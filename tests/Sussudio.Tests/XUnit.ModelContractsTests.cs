@@ -1044,14 +1044,6 @@ public sealed class SnapshotModelsTests
         AssertContains(diagnosticsRootText, "public int MjpegDecodeSampleCount { get; init; }");
         AssertContains(diagnosticsRootText, "public double[] VisualCenterCadenceRecentChangeIntervalsMs { get; init; } = Array.Empty<double>();");
         AssertDoesNotContain(diagnosticsRootText, "partial class CaptureDiagnosticsSnapshot");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Models", "Capture", "CaptureDiagnosticsSnapshot.cs")),
-            "CaptureDiagnosticsSnapshot.cs folded into CaptureModels.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Models", "Capture", "CaptureSnapshotModels.cs")),
-            "CaptureSnapshotModels.cs folded into CaptureModels.cs");
 
         var snapshotType = RequireType("Sussudio.Models.CaptureDiagnosticsSnapshot");
         var decoderType = RequireType("Sussudio.Models.MjpegDecoderHealthSnapshot");
@@ -1996,14 +1988,6 @@ public sealed class SnapshotModelsTests
         AssertContains(healthRootText, "public string FlashbackExportStatus { get; init; } = \"NotStarted\";");
         AssertContains(healthRootText, "public string? FlashbackExportVerificationFormat { get; init; }");
         AssertDoesNotContain(healthRootText, "partial class CaptureHealthSnapshot");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Models", "Capture", "CaptureHealthSnapshot.cs")),
-            "CaptureHealthSnapshot.cs folded into CaptureModels.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Models", "Capture", "CaptureSnapshotModels.cs")),
-            "CaptureSnapshotModels.cs folded into CaptureModels.cs");
 
         var detailEntry = CreateSourceTelemetryDetailEntry(detailType);
         AssertSourceTelemetryDetailEntryValues(detailEntry);

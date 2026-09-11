@@ -1,0 +1,2394 @@
+﻿{
+    "schemaVersion":  1,
+    "description":  "Source files that must not exist. Each entry records a split that was intentionally folded into an existing owner; the failing test names the path and this reason. Add entries here rather than writing new per-file assertions, and run the tests to confirm a proposed new file is not already forbidden.",
+    "forbiddenPaths":  [
+                           {
+                               "path":  "Sussudio.Automation.Contracts/AutomationPipeClientModels.cs",
+                               "reason":  "pipe client handoff/error models stay folded into AutomationPipeProtocol.cs"
+                           },
+                           {
+                               "path":  "Sussudio/App.ExceptionPolicy.cs",
+                               "reason":  "old App exception policy partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/App.LaunchLifecycle.cs",
+                               "reason":  "old App launch lifecycle partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Audio/AudioControlPresentationController.cs",
+                               "reason":  "audio control presentation lives with audio control binding ownership"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Audio/AudioMeterController.Context.cs",
+                               "reason":  "AudioMeterController context partial"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Audio/Meter/AudioMeterController.cs",
+                               "reason":  "audio meter controller folded into AudioControlBindingController.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Audio/MicrophoneControlsController.cs",
+                               "reason":  "microphone controls folded into AudioControlBindingController.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Capture/CaptureOptionPresentationController.cs",
+                               "reason":  "capture option presentation policy and controller folded into CaptureBindingControllers.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Capture/CaptureSelectionBindingController.SelectionState.cs",
+                               "reason":  "empty selection-state marker partial should stay removed"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Flashback/FlashbackCommandController.cs",
+                               "reason":  "Flashback command controller folded into FlashbackUiControllers.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Flashback/FlashbackPlaybackUiCoordinator.cs",
+                               "reason":  "Flashback playback presentation and UI coordination live with Flashback UI controllers"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.cs",
+                               "reason":  "Flashback playhead motion folded into Flashback UI controllers"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.Cti.cs",
+                               "reason":  "Flashback playhead CTI partial is consolidated into the motion controller root"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.Visuals.cs",
+                               "reason":  "Flashback playhead visuals partial is consolidated into the motion controller root"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Flashback/FlashbackScrubInteractionController.cs",
+                               "reason":  "Flashback scrub interaction folded into Flashback UI controllers"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Flashback/FlashbackTimelineAnimationController.cs",
+                               "reason":  "timeline animation folded into Flashback UI controllers"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Flashback/FlashbackTimelineController.cs",
+                               "reason":  "Flashback timeline folded into Flashback UI controllers"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.cs",
+                               "reason":  "launch entrance choreography lives with the launch flow owner"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.Shell.cs",
+                               "reason":  "launch entrance shell phase is consolidated into the root controller"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.Splash.cs",
+                               "reason":  "launch entrance splash phase is consolidated into the root controller"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Launch/LaunchStartupController.cs",
+                               "reason":  "launch startup choreography lives with the launch flow owner"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Launch/Splash/SplashLoadingPhraseCatalog.cs",
+                               "reason":  "splash phrase catalog folded into LaunchFlowController.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Launch/Splash/SplashLoadingPhraseController.cs",
+                               "reason":  "splash phrase controller folded into LaunchFlowController.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Launch/Splash/SplashLoadingPhrasePacingPolicy.cs",
+                               "reason":  "splash phrase pacing policy folded into LaunchFlowController.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Preview/PreviewButtonActionController.cs",
+                               "reason":  "preview button action, presentation, and fade-in controllers live with preview lifecycle events"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Preview/PreviewReinitTransitionController.cs",
+                               "reason":  "preview reinit transition state lives with preview transition animation ownership"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Preview/PreviewSurfacePresentationController.cs",
+                               "reason":  "preview surface presentation folded into PreviewLifecycleControllers.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Preview/PreviewSurfaceShadowController.cs",
+                               "reason":  "preview surface shadow controller lives with preview surface presentation owner"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotMapper.cs",
+                               "reason":  "Preview runtime snapshot mapper stays folded into the snapshot controller owner"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotSamplingController.cs",
+                               "reason":  "preview runtime snapshot sampling lives with the snapshot controller"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Preview/Startup/PreviewStartupFailureTextFormatter.cs",
+                               "reason":  "preview startup failure text formatter helper"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Preview/Startup/PreviewStartupOverlayController.cs",
+                               "reason":  "preview startup overlay lives with preview transition presentation concerns"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Preview/Startup/PreviewStartupReadinessSignalController.cs",
+                               "reason":  "preview startup readiness controller folded into PreviewStartupControllers.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Preview/Startup/PreviewStartupSignalCoordinator.cs",
+                               "reason":  "preview startup signal coordinator folded into PreviewStartupControllers.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Preview/Startup/PreviewStartupSignalsController.cs",
+                               "reason":  "preview startup signals controller folded into PreviewStartupControllers.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Recording/Button/RecordingButtonChromeController.cs",
+                               "reason":  "recording button chrome controller folded into RecordingControlsControllers.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Recording/Output/OutputPathController.cs",
+                               "reason":  "output path controller folded into RecordingControlsControllers.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Recording/RecordingStatePresentationController.cs",
+                               "reason":  "recording state presentation lives with recording button chrome instead of returning as a tiny adjacent file"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Screenshot/Preview/PreviewScreenshotController.cs",
+                               "reason":  "preview screenshot workflow lives with the screenshot controller owner"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Screenshot/Window/WindowScreenshotController.cs",
+                               "reason":  "whole-window screenshot capture lives with the screenshot controller owner"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Screenshot/Window/WindowScreenshotImageEncoder.cs",
+                               "reason":  "whole-window screenshot image encoder folded into WindowScreenshotController"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Screenshot/Window/WindowScreenshotNativeCapture.cs",
+                               "reason":  "native whole-window capture stays with WindowScreenshotController"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Shell/ControlBarAnimationController.cs",
+                               "reason":  "control-bar hover animation lives with shell chrome controller concerns"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Shell/ControlBarLabelVisibilityController.cs",
+                               "reason":  "control-bar label visibility lives with responsive shell layout application"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Shell/LiveSignalInfoController.cs",
+                               "reason":  "live signal info presentation lives with shell chrome"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Shell/MainWindowPropertyChangedRouter.cs",
+                               "reason":  "property-name route order lives in the MainWindow root composition"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Shell/ResponsiveShellLayoutController.cs",
+                               "reason":  "responsive shell layout application lives with shell chrome"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Shell/ResponsiveShellLayoutPolicy.cs",
+                               "reason":  "responsive shell layout policy lives with responsive shell layout application"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Shell/SettingsShelfController.cs",
+                               "reason":  "settings shelf lives with shell chrome ownership"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Shell/ShellElevationController.cs",
+                               "reason":  "shell elevation setup lives with shell chrome controller concerns"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Shell/ShellPropertyChangedController.cs",
+                               "reason":  "shell property-change routing lives with shell chrome controller concerns"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Shell/StatusStripPresentationController.cs",
+                               "reason":  "status strip presentation lives with shell chrome ownership"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Stats/StatsSectionChromeController.cs",
+                               "reason":  "stats section chrome controller folded into stats overlay composition owner"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs",
+                               "reason":  "capture mode option rebuild controller folded into MainViewModelDeviceControllers.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs",
+                               "reason":  "MainViewModelControllerGraph folded into MainViewModel.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/ViewModel/MainViewModelDeviceFormatProbeRetargetApplier.cs",
+                               "reason":  "device format probe retarget applier lives with probe event owner"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/ViewModel/MainViewModelDisposalController.cs",
+                               "reason":  "disposal controller folded into MainViewModelLifecycleController.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/ViewModel/MainViewModelFrameRateTimingResolver.cs",
+                               "reason":  "frame-rate timing resolver lives with capture mode option rebuild owner"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs",
+                               "reason":  "preview lifecycle controller lives with recording transitions in the ViewModel capture lifecycle owner"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/ViewModel/MainViewModelPreviewReinitializeController.cs",
+                               "reason":  "Preview reinitialize transaction controller lives with preview lifecycle owner"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs",
+                               "reason":  "recording transition controller lives with the ViewModel capture lifecycle owner"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/ViewModel/MainViewModelResolutionOptionRebuildController.cs",
+                               "reason":  "old standalone resolution option rebuild controller removed"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/ViewModel/MainViewModelRuntimeEventIngressController.cs",
+                               "reason":  "runtime event ingress controller folded into MainViewModelLifecycleController.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/ViewModel/MainViewModelRuntimeLifecycleController.cs",
+                               "reason":  "runtime lifecycle controller folded into MainViewModelLifecycleController.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Window/NativeWindowBootstrapController.cs",
+                               "reason":  "native window bootstrap lives with the window lifecycle controller"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Window/WindowAppClosingController.cs",
+                               "reason":  "app closing choreography lives with close lifecycle policy"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Window/WindowAutomationHostLifecycleController.cs",
+                               "reason":  "automation host lifecycle lives with the window automation controller owner"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Window/WindowCloseRequestController.cs",
+                               "reason":  "close request execution lives with close lifecycle policy"
+                           },
+                           {
+                               "path":  "Sussudio/Controllers/Window/WindowSnapRegionLayoutPolicy.cs",
+                               "reason":  "snap-region rectangle math lives with window automation controller concerns"
+                           },
+                           {
+                               "path":  "Sussudio/Logger.Diagnostics.cs",
+                               "reason":  "old Logger diagnostics partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/MainWindow.AudioMeter.cs",
+                               "reason":  "Audio meter adapter folded into MainWindow.xaml.cs"
+                           },
+                           {
+                               "path":  "Sussudio/MainWindow.AutomationHost.cs",
+                               "reason":  "MainWindow automation host adapter partial"
+                           },
+                           {
+                               "path":  "Sussudio/MainWindow.Bindings.cs",
+                               "reason":  "root startup binding sequence lives with the MainWindow composition root"
+                           },
+                           {
+                               "path":  "Sussudio/MainWindow.CaptureDeviceActions.cs",
+                               "reason":  "capture-device button adapter folded into MainWindow.xaml.cs"
+                           },
+                           {
+                               "path":  "Sussudio/MainWindow.CaptureOptionBindings.cs",
+                               "reason":  "MainWindow capture option adapter folded into MainWindow.xaml.cs"
+                           },
+                           {
+                               "path":  "Sussudio/MainWindow.CaptureSelectionBindings.Composition.cs",
+                               "reason":  "MainWindow capture selection adapter folded into MainWindow.xaml.cs"
+                           },
+                           {
+                               "path":  "Sussudio/MainWindow.Composition.cs",
+                               "reason":  "preview reinit adapter folded into MainWindow.xaml.cs"
+                           },
+                           {
+                               "path":  "Sussudio/MainWindow.ControlBindings.cs",
+                               "reason":  "XAML control binding adapter folded into MainWindow root code-behind"
+                           },
+                           {
+                               "path":  "Sussudio/MainWindow.ControllerInitialization.cs",
+                               "reason":  "controller initialization partial folded into MainWindow root composition"
+                           },
+                           {
+                               "path":  "Sussudio/MainWindow.EventHandlers.cs",
+                               "reason":  "generic MainWindow event-handler partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/MainWindow.Flashback.Interactions.cs",
+                               "reason":  "Flashback polling adapter folded into the MainWindow root composition adapter"
+                           },
+                           {
+                               "path":  "Sussudio/MainWindow.FullScreen.Composition.cs",
+                               "reason":  "fullscreen adapter folded into MainWindow.xaml.cs"
+                           },
+                           {
+                               "path":  "Sussudio/MainWindow.FullScreenFlashbackBridge.cs",
+                               "reason":  "Flashback fullscreen bridge is consolidated into the fullscreen adapter"
+                           },
+                           {
+                               "path":  "Sussudio/MainWindow.MicrophoneControls.cs",
+                               "reason":  "microphone controls adapter folded into MainWindow.xaml.cs"
+                           },
+                           {
+                               "path":  "Sussudio/MainWindow.PreviewRuntimeSnapshot.cs",
+                               "reason":  "preview runtime snapshot adapter lives with the preview renderer composition"
+                           },
+                           {
+                               "path":  "Sussudio/MainWindow.PreviewStartup.Signals.cs",
+                               "reason":  "old marker-only preview startup signal partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/MainWindow.PreviewStartup.Watchdog.cs",
+                               "reason":  "preview startup watchdog adapter folded into the preview startup session adapter"
+                           },
+                           {
+                               "path":  "Sussudio/MainWindow.PreviewSurface.cs",
+                               "reason":  "preview surface XAML adapter lives with preview renderer composition"
+                           },
+                           {
+                               "path":  "Sussudio/MainWindow.PropertyChanged.cs",
+                               "reason":  "property-change router composition lives in the MainWindow root composition"
+                           },
+                           {
+                               "path":  "Sussudio/MainWindow.PropertyChangedRecording.cs",
+                               "reason":  "recording property-changed adapter folded into MainWindow.xaml.cs"
+                           },
+                           {
+                               "path":  "Sussudio/MainWindow.RecordingActions.cs",
+                               "reason":  "recording button adapter folded into MainWindow.xaml.cs"
+                           },
+                           {
+                               "path":  "Sussudio/MainWindow.ResponsiveShellLayout.cs",
+                               "reason":  "responsive shell layout adapter lives with shell chrome composition"
+                           },
+                           {
+                               "path":  "Sussudio/MainWindow.Screenshot.cs",
+                               "reason":  "preview screenshot button adapter lives with MainWindow button actions"
+                           },
+                           {
+                               "path":  "Sussudio/MainWindow.ShutdownCleanup.Composition.cs",
+                               "reason":  "shutdown cleanup adapter folded into MainWindow root composition"
+                           },
+                           {
+                               "path":  "Sussudio/MainWindow.StatusStripPresentation.cs",
+                               "reason":  "status strip adapter folded into MainWindow.xaml.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Models/Automation/AutomationCommandKind.cs",
+                               "reason":  "app project must not own AutomationCommandKind"
+                           },
+                           {
+                               "path":  "Sussudio/Models/Automation/CaptureRuntimeSnapshot.cs",
+                               "reason":  "capture runtime DTO folded into AutomationModels.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Models/Automation/PerformanceTimelineEntry.cs",
+                               "reason":  "performance timeline DTO folded into AutomationModels.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Models/Automation/PreviewRuntimeSnapshot.cs",
+                               "reason":  "preview runtime DTO folded into AutomationModels.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Models/Capture/CaptureDiagnosticsSnapshot.cs",
+                               "reason":  "CaptureDiagnosticsSnapshot.cs folded into CaptureModels.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Models/Capture/CaptureHealthSnapshot.cs",
+                               "reason":  "CaptureHealthSnapshot.cs folded into CaptureModels.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Models/Capture/CaptureSnapshotModels.cs",
+                               "reason":  "CaptureSnapshotModels.cs folded into CaptureModels.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Models/Telemetry/SourceSignalTelemetrySnapshot.cs",
+                               "reason":  "source telemetry DTOs live with the probe-linked telemetry provider contract"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Audio/WasapiAudioCapture.CaptureLoop.cs",
+                               "reason":  "WASAPI capture loop folded into capture lifecycle root"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Audio/WasapiAudioCapture.Conversion.cs",
+                               "reason":  "WASAPI capture conversion folded into capture lifecycle root"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Audio/WasapiAudioCapture.Diagnostics.cs",
+                               "reason":  "WASAPI capture diagnostics folded into capture lifecycle root"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Audio/WasapiAudioCapture.Fanout.cs",
+                               "reason":  "converted audio fan-out lives with the WASAPI capture loop"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Audio/WasapiAudioCapture.Initialization.cs",
+                               "reason":  "WASAPI capture initialization stays folded into capture lifecycle root"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Audio/WasapiAudioPlayback.Initialization.cs",
+                               "reason":  "WASAPI playback initialization stays folded into playback lifecycle root"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Audio/WasapiAudioPlayback.Queue.cs",
+                               "reason":  "WASAPI playback queue state stays folded into the lifecycle root"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Audio/WasapiAudioPlayback.RenderThread.cs",
+                               "reason":  "WASAPI playback render thread folded into the playback lifecycle root"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Audio/WasapiAudioPlayback.Volume.cs",
+                               "reason":  "WASAPI playback render-side volume telemetry folded into the playback lifecycle root"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Audio/WasapiComInterop.AudioClient.Contracts.cs",
+                               "reason":  "AudioClient contract shard folded into the single WASAPI interop owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Audio/WasapiComInterop.CommonContracts.cs",
+                               "reason":  "shared WASAPI contracts stay with Core Audio contracts instead of a tiny file"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Audio/WasapiComInterop.Contracts.cs",
+                               "reason":  "old combined WASAPI COM contract file removed"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Audio/WasapiComInterop.CoreAudio.Contracts.cs",
+                               "reason":  "Core Audio contract shard folded into the single WASAPI interop owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Audio/WasapiComInterop.DeviceClients.cs",
+                               "reason":  "WASAPI device helpers stay with the implementation root instead of a tiny partial"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Audio/WasapiComInterop.Formats.cs",
+                               "reason":  "WASAPI format helpers stay with the implementation root instead of a tiny partial"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Automation/AutomationCommandDispatcher.Assertions.cs",
+                               "reason":  "assert-snapshot command body folded into AutomationCommandDispatcher.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Automation/AutomationCommandDispatcher.Authorization.cs",
+                               "reason":  "auth gate folded into AutomationCommandDispatcher.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs",
+                               "reason":  "custom command router folded into AutomationCommandDispatcher.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Automation/AutomationCommandDispatcher.DiagnosticCommands.cs",
+                               "reason":  "diagnostic readback folded into AutomationCommandDispatcher.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Automation/AutomationCommandDispatcher.FlashbackCommands.cs",
+                               "reason":  "Flashback command bodies folded into AutomationCommandDispatcher.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Automation/AutomationCommandDispatcher.Payload.cs",
+                               "reason":  "payload helpers folded into AutomationCommandDispatcher.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Automation/AutomationCommandDispatcher.PortMappedDispatch.cs",
+                               "reason":  "port-mapped dispatch folded into AutomationCommandDispatcher.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Automation/AutomationCommandDispatcher.Preflight.cs",
+                               "reason":  "preflight gate folded into AutomationCommandDispatcher.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Automation/AutomationCommandDispatcher.ReadbackCommands.cs",
+                               "reason":  "readback commands folded into AutomationCommandDispatcher.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Automation/AutomationCommandDispatcher.TrivialHandlers.cs",
+                               "reason":  "trivial port handler tables folded into AutomationCommandDispatcher.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Automation/AutomationCommandDispatcher.UiSettingsCommands.cs",
+                               "reason":  "UI settings handlers folded into AutomationCommandDispatcher.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Automation/AutomationCommandDispatcher.VerificationCommands.cs",
+                               "reason":  "verification commands folded into AutomationCommandDispatcher.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Automation/AutomationCommandDispatcher.VisualCaptureCommands.cs",
+                               "reason":  "visual capture commands folded into AutomationCommandDispatcher.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Automation/AutomationCommandDispatcher.WaitConditions.cs",
+                               "reason":  "wait-condition commands folded into AutomationCommandDispatcher.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Automation/AutomationCommandDispatcher.WindowActions.cs",
+                               "reason":  "window action executor folded into AutomationCommandDispatcher.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Automation/AutomationCommandDispatcher.WindowCommands.cs",
+                               "reason":  "window command bodies folded into AutomationCommandDispatcher.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Automation/AutomationDiagnosticsHub.Alerts.cs",
+                               "reason":  "diagnostic alert refresh folded into AutomationDiagnosticsHub.Snapshots.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluation.cs",
+                               "reason":  "Diagnostic verdict branch policies folded into Evaluation owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.cs",
+                               "reason":  "Flashback diagnostic evaluation folded into Evaluation owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.Playback.cs",
+                               "reason":  "Flashback playback diagnostic evaluation partial folded into Flashback evaluation owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.Recording.cs",
+                               "reason":  "Flashback recording diagnostic evaluation folded into Flashback evaluation owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationLanes.cs",
+                               "reason":  "Diagnostic lane text builders folded into Evaluation owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.cs",
+                               "reason":  "Realtime diagnostic evaluation folded into Evaluation owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.Preview.cs",
+                               "reason":  "Realtime preview diagnostic evaluation helpers folded into realtime evaluation owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvents.cs",
+                               "reason":  "diagnostic event state helpers folded into AutomationDiagnosticsHub.Snapshots.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Automation/AutomationDiagnosticsHub.FlashbackRecordingAlerts.cs",
+                               "reason":  "Flashback recording alert rules folded into the main alerts owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Automation/NamedPipeAutomationServer.ConnectionSession.cs",
+                               "reason":  "connection session stays with the named-pipe automation server owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Automation/NamedPipeAutomationServer.Security.cs",
+                               "reason":  "pipe security stays with the named-pipe automation server owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CapturePipelineResources.cs",
+                               "reason":  "capture pipeline resources folded into CaptureService.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureRecordingBackendResources.cs",
+                               "reason":  "recording backend resources folded into CaptureService.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.Audio.cs",
+                               "reason":  "old audio event projection partial removed after audio preview lifecycle consolidation"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.AudioInputSwitching.cs",
+                               "reason":  "live audio input switching folded into CaptureService.PreviewLifecycle.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs",
+                               "reason":  "old audio preview partial folded into preview lifecycle owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.CaptureFormatTelemetry.cs",
+                               "reason":  "old capture-format telemetry partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.Failures.cs",
+                               "reason":  "CaptureService failure callbacks folded into CaptureService.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.FlashbackAudioInputs.cs",
+                               "reason":  "Flashback audio input restoration folded into Flashback recording owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.FlashbackBackendFailureCleanup.cs",
+                               "reason":  "CaptureService Flashback backend failure cleanup folded into cleanup lifecycle"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.FlashbackControls.cs",
+                               "reason":  "Flashback controls owner folded into CaptureService.Flashback.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.FlashbackExportBackendSnapshot.cs",
+                               "reason":  "old Flashback export backend snapshot partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.FlashbackExportForceRotate.cs",
+                               "reason":  "old Flashback export force-rotate partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.FlashbackExportRangeResolution.cs",
+                               "reason":  "old Flashback export range-resolution partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.FlashbackPreviewBackend.cs",
+                               "reason":  "Flashback preview backend lifecycle folded into Flashback controls owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.FlashbackPreviewBackendDisposal.cs",
+                               "reason":  "old Flashback preview backend disposal partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs",
+                               "reason":  "Flashback recording owner folded into CaptureService.Flashback.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.FlashbackRecording.FrameRate.cs",
+                               "reason":  "old Flashback recording frame-rate partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.FlashbackRecording.SessionContext.cs",
+                               "reason":  "old Flashback recording session-context partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.FlashbackSettings.cs",
+                               "reason":  "Flashback settings owner folded into CaptureService.Flashback.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.FlashbackSettingsControls.cs",
+                               "reason":  "old broad Flashback settings controls file removed"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.FlashbackState.cs",
+                               "reason":  "Flashback state owner folded into CaptureService.Flashback.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.HealthSnapshotFlashbackBackend.cs",
+                               "reason":  "Flashback backend health fields folded into health snapshot sampler"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.Initialization.cs",
+                               "reason":  "old initialization partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.cs",
+                               "reason":  "microphone monitor state and restart folded into CaptureService.PreviewLifecycle.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.Restart.cs",
+                               "reason":  "old microphone monitor restart partial removed after monitor consolidation"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.MicrophoneMonitor.Update.cs",
+                               "reason":  "old microphone monitor update partial removed after monitor consolidation"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.ObservedPixelTelemetry.cs",
+                               "reason":  "old observed pixel telemetry partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.PreviewDisposal.cs",
+                               "reason":  "old preview disposal partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.PreviewPipeline.cs",
+                               "reason":  "old preview pipeline partial removed after video lifecycle promotion"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.PreviewReuse.cs",
+                               "reason":  "preview reuse helper partial folded into preview start"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.PreviewStart.cs",
+                               "reason":  "old preview start partial folded into preview lifecycle owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.PreviewStart.FastPath.cs",
+                               "reason":  "old preview-start fast-path partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.PreviewStart.FreshPipeline.cs",
+                               "reason":  "old preview-start fresh-pipeline partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.PreviewStart.Recycle.cs",
+                               "reason":  "old preview-start recycle partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.PreviewStop.cs",
+                               "reason":  "preview stop and disposal folded into preview lifecycle owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.Probes.cs",
+                               "reason":  "CaptureService probe partial folded into snapshots"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashback.cs",
+                               "reason":  "Flashback export-finalize helpers folded into CaptureService.Flashback.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBackendReconcile.cs",
+                               "reason":  "old Flashback backend reconcile partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvIdlePreview.cs",
+                               "reason":  "old LibAv idle-preview finalization partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvPreviewRestore.cs",
+                               "reason":  "old LibAv preview-restore finalization partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvResources.cs",
+                               "reason":  "old broad LibAv resource finalization partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvSink.cs",
+                               "reason":  "old LibAv sink finalization partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvVideoBoundary.cs",
+                               "reason":  "old LibAv video-boundary finalization partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.RecordingIntegrity.Audio.cs",
+                               "reason":  "old recording integrity audio partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.RecordingIntegrity.Counters.cs",
+                               "reason":  "old recording integrity counters partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs",
+                               "reason":  "recording integrity sidecar folded into recording lifecycle"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.RecordingIntegrity.Logging.cs",
+                               "reason":  "old recording integrity logging partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.RecordingIntegrity.Summary.cs",
+                               "reason":  "old recording integrity summary partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.RecordingOutcomeState.cs",
+                               "reason":  "old recording outcome-state partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.RecordingRollback.cs",
+                               "reason":  "recording start rollback lives with recording lifecycle ownership"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.RecordingStartContext.cs",
+                               "reason":  "old recording start context partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.RecordingStartFlashback.cs",
+                               "reason":  "Flashback recording start folded into Flashback recording owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.RecordingStartLibAv.AudioInputs.cs",
+                               "reason":  "old LibAv recording audio-input startup partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.RecordingStartLibAv.cs",
+                               "reason":  "LibAv recording startup folded into recording lifecycle owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.RecordingStartLibAv.VideoCapture.cs",
+                               "reason":  "old LibAv recording video-capture startup partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.RecordingStopLifecycle.cs",
+                               "reason":  "old recording stop lifecycle partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.ResourceRelease.cs",
+                               "reason":  "CaptureService resource-release helpers stay folded into CaptureService.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.RuntimeSnapshotAssembler.cs",
+                               "reason":  "runtime snapshot assembler folded into RuntimeSnapshots.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.RuntimeSnapshotAssemblyFields.cs",
+                               "reason":  "old runtime snapshot assembly-fields partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.RuntimeSnapshotHdrPipeline.cs",
+                               "reason":  "HDR runtime snapshot projection folded into runtime snapshot sampler"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.RuntimeSnapshotRecordingIntegrity.cs",
+                               "reason":  "old runtime recording-integrity projection partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.RuntimeSnapshotSourceTelemetry.cs",
+                               "reason":  "source telemetry runtime snapshot projection folded into runtime snapshot sampler"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.SnapshotObservedFrames.cs",
+                               "reason":  "old observed frames snapshot partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.SnapshotRecordingFormat.cs",
+                               "reason":  "old recording format snapshot partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.SnapshotRecordingStats.cs",
+                               "reason":  "old recording stats snapshot partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.Snapshots.cs",
+                               "reason":  "capture diagnostics/source telemetry snapshot helpers folded into CaptureService.RuntimeSnapshots.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.SnapshotTelemetry.cs",
+                               "reason":  "old source telemetry snapshot partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.Telemetry.cs",
+                               "reason":  "CaptureService telemetry polling folded into snapshot diagnostics owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.TelemetryFallback.cs",
+                               "reason":  "old telemetry fallback partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.TransitionExecution.cs",
+                               "reason":  "CaptureService transition transaction helpers stay folded into CaptureService.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.VideoPipelineLifecycle.cs",
+                               "reason":  "video pipeline lifecycle helper partial folded into preview start"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureService.WasapiPlayback.cs",
+                               "reason":  "old WASAPI playback partial removed after PreviewAudioGraphResources promotion"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureSessionCoordinator.Commands.cs",
+                               "reason":  "CaptureSessionCoordinator command facade folded into the coordinator root"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureSessionCoordinator.Disposal.cs",
+                               "reason":  "CaptureSessionCoordinator disposal lifecycle folded into the coordinator root"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureSessionCoordinator.Flashback.cs",
+                               "reason":  "CaptureSessionCoordinator Flashback facade folded into the coordinator root"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureSessionCoordinator.Flashback.Playback.cs",
+                               "reason":  "CaptureSessionCoordinator Flashback playback adapters folded into the Flashback coordinator facade"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureSessionCoordinator.Models.cs",
+                               "reason":  "coordinator model surface folded into the coordinator root"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureSessionCoordinator.Queue.cs",
+                               "reason":  "CaptureSessionCoordinator queue worker folded into the coordinator root"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureSessionCoordinator.Snapshot.cs",
+                               "reason":  "CaptureSessionCoordinator snapshot projection folded into the coordinator root"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureSessionStateMachine.cs",
+                               "reason":  "mutable capture session state machine lives with capture model owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/CaptureVideoPipelineResources.cs",
+                               "reason":  "video pipeline resources folded into CaptureService.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/DeviceService.AudioAssociation.cs",
+                               "reason":  "audio endpoint association folded into DeviceService.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/DeviceService.FormatCache.cs",
+                               "reason":  "DeviceService format cache folded into format probe owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/DeviceService.FormatProbe.cs",
+                               "reason":  "DeviceService format probing folded into DeviceService.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/FrameLedger.cs",
+                               "reason":  "frame ledger helper folded into UnifiedVideoCapture.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/MfInteropHelpers.cs",
+                               "reason":  "MF startup and attribute helpers folded into shared MF interop owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/MfSourceReaderVideoCapture.Cadence.cs",
+                               "reason":  "source-reader cadence metrics folded into active lifecycle owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/MfSourceReaderVideoCapture.ComContracts.cs",
+                               "reason":  "source-reader COM contracts folded into shared MF interop owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/MfSourceReaderVideoCapture.ConvertedMediaType.cs",
+                               "reason":  "converted source-reader media type construction folded into negotiation owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/MfSourceReaderVideoCapture.DeviceEnumeration.cs",
+                               "reason":  "source-reader device enumeration fallback folded into negotiation/source-open owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/MfSourceReaderVideoCapture.Diagnostics.cs",
+                               "reason":  "source-reader vtable diagnostic folded into root source-reader owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/MfSourceReaderVideoCapture.DxgiBuffers.cs",
+                               "reason":  "MfSourceReaderVideoCapture DXGI texture extraction folded into root source-reader owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/MfSourceReaderVideoCapture.FrameDelivery.cs",
+                               "reason":  "source-reader frame delivery folded into root source-reader owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/MfSourceReaderVideoCapture.FrameLayout.cs",
+                               "reason":  "shared source-reader frame layout helpers folded into the root source-reader state"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/MfSourceReaderVideoCapture.Initialization.cs",
+                               "reason":  "source-reader initialization folded into active lifecycle owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/MfSourceReaderVideoCapture.InitializedSession.cs",
+                               "reason":  "source-reader initialized-session handoff folded into active lifecycle owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/MfSourceReaderVideoCapture.Interop.cs",
+                               "reason":  "source-reader MF P/Invokes and constants folded into shared MF interop owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/MfSourceReaderVideoCapture.Lifecycle.cs",
+                               "reason":  "source-reader lifecycle folded into root source-reader state"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/MfSourceReaderVideoCapture.Negotiation.cs",
+                               "reason":  "source-reader negotiation and source-open helpers folded into root source-reader owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/MfSourceReaderVideoCapture.RawFrameDelivery.cs",
+                               "reason":  "raw/compressed source-reader frame extraction folded into root source-reader owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/MfSourceReaderVideoCapture.ReadLoop.cs",
+                               "reason":  "source-reader read loop folded into active lifecycle owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/MfSourceReaderVideoCapture.SampleBufferContracts.cs",
+                               "reason":  "source-reader sample/buffer COM declarations folded into shared MF interop owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.CompressedQueue.cs",
+                               "reason":  "MJPEG compressed queue admission stays folded into pipeline root/channel owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.Lifecycle.cs",
+                               "reason":  "MJPEG pipeline lifecycle folded into the root pipeline owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.Metrics.cs",
+                               "reason":  "MJPEG pipeline metrics folded into pipeline root/channel owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.Reorder.cs",
+                               "reason":  "MJPEG decoded-frame ordering folded into the pipeline root"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.ReorderEmission.cs",
+                               "reason":  "MJPEG reorder emission stays folded into decoded-frame ordering owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.ResourceCleanup.cs",
+                               "reason":  "MJPEG pipeline resource cleanup folded into ParallelMjpegDecodePipeline root"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.Workers.cs",
+                               "reason":  "MJPEG worker execution stays folded into pipeline root/channel owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/MjpegPreviewJitterBuffer.Adaptive.cs",
+                               "reason":  "MJPEG preview adaptive deadline/depth policy folded into the lifecycle root"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/MjpegPreviewJitterBuffer.EmitLoop.cs",
+                               "reason":  "MJPEG preview jitter emit loop stays folded into the lifecycle root"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/MjpegPreviewJitterBuffer.FrameIngress.cs",
+                               "reason":  "MJPEG preview jitter queue ingress folded into the lifecycle root"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/MjpegPreviewJitterBuffer.FramePacing.cs",
+                               "reason":  "MJPEG preview frame pacing folded into the lifecycle root"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/MjpegPreviewJitterBuffer.Metrics.cs",
+                               "reason":  "MJPEG preview jitter metrics folded into the lifecycle root"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/MjpegPreviewJitterBuffer.Queue.cs",
+                               "reason":  "MJPEG preview jitter queue ordering folded into frame ingress owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/PreviewAudioGraphResources.cs",
+                               "reason":  "preview audio graph resources folded into CaptureService.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/UnifiedVideoCapture.FrameIngress.cs",
+                               "reason":  "UnifiedVideoCapture frame ingress folded into the source-session owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/UnifiedVideoCapture.Initialization.cs",
+                               "reason":  "UnifiedVideoCapture initialization folded into root source-session owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/UnifiedVideoCapture.Lifecycle.cs",
+                               "reason":  "UnifiedVideoCapture lifecycle folded into root source-session owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/UnifiedVideoCapture.MjpegPipelineLifecycle.cs",
+                               "reason":  "UnifiedVideoCapture MJPEG startup helpers folded into root source-session owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/UnifiedVideoCapture.Preview.cs",
+                               "reason":  "UnifiedVideoCapture preview submission folded into the source-session owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/UnifiedVideoCapture.SinkFanout.cs",
+                               "reason":  "UnifiedVideoCapture recording/Flashback fanout folded into the source-session owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/UnifiedVideoCapture.SinkFanout.Flashback.cs",
+                               "reason":  "UnifiedVideoCapture Flashback fanout folded into the source-session owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/VisualCadenceTracker.cs",
+                               "reason":  "visual cadence tracker folded into CaptureCadenceTrackers.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/VisualCadenceTracker.Metrics.cs",
+                               "reason":  "old visual cadence metrics partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Capture/VisualCadenceTracker.Sampling.cs",
+                               "reason":  "old visual cadence sampling partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Contracts/AutomationInterfaces.cs",
+                               "reason":  "automation service interfaces live with ServiceContracts"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Contracts/IPreviewFrameSink.cs",
+                               "reason":  "preview sink service interface lives with ServiceContracts"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Contracts/PooledVideoFrame.cs",
+                               "reason":  "pooled-frame ownership types live with ServiceContracts"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Contracts/PooledVideoFrameLease.cs",
+                               "reason":  "pooled-frame leases live with the pooled frame owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Contracts/RecordingContracts.cs",
+                               "reason":  "recording service contracts live with ServiceContracts"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Contracts/ServiceInterfaces.cs",
+                               "reason":  "app service contract interfaces live with ServiceContracts"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Flashback/FlashbackBackendResources.RecordingFinalize.cs",
+                               "reason":  "recording finalize policy folded into FlashbackBackendResources.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Flashback/FlashbackBufferManager.Lifecycle.cs",
+                               "reason":  "FlashbackBufferManager.Lifecycle.cs folded into FlashbackBufferManager.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Flashback/FlashbackBufferManager.LiveAccounting.cs",
+                               "reason":  "FlashbackBufferManager.LiveAccounting.cs folded into FlashbackBufferManager.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Flashback/FlashbackBufferManager.Math.cs",
+                               "reason":  "FlashbackBufferManager.Math.cs folded into FlashbackBufferManager.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Flashback/FlashbackBufferManager.Purge.cs",
+                               "reason":  "FlashbackBufferManager.Purge.cs folded into FlashbackBufferManager.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Flashback/FlashbackBufferManager.Retention.cs",
+                               "reason":  "FlashbackBufferManager.Retention.cs folded into FlashbackBufferManager.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Flashback/FlashbackBufferManager.Segments.cs",
+                               "reason":  "FlashbackBufferManager.Segments.cs folded into FlashbackBufferManager.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Flashback/FlashbackDecoder.AudioOutput.cs",
+                               "reason":  "Flashback decoder audio output folded into decoder root"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Flashback/FlashbackDecoder.D3D11.cs",
+                               "reason":  "Flashback decoder D3D11VA initialization lives with the decoder root."
+                           },
+                           {
+                               "path":  "Sussudio/Services/Flashback/FlashbackDecoder.D3D11Discovery.cs",
+                               "reason":  "Flashback decoder D3D11VA discovery folded into video decoder setup owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Flashback/FlashbackDecoder.Lifetime.cs",
+                               "reason":  "FlashbackDecoder file-close cleanup lives with the root lifecycle owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Flashback/FlashbackDecoder.OutputTypes.cs",
+                               "reason":  "Flashback decoder output DTOs stay folded into the decoder root surface."
+                           },
+                           {
+                               "path":  "Sussudio/Services/Flashback/FlashbackDecoder.Playback.cs",
+                               "reason":  "Flashback decoder playback packet feed folded into decoder root"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Flashback/FlashbackDecoder.Validation.cs",
+                               "reason":  "FlashbackDecoder validation helpers folded into decoder root"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Flashback/FlashbackDecoder.VideoConversion.cs",
+                               "reason":  "FlashbackDecoder.VideoConversion.cs folded into FlashbackDecoder.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Flashback/FlashbackDecoder.VideoOutput.cs",
+                               "reason":  "FlashbackDecoder.VideoOutput.cs folded into FlashbackDecoder.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Flashback/FlashbackDecoder.VideoSetup.cs",
+                               "reason":  "FlashbackDecoder.VideoSetup.cs folded into FlashbackDecoder.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Flashback/FlashbackEncoderSink.AudioQueueSubmission.cs",
+                               "reason":  "FlashbackEncoderSink.AudioQueueSubmission.cs folded into FlashbackEncoderSink.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Flashback/FlashbackEncoderSink.DisposeLifecycle.cs",
+                               "reason":  "FlashbackEncoderSink stop/dispose lifecycle folded into FlashbackEncoderSink.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Flashback/FlashbackEncoderSink.EncodingProgress.cs",
+                               "reason":  "FlashbackEncoderSink.EncodingProgress.cs folded into FlashbackEncoderSink.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Flashback/FlashbackEncoderSink.ForceRotate.cs",
+                               "reason":  "FlashbackEncoderSink.ForceRotate.cs folded into FlashbackEncoderSink.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Flashback/FlashbackEncoderSink.Inputs.Audio.cs",
+                               "reason":  "FlashbackEncoderSink audio producer inputs folded into FlashbackEncoderSink.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Flashback/FlashbackEncoderSink.Inputs.cs",
+                               "reason":  "FlashbackEncoderSink.Inputs.cs folded into FlashbackEncoderSink.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Flashback/FlashbackEncoderSink.Inputs.Video.cs",
+                               "reason":  "FlashbackEncoderSink video producer inputs folded into FlashbackEncoderSink.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Flashback/FlashbackEncoderSink.Lifetime.cs",
+                               "reason":  "FlashbackEncoderSink.Lifetime.cs folded into FlashbackEncoderSink.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Flashback/FlashbackEncoderSink.Options.cs",
+                               "reason":  "FlashbackEncoderSink.Options.cs folded into FlashbackEncoderSink.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Flashback/FlashbackEncoderSink.PacketBuffers.cs",
+                               "reason":  "FlashbackEncoderSink.PacketBuffers.cs folded into FlashbackEncoderSink.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Flashback/FlashbackEncoderSink.PacketDrain.cs",
+                               "reason":  "FlashbackEncoderSink.PacketDrain.cs folded into FlashbackEncoderSink.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Flashback/FlashbackEncoderSink.Queues.cs",
+                               "reason":  "FlashbackEncoderSink.Queues.cs folded into FlashbackEncoderSink.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Flashback/FlashbackEncoderSink.Recording.cs",
+                               "reason":  "FlashbackEncoderSink.Recording.cs folded into FlashbackEncoderSink.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Flashback/FlashbackEncoderSink.Startup.cs",
+                               "reason":  "FlashbackEncoderSink startup folded into the root lifetime owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Flashback/FlashbackEncoderSink.VideoQueueSubmission.cs",
+                               "reason":  "FlashbackEncoderSink.VideoQueueSubmission.cs folded into FlashbackEncoderSink.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Flashback/FlashbackExporter.PacketBuffers.cs",
+                               "reason":  "FlashbackExporter.PacketBuffers.cs folded into FlashbackExporter.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Flashback/FlashbackExporter.RuntimePolicy.cs",
+                               "reason":  "FlashbackExporter.RuntimePolicy.cs folded into FlashbackExporter.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketRebasing.cs",
+                               "reason":  "FlashbackExporter.SegmentPacketRebasing.cs folded into FlashbackExporter.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Flashback/FlashbackExporter.Segments.cs",
+                               "reason":  "FlashbackExporter.Segments.cs folded into FlashbackExporter.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Flashback/FlashbackExporter.SegmentTemplate.cs",
+                               "reason":  "FlashbackExporter.SegmentTemplate.cs folded into FlashbackExporter.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Flashback/FlashbackExporter.SegmentValidation.cs",
+                               "reason":  "FlashbackExporter.SegmentValidation.cs folded into FlashbackExporter.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Flashback/FlashbackExporter.SingleFilePacketReadLoop.cs",
+                               "reason":  "single-file packet pump folded into FlashbackExporter.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Flashback/FlashbackExporter.Streams.cs",
+                               "reason":  "FlashbackExporter.Streams.cs folded into FlashbackExporter.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Flashback/FlashbackPlaybackController.AudioMasterPacing.cs",
+                               "reason":  "audio-master pacing folded into FlashbackPlaybackController.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderReopen.cs",
+                               "reason":  "active fMP4 reopen recovery folded into decoder file ownership"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Flashback/FlashbackPlaybackController.Lifecycle.cs",
+                               "reason":  "Flashback playback component lifecycle folded into root controller"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Flashback/FlashbackPlaybackController.PreviewDetachLifecycle.cs",
+                               "reason":  "Flashback playback preview-detach lifecycle folded into root controller"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Flashback/FlashbackPlaybackController.PreviewFrames.cs",
+                               "reason":  "Flashback playback preview-frame submission folded into PlaybackFrames"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Flashback/FlashbackPlaybackController.SeekDisplay.cs",
+                               "reason":  "Flashback seek-display logic folded into playback frame ownership"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Gpu/CudaD3D11Interop.Copy.cs",
+                               "reason":  "CUDA/D3D11 interop copy hot paths folded into bridge owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Gpu/CudaD3D11Interop.cs",
+                               "reason":  "CUDA/D3D11 interop state-only partial"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Gpu/CudaD3D11Interop.Initialization.cs",
+                               "reason":  "CUDA/D3D11 interop initialization folded into bridge owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Gpu/CudaD3D11Interop.Lifetime.cs",
+                               "reason":  "CUDA/D3D11 interop lifetime is consolidated with bridge initialization"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Gpu/CudaD3D11Interop.Native.cs",
+                               "reason":  "CUDA/D3D11 native declarations folded into bridge initialization"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Gpu/CudaD3D11InteropBridge.cs",
+                               "reason":  "unused CUDA/D3D11 interop bridge removed until a live caller owns the path"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Gpu/FrameFingerprintCadenceTracker.cs",
+                               "reason":  "packet hash cadence tracker moves with the CPU MJPEG pipeline under capture"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Gpu/NvdecMjpegDecoder.cs",
+                               "reason":  "unused NVDEC MJPEG decoder removed until a live pipeline caller owns the path"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Gpu/NvdecMjpegDecoder.Decode.cs",
+                               "reason":  "unused NVDEC packet decode partial remains absent"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Gpu/NvdecMjpegDecoder.Download.cs",
+                               "reason":  "unused NVDEC CPU download partial remains absent"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Gpu/NvdecMjpegDecoder.Initialization.cs",
+                               "reason":  "unused NVDEC decoder initialization partial remains absent"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Gpu/NvdecMjpegDecoder.Lifetime.cs",
+                               "reason":  "unused NVDEC decoder lifetime partial remains absent"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Gpu/NvdecMjpegDecoder.SharedInitialization.cs",
+                               "reason":  "unused NVDEC shared-context initialization partial remains absent"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Gpu/NvmlMonitor.NativeInterop.cs",
+                               "reason":  "NvmlMonitor.NativeInterop.cs folded into NvmlMonitor.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Preview/D3D11PreviewRenderer.Configuration.cs",
+                               "reason":  "D3D11 preview renderer configuration partial"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Preview/D3D11PreviewRenderer.DeviceInitialization.cs",
+                               "reason":  "D3D11 preview device initialization folded into D3D resource ownership"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Preview/D3D11PreviewRenderer.DeviceLost.cs",
+                               "reason":  "D3D11 preview device-lost recovery folded into D3D resource ownership"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Preview/D3D11PreviewRenderer.Diagnostics.cs",
+                               "reason":  "slow-frame diagnostics folded into renderer metrics owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Preview/D3D11PreviewRenderer.DisplayClock.cs",
+                               "reason":  "D3D11 preview display-clock projection lives with renderer metrics"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Preview/D3D11PreviewRenderer.DxgiFrameStatistics.cs",
+                               "reason":  "DXGI frame-statistics partial folded into renderer metrics owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Preview/D3D11PreviewRenderer.FrameLatency.cs",
+                               "reason":  "D3D11 waitable frame-latency pacing lives with render-thread execution"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Preview/D3D11PreviewRenderer.FrameOwnership.cs",
+                               "reason":  "frame ownership metrics folded into renderer metrics owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Preview/D3D11PreviewRenderer.FrameUpload.cs",
+                               "reason":  "Frame upload helpers folded into render-pass owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Preview/D3D11PreviewRenderer.HdrShaderPass.cs",
+                               "reason":  "HDR shader pass folded into render-pass owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Preview/D3D11PreviewRenderer.Lifecycle.cs",
+                               "reason":  "D3D11 preview public lifecycle is consolidated into the renderer root facade"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs",
+                               "reason":  "renderer metrics partial folded into the renderer root"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Preview/D3D11PreviewRenderer.MetricsTracking.cs",
+                               "reason":  "Metric tracking folded into the renderer root"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Preview/D3D11PreviewRenderer.MetricTypes.cs",
+                               "reason":  "renderer metric model types folded into the renderer root"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Preview/D3D11PreviewRenderer.MetricWindows.cs",
+                               "reason":  "Metric window lifecycle folded into the renderer root"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Preview/D3D11PreviewRenderer.NativeInterop.cs",
+                               "reason":  "mixed native interop bucket retired into behavior owners"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Preview/D3D11PreviewRenderer.Nv12ShaderPass.cs",
+                               "reason":  "NV12 shader pass folded into render-pass owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Preview/D3D11PreviewRenderer.Nv12Submission.cs",
+                               "reason":  "NV12 texture submission folded into the D3D11 preview renderer root"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Preview/D3D11PreviewRenderer.PanelBinding.cs",
+                               "reason":  "D3D11 preview panel binding folded into renderer facade"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Preview/D3D11PreviewRenderer.PendingFrame.cs",
+                               "reason":  "pending-frame lifetime model stays folded into the renderer root"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Preview/D3D11PreviewRenderer.PendingFrames.cs",
+                               "reason":  "pending-frame queue folded into the renderer root"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Preview/D3D11PreviewRenderer.Present.cs",
+                               "reason":  "D3D11 preview present/accounting lives with render-pass execution"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Preview/D3D11PreviewRenderer.PresentCadenceMetrics.cs",
+                               "reason":  "Present cadence metrics folded into the renderer root"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Preview/D3D11PreviewRenderer.RawFrameUpload.cs",
+                               "reason":  "Raw frame upload helpers folded into render-pass owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Preview/D3D11PreviewRenderer.RenderThread.cs",
+                               "reason":  "D3D11 render-thread execution and frame-latency pacing are folded into the renderer root"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Preview/D3D11PreviewRenderer.ScreenshotCapture.cs",
+                               "reason":  "renderer screenshot capture folded into the render-pass present transaction owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Preview/D3D11PreviewRenderer.ScreenshotEncoding.cs",
+                               "reason":  "renderer screenshot encoding partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Preview/D3D11PreviewRenderer.ScreenshotStaging.cs",
+                               "reason":  "renderer screenshot staging is consolidated into D3D11PreviewRenderer.RenderPasses.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Preview/D3D11PreviewRenderer.ShaderCompilation.cs",
+                               "reason":  "shader compilation folded into D3D resource owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Preview/D3D11PreviewRenderer.ShaderRendering.cs",
+                               "reason":  "shader rendering resources folded into D3D resource owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Preview/D3D11PreviewRenderer.SharedDevice.cs",
+                               "reason":  "shared D3D device lifecycle folded into D3D resource ownership"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Preview/D3D11PreviewRenderer.Submission.cs",
+                               "reason":  "pending-frame submission folded into the renderer root"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Preview/D3D11PreviewRenderer.SwapChainInitialization.cs",
+                               "reason":  "D3D11 preview swap-chain setup folded into D3D resource ownership"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Preview/D3D11PreviewRenderer.VideoProcessorPipeline.cs",
+                               "reason":  "VideoProcessor setup and output-view resources live with D3D resource ownership"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Preview/D3D11PreviewRenderer.Viewport.cs",
+                               "reason":  "D3D11 preview viewport helpers live with render-pass execution"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Preview/PreviewPng16Encoder.cs",
+                               "reason":  "16-bit PNG encoder folded into PreviewScreenshotCapture.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Preview/PreviewScreenshotCapture.Bmp.cs",
+                               "reason":  "preview BMP capture is consolidated into PreviewScreenshotCapture.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Preview/PreviewScreenshotCapture.Png.cs",
+                               "reason":  "preview PNG capture is consolidated into PreviewScreenshotCapture.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Preview/PreviewShaderSources.cs",
+                               "reason":  "preview shader sources live with D3D resource ownership"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Preview/SharedD3DDeviceManager.cs",
+                               "reason":  "shared D3D device manager lives with D3D resource ownership"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Recording/LibAvEncoder.AudioInitialization.cs",
+                               "reason":  "Audio stream initialization folded into LibAvEncoder.Audio.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Recording/LibAvEncoder.AudioQueue.cs",
+                               "reason":  "Audio queue and A/V sync helpers folded into LibAvEncoder.Audio.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Recording/LibAvEncoder.AudioSetup.cs",
+                               "reason":  "Audio setup helpers live with audio stream initialization"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Recording/LibAvEncoder.AudioSubmission.cs",
+                               "reason":  "Audio sample submission folded into LibAvEncoder.Audio.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Recording/LibAvEncoder.CodecPolicy.cs",
+                               "reason":  "LibAvEncoder codec/filter/rational policy lives with encoder initialization"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Recording/LibAvEncoder.Diagnostics.cs",
+                               "reason":  "LibAvEncoder diagnostics helpers live with core encoder state, not a standalone partial"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Recording/LibAvEncoder.FrameCopy.cs",
+                               "reason":  "CPU packed-frame copy is part of video submission, not a standalone partial"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Recording/LibAvEncoder.HardwareFrames.cs",
+                               "reason":  "hardware frame setup/submission folded into LibAvEncoder.VideoFrames.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Recording/LibAvEncoder.HardwareFrames.Cuda.cs",
+                               "reason":  "CUDA hardware frame adoption lives with the hardware frame initializer"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Recording/LibAvEncoder.HardwareSubmission.cs",
+                               "reason":  "hardware frame submission lives with LibAvEncoder.VideoFrames.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Recording/LibAvEncoder.HdrSideData.cs",
+                               "reason":  "HDR side-data helpers live with LibAvEncoder.VideoFrames.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Recording/LibAvEncoder.Initialization.cs",
+                               "reason":  "LibAvEncoder initialization folded into the encoder root"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Recording/LibAvEncoder.Models.cs",
+                               "reason":  "LibAvEncoder option/result models live with the encoder root"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Recording/LibAvEncoder.NativeResourceRelease.cs",
+                               "reason":  "Native resource release folded into LibAvEncoder.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Recording/LibAvEncoder.OptionsValidation.cs",
+                               "reason":  "LibAvEncoder option validation folded into encoder initialization"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Recording/LibAvEncoder.OutputLifecycle.cs",
+                               "reason":  "output lifecycle folded into LibAvEncoder.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Recording/LibAvEncoder.OutputRotation.cs",
+                               "reason":  "output rotation folded into LibAvEncoder.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Recording/LibAvEncoder.PacketWriting.cs",
+                               "reason":  "video packet drain/write helpers stay folded into video submission"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Recording/LibAvEncoder.ResourceCleanup.cs",
+                               "reason":  "resource cleanup folded into LibAvEncoder.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Recording/LibAvEncoder.VideoSetup.cs",
+                               "reason":  "Video codec setup helpers live with encoder initialization"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Recording/LibAvEncoder.VideoSubmission.cs",
+                               "reason":  "CPU video submission folded into LibAvEncoder.VideoFrames.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Recording/LibAvRecordingSink.AudioQueues.cs",
+                               "reason":  "LibAvRecordingSink audio queue surface folded into shared queue owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Recording/LibAvRecordingSink.Diagnostics.cs",
+                               "reason":  "LibAvRecordingSink diagnostics surface lives with the sink root state"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Recording/LibAvRecordingSink.EncodingLoop.cs",
+                               "reason":  "LibAvRecordingSink encoding loop stays folded into the sink root"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Recording/LibAvRecordingSink.Lifetime.cs",
+                               "reason":  "LibAvRecordingSink dispose/deferred cleanup lives with the sink root"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Recording/LibAvRecordingSink.Options.cs",
+                               "reason":  "LibAvRecordingSink.Options.cs folded into the sink startup owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Recording/LibAvRecordingSink.OutputValidation.cs",
+                               "reason":  "LibAvRecordingSink.OutputValidation.cs folded into the sink root lifecycle"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Recording/LibAvRecordingSink.PacketDrain.cs",
+                               "reason":  "LibAvRecordingSink packet drains stay folded into the sink root with the encoding loop"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Recording/LibAvRecordingSink.QueueCleanup.cs",
+                               "reason":  "LibAvRecordingSink queue cleanup lives with video queue submission and packet ownership"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Recording/LibAvRecordingSink.Queueing.cs",
+                               "reason":  "LibAvRecordingSink queueing sidecar folded into the sink root"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Recording/LibAvRecordingSink.Queues.cs",
+                               "reason":  "LibAvRecordingSink.Queues.cs folded into LibAvRecordingSink.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Recording/LibAvRecordingSink.Startup.cs",
+                               "reason":  "LibAvRecordingSink startup shell folded into the sink root with encoding-loop lifecycle"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Recording/LibAvRecordingSink.StopLifecycle.cs",
+                               "reason":  "LibAvRecordingSink stop/finalize lifecycle lives with the sink root lifecycle"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Recording/LibAvRecordingSink.VideoQueueSubmission.cs",
+                               "reason":  "LibAvRecordingSink.VideoQueueSubmission.cs folded into LibAvRecordingSink.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Recording/LibAvRecordingSink.VideoSession.cs",
+                               "reason":  "LibAvRecordingSink video session startup helpers folded into the sink root"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Recording/Verification/RecordingVerifier.Cadence.cs",
+                               "reason":  "RecordingVerifier cadence ffprobe pass folded into verifier owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Recording/Verification/RecordingVerifier.Ffprobe.cs",
+                               "reason":  "RecordingVerifier ffprobe helper partial folded into verifier owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Recording/Verification/RecordingVerifier.Results.cs",
+                               "reason":  "RecordingVerifier.Results.cs folded into RecordingVerifier.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Recording/Verification/RecordingVerifier.Validation.cs",
+                               "reason":  "RecordingVerifier validation policy folded into RecordingVerifier.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Recording/VideoQueueLatencyTracker.cs",
+                               "reason":  "shared video queue latency tracker folded into the recording queueing owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Runtime/SettingsService.cs",
+                               "reason":  "SettingsService.cs folded into RuntimeHelpers.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Telemetry/NativeXuAtCommandProvider.AnalogGain.cs",
+                               "reason":  "analog gain execution folded into audio command owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Telemetry/NativeXuAtCommandProvider.AtProtocol.cs",
+                               "reason":  "the old Native XU provider AT-protocol partial stays removed"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Telemetry/NativeXuAtCommandProvider.AudioCommands.cs",
+                               "reason":  "audio command entry points folded into DeviceCommands.cs with the public command surface"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Telemetry/NativeXuAtCommandProvider.AudioSwitch.cs",
+                               "reason":  "audio switch execution folded into audio command owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Telemetry/NativeXuAtCommandProvider.DeviceCommandReads.cs",
+                               "reason":  "Native XU public read commands stay folded into DeviceCommands.cs with the generic SET surface."
+                           },
+                           {
+                               "path":  "Sussudio/Services/Telemetry/NativeXuAtCommandProvider.DiagnosticSummary.cs",
+                               "reason":  "diagnostic summary formatting folded into NativeXuAtCommandProvider.SnapshotAssembly.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Telemetry/NativeXuAtCommandProvider.FullSnapshot.cs",
+                               "reason":  "reference full-snapshot read folded into NativeXuAtCommandProvider.SnapshotAssembly.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Telemetry/NativeXuAtCommandProvider.InterfaceRead.cs",
+                               "reason":  "selected-interface open/topology/node scanning folded into NativeXuAtCommandProvider.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Telemetry/NativeXuAtCommandProvider.PayloadDecoding.cs",
+                               "reason":  "the old Native XU provider payload-decoding partial stays removed"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Telemetry/NativeXuAtCommandProvider.RollingCommandGroups.cs",
+                               "reason":  "rolling command batch dispatch folded into the NativeXuAtCommandProvider root read owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Telemetry/NativeXuAtCommandProvider.RollingPoll.cs",
+                               "reason":  "active rolling telemetry folded into the NativeXuAtCommandProvider root read owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Telemetry/NativeXuAtCommandProvider.SnapshotAssembly.CommandResults.cs",
+                               "reason":  "snapshot command result DTO folded into NativeXuAtCommandProvider.SnapshotAssembly.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Telemetry/NativeXuAtCommandProvider.SnapshotAssembly.Timing.cs",
+                               "reason":  "snapshot timing policy folded into NativeXuAtCommandProvider.SnapshotAssembly.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Telemetry/NativeXuAtCommandProvider.TelemetryDetails.AudioInput.cs",
+                               "reason":  "Native XU audio input detail helpers folded into the telemetry details owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Telemetry/NativeXuAtCommandProvider.TelemetryDetails.Build.cs",
+                               "reason":  "Native XU detail row assembly folded into the telemetry details owner"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Telemetry/NativeXuAtCommandProvider.TelemetryDetails.cs",
+                               "reason":  "Native XU detail row assembly folded into NativeXuAtCommandProvider.SnapshotAssembly.cs"
+                           },
+                           {
+                               "path":  "Sussudio/Services/Telemetry/NativeXuAtCommandProvider.TelemetryDetails.Formatters.cs",
+                               "reason":  "Native XU AT detail formatters folded into the telemetry details owner"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/AudioRampTraceRecorder.cs",
+                               "reason":  "audio ramp trace recorder folded into PreviewAudioTransitionControllers.cs"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/BitrateSampleWindow.cs",
+                               "reason":  "BitrateSampleWindow folded into MainViewModel.cs"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/CaptureResolutionSelectionPolicy.cs",
+                               "reason":  "resolution selection policy folded into ViewModelSelectionPolicies.cs"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/CaptureResolutionSelectionPolicy.Hdr.cs",
+                               "reason":  "old HDR resolution selection policy partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/CaptureResolutionSelectionPolicy.Models.cs",
+                               "reason":  "old resolution policy models partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/CaptureResolutionSelectionPolicy.Ranking.cs",
+                               "reason":  "old resolution ranking policy partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/CaptureResolutionSelectionPolicy.Sdr.cs",
+                               "reason":  "old SDR resolution selection policy partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/CaptureResolutionSelectionPolicy.Source.cs",
+                               "reason":  "old source resolution selection policy partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/CaptureResolutionSelectionPolicy.Support.cs",
+                               "reason":  "old resolution support policy partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/CaptureSettingsProjectionBuilder.cs",
+                               "reason":  "capture settings projection builder folded into ViewModelBuilders.cs"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/DeviceAudioGainMapper.cs",
+                               "reason":  "DeviceAudioGainMapper folded into MainViewModel.AudioState.cs"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/FrameRateTimingPolicy.cs",
+                               "reason":  "pure frame-rate timing policy folded into ViewModelSelectionPolicies.cs"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.AnalogAudioGain.cs",
+                               "reason":  "MainViewModel analog gain write partial"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.AudioCapturePropertyChanges.cs",
+                               "reason":  "MainViewModel.AudioCapturePropertyChanges.cs folded into MainViewModel.AudioState.cs"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.AudioControls.cs",
+                               "reason":  "MainViewModel shared audio-control helper partial"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.AudioDeviceDiscovery.cs",
+                               "reason":  "audio endpoint discovery adapter folded into audio state owner"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.AudioInputPropertyChanges.cs",
+                               "reason":  "MainViewModel audio-input property-change partial"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.AudioInputSelection.cs",
+                               "reason":  "MainViewModel.AudioInputSelection.cs folded into MainViewModel.AudioState.cs"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.AudioMeters.cs",
+                               "reason":  "MainViewModel.AudioMeters.cs folded into MainViewModel.AudioState.cs"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.AudioMonitoring.cs",
+                               "reason":  "MainViewModel.AudioMonitoring.cs folded into MainViewModel.AudioState.cs"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.AudioPreviewPropertyChanges.cs",
+                               "reason":  "MainViewModel audio-preview property-change partial"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.AudioPropertyChanges.cs",
+                               "reason":  "MainViewModel legacy audio property-change partial"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.AudioRampTrace.cs",
+                               "reason":  "MainViewModel.AudioRampTrace.cs folded into MainViewModel.AudioState.cs"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.Automation.cs",
+                               "reason":  "MainViewModel automation catch-all partial"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.AutomationAudioInputSelection.cs",
+                               "reason":  "MainViewModel audio input automation partial"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.AutomationCommands.cs",
+                               "reason":  "MainViewModel automation commands facade folded into MainViewModel.cs"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.AutomationDeviceSelection.cs",
+                               "reason":  "MainViewModel device selection automation partial folded into MainViewModel.cs"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.AutomationFlashback.cs",
+                               "reason":  "MainViewModel automation Flashback partial"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.AutomationHdr.cs",
+                               "reason":  "MainViewModel automation HDR partial"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.AutomationOptionsSnapshot.cs",
+                               "reason":  "MainViewModel.AutomationOptionsSnapshot.cs folded into MainViewModel.cs"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.AutomationPreview.cs",
+                               "reason":  "MainViewModel automation preview partial"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.AutomationRecordingFormat.cs",
+                               "reason":  "stale recording format automation partial"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.AutomationRecordingLifecycle.cs",
+                               "reason":  "MainViewModel automation recording lifecycle bridge partial"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.AutomationRecordingSettings.cs",
+                               "reason":  "stale recording settings automation facade partial"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.AutomationSnapshots.cs",
+                               "reason":  "MainViewModel.AutomationSnapshots.cs folded into MainViewModel.cs"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.AutomationStatsUi.cs",
+                               "reason":  "MainViewModel stats UI automation partial"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.AutomationUi.cs",
+                               "reason":  "MainViewModel.AutomationUi.cs folded into MainViewModel.cs"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.AutoResolutionOptions.cs",
+                               "reason":  "old auto resolution options partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.AutoResolutionSelection.cs",
+                               "reason":  "MainViewModel auto resolution selection adapter partial"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.AutoResolutionState.cs",
+                               "reason":  "old auto resolution state partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.Capture.cs",
+                               "reason":  "MainViewModel capture lifecycle facade partial"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.CaptureHdrState.cs",
+                               "reason":  "MainViewModel.CaptureHdrState.cs folded into MainViewModel.cs"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.CaptureModePropertyChanges.cs",
+                               "reason":  "MainViewModel.CaptureModePropertyChanges.cs folded into MainViewModel.cs"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.CapturePresentation.cs",
+                               "reason":  "MainViewModel.CapturePresentation.cs folded into capture state"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.CaptureSelection.cs",
+                               "reason":  "MainViewModel capture selection partial folded into MainViewModel.cs"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.CaptureSettings.cs",
+                               "reason":  "MainViewModel capture-settings adapter folded into MainViewModel.cs"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.CaptureSourceState.cs",
+                               "reason":  "MainViewModel.CaptureSourceState.cs folded into MainViewModel.cs"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.CaptureState.cs",
+                               "reason":  "MainViewModel.CaptureState.cs folded into MainViewModel.cs"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.Composition.cs",
+                               "reason":  "MainViewModel composition partial folded into MainViewModel.cs"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.DeviceAudioMode.cs",
+                               "reason":  "MainViewModel device-audio mode folded into audio state"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.DeviceAudioRefresh.cs",
+                               "reason":  "MainViewModel device-audio refresh folded into device audio state"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.DeviceAudioRequests.cs",
+                               "reason":  "MainViewModel device audio request adapter partial"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.DeviceAudioState.cs",
+                               "reason":  "MainViewModel device-audio state folded into MainViewModel.AudioState.cs"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.DeviceManagement.cs",
+                               "reason":  "shallow MainViewModel device-management partial"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.DeviceSelection.cs",
+                               "reason":  "old device selection partial folded into capture selection owner"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.Dispatching.cs",
+                               "reason":  "MainViewModel dispatch adapter partial folded into MainViewModel.cs"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.FlashbackBufferStatus.cs",
+                               "reason":  "MainViewModel.FlashbackBufferStatus.cs folded into MainViewModel.FlashbackState.cs"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.FlashbackEncoderSettings.cs",
+                               "reason":  "MainViewModel.FlashbackEncoderSettings.cs folded into FlashbackState"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.FlashbackExport.cs",
+                               "reason":  "MainViewModel.FlashbackExport.cs folded into MainViewModel.FlashbackState.cs"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.FlashbackExportAutomation.cs",
+                               "reason":  "MainViewModel.FlashbackExportAutomation.cs folded into FlashbackExport"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.FlashbackExportOperation.cs",
+                               "reason":  "MainViewModel.FlashbackExportOperation.cs folded into FlashbackExport"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.FlashbackMarkers.cs",
+                               "reason":  "MainViewModel.FlashbackMarkers.cs folded into MainViewModel.FlashbackState.cs"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.FlashbackPlayback.cs",
+                               "reason":  "MainViewModel.FlashbackPlayback.cs folded into MainViewModel.FlashbackState.cs"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.FlashbackPlaybackAutomation.cs",
+                               "reason":  "MainViewModel.FlashbackPlaybackAutomation.cs folded into MainViewModel.FlashbackState.cs"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.FlashbackPlaybackCommands.cs",
+                               "reason":  "MainViewModel.FlashbackPlaybackCommands.cs folded into MainViewModel.FlashbackState.cs"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.FlashbackSettings.cs",
+                               "reason":  "MainViewModel.FlashbackSettings.cs folded into FlashbackState"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.FrameRateAutoSelectionPolicy.cs",
+                               "reason":  "old nested frame-rate auto-selection partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.FrameRateOptions.cs",
+                               "reason":  "old frame-rate options partial folded into capture selection owner"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.FrameRateSourceFilterPolicy.cs",
+                               "reason":  "old nested frame-rate source-filter partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.FrameRateTiming.cs",
+                               "reason":  "old MainViewModel frame-rate timing partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.MicrophonePropertyChanges.cs",
+                               "reason":  "MainViewModel.MicrophonePropertyChanges.cs folded into MainViewModel.AudioState.cs"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.MicrophoneVolume.cs",
+                               "reason":  "MainViewModel.MicrophoneVolume.cs folded into MainViewModel.AudioState.cs"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.ModeSelectionState.cs",
+                               "reason":  "MainViewModel.ModeSelectionState.cs folded into MainViewModel.cs"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.PreviewState.cs",
+                               "reason":  "MainViewModel.PreviewState.cs folded into MainViewModel.cs"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.RecordingCapabilityRefresh.cs",
+                               "reason":  "stale recording capability refresh partial"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.RecordingFormatOptions.cs",
+                               "reason":  "stale recording format options partial"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.RecordingLifecycle.cs",
+                               "reason":  "MainViewModel recording lifecycle facade partial"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.RecordingRuntime.cs",
+                               "reason":  "MainViewModel.RecordingRuntime.cs folded into MainViewModel.cs"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.RecordingState.cs",
+                               "reason":  "MainViewModel recording state folded into MainViewModel.cs"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.ResolutionOptions.cs",
+                               "reason":  "old resolution options partial folded into capture selection owner"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.ResolutionSelectionPolicy.cs",
+                               "reason":  "old resolution selection policy adapter partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.Settings.cs",
+                               "reason":  "old settings pass-through partial removed"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.SettingsPersistence.cs",
+                               "reason":  "MainViewModel settings persistence partial folded into MainViewModel.cs"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.State.cs",
+                               "reason":  "MainViewModel.State.cs folded into MainViewModel.cs"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModel.Telemetry.cs",
+                               "reason":  "old MainViewModel telemetry partial removed after controller extraction"
+                           },
+                           {
+                               "path":  "Sussudio/ViewModels/MainViewModelDependencies.cs",
+                               "reason":  "MainViewModelDependencies.cs folded into MainViewModel.cs"
+                           },
+                           {
+                               "path":  "tools/Common/AutomationCommandKind.cs",
+                               "reason":  "tools/Common must not own AutomationCommandKind"
+                           },
+                           {
+                               "path":  "tools/Common/AutomationPipeClient/AutomationCommandKind.cs",
+                               "reason":  "tools/Common/AutomationPipeClient must not own AutomationCommandKind"
+                           },
+                           {
+                               "path":  "tools/Common/AutomationPipeClient/AutomationPipeClient.cs",
+                               "reason":  "tools/Common/AutomationPipeClient must not own AutomationPipeClient.cs"
+                           },
+                           {
+                               "path":  "tools/Common/AutomationPipeClient/AutomationPipeClient.Models.cs",
+                               "reason":  "tools/Common/AutomationPipeClient must not own AutomationPipeClient.Models.cs"
+                           },
+                           {
+                               "path":  "tools/Common/PresentMon/PresentMonProbe.Csv.Correlation.cs",
+                               "reason":  "PresentMon CSV app correlation lives with PresentMonProbe.cs"
+                           },
+                           {
+                               "path":  "tools/Common/PresentMon/PresentMonProbe.Csv.cs",
+                               "reason":  "PresentMon CSV parsing and aggregation live with PresentMonProbe.RunAsync"
+                           },
+                           {
+                               "path":  "tools/Common/PresentMon/PresentMonProbe.Csv.Rows.cs",
+                               "reason":  "PresentMon CSV row ingestion lives with PresentMonProbe.cs"
+                           },
+                           {
+                               "path":  "tools/Common/PresentMon/PresentMonProbe.Csv.Summary.cs",
+                               "reason":  "PresentMon CSV warnings and percentile summaries live with PresentMonProbe.cs"
+                           },
+                           {
+                               "path":  "tools/Common/PresentMon/PresentMonProbe.Format.cs",
+                               "reason":  "PresentMon result formatting lives with PresentMonProbe.RunAsync"
+                           },
+                           {
+                               "path":  "tools/Common/PresentMon/PresentMonProbe.Models.cs",
+                               "reason":  "PresentMon public DTOs live with PresentMonProbe.RunAsync and result formatting"
+                           },
+                           {
+                               "path":  "tools/Common/PresentMon/PresentMonProbe.Paths.cs",
+                               "reason":  "PresentMon path resolution lives with PresentMonProbe.RunAsync"
+                           },
+                           {
+                               "path":  "tools/Common/PresentMon/PresentMonProbe.Process.cs",
+                               "reason":  "PresentMon process supervision lives with PresentMonProbe.RunAsync"
+                           },
+                           {
+                               "path":  "tools/DiagnosticSession/DiagnosticSessionAutomationResponseJson.cs",
+                               "reason":  "Automation response JSON helpers stay folded into DiagnosticSessionRunContext.cs"
+                           },
+                           {
+                               "path":  "tools/DiagnosticSession/DiagnosticSessionBackgroundTasks.cs",
+                               "reason":  "diagnostic-session background task drain folded into DiagnosticSessionRunner.cs"
+                           },
+                           {
+                               "path":  "tools/DiagnosticSession/DiagnosticSessionCommandChannel.cs",
+                               "reason":  "diagnostic-session command channel lives with DiagnosticSessionRunContext.cs"
+                           },
+                           {
+                               "path":  "tools/DiagnosticSession/DiagnosticSessionFlashbackMetrics.cs",
+                               "reason":  "Flashback metrics stay folded into DiagnosticSessionMetrics.cs"
+                           },
+                           {
+                               "path":  "tools/DiagnosticSession/DiagnosticSessionFlashbackMetrics.Export.cs",
+                               "reason":  "Flashback export metrics stay folded into the consolidated metrics owner"
+                           },
+                           {
+                               "path":  "tools/DiagnosticSession/DiagnosticSessionFlashbackMetrics.PlaybackObservation.cs",
+                               "reason":  "Flashback playback observation metrics stay folded into the consolidated metrics owner"
+                           },
+                           {
+                               "path":  "tools/DiagnosticSession/DiagnosticSessionFlashbackMetrics.PlaybackResult.cs",
+                               "reason":  "Flashback playback result metrics stay folded into the consolidated metrics owner"
+                           },
+                           {
+                               "path":  "tools/DiagnosticSession/DiagnosticSessionFlashbackMetrics.PlaybackSession.cs",
+                               "reason":  "Flashback playback session metrics stay folded into the consolidated metrics owner"
+                           },
+                           {
+                               "path":  "tools/DiagnosticSession/DiagnosticSessionFlashbackMetrics.Recording.cs",
+                               "reason":  "Flashback recording metrics stay folded into the consolidated metrics owner"
+                           },
+                           {
+                               "path":  "tools/DiagnosticSession/DiagnosticSessionFlashbackMetrics.RecordingExport.cs",
+                               "reason":  "Flashback recording/export metrics stay folded into the consolidated metrics owner"
+                           },
+                           {
+                               "path":  "tools/DiagnosticSession/DiagnosticSessionFlashbackPreviewCycleScenarios.cs",
+                               "reason":  "Flashback preview-cycle scenario family folded into the Flashback cycle scenario owner"
+                           },
+                           {
+                               "path":  "tools/DiagnosticSession/DiagnosticSessionFlashbackPreviewCycleScenarios.Playback.cs",
+                               "reason":  "Flashback playback preview-cycle scenario stays with the preview-cycle scenario family"
+                           },
+                           {
+                               "path":  "tools/DiagnosticSession/DiagnosticSessionFlashbackPreviewCycleScenarios.Recording.cs",
+                               "reason":  "Flashback recording preview-cycle scenario stays with the preview-cycle scenario family"
+                           },
+                           {
+                               "path":  "tools/DiagnosticSession/DiagnosticSessionFlashbackRejectedExports.cs",
+                               "reason":  "Flashback rejected-export scenarios stay folded into the export scenario owner"
+                           },
+                           {
+                               "path":  "tools/DiagnosticSession/DiagnosticSessionHealthTolerances.cs",
+                               "reason":  "diagnostic-session health tolerance classifiers folded into the health policy owner"
+                           },
+                           {
+                               "path":  "tools/DiagnosticSession/DiagnosticSessionLiveStateWriter.cs",
+                               "reason":  "live-state writer stays folded into DiagnosticSessionRunContext.cs"
+                           },
+                           {
+                               "path":  "tools/DiagnosticSession/DiagnosticSessionOptionalTextFormatter.cs",
+                               "reason":  "Optional diagnostic text formatting stays folded into DiagnosticSessionResult.cs"
+                           },
+                           {
+                               "path":  "tools/DiagnosticSession/DiagnosticSessionPipeRetryPolicy.cs",
+                               "reason":  "diagnostic-session pipe retry policy lives with the run-context command-channel transport owner"
+                           },
+                           {
+                               "path":  "tools/DiagnosticSession/DiagnosticSessionPostRunSnapshots.cs",
+                               "reason":  "post-run timeline and final-snapshot capture lives with the runner completion phase"
+                           },
+                           {
+                               "path":  "tools/DiagnosticSession/DiagnosticSessionResultArtifacts.cs",
+                               "reason":  "Result artifact helpers stay folded into DiagnosticSessionResultBuilder.cs"
+                           },
+                           {
+                               "path":  "tools/DiagnosticSession/DiagnosticSessionResultBuilder.Analysis.cs",
+                               "reason":  "diagnostic-session analysis folded into DiagnosticSessionResultBuilder.cs"
+                           },
+                           {
+                               "path":  "tools/DiagnosticSession/DiagnosticSessionResultBuilder.DiagnosticHealth.cs",
+                               "reason":  "diagnostic health verdict helpers folded into analysis owner"
+                           },
+                           {
+                               "path":  "tools/DiagnosticSession/DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs",
+                               "reason":  "Flashback playback result projection folded into DiagnosticSessionResultBuilder.cs"
+                           },
+                           {
+                               "path":  "tools/DiagnosticSession/DiagnosticSessionResultBuilder.Flattening.cs",
+                               "reason":  "final result DTO flattening folded into DiagnosticSessionResultBuilder.cs"
+                           },
+                           {
+                               "path":  "tools/DiagnosticSession/DiagnosticSessionResultBuilder.PreviewScheduler.cs",
+                               "reason":  "preview scheduler analysis folded into DiagnosticSessionResultBuilder.cs"
+                           },
+                           {
+                               "path":  "tools/DiagnosticSession/DiagnosticSessionResultBuilder.Projections.cs",
+                               "reason":  "result projection set folded into DiagnosticSessionResultBuilder.cs"
+                           },
+                           {
+                               "path":  "tools/DiagnosticSession/DiagnosticSessionResultFormatter.cs",
+                               "reason":  "Diagnostic session result text formatting stays folded into DiagnosticSessionResult.cs"
+                           },
+                           {
+                               "path":  "tools/DiagnosticSession/DiagnosticSessionRunState.cs",
+                               "reason":  "run state stays folded into DiagnosticSessionRunContext.cs"
+                           },
+                           {
+                               "path":  "tools/DiagnosticSession/DiagnosticSessionScenarioActivation.cs",
+                               "reason":  "diagnostic-session scenario setup/startup activation folded into the scenario catalog owner"
+                           },
+                           {
+                               "path":  "tools/DiagnosticSession/DiagnosticSessionScenarioCatalog.Entries.cs",
+                               "reason":  "Diagnostic session scenario entries folded into the catalog owner"
+                           },
+                           {
+                               "path":  "tools/DiagnosticSession/DiagnosticSessionScenarioPhaseRunner.cs",
+                               "reason":  "diagnostic-session scenario phase runner folded into DiagnosticSessionRunner.cs"
+                           },
+                           {
+                               "path":  "tools/DiagnosticSession/DiagnosticSessionScenarioPlan.cs",
+                               "reason":  "Diagnostic session scenario plan flags live with the catalog that constructs every plan"
+                           },
+                           {
+                               "path":  "tools/EgavdsAudioProbe/Program.NativeInterop.cs",
+                               "reason":  "EGAVDS probe private interop declarations live with the probe command flow"
+                           },
+                           {
+                               "path":  "tools/KsAudioNodeProbe/Program.NativeInterop.cs",
+                               "reason":  "KS audio node probe private interop declarations live with the command entry point"
+                           },
+                           {
+                               "path":  "tools/KsAudioNodeProbe/Program.ScanWorkflows.Extended.cs",
+                               "reason":  "KS audio node scan workflow probes live with the main scan workflow owner"
+                           },
+                           {
+                               "path":  "tools/McpServer/Tools/FramePacingVerdictTools.Channels.cs",
+                               "reason":  "Frame pacing channel projection lives with the MCP verdict tool"
+                           },
+                           {
+                               "path":  "tools/McpServer/Tools/FramePacingVerdictTools.Policy.cs",
+                               "reason":  "Frame pacing readiness and verdict policy lives with the MCP verdict tool"
+                           },
+                           {
+                               "path":  "tools/McpServer/Tools/FramePacingVerdictTools.Rendering.cs",
+                               "reason":  "Frame pacing verdict rendering lives with the MCP verdict tool"
+                           },
+                           {
+                               "path":  "tools/McpServer/Tools/FramePacingVerdictTools.Timeline.cs",
+                               "reason":  "Frame pacing timeline reader lives with the MCP tool orchestration"
+                           },
+                           {
+                               "path":  "tools/McpServer/Tools/PerformanceTimelineTools.Rendering.cs",
+                               "reason":  "MCP timeline rendering lives with the broader performance MCP tool owner"
+                           },
+                           {
+                               "path":  "tools/McpServer/Tools/PerformanceTimelineTools.Rows.cs",
+                               "reason":  "MCP performance timeline row projection lives with the timeline renderer owner"
+                           },
+                           {
+                               "path":  "tools/McpServer/Tools/PresentMonTools.Correlation.cs",
+                               "reason":  "PresentMon snapshot correlation lives with the PresentMon MCP tool"
+                           },
+                           {
+                               "path":  "tools/McpServer/Tools/PresentMonTools.cs",
+                               "reason":  "PresentMon MCP entry points live with the broader performance MCP tool owner"
+                           },
+                           {
+                               "path":  "tools/McpServer/Tools/PreviewFrameCaptureTools.Diagnosis.cs",
+                               "reason":  "preview frame diagnosis policy lives with the preview frame MCP tool"
+                           },
+                           {
+                               "path":  "tools/McpServer/Tools/PreviewFrameCaptureTools.Histogram.cs",
+                               "reason":  "preview frame histogram rendering lives with the preview frame report renderer"
+                           },
+                           {
+                               "path":  "tools/McpServer/Tools/PreviewFrameCaptureTools.Rendering.cs",
+                               "reason":  "preview frame report rendering lives with the preview frame MCP tool"
+                           },
+                           {
+                               "path":  "tools/McpServer/Tools/VerificationTools.Formatting.cs",
+                               "reason":  "MCP verification response formatting lives with the verification tool commands"
+                           },
+                           {
+                               "path":  "tools/NativeXuAudioProbe/NativeXuProbeDeviceLocator.cs",
+                               "reason":  "NativeXu probe device lookup lives with top-level probe command routing"
+                           },
+                           {
+                               "path":  "tools/NativeXuAudioProbe/Program.AtCommands.cs",
+                               "reason":  "NativeXu direct AT probe commands live with top-level probe command routing"
+                           },
+                           {
+                               "path":  "tools/NativeXuAudioProbe/Program.Commands.cs",
+                               "reason":  "NativeXu probe command IDs and shared raw formatting live with default experiment support"
+                           },
+                           {
+                               "path":  "tools/NativeXuAudioProbe/Program.DefaultExperiment.Reporting.cs",
+                               "reason":  "NativeXu default experiment reporting folded into default experiment owner"
+                           },
+                           {
+                               "path":  "tools/NativeXuAudioProbe/Program.ExperimentPayloads.cs",
+                               "reason":  "NativeXu probe experiment payload helpers folded into default experiment owner"
+                           },
+                           {
+                               "path":  "tools/NativeXuAudioProbe/Program.I2cCommands.HighSelectorProbe.cs",
+                               "reason":  "old NativeXu i2c high-selector partial removed"
+                           },
+                           {
+                               "path":  "tools/NativeXuAudioProbe/Program.I2cCommands.SelectorProbe.cs",
+                               "reason":  "old NativeXu i2c selector partial removed"
+                           },
+                           {
+                               "path":  "tools/NativeXuAudioProbe/Program.I2cCommands.TopologyProbe.cs",
+                               "reason":  "old NativeXu i2c topology partial removed"
+                           },
+                           {
+                               "path":  "tools/NativeXuAudioProbe/Program.I2cCommands.Verify.cs",
+                               "reason":  "old NativeXu i2c verify partial removed"
+                           },
+                           {
+                               "path":  "tools/NativeXuAudioProbe/Program.I2cLegacyProbe.cs",
+                               "reason":  "NativeXu legacy i2c-probe workflow lives with the I2C command family"
+                           },
+                           {
+                               "path":  "tools/NativeXuAudioProbe/Program.I2cSwitch.cs",
+                               "reason":  "NativeXu captured audio-switch replay workflow lives with top-level probe command routing"
+                           },
+                           {
+                               "path":  "tools/NativeXuAudioProbe/Program.I2cTransport.cs",
+                               "reason":  "NativeXu I2C-over-AT transport helpers live with the I2C command family"
+                           },
+                           {
+                               "path":  "tools/NativeXuAudioProbe/Program.Models.cs",
+                               "reason":  "old NativeXu probe model bucket removed"
+                           },
+                           {
+                               "path":  "tools/NativeXuAudioProbe/Program.ServiceProbe.cs",
+                               "reason":  "NativeXu service-control smoke/payload workflows live with top-level probe command routing"
+                           },
+                           {
+                               "path":  "tools/NativeXuAudioProbe/RtkI2cProbe.cs",
+                               "reason":  "RTK I2C probe workflow lives with top-level probe command routing"
+                           },
+                           {
+                               "path":  "tools/ssctl/SsctlHelpWriter.cs",
+                               "reason":  "ssctl help facade folded into the CLI front-door file"
+                           }
+                       ]
+}

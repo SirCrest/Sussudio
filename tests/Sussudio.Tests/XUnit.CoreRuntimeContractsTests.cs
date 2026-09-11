@@ -1249,14 +1249,6 @@ static partial class Program
         AssertContains(rootText, "private NodeReadAttempt TryReadRolling(");
         AssertContains(rootText, "private NodeReadAttempt BuildSnapshotFromCachedResults(");
         AssertContains(rootText, "private static readonly IReadOnlyDictionary<int, VicTiming> VicTimingMap");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.InterfaceRead.cs")),
-            "selected-interface open/topology/node scanning folded into NativeXuAtCommandProvider.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.RollingPoll.cs")),
-            "active rolling telemetry folded into the NativeXuAtCommandProvider root read owner");
         AssertContains(rollingPollText, "private int _rollingGroup;");
         AssertContains(rollingPollText, "private static readonly IReadOnlyDictionary<int, VicTiming> VicTimingMap");
         AssertContains(rollingPollText, "private static readonly double[] CanonicalFrameRates");
@@ -1276,10 +1268,6 @@ static partial class Program
         AssertContains(rollingCommandGroupsText, "private void RefreshRollingGroup(");
         AssertContains(rollingCommandGroupsText, "case 5: // Diagnostics");
         AssertContains(rootText, "private static bool IsUnsupportedNodeFailure(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.RollingCommandGroups.cs")),
-            "rolling command batch dispatch folded into the NativeXuAtCommandProvider root read owner");
         AssertContains(snapshotAssemblyText, "private static readonly IReadOnlyDictionary<int, VicTiming> VicTimingMap");
         AssertContains(snapshotAssemblyText, "private static readonly double[] CanonicalFrameRates");
         AssertContains(snapshotAssemblyText, "private readonly record struct VicTiming(");
@@ -1296,22 +1284,6 @@ static partial class Program
         AssertContains(snapshotAssemblyText, "AppendFlashAudioAnalogGainDetail(detailEntries, results.FlashAudio)");
         AssertContains(snapshotAssemblyText, "new SourceSignalTelemetrySnapshot");
         AssertContains(snapshotAssemblyText, "private static string ResolveSnapshotAudioInputOrigin(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.DiagnosticSummary.cs")),
-            "diagnostic summary formatting folded into NativeXuAtCommandProvider.SnapshotAssembly.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.FullSnapshot.cs")),
-            "reference full-snapshot read folded into NativeXuAtCommandProvider.SnapshotAssembly.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.SnapshotAssembly.CommandResults.cs")),
-            "snapshot command result DTO folded into NativeXuAtCommandProvider.SnapshotAssembly.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.SnapshotAssembly.Timing.cs")),
-            "snapshot timing policy folded into NativeXuAtCommandProvider.SnapshotAssembly.cs");
         AssertContains(telemetryDetailsText, "private static string ResolveSnapshotAudioInputOrigin(");
         AssertContains(telemetryDetailsText, "\"nativexu-flash-audio\"");
         AssertContains(snapshotAssemblyText, "TelemetryLabels.AnalogGain");
@@ -1347,10 +1319,6 @@ static partial class Program
         AssertContains(deviceCommandsText, "public static async Task<byte[]?> ReadAtCommandAsync(");
         AssertContains(deviceCommandsText, "SendAtCommand(handle, node.NodeId, label, cmdCode)");
         AssertContains(deviceCommandsText, "NATIVEXU_GET_EXCEPTION");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.DeviceCommandReads.cs")),
-            "Native XU public read commands stay folded into DeviceCommands.cs with the generic SET surface.");
         AssertContains(deviceCommandsText, "public static async Task<bool> SwitchAudioInputAsync(");
         AssertContains(deviceCommandsText, "public static async Task<bool> SetAnalogGainAsync(");
         AssertContains(deviceCommandsText, "NativeXuDeviceSupport.TryGetSupported4kXIds(device, out var vendorId, out var productId)");
@@ -1364,18 +1332,6 @@ static partial class Program
         AssertContains(deviceCommandsText, "internal static void ComputeGainRegisters(");
         AssertContains(deviceCommandsText, "private static bool SendSelector4Command(");
         AssertContains(deviceCommandsText, "SendSelector4Command(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.AudioCommands.cs")),
-            "audio command entry points folded into DeviceCommands.cs with the public command surface");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.AudioSwitch.cs")),
-            "audio switch execution folded into audio command owner");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.AnalogGain.cs")),
-            "analog gain execution folded into audio command owner");
         AssertContains(providerRootText, "private static bool SendSelector4Command(");
         AssertContains(providerRootText, "BuildAtWriteFrame(cmdCode, inputData)");
         AssertContains(providerRootText, "TryXuSetViaOutput(handle, nodeId, XuGuid, I2cSelector, payload, out var win32)");
@@ -1423,14 +1379,6 @@ static partial class Program
         AssertContains(protocolText, "const int HdrStaticMetadataEotfOffset = HdrStaticMetadataDataStartOffset;");
         AssertContains(protocolText, "buffer[InfoFrameLengthOffset] < 1");
         AssertContains(protocolText, "var eotf = buffer[HdrStaticMetadataEotfOffset];");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.AtProtocol.cs")),
-            "the old Native XU provider AT-protocol partial stays removed");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.PayloadDecoding.cs")),
-            "the old Native XU provider payload-decoding partial stays removed");
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.AtProtocol.cs");
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.PayloadDecoding.cs");
         AssertContains(probeProjectText, "NativeXuAtProtocol.cs");
@@ -1563,22 +1511,6 @@ static partial class Program
         AssertContains(telemetryDetailsText, "private static (string Value, string? RawValue) FormatUsbHostProtocolDetail(byte[] data)");
         AssertContains(telemetryDetailsText, "private static (string Value, string? RawValue) FormatAsciiOrHexDetail(byte[] data)");
         AssertContains(telemetryDetailsText, "private static string? DecodeCString(byte[] buffer)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.TelemetryDetails.cs")),
-            "Native XU detail row assembly folded into NativeXuAtCommandProvider.SnapshotAssembly.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.TelemetryDetails.AudioInput.cs")),
-            "Native XU audio input detail helpers folded into the telemetry details owner");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.TelemetryDetails.Build.cs")),
-            "Native XU detail row assembly folded into the telemetry details owner");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.TelemetryDetails.Formatters.cs")),
-            "Native XU AT detail formatters folded into the telemetry details owner");
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.TelemetryDetails.cs");
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.TelemetryDetails.AudioInput.cs");
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.TelemetryDetails.Build.cs");
@@ -1676,26 +1608,6 @@ static partial class Program
         AssertDoesNotContain(snapshotsText, "private static long ComputeFlashbackExportElapsedMs(");
         AssertDoesNotContain(snapshotsText, "private static long ComputeFlashbackExportLastProgressAgeMs(");
         AssertDoesNotContain(snapshotsText, "private static long GetFileLengthOrZero(string? path)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.HealthSnapshotFlashbackBackend.cs")),
-            "Flashback backend health fields folded into health snapshot sampler");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.SnapshotRecordingStats.cs")),
-            "old recording stats snapshot partial removed");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.SnapshotRecordingFormat.cs")),
-            "old recording format snapshot partial removed");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.SnapshotObservedFrames.cs")),
-            "old observed frames snapshot partial removed");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.Snapshots.cs")),
-            "capture diagnostics/source telemetry snapshot helpers folded into CaptureService.RuntimeSnapshots.cs");
 
         return Task.CompletedTask;
     }
@@ -1771,10 +1683,6 @@ static partial class Program
         var hdrPipelineText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
             .Replace("\r\n", "\n");
         AssertContains(hdrPipelineText, "private static string ResolveHdrWarmupState(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.Snapshots.cs")),
-            "old snapshot helper partial folded into runtime snapshot owner");
 
         // HDR not requested Ã¢â€ â€™ NotRequested
         var notRequested = method.Invoke(null, new object[] { false, false, false, 0L })?.ToString();
@@ -1804,18 +1712,6 @@ static partial class Program
         AssertDoesNotContain(telemetryText, "RecordObservedPixelFormat");
         AssertDoesNotContain(telemetryText, "expectedFormat");
         AssertContains(telemetryText, "private void CaptureEncoderRuntimeTelemetry(LibAvRecordingSink? sink)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.ObservedPixelTelemetry.cs")),
-            "old observed pixel telemetry partial removed");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.CaptureFormatTelemetry.cs")),
-            "old capture-format telemetry partial removed");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.Telemetry.cs")),
-            "source telemetry polling folded into CaptureService.RuntimeSnapshots.cs");
 
         return Task.CompletedTask;
     }
@@ -1867,10 +1763,6 @@ static partial class Program
         var snapshotsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
             .Replace("\r\n", "\n");
         AssertContains(snapshotsText, "private static string ResolveSourceTelemetryBackend(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.SnapshotTelemetry.cs")),
-            "old source telemetry snapshot partial removed");
 
         var nativeXuTelemetry = RuntimeHelpers.GetUninitializedObject(telemetryType);
         SetPropertyBackingField(nativeXuTelemetry, "Origin", Enum.Parse(originType, "NativeXu"));
@@ -1946,10 +1838,6 @@ static partial class Program
         var runtimeSourceTelemetryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
             .Replace("\r\n", "\n");
         AssertContains(runtimeSourceTelemetryText, "private static (string Status, string Reason) ResolveTelemetryAlignment(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.Snapshots.cs")),
-            "old snapshot helper partial folded into runtime snapshot owner");
 
         var alignedTelemetry = RuntimeHelpers.GetUninitializedObject(telemetryType);
         SetPropertyBackingField(alignedTelemetry, "Availability", Enum.Parse(availabilityType, "Available"));
@@ -2219,26 +2107,6 @@ static partial class Program
         AssertContains(rootText, "private RecordingAudioIntegrityCounterSnapshot GetRecordingAudioCountersSinceBaseline(");
         AssertContains(rootText, "private RecordingAudioIntegrityCounterSnapshot CaptureRecordingAudioCounters(");
         AssertContains(rootText, "CreateRecordingAudioCounters(");
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RecordingIntegrity.cs")),
-            "recording integrity sidecar folded into recording lifecycle");
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RecordingIntegrity.Summary.cs")),
-            "old recording integrity summary partial removed");
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RecordingIntegrity.Counters.cs")),
-            "old recording integrity counters partial removed");
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RecordingIntegrity.Audio.cs")),
-            "old recording integrity audio partial removed");
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RecordingIntegrity.Logging.cs")),
-            "old recording integrity logging partial removed");
 
         return Task.CompletedTask;
     }
@@ -2578,28 +2446,12 @@ static partial class Program
         AssertContains(cleanupPlanText, "private runtime snapshot assembly handoff contract");
         AssertContains(cleanupPlanText, "snapshot sampler that consumes it.");
         AssertContains(cleanupPlanText, "`AutomationModels.cs`");
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Models", "Automation", "CaptureRuntimeSnapshot.cs")),
-            "capture runtime DTO folded into AutomationModels.cs");
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RuntimeSnapshotAssemblyFields.cs")),
-            "old runtime snapshot assembly-fields partial removed");
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RuntimeSnapshotAssembler.cs")),
-            "runtime snapshot assembler folded into RuntimeSnapshots.cs");
         AssertContains(cleanupPlanText, "Video ingest, source-reader health, WASAPI capture, playback output counter,");
         AssertContains(cleanupPlanText, "requested/negotiated reader transport, memory preference, frame-ledger, preview");
         AssertContains(cleanupPlanText, "HDR pipeline");
         AssertContains(cleanupPlanText, "source telemetry");
         AssertContains(cleanupPlanText, "detail/frame-rate-origin/age/alignment projection");
         AssertContains(cleanupPlanText, "private handoff models now live with the runtime snapshot sampler");
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RuntimeSnapshotRecordingIntegrity.cs")),
-            "old runtime recording-integrity projection partial removed");
 
         return Task.CompletedTask;
     }
@@ -2661,10 +2513,6 @@ static partial class Program
         AssertContains(hdrPipelineText, "ResolveHdrWarmupState(");
         AssertContains(hdrPipelineText, "ObservedNonP010Frames = (int)Math.Min(int.MaxValue, Math.Max(0L, observedNonP010FrameCount))");
 
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RuntimeSnapshotHdrPipeline.cs")),
-            "HDR runtime snapshot projection folded into runtime snapshot sampler");
         AssertDoesNotContain(assemblerText, "HdrWarmupObservedP010Frames = (int)Math.Min(int.MaxValue, observedP010FrameCount),");
 
         return Task.CompletedTask;
@@ -2691,10 +2539,6 @@ static partial class Program
         AssertContains(sourceTelemetryText, "CircuitState = ResolveSourceTelemetryCircuitState(telemetry.Availability, suppressed)");
         AssertContains(sourceTelemetryText, "SourceRawTimingHex = telemetry.RawTimingHex,");
 
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RuntimeSnapshotSourceTelemetry.cs")),
-            "source telemetry runtime snapshot projection folded into runtime snapshot sampler");
         AssertDoesNotContain(runtimeText, "SourceTelemetryDetails = _latestSourceTelemetry.DetailEntries,");
         AssertDoesNotContain(runtimeText, "ResolveSourceTelemetryCircuitState(_latestSourceTelemetry.Availability");
 
@@ -2731,10 +2575,6 @@ static partial class Program
         var unifiedVideoCaptureText = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs")
             .Replace("\r\n", "\n");
         AssertContains(unifiedVideoCaptureText, "internal sealed class FrameLedger");
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "FrameLedger.cs")),
-            "frame ledger helper folded into UnifiedVideoCapture.cs");
 
         var ledgerType = RequireType("Sussudio.Services.Capture.FrameLedger");
         var identityType = RequireType("Sussudio.Models.FrameIdentity");

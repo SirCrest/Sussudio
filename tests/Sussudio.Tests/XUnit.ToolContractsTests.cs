@@ -2512,10 +2512,6 @@ static partial class Program
         AssertContains(verificationRootText, "\"{label}: None\"");
         AssertContains(verificationRootText, "private static string BuildFileVerificationText(");
         AssertContains(verificationRootText, "== File Verification: PASS ==");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "McpServer", "Tools", "VerificationTools.Formatting.cs")),
-            "MCP verification response formatting lives with the verification tool commands");
 
         AssertMcpCommandRoutingTestsUseCommandIdHelper();
     }
@@ -2601,8 +2597,6 @@ static partial class Program
         AssertContains(formatterRootText, "internal static class DiagnosticSessionOptionalTextFormatter");
         AssertContains(formatterRootText, "internal static string FormatOptional(string value)");
         AssertContains(formatterRootText, "string.IsNullOrWhiteSpace(value) ? \"none\" : value");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionOptionalTextFormatter.cs")), "Optional diagnostic text formatting stays folded into DiagnosticSessionResult.cs");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionResultFormatter.cs")), "Diagnostic session result text formatting stays folded into DiagnosticSessionResult.cs");
         AssertContains(builderText, "using static Sussudio.Tools.DiagnosticSessionOptionalTextFormatter;");
         AssertContains(formatterText, "using static Sussudio.Tools.DiagnosticSessionOptionalTextFormatter;");
         AssertContains(validationText, "using static Sussudio.Tools.DiagnosticSessionOptionalTextFormatter;");
@@ -2625,8 +2619,6 @@ static partial class Program
         AssertContains(responseJsonText, "internal static class DiagnosticSessionAutomationResponseJson");
         AssertContains(responseJsonText, "internal static bool TryGetSnapshot(");
         AssertContains(responseJsonText, "internal static bool TryGetVerification(");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionResultArtifacts.cs")), "Result artifact helpers stay folded into DiagnosticSessionResultBuilder.cs");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionAutomationResponseJson.cs")), "Automation response JSON helpers stay folded into DiagnosticSessionRunContext.cs");
         AssertContains(initialSnapshotText, "using static Sussudio.Tools.DiagnosticSessionAutomationResponseJson;");
         AssertContains(initialSnapshotText, "using static Sussudio.Tools.DiagnosticSessionJsonArtifacts;");
         AssertDoesNotContain(builderText, "TryGetSnapshot(");
@@ -2770,7 +2762,6 @@ static partial class Program
         AssertContains(formatterRootText, "PreviewD3DInputUploadCpuP99MsAtEnd");
         AssertContains(formatterRootText, "VisualCadenceLongestRepeatRunAtEnd");
         AssertContains(runnerText, "return DiagnosticSessionResultFormatter.Format(result);");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionResultFormatter.cs")), "DiagnosticSessionResultFormatter lives with the diagnostic result model surface");
         AssertDoesNotContain(runnerText, "== Diagnostic Session:");
         AssertDoesNotContain(runnerText, "\"Flashback Playback Perf: \"");
         AssertDoesNotContain(runnerText, "private static string FormatFrameRate(");
@@ -3105,10 +3096,6 @@ static partial class Program
         AssertContains(overviewText, "(analysis.DiagnosticHealthSucceeded ||");
         AssertContains(overviewText, "IsFunctionallyVerifiedRecordingWarning(request, analysis, verificationSucceeded) ||");
         AssertContains(overviewText, "IsVisuallyVerifiedPreviewWarning(request, analysis)) &&");
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionResultBuilder.DiagnosticHealth.cs")),
-            "diagnostic health verdict helpers folded into analysis owner");
         AssertDoesNotContain(analysisText, "diagnostic health {toleratedReason}:");
 
         return Task.CompletedTask;
@@ -3229,26 +3216,6 @@ static partial class Program
         AssertContains(
             ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionHealthPolicy.cs"),
             "\"flashback preview: present/display pressure \"");
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionResultBuilder.Analysis.cs")),
-            "diagnostic-session analysis folded into DiagnosticSessionResultBuilder.cs");
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionResultBuilder.DiagnosticHealth.cs")),
-            "diagnostic health verdict helpers folded into DiagnosticSessionResultBuilder.cs");
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs")),
-            "Flashback playback result projection folded into DiagnosticSessionResultBuilder.cs");
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionResultBuilder.Flattening.cs")),
-            "final result DTO flattening folded into DiagnosticSessionResultBuilder.cs");
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionResultBuilder.Projections.cs")),
-            "result projection set folded into DiagnosticSessionResultBuilder.cs");
         AssertContains(builderText, "return new DiagnosticSessionResult\n        {");
         AssertContains(analysisText, "IsToleratedFlashbackScenarioWarning(");
     }
@@ -3292,10 +3259,6 @@ static partial class Program
         AssertDoesNotContain(analysisText, "double PreviewSchedulerMaxScheduleLateMsObserved");
         AssertDoesNotContain(analysisText, "var previewSchedulerDroppedAtEnd =");
         AssertDoesNotContain(analysisText, "var previewSchedulerMaxScheduleLateMsObserved = samples");
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionResultBuilder.PreviewScheduler.cs")),
-            "preview scheduler analysis folded into DiagnosticSessionResultBuilder.cs");
     }
 
     private static void AssertDiagnosticSessionResultBuilderOverviewAndCaptureCompositionOwnership()
@@ -3401,14 +3364,6 @@ static partial class Program
         AssertOccursBefore(sources.RowsSource, "public string PreviewPacingSlowStageEvidence { get; set; } = string.Empty;", "public string FlashbackPlaybackState { get; set; } = string.Empty;");
         AssertOccursBefore(sources.RowsSource, "public bool FlashbackForceRotateDraining { get; set; }", "public bool FlashbackExportActive { get; set; }");
         AssertOccursBefore(sources.RowsSource, "public string FlashbackExportMessage { get; set; } = string.Empty;", "public long LatencyMs { get; set; }");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "McpServer", "Tools", "PerformanceTimelineTools.Rows.cs")),
-            "MCP performance timeline row projection lives with the timeline renderer owner");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "McpServer", "Tools", "PerformanceTimelineTools.Rendering.cs")),
-            "MCP timeline rendering lives with the broader performance MCP tool owner");
         AssertContains(sources.RenderingSource, "public static async Task<CallToolResult> get_performance_timeline(");
         AssertContains(sources.RenderingSource, "var entries = ReadTimelineRows(data);");
         AssertContains(sources.RenderingSource, "McpToolResultFactory.FromResponse(response, BuildPerformanceTimelineText(entries, targetOnePercentLowFps))");
@@ -3813,14 +3768,6 @@ static partial class Program
         AssertDoesNotContain(rootText, "SendCommandAsync(\"GetSnapshot\")");
         AssertDoesNotContain(rootText, "GetPositiveLong(");
         AssertDoesNotContain(rootText, "private readonly record struct PresentMonCorrelation(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "McpServer", "Tools", "PresentMonTools.Correlation.cs")),
-            "PresentMon snapshot correlation lives with the PresentMon MCP tool");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "McpServer", "Tools", "PresentMonTools.cs")),
-            "PresentMon MCP entry points live with the broader performance MCP tool owner");
 
         AssertContains(probeText, "public readonly record struct PresentMonProbeCorrelation(");
         AssertContains(probeText, "public static PresentMonProbeOptions CreateOptions(");
@@ -3945,22 +3892,6 @@ static partial class Program
         AssertContains(rootSource, "private static string BuildFramePacingVerdictText(");
         AssertContains(rootSource, "new StringBuilder()");
         AssertContains(rootSource, "Verdict: {verdict}");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "McpServer", "Tools", "FramePacingVerdictTools.Timeline.cs")),
-            "Frame pacing timeline reader lives with the MCP tool orchestration");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "McpServer", "Tools", "FramePacingVerdictTools.Channels.cs")),
-            "Frame pacing channel projection lives with the MCP verdict tool");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "McpServer", "Tools", "FramePacingVerdictTools.Policy.cs")),
-            "Frame pacing readiness and verdict policy lives with the MCP verdict tool");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "McpServer", "Tools", "FramePacingVerdictTools.Rendering.cs")),
-            "Frame pacing verdict rendering lives with the MCP verdict tool");
 
         return Task.CompletedTask;
     }
@@ -5051,10 +4982,6 @@ static partial class Program
         AssertContains(rootText, "while (bins.Count < 16)");
         AssertContains(rootText, "* 24.0");
         AssertContains(rootText, "new string('#', Math.Max(0, barLength))");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "McpServer", "Tools", "PreviewFrameCaptureTools.Histogram.cs")),
-            "preview frame histogram rendering lives with the preview frame report renderer");
 
         AssertContains(rootText, "private static List<string> BuildPreviewFrameCaptureDiagnosis(");
         AssertContains(rootText, "pureBlackPercent > 95.0");
@@ -5064,14 +4991,6 @@ static partial class Program
         AssertContains(rootText, "private static string FormatAspectRatio(");
         AssertContains(rootText, "AutomationSnapshotFormatter.FormatNumber(aspectRatio, \"0.###\")");
         AssertContains(rootText, "private static bool IsNear(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "McpServer", "Tools", "PreviewFrameCaptureTools.Rendering.cs")),
-            "preview frame report rendering lives with the preview frame MCP tool");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "McpServer", "Tools", "PreviewFrameCaptureTools.Diagnosis.cs")),
-            "preview frame diagnosis policy lives with the preview frame MCP tool");
     }
 
     private static async Task<string> InvokePreviewFrameCaptureAsync(
@@ -5782,10 +5701,6 @@ static partial class Program
         AssertContains(helpWriterText, "WriteCatalogHelpLine(writer, AutomationCommandKind.SetFrameTimeOverlayVisible);");
         AssertContains(helpWriterText, "WriteCatalogHelpLine(writer, AutomationCommandKind.SetFlashbackTimelineVisible);");
         AssertContains(helpWriterText, "DiagnosticSessionOptions.CliUsage");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "ssctl", "SsctlHelpWriter.cs")),
-            "ssctl help facade folded into the CLI front-door file");
         AssertContains(helpOutput, "ssctl");
         AssertContains(helpOutput, "Usage:");
         AssertContains(helpOutput, "Flashback:");
@@ -6188,10 +6103,6 @@ static partial class Program
         AssertDoesNotContain(runnerText, "private readonly record struct DiagnosticHealthObservation");
         AssertDoesNotContain(runnerText, "private static DiagnosticHealthObservation BuildSessionDiagnosticHealthObservation(");
         AssertDoesNotContain(runnerText, "private static bool IsSparseSourceCaptureCadenceWarningRun(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionHealthTolerances.cs")),
-            "diagnostic-session health tolerance classifiers folded into the health policy owner");
 
         return Task.CompletedTask;
     }
@@ -6233,10 +6144,6 @@ static partial class Program
         AssertContains(catalogText, "DiagnosticSessionScenarioKind.FlashbackExportRejected");
         AssertContains(catalogText, "private static DiagnosticSessionScenarioCatalogEntry CreateCombinedScenarioEntry()");
         AssertContains(catalogText, "DiagnosticSessionScenarioKind.Combined");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionScenarioCatalog.Entries.cs")),
-            "Diagnostic session scenario entries folded into the catalog owner");
         AssertContains(catalogText, "internal readonly record struct DiagnosticSessionScenarioPlan(");
         AssertContains(catalogText, "internal enum DiagnosticSessionScenarioKind");
         AssertContains(catalogText, "internal static DiagnosticSessionScenarioPlan From(string scenario)");
@@ -6255,10 +6162,6 @@ static partial class Program
         AssertContains(catalogText, "DiagnosticSessionScenarioKind.FlashbackPreviewCycle or");
         AssertContains(catalogText, "DiagnosticSessionScenarioKind.FlashbackPlaybackPreviewCycle or");
         AssertContains(catalogText, "DiagnosticSessionScenarioKind.FlashbackSegmentPlayback");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionScenarioPlan.cs")),
-            "Diagnostic session scenario plan flags live with the catalog that constructs every plan");
         AssertContains(bootstrapText, "var scenarioPlan = DiagnosticSessionScenarioPlan.From(scenario);");
         AssertContains(runnerText, "ScenarioPlan = RunBootstrap.ScenarioPlan;");
         AssertDoesNotContain(runnerText, "scenario == \"flashback-playback\"");
@@ -6310,10 +6213,6 @@ static partial class Program
         AssertDoesNotContain(setupText, "sendAsync(\"SetFlashbackEnabled\"");
         AssertDoesNotContain(setupText, "sendAsync(\"SetPreviewEnabled\"");
         AssertDoesNotContain(setupText, "sendAsync(\"SetRecordingEnabled\"");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionScenarioActivation.cs")),
-            "diagnostic-session scenario setup/startup activation folded into the scenario catalog owner");
 
         return Task.CompletedTask;
     }
@@ -6410,10 +6309,6 @@ static partial class Program
         AssertDoesNotContain(runnerText, "Task<PresentMonProbeResult>? presentMonTask");
         AssertDoesNotContain(runnerText, "async Task ObserveBackgroundTasksAfterFaultAsync()");
         AssertDoesNotContain(runnerText, "async Task ObserveTaskAfterFaultAsync(Task? task, string stage)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionBackgroundTasks.cs")),
-            "diagnostic-session background task drain folded into DiagnosticSessionRunner.cs");
 
         return Task.CompletedTask;
     }
@@ -6450,10 +6345,6 @@ static partial class Program
         AssertContains(scenarioText, "samples.Add(new DiagnosticSessionSample");
         AssertContains(scenarioText, "await sampleCheckpointAsync().ConfigureAwait(false);");
         AssertOccursBefore(scenarioText, "samples.Add(new DiagnosticSessionSample", "await sampleCheckpointAsync().ConfigureAwait(false);");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionScenarioPhaseRunner.cs")),
-            "diagnostic-session scenario phase runner folded into DiagnosticSessionRunner.cs");
 
         return Task.CompletedTask;
     }
@@ -6570,10 +6461,6 @@ static partial class Program
         AssertContains(runnerText, "CapturePostRunSnapshotsAsync(");
         AssertContains(runnerText, "postRunSnapshots.HealthSnapshot");
         AssertContains(runnerText, "postRunSnapshots.Timeline");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionPostRunSnapshots.cs")),
-            "post-run timeline and final-snapshot capture lives with the runner completion phase");
 
         return Task.CompletedTask;
     }
@@ -6692,10 +6579,6 @@ static partial class Program
         AssertContains(retryText, "\"pipe-access-denied\"");
         AssertContains(channelText, "using static Sussudio.Tools.DiagnosticSessionPipeRetryPolicy;");
         AssertContains(channelText, "SendCommandWithConnectRetryAsync(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionPipeRetryPolicy.cs")),
-            "diagnostic-session pipe retry policy lives with the run-context command-channel transport owner");
         AssertDoesNotContain(executionText, "using static Sussudio.Tools.DiagnosticSessionPipeRetryPolicy;");
         AssertDoesNotContain(executionText, "private static bool IsSyntheticPipeConnectFailure(");
         AssertDoesNotContain(executionText, "private static bool IsPermanentPipeConnectFailure(");
@@ -6742,10 +6625,6 @@ static partial class Program
         AssertContains(channelText, "$\"wait {condition}: {Get(response, \"Message\", \"not met\")}\"");
         AssertDoesNotContain(channelText, "\"WaitForCondition\"");
         AssertDoesNotContain(channelText, "\"GetSnapshot\"");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionCommandChannel.cs")),
-            "diagnostic-session command channel lives with DiagnosticSessionRunContext.cs");
         AssertContains(contextText, "CommandChannel = new DiagnosticSessionCommandChannel(");
         AssertContains(executionText, "context.CommandChannel,");
         AssertContains(executionText, "runContext.CreateCleanupContext(options, scenarioPhase)");
@@ -6815,14 +6694,6 @@ static partial class Program
         AssertDoesNotContain(scenarioText, "internal required DiagnosticSessionScenarioPhaseState PhaseState");
         AssertDoesNotContain(executionText, "backgroundTasks.AwaitScenarioTasksAsync()");
         AssertDoesNotContain(phaseRunnerText, "backgroundTasks.AwaitScenarioTasksAsync()");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionScenarioPhaseRunner.cs")),
-            "diagnostic-session scenario phase runner folded into DiagnosticSessionRunner.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionBackgroundTasks.cs")),
-            "diagnostic-session background task drain folded into DiagnosticSessionRunner.cs");
         AssertOccursBefore(phaseRunnerText, "DiagnosticSessionScenarioSetup.RunAsync(", "DiagnosticSessionScenarioStartup.StartAsync(");
         AssertOccursBefore(phaseRunnerText, "DiagnosticSessionScenarioStartup.StartAsync(", "RunSamplingAndCompleteAsync(context, backgroundTasks, scenarioPhase)");
         AssertOccursBefore(phaseRunnerText, "context.RecordTerminalException(ex, context.GetLastStage())", "context.ScenarioCancellationSource.Cancel();");
@@ -6907,10 +6778,6 @@ static partial class Program
         AssertContains(contextText, "RunState = new DiagnosticSessionRunState(");
         AssertContains(contextText, "internal void SetStage(string stage)");
         AssertContains(contextText, "internal void RecordTerminalException(Exception ex, string stage)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionRunState.cs")),
-            "run state stays folded into DiagnosticSessionRunContext.cs");
         AssertDoesNotContain(runnerText, "var lastStage = \"initializing\";");
         AssertDoesNotContain(runnerText, "Exception? terminalException = null;");
         AssertDoesNotContain(runStateText, "DateTimeOffset.MinValue");
@@ -6938,10 +6805,6 @@ static partial class Program
         AssertContains(contextText, "LivePath = _liveStateWriter.LivePath;");
         AssertContains(contextText, "_liveStateWriter.WriteLiveStateBestEffortAsync(");
         AssertContains(contextText, "_liveStateWriter.WriteSamplingLiveStateBestEffortAsync(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionLiveStateWriter.cs")),
-            "live-state writer stays folded into DiagnosticSessionRunContext.cs");
         AssertDoesNotContain(runnerText, "var livePath = runState.LivePath;");
 
         return Task.CompletedTask;
@@ -8524,18 +8387,6 @@ static partial class Program
         AssertContains(cyclesText, "13,\n                \"flashback-preview-cycle-task\",");
         AssertContains(cyclesText, "14,\n                \"flashback-playback-preview-cycle-task\",");
         AssertContains(cyclesText, "15,\n                \"flashback-recording-preview-cycle-task\",");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionFlashbackPreviewCycleScenarios.Playback.cs")),
-            "Flashback playback preview-cycle scenario stays with the preview-cycle scenario family");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionFlashbackPreviewCycleScenarios.Recording.cs")),
-            "Flashback recording preview-cycle scenario stays with the preview-cycle scenario family");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionFlashbackPreviewCycleScenarios.cs")),
-            "Flashback preview-cycle scenario family folded into the Flashback cycle scenario owner");
         AssertContains(startupText, "DiagnosticSessionFlashbackPreviewCycleScenarios.RegisterSelectedFlashbackPreviewCycleScenarioTasks(");
         AssertDoesNotContain(startupText, "using static Sussudio.Tools.DiagnosticSessionFlashbackPreviewCycleScenarios;");
         AssertDoesNotContain(startupText, "RunFlashbackPreviewCycleAsync(");
@@ -8570,10 +8421,6 @@ static partial class Program
         AssertContains(dispatchText, "scenarioPlan.Kind == DiagnosticSessionScenarioKind.FlashbackRecordingExportRejected");
         AssertOccursBefore(dispatchText, "RunFlashbackExportRejectedAsync(", "RunFlashbackRecordingExportRejectedAsync(");
         AssertContains(runnerText, "DiagnosticSessionFlashbackExportScenarios.RunSelectedRejectedExportScenariosAsync(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionFlashbackRejectedExports.cs")),
-            "Flashback rejected-export scenarios stay folded into the export scenario owner");
         AssertDoesNotContain(runnerText, "DiagnosticSessionFlashbackRejectedExports.");
         AssertDoesNotContain(runnerText, "RunFlashbackExportRejectedAsync(");
         AssertDoesNotContain(runnerText, "RunFlashbackRecordingExportRejectedAsync(");
@@ -8706,13 +8553,6 @@ static partial class Program
         var exportText = metricsText;
 
         AssertContains(metricsText, "internal static class DiagnosticSessionFlashbackMetrics");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionFlashbackMetrics.cs")), "Flashback metrics stay folded into DiagnosticSessionMetrics.cs");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionFlashbackMetrics.Recording.cs")), "Flashback recording metrics stay folded into the consolidated metrics owner");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionFlashbackMetrics.Export.cs")), "Flashback export metrics stay folded into the consolidated metrics owner");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionFlashbackMetrics.PlaybackObservation.cs")), "Flashback playback observation metrics stay folded into the consolidated metrics owner");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionFlashbackMetrics.RecordingExport.cs")), "Flashback recording/export metrics stay folded into the consolidated metrics owner");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionFlashbackMetrics.PlaybackSession.cs")), "Flashback playback session metrics stay folded into the consolidated metrics owner");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionFlashbackMetrics.PlaybackResult.cs")), "Flashback playback result metrics stay folded into the consolidated metrics owner");
         AssertContains(recordingText, "internal sealed class FlashbackRecordingSessionMetrics");
         AssertContains(playbackSessionText, "internal sealed class FlashbackPlaybackSessionMetrics");
         AssertContains(playbackResultText, "internal sealed class FlashbackPlaybackResultMetrics");
@@ -8873,10 +8713,6 @@ static partial class Program
         AssertContains(monitorText, "private static unsafe string? GetDeviceName(IntPtr device)");
         AssertContains(monitorText, "private struct NvmlUtilization");
         AssertContains(monitorText, "[DllImport(\"nvml.dll\"");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Gpu", "NvmlMonitor.NativeInterop.cs")),
-            "NvmlMonitor.NativeInterop.cs folded into NvmlMonitor.cs");
 
         return Task.CompletedTask;
     }
@@ -10136,24 +9972,12 @@ static partial class Program
         AssertContains(rootText, "public sealed class PresentMonAppCorrelation");
         AssertContains(rootText, "public sealed class PresentMonSwapChainSummary");
         AssertContains(rootText, "public sealed class PresentMonMetricSummary");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "PresentMon", "PresentMonProbe.Models.cs")),
-            "PresentMon public DTOs live with PresentMonProbe.RunAsync and result formatting");
 
         AssertContains(formatText, "public static string Format(PresentMonProbeResult result)");
         AssertContains(formatText, "private static void AppendSummaryContext(");
         AssertContains(formatText, "private static void AppendMetric(");
         AssertContains(formatText, "private static void AppendAppCorrelation(");
         AssertContains(formatText, "private static void AppendSwapChains(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "PresentMon", "PresentMonProbe.Format.cs")),
-            "PresentMon result formatting lives with PresentMonProbe.RunAsync");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "PresentMon", "PresentMonProbe.Csv.cs")),
-            "PresentMon CSV parsing and aggregation live with PresentMonProbe.RunAsync");
 
         AssertContains(csvText, "private static PresentMonCaptureSummary ParseCsv(");
         AssertContains(csvText, "var csvRows = ReadCsvRows(path);");
@@ -10188,27 +10012,7 @@ static partial class Program
         AssertContains(rootText, "private static void TryKill(");
         AssertContains(rootText, "private static void TryDelete(");
         AssertContains(rootText, "private sealed class ProcessRun");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "PresentMon", "PresentMonProbe.Paths.cs")),
-            "PresentMon path resolution lives with PresentMonProbe.RunAsync");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "PresentMon", "PresentMonProbe.Process.cs")),
-            "PresentMon process supervision lives with PresentMonProbe.RunAsync");
 
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "PresentMon", "PresentMonProbe.Csv.Rows.cs")),
-            "PresentMon CSV row ingestion lives with PresentMonProbe.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "PresentMon", "PresentMonProbe.Csv.Correlation.cs")),
-            "PresentMon CSV app correlation lives with PresentMonProbe.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "PresentMon", "PresentMonProbe.Csv.Summary.cs")),
-            "PresentMon CSV warnings and percentile summaries live with PresentMonProbe.cs");
 
         return Task.CompletedTask;
     }
@@ -10578,14 +10382,6 @@ static partial class Program
         AssertContains(scanWorkflowsText, "private static void RunAdcVolumeProbe(SafeFileHandle handle)");
         AssertContains(scanWorkflowsText, "private static void RunMuxProbe(SafeFileHandle handle)");
         AssertContains(scanWorkflowsText, "private static void RunMuteProbe(SafeFileHandle handle)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "KsAudioNodeProbe", "Program.ScanWorkflows.Extended.cs")),
-            "KS audio node scan workflow probes live with the main scan workflow owner");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "KsAudioNodeProbe", "Program.NativeInterop.cs")),
-            "KS audio node probe private interop declarations live with the command entry point");
 
         return Task.CompletedTask;
     }
@@ -10607,10 +10403,6 @@ static partial class Program
         AssertContains(programText, "private static extern int EGAVDS_OpenDevice");
         AssertContains(programText, "private static extern bool SetupDiEnumDeviceInterfaces");
         AssertContains(programText, "private struct SP_DEVICE_INTERFACE_DATA");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "EgavdsAudioProbe", "Program.NativeInterop.cs")),
-            "EGAVDS probe private interop declarations live with the probe command flow");
         AssertContains(agentMapText, "`tools/EgavdsAudioProbe/Program.cs` owns EGAVDS audio probe command flow,");
         AssertDoesNotContain(agentMapText, "`Program.NativeInterop.cs` owns EGAVDS");
         AssertDoesNotContain(cleanupPlanText, "`tools/EgavdsAudioProbe/Program.NativeInterop.cs`");

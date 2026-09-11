@@ -1109,14 +1109,6 @@ static partial class Program
         AssertContains(rootText, "public FrameFingerprintCadenceTracker.Metrics GetPacketHashMetrics()");
         AssertContains(rootText, "private void RecordPerDecoderTiming(int workerIndex, double valueMs)");
         AssertContains(rootText, "MJPEG_PIPELINE_COMPRESSED_DEPTH_UNDERFLOW");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "Mjpeg", "ParallelMjpegDecodePipeline.CompressedQueue.cs")),
-            "MJPEG compressed queue admission stays folded into pipeline root/channel owner");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "Mjpeg", "ParallelMjpegDecodePipeline.Metrics.cs")),
-            "MJPEG pipeline metrics folded into pipeline root/channel owner");
 
         return Task.CompletedTask;
     }
@@ -1174,10 +1166,6 @@ static partial class Program
         AssertContains(trackerSource, "public Metrics GetMetrics(int maxRecentSamples = 180)");
         AssertContains(trackerSource, "private static double[] BuildRecentUniqueIntervals(");
         AssertContains(trackerSource, "private static string ResolvePattern(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Gpu", "FrameFingerprintCadenceTracker.cs")),
-            "packet hash cadence tracker moves with the CPU MJPEG pipeline under capture");
 
         return Task.CompletedTask;
     }
@@ -1217,18 +1205,6 @@ static partial class Program
         AssertDoesNotContain(trackerSource, "ComputeAverageDelta");
         AssertDoesNotContain(trackerSource, "Array.Copy(_currentSample, _lastSample");
         AssertDoesNotContain(trackerSource, "ComputeChangedPixelCount");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "VisualCadenceTracker.Sampling.cs")),
-            "old visual cadence sampling partial removed");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "VisualCadenceTracker.Metrics.cs")),
-            "old visual cadence metrics partial removed");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "VisualCadenceTracker.cs")),
-            "visual cadence tracker folded into CaptureCadenceTrackers.cs");
 
         AssertContains(captureSource, "previewFrameProbe: null");
         AssertContains(captureSource, "frame.ArrivalTick");
@@ -1254,10 +1230,6 @@ static partial class Program
         AssertContains(rootText, "private void WorkerLoop(int workerIndex)");
         AssertContains(rootText, "private bool HasAliveWorkers()");
         AssertContains(rootText, "DecrementCompressedQueueDepth(\"dequeue\");");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "Mjpeg", "ParallelMjpegDecodePipeline.Workers.cs")),
-            "MJPEG worker execution stays folded into pipeline root/channel owner");
 
         return Task.CompletedTask;
     }
@@ -1283,14 +1255,6 @@ static partial class Program
         AssertDoesNotContain(reorderText, "DrainRemainingFramesInOrder");
         AssertContains(reorderText, "RecordTimingSample(_reorderLatencyMs");
         AssertContains(reorderText, "_emitCallback(frame.Frame);");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "Mjpeg", "ParallelMjpegDecodePipeline.ReorderEmission.cs")),
-            "MJPEG reorder emission stays folded into decoded-frame ordering owner");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "Mjpeg", "ParallelMjpegDecodePipeline.Reorder.cs")),
-            "MJPEG decoded-frame ordering folded into the pipeline root");
         AssertContains(rootText, "private void EmitLoop()");
         AssertContains(rootText, "private bool DrainReadyFrames()");
         AssertContains(rootText, "private bool TryAddDecodedFrame(long seqNo, PooledVideoFrame frame, long decodedTick)");
@@ -1320,14 +1284,6 @@ static partial class Program
         AssertContains(rootText, "private void ReturnRemainingWorkItems()");
         AssertContains(rootText, "ArrayPool<byte>.Shared.Return(item.JpegBuffer);");
         AssertContains(rootText, "_emitSignal.Dispose();");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "Mjpeg", "ParallelMjpegDecodePipeline.ResourceCleanup.cs")),
-            "MJPEG pipeline resource cleanup folded into ParallelMjpegDecodePipeline root");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "Mjpeg", "ParallelMjpegDecodePipeline.Lifecycle.cs")),
-            "MJPEG pipeline lifecycle folded into the root pipeline owner");
 
         return Task.CompletedTask;
     }
@@ -1707,20 +1663,8 @@ static partial class Program
         AssertContains(queueIngressText, "private bool AddFrameInOrder(BufferedFrame frame)");
         AssertContains(queueIngressText, "private BufferedFrame RemoveOldestFrame()");
         AssertContains(queueIngressText, "private bool TryRecordResumeReprimeMiss(long nowTick)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MjpegPreviewJitterBuffer.FrameIngress.cs")),
-            "MJPEG preview jitter queue ingress folded into the lifecycle root");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MjpegPreviewJitterBuffer.Queue.cs")),
-            "MJPEG preview jitter queue ordering folded into frame ingress owner");
         AssertContains(rootText, "private void EmitLoop()");
         AssertContains(rootText, "MmcssThreadRegistration.TryRegister(_mmcssTask, _mmcssPriority");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MjpegPreviewJitterBuffer.EmitLoop.cs")),
-            "MJPEG preview jitter emit loop stays folded into the lifecycle root");
         AssertContains(framePacingText, "private long AlignDueTickToDisplayClock(IPreviewFrameSink? sink, long currentDueTick, long nowTick)");
         AssertContains(framePacingText, "private void SubmitFrame(IPreviewFrameSink sink, BufferedFrame frame)");
         AssertContains(framePacingText, "private void WaitForTicks(long ticks)");
@@ -1729,23 +1673,11 @@ static partial class Program
         AssertContains(framePacingText, "private void DropDeadlineExpiredFrames(long nowTick)");
         AssertContains(framePacingText, "private void IncreaseTargetDepth(long nowTick)");
         AssertContains(framePacingText, "private bool HasLatencyPressure(long nowTick)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MjpegPreviewJitterBuffer.Adaptive.cs")),
-            "MJPEG preview adaptive deadline/depth policy folded into the lifecycle root");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MjpegPreviewJitterBuffer.FramePacing.cs")),
-            "MJPEG preview frame pacing folded into the lifecycle root");
         AssertContains(rootText, "private long AlignDueTickToDisplayClock(");
         AssertContains(rootText, "private void SubmitFrame(IPreviewFrameSink sink, BufferedFrame frame)");
         AssertContains(metricsText, "public Metrics GetMetrics()");
         AssertContains(metricsText, "private void RecordInputInterval(long nowTick)");
         AssertContains(metricsText, "private void RecordDroppedFrame(long sourceSequenceNumber, string reason)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MjpegPreviewJitterBuffer.Metrics.cs")),
-            "MJPEG preview jitter metrics folded into the lifecycle root");
 
         return Task.CompletedTask;
     }

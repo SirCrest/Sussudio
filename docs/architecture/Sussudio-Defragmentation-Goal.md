@@ -35,10 +35,13 @@ So the remaining risk is the inverse of the original symptom: too few, too large
 than too many tiny ones. Do not read the historical snapshot above as a live mandate to
 consolidate further.
 
-Note also that the current layout is now enforced: `tests/Sussudio.Tests` contains roughly
-708 `AssertEqual(false, File.Exists(...))` guards naming candidate split filenames that must
-not exist, plus `AssertContains` checks that pin specific method bodies to specific files.
-Any further slice has to update those guards in the same change.
+Note also that the current layout is now enforced. Candidate split filenames that must not
+exist are listed once in `docs/architecture/architecture.policy.json` and checked by
+`tests/Sussudio.Tests/ArchitecturePolicyTests.cs`; a handful of guards whose asserted path is
+a directory combined with a loop variable remain in their owning suites. Add policy entries
+there rather than writing new `File.Exists` assertions beside the test that motivated them.
+The suites also carry `AssertContains` checks that pin specific method bodies to specific
+files. Any further slice has to update the policy and those checks in the same change.
 
 **Always take live numbers from `Sussudio-Defragmentation-Baseline.generated.md`**, which is
 produced by `scripts/architecture/Capture-SussudioDefragBaseline.ps1` and is test-asserted

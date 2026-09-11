@@ -1298,10 +1298,6 @@ static partial class Program
         AssertContains(packetBuffersText, "bufferedStreamIndices?.Clear();");
         AssertContains(packetBuffersText, "private static AVPacket* ClonePacketOrThrow(AVPacket* packet, string operation)");
         AssertContains(packetBuffersText, "FLASHBACK_EXPORT_PACKET_CLONE_FAIL operation={operation}");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackExporter.PacketBuffers.cs")),
-            "FlashbackExporter.PacketBuffers.cs folded into FlashbackExporter.cs");
         AssertContains(singleFileText, "WriteSingleFilePacketsToActiveOutput(");
         AssertContains(singleFilePacketWritingText, "WriteSingleFilePacketReadLoop(");
         AssertContains(singleFilePacketReadLoopText, "FreeBufferedPackets(packetState.BufferedPackets, packetState.BufferedStreamIndices);");
@@ -1775,10 +1771,6 @@ static partial class Program
         AssertContains(singleFilePacketRebasingText, "private void WriteSingleFilePacket(");
         AssertContains(singleFilePacketRebasingText, "private static bool PacketPtsExceedsSingleFileOutPoint(");
         AssertContains(singleFilePacketRebasingText, "ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, packet), \"av_interleaved_write_frame\", FlashbackExportFailureCodes.OutputWriteFailed);");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackExporter.SingleFilePacketReadLoop.cs")),
-            "single-file packet pump folded into FlashbackExporter.cs");
         AssertDoesNotContain(singleFileText, "var timestampBasesUs = new long[streamCount];");
         AssertDoesNotContain(singleFileText, "LogTimestampBaseDrift(timestampBasesUs, hasTimestampBase);");
         AssertContains(segmentsText, "private FinalizeResult ExportSegmentsCore(");
@@ -1875,10 +1867,6 @@ static partial class Program
         AssertContains(packetBuffersText, "private static void FreeBufferedPackets(");
         AssertContains(packetBuffersText, "private static AVPacket* ClonePacketOrThrow(AVPacket* packet, string operation)");
         AssertContains(packetBuffersText, "finally\n        {\n            FreeBufferedPackets(bufferedPackets, bufferedStreamIndices);\n        }");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackExporter.PacketBuffers.cs")),
-            "FlashbackExporter.PacketBuffers.cs folded into FlashbackExporter.cs");
         AssertContains(streamsText, "private void OpenInput(string inputPath)");
         AssertContains(streamsText, "private void CreateOutputContext(string tmpPath, bool fastStart)");
         AssertContains(streamsText, "private static void OpenOutputIoAndWriteHeader(AVFormatContext* outputContext, string tmpPath, bool fastStart)");
@@ -1920,10 +1908,6 @@ static partial class Program
                 File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", removedFile)),
                 $"{removedFile} folded into FlashbackExporter.cs");
         }
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackExporter.SegmentValidation.cs")),
-            "FlashbackExporter.SegmentValidation.cs folded into FlashbackExporter.cs");
         foreach (var removedFile in new[]
         {
             "FlashbackExporter.Progress.cs",
@@ -1938,18 +1922,6 @@ static partial class Program
                 File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", removedFile)),
                 $"{removedFile} folded into FlashbackExporter.cs");
         }
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackExporter.SegmentPacketRebasing.cs")),
-            "FlashbackExporter.SegmentPacketRebasing.cs folded into FlashbackExporter.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackExporter.SegmentTemplate.cs")),
-            "FlashbackExporter.SegmentTemplate.cs folded into FlashbackExporter.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackExporter.Segments.cs")),
-            "FlashbackExporter.Segments.cs folded into FlashbackExporter.cs");
 
         return Task.CompletedTask;
     }
@@ -2007,14 +1979,6 @@ static partial class Program
         AssertContains(packetBuffersText, "ffmpeg.av_packet_free(&p);");
         AssertContains(packetBuffersText, "private static AVPacket* ClonePacketOrThrow(AVPacket* packet, string operation)");
         AssertContains(packetBuffersText, "var clone = ffmpeg.av_packet_clone(packet);");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackExporter.PacketBuffers.cs")),
-            "FlashbackExporter.PacketBuffers.cs folded into FlashbackExporter.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackExporter.RuntimePolicy.cs")),
-            "FlashbackExporter.RuntimePolicy.cs folded into FlashbackExporter.cs");
         AssertContains(sourceText, "ReleaseExportLockBestEffort(\"single_export\");");
         AssertContains(sourceText, "ReleaseExportLockBestEffort(\"segment_export\");");
         AssertContains(sourceText, "private void ReleaseExportLockBestEffort(string operation)");
@@ -2079,10 +2043,6 @@ static partial class Program
         AssertContains(singleFileText, "CopyTemplateStreams(_activeInputContext, _activeOutputContext, streamCount)");
         AssertContains(segmentTemplateText, "CopyTemplateStreams(_activeInputContext, _activeOutputContext, candidateStreamCount)");
         AssertContains(streamTemplatesText, "private static int[] CopyTemplateStreams(AVFormatContext* inputContext, AVFormatContext* outputContext, int inputStreamCount)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackExporter.Streams.cs")),
-            "FlashbackExporter.Streams.cs folded into FlashbackExporter.cs");
         AssertDoesNotContain(sourceText, "checked((int)_activeInputContext->nb_streams)");
         AssertDoesNotContain(sourceText, "checked((int)inputContext->nb_streams)");
 
@@ -3326,10 +3286,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var wasapiPlaybackRenderText = wasapiPlaybackText;
 
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackPlaybackController.AudioMasterPacing.cs")),
-            "audio-master pacing folded into FlashbackPlaybackController.cs");
 
         AssertContains(sourceText, "private void SafeSuppressPreviewSubmission(string operation)");
         AssertContains(sourceText, "private void SafeResumePreviewSubmission(string operation)");
@@ -3532,10 +3488,6 @@ static partial class Program
         AssertContains(wasapiPlaybackRenderText, "if (_pauseRequested)\n            {\n                pausePending = true;\n                break;\n            }");
         AssertContains(wasapiPlaybackRenderText, "pause_pending={pausePending}");
         AssertContains(wasapiPlaybackRenderText, "private int PlaybackBufferedFramesForResume()");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Audio", "WasapiAudioPlayback.RenderThread.cs")),
-            "WASAPI playback render thread folded into the playback lifecycle root");
         AssertDoesNotContain(wasapiPlaybackText, "public void ResumeRendering()\n    {\n        if (Volatile.Read(ref _started) == 0) return;\n        if (Volatile.Read(ref _renderingPaused) == 0 && !_pauseRequested) return;\n\n        _pauseRequested = false;");
         AssertDoesNotContain(wasapiPlaybackRenderText, "GetCurrentPadding(pre-fill)");
         AssertDoesNotContain(wasapiPlaybackRenderText, "IAudioRenderClient.GetBuffer(pre-fill)");
@@ -3550,10 +3502,6 @@ static partial class Program
         AssertContains(wasapiPlaybackText, "DecrementPlaybackQueueDepth();\n        return false;");
         AssertContains(wasapiPlaybackText, "private bool TryDequeueChunk(out PlaybackChunk chunk)");
         AssertContains(wasapiPlaybackText, "DecrementPlaybackQueueDepth();");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Audio", "WasapiAudioPlayback.Queue.cs")),
-            "WASAPI playback queue state stays folded into the lifecycle root");
         AssertContains(wasapiPlaybackText, "private const int OutputSampleRate = 48000;");
         AssertContains(wasapiPlaybackText, "private const uint MaxRenderWriteFrames = OutputSampleRate / 50; // 20ms");
         AssertContains(wasapiPlaybackRenderText, "var framesToWrite = Math.Min(_bufferFrameCount - paddingFrames, _maxRenderWriteFrames);");
@@ -3655,10 +3603,6 @@ static partial class Program
         AssertContains(positioningText, "FLASHBACK_PLAYBACK_DECODER_CLEANUP_COMPLETE");
         AssertContains(decoderReopenText, "private void ReopenDecoderPlaybackFile(");
         AssertContains(decoderReopenText, "private void MarkDecoderPlaybackFileClosed(ref bool fileOpen)");
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackPlaybackController.DecoderReopen.cs")),
-            "active fMP4 reopen recovery folded into decoder file ownership");
         AssertContains(sourceText, "private long SuppressAudioForFmp4Reopen(FlashbackDecoder decoder)");
         AssertContains(sourceText, "Interlocked.Increment(ref _playbackReopenAudioNullWindowCount);\n        decoder.AudioChunkCallback = null;");
         AssertContains(sourceText, "private void RestoreAudioAfterFmp4Reopen(");
@@ -3682,10 +3626,6 @@ static partial class Program
         AssertContains(seekDisplayText, "private void RecordSeekDisplayDecodeFailure(");
         AssertDoesNotContain(agentMapText, "FlashbackPlaybackController.SeekDisplay.cs");
         AssertDoesNotContain(cleanupPlanText, "FlashbackPlaybackController.SeekDisplay.cs");
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackPlaybackController.SeekDisplay.cs")),
-            "Flashback seek-display logic folded into playback frame ownership");
         var seekDisplayBlock = ExtractTextBetween(
             seekDisplayText,
             "private bool SeekAndDisplayKeyframe(",
@@ -4082,10 +4022,6 @@ static partial class Program
         AssertContains(playbackFrameOwnershipText, "SetState(FlashbackPlaybackState.Live, operation);");
         AssertDoesNotContain(rootText, "private DecodedVideoFrame _previousHeldFrame;");
         AssertDoesNotContain(rootText, "private bool _hasPreviousHeldFrame;");
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackPlaybackController.PreviewFrames.cs")),
-            "Flashback playback preview-frame submission folded into PlaybackFrames");
         AssertContains(rootText, "private IPreviewFrameSink? _previewSink;");
         AssertContains(rootText, "private ILiveVideoSource? _videoCapture;");
         AssertContains(rootText, "private volatile WasapiAudioPlayback? _audioPlayback;");
@@ -4101,14 +4037,6 @@ static partial class Program
         AssertContains(rootText, "private bool TryDeferPreviewAttachAfterStopTimeoutUnsafe(");
         AssertContains(rootText, "private void ApplyDeferredPreviewAttachAfterStopTimeout()");
         AssertContains(rootText, "private void ScheduleDeferredPreviewAttachApplyRetry()");
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackPlaybackController.Lifecycle.cs")),
-            "Flashback playback component lifecycle folded into root controller");
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackPlaybackController.PreviewDetachLifecycle.cs")),
-            "Flashback playback preview-detach lifecycle folded into root controller");
         AssertContains(sourceText, "if (!TryValidatePreviewFrame(frame, out var skipReason))");
         AssertContains(sourceText, "Interlocked.Increment(ref _playbackSubmitFailures);");
         AssertContains(sourceText, "SetLastSubmitFailure($\"{operation}:{skipReason}\");");
@@ -4706,10 +4634,6 @@ static partial class Program
         AssertContains(forceRotateText, "private bool TryCancelForceRotate(ForceRotateRequest request)");
         AssertContains(forceRotateText, "private void CompletePendingForceRotateWithEmptyResult()");
         AssertContains(forceRotateText, "private static bool ShouldAbortForceRotateDrain(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.ForceRotate.cs")),
-            "FlashbackEncoderSink.ForceRotate.cs folded into FlashbackEncoderSink.cs");
         AssertContains(loopBlock, "if (DrainAndRotateForceRotateRequest(videoQueue, audioQueue, microphoneQueue, gpuQueue))");
         AssertContains(loopBlock, "madeProgress = true;\n                        continue;");
         AssertContains(executionBlock, "localRequest = _forceRotateRequest;\n            _forceRotateRequest = null;");
@@ -4817,10 +4741,6 @@ static partial class Program
         AssertContains(startupRollbackText, "DisposeEncoderBestEffort(\"start_fail\");");
         AssertContains(startupRollbackText, "_bufferManager.AbandonGeneratedSegmentPath(startupGeneratedSegmentPath, restoreActivePath: null);");
 
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.Startup.cs")),
-            "FlashbackEncoderSink startup folded into the root lifetime owner");
         AssertContains(docsText, "FlashbackEncoderSink.cs");
         AssertContains(docsText, "startup queue allocation");
         AssertContains(docsText, "start-failure rollback");
@@ -4898,14 +4818,6 @@ static partial class Program
         AssertContains(encodingProgressText, "FLASHBACK_SINK_ROTATE_FAIL");
         AssertContains(docsText, "FlashbackEncoderSink.cs");
         AssertContains(docsText, "bounded video/GPU/audio/microphone packet drains");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.PacketDrain.cs")),
-            "FlashbackEncoderSink.PacketDrain.cs folded into FlashbackEncoderSink.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.EncodingProgress.cs")),
-            "FlashbackEncoderSink.EncodingProgress.cs folded into FlashbackEncoderSink.cs");
 
         return Task.CompletedTask;
     }
@@ -4990,22 +4902,6 @@ static partial class Program
                 File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", removedFile)),
                 $"{removedFile} folded into FlashbackEncoderSink.cs");
         }
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.AudioQueueSubmission.cs")),
-            "FlashbackEncoderSink.AudioQueueSubmission.cs folded into FlashbackEncoderSink.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.VideoQueueSubmission.cs")),
-            "FlashbackEncoderSink.VideoQueueSubmission.cs folded into FlashbackEncoderSink.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.Inputs.cs")),
-            "FlashbackEncoderSink.Inputs.cs folded into FlashbackEncoderSink.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.Queues.cs")),
-            "FlashbackEncoderSink.Queues.cs folded into FlashbackEncoderSink.cs");
 
         return Task.CompletedTask;
     }
@@ -5061,10 +4957,6 @@ static partial class Program
         AssertContains(rootText, "private const int ForceRotateCommittedGraceMs = 1_000;");
         AssertContains(docsText, "FlashbackEncoderSink.cs");
         AssertDoesNotContain(docsText, "FlashbackEncoderSink.ForceRotate.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.ForceRotate.cs")),
-            "FlashbackEncoderSink.ForceRotate.cs folded into FlashbackEncoderSink.cs");
         foreach (var removedFile in new[]
         {
             "FlashbackEncoderSink.ForceRotateRequests.cs",
@@ -5098,14 +4990,6 @@ static partial class Program
         AssertContains(lifetimeText, "private void FinalizeDisposeCore()");
         AssertContains(lifetimeText, "private void CancelEncodingCts(string operation)");
         AssertContains(lifetimeText, "private void DisposeEncoderBestEffort(string operation)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.DisposeLifecycle.cs")),
-            "FlashbackEncoderSink stop/dispose lifecycle folded into FlashbackEncoderSink.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.Lifetime.cs")),
-            "FlashbackEncoderSink.Lifetime.cs folded into FlashbackEncoderSink.cs");
 
         return Task.CompletedTask;
     }
@@ -5141,14 +5025,6 @@ static partial class Program
         AssertContains(rootText, "public bool TryEnqueueRawVideoFrame(ReadOnlySpan<byte> data, int expectedSize)");
         AssertContains(rootText, "public void EnqueueAudioSamples(ReadOnlyMemory<byte> samples)");
         AssertContains(docsText, "FlashbackEncoderSink.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.Inputs.Video.cs")),
-            "FlashbackEncoderSink video producer inputs folded into FlashbackEncoderSink.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.Inputs.Audio.cs")),
-            "FlashbackEncoderSink audio producer inputs folded into FlashbackEncoderSink.cs");
 
         return Task.CompletedTask;
     }
@@ -5228,10 +5104,6 @@ static partial class Program
 
         AssertContains(docsText, "FlashbackEncoderSink.cs");
         AssertContains(docsText, "recording PTS boundary state");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.Recording.cs")),
-            "FlashbackEncoderSink.Recording.cs folded into FlashbackEncoderSink.cs");
         foreach (var removedFile in new[]
         {
             "FlashbackEncoderSink.Recording.State.cs",
@@ -5304,14 +5176,6 @@ static partial class Program
         AssertContains(docsText, "generated session ID formatting");
         AssertContains(docsText, "FlashbackEncoderSink.cs");
         AssertContains(docsText, "packet DTOs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.Options.cs")),
-            "FlashbackEncoderSink.Options.cs folded into FlashbackEncoderSink.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.PacketBuffers.cs")),
-            "FlashbackEncoderSink.PacketBuffers.cs folded into FlashbackEncoderSink.cs");
 
         return Task.CompletedTask;
     }
@@ -5556,14 +5420,6 @@ static partial class Program
         AssertContains(decoderText, "FLASHBACK_DECODER_AUDIO codec=");
         AssertContains(decoderText, "swr_alloc_set_opts2");
         AssertContains(decoderText, "DecodeAndDeliverAudioPacket(_packet);");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackDecoder.AudioOutput.cs")),
-            "Flashback decoder audio output folded into decoder root");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackDecoder.Playback.cs")),
-            "Flashback decoder playback packet feed folded into decoder root");
 
         return Task.CompletedTask;
     }
@@ -5692,10 +5548,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var d3d11Text = rootText;
         AssertContains(rootText, "public void Initialize(IntPtr d3dDevicePtr, IntPtr d3dContextPtr)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackDecoder.D3D11.cs")),
-            "Flashback decoder D3D11VA initialization lives with the decoder root.");
         var initializeBlock = ExtractTextBetween(
             d3d11Text,
             "public void Initialize(IntPtr d3dDevicePtr, IntPtr d3dContextPtr)",
@@ -5754,14 +5606,6 @@ static partial class Program
         AssertContains(d3d11Text, "FLASHBACK_DECODER_D3D11VA_SKIP reason=no_d3d11_device_ctx_decoder");
         AssertContains(d3d11Text, "FLASHBACK_DECODER_D3D11VA_SKIP reason=exception type={ex.GetType().Name} msg='{ex.Message}'");
         AssertContains(d3d11Text, "private static string DescribeHardwareConfigs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackDecoder.D3D11Discovery.cs")),
-            "Flashback decoder D3D11VA discovery folded into video decoder setup owner");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackDecoder.D3D11.cs")),
-            "Flashback decoder D3D11VA setup folded into video decoder setup owner");
         AssertContains(d3d11DiscoveryText, "private static AVCodec* FindD3D11VADecoder(AVCodecID codecId, out string codecName)");
         AssertContains(d3d11DiscoveryText, "ffmpeg.avcodec_find_decoder_by_name(preferredName)");
         AssertContains(d3d11DiscoveryText, "AVCodecID.AV_CODEC_ID_AV1 => \"av1\"");
@@ -5842,22 +5686,6 @@ static partial class Program
         AssertContains(rootText, "private void ConvertYuv420pToNv12(");
         AssertContains(rootText, "private void ConvertYuv420p10leToP010(");
         AssertContains(rootText, "private static void InterleaveUvRow(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackDecoder.VideoSetup.cs")),
-            "FlashbackDecoder.VideoSetup.cs folded into FlashbackDecoder.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackDecoder.VideoConversion.cs")),
-            "FlashbackDecoder.VideoConversion.cs folded into FlashbackDecoder.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackDecoder.VideoOutput.cs")),
-            "FlashbackDecoder.VideoOutput.cs folded into FlashbackDecoder.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackDecoder.Validation.cs")),
-            "FlashbackDecoder validation helpers folded into decoder root");
 
         return Task.CompletedTask;
     }
@@ -5870,10 +5698,6 @@ static partial class Program
         AssertContains(rootText, "private void CloseFileCore()");
         AssertContains(rootText, "internal static void ReleaseHeldFrame(DecodedVideoFrame frame)");
         AssertContains(rootText, "private static void ReleaseHeldFrameBestEffort(DecodedVideoFrame frame, string operation)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackDecoder.Lifetime.cs")),
-            "FlashbackDecoder file-close cleanup lives with the root lifecycle owner");
 
         return Task.CompletedTask;
     }
@@ -5891,10 +5715,6 @@ static partial class Program
         AssertContains(rootText, "private void ThrowIfNotInitialized()");
         AssertContains(rootText, "private void ThrowIfNotOpen()");
         AssertContains(rootText, "private void ThrowIfDisposed()");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackDecoder.Playback.cs")),
-            "Flashback decoder playback/timing folded into decoder root");
 
         return Task.CompletedTask;
     }
@@ -5904,10 +5724,6 @@ static partial class Program
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
             .Replace("\r\n", "\n");
 
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackDecoder.OutputTypes.cs")),
-            "Flashback decoder output DTOs stay folded into the decoder root surface.");
         AssertContains(rootText, "internal readonly struct DecodedVideoFrame");
         AssertContains(rootText, "internal readonly struct DecodedAudioChunk");
 
@@ -5928,14 +5744,6 @@ static partial class Program
         AssertContains(rootText, "private void CopyFramePlanesToBuffer(");
         AssertContains(rootText, "private void ConvertYuv420pToNv12(");
         AssertContains(rootText, "private void ConvertYuv420p10leToP010(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackDecoder.VideoSetup.cs")),
-            "FlashbackDecoder video setup folded into decoder root");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackDecoder.D3D11.cs")),
-            "FlashbackDecoder D3D11VA setup folded into decoder root");
 
         return Task.CompletedTask;
     }
@@ -5957,10 +5765,6 @@ static partial class Program
             rootText,
             "public bool SeekTo(TimeSpan target, CancellationToken cancellationToken = default)",
             "public bool TryDecodeNextVideoFrame(out DecodedVideoFrame frame, CancellationToken cancellationToken = default)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackDecoder.Playback.cs")),
-            "FlashbackDecoder playback flow folded into decoder root");
 
         return Task.CompletedTask;
     }

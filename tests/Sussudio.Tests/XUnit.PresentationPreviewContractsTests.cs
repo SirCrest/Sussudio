@@ -1109,10 +1109,6 @@ static partial class Program
         AssertContains(rootText, "SUSSUDIO_PREVIEW_RENDER_MMCSS_TASK\") ?? \"Playback\"");
         AssertContains(rootText, "SUSSUDIO_PREVIEW_NATIVE_STOP_FENCE_TIMEOUT_MS");
         AssertContains(rootText, "SUSSUDIO_PREVIEW_RENDER_THREAD_STOP_TIMEOUT_MS");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.Configuration.cs")),
-            "D3D11 preview renderer configuration partial");
 
         return Task.CompletedTask;
     }
@@ -1126,14 +1122,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var metricsText = rootText;
 
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.NativeInterop.cs")),
-            "mixed native interop bucket retired into behavior owners");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.Metrics.cs")),
-            "renderer metrics partial folded into the renderer root");
         AssertContains(panelBindingText, "private interface ISwapChainPanelNative");
         AssertContains(panelBindingText, "WinRT.CastExtensions.As<ISwapChainPanelNative>(_panel)");
         AssertContains(resourcesText, "private interface ID3DBlob");
@@ -1155,10 +1143,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var metricsText = rootText;
 
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.PendingFrame.cs")), "pending-frame lifetime model stays folded into the renderer root");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.PendingFrames.cs")), "pending-frame queue folded into the renderer root");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.Submission.cs")), "pending-frame submission folded into the renderer root");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.MetricTypes.cs")), "renderer metric model types folded into the renderer root");
         AssertContains(rootText, "private sealed class PendingFrame : IDisposable");
         AssertContains(rootText, "ArrayPool<byte>.Shared.Return(RawData);");
         AssertContains(rootText, "FrameLease?.Dispose();");
@@ -1182,10 +1166,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var metricsText = rootText;
 
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.FrameOwnership.cs")),
-            "frame ownership metrics folded into renderer metrics owner");
         AssertContains(metricsText, "private long _framesSubmitted;");
         AssertContains(metricsText, "private long _framesRendered;");
         AssertContains(metricsText, "private long _framesDropped;");
@@ -1210,10 +1190,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var metricsText = rootText;
 
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.DxgiFrameStatistics.cs")),
-            "DXGI frame-statistics partial folded into renderer metrics owner");
         AssertContains(metricsText, "private readonly object _dxgiFrameStatisticsLock = new();");
         AssertContains(metricsText, "private long _dxgiFrameStatisticsSampleCount;");
         AssertContains(metricsText, "private long _dxgiFrameStatisticsMissedRefreshCount;");
@@ -1228,10 +1204,6 @@ static partial class Program
         AssertContains(metricsText, "private long GetEstimatedDisplayFrameIntervalTicks()");
         AssertContains(metricsText, "public bool TryGetDisplayClock(out PreviewDisplayClockSnapshot snapshot)");
         AssertContains(metricsText, "new PreviewDisplayClockSnapshot(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.DisplayClock.cs")),
-            "D3D11 preview display-clock projection lives with renderer metrics");
 
         return Task.CompletedTask;
     }
@@ -1241,10 +1213,6 @@ static partial class Program
         var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
             .Replace("\r\n", "\n");
         var metricsText = rootText;
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.Diagnostics.cs")),
-            "slow-frame diagnostics folded into renderer metrics owner");
         AssertContains(metricsText, "private readonly object _slowFrameDiagnosticsLock = new();");
         AssertContains(metricsText, "private readonly PreviewSlowFrameDiagnostic[] _slowFrameDiagnostics = new PreviewSlowFrameDiagnostic[64];");
         AssertContains(metricsText, "public PreviewSlowFrameDiagnostic[] GetRecentSlowFrameDiagnostics(int maxEntries = 16)");
@@ -1293,22 +1261,6 @@ static partial class Program
         AssertContains(metricsText, "private static CpuStageTimingMetrics SummarizeCpuStageTiming(double[] samples)");
         AssertContains(metricsText, "private static double TicksToMs(long ticks)");
         AssertContains(metricsText, "private static bool IsValidRenderCpuStageMs(double value)");
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.PresentCadenceMetrics.cs")),
-            "Present cadence metrics folded into the renderer root");
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.MetricTypes.cs")),
-            "Renderer metric model types folded into the renderer root");
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.MetricsTracking.cs")),
-            "Metric tracking folded into the renderer root");
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.MetricWindows.cs")),
-            "Metric window lifecycle folded into the renderer root");
 
         return Task.CompletedTask;
     }
@@ -1321,10 +1273,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var panelBindingText = rootText;
 
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.PanelBinding.cs")),
-            "D3D11 preview panel binding folded into renderer facade");
         AssertContains(panelBindingText, "private int _swapChainBound;");
         AssertContains(panelBindingText, "private void BindSwapChainToPanel(IDXGISwapChain1 swapChain)");
         AssertContains(panelBindingText, "private void UnbindSwapChainFromPanel()");
@@ -1370,14 +1318,6 @@ static partial class Program
         AssertContains(deviceInitializationText, "private void RecreateSdrCompositionSwapChain(");
         AssertContains(deviceInitializationText, "Format.B8G8R8A8_UNorm");
         AssertContains(deviceInitializationText, "_configuredOutputWidth = pixelWidth;");
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.SwapChainInitialization.cs")),
-            "D3D11 preview swap-chain setup folded into D3D resource ownership");
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.DeviceInitialization.cs")),
-            "D3D11 preview device initialization folded into D3D resource ownership");
         AssertContains(videoProcessorPipelineText, "private void EnsurePipeline(int width, int height, bool isHdr, bool useExternalTexture)");
         AssertContains(videoProcessorPipelineText, "private void EnsureSwapChainRTV()");
         AssertContains(videoProcessorPipelineText, "private void RecreateOutputView()");
@@ -1394,10 +1334,6 @@ static partial class Program
         AssertContains(resourcesText, "private void CleanupD3DResources()");
         AssertContains(resourcesText, "DisposeInputTextureResources();");
         AssertContains(resourcesText, "DisposeShaderPipelineResources();");
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.VideoProcessorPipeline.cs")),
-            "VideoProcessor setup and output-view resources live with D3D resource ownership");
         AssertContains(resourcesText, "private void InitializeD3D()");
         AssertContains(deviceInitializationText, "private bool TryInitializeWithSharedDevice(");
         AssertContains(deviceInitializationText, "private void HandleDeviceLost(Exception ex)");
@@ -1436,10 +1372,6 @@ static partial class Program
         AssertContains(renderLifecycleText, "InitializeD3D();");
         AssertDoesNotContain(rootText, "public void SetSharedDevice(ID3D11Device sharedDevice)");
         AssertDoesNotContain(rootText, "public void RetireSharedDeviceReferenceForReinit()");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.SharedDevice.cs")),
-            "shared D3D device lifecycle folded into D3D resource ownership");
 
         return Task.CompletedTask;
     }
@@ -1494,14 +1426,6 @@ static partial class Program
         AssertContains(renderPassesText, "private unsafe bool UploadRawFrameViaStaging(");
         AssertContains(renderPassesText, "_deviceContext.UpdateSubresource(");
         AssertContains(renderPassesText, "_deviceContext.CopyResource(inputTexture, stagingTexture);");
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.RawFrameUpload.cs")),
-            "Raw frame upload helpers folded into render-pass owner");
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.FrameUpload.cs")),
-            "Frame upload helpers folded into render-pass owner");
 
         return Task.CompletedTask;
     }
@@ -1515,14 +1439,6 @@ static partial class Program
         var renderPassesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs")
             .Replace("\r\n", "\n");
 
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.FrameLatency.cs")),
-            "D3D11 waitable frame-latency pacing lives with render-thread execution");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.RenderThread.cs")),
-            "D3D11 render-thread execution and frame-latency pacing are folded into the renderer root");
         AssertContains(rootText, "private SafeWaitHandle? _frameLatencyWaitHandle;");
         AssertContains(rootText, "private void ConfigureFrameLatencyWaitableObject()");
         AssertContains(rootText, "private void WaitForFrameLatencySignal()");
@@ -1539,10 +1455,6 @@ static partial class Program
         var renderPassesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs")
             .Replace("\r\n", "\n");
 
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.Viewport.cs")),
-            "D3D11 preview viewport helpers live with render-pass execution");
         AssertContains(renderPassesText, "private Viewport ComputeLetterboxViewport(int sourceWidth, int sourceHeight)");
         AssertContains(renderPassesText, "private void UpdateViewportConstantBuffer(Viewport viewport)");
         AssertContains(renderPassesText, "private static Vortice.RawRect ComputeLetterboxRect(");
@@ -1594,14 +1506,6 @@ static partial class Program
         var resourcesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs")
             .Replace("\r\n", "\n");
 
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.Nv12ShaderPass.cs")),
-            "NV12 shader pass folded into render-pass owner");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.HdrShaderPass.cs")),
-            "HDR shader pass folded into render-pass owner");
         AssertContains(renderPassesText, "private bool _loggedHdrShaderFallback;");
         AssertContains(renderPassesText, "private void RenderFrame(PendingFrame frame)");
         AssertContains(renderPassesText, "private void ApplySwapChainColorSpaceIfDirty()");
@@ -1645,10 +1549,6 @@ static partial class Program
         var resourcesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs")
             .Replace("\r\n", "\n");
 
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.ShaderRendering.cs")),
-            "shader rendering resources folded into D3D resource owner");
         AssertContains(resourcesText, "private ID3D11VertexShader? _fullscreenVS;");
         AssertContains(resourcesText, "private ID3D11PixelShader? _nv12PS;");
         AssertContains(resourcesText, "private ID3D11PixelShader? _hdrPassthroughPS;");
@@ -1682,10 +1582,6 @@ static partial class Program
         var previewShaderSourcesText = resourcesText;
 
         AssertContains(previewShaderSourcesText, "internal static class PreviewShaderSources");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "PreviewShaderSources.cs")),
-            "preview shader sources live with D3D resource ownership");
         AssertContains(previewShaderSourcesText, "internal const string FullscreenVertex");
         AssertContains(previewShaderSourcesText, "internal const string HdrTonemapPixel");
         AssertContains(previewShaderSourcesText, "internal const string HdrPassthroughPixel");
@@ -1694,14 +1590,6 @@ static partial class Program
         AssertContains(previewShaderSourcesText, "Texture2D<float> yPlane : register(t0);");
         AssertContains(previewShaderSourcesText, "BT2020_to_BT709");
 
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.ShaderCompilation.cs")),
-            "shader compilation folded into D3D resource owner");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.ShaderRendering.cs")),
-            "shader rendering owner folded into D3D resource owner");
         AssertContains(resourcesText, "private unsafe void CompileTonemapShaders()");
         AssertContains(resourcesText, "PreviewShaderSources.FullscreenVertex");
         AssertContains(resourcesText, "PreviewShaderSources.HdrTonemapPixel");
@@ -1712,10 +1600,6 @@ static partial class Program
         AssertContains(resourcesText, "private static byte[] CompileShader(string hlslSource, string entryPoint, string profile)");
         AssertContains(resourcesText, "private static byte[] ReadBlobBytes(IntPtr blobPtr)");
         AssertContains(resourcesText, "private static string ReadBlobString(IntPtr blobPtr)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.NativeInterop.cs")),
-            "shader compiler interop folded into D3D resource owner");
 
         AssertDoesNotContain(rootText, "internal const string FullscreenVertex");
         AssertDoesNotContain(rootText, "static const float PQ_m1");
@@ -1731,10 +1615,6 @@ static partial class Program
         var submissionText = rootText;
         var nv12SubmissionText = rootText;
 
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.Submission.cs")),
-            "D3D11 preview submission folded into the renderer root lifecycle owner");
         AssertContains(nv12SubmissionText, "private bool _loggedNv12ShaderMissing;");
         AssertContains(nv12SubmissionText, "private int _lastNv12IsHdr = -1;");
         AssertContains(submissionText, "private readonly ManualResetEventSlim _frameReadyEvent = new(false);");
@@ -1748,14 +1628,6 @@ static partial class Program
         AssertContains(submissionText, "public void SubmitNv12PlaneTextures(");
         AssertContains(submissionText, "private void EnqueueNv12Frame(");
         AssertContains(submissionText, "EnqueuePendingFrame(frame);");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.Nv12Submission.cs")),
-            "NV12 texture submission folded into the D3D11 preview renderer root");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.PendingFrames.cs")),
-            "pending-frame queue folded into the D3D11 preview renderer root");
 
         return Task.CompletedTask;
     }
@@ -1765,14 +1637,6 @@ static partial class Program
         var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
             .Replace("\r\n", "\n");
 
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.Lifecycle.cs")),
-            "D3D11 preview public lifecycle is consolidated into the renderer root facade");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.RenderThread.cs")),
-            "D3D11 preview render thread lifecycle is consolidated into the renderer root facade");
         AssertContains(rootText, "private readonly object _lifecycleLock = new();");
         AssertContains(rootText, "private Thread? _renderThread;");
         AssertContains(rootText, "private int _disposed;");
@@ -1839,14 +1703,6 @@ static partial class Program
             2,
             Regex.Matches(previewScreenshotCaptureText, "new FileStream\\(outputPath, FileMode\\.CreateNew").Count,
             "preview screenshot BMP and PNG writers refuse existing output files");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.ScreenshotEncoding.cs")),
-            "renderer screenshot encoding partial removed");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.ScreenshotCapture.cs")),
-            "renderer screenshot capture folded into the render-pass present transaction owner");
         AssertDoesNotContain(captureText, "private static PreviewFrameCaptureResult CaptureMappedFrameToBmp(");
         AssertDoesNotContain(captureText, "private static void WriteBitmapHeaders(");
         AssertDoesNotContain(resourcesText, "_captureStagingTexture?.Dispose();");
@@ -1857,10 +1713,6 @@ static partial class Program
         AssertContains(previewPngEncoderText, "internal static uint[] InitPngCrc32Table()");
         AssertContains(previewPngEncoderText, "private static void WritePngChunk(");
         AssertContains(previewPngEncoderText, "private static uint UpdatePngCrc32(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "PreviewPng16Encoder.cs")),
-            "16-bit PNG encoder folded into PreviewScreenshotCapture.cs");
         AssertContains(captureText, "private ID3D11Texture2D? _captureStagingTexture;");
         AssertContains(captureText, "private ID3D11Texture2D EnsureFrameCaptureStagingTexture(");
         AssertContains(captureText, "_captureStagingTexture = _device!.CreateTexture2D(");
@@ -1868,18 +1720,6 @@ static partial class Program
         AssertContains(captureText, "_captureStagingTexture?.Dispose();");
         AssertContains(resourcesText, "DisposeFrameCaptureStagingResources();");
         AssertDoesNotContain(resourcesText, "_captureStagingTexture?.Dispose();");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "PreviewScreenshotCapture.Png.cs")),
-            "preview PNG capture is consolidated into PreviewScreenshotCapture.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "PreviewScreenshotCapture.Bmp.cs")),
-            "preview BMP capture is consolidated into PreviewScreenshotCapture.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.ScreenshotStaging.cs")),
-            "renderer screenshot staging is consolidated into D3D11PreviewRenderer.RenderPasses.cs");
 
         return Task.CompletedTask;
     }
@@ -2190,10 +2030,6 @@ static partial class Program
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md")
             .Replace("\r\n", "\n");
 
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.RenderThread.cs")),
-            "D3D11 preview render-thread orchestration is folded into the renderer root");
         AssertContains(rootText, "private void RenderThreadMain()");
         AssertContains(rootText, "MmcssThreadRegistration.TryRegister");
         AssertContains(rootText, "_frameReadyEvent.Wait");
@@ -2288,10 +2124,6 @@ static partial class Program
         AssertContains(deviceInitializationText, "TrackFrameDropped(stalePending, \"device-lost\");");
         AssertContains(deviceInitializationText, "ResultCode.DeviceRemoved");
         AssertContains(deviceInitializationText, "unchecked((int)0x887A0005)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.DeviceLost.cs")),
-            "D3D11 preview device-lost recovery folded into D3D resource ownership");
 
         return Task.CompletedTask;
     }
@@ -2301,10 +2133,6 @@ static partial class Program
         var renderPassesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs")
             .Replace("\r\n", "\n");
 
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.Present.cs")),
-            "D3D11 preview present/accounting lives with render-pass execution");
         AssertContains(renderPassesText, "private void PresentAndTrackFrame(");
         AssertContains(renderPassesText, "TryCaptureFrameBeforePresent(rendererMode);");
         AssertContains(renderPassesText, "var presentResult = swapChain.Present((uint)_presentSyncInterval, PresentFlags.None);");
@@ -2541,10 +2369,6 @@ static partial class Program
         AssertContains(duplicateMethod, "Marshal.AddRef(nativePointer);");
         AssertContains(duplicateMethod, "device = new ID3D11Device(nativePointer);");
         AssertContains(disposeMethod, "lock (_sync)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "SharedD3DDeviceManager.cs")),
-            "shared D3D device manager lives with D3D resource ownership");
         AssertContains(applyMethod, "d3dManager.TryCreateDeviceReference(out var sharedDevice, out var reason)");
         AssertContains(applyMethod, "UNIFIED_VIDEO_SHARED_DEVICE_APPLY_SKIP reason={reason}");
         AssertContains(applyMethod, "sharedDevice.Dispose();");
@@ -2719,10 +2543,6 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(rootModelText, "public double FlashbackExportThroughputBytesPerSec { get; init; }");
         AssertContains(rootModelText, "public double ProcessCpuPercent { get; init; }");
         AssertDoesNotContain(rootModelText, "partial class PerformanceTimelineEntry");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Models", "Automation", "PerformanceTimelineEntry.cs")),
-            "performance timeline DTO folded into AutomationModels.cs");
 
         var performanceTimelineEntryType = RequireType("Sussudio.Models.PerformanceTimelineEntry");
         foreach (var prop in new[]
@@ -3112,25 +2932,9 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
             .Replace("\r\n", "\n");
         var previewStartupReadinessSignalControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Startup/PreviewStartupControllers.cs")
             .Replace("\r\n", "\n");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Preview", "Startup", "PreviewStartupSignalCoordinator.cs")),
-            "preview startup signal coordinator folded into PreviewStartupControllers.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Preview", "Startup", "PreviewStartupReadinessSignalController.cs")),
-            "preview startup readiness controller folded into PreviewStartupControllers.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Preview", "Startup", "PreviewStartupSignalsController.cs")),
-            "preview startup signals controller folded into PreviewStartupControllers.cs");
 
         AssertContains(mainWindowText, "InitializePreviewStartupSignalCoordinator();");
         AssertContains(previewStartupSignalsText, "private PreviewStartupSignalCoordinator _previewStartupSignalCoordinator = null!;");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.PreviewStartup.Signals.cs")),
-            "old marker-only preview startup signal partial removed");
         AssertContains(previewStartupSignalsText, "private PreviewStartupSignalCoordinator _previewStartupSignalCoordinator = null!;");
         AssertContains(previewStartupSignalsText, "private void InitializePreviewStartupSignalCoordinator()");
         AssertContains(previewStartupSignalsText, "IsSignalWindowActive = IsPreviewStartupSignalWindowActive,");
@@ -3342,10 +3146,6 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
             .Replace("\r\n", "\n");
 
         AssertContains(mainWindowText, "InitializePreviewStartupWatchdogController();");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.PreviewStartup.Watchdog.cs")),
-            "preview startup watchdog adapter folded into the preview startup session adapter");
         AssertContains(previewStartupWatchdogText, "private PreviewStartupWatchdogController _previewStartupWatchdogController = null!;");
         AssertContains(previewStartupWatchdogText, "private void InitializePreviewStartupWatchdogController()");
         AssertContains(previewStartupWatchdogText, "IsWaitingForFirstVisual = () => _previewStartupSessionController.IsWaitingForFirstVisual,");
@@ -3391,16 +3191,6 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(previewStartupWatchdogControllerText, "PREVIEW_START_TIMEOUT_IGNORED reason=user-or-shutdown-stop-requested");
         AssertContains(previewStartupWatchdogControllerText, "PREVIEW_START_TIMEOUT attempt={_context.GetAttemptLabel()}");
         AssertContains(previewStartupWatchdogControllerText, "PREVIEW_START_FAILURE_STOP begin");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(
-                GetRepoRoot(),
-                "Sussudio",
-                "Controllers",
-                "Preview",
-                "Startup",
-                "PreviewStartupFailureTextFormatter.cs")),
-            "preview startup failure text formatter helper");
         AssertDoesNotContain(mainWindowText, "_previewStartupVisualTimeoutMs");
         AssertDoesNotContain(mainWindowText, "_previewStartupWatchdogTimer");
         AssertDoesNotContain(previewStartupWatchdogText, "DispatcherQueueTimer");
@@ -3908,10 +3698,6 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
 
         AssertContains(mainWindowText, "InitializePreviewStartupSessionController();");
         AssertContains(mainWindowText, "InitializePreviewReinitTransitionController();");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Composition.cs")),
-            "preview reinit adapter folded into MainWindow.xaml.cs");
         AssertContains(previewStartupText, "private PreviewStartupSessionController _previewStartupSessionController = null!;");
         AssertContains(previewStartupText, "private void InitializePreviewStartupSessionController()");
         AssertContains(previewStartupText, "private PreviewStartupState CurrentPreviewStartupState");
@@ -3974,10 +3760,6 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(previewReinitText, "ResetPreviewContentTransform = ResetPreviewContentTransform,");
         AssertContains(previewReinitText, "ShowStartPreviewButtonPresentation = ShowStartPreviewButtonPresentation,");
         AssertContains(previewReinitTransitionControllerText, "internal sealed class PreviewReinitTransitionController");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Preview", "PreviewReinitTransitionController.cs")),
-            "preview reinit transition state lives with preview transition animation ownership");
         AssertContains(previewReinitTransitionControllerText, "internal sealed class PreviewReinitCompletionPresentationContext");
         AssertContains(previewReinitTransitionControllerText, "public bool IsAnimating { get; private set; }");
         AssertContains(previewReinitTransitionControllerText, "public void BeginAnimateOut(string reason, string callerName)");
@@ -4343,23 +4125,10 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
 
         AssertContains(previewStateText, "private Task ReinitializeDeviceAsync(string reason)");
         AssertContains(previewStateText, "=> _previewLifecycleController.ReinitializeDeviceAsync(reason);");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.Capture.cs")),
-            "MainViewModel capture lifecycle facade partial");
         if (File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.PreviewReinitialization.cs")))
         {
             throw new InvalidOperationException("Preview reinitialization should not live in a tiny pass-through partial.");
         }
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(
-                GetRepoRoot(),
-                "Sussudio",
-                "Controllers",
-                "ViewModel",
-                "MainViewModelPreviewReinitializeController.cs")),
-            "Preview reinitialize transaction controller lives with preview lifecycle owner");
         AssertContains(previewLifecycleControllerText, "private readonly MainViewModelPreviewReinitializeController _previewReinitializeController;");
         AssertContains(previewLifecycleControllerText, "public Task ReinitializeDeviceAsync(string reason)");
         AssertContains(previewLifecycleControllerText, "=> _previewReinitializeController.ReinitializeDeviceAsync(reason);");
@@ -4527,18 +4296,6 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         var previewRendererText = ReadMainWindowPreviewRendererAdapterSource();
         var previewSurfaceControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs").Replace("\r\n", "\n");
 
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.PreviewSurface.cs")),
-            "preview surface XAML adapter lives with preview renderer composition");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Preview", "PreviewSurfaceShadowController.cs")),
-            "preview surface shadow controller lives with preview surface presentation owner");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Preview", "PreviewSurfacePresentationController.cs")),
-            "preview surface presentation folded into PreviewLifecycleControllers.cs");
         AssertContains(previewRendererText, "XAML-facing preview surface adapter");
         AssertContains(previewRendererText, "private PreviewSurfacePresentationController _previewSurfacePresentationController = null!;");
         AssertContains(previewRendererText, "private PreviewSurfaceShadowController _previewSurfaceShadowController = null!;");
@@ -4902,10 +4659,6 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(previewRuntimeSnapshotModelText, "public PreviewSlowFrameDiagnostic[] D3DRecentSlowFrames { get; init; } = Array.Empty<PreviewSlowFrameDiagnostic>();");
         AssertContains(previewRuntimeSnapshotModelText, "public string GpuPlaybackState { get; init; } = \"None\";");
         AssertDoesNotContain(previewRuntimeSnapshotModelText, "partial class PreviewRuntimeSnapshot");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Models", "Automation", "PreviewRuntimeSnapshot.cs")),
-            "preview runtime DTO folded into AutomationModels.cs");
         AssertContains(agentMapText, "MainWindow.xaml.cs");
         AssertContains(agentMapText, "PreviewRuntimeSnapshotControllers.cs");
         AssertDoesNotContain(agentMapText, "PreviewRuntimeSnapshotMapper.cs");
@@ -4919,10 +4672,6 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertDoesNotContain(cleanupPlanText, "PreviewRuntimeSnapshotMapper.cs");
         AssertContains(cleanupPlanText, "direct surface/startup/GPU playback mapping");
         AssertContains(cleanupPlanText, "health input factory");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Preview", "Renderer", "PreviewRuntimeSnapshotMapper.cs")),
-            "Preview runtime snapshot mapper stays folded into the snapshot controller owner");
         AssertDoesNotContain(previewRuntimeSnapshotControllerBuildText, "return new PreviewRuntimeSnapshot\n        {");
         AssertDoesNotContain(previewRuntimeSnapshotControllerBuildText, "BlankSuspected = health.BlankSuspected,");
         AssertDoesNotContain(previewRuntimeSnapshotControllerBuildText, "StallSuspected = health.StallSuspected,");
@@ -4944,14 +4693,6 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertDoesNotContain(previewRuntimeSnapshotText, "CurrentPreviewStartupState is PreviewStartupState.WaitingForFirstVisual or PreviewStartupState.Failed");
         AssertDoesNotContain(previewRuntimeSnapshotText, "IsStartupWaitingForFirstVisual = CurrentPreviewStartupState == PreviewStartupState.WaitingForFirstVisual");
         AssertDoesNotContain(previewRendererText, "private PreviewRuntimeSnapshot GetPreviewRuntimeSnapshot()");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Preview", "Renderer", "PreviewRuntimeSnapshotSamplingController.cs")),
-            "preview runtime snapshot sampling lives with the snapshot controller");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.PreviewRuntimeSnapshot.cs")),
-            "preview runtime snapshot adapter lives with the preview renderer composition");
 
         return Task.CompletedTask;
     }
@@ -5687,9 +5428,6 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(deviceAudioStateText, "private const double GainCurveK = 4.0;");
         AssertContains(deviceAudioStateText, "internal static byte PercentToGainByte");
         AssertContains(deviceAudioStateText, "internal static double GainByteToPercent");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "DeviceAudioGainMapper.cs")), "DeviceAudioGainMapper folded into MainViewModel.AudioState.cs");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AnalogAudioGain.cs")), "analog gain XU writes folded into MainViewModel.AudioState.cs");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.DeviceAudioMode.cs")), "device audio mode folded into MainViewModel.AudioState.cs");
 
         AssertEqual((byte)0, (byte)mapPercent.Invoke(null, new object[] { -25d })!, "PercentToGainByte clamps below zero");
         AssertEqual((byte)0, (byte)mapPercent.Invoke(null, new object[] { 0d })!, "PercentToGainByte zero");
@@ -5781,10 +5519,6 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(audioStateText, "private void ResetAudioMeter()");
         AssertContains(audioStateText, "public void ResetAudioMeterTimerFlag()");
         AssertContains(audioStateText, "private double UpdateMeterLevel(double peak, ref double meterDb, ref long lastTick)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AudioMeters.cs")),
-            "MainViewModel.AudioMeters.cs folded into MainViewModel.AudioState.cs");
         AssertContains(runtimeEventIngressControllerText, "_context.AttachAudioLevelUpdated(_context.OnAudioLevelUpdated);");
         AssertContains(runtimeEventIngressControllerText, "_context.AttachMicrophoneAudioLevelUpdated(_context.OnMicrophoneAudioLevelUpdated);");
         AssertDoesNotContain(baseText, "_captureService.AudioLevelUpdated += OnAudioLevelUpdated;");
@@ -5813,38 +5547,11 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(audioControlPresentationControllerText, "HandleAudioPreviewActiveChanged();");
         AssertContains(audioControlPresentationControllerText, "_context.SetAudioMeterMonitoringState(_context.ViewModel.IsAudioPreviewActive);");
         AssertContains(audioMeterText, "private AudioMeterController _audioMeterController = null!;");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.AudioMeter.cs")),
-            "Audio meter adapter folded into MainWindow.xaml.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.MicrophoneControls.cs")),
-            "Microphone controls adapter folded into MainWindow.xaml.cs");
         AssertDoesNotContain(mainWindowText, "private Storyboard? _audioMeterMonitoringStoryboard;");
         AssertContains(audioMeterControllerRootText, "internal sealed class AudioMeterController");
         AssertContains(audioMeterControllerRootText, "private Storyboard? _audioMeterMonitoringStoryboard;");
         AssertContains(audioMeterControllerRootText, "internal sealed class AudioMeterControllerContext");
         AssertContains(audioMeterControllerRootText, "public required MainViewModel ViewModel { get; init; }");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(
-                GetRepoRoot(),
-                "Sussudio",
-                "Controllers",
-                "Audio",
-                "AudioMeterController.Context.cs")),
-            "AudioMeterController context partial");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(
-                GetRepoRoot(),
-                "Sussudio",
-                "Controllers",
-                "Audio",
-                "Meter",
-                "AudioMeterController.cs")),
-            "audio meter controller folded into AudioControlBindingController.cs");
         AssertContains(audioMeterControllerRootText, "public void AnimateTick()");
         AssertContains(audioMeterControllerRootText, "public void ResetVisuals()");
         AssertContains(audioMeterControllerRootText, "public void ResetMicrophoneVisuals()");
@@ -5898,7 +5605,6 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(traceModelsText, "public long PlaybackOutputAgeMs { get; init; }");
 
         AssertContains(audioRampTraceRecorderRootText, "internal sealed class AudioRampTraceRecorder");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "AudioRampTraceRecorder.cs")), "audio ramp trace recorder folded into PreviewAudioTransitionControllers.cs");
         AssertContains(audioRampTraceRecorderText, "private const int AudioRampTraceCapacity = 2048;");
         AssertContains(audioRampTraceRecorderText, "private const int AudioRampTraceSampleIntervalMs = 10;");
         AssertContains(audioRampTraceRecorderText, "private const int AudioRampTracePostCompleteSampleMs = 250;");
@@ -5932,10 +5638,6 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(audioMonitoringText, "RecordAudioRampTracePoint(\"monitoring-started\"");
         AssertContains(audioMonitoringText, "RecordAudioRampTracePoint(\"monitoring-stopped\"");
         AssertContains(audioRampTraceText, "GetAudioRampTraceSnapshotAsync");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AudioRampTrace.cs")),
-            "MainViewModel.AudioRampTrace.cs folded into MainViewModel.AudioState.cs");
 
         AssertContains(playbackRenderText, "UpdateOutputLevel(destinationSpan);");
         AssertContains(playbackRenderText, "private unsafe void RenderAvailableFrames()");
@@ -5946,14 +5648,6 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(playbackVolumeText, "public float LastOutputRms => _lastOutputRms;");
         AssertContains(playbackVolumeText, "private void ApplyVolume(Span<byte> buffer)");
         AssertContains(playbackVolumeText, "private void UpdateOutputLevel(ReadOnlySpan<byte> buffer)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Audio", "WasapiAudioPlayback.Volume.cs")),
-            "WASAPI playback render-side volume telemetry folded into the playback lifecycle root");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Audio", "WasapiAudioPlayback.RenderThread.cs")),
-            "WASAPI playback render thread folded into the playback lifecycle root");
 
         AssertContains(runtimeContractsText, "public double WasapiPlaybackTargetVolumePercent { get; init; }");
         AssertContains(runtimeContractsText, "public double WasapiPlaybackCurrentVolumePercent { get; init; }");
@@ -6001,7 +5695,6 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
 
         AssertContains(microphoneVolumeCode, "internal void SaveMicrophoneVolume() => SaveSettings();");
         AssertContains(microphoneVolumeCode, "partial void OnMicrophoneVolumeChanged(double value)");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.MicrophoneVolume.cs")), "MainViewModel.MicrophoneVolume.cs folded into audio state");
         AssertContains(deviceAudioStateCode, "SetMicrophoneEndpointVolume");
         AssertContains(deviceAudioStateCode, "GetMicrophoneEndpointVolume");
         AssertContains(deviceAudioStateCode, "private async Task RefreshDeviceAudioControlsAsync");
@@ -6009,8 +5702,6 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(deviceAudioStateCode, "private async Task<bool> ApplyDeviceAudioModeAsync");
         AssertContains(deviceAudioModeText, "Device-native audio mode switching and failure readback.");
         AssertContains(deviceAudioStateCode, "private async Task<bool> ApplyAnalogAudioGainAsync");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.DeviceAudioRefresh.cs")), "MainViewModel.DeviceAudioRefresh.cs folded into audio state");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.DeviceAudioMode.cs")), "MainViewModel.DeviceAudioMode.cs folded into audio state");
         AssertContains(deviceAudioRequestControllerCode, "internal sealed class MainViewModelDeviceAudioRequestController");
         AssertDoesNotContain(deviceAudioRequestControllerCode, "partial class MainViewModelDeviceAudioRequestController");
         AssertContains(deviceAudioRequestControllerCode, "internal sealed class MainViewModelDeviceAudioRequestControllerContext");
@@ -6021,7 +5712,6 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(deviceAudioStateCode, "partial void OnAnalogAudioGainPercentChanged(double value)");
         AssertDoesNotContain(deviceAudioStateCode, "TryApplyAtDeviceAudioModeAsync");
         AssertDoesNotContain(deviceAudioStateCode, "SetInputSourceAsync");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AnalogAudioGain.cs")), "MainViewModel analog gain writes folded into audio state");
 
         AssertContains(setMicrophoneEndpointVolume, "string.IsNullOrWhiteSpace(deviceId)");
         AssertContains(setMicrophoneEndpointVolume, "WasapiComInterop.SetEndpointVolume(deviceId, (float)(Math.Clamp(volumePercent, 0.0, 100.0) / 100.0));");
@@ -6241,7 +5931,6 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         var adapterText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs").Replace("\r\n", "\n");
         var policyText = ReadRepoFile("Sussudio/ViewModels/ViewModelSelectionPolicies.cs").Replace("\r\n", "\n");
 
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AudioDeviceDiscovery.cs")), "audio device discovery adapter stays folded into AudioState");
         AssertContains(policyText, "internal static class AudioDeviceSelectionPolicy");
         AssertContains(policyText, "internal static AudioDeviceSelection SelectStartup(");
         AssertContains(policyText, "internal static AudioDeviceSelection SelectRefresh(");
@@ -6463,14 +6152,6 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(rootText, "=> _deviceRefreshController.RefreshDevicesAsync(cancellationToken);");
         AssertContains(rootText, "internal MainViewModel(MainViewModelDependencies dependencies)");
         AssertContains(rootText, "private readonly DeviceService _deviceService;");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.Composition.cs")),
-            "MainViewModel.Composition.cs folded into MainViewModel.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "ViewModel", "MainViewModelControllerGraph.cs")),
-            "MainViewModelControllerGraph folded into MainViewModel.cs");
         AssertContains(compositionText, "public MainViewModel()\n        : this(MainViewModelDependencies.CreateDefault())");
         AssertContains(compositionText, "internal MainViewModel(MainViewModelDependencies dependencies)");
         AssertContains(compositionText, "private readonly DeviceService _deviceService;");
@@ -6539,64 +6220,32 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(rootText, "public partial bool IsSettingsVisible");
         AssertContains(rootText, "public Action<string, bool>? StatsSectionVisibilityHandler { get; set; }");
         AssertContains(rootText, "public Task SetStatsVisibleAsync(bool visible, CancellationToken cancellationToken = default)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutomationUi.cs")),
-            "MainViewModel.AutomationUi.cs folded into MainViewModel.cs");
         AssertContains(rootText, "public partial string StatusText");
         AssertContains(rootText, "private IntPtr _windowHandle;");
         AssertContains(rootText, "public void SetWindowHandle(IntPtr handle)");
         AssertContains(rootText, "_windowHandle = handle;");
         AssertContains(rootText, "private static void ReplaceCollection<T>(ObservableCollection<T> target, IReadOnlyList<T> source)");
         AssertDoesNotContain(rootText, "private readonly SemaphoreSlim _automationCaptureModeGate = new(1, 1);");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.State.cs")),
-            "MainViewModel.State.cs folded into MainViewModel.cs");
         AssertDoesNotContain(captureModeTransactionsText, "_automationCaptureModeGate");
         AssertContains(rootText, "public partial bool IsPreviewing");
         AssertContains(rootText, "public event EventHandler? PreviewStartRequested");
         AssertContains(rootText, "public Task StartPreviewAsync(bool userInitiated = true, CancellationToken cancellationToken = default)");
         AssertContains(rootText, "public Task StopPreviewAsync(bool userInitiated, bool teardownPipeline, CancellationToken cancellationToken)");
         AssertContains(rootText, "private Task ReinitializeDeviceAsync(string reason)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.PreviewState.cs")),
-            "MainViewModel.PreviewState.cs folded into MainViewModel.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.CaptureState.cs")),
-            "MainViewModel.CaptureState.cs folded into MainViewModel.cs");
         AssertContains(captureStateText, "public partial ObservableCollection<CaptureDevice> Devices");
         AssertContains(captureStateText, "public partial ObservableCollection<ResolutionOption> AvailableResolutions");
         AssertContains(captureStateText, "public partial ObservableCollection<FrameRateOption> AvailableFrameRates");
         AssertContains(captureStateText, "private const string HdrToggleBlockedWhileRecordingMessage");
         AssertContains(captureStateText, "public partial bool IsHdrEnabled");
         AssertContains(captureStateText, "public partial string HdrRuntimeState");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.CaptureHdrState.cs")),
-            "MainViewModel.CaptureHdrState.cs folded into MainViewModel.cs");
         AssertContains(captureStateText, "private SourceSignalTelemetrySnapshot _latestSourceTelemetry");
         AssertContains(captureStateText, "public partial double? DetectedSourceFrameRate");
         AssertContains(captureStateText, "public partial string SourceTelemetryAvailability");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.CaptureSourceState.cs")),
-            "MainViewModel.CaptureSourceState.cs folded into MainViewModel.cs");
         AssertContains(audioStateText, "public partial bool IsAudioPreviewActive");
         AssertContains(audioStateText, "private AudioRampTraceRecorder CreateAudioRampTraceRecorder()");
         AssertContains(audioStateText, "public Task<AudioRampTraceSnapshot> GetAudioRampTraceSnapshotAsync");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AudioRampTrace.cs")),
-            "MainViewModel.AudioRampTrace.cs folded into MainViewModel.AudioState.cs");
         AssertContains(flashbackStateText, "partial void OnIsFlashbackEnabledChanged(bool value)");
         AssertContains(flashbackStateText, "public void UpdateFlashbackBufferStatus()");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.FlashbackBufferStatus.cs")),
-            "MainViewModel.FlashbackBufferStatus.cs folded into MainViewModel.FlashbackState.cs");
 
         AssertContains(dependenciesText, "internal sealed class MainViewModelDependencies");
         AssertContains(dependenciesText, "public static MainViewModelDependencies CreateDefault()");
@@ -6604,10 +6253,6 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(dependenciesText, "new CaptureSessionCoordinator(captureService)");
         AssertContains(dependenciesText, "DispatcherQueue.GetForCurrentThread()");
         AssertContains(dependenciesText, "new AudioDeviceWatcher()");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModelDependencies.cs")),
-            "MainViewModelDependencies.cs folded into MainViewModel.cs");
 
         return Task.CompletedTask;
     }
@@ -6662,10 +6307,6 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(recordingTransitionControllerText, "private Task BeginRecordingTransitionAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertContains(recordingTransitionControllerText, "await _previewLifecycleController.InitializeDeviceAsync(cancellationToken);");
         AssertDoesNotContain(recordingTransitionControllerText, "await _viewModel.InitializeDeviceAsync(cancellationToken);");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "ViewModel", "MainViewModelRecordingTransitionController.cs")),
-            "recording transition controller lives with the ViewModel capture lifecycle owner");
 
         return Task.CompletedTask;
     }
@@ -6773,14 +6414,6 @@ internal static Task MainViewModelPresentationControllers_UseDependencyCompositi
         AssertContains(previewReinitializeControllerText, "public required int PreviewReinitializeDebounceMs { get; init; }");
         AssertContains(previewReinitializeControllerText, "public required int FlashbackCycleBeforeReinitializeTimeoutMs { get; init; }");
         AssertContains(previewReinitializeControllerText, "public required Func<Task, int, string, Task> AwaitWithTimeoutAsync { get; init; }");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "ViewModel", "MainViewModelPreviewReinitializeController.cs")),
-            "preview reinitialize transaction controller lives with preview lifecycle owner");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "ViewModel", "MainViewModelPreviewLifecycleController.cs")),
-            "preview lifecycle controller lives with recording transitions in the ViewModel capture lifecycle owner");
 
         return Task.CompletedTask;
     }
@@ -6815,14 +6448,6 @@ internal static Task MainViewModelPresentationControllers_UseDependencyCompositi
         AssertContains(captureServiceText, "private const int PreviewFrameCaptureRendererWaitTimeoutMs = 2000;");
         AssertContains(captureServiceText, "while (_isVideoPreviewActive && !cancellationToken.IsCancellationRequested)");
         AssertContains(captureServiceText, "await Task.Delay(PreviewFrameCaptureRendererPollMs, cancellationToken).ConfigureAwait(false);");
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.Probes.cs")),
-            "CaptureService probe partial folded into snapshots");
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutomationPreview.cs")),
-            "MainViewModel preview automation partial");
 
         return Task.CompletedTask;
     }
@@ -6846,10 +6471,6 @@ internal static Task MainViewModelCaptureDeviceControllers_UseDependencyComposit
         AssertContains(deviceAudioStateText, "public partial bool IsDeviceAudioControlSupported");
         AssertContains(deviceAudioStateText, "public partial string SelectedDeviceAudioMode");
         AssertContains(deviceAudioStateText, "public partial double AnalogAudioGainPercent");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.DeviceAudioState.cs")),
-            "MainViewModel device-audio state folded into MainViewModel.AudioState.cs");
 
         AssertContains(controllerGraphText, "var deviceAudioRequestController = CreateDeviceAudioRequestController(viewModel);");
         AssertContains(controllerGraphText, "var recordingCapabilityController = CreateRecordingCapabilityController(viewModel);");
@@ -6961,10 +6582,6 @@ internal static Task MainViewModelCaptureDeviceControllers_UseDependencyComposit
         AssertContains(captureModeOptionRebuildControllerText, "internal sealed class MainViewModelCaptureModeOptionRebuildControllerContext");
         AssertContains(captureModeOptionRebuildControllerText, "private readonly MainViewModelCaptureModeOptionRebuildControllerContext _context;");
         AssertContains(captureModeOptionRebuildControllerText, "private readonly MainViewModelFrameRateTimingResolver _frameRateTimingResolver;");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "ViewModel", "MainViewModelCaptureModeOptionRebuildController.cs")),
-            "capture mode option rebuild controller folded into MainViewModelDeviceControllers.cs");
         AssertDoesNotContain(captureModeOptionRebuildControllerText, "public required Func<string?, double, FrameRateTimingFamily> ResolvePreferredTimingFamily");
         AssertDoesNotContain(captureModeOptionRebuildControllerText, "public required Func<string?, IReadOnlyList<FrameRateOption>, double, (double? Rate, string? Arg, string Origin)> ResolveDetectedSourceFrameRate");
         AssertDoesNotContain(captureModeOptionRebuildControllerText, "public required Func<string?, IReadOnlyList<FrameRateTimingVariant>> BuildFrameRateTimingVariants");
@@ -6974,10 +6591,6 @@ internal static Task MainViewModelCaptureDeviceControllers_UseDependencyComposit
         AssertContains(frameRateTimingResolverText, "public (double? Rate, string? Arg, string Origin) ResolveDetectedSourceFrameRate(");
         AssertContains(frameRateTimingResolverText, "public IReadOnlyList<FrameRateTimingVariant> BuildFrameRateTimingVariants(string? resolutionKey)");
         AssertContains(frameRateTimingResolverText, "internal sealed class MainViewModelFrameRateTimingResolverContext");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "ViewModel", "MainViewModelFrameRateTimingResolver.cs")),
-            "frame-rate timing resolver lives with capture mode option rebuild owner");
         AssertContains(captureModeOptionRebuildControllerText, "public required string AutoResolutionValue { get; init; }");
         AssertContains(captureModeOptionRebuildControllerText, "public required double AutoFrameRateValue { get; init; }");
         AssertContains(controllerGraphText, "AutoResolutionValue = AutoResolutionValue,");
@@ -6996,10 +6609,6 @@ internal static Task MainViewModelCaptureDeviceControllers_UseDependencyComposit
         AssertContains(captureModeOptionRebuildControllerText, "public void UpdateSelectedFormat()");
         AssertContains(captureModeOptionRebuildControllerText, "public void RebuildResolutionOptions()");
         AssertContains(captureModeOptionRebuildControllerText, "=> RebuildFrameRateOptions();");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "ViewModel", "MainViewModelResolutionOptionRebuildController.cs")),
-            "old standalone resolution option rebuild controller removed");
 
         AssertContains(deviceFormatProbeControllerText, "namespace Sussudio.Controllers;");
         AssertContains(deviceFormatProbeControllerText, "internal sealed class MainViewModelDeviceFormatProbeController");
@@ -7010,10 +6619,6 @@ internal static Task MainViewModelCaptureDeviceControllers_UseDependencyComposit
         AssertContains(deviceFormatProbeControllerText, "public void OnDeviceFormatProbeCompleted");
         AssertContains(deviceFormatProbeControllerText, "_retargetApplier = _context.CreateRetargetApplier();");
         AssertContains(deviceFormatProbeControllerText, "_retargetApplier.TryApplyDeviceFormatProbeRetarget(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "ViewModel", "MainViewModelDeviceFormatProbeRetargetApplier.cs")),
-            "device format probe retarget applier lives with probe event owner");
         AssertContains(deviceFormatProbeRetargetApplierText, "namespace Sussudio.Controllers;");
         AssertContains(deviceFormatProbeRetargetApplierText, "internal sealed class MainViewModelDeviceFormatProbeRetargetApplier");
         AssertContains(deviceFormatProbeRetargetApplierText, "internal sealed class MainViewModelDeviceFormatProbeRetargetApplierContext");
@@ -7080,10 +6685,6 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(runtimeLifecycleControllerText, "private readonly MainViewModelRuntimeEventIngressController _eventIngressController;");
         AssertContains(runtimeLifecycleControllerText, "internal sealed class MainViewModelRuntimeLifecycleControllerContext");
         AssertContains(runtimeLifecycleControllerText, "private readonly MainViewModelRuntimeLifecycleControllerContext _context;");
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "ViewModel", "MainViewModelRuntimeLifecycleController.cs")),
-            "runtime lifecycle controller folded into MainViewModelLifecycleController.cs");
         AssertDoesNotContain(runtimeLifecycleControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(runtimeLifecycleControllerText, "_viewModel.");
         AssertContains(runtimeLifecycleControllerText, "_eventIngressController = _context.CreateEventIngressController();");
@@ -7111,10 +6712,6 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(runtimeEventIngressControllerText, "_context.ReinitializeDeviceAsync(\"system resume\")");
         AssertContains(controllerGraphText, "private static MainViewModelRuntimeEventIngressController CreateRuntimeEventIngressController(");
         AssertContains(controllerGraphText, "new MainViewModelRuntimeEventIngressControllerContext");
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "ViewModel", "MainViewModelRuntimeEventIngressController.cs")),
-            "runtime event ingress controller folded into MainViewModelLifecycleController.cs");
         AssertContains(runtimeEventIngressControllerText, "public required Func<CaptureRuntimeSnapshot> GetRuntimeSnapshot { get; init; }");
         AssertContains(runtimeEventIngressControllerText, "public required Func<Func<Task>, string, bool> EnqueueUiOperation { get; init; }");
         AssertDoesNotContain(runtimeEventIngressControllerText, "_viewModel.RecoverCaptureErrorAsync(");
@@ -7167,10 +6764,6 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(disposalControllerText, "internal sealed class MainViewModelDisposalController");
         AssertContains(disposalControllerText, "internal sealed class MainViewModelDisposalControllerContext");
         AssertContains(disposalControllerText, "private readonly MainViewModelDisposalControllerContext _context;");
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "ViewModel", "MainViewModelDisposalController.cs")),
-            "disposal controller folded into MainViewModelLifecycleController.cs");
         AssertContains(disposalControllerText, "public required Func<Task, int, string, Task> AwaitWithTimeoutAsync { get; init; }");
         AssertDoesNotContain(disposalControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(disposalControllerText, "_viewModel.");
@@ -7251,14 +6844,6 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(nativeWindowText, "=> _nativeWindowBootstrapController.ScheduleRevealAfterFirstComposedFrame(_hwnd);");
         AssertContains(nativeWindowText, "private void CancelNativeShellRevealAfterFirstFrame()");
         AssertContains(nativeWindowText, "=> _nativeWindowBootstrapController.CancelPendingFirstFrameReveal();");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Composition.cs")),
-            "native window adapter folded into MainWindow.xaml.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Window", "NativeWindowBootstrapController.cs")),
-            "native window bootstrap lives with the window lifecycle controller");
         AssertDoesNotContain(nativeWindowText, "private static extern int DwmSetWindowAttribute(");
         AssertDoesNotContain(nativeWindowText, "MinSizeWindowSubclass.Install(");
 
@@ -7341,10 +6926,6 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
             throw new InvalidOperationException("MainWindow.WindowManagement.cs should not return as a catch-all partial.");
         }
 
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.ShutdownCleanup.Composition.cs")),
-            "shutdown cleanup adapter folded into MainWindow root composition");
 
         AssertContains(mainWindowText, "ViewModel = new MainViewModel();");
         AssertContains(mainWindowText, "InitializeWindowCloseRequestController();");
@@ -7453,14 +7034,6 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(closeRequestControllerText, "catch (COMException ex)");
         AssertContains(closeRequestControllerText, "_context.ExitApplication();");
         AssertContains(closeRequestControllerText, "_context.LifecycleController.ResetRequestedAfterFailure();");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Window", "WindowCloseRequestController.cs")),
-            "close request execution lives with close lifecycle policy");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Window", "WindowAppClosingController.cs")),
-            "app closing choreography lives with close lifecycle policy");
 
         AssertDoesNotContain(closeLifecycleText, "args.Cancel = true;");
         AssertDoesNotContain(closeLifecycleText, "if (!ViewModel.IsRecording && !ViewModel.IsRecordingTransitioning)");
@@ -7618,10 +7191,6 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(shutdownCleanupText, "await _windowShutdownCleanupController.RunAsync();");
         AssertContains(shutdownCleanupText, "StopRecordingAfterClosedBestEffortAsync = () => _windowCloseRecordingFinalizationController.StopAfterClosedBestEffortAsync(");
         AssertContains(shutdownCleanupText, "DisposeAutomationHostAsync = () => _automationHostLifecycleController.DisposeAsync(),");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.AutomationHost.cs")),
-            "MainWindow automation host adapter partial");
 
         AssertContains(automationHostControllerText, "public async ValueTask DisposeAsync()");
         AssertContains(automationHostControllerText, "await _pipeServer.DisposeAsync();");
@@ -7713,18 +7282,6 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(catalogText, "while (line.EndsWith('.'))");
         AssertContains(catalogText, "_cachedSplashPhrases = DefaultSplashLoadingPhrases;");
         AssertDoesNotContain(controllerText, "private TimeSpan NextSplashPhraseInterval()");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Launch", "Splash", "SplashLoadingPhraseCatalog.cs")),
-            "splash phrase catalog folded into LaunchFlowController.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Launch", "Splash", "SplashLoadingPhrasePacingPolicy.cs")),
-            "splash phrase pacing policy folded into LaunchFlowController.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Launch", "Splash", "SplashLoadingPhraseController.cs")),
-            "splash phrase controller folded into LaunchFlowController.cs");
 
         return Task.CompletedTask;
     }
@@ -7796,10 +7353,6 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(adapterText, "FadeInControlBarShadow = () => FadeInControlBarShadow(delayMs: 400, durationMs: 500),");
         AssertContains(adapterText, "=> _launchEntranceAnimationController.PrepareInitialState();");
         AssertContains(adapterText, "=> _launchEntranceAnimationController.PlaySplashAndEntrance();");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Composition.cs")),
-            "launch entrance adapter folded into MainWindow.xaml.cs");
         AssertContains(controllerInitializationText, "InitializeLaunchEntranceAnimationController();");
         AssertContains(mainWindowText, "PrepareLaunchEntranceInitialState();");
         AssertContains(startupText, "PlaySplashAndEntrance();");
@@ -7828,14 +7381,6 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertDoesNotContain(agentMapText, "LaunchEntranceAnimationController.Shell.cs");
         AssertDoesNotContain(cleanupPlanText, "LaunchEntranceAnimationController.Splash.cs");
         AssertDoesNotContain(cleanupPlanText, "LaunchEntranceAnimationController.Shell.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Launch", "Entrance", "LaunchEntranceAnimationController.Splash.cs")),
-            "launch entrance splash phase is consolidated into the root controller");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Launch", "Entrance", "LaunchEntranceAnimationController.Shell.cs")),
-            "launch entrance shell phase is consolidated into the root controller");
         AssertDoesNotContain(mainWindowText, "private bool _entranceAnimationPlayed;");
         AssertDoesNotContain(mainWindowText, "private Storyboard? _entranceStoryboard;");
         AssertDoesNotContain(mainWindowText, "ControlBarBorder.Opacity = 0;");
@@ -7889,23 +7434,7 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(launchStartupControllerText, "_context.PlaySplashAndEntrance();");
         AssertContains(agentMapText, "Sussudio/Controllers/Launch/LaunchFlowController.cs");
         AssertContains(cleanupPlanText, "Sussudio/Controllers/Launch/LaunchFlowController.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Launch", "LaunchStartupController.cs")),
-            "launch startup choreography lives with the launch flow owner");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Launch", "Entrance", "LaunchEntranceAnimationController.cs")),
-            "launch entrance choreography lives with the launch flow owner");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Composition.cs")),
-            "startup adapter folded into MainWindow.xaml.cs");
         AssertContains(mainWindowText, "private readonly WindowAutomationHostLifecycleController _automationHostLifecycleController;");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.AutomationHost.cs")),
-            "MainWindow automation host adapter partial");
         AssertContains(automationHostControllerText, "private int _started;");
         AssertContains(automationHostControllerText, "Interlocked.Exchange(ref _started, 1)");
         AssertContains(automationHostControllerText, "if (_pipeServer.Start())\n        {\n            _diagnosticsHub.Start();");
@@ -8053,8 +7582,6 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(captureOptionBindingsText, "private void AttachRecordingOptionBindings()");
         AssertContains(captureOptionBindingsText, "=> _captureOptionBindingController.AttachRecordingOptionBindings();");
         AssertContains(mainWindowText, "InitializeCaptureOptionBindingController();");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.CaptureOptionBindings.cs")), "MainWindow capture option adapter folded into MainWindow.xaml.cs");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.CaptureSelectionBindings.Composition.cs")), "MainWindow capture selection adapter folded into MainWindow.xaml.cs");
 
         AssertContains(controllerRootText, "internal sealed class CaptureOptionBindingControllerContext");
         AssertContains(controllerRootText, "internal sealed class CaptureOptionBindingController");
@@ -8233,10 +7760,6 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertDoesNotContain(adapterText, "ViewModel.RefreshDevicesAsync();");
         AssertDoesNotContain(adapterText, "ViewModel.ApplySelectedDeviceAsync(selectedDevice);");
         AssertDoesNotContain(captureDeviceActionInit, "UpdateDeviceApplyButtonState();");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.CaptureDeviceActions.cs")),
-            "capture-device button adapter folded into MainWindow.xaml.cs");
 
         return Task.CompletedTask;
     }
@@ -8318,10 +7841,6 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(controllerText, "_context.ViewModel.SourceTelemetrySummaryText");
         AssertContains(controllerText, "_context.ViewModel.SourceTargetSummaryText");
         AssertContains(mainWindowText, "InitializeCaptureOptionPresentationController();");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Capture", "CaptureOptionPresentationController.cs")),
-            "capture option presentation policy and controller folded into CaptureBindingControllers.cs");
         AssertContains(propertyChangedText, "TryHandleOutput = TryHandleOutputPropertyChanged,");
         AssertContains(propertyChangedText, "TryHandleCaptureOption = TryHandleCaptureOptionPropertyChanged,");
         AssertContains(outputPathDisplayText, "=> _outputPathController.TryHandlePropertyChanged(propertyName);");
@@ -8521,7 +8040,6 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(adapterText, "private void UpdateDeviceApplyButtonState()");
         AssertContains(adapterText, "private bool TryHandleCaptureSelectionPropertyChanged(string? propertyName)");
         AssertContains(adapterText, "=> _captureSelectionBindingController.TryHandlePropertyChanged(propertyName);");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.CaptureSelectionBindings.Composition.cs")), "MainWindow capture selection adapter folded into MainWindow.xaml.cs");
 
         AssertContains(mainWindowText, "InitializeCaptureSelectionBindingController();");
         AssertContains(bindingsText, "AttachCaptureSelectionBindings();");
@@ -8610,10 +8128,6 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(controllerText, "_context.DeviceComboBox.ItemsSource = _context.ViewModel.Devices;");
         AssertContains(controllerText, "AttachCollectionSync(_context.ViewModel.AvailableFrameRates, QueueFrameRateSelectionSync);");
 
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Capture", "CaptureSelectionBindingController.SelectionState.cs")),
-            "empty selection-state marker partial should stay removed");
         AssertDoesNotContain(adapterText, "private void AttachRecordingStringSelectionBindings()");
         AssertDoesNotContain(adapterText, "_captureSelectionBindingController.AttachRecordingStringSelectionBindings()");
         AssertDoesNotContain(bindingsText, "private void QueueSelectionSync(");
@@ -8888,10 +8402,6 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(modeSelectionText, "_lastSourceModeKey = null;");
         AssertContains(modeSelectionText, "_pendingSdrAutoSelectionForDeviceChange = false;");
         AssertContains(modeSelectionText, "_pendingSdrAutoFriendlyFrameRateBucket = null;");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.ModeSelectionState.cs")),
-            "MainViewModel.ModeSelectionState.cs folded into MainViewModel.cs");
 
         return Task.CompletedTask;
     }
@@ -8942,22 +8452,6 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertMemberContains(automationSettingsText, "CreateRecordingSettingsController", "viewModel.CustomBitrateMbps,");
         AssertMemberContains(automationSettingsText, "CreateRecordingSettingsController", "NvencPresetParser.Parse(viewModel.SelectedPreset)");
         AssertMemberContains(automationSettingsText, "CreateRecordingSettingsController", "SplitEncodeModeParser.Parse(viewModel.SelectedSplitEncodeMode)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutomationRecordingFormat.cs")),
-            "stale recording format automation partial");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutomationRecordingSettings.cs")),
-            "stale recording settings automation facade partial");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.RecordingFormatOptions.cs")),
-            "stale recording format options partial");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.RecordingCapabilityRefresh.cs")),
-            "stale recording capability refresh partial");
         AssertDoesNotContain(captureModeTransactionsText, "private static bool IsHdrCompatibleRecordingFormat(");
         AssertContains(recordingSettingsPolicyText, "internal static class RecordingSettingsSelectionPolicy");
         AssertContains(recordingSettingsPolicyText, "internal static bool IsHdrCompatible(");
@@ -9409,10 +8903,6 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(probeControllerText, "FORMAT_PROBE_UI_ENQUEUE_FAILED deviceId='{e.DeviceId}' requestId={e.RequestId}");
         AssertDoesNotContain(probeControllerText, "var nv12Candidates = target.SupportedFormats");
         AssertDoesNotContain(probeControllerText, "ShouldPreserveMjpegHighFrameRateMode(_viewModel.SelectedFormat)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "ViewModel", "MainViewModelDeviceFormatProbeRetargetApplier.cs")),
-            "device format probe retarget applier lives with probe event owner");
         AssertContains(retargetApplierText, "namespace Sussudio.Controllers;");
         AssertContains(retargetApplierText, "internal sealed class MainViewModelDeviceFormatProbeRetargetApplier");
         AssertContains(retargetApplierText, "internal sealed class MainViewModelDeviceFormatProbeRetargetApplierContext");
@@ -9455,10 +8945,6 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(probeControllerText, "target.SupportedFormats.Clear();");
         AssertContains(probeControllerText, "_context.RebuildSelectedDeviceCapabilities(selectedDevice, false);");
         AssertContains(probeControllerText, "_retargetApplier.TryApplyDeviceFormatProbeRetarget(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "ViewModel", "MainViewModelDeviceFormatProbeRetargetApplier.cs")),
-            "device format probe retarget applier lives with probe event owner");
         AssertContains(retargetApplierText, "namespace Sussudio.Controllers;");
         AssertContains(retargetApplierText, "internal sealed class MainViewModelDeviceFormatProbeRetargetApplier");
         AssertContains(retargetApplierText, "internal sealed class MainViewModelDeviceFormatProbeRetargetApplierContext");
@@ -9600,14 +9086,6 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         var captureSettingsBuilderText = ReadRepoFile("Sussudio/ViewModels/ViewModelBuilders.cs")
             .Replace("\r\n", "\n");
 
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.CaptureSettings.cs")),
-            "MainViewModel capture-settings adapter folded into MainViewModel.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "CaptureSettingsProjectionBuilder.cs")),
-            "capture settings projection builder folded into ViewModelBuilders.cs");
         AssertContains(captureStateText, "private CaptureSettings BuildCaptureSettings()");
         AssertContains(captureStateText, "var runtime = _captureService.GetRuntimeSnapshot();");
         AssertContains(captureStateText, "var sourceTelemetry = _captureService.GetLatestSourceTelemetrySnapshot();");
@@ -9911,18 +9389,6 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(resolutionOptionRebuildControllerText, "Value = _context.AutoResolutionValue,");
         AssertContains(resolutionOptionRebuildControllerText, "private bool ShouldSelectAutoResolutionOption(");
         AssertDoesNotContain(resolutionOptionsText, "private ResolutionOption? SelectBestAutoResolutionCandidate(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "ViewModel", "MainViewModelResolutionOptionRebuildController.cs")),
-            "old standalone resolution option rebuild controller removed");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(
-                GetRepoRoot(),
-                "Sussudio",
-                "ViewModels",
-                "MainViewModel.AutoResolutionSelection.cs")),
-            "MainViewModel auto resolution selection adapter partial");
         AssertContains(autoCaptureSelectionPolicyText, "internal sealed record AutoCaptureSelection(");
         AssertContains(autoCaptureSelectionPolicyText, "internal sealed record AutoCaptureSelectionRequest(");
         AssertContains(autoCaptureSelectionPolicyText, "internal static class CaptureModeOptionsBuilder");
@@ -9931,7 +9397,6 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(autoCaptureSelectionPolicyText, "internal static AutoCaptureSelection? Select(AutoCaptureSelectionRequest request)");
         AssertContains(autoCaptureSelectionPolicyText, "private static ResolutionOption? SelectBestResolutionCandidate(");
         AssertContains(autoCaptureSelectionPolicyText, "private static MediaFormat SelectPreferredFrameRateFormat(");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.ResolutionOptions.cs")), "old resolution options partial folded into capture selection owner");
         AssertDoesNotContain(autoCaptureSelectionPolicyText, "AvailableResolutions.Clear();");
         AssertDoesNotContain(autoCaptureSelectionPolicyText, "SelectedResolution =");
         AssertContains(resolutionOptionsText, "/// Capture-device, resolution, and frame-rate selection reactions.");
@@ -9940,10 +9405,6 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(resolutionOptionRebuildControllerText, "_context.SetAutoResolvedWidth(selection?.Resolution.Width);");
         AssertContains(resolutionOptionRebuildControllerText, "private void ClearAutoResolutionState()");
         AssertContains(capturePresentationText, "// Capture presentation adapters that apply runtime/source state to ViewModel labels.");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.CapturePresentation.cs")),
-            "MainViewModel.CapturePresentation.cs folded into MainViewModel.cs");
         AssertContains(capturePresentationText, "private string GetSelectedResolutionDisplayText()");
         AssertContains(capturePresentationText, "return $\"{AutoResolutionValue} ({GetResolutionKey(AutoResolvedWidth.Value, AutoResolvedHeight.Value)} @ {friendlyRate.Value:0} fps)\";");
         AssertContains(resolutionOptionsText, "private static bool IsAutoResolutionValue(");
@@ -9961,18 +9422,6 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(resolutionOptionsText, "CaptureResolutionSelectionPolicy.BuildHdrSupportHint(");
         AssertDoesNotContain(resolutionOptionsText, "SelectNearestResolution(");
         AssertDoesNotContain(resolutionOptionsText, "sdrFriendlyBucketsByResolution");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutoResolutionOptions.cs")),
-            "old auto resolution options partial removed");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutoResolutionState.cs")),
-            "old auto resolution state partial removed");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.ResolutionSelectionPolicy.cs")),
-            "old resolution selection policy adapter partial removed");
         AssertContains(helperText, "internal static class CaptureResolutionSelectionPolicy");
         AssertDoesNotContain(helperText, "partial class CaptureResolutionSelectionPolicy");
         AssertContains(helperText, "internal static CaptureResolutionSelection Select(CaptureResolutionSelectionRequest request)");
@@ -9991,34 +9440,6 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertDoesNotContain(helperText, "AvailableResolutions.Clear();");
         AssertDoesNotContain(helperText, "OnPropertyChanged(");
         AssertDoesNotContain(helperText, "SelectedResolution =");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "CaptureResolutionSelectionPolicy.cs")),
-            "resolution selection policy folded into ViewModelSelectionPolicies.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "CaptureResolutionSelectionPolicy.Source.cs")),
-            "old source resolution selection policy partial removed");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "CaptureResolutionSelectionPolicy.Hdr.cs")),
-            "old HDR resolution selection policy partial removed");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "CaptureResolutionSelectionPolicy.Sdr.cs")),
-            "old SDR resolution selection policy partial removed");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "CaptureResolutionSelectionPolicy.Support.cs")),
-            "old resolution support policy partial removed");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "CaptureResolutionSelectionPolicy.Ranking.cs")),
-            "old resolution ranking policy partial removed");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "CaptureResolutionSelectionPolicy.Models.cs")),
-            "old resolution policy models partial removed");
 
         return Task.CompletedTask;
     }
@@ -10234,8 +9655,6 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(modeSelectionText, "private void ApplyResolvedFrameRateSelection(FrameRateOption? selected, double fallbackRate)");
         AssertContains(sourceFilterPolicyText, "internal static class FrameRateSourceFilterPolicy");
         AssertContains(sourceFilterPolicyText, "internal static FrameRateSourceFilterResult Apply(");
-        AssertEqual(false, File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.FrameRateOptions.cs")), "old frame-rate options partial folded into capture selection owner");
-        AssertEqual(false, File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.FrameRateSourceFilterPolicy.cs")), "old nested frame-rate source-filter partial removed");
         AssertContains(sourceFilterPolicyText, "IReadOnlyCollection<FrameRateTimingVariant> resolutionTimingVariants");
         AssertContains(sourceFilterPolicyText, "option.FriendlyValue > sourceFriendlyRate.Value + 0.01");
         AssertContains(sourceFilterPolicyText, "option.Value > sourceRate.Value + 0.03");
@@ -10273,7 +9692,6 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(autoSelectionPolicyText, "internal readonly record struct FrameRateAutoSelectionSource(");
         AssertContains(autoSelectionPolicyText, "internal sealed record FrameRateAutoSelectionRequest(");
         AssertContains(autoSelectionPolicyText, "internal sealed record FrameRateAutoSelection(");
-        AssertEqual(false, File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.FrameRateAutoSelectionPolicy.cs")), "old nested frame-rate auto-selection partial removed");
         AssertContains(autoSelectionPolicyText, "internal static FrameRateAutoSelection Select(FrameRateAutoSelectionRequest request)");
         AssertContains(autoSelectionPolicyText, "request.PendingSdrAutoSelectionForDeviceChange");
         AssertContains(autoSelectionPolicyText, "request.PendingSdrAutoFriendlyFrameRateBucket.Value");
@@ -10338,24 +9756,12 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertDoesNotContain(timingResolverText, "private static bool TryInferFrameRateTimingFamily(");
         AssertDoesNotContain(timingResolverText, "private static bool TryParseFrameRateRational(");
         AssertDoesNotContain(timingResolverText, "private static int GetFriendlyFrameRateBucket(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.FrameRateTiming.cs")),
-            "old MainViewModel frame-rate timing partial removed");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "ViewModel", "MainViewModelFrameRateTimingResolver.cs")),
-            "frame-rate timing resolver lives with capture mode option rebuild owner");
         AssertContains(timingPolicyText, "internal enum FrameRateTimingFamily");
         AssertContains(timingPolicyText, "internal readonly record struct FrameRateTimingVariant(int FriendlyBucket, FrameRateTimingFamily Family);");
         AssertContains(timingPolicyText, "internal static IReadOnlyList<FrameRateTimingVariant> BuildTimingVariants(IEnumerable<MediaFormat> formats)");
         AssertContains(timingPolicyText, "internal static MediaFormat SelectPreferredFrameRateFormat(");
         AssertContains(timingPolicyText, "internal static bool TryInferFrameRateTimingFamily(");
         AssertContains(timingPolicyText, "internal static bool TryParseFrameRateRational(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "FrameRateTimingPolicy.cs")),
-            "pure frame-rate timing policy folded into ViewModelSelectionPolicies.cs");
 
         return Task.CompletedTask;
     }

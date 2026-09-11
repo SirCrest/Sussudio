@@ -42,22 +42,6 @@ static partial class Program
         AssertContains(rootText, "private void InitializeMainWindowPropertyChangedRouter()");
         AssertContains(mainWindowText, "InitializeMainWindowPropertyChangedRouter();");
         AssertContains(rootText, "=> _propertyChangedRouter.RouteAsync(e.PropertyName);");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.PropertyChanged.cs")),
-            "property-change router composition lives in the MainWindow root composition");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.ControllerInitialization.cs")),
-            "controller initialization partial folded into MainWindow root composition");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.ControlBindings.cs")),
-            "XAML control binding adapter folded into MainWindow root code-behind");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Shell", "MainWindowPropertyChangedRouter.cs")),
-            "property-name route order lives in the MainWindow root composition");
         AssertContains(rootText, "TryHandleCaptureSelection = TryHandleCaptureSelectionPropertyChanged,");
         AssertContains(rootText, "TryHandleStatusStrip = TryHandleStatusStripPropertyChanged,");
         AssertContains(rootText, "TryHandlePreviewAsync = TryHandlePreviewPropertyChangedAsync,");
@@ -126,10 +110,6 @@ static partial class Program
         AssertDoesNotContain(previewPropertyChangedHandler, "case nameof(MainViewModel.IsPreviewing):");
         AssertDoesNotContain(previewPropertyChangedHandler, "await HandlePreviewingChangedAsync();");
         AssertContains(previewReinitText, "private PreviewReinitTransitionController _previewReinitTransitionController = null!;");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Composition.cs")),
-            "preview reinit adapter folded into MainWindow.xaml.cs");
         AssertContains(previewReinitText, "private bool IsPreviewReinitAnimating");
         AssertContains(previewReinitText, "private async Task ViewModel_PreviewReinitRequested(string reason)");
         AssertContains(previewReinitText, "private Task ViewModel_PreviewRendererStopRequested()");
@@ -202,10 +182,6 @@ static partial class Program
         AssertContains(shellChromeControllerText, "public bool TryHandlePropertyChanged(string propertyName)");
         AssertContains(shellChromeControllerText, "_context.StatsOverlayComposition.TryHandlePropertyChanged(propertyName, _context.IsStatsVisible())");
         AssertContains(shellChromeControllerText, "_context.SettingsShelf.TryHandlePropertyChanged(propertyName, _context.IsSettingsVisible())");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Shell", "ShellPropertyChangedController.cs")),
-            "shell property-change routing lives with shell chrome controller concerns");
         AssertContains(statsOverlayCompositionControllerText, "case nameof(MainViewModel.IsStatsVisible):");
         AssertContains(settingsShelfControllerText, "case nameof(MainViewModel.IsSettingsVisible):");
         AssertDoesNotContain(shellText, "StatsToggle.IsChecked = ViewModel.IsStatsVisible;");
@@ -301,10 +277,6 @@ static partial class Program
         AssertContains(mainWindowText, "ViewModel.StatsSectionVisibilityHandler = SetStatsSectionVisible;");
         AssertContains(mainWindowText, "InitializeStatsOverlayCompositionController();");
         AssertContains(statsOverlayCompositionText, "RefreshDiagnosticsSection = _statsDockRefreshController.RefreshDiagnosticsSection");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Stats", "StatsSectionChromeController.cs")),
-            "stats section chrome controller folded into stats overlay composition owner");
         AssertDoesNotContain(statsOverlayText, "StatsDockPanel.FindName(contentName)");
         AssertDoesNotContain(statsOverlayText, "rotate.Angle =");
         AssertDoesNotContain(statsOverlayText, "UpdateDiagnosticsSection(snapshot");
@@ -333,10 +305,6 @@ static partial class Program
         AssertContains(controllerText, "public IReadOnlyList<FrameworkElement> EntranceButtons");
         AssertContains(controllerText, "public void AttachHoverAnimations()");
         AssertContains(controllerText, "private static void AnimateScale(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Shell", "ControlBarAnimationController.cs")),
-            "control-bar hover animation lives with shell chrome controller concerns");
         AssertDoesNotContain(adapterText, "private FrameworkElement[] GetControlBarButtons()");
 
         return Task.CompletedTask;
@@ -363,10 +331,6 @@ static partial class Program
         AssertContains(controllerText, "_context.ControlBarBorder.Translation = new Vector3(0, 0, 32);");
         AssertContains(controllerText, "var recordButtonShadow = new ThemeShadow();");
         AssertContains(controllerText, "_context.RecordButton.Translation = new Vector3(0, 0, 16);");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Shell", "ShellElevationController.cs")),
-            "shell elevation setup lives with shell chrome controller concerns");
         AssertDoesNotContain(mainWindowText, "new Microsoft.UI.Xaml.Media.ThemeShadow()");
         AssertDoesNotContain(mainWindowText, "ControlBarBorder.Translation = new System.Numerics.Vector3(0, 0, 32);");
         AssertDoesNotContain(mainWindowText, "RecordButton.Translation = new System.Numerics.Vector3(0, 0, 16);");
@@ -425,10 +389,6 @@ static partial class Program
         AssertContains(previewSurfaceControllerText, "compositor.CreateCubicBezierEasingFunction(new Vector2(0.25f, 0.1f), new Vector2(0.25f, 1f))");
         AssertContains(previewSurfaceControllerText, "animation.DelayTime = TimeSpan.FromMilliseconds(delayMs);");
         AssertContains(previewSurfaceControllerText, "visual.StartAnimation(\"Opacity\", animation);");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Preview", "PreviewSurfacePresentationController.cs")),
-            "preview surface presentation folded into PreviewLifecycleControllers.cs");
         AssertDoesNotContain(controllerText, "PreviewShadowFadeAnimator.");
         AssertDoesNotContain(previewSurfaceControllerText, "PreviewShadowFadeAnimator.");
         AssertDoesNotContain(adapterText, "FadeOutVideoFrameShadow(durationMs: 150);");
@@ -461,10 +421,6 @@ static partial class Program
         AssertContains(controllerText, "_context.PreviewLoadingOverlay.Opacity = 1.0;");
         AssertContains(controllerText, "PreviewTransitionAnimationController.FadeInElement(_context.PreviewLoadingOverlay);");
         AssertContains(controllerText, "PreviewTransitionAnimationController.FadeOutElement(_context.PreviewLoadingOverlay);");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Preview", "Startup", "PreviewStartupOverlayController.cs")),
-            "preview startup overlay lives with preview transition presentation concerns");
         AssertDoesNotContain(adapterText, "FadeInElement = FadeInElement,");
         AssertDoesNotContain(adapterText, "FadeOutElement = FadeOutElement,");
         AssertDoesNotContain(adapterText, "var ring = (ProgressRing)");
@@ -513,10 +469,6 @@ static partial class Program
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var recordingPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Recording/RecordingControlsControllers.cs").Replace("\r\n", "\n");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Recording", "Button", "RecordingButtonChromeController.cs")),
-            "recording button chrome controller folded into RecordingControlsControllers.cs");
         var presentationStart = controllerText.IndexOf("internal sealed class RecordingStatePresentationControllerContext", System.StringComparison.Ordinal);
         if (presentationStart < 0)
         {
@@ -525,10 +477,6 @@ static partial class Program
         var recordingPresentationText = controllerText[presentationStart..];
 
         AssertContains(recordingPropertyChangedText, "private RecordingButtonChromeController _recordingButtonChromeController = null!;");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.PropertyChangedRecording.cs")),
-            "recording property-changed adapter folded into MainWindow.xaml.cs");
         AssertContains(recordingPropertyChangedText, "private void InitializeRecordingButtonChromeController()");
         AssertContains(recordingPropertyChangedText, "RecordingGlowBorder = RecordingGlowBorder,");
         AssertContains(recordingPropertyChangedText, "RecordingGlowPulseStoryboard = RecordingGlowPulseStoryboard,");
@@ -606,10 +554,6 @@ static partial class Program
         var mainWindowText = ReadMainWindowCompositionSource();
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Recording", "RecordingStatePresentationController.cs")),
-            "recording state presentation lives with recording button chrome instead of returning as a tiny adjacent file");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Recording/RecordingControlsControllers.cs").Replace("\r\n", "\n");
         const string presentationMarker = "internal sealed class RecordingStatePresentationControllerContext";
         var presentationStart = controllerText.IndexOf(presentationMarker, System.StringComparison.Ordinal);
@@ -789,10 +733,6 @@ internal static Task ResponsiveShellLayout_LivesInController()
         AssertContains(xamlText, "x:Name=\"FlashbackToggleLabel\"");
         AssertContains(mainWindowText, "InitializeResponsiveShellLayoutController();");
         AssertContains(bindingsText, "SetupResponsiveShellLayoutBindings();");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Bindings.cs")),
-            "root startup binding sequence lives with the MainWindow composition root");
         AssertContains(controllerText, "internal sealed class ResponsiveShellLayoutController");
         AssertContains(controllerText, "internal sealed class ControlBarLabelVisibilityController");
         AssertContains(controllerText, "public required UIElement[] ControlBarLabels { get; init; }");
@@ -824,22 +764,6 @@ internal static Task ResponsiveShellLayout_LivesInController()
         AssertDoesNotContain(controllerText, "private void ApplyWideCaptureSettingsLayout()");
         AssertDoesNotContain(bindingsText, "private void UpdateToggleLabelVisibility(");
         AssertDoesNotContain(bindingsText, "private void CaptureSettingsGrid_SizeChanged(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.ResponsiveShellLayout.cs")),
-            "responsive shell layout adapter lives with shell chrome composition");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Shell", "ControlBarLabelVisibilityController.cs")),
-            "control-bar label visibility lives with responsive shell layout application");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Shell", "ResponsiveShellLayoutPolicy.cs")),
-            "responsive shell layout policy lives with responsive shell layout application");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Shell", "ResponsiveShellLayoutController.cs")),
-            "responsive shell layout application lives with shell chrome");
 
         return Task.CompletedTask;
     }
@@ -904,10 +828,6 @@ internal static Task ResponsiveShellLayout_LivesInController()
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Recording/RecordingControlsControllers.cs").Replace("\r\n", "\n");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Recording", "Output", "OutputPathController.cs")),
-            "output path controller folded into RecordingControlsControllers.cs");
         const string formatterMarker = "internal static class OutputPathDisplayTextFormatter";
         var formatterStart = controllerText.IndexOf(formatterMarker, System.StringComparison.Ordinal);
         if (formatterStart < 0)
@@ -999,10 +919,6 @@ internal static Task ResponsiveShellLayout_LivesInController()
         var mainWindowText = ReadMainWindowCompositionSource();
         var adapterText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Recording/RecordingControlsControllers.cs").Replace("\r\n", "\n");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Recording", "Output", "OutputPathController.cs")),
-            "output path button actions folded into RecordingControlsControllers.cs");
 
         AssertContains(adapterText, "private OutputPathController _outputPathController = null!;");
         AssertContains(adapterText, "private void InitializeOutputPathController()");
@@ -1180,14 +1096,6 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
         AssertDoesNotContain(policyText, "CapturePreviewFrameAsync");
         AssertDoesNotContain(policyText, "Directory.CreateDirectory");
         AssertDoesNotContain(policyText, "Logger.Log");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Screenshot.cs")),
-            "preview screenshot button adapter lives with MainWindow button actions");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Screenshot", "Preview", "PreviewScreenshotController.cs")),
-            "preview screenshot workflow lives with the screenshot controller owner");
 
         return Task.CompletedTask;
     }
@@ -1298,14 +1206,6 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
         AssertContains(controllerText, "Message = $\"Window screenshot saved: {width}x{height}\"");
         AssertContains(controllerText, "[DllImport(\"user32.dll\")]");
         AssertContains(controllerText, "private struct BITMAPINFOHEADER");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Screenshot", "Window", "WindowScreenshotNativeCapture.cs")),
-            "native whole-window capture stays with WindowScreenshotController");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Screenshot", "Window", "WindowScreenshotController.cs")),
-            "whole-window screenshot capture lives with the screenshot controller owner");
 
         return Task.CompletedTask;
     }
@@ -1325,10 +1225,6 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
         AssertContains(encoderText, "internal static void WritePngToStream");
         AssertContains(encoderText, "internal static void WriteBmpToStream");
         AssertContains(encoderText, "internal static uint[] InitCrc32Table()");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Screenshot", "Window", "WindowScreenshotImageEncoder.cs")),
-            "whole-window screenshot image encoder folded into WindowScreenshotController");
 
         var encoderType = RequireType("Sussudio.Controllers.WindowScreenshotImageEncoder");
         var writePng = encoderType.GetMethod("WritePngToStream", BindingFlags.Static | BindingFlags.NonPublic)
@@ -1369,22 +1265,10 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
         AssertContains(settingsShelfText, "private void InitializeSettingsShelfController()");
         AssertContains(settingsShelfText, "=> _settingsShelfController.Toggle();");
         AssertContains(settingsShelfText, "=> _settingsShelfController.ApplyVisibility(visible);");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Composition.cs")),
-            "settings shelf adapter folded into MainWindow.xaml.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.FullScreen.Composition.cs")),
-            "fullscreen adapter folded into MainWindow.xaml.cs");
         AssertContains(mainWindowText, "InitializeSettingsShelfController();");
         AssertContains(fullScreenText, "ResetSettingsShelfAnimation = _settingsShelfController.ResetAnimationState,");
         AssertDoesNotContain(settingsShelfText, "ResetSettingsShelfAnimationForFullScreen");
         AssertContains(controllerText, "internal sealed class SettingsShelfController");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Shell", "SettingsShelfController.cs")),
-            "settings shelf lives with shell chrome ownership");
         AssertContains(controllerText, "private bool _isAnimating;");
         AssertContains(controllerText, "public bool IsAnimating => _isAnimating;");
         AssertContains(controllerText, "public void Toggle()");
@@ -1396,10 +1280,6 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
         AssertContains(controllerText, "EnableDependentAnimation = true");
         AssertContains(controllerText, "_context.SettingsOverlayPanel.Visibility = Visibility.Collapsed;");
         AssertDoesNotContain(mainWindowText, "private bool _isSettingsShelfAnimating;");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.EventHandlers.cs")),
-            "generic MainWindow event-handler partial removed");
 
         return Task.CompletedTask;
     }
@@ -1518,10 +1398,6 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
         AssertDoesNotContain(propertyChangedText, "LivePixelFormatTextBlock.Text = ViewModel.LivePixelFormat;");
         AssertDoesNotContain(mainWindowText, "private bool _liveSignalInfoVisible;");
         AssertDoesNotContain(mainWindowText, "private DispatcherQueueTimer? _liveSignalDebounceTimer;");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Shell", "LiveSignalInfoController.cs")),
-            "live signal info presentation lives with shell chrome");
 
         return Task.CompletedTask;
     }
@@ -1537,10 +1413,6 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
         var controllerText = ReadRepoFile("Sussudio/Controllers/Shell/ShellChromeController.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private StatusStripPresentationController _statusStripPresentationController = null!;");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.StatusStripPresentation.cs")),
-            "status strip adapter folded into MainWindow.xaml.cs");
         AssertContains(adapterText, "private void InitializeStatusStripPresentationController()");
         AssertContains(adapterText, "DiskWarningInfoBar = DiskWarningInfoBar,");
         AssertContains(adapterText, "StatusTextBlock = StatusTextBlock,");
@@ -1569,10 +1441,6 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
         AssertDoesNotContain(flashbackPropertyChangedControllerText, "case nameof(MainViewModel.FlashbackBitrateInfo):");
         AssertContains(controllerText, "internal readonly record struct StatusStripPresentationSnapshot");
         AssertContains(controllerText, "internal sealed class StatusStripPresentationController");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Shell", "StatusStripPresentationController.cs")),
-            "status strip presentation lives with shell chrome ownership");
         AssertContains(controllerText, "public void ApplyInitial(StatusStripPresentationSnapshot snapshot)");
         AssertContains(controllerText, "public bool TryHandlePropertyChanged(");
         AssertContains(controllerText, "case nameof(MainViewModel.StatusText):");
@@ -1657,10 +1525,6 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
         AssertDoesNotContain(adapterText, "ViewModel.ToggleRecordingAsync();");
         AssertDoesNotContain(adapterText, "PreviewStateDuringRecording");
         AssertDoesNotContain(adapterText, "WARNING: preview renderer appears inactive while recording.");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.RecordingActions.cs")),
-            "recording button adapter folded into MainWindow.xaml.cs");
 
         return Task.CompletedTask;
     }
@@ -1744,15 +1608,7 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
         AssertContains(previewActionsText, "=> _previewButtonActionController.TogglePreviewAsync(nameof(PreviewButton_Click));");
         AssertContains(previewActionsText, "_ = RunUiEventHandlerAsync(() => TogglePreviewFromButtonAsync(), nameof(PreviewButton_Click));");
         AssertContains(mainWindowText, "InitializePreviewButtonActionController();");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Composition.cs")),
-            "preview button action adapter folded into MainWindow.xaml.cs");
         AssertContains(actionControllerText, "internal sealed class PreviewButtonActionController");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Preview", "PreviewButtonActionController.cs")),
-            "preview button action, presentation, and fade-in controllers live with preview lifecycle events");
         AssertContains(actionControllerText, "public async Task TogglePreviewAsync(string operationName)");
         AssertContains(actionControllerText, "viewModel.CancelPendingPreviewRestart();");
         AssertContains(actionControllerText, "Logger.Log($\"PREVIEW_REINIT_CANCEL_REQUESTED attempt={_context.GetPreviewStartupAttemptId() ?? \"none\"}\", operationName);");
@@ -1804,10 +1660,6 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
 
         AssertContains(controllerText, "internal sealed class AudioControlPresentationControllerContext");
         AssertContains(controllerText, "internal sealed class AudioControlPresentationController");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Audio", "AudioControlPresentationController.cs")),
-            "audio control presentation lives with audio control binding ownership");
         AssertContains(controllerText, "public bool TryHandlePropertyChanged(string propertyName)");
         AssertContains(controllerText, "case nameof(MainViewModel.IsCustomAudioInputEnabled):");
         AssertContains(controllerText, "case nameof(MainViewModel.IsMicrophoneEnabled):");
@@ -1858,14 +1710,6 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
 
         AssertContains(adapterText, "private MicrophoneControlsController _microphoneControlsController = null!;");
         AssertContains(adapterText, "private void InitializeMicrophoneControlsController()");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.MicrophoneControls.cs")),
-            "microphone controls adapter folded into MainWindow.xaml.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Audio", "MicrophoneControlsController.cs")),
-            "microphone controls folded into AudioControlBindingController.cs");
         AssertContains(adapterText, "=> _microphoneControlsController.AttachVolumeBindings();");
         AssertContains(adapterText, "=> _microphoneControlsController.SyncVolumeControls(volumePercent);");
         AssertContains(adapterText, "=> _microphoneControlsController.ApplyInitialVisibility();");
@@ -2092,14 +1936,6 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
         AssertContains(controllerSource, "public static RectInt32? ResolveTargetBounds(");
         AssertContains(controllerSource, "AutomationWindowAction.Center => new RectInt32(");
         AssertContains(adapterSource, "public Task CloseAsync(CancellationToken cancellationToken = default)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Window", "WindowSnapRegionLayoutPolicy.cs")),
-            "snap-region rectangle math lives with window automation controller concerns");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Window", "WindowAutomationHostLifecycleController.cs")),
-            "automation host lifecycle lives with the window automation controller owner");
         return Task.CompletedTask;
     }
 
