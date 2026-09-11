@@ -493,19 +493,28 @@ internal static class AutomationPipeClient
             bufferSize: 4096,
             leaveOpen: true);
 
-        await writer.WriteLineAsync(requestJson).WaitAsync(cancellationToken).ConfigureAwait(false);
+        // Pass the token to the write and the read themselves. WaitAsync(token)
+        // only cancels the wait: the I/O keeps running on the stream, and
+        // disposing the StreamWriter/StreamReader as this method unwinds then
+        // throws "The stream is currently in use by a previous operation on the
+        // stream" instead of the OperationCanceledException callers expect.
+        await writer.WriteLineAsync(requestJson.AsMemory(), cancellationToken).ConfigureAwait(false);
+
         string? responseLine;
-        try
+        using (var responseTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
         {
-            responseLine = await reader.ReadLineAsync()
-                .WaitAsync(TimeSpan.FromMilliseconds(responseTimeoutMs), cancellationToken)
-                .ConfigureAwait(false);
-        }
-        catch (TimeoutException ex)
-        {
-            throw new AutomationPipeResponseTimeoutException(
-                $"Timed out waiting for automation response after {responseTimeoutMs} ms.",
-                ex);
+            responseTimeout.CancelAfter(responseTimeoutMs);
+            try
+            {
+                responseLine = await reader.ReadLineAsync(responseTimeout.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                throw new AutomationPipeResponseTimeoutException(
+                    $"Timed out waiting for automation response after {responseTimeoutMs} ms.",
+                    new TimeoutException(
+                        $"Timed out waiting for automation response after {responseTimeoutMs} ms."));
+            }
         }
 
         if (string.IsNullOrWhiteSpace(responseLine))

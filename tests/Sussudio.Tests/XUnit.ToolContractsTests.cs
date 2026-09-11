@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -11127,7 +11127,7 @@ public sealed class AutomationToolContractsProtocolXunitTests
         Assert.Contains("public class AutomationPipeException : Exception", automationPipeProtocolText);
         Assert.Contains("public sealed class AutomationPipeConnectException : AutomationPipeException", automationPipeProtocolText);
         Assert.Contains("ConnectWithClassifiedErrorsAsync(", pipeClientText);
-        Assert.Contains("await writer.WriteLineAsync(requestJson)", pipeClientText);
+        Assert.Contains("await writer.WriteLineAsync(requestJson.AsMemory(), cancellationToken)", pipeClientText);
         Assert.Contains("private static async Task ConnectWithClassifiedErrorsAsync(", pipeClientText);
         Assert.Contains("await client.ConnectAsync(connectTimeoutMs, cancellationToken).ConfigureAwait(false);", pipeClientText);
         Assert.Contains("catch (TimeoutException ex)", pipeClientText);
