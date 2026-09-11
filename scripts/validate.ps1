@@ -35,8 +35,17 @@ $ErrorActionPreference = "Stop"
 $Root = (Resolve-Path -LiteralPath $Root).Path
 $solution = Join-Path $Root "Sussudio.slnx"
 $testProject = Join-Path $Root "tests\Sussudio.Tests\Sussudio.Tests.csproj"
-$harnessDll = Join-Path $Root "tests\Sussudio.Tests\bin\$Configuration\net8.0\Sussudio.Tests.dll"
 $appDll = Join-Path $Root "Sussudio\bin\$Platform\$Configuration\net8.0-windows10.0.19041.0\win-x64\Sussudio.dll"
+
+# The test project honours -p:Platform, so its output lands under bin\<Platform>
+# when the solution is built that way. Prefer that path and only fall back to
+# the platform-less one, so the smoke step cannot silently load a stale build.
+$harnessCandidates = @(
+    (Join-Path $Root "tests\Sussudio.Tests\bin\$Platform\$Configuration\net8.0\Sussudio.Tests.dll"),
+    (Join-Path $Root "tests\Sussudio.Tests\bin\$Configuration\net8.0\Sussudio.Tests.dll")
+)
+$harnessDll = $harnessCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+if (-not $harnessDll) { $harnessDll = $harnessCandidates[0] }
 
 if (-not (Test-Path -LiteralPath $solution)) { throw "Solution not found: $solution" }
 
