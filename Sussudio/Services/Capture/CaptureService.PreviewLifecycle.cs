@@ -274,6 +274,13 @@ public partial class CaptureService
                 unifiedVideoCapture.SetSkipCpuReadback(true);
             }
             _videoPipeline.InstallCapture(unifiedVideoCapture);
+            // Kept inline rather than routed through ResetVideoBaselineCounters (its twin in
+            // CaptureService.RecordingLifecycle.cs): CaptureServiceOwnershipTests'
+            // CaptureService_InitializationLivesWithServiceRoot deliberately asserts that BOTH
+            // lifecycle partials spell out this SetActualCaptureFrameRate call, and separately
+            // asserts neither file invokes the telemetry frame-rate correction helper -- so the
+            // rate is provably taken from the negotiated capture here. desloppify flags the
+            // 7-line overlap with the recording path as boilerplate_duplication; the guard wins.
             _lastMfSourceReaderFramesDelivered = 0;
             _lastMfSourceReaderFramesDropped = 0;
             _lastMfSourceReaderNegotiatedFormat = unifiedVideoCapture.NegotiatedFormat;
