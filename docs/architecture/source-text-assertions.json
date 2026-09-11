@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "description": "Ceiling on source-text assertions per test file. An assertion on repository source text cannot fail when behavior breaks; lower a ceiling when a slice removes some, and never raise one.",
+  "totalCeiling": 7617,
+  "fileCeilings": {
+    "ArchitectureGuardrailsTests.cs": 468,
+    "CaptureServiceOwnershipTests.cs": 289,
+    "MainWindowControllerOwnershipTests.cs": 685,
+    "MjpegPipelineTests.cs": 142,
+    "XUnit.AutomationContractsTests.cs": 1076,
+    "XUnit.CoreRuntimeContractsTests.cs": 271,
+    "XUnit.FlashbackContractsTests.cs": 1239,
+    "XUnit.ModelContractsTests.cs": 149,
+    "XUnit.PresentationPreviewContractsTests.cs": 1700,
+    "XUnit.RecordingContractsTests.cs": 847,
+    "XUnit.ToolContractsTests.cs": 751
+  }
+}
