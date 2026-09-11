@@ -370,6 +370,11 @@ namespace Sussudio.Services.Contracts
         void EnqueueGpuVideoFrame(IntPtr d3d11Texture2D, int subresourceIndex);
     }
 
+    /// <summary>
+    /// On either normal return the callee has taken and released any reference it
+    /// needed, including when admission is rejected; the caller may release its
+    /// texture after return.
+    /// </summary>
     public interface IGpuVideoFrameTryEncoder
     {
         bool TryEnqueueGpuVideoFrame(IntPtr d3d11Texture2D, int subresourceIndex);

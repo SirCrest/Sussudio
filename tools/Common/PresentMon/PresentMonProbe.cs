@@ -243,6 +243,13 @@ public static class PresentMonProbe
     {
         foreach (var candidate in EnumeratePresentMonCandidates(explicitPath))
         {
+            // The caller- and environment-supplied candidates are not otherwise
+            // mediated, so admit only the known PresentMon executable names.
+            if (!CandidateExeNames.Contains(Path.GetFileName(candidate), StringComparer.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
             if (File.Exists(candidate))
             {
                 return Path.GetFullPath(candidate);

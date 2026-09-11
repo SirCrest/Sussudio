@@ -544,12 +544,6 @@ public static class FlashbackTools
 
         outputPath ??= $"temp/flashback_export_{DateTime.Now:yyyyMMdd_HHmmss}.mp4";
 
-        var dir = Path.GetDirectoryName(outputPath);
-        if (!string.IsNullOrEmpty(dir))
-        {
-            Directory.CreateDirectory(dir);
-        }
-
         var payload = new Dictionary<string, object?>
         {
             ["seconds"] = seconds,

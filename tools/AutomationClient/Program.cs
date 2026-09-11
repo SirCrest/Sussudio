@@ -96,16 +96,9 @@ internal static class Program
                 Console.WriteLine(responseLine);
             }
 
-            try
+            if (result.StateRead && result.Success)
             {
-                if (result.StateRead && result.Success)
-                {
-                    return 0;
-                }
-            }
-            catch
-            {
-                // Keep zero exit behavior only for valid JSON success payloads.
+                return 0;
             }
 
             return 3;
