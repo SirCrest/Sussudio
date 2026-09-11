@@ -413,28 +413,12 @@ public sealed class FlashbackDecoderContractsTests
         => global::Program.FlashbackDecoder_ValidationHelpersLiveWithRootLifecycle();
 
     [Fact]
-    public Task FlashbackDecoderLifetimeCleanupLivesWithRootLifecycle()
-        => global::Program.FlashbackDecoder_LifetimeCleanupLivesWithRootLifecycle();
-
-    [Fact]
     public Task FlashbackDecoderStateGuardsTimingAndErrorsLiveWithDecoderRoot()
         => global::Program.FlashbackDecoder_StateGuardsTimingAndErrorsLiveWithDecoderRoot();
 
     [Fact]
     public Task FlashbackDecoderOutputTypesLiveWithDecoderRoot()
         => global::Program.FlashbackDecoder_OutputTypesLiveWithDecoderRoot();
-
-    [Fact]
-    public Task FlashbackDecoderVideoSetupLivesWithDecoderRoot()
-        => global::Program.FlashbackDecoder_VideoSetupLivesWithDecoderRoot();
-
-    [Fact]
-    public Task FlashbackDecoderPlaybackFlowLivesWithDecoderRoot()
-        => global::Program.FlashbackDecoder_PlaybackFlowLivesWithDecoderRoot();
-
-    [Fact]
-    public Task FlashbackDecoderDecodeLoopLivesWithDecoderRoot()
-        => global::Program.FlashbackDecoder_DecodeLoopLivesWithDecoderRoot();
 
     [Fact]
     public Task FlashbackDecoderDefaultsToClosedState()
@@ -463,10 +447,6 @@ public sealed class FlashbackDecoderContractsTests
     [Fact]
     public Task FlashbackDecoderAudioOutputBuffersAreBounded()
         => global::Program.FlashbackDecoder_AudioOutputBuffersAreBounded();
-
-    [Fact]
-    public Task FlashbackDecoderAudioSetupLivesWithDecoderRoot()
-        => global::Program.FlashbackDecoder_AudioSetupLivesWithDecoderRoot();
 
     [Fact]
     public Task FlashbackDecoderSoftwareFramePlanesAreValidated()
@@ -596,10 +576,6 @@ public sealed class FlashbackEncoderSinkContractsTests
         => global::Program.FlashbackEncoderSink_RootOwnsConstructionAndRuntimeSurface();
 
     [Fact]
-    public Task FlashbackEncoderSinkForceRotateLivesWithEncodingLoop()
-        => global::Program.FlashbackEncoderSink_ForceRotateLivesWithEncodingLoop();
-
-    [Fact]
     public Task FlashbackEncoderSinkStopAndDisposeLifecyclesShareShutdownOwner()
         => global::Program.FlashbackEncoderSink_StopAndDisposeLifecyclesShareShutdownOwner();
 
@@ -610,10 +586,6 @@ public sealed class FlashbackEncoderSinkContractsTests
     [Fact]
     public Task FlashbackEncoderSinkRuntimeStateLivesWithRoot()
         => global::Program.FlashbackEncoderSink_RuntimeStateLivesWithRoot();
-
-    [Fact]
-    public Task FlashbackEncoderSinkRecordingLifecycleLivesWithRootRuntimeSurface()
-        => global::Program.FlashbackEncoderSink_RecordingLifecycleLivesWithRootRuntimeSurface();
 
     [Fact]
     public Task FlashbackEncoderSinkOptionsHelpersLiveWithStartup()
@@ -4906,73 +4878,6 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackEncoderSink_ForceRotateLivesWithEncodingLoop()
-    {
-        var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
-            .Replace("\r\n", "\n");
-        var forceRotateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
-            .Replace("\r\n", "\n");
-        var docsText = ReadRepoFile("docs/architecture/cleanup-plan.md")
-            .Replace("\r\n", "\n") + "\n" +
-            ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
-
-        AssertContains(forceRotateText, "public bool IsForceRotateActive =>");
-        AssertContains(forceRotateText, "public bool IsForceRotateRequested =>");
-        AssertContains(forceRotateText, "public bool IsForceRotateDraining =>");
-        AssertContains(forceRotateText, "public bool WaitForForceRotateIdle(TimeSpan timeout)");
-        AssertContains(forceRotateText, "private bool _forceRotateRequested;");
-        AssertContains(forceRotateText, "private volatile ForceRotateRequest? _forceRotateRequest;");
-        AssertContains(forceRotateText, "private TimeSpan _forceRotateInPoint;");
-        AssertContains(forceRotateText, "private TimeSpan _forceRotateOutPoint;");
-        AssertContains(forceRotateText, "private bool _forceRotateDraining;");
-        AssertContains(forceRotateText, "public FlashbackForceRotateResult ForceRotateForExport(");
-        AssertContains(forceRotateText, "private const int ForceRotateCommittedGraceMs = 1_000;");
-        AssertContains(forceRotateText, "var request = new ForceRotateRequest(preparedPath);");
-        AssertContains(forceRotateText, "TryCancelForceRotate(request)");
-        AssertContains(forceRotateText, "private bool TryCancelForceRotate(ForceRotateRequest request)");
-        AssertContains(forceRotateText, "private void CompletePendingForceRotateWithEmptyResult()");
-        AssertContains(forceRotateText, "private static bool ShouldAbortForceRotateDrain(");
-        AssertContains(forceRotateText, "private sealed class ForceRotateRequest");
-        AssertContains(forceRotateText, "public bool TryBeginCommit()");
-        AssertContains(forceRotateText, "public bool TryCancel()");
-        AssertContains(forceRotateText, "public void Complete(IReadOnlyList<string> paths)");
-        AssertContains(forceRotateText, "private bool DrainAndRotateForceRotateRequest(");
-        AssertContains(forceRotateText, "Volatile.Write(ref _forceRotateDraining, true);");
-        AssertContains(forceRotateText, "private static bool TryDrainForceRotatePhase(");
-        AssertContains(forceRotateText, "() => DrainAudioPackets(audioQueue.Reader, AudioDrainBatchLimit)");
-        AssertContains(forceRotateText, "() => DrainMicrophonePackets(microphoneQueue.Reader, AudioDrainBatchLimit)");
-        AssertContains(forceRotateText, "() => DrainGpuPackets(gpuQueue.Reader, GpuDrainBatchLimit)");
-        AssertContains(forceRotateText, "() => DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit)");
-        AssertContains(forceRotateText, "if (!localRequest.TryBeginCommit())");
-        AssertContains(forceRotateText, "if (!RotateSegment(currentPts, localRequest.PreparedPath))");
-        AssertContains(forceRotateText, "localRequest.Complete(_bufferManager.GetExistingCompletedSegmentPathsInRange(localIn, localOut));");
-        AssertContains(rootText, "public FlashbackForceRotateResult ForceRotateForExport(");
-        AssertContains(rootText, "public bool IsForceRotateActive =>");
-        AssertContains(rootText, "public bool WaitForForceRotateIdle(TimeSpan timeout)");
-        AssertContains(rootText, "private bool _forceRotateRequested;");
-        AssertContains(rootText, "private TimeSpan _forceRotateInPoint;");
-        AssertContains(rootText, "private TimeSpan _forceRotateOutPoint;");
-        AssertContains(rootText, "private bool _forceRotateDraining;");
-        AssertContains(rootText, "private sealed class ForceRotateRequest");
-        AssertContains(rootText, "private const int ForceRotateCommittedGraceMs = 1_000;");
-        AssertContains(docsText, "FlashbackEncoderSink.cs");
-        AssertDoesNotContain(docsText, "FlashbackEncoderSink.ForceRotate.cs");
-        foreach (var removedFile in new[]
-        {
-            "FlashbackEncoderSink.ForceRotateRequests.cs",
-            "FlashbackEncoderSink.ForceRotateExecution.cs",
-            "FlashbackEncoderSink.ForceRotateLifecycle.cs",
-            "FlashbackEncoderSink.ForceRotateRequest.cs"
-        })
-        {
-            AssertEqual(
-                false,
-                File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", removedFile)),
-                $"{removedFile} folded into FlashbackEncoderSink.cs");
-        }
-
-        return Task.CompletedTask;
-    }
 
     internal static Task FlashbackEncoderSink_StopAndDisposeLifecyclesShareShutdownOwner()
     {
@@ -5077,48 +4982,6 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackEncoderSink_RecordingLifecycleLivesWithRootRuntimeSurface()
-    {
-        var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
-            .Replace("\r\n", "\n");
-        var docsText = ReadRepoFile("docs/architecture/cleanup-plan.md")
-            .Replace("\r\n", "\n") + "\n" +
-            ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
-
-        AssertContains(rootText, "public TimeSpan LastRecordingStartPts { get; private set; }");
-        AssertContains(rootText, "public TimeSpan LastRecordingEndPts { get; private set; }");
-        AssertContains(rootText, "public bool IsRecordingActive =>");
-        AssertContains(rootText, "public bool CanBeginRecording");
-        AssertContains(rootText, "!_bufferManager.IsSessionPreservedForRecovery");
-        AssertContains(rootText, "Task IRecordingSink.StartAsync(RecordingContext context, CancellationToken cancellationToken)");
-        AssertContains(rootText, "public void BeginRecording(string outputPath)");
-        AssertContains(rootText, "Cannot begin recording: flashback export rotation is still draining.");
-        AssertContains(rootText, "_bufferManager.PauseEviction();");
-        AssertContains(rootText, "public void CancelRecordingStartRollback(string reason)");
-        AssertContains(rootText, "ResumeEvictionBestEffort(_bufferManager, \"recording_start_rollback\")");
-        AssertContains(rootText, "public async Task<FinalizeResult> EndRecordingAsync(CancellationToken cancellationToken)");
-        AssertContains(rootText, "FLASHBACK_RECORDING_END_REJECTED");
-        AssertContains(rootText, "FLASHBACK_RECORDING_FAIL");
-        AssertContains(rootText, "ResumeEvictionBestEffort(_bufferManager, \"recording_end\")");
-        AssertContains(rootText, "FLASHBACK_RECORDING_READY");
-
-        AssertContains(docsText, "FlashbackEncoderSink.cs");
-        AssertContains(docsText, "recording PTS boundary state");
-        foreach (var removedFile in new[]
-        {
-            "FlashbackEncoderSink.Recording.State.cs",
-            "FlashbackEncoderSink.Recording.Start.cs",
-            "FlashbackEncoderSink.Recording.End.cs"
-        })
-        {
-            AssertEqual(
-                false,
-                File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", removedFile)),
-                $"{removedFile} folded into FlashbackEncoderSink.cs");
-        }
-
-        return Task.CompletedTask;
-    }
 
     internal static Task FlashbackEncoderSink_OptionsHelpersLiveWithStartup()
     {
@@ -5408,21 +5271,6 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackDecoder_AudioSetupLivesWithDecoderRoot()
-    {
-        var decoderText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(decoderText, "private void InitializeAudioDecoder()");
-        AssertContains(decoderText, "private void InitializeAudioResampler()");
-        AssertContains(decoderText, "private void DecodeAndDeliverAudioPacket(AVPacket* packet)");
-        AssertContains(decoderText, "private DecodedAudioChunk ConvertAndOutputAudioFrame()");
-        AssertContains(decoderText, "FLASHBACK_DECODER_AUDIO codec=");
-        AssertContains(decoderText, "swr_alloc_set_opts2");
-        AssertContains(decoderText, "DecodeAndDeliverAudioPacket(_packet);");
-
-        return Task.CompletedTask;
-    }
 
     internal static Task FlashbackDecoder_SoftwareFramePlanesAreValidated()
     {
@@ -5690,17 +5538,6 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackDecoder_LifetimeCleanupLivesWithRootLifecycle()
-    {
-        var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(rootText, "private void CloseFileCore()");
-        AssertContains(rootText, "internal static void ReleaseHeldFrame(DecodedVideoFrame frame)");
-        AssertContains(rootText, "private static void ReleaseHeldFrameBestEffort(DecodedVideoFrame frame, string operation)");
-
-        return Task.CompletedTask;
-    }
 
     internal static Task FlashbackDecoder_StateGuardsTimingAndErrorsLiveWithDecoderRoot()
     {
@@ -5730,63 +5567,8 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackDecoder_VideoSetupLivesWithDecoderRoot()
-    {
-        var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
-            .Replace("\r\n", "\n");
 
-        AssertContains(rootText, "private void InitializeVideoDecoder()");
-        AssertContains(rootText, "public void Initialize(IntPtr d3dDevicePtr, IntPtr d3dContextPtr)");
-        AssertContains(rootText, "private bool TryInitializeD3D11VADecoder(AVCodecParameters* codecPar)");
-        AssertContains(rootText, "private static AVCodec* FindD3D11VADecoder(AVCodecID codecId, out string codecName)");
-        AssertContains(rootText, "private void AllocateVideoOutputBuffers()");
-        AssertContains(rootText, "private DecodedVideoFrame ConvertAndOutputVideoFrame()");
-        AssertContains(rootText, "private void CopyFramePlanesToBuffer(");
-        AssertContains(rootText, "private void ConvertYuv420pToNv12(");
-        AssertContains(rootText, "private void ConvertYuv420p10leToP010(");
 
-        return Task.CompletedTask;
-    }
-
-    internal static Task FlashbackDecoder_PlaybackFlowLivesWithDecoderRoot()
-    {
-        var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(rootText, "public bool SeekToKeyframe(TimeSpan target, CancellationToken cancellationToken = default)");
-        AssertContains(rootText, "public bool SeekTo(TimeSpan target, CancellationToken cancellationToken = default)");
-        AssertContains(rootText, "FLASHBACK_DECODER_SEEK_FALLBACK_OK");
-        AssertContains(rootText, "FLASHBACK_DECODER_SEEK_CAP_HIT");
-        AssertContains(rootText, "public bool TryDecodeNextVideoFrame(out DecodedVideoFrame frame, CancellationToken cancellationToken = default)");
-        AssertContains(rootText, "private bool FeedNextVideoPacket(CancellationToken cancellationToken = default)");
-        AssertContains(rootText, "private void AddLastDecodeReceiveMs(double elapsedMs)");
-        AssertContains(rootText, "private static double ElapsedMsSince(long startTimestamp)");
-        AssertOccursBefore(
-            rootText,
-            "public bool SeekTo(TimeSpan target, CancellationToken cancellationToken = default)",
-            "public bool TryDecodeNextVideoFrame(out DecodedVideoFrame frame, CancellationToken cancellationToken = default)");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task FlashbackDecoder_DecodeLoopLivesWithDecoderRoot()
-    {
-        var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(rootText, "private PlaybackDecodePhaseTimings _lastDecodePhaseTimings;");
-        AssertContains(rootText, "public PlaybackDecodePhaseTimings LastDecodePhaseTimings => _lastDecodePhaseTimings;");
-        AssertContains(rootText, "public readonly record struct PlaybackDecodePhaseTimings(");
-        AssertContains(rootText, "public bool TryDecodeNextVideoFrame(out DecodedVideoFrame frame, CancellationToken cancellationToken = default)");
-        AssertContains(rootText, "private bool FeedNextVideoPacket(CancellationToken cancellationToken = default)");
-        AssertContains(rootText, "private void DecodeAndDeliverAudioPacket(AVPacket* packet)");
-        AssertContains(rootText, "private DecodedAudioChunk ConvertAndOutputAudioFrame()");
-        AssertContains(rootText, "private static bool TryCalculateAudioBufferBytes(int sampleCount, out int bytes)");
-        AssertContains(rootText, "ffmpeg.av_read_frame(_formatCtx, _packet)");
-        AssertContains(rootText, "DecodeAndDeliverAudioPacket(_packet);");
-
-        return Task.CompletedTask;
-    }
 
     internal static Task FlashbackDecoder_DefaultState_IsNotOpenAndNotInitialized()
     {

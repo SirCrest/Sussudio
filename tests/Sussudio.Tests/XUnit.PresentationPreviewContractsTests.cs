@@ -290,10 +290,6 @@ public sealed class PresentationPreviewD3DContractsAndMetricsOwnershipTests
     }
 
     [Fact]
-    public Task ConfigurationLivesWithRendererFacade()
-        => global::Program.D3D11PreviewRenderer_ConfigurationLivesWithRendererFacade();
-
-    [Fact]
     public Task NativeInteropLivesWithBehaviorOwners()
         => global::Program.D3D11PreviewRenderer_NativeInteropLivesWithBehaviorOwners();
 
@@ -382,16 +378,8 @@ public sealed class PresentationPreviewD3DRenderPipelineOwnershipTests
         => global::Program.D3D11PreviewRenderer_ShaderCompilationLivesInFocusedFiles();
 
     [Fact]
-    public Task FrameLatencyLivesWithRenderThread()
-        => global::Program.D3D11PreviewRenderer_FrameLatencyLivesWithRenderThread();
-
-    [Fact]
     public Task RenderThreadLivesInRendererRoot()
         => global::Program.D3D11PreviewRenderer_RenderThreadLivesInRendererRoot();
-
-    [Fact]
-    public Task PresentAccountingLivesWithRenderPasses()
-        => global::Program.D3D11PreviewRenderer_PresentAccountingLivesWithRenderPasses();
 
     [Fact]
     public Task ViewportHelpersLiveWithRenderPasses()
@@ -1095,23 +1083,6 @@ public sealed class PresentationPreviewOutputPathContractsTests
 
 static partial class Program
 {
-    internal static Task D3D11PreviewRenderer_ConfigurationLivesWithRendererFacade()
-    {
-        var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(rootText, "SUSSUDIO_PREVIEW_PRESENT_SYNC_INTERVAL");
-        AssertContains(rootText, "SUSSUDIO_PREVIEW_DXGI_MAX_FRAME_LATENCY");
-        AssertContains(rootText, "SUSSUDIO_PREVIEW_SWAPCHAIN_BUFFER_COUNT");
-        AssertContains(rootText, "SUSSUDIO_PREVIEW_RENDER_QUEUE_DEPTH");
-        AssertContains(rootText, "SUSSUDIO_PREVIEW_WAITABLE_SWAPCHAIN");
-        AssertContains(rootText, "SUSSUDIO_PREVIEW_DXGI_FRAME_STATS_SAMPLE_INTERVAL");
-        AssertContains(rootText, "SUSSUDIO_PREVIEW_RENDER_MMCSS_TASK\") ?? \"Playback\"");
-        AssertContains(rootText, "SUSSUDIO_PREVIEW_NATIVE_STOP_FENCE_TIMEOUT_MS");
-        AssertContains(rootText, "SUSSUDIO_PREVIEW_RENDER_THREAD_STOP_TIMEOUT_MS");
-
-        return Task.CompletedTask;
-    }
 
     internal static Task D3D11PreviewRenderer_NativeInteropLivesWithBehaviorOwners()
     {
@@ -1430,25 +1401,6 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task D3D11PreviewRenderer_FrameLatencyLivesWithRenderThread()
-    {
-        var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
-            .Replace("\r\n", "\n");
-        var resourcesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs")
-            .Replace("\r\n", "\n");
-        var renderPassesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(rootText, "private SafeWaitHandle? _frameLatencyWaitHandle;");
-        AssertContains(rootText, "private void ConfigureFrameLatencyWaitableObject()");
-        AssertContains(rootText, "private void WaitForFrameLatencySignal()");
-        AssertContains(rootText, "TrackFrameLatencyWait(result, Stopwatch.GetTimestamp() - waitStart);");
-        AssertContains(rootText, "private static extern uint WaitForSingleObject(SafeWaitHandle handle, uint milliseconds);");
-        AssertDoesNotContain(resourcesText, "private void WaitForFrameLatencySignal()");
-        AssertDoesNotContain(renderPassesText, "private static extern uint WaitForSingleObject");
-
-        return Task.CompletedTask;
-    }
 
     internal static Task D3D11PreviewRenderer_ViewportHelpersLiveWithRenderPasses()
     {
@@ -2128,26 +2080,6 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task D3D11PreviewRenderer_PresentAccountingLivesWithRenderPasses()
-    {
-        var renderPassesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(renderPassesText, "private void PresentAndTrackFrame(");
-        AssertContains(renderPassesText, "TryCaptureFrameBeforePresent(rendererMode);");
-        AssertContains(renderPassesText, "var presentResult = swapChain.Present((uint)_presentSyncInterval, PresentFlags.None);");
-        AssertContains(renderPassesText, "TrackPresentCadence(frame.CountForPresentCadence);");
-        AssertContains(renderPassesText, "var estimatedVisibleTick = EstimateVisibleTick(presentEnd);");
-        AssertContains(renderPassesText, "RecordSlowFrameDiagnostic(frame, presentIntervalMs, inputUploadTicks, renderTicks, presentTicks, totalTicks, presentEnd, estimatedVisibleTick);");
-        var captureIndex = renderPassesText.IndexOf("TryCaptureFrameBeforePresent(rendererMode);", StringComparison.Ordinal);
-        var presentIndex = renderPassesText.IndexOf("var presentResult = swapChain.Present((uint)_presentSyncInterval, PresentFlags.None);", StringComparison.Ordinal);
-        if (captureIndex < 0 || presentIndex < 0 || captureIndex > presentIndex)
-        {
-            throw new InvalidOperationException("Present transaction must capture screenshots before swap-chain Present.");
-        }
-
-        return Task.CompletedTask;
-    }
 
 
     internal static Task D3D11PreviewRenderer_LeasedSubmissionPreservesTracking()

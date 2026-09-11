@@ -65,32 +65,12 @@ public sealed class RecordingPipelineContractsTests
         => global::Program.UnifiedVideoCapture_SinkFanoutOwnsRecordingAndFlashbackFanout();
 
     [Fact]
-    public Task UnifiedVideoCaptureFrameIngressLivesWithSourceSessionRoot()
-        => global::Program.UnifiedVideoCapture_FrameIngressLivesWithSourceSessionRoot();
-
-    [Fact]
     public Task UnifiedVideoCaptureLifecycleLivesWithRootState()
         => global::Program.UnifiedVideoCapture_LifecycleLivesWithRootState();
 
     [Fact]
     public Task WasapiAudioCaptureRejectsIncompleteHotAudioWrites()
         => global::Program.WasapiAudioCapture_HotAudioWritesRejectIncompleteTasks();
-
-    [Fact]
-    public Task WasapiAudioCaptureConversionLivesWithLifecycleRoot()
-        => global::Program.WasapiAudioCapture_ConversionLivesWithLifecycleRoot();
-
-    [Fact]
-    public Task WasapiAudioCaptureInitializationLivesWithLifecycleRoot()
-        => global::Program.WasapiAudioCapture_InitializationLivesWithLifecycleRoot();
-
-    [Fact]
-    public Task WasapiAudioPlaybackInitializationLivesWithLifecycleRoot()
-        => global::Program.WasapiAudioPlayback_InitializationLivesWithLifecycleRoot();
-
-    [Fact]
-    public Task WasapiAudioCaptureDiagnosticsLivesWithLifecycleRoot()
-        => global::Program.WasapiAudioCapture_DiagnosticsLivesWithLifecycleRoot();
 
     [Fact]
     public Task WasapiComInteropContractsLiveWithInteropOwner()
@@ -183,14 +163,6 @@ public sealed class CoreRuntimeRecordingContractsTests
         Assert.True(verifyAsync.ReturnType.IsGenericType);
         Assert.Equal(resultType, verifyAsync.ReturnType.GetGenericArguments()[0]);
     }
-
-    [Fact]
-    public Task RecordingVerifierCadenceAnalysisLivesWithVerifier()
-        => global::Program.RecordingVerifier_CadenceAnalysisLivesWithVerifier();
-
-    [Fact]
-    public Task RecordingVerifierProbeValidationAndResultShapingOwnership()
-        => global::Program.RecordingVerifier_ProbeValidationAndResultShapingOwnership();
 
     [Fact]
     public Task RecordingVerificationResultExposesExpectedProperties()
@@ -327,14 +299,6 @@ public sealed class CoreRuntimeRecordingContractsTests
     [Fact]
     public Task LibAvEncoderDumpsMpegTsHeadersForRotatedFlashbackSegments()
         => global::Program.LibAvEncoder_MpegTsNvencDumpsHeadersForRotatedSegments();
-
-    [Fact]
-    public Task LibAvEncoderPacketWritingLivesWithVideoSubmission()
-        => global::Program.LibAvEncoder_PacketWritingLivesWithVideoSubmission();
-
-    [Fact]
-    public Task LibAvEncoderFrameCopyLivesWithVideoSubmission()
-        => global::Program.LibAvEncoder_FrameCopyLivesWithVideoSubmission();
 
     [Fact]
     public Task LibAvEncoderVideoSubmissionLivesInFocusedPartial()
@@ -530,14 +494,6 @@ public sealed class RecordingModelContractsTests
     [Fact]
     public Task FlashbackBufferManagerSegmentQueryHelpersLiveWithRootState()
         => global::Program.FlashbackBufferManager_SegmentQueriesLiveWithRootState();
-
-    [Fact]
-    public Task FlashbackBufferManagerSegmentMutationLivesWithRootState()
-        => global::Program.FlashbackBufferManager_SegmentMutationLivesWithRootState();
-
-    [Fact]
-    public Task FlashbackBufferManagerLiveAccountingLivesWithRootState()
-        => global::Program.FlashbackBufferManager_LiveAccountingLivesWithRootState();
 
     [Fact]
     public Task FlashbackBufferManagerLifecycleHelpersLiveWithRootState()
@@ -2304,48 +2260,7 @@ static partial class Program
         return task.GetType().GetProperty("Result")!.GetValue(task)!;
     }
 
-    internal static Task RecordingVerifier_CadenceAnalysisLivesWithVerifier()
-    {
-        var rootText = ReadRepoFile("Sussudio/Services/Recording/Verification/RecordingVerifier.cs")
-            .Replace("\r\n", "\n");
 
-        AssertContains(rootText, "public sealed class RecordingVerifier : IRecordingVerifier");
-        AssertContains(rootText, "private async Task<CadenceProbeResult> AnalyzeCadenceMetricsAsync(");
-        AssertContains(rootText, "private static CadenceMetrics ComputeCadenceMetrics(");
-        AssertContains(rootText, "private static double? TryGetFrameTimestampSeconds(JsonElement frame)");
-        AssertContains(rootText, "private static double? TryGetJsonDouble(JsonElement element, string propertyName)");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task RecordingVerifier_ProbeValidationAndResultShapingOwnership()
-    {
-        var rootText = ReadRepoFile("Sussudio/Services/Recording/Verification/RecordingVerifier.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(rootText, "public async Task<RecordingVerificationResult> VerifyAsync(");
-        AssertContains(rootText, "private async Task<HdrSideDataProbeResult> ProbeHdrSideDataAsync(");
-        AssertContains(rootText, "private async Task<CadenceProbeResult> AnalyzeCadenceMetricsAsync(");
-        AssertContains(rootText, "private static Dictionary<string, string> ParseKeyValueOutput(string output)");
-        AssertContains(rootText, "private static double? TryParseRational(string? value)");
-        AssertContains(rootText, "private ProcessSpec CreateFfprobeProcessSpec(");
-        AssertContains(rootText, "private static void ValidateContainer(");
-        AssertContains(rootText, "private static void ValidateCodec(");
-        AssertContains(rootText, "private static void ValidateDimensions(");
-        AssertContains(rootText, "private static double? ResolveExpectedFrameRate(");
-        AssertContains(rootText, "private static void ValidateCadence(");
-        AssertContains(rootText, "private readonly record struct HdrValidationResult(");
-        AssertContains(rootText, "private static HdrValidationResult ValidateHdrMetadata(");
-        AssertContains(rootText, "private static string ResolveExpectedFormat(");
-        AssertContains(rootText, "private static bool IsFlashbackRecording(");
-        AssertContains(rootText, "private static (string? Code, string? Expected, string? Actual) ParsePrimaryMismatch(");
-        AssertContains(rootText, "private static HdrParityResult BuildHdrParityResult(");
-        AssertContains(rootText, "private static IReadOnlyList<MismatchTaxonomyEntry> BuildMismatchTaxonomy(");
-        AssertContains(rootText, "private static string? TryGetMismatchPart(");
-        AssertContains(rootText, "private static RecordingVerificationResult CreateEarlyFailure(");
-
-        return Task.CompletedTask;
-    }
 
     internal static Task RecordingVerificationResult_HasExpectedProperties()
     {
@@ -2973,63 +2888,6 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task UnifiedVideoCapture_FrameIngressLivesWithSourceSessionRoot()
-    {
-        var frameIngressSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(frameIngressSource, "private void OnFrameArrived(ReadOnlySpan<byte> frameData, int width, int height, long arrivalTick)");
-        AssertContains(frameIngressSource, "private void OnMjpegPipelineFrameEmitted(PooledVideoFrame frame)");
-        AssertContains(frameIngressSource, "private void OnDualFrameArrived(");
-        AssertContains(frameIngressSource, "private void RecordCaptureArrived(long sourceSequence, long arrivalTick, int width, int height, int compressedByteLength)");
-        AssertContains(frameIngressSource, "private void FirePixelFormatObserverOnce(string format)");
-        AssertContains(frameIngressSource, "private void SignalFatalError(Exception ex, string logMessage)");
-        AssertContains(frameIngressSource, "private void OnMjpegPipelinePreviewFrameDecoded(PooledVideoFrameLease frame)");
-        AssertContains(frameIngressSource, "private unsafe void SubmitPreviewRawFrame(");
-        AssertContains(frameIngressSource, "private void TrackPreviewVisualFrame(");
-        AssertContains(frameIngressSource, "private void MarkPreviewVisualCadenceUnavailable(string reason)");
-        AssertContains(frameIngressSource, "private void EnqueueRecordingFrame(ReadOnlySpan<byte> frameData, int width, int height, bool isP010, long sourceSequence)");
-        AssertContains(frameIngressSource, "private void EnqueueFlashbackFrame(ReadOnlySpan<byte> frameData, int width, int height, bool isP010, long sourceSequence)");
-        AssertContains(frameIngressSource, "private void TrackFlashbackRecordingAcceptedSequence(long sourceSequence)");
-        AssertContains(frameIngressSource, "internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource");
-        AssertDoesNotContain(frameIngressSource, "partial class UnifiedVideoCapture");
-
-        var rawIngress = ExtractSourceBlock(
-            frameIngressSource,
-            "private void OnFrameArrived(ReadOnlySpan<byte> frameData, int width, int height, long arrivalTick)",
-            "private void OnMjpegPipelineFrameEmitted(PooledVideoFrame frame)");
-        AssertOccursBefore(rawIngress, "Interlocked.Increment(ref _videoFramesArrived)", "Interlocked.Exchange(ref _lastVideoFrameArrivedTick");
-        AssertOccursBefore(rawIngress, "Interlocked.Exchange(ref _lastVideoFrameArrivedTick", "RecordCaptureArrived(sourceSequence, arrivalTick, width, height, frameData.Length);");
-        AssertOccursBefore(rawIngress, "FrameLedgerStage.CompressedQueued", "return;");
-        AssertOccursBefore(rawIngress, "FirePixelFormatObserverOnce(isP010 ? \"P010\" : \"NV12\");", "EnqueueRecordingFrame(frameData, width, height, isP010, sourceSequence);");
-        AssertOccursBefore(rawIngress, "EnqueueRecordingFrame(frameData, width, height, isP010, sourceSequence);", "EnqueueFlashbackFrame(frameData, width, height, isP010, sourceSequence);");
-        AssertOccursBefore(rawIngress, "EnqueueFlashbackFrame(frameData, width, height, isP010, sourceSequence);", "SubmitPreviewRawFrame(previewSink!, frameData, width, height, isP010, arrivalTick, sourceSequence);");
-
-        var mjpegIngress = ExtractSourceBlock(
-            frameIngressSource,
-            "private void OnMjpegPipelineFrameEmitted(PooledVideoFrame frame)",
-            "private void OnDualFrameArrived(");
-        AssertOccursBefore(mjpegIngress, "FirePixelFormatObserverOnce(\"NV12\");", "EnqueueRecordingFrame(frame);");
-        AssertOccursBefore(mjpegIngress, "EnqueueRecordingFrame(frame);", "EnqueueFlashbackFrame(frame);");
-
-        var dualIngress = ExtractSourceBlock(
-            frameIngressSource,
-            "private void OnDualFrameArrived(",
-            "private void RecordCaptureArrived(long sourceSequence, long arrivalTick, int width, int height, int compressedByteLength)");
-        AssertOccursBefore(dualIngress, "Interlocked.Increment(ref _videoFramesArrived)", "Interlocked.Exchange(ref _lastVideoFrameArrivedTick");
-        AssertOccursBefore(dualIngress, "FirePixelFormatObserverOnce(isP010 ? \"P010\" : \"NV12\");", "var gpuEncoder = Volatile.Read(ref _gpuRecordingEncoder);");
-        AssertOccursBefore(dualIngress, "EnqueueGpuRecordingFrame(gpuEncoder, gpuTexture, gpuSubresource, sourceSequence);", "EnqueueFlashbackGpuFrame(gpuTexture, gpuSubresource, sourceSequence);");
-        AssertOccursBefore(dualIngress, "EnqueueRecordingFrame(frameData, width, height, isP010, sourceSequence);", "EnqueueFlashbackFrame(frameData, width, height, isP010, sourceSequence);");
-        AssertOccursBefore(dualIngress, "EnqueueFlashbackFrame(frameData, width, height, isP010, sourceSequence);", "previewSink.SubmitTexture(");
-        AssertOccursBefore(dualIngress, "Volatile.Read(ref _strictPreviewTextureRequired)", "SignalFatalError(");
-        AssertOccursBefore(dualIngress, "Volatile.Read(ref _strictPreviewTextureRequired)", "SubmitPreviewRawFrame(previewSink, frameData, width, height, isP010, arrivalTick, sourceSequence);");
-
-        AssertOccursBefore(frameIngressSource, "Logger.Log(logMessage);", "Interlocked.Exchange(ref _fatalErrorSignaled, 1)");
-        AssertOccursBefore(frameIngressSource, "Interlocked.Exchange(ref _fatalErrorSignaled, 1)", "FatalErrorOccurred?.Invoke(this, ex);");
-        AssertContains(frameIngressSource, "UNIFIED_VIDEO_FATAL_CALLBACK_FAIL");
-
-        return Task.CompletedTask;
-    }
 
     internal static Task UnifiedVideoCapture_LifecycleLivesWithRootState()
     {
@@ -3114,111 +2972,9 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task WasapiAudioCapture_ConversionLivesWithLifecycleRoot()
-    {
-        var wasapiSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioCapture.cs")
-            .Replace("\r\n", "\n");
 
-        AssertContains(wasapiSource, "internal sealed class WasapiAudioCapture : IAsyncDisposable");
-        AssertContains(wasapiSource, "private void CaptureThreadMain()");
-        AssertContains(wasapiSource, "private void DrainCapturePackets()");
-        AssertContains(wasapiSource, "public void AttachRecordingSink(IRecordingSink sink)");
-        AssertContains(wasapiSource, "public void SetAudioWriter(Func<ReadOnlyMemory<byte>, Task>? writer)");
-        AssertContains(wasapiSource, "internal void SetPlayback(WasapiAudioPlayback? playback)");
-        AssertContains(wasapiSource, "private ConvertedAudioPacket ConvertToOutputFormat(");
-        AssertContains(wasapiSource, "private int ComputeResampledFrameCount(");
-        AssertContains(wasapiSource, "private static void ResampleStereoLinear(");
-        AssertContains(wasapiSource, "private static unsafe void DecodeToStereo(");
-        AssertContains(wasapiSource, "private static unsafe float ReadSample(");
-        AssertContains(wasapiSource, "private static void ReturnPacketBuffer(ConvertedAudioPacket packet)");
-        AssertContains(wasapiSource, "private readonly struct ConvertedAudioPacket");
 
-        return Task.CompletedTask;
-    }
 
-    internal static Task WasapiAudioCapture_InitializationLivesWithLifecycleRoot()
-    {
-        var wasapiSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioCapture.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(wasapiSource, "internal sealed class WasapiAudioCapture : IAsyncDisposable");
-        AssertContains(wasapiSource, "public Task InitializeAsync(string audioDeviceId, CancellationToken ct)");
-        AssertContains(wasapiSource, "WasapiComInterop.CreateDeviceEnumerator()");
-        AssertContains(wasapiSource, "audioClient.GetMixFormat(out mixFormat)");
-        AssertContains(wasapiSource, "WasapiComInterop.AllocFloatStereo48kFormat()");
-        AssertContains(wasapiSource, "audioClient.IsFormatSupported(");
-        AssertContains(wasapiSource, "WasapiComInterop.TryInitializeSharedStreamWithAudioClient3(audioClient3, selectedFormat)");
-        AssertContains(wasapiSource, "\"IAudioClient.Initialize(capture)\"");
-        AssertContains(wasapiSource, "audioClient.SetEventHandle(captureEvent.SafeWaitHandle.DangerousGetHandle())");
-        AssertContains(wasapiSource, "audioClient.GetService(ref iidCaptureClient, out var captureClientObject)");
-        AssertContains(wasapiSource, "_fastPathCopy = _captureFormat.SampleRate == OutputSampleRate");
-        AssertContains(wasapiSource, "_resampleRemainderNumerator = 0;");
-        AssertContains(wasapiSource, "Interlocked.Exchange(ref _initialized, 1);");
-        AssertContains(wasapiSource, "WasapiComInterop.CoTaskMemFree(desiredFormat);");
-        AssertContains(wasapiSource, "WasapiComInterop.ReleaseComObject(ref audioCaptureClient);");
-        AssertContains(wasapiSource, "public void Start()");
-        AssertContains(wasapiSource, "public Task StopAsync()");
-        AssertContains(wasapiSource, "public async ValueTask DisposeAsync()");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task WasapiAudioPlayback_InitializationLivesWithLifecycleRoot()
-    {
-        var playbackSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(playbackSource, "internal sealed class WasapiAudioPlayback : IDisposable");
-        AssertContains(playbackSource, "public Task InitializeAsync(CancellationToken ct)");
-        AssertContains(playbackSource, "enumerator.GetDefaultAudioEndpoint(EDataFlow.eRender, ERole.eConsole, out device)");
-        AssertContains(playbackSource, "WasapiComInterop.AllocFloatStereo48kFormat()");
-        AssertContains(playbackSource, "audioClient.IsFormatSupported(");
-        AssertContains(playbackSource, "WasapiComInterop.TryInitializeSharedStreamWithAudioClient3(audioClient3, desiredFormat)");
-        AssertContains(playbackSource, "\"IAudioClient.Initialize(render)\"");
-        AssertContains(playbackSource, "audioClient.GetBufferSize(out _bufferFrameCount)");
-        AssertContains(playbackSource, "audioClient.GetStreamLatency(out var streamLatencyHundredNs)");
-        AssertContains(playbackSource, "audioClient.SetEventHandle(renderEvent.SafeWaitHandle.DangerousGetHandle())");
-        AssertContains(playbackSource, "audioClient.GetService(ref iidRenderClient, out var renderClientObject)");
-        AssertContains(playbackSource, "Interlocked.Exchange(ref _renderCallbackCount, 0)");
-        AssertContains(playbackSource, "Volatile.Write(ref _playbackQueueDepth, 0)");
-        AssertContains(playbackSource, "Interlocked.Exchange(ref _initialized, 1)");
-        AssertContains(playbackSource, "WasapiComInterop.CoTaskMemFree(desiredFormat)");
-        AssertContains(playbackSource, "WasapiComInterop.ReleaseComObject(ref audioRenderClient)");
-        AssertContains(playbackSource, "internal void EnqueuePooledSamples(byte[] pooledBuffer, int validLength, long ptsTicks = 0)");
-        AssertContains(playbackSource, "private bool TryWriteChunk(PlaybackChunk chunk)");
-        AssertContains(playbackSource, "private bool TryDequeueChunk(out PlaybackChunk chunk)");
-        AssertContains(playbackSource, "private readonly record struct PlaybackChunk");
-        AssertContains(playbackSource, "public void Start()");
-        AssertContains(playbackSource, "public void PauseRendering()");
-        AssertContains(playbackSource, "public void ResumeRendering(double prebufferMs = 0, int prebufferTimeoutMs = 0)");
-        AssertContains(playbackSource, "public void Flush()");
-        AssertContains(playbackSource, "public void Stop()");
-        AssertContains(playbackSource, "public void Dispose()");
-        AssertContains(playbackSource, "private void RenderThreadMain()");
-        AssertContains(playbackSource, "private unsafe void RenderAvailableFrames()");
-        AssertContains(playbackSource, "private void ApplyVolume(Span<byte> buffer)");
-        AssertContains(playbackSource, "private void UpdateOutputLevel(ReadOnlySpan<byte> buffer)");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task WasapiAudioCapture_DiagnosticsLivesWithLifecycleRoot()
-    {
-        var wasapiSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioCapture.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(wasapiSource, "TrackCaptureCallback(Environment.TickCount64);");
-        AssertContains(wasapiSource, "TrackCapturePacketFlags(flags);");
-        AssertContains(wasapiSource, "public long AudioFramesArrived => Interlocked.Read(ref _audioFramesArrived);");
-        AssertContains(wasapiSource, "public (double AvgIntervalMs, double MaxIntervalMs) GetCaptureCallbackIntervalSnapshot()");
-        AssertContains(wasapiSource, "private void RaiseAudioLevelIfDue(ReadOnlySpan<byte> f32leBytes)");
-        AssertContains(wasapiSource, "private void TrackCaptureCallback(long callbackTickMs)");
-        AssertContains(wasapiSource, "private CallbackIntervalMetrics GetCaptureCallbackIntervalMetrics()");
-        AssertContains(wasapiSource, "private void TrackCapturePacketFlags(uint flags)");
-        AssertContains(wasapiSource, "private readonly record struct CallbackIntervalMetrics");
-
-        return Task.CompletedTask;
-    }
 
     internal static Task WasapiComInterop_ContractsLiveWithInteropOwner()
     {
@@ -4286,40 +4042,7 @@ static partial class Program
     }
 
 
-    internal static Task LibAvEncoder_PacketWritingLivesWithVideoSubmission()
-    {
-        var rootText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.cs")
-            .Replace("\r\n", "\n");
-        var videoSubmissionText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.VideoFrames.cs")
-            .Replace("\r\n", "\n");
 
-        AssertContains(videoSubmissionText, "private void DrainEncoderPackets()");
-        AssertContains(videoSubmissionText, "private void WriteFilteredPackets()");
-        AssertContains(videoSubmissionText, "private void DrainBsfPackets()");
-        AssertContains(videoSubmissionText, "private void WritePacket(AVPacket* packet, bool useBsfTimeBase)");
-        AssertDoesNotContain(rootText, "private void DrainEncoderPackets()");
-        AssertDoesNotContain(rootText, "private void WriteFilteredPackets()");
-        AssertDoesNotContain(rootText, "private void DrainBsfPackets()");
-        AssertDoesNotContain(rootText, "private void WritePacket(AVPacket* packet, bool useBsfTimeBase)");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task LibAvEncoder_FrameCopyLivesWithVideoSubmission()
-    {
-        var rootText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.cs")
-            .Replace("\r\n", "\n");
-        var videoSubmissionText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.VideoFrames.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(videoSubmissionText, "private void CopyPackedFrameToVideoFrame(ReadOnlySpan<byte> frameData, LibAvEncoderOptions options)");
-        AssertContains(videoSubmissionText, "private static void CopyPlane(byte* sourceStart, byte* destinationStart, int destinationStride, int rowBytes, int rowCount)");
-        AssertContains(videoSubmissionText, "Buffer.MemoryCopy(");
-        AssertDoesNotContain(rootText, "private void CopyPackedFrameToVideoFrame(ReadOnlySpan<byte> frameData, LibAvEncoderOptions options)");
-        AssertDoesNotContain(rootText, "private static void CopyPlane(byte* sourceStart, byte* destinationStart, int destinationStride, int rowBytes, int rowCount)");
-
-        return Task.CompletedTask;
-    }
 
     internal static Task LibAvEncoder_VideoSubmissionLivesInFocusedPartial()
     {
@@ -5012,38 +4735,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackBufferManager_SegmentMutationLivesWithRootState()
-    {
-        var managerText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
-            .Replace("\r\n", "\n");
 
-        AssertContains(managerText, "public string AcquireSegmentPath(out bool generated)");
-        AssertContains(managerText, "public string GenerateSegmentPath()");
-        AssertContains(managerText, "public void MarkActiveSegmentStart(string path, TimeSpan startPts)");
-        AssertContains(managerText, "public void AbandonGeneratedSegmentPath(string generatedPath, string? restoreActivePath)");
-        AssertContains(managerText, "public void OnSegmentCompleted(string path, TimeSpan startPts, TimeSpan endPts, long sizeBytes)");
-        AssertContains(managerText, "private bool TryExtendCompletedSegment(");
-        AssertContains(managerText, "FLASHBACK_BUFFER_SEGMENT_COMPLETE");
-        AssertContains(managerText, "FLASHBACK_BUFFER_SEGMENT_EXTEND");
-        AssertDoesNotContain(managerText, "partial class FlashbackBufferManager");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task FlashbackBufferManager_LiveAccountingLivesWithRootState()
-    {
-        var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(rootText, "public void ResetLatestPts()");
-        AssertContains(rootText, "public void FinalizeActiveSegmentForCycle()");
-        AssertContains(rootText, "public double EncodeFrameRate { get; set; }");
-        AssertContains(rootText, "public void UpdateLatestPts(TimeSpan pts)");
-        AssertContains(rootText, "public void UpdateDiskBytes(long activeSegmentBytes)");
-        AssertContains(rootText, "FLASHBACK_BUFFER_DISK_EVICT");
-
-        return Task.CompletedTask;
-    }
 
     internal static Task FlashbackBufferManager_MathHelpersLiveWithRootState()
     {

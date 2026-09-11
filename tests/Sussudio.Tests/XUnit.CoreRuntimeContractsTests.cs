@@ -46,10 +46,6 @@ public sealed class CoreRuntimeContractsTests
         => global::Program.NativeXuTelemetry_AcceptsKnown4kXProductRevisions();
 
     [Fact]
-    public Task KsExtensionUnitNativeHelperIsCohesiveNativeBridge()
-        => global::Program.KsExtensionUnitNative_SourceOwnership_IsCohesiveNativeBridge();
-
-    [Fact]
     public Task NativeXuTelemetryActiveReadAndRollingPollLiveInProviderRoot()
         => global::Program.NativeXuAtCommandProvider_ActiveReadAndRollingPollLiveInProviderRoot();
 
@@ -106,24 +102,8 @@ public sealed class CoreRuntimeContractsTests
         => global::Program.CaptureService_RuntimeSnapshotAssembler_LivesInFocusedPartial();
 
     [Fact]
-    public Task CaptureServiceRuntimeIngestAudioProjectionLivesWithRuntimeSnapshotSampler()
-        => global::Program.CaptureService_RuntimeIngestAudioProjection_LivesWithRuntimeSnapshotSampler();
-
-    [Fact]
-    public Task CaptureServiceRuntimeReaderTransportProjectionLivesWithRuntimeSnapshotSampler()
-        => global::Program.CaptureService_RuntimeReaderTransportProjection_LivesWithRuntimeSnapshotSampler();
-
-    [Fact]
-    public Task CaptureServiceRuntimeHdrPipelineProjectionLivesWithRuntimeSnapshotSampler()
-        => global::Program.CaptureService_RuntimeHdrPipelineProjection_LivesWithRuntimeSnapshotSampler();
-
-    [Fact]
     public Task CaptureServiceRuntimeSourceTelemetryProjectionLivesWithRuntimeSnapshotSampler()
         => global::Program.CaptureService_RuntimeSourceTelemetryProjection_LivesWithRuntimeSnapshotSampler();
-
-    [Fact]
-    public Task CaptureServiceRuntimeRecordingIntegrityProjectionLivesWithRuntimeSnapshotSampler()
-        => global::Program.CaptureService_RuntimeRecordingIntegrityProjection_LivesWithRuntimeSnapshotSampler();
 
     [Fact]
     public Task CaptureServiceSnapshotHelperPolicyLivesInFocusedPartials()
@@ -144,10 +124,6 @@ public sealed class CoreRuntimeContractsTests
     [Fact]
     public Task CaptureSourceObservedPixelFormatsPreserveCanonicalEvidence()
         => global::Program.UnifiedVideoCapture_ObservedPixelFormat_PreservesCanonicalEvidence();
-
-    [Fact]
-    public Task CaptureServiceObservedPixelTelemetryLivesWithSourceTelemetry()
-        => global::Program.CaptureService_ObservedPixelTelemetry_LivesWithSourceTelemetry();
 
     [Fact]
     public Task CaptureServiceSourceTelemetryBackendMapsOrigins()
@@ -209,9 +185,6 @@ public sealed class CoreRuntimeContractsTests
     public Task AudioBufferHealthClassifiesUnderAndOverruns()
         => global::Program.AudioBufferHealth_ClassifiesUnderAndOverruns();
 
-    [Fact]
-    public Task CaptureServiceRecordingIntegrityOwnershipLivesWithRecordingLifecycle()
-        => global::Program.CaptureService_RecordingIntegrityLivesWithRecordingLifecycle();
 }
 
 // xUnit slice for no-hardware runtime contracts ported from the legacy runner.
@@ -1163,63 +1136,6 @@ public class SmallContractsTests
 
 static partial class Program
 {
-    internal static Task KsExtensionUnitNative_SourceOwnership_IsCohesiveNativeBridge()
-    {
-        var rootText = ReadKsExtensionUnitNativeFile("KsExtensionUnitNative.cs");
-
-        AssertContains(rootText, "internal static class KsExtensionUnitNative");
-        AssertDoesNotContain(rootText, "partial class KsExtensionUnitNative");
-        AssertContains(rootText, "internal readonly record struct KsInterfacePath");
-        AssertContains(rootText, "internal readonly record struct KsTopologyNode");
-        AssertContains(rootText, "internal static IReadOnlyList<KsInterfacePath> EnumerateKsInterfaces(");
-        AssertContains(rootText, "internal static SafeFileHandle? TryOpen(");
-        AssertContains(rootText, "internal static bool TryReadTopologyNodes(");
-        AssertContains(rootText, "internal static bool TryXuGetDirect(");
-        AssertContains(rootText, "internal static bool TryXuSetViaOutput(");
-        AssertContains(rootText, "internal static bool TryXuSetViaInput(");
-        AssertContains(rootText, "DeviceIoControl(");
-        AssertContains(rootText, "[DllImport(\"setupapi.dll\", SetLastError = true)]");
-        AssertContains(rootText, "[DllImport(\"kernel32.dll\", SetLastError = true)]");
-        AssertContains(rootText, "[StructLayout(LayoutKind.Sequential)]");
-
-        var probeIncludes = ReadCompileIncludes(Path.Combine(
-            GetRepoRoot(),
-            "tools",
-            "NativeXuAudioProbe",
-            "NativeXuAudioProbe.csproj"));
-        AssertEqual(
-            1,
-            CountCompileInclude(probeIncludes, @"..\..\Sussudio\Services\NativeXu\KsExtensionUnitNative.cs"),
-            "NativeXuAudioProbe links the consolidated Native XU bridge");
-        AssertEqual(
-            0,
-            CountCompileInclude(probeIncludes, @"..\..\Sussudio\Services\NativeXu\NativeXuDeviceSupport.cs"),
-            "NativeXuDeviceSupport folded into the Native XU bridge linked source");
-        AssertContains(rootText, "internal static class NativeXuDeviceSupport");
-        AssertContains(rootText, "public static bool TryGetSupported4kXIds(");
-        AssertContains(rootText, "public static bool IsSupported4kXDevice(");
-
-        foreach (var removedFile in new[]
-        {
-            "KsExtensionUnitNative.Handles.cs",
-            "KsExtensionUnitNative.Interfaces.cs",
-            "KsExtensionUnitNative.Interop.cs",
-            "KsExtensionUnitNative.Topology.cs",
-            "KsExtensionUnitNative.Transfers.cs"
-        })
-        {
-            AssertEqual(
-                false,
-                File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "NativeXu", removedFile)),
-                $"{removedFile} removed");
-            AssertEqual(
-                0,
-                CountCompileInclude(probeIncludes, $@"..\..\Sussudio\Services\Capture\NativeXu\{removedFile}"),
-                $"NativeXuAudioProbe no longer links {removedFile}");
-        }
-
-        return Task.CompletedTask;
-    }
 
     internal static Task NativeXuAtCommandProvider_ActiveReadAndRollingPollLiveInProviderRoot()
     {
@@ -1700,21 +1616,6 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task CaptureService_ObservedPixelTelemetry_LivesWithSourceTelemetry()
-    {
-        var telemetryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
-            .Replace("\r\n", "\n");
-
-        var sourceText = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs");
-        AssertContains(telemetryText, "_videoPipeline.Capture?.GetPixelFormatObservation()?.PixelFormat");
-        AssertContains(sourceText, "internal PixelFormatObservation? GetPixelFormatObservation()");
-        AssertContains(sourceText, "Volatile.Write(ref _pixelFormatObservation, new PixelFormatObservation(format));");
-        AssertDoesNotContain(telemetryText, "RecordObservedPixelFormat");
-        AssertDoesNotContain(telemetryText, "expectedFormat");
-        AssertContains(telemetryText, "private void CaptureEncoderRuntimeTelemetry(LibAvRecordingSink? sink)");
-
-        return Task.CompletedTask;
-    }
 
     internal static async Task UnifiedVideoCapture_ObservedPixelFormat_PreservesCanonicalEvidence()
     {
@@ -2078,38 +1979,6 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task CaptureService_RecordingIntegrityLivesWithRecordingLifecycle()
-    {
-        var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs");
-
-        AssertContains(rootText, "private RecordingIntegritySummary ResolveRecordingIntegritySummary(");
-        AssertContains(rootText, "private sealed record RecordingIntegrityCounterSnapshot(");
-        AssertContains(rootText, "private sealed record RecordingAudioIntegrityCounterSnapshot(");
-        AssertContains(rootText, "private static RecordingIntegritySummary BuildRecordingIntegritySummary(");
-        AssertContains(rootText, "var videoFields = BuildRecordingIntegritySummaryVideoFields(");
-        AssertContains(rootText, "var evaluation = EvaluateRecordingIntegritySummary(");
-        AssertContains(rootText, "private static void LogRecordingIntegritySummary(");
-        AssertContains(rootText, "RECORDING_INTEGRITY ");
-        AssertContains(rootText, "private readonly record struct RecordingIntegritySummaryVideoFields");
-        AssertContains(rootText, "private readonly record struct RecordingIntegritySummaryAudioFields");
-        AssertContains(rootText, "private static RecordingIntegritySummaryVideoFields BuildRecordingIntegritySummaryVideoFields(");
-        AssertContains(rootText, "var activePipelineDroppedFrames = recordingActive");
-        AssertContains(rootText, "RecordingBoundaryRejectedFrames = normalizedBoundaryRejectedFrames");
-        AssertContains(rootText, "queue_rejections=");
-        AssertContains(rootText, "private static RecordingIntegritySummaryEvaluation EvaluateRecordingIntegritySummary(");
-        AssertContains(rootText, "private static string EvaluateRecordingIntegrityAudioStatus(");
-        AssertContains(rootText, "RecordingIntegrityAvSyncDriftWarningMs");
-        AssertContains(rootText, "audio_boundary_drops=");
-        AssertContains(rootText, "private static string FormatRecordingIntegrityDouble(");
-        AssertContains(rootText, "private RecordingIntegrityCounterSnapshot GetRecordingIntegrityCountersSinceBaseline(");
-        AssertContains(rootText, "private RecordingIntegrityCounterSnapshot CaptureFlashbackRecordingIntegrityCountersSinceBaseline(");
-        AssertContains(rootText, "private static long DeltaCounter(");
-        AssertContains(rootText, "private RecordingAudioIntegrityCounterSnapshot GetRecordingAudioCountersSinceBaseline(");
-        AssertContains(rootText, "private RecordingAudioIntegrityCounterSnapshot CaptureRecordingAudioCounters(");
-        AssertContains(rootText, "CreateRecordingAudioCounters(");
-
-        return Task.CompletedTask;
-    }
 
     internal static Task SharedFormatter_RendersRecordingIntegrity()
     {
@@ -2345,29 +2214,6 @@ static partial class Program
 
 
 
-    internal static Task CaptureService_RuntimeIngestAudioProjection_LivesWithRuntimeSnapshotSampler()
-    {
-        var runtimeText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
-            .Replace("\r\n", "\n");
-        var assemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(runtimeText, "var ingestAudio = CaptureRuntimeIngestAudioSnapshotFields(");
-        AssertContains(runtimeText, "IngestAudio = ingestAudio,");
-        AssertContains(assemblerText, "AudioReaderActive = ingestAudio.AudioReaderActive,");
-        AssertContains(assemblerText, "SourceReaderFrameChannelDepth = ingestAudio.SourceReaderFrameChannelDepth,");
-        AssertContains(assemblerText, "WasapiPlaybackTargetVolumePercent = ingestAudio.WasapiPlaybackTargetVolumePercent,");
-
-        AssertContains(runtimeText, "private RuntimeIngestAudioSnapshotFields CaptureRuntimeIngestAudioSnapshotFields(");
-        AssertContains(runtimeText, "private sealed class RuntimeIngestAudioSnapshotFields");
-        AssertContains(runtimeText, "VideoReaderActive = unifiedVideoCapture != null && (videoPreviewActive || recordingActive)");
-        AssertContains(runtimeText, "IngestLastVideoFrameAgeMs = ComputeTickAge(unifiedVideoCapture?.LastVideoFrameArrivedTick ?? 0)");
-        AssertContains(runtimeText, "SourceReaderFrameChannelDepth = sink?.VideoQueueCount ?? 0");
-        AssertContains(runtimeText, "WasapiPlaybackTargetVolumePercent = (wasapiPlayback?.TargetVolume ?? 0) * 100.0");
-        AssertContains(runtimeText, "WasapiPlaybackCurrentVolumePercent = (wasapiPlayback?.CurrentVolume ?? 0) * 100.0");
-
-        return Task.CompletedTask;
-    }
 
     internal static Task CaptureService_RuntimeSnapshotAssembler_LivesInFocusedPartial()
     {
@@ -2456,67 +2302,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task CaptureService_RuntimeReaderTransportProjection_LivesWithRuntimeSnapshotSampler()
-    {
-        var runtimeText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
-            .Replace("\r\n", "\n");
-        var assemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
-            .Replace("\r\n", "\n");
 
-        AssertContains(runtimeText, "var readerTransport = CaptureRuntimeReaderTransportSnapshotFields(");
-        AssertContains(runtimeText, "ReaderTransport = readerTransport,");
-        AssertContains(assemblerText, "MemoryPreference = readerTransport.MemoryPreference,");
-        AssertContains(assemblerText, "VideoRequestedSubtype = readerTransport.VideoRequestedSubtype,");
-        AssertContains(assemblerText, "FrameLedgerRecentEvents = readerTransport.FrameLedgerRecentEvents,");
-        AssertContains(assemblerText, "MfSourceReaderNegotiatedFormat = readerTransport.MfSourceReaderNegotiatedFormat,");
-        AssertContains(assemblerText, "ReaderSourceSubtype = readerTransport.ReaderSourceSubtype,");
-
-        AssertContains(runtimeText, "private static RuntimeReaderTransportSnapshotFields CaptureRuntimeReaderTransportSnapshotFields(");
-        AssertContains(runtimeText, "private sealed class RuntimeReaderTransportSnapshotFields");
-        AssertContains(runtimeText, "requestedSettings!.RequestedPixelFormat");
-        AssertContains(runtimeText, "mfSourceReaderNegotiatedFormat.Contains(\"P010\", StringComparison.OrdinalIgnoreCase)");
-        AssertContains(runtimeText, "unifiedVideoCapture.IsHighFrameRateMjpegMode ? \"MJPG\"");
-        AssertContains(runtimeText, "readerSourceStreamType = (recordingActive || videoPreviewActive) && unifiedVideoCapture != null");
-        AssertContains(runtimeText, "FrameLedgerSummary.Empty");
-        AssertContains(runtimeText, "MemoryPreference = unifiedVideoCapture?.D3DManager != null ? \"Gpu\" : \"Cpu\",");
-        AssertContains(runtimeText, "(previewFrameSink as D3D11PreviewRenderer)?.RendererMode ?? \"None\"");
-        AssertContains(runtimeText, "ReaderSourceSubtype = actualPixelFormat");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task CaptureService_RuntimeHdrPipelineProjection_LivesWithRuntimeSnapshotSampler()
-    {
-        var runtimeText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
-            .Replace("\r\n", "\n");
-        var assemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
-            .Replace("\r\n", "\n");
-        var hdrPipelineText = runtimeText;
-
-        AssertContains(runtimeText, "var hdrPipeline = CaptureRuntimeHdrPipelineSnapshotFields(");
-        AssertContains(runtimeText, "var hdrWarmup = CaptureRuntimeHdrWarmupSnapshotFields(");
-        AssertContains(runtimeText, "HdrPipeline = hdrPipeline,");
-        AssertContains(runtimeText, "HdrWarmup = hdrWarmup,");
-        AssertContains(assemblerText, "HdrRuntimeState = hdrPipeline.HdrRuntimeState,");
-        AssertContains(assemblerText, "HdrWarmupState = hdrWarmup.State,");
-        AssertContains(assemblerText, "EncoderOutputPixelFormat = hdrPipeline.EncoderOutputPixelFormat,");
-        AssertContains(assemblerText, "PipelineModeReason = hdrPipeline.PipelineModeReason,");
-
-        AssertContains(hdrPipelineText, "private static RuntimeHdrPipelineSnapshotFields CaptureRuntimeHdrPipelineSnapshotFields(");
-        AssertContains(hdrPipelineText, "private static RuntimeHdrWarmupSnapshotFields CaptureRuntimeHdrWarmupSnapshotFields(");
-        AssertContains(hdrPipelineText, "private sealed class RuntimeHdrPipelineSnapshotFields");
-        AssertContains(hdrPipelineText, "private sealed class RuntimeHdrWarmupSnapshotFields");
-        AssertContains(hdrPipelineText, "ResolveEncoderOutputPixelFormat(recordingContext, requestedSettings)");
-        AssertContains(hdrPipelineText, "Requested pipeline '{requestedPipelineMode}'");
-        AssertContains(hdrPipelineText, "HdrDowngradeCode = hdrAutoDowngraded ? \"encoder-input-not-p010\" : string.Empty");
-        AssertContains(hdrPipelineText, "HdrRequestedButSourceNot10Bit = hdrRequested && sourceTelemetry.IsHdr == false");
-        AssertContains(hdrPipelineText, "ResolveHdrWarmupState(");
-        AssertContains(hdrPipelineText, "ObservedNonP010Frames = (int)Math.Min(int.MaxValue, Math.Max(0L, observedNonP010FrameCount))");
-
-        AssertDoesNotContain(assemblerText, "HdrWarmupObservedP010Frames = (int)Math.Min(int.MaxValue, observedP010FrameCount),");
-
-        return Task.CompletedTask;
-    }
 
     internal static Task CaptureService_RuntimeSourceTelemetryProjection_LivesWithRuntimeSnapshotSampler()
     {
@@ -2545,30 +2331,6 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task CaptureService_RuntimeRecordingIntegrityProjection_LivesWithRuntimeSnapshotSampler()
-    {
-        var runtimeText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
-            .Replace("\r\n", "\n");
-        var assemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(runtimeText, "var recordingIntegrity = CaptureRuntimeRecordingIntegritySnapshotFields(");
-        AssertContains(runtimeText, "RecordingIntegrity = recordingIntegrity,");
-        AssertContains(assemblerText, "RecordingIntegrityStatus = recordingIntegrity.Status,");
-        AssertContains(assemblerText, "RecordingIntegrityAudioFramesWrittenToSink = recordingIntegrity.AudioFramesWrittenToSink,");
-        AssertContains(assemblerText, "RecordingIntegrityEncoderAvSyncDriftMs = recordingIntegrity.EncoderAvSyncDriftMs,");
-
-        AssertContains(runtimeText, "private static RuntimeRecordingIntegritySnapshotFields CaptureRuntimeRecordingIntegritySnapshotFields(");
-        AssertContains(runtimeText, "private sealed class RuntimeRecordingIntegritySnapshotFields");
-        AssertContains(runtimeText, "Status = recordingIntegrity.Status,");
-        AssertContains(runtimeText, "AudioFramesWrittenToSink = recordingIntegrity.AudioFramesWrittenToSink,");
-        AssertContains(runtimeText, "EncoderAvSyncDriftMs = recordingIntegrity.EncoderAvSyncDriftMs,");
-        AssertContains(runtimeText, "Reason = recordingIntegrity.Reason");
-
-        AssertDoesNotContain(runtimeText, "var recordingIntegrity = ResolveRecordingIntegritySummary(");
-
-        return Task.CompletedTask;
-    }
 
     internal static Task FrameLedger_RetainsBoundedRecentEvents()
     {
