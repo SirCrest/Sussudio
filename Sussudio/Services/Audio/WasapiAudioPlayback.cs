@@ -206,16 +206,16 @@ internal sealed class WasapiAudioPlayback : IDisposable
                 desiredFormat,
                 out var closestMatch);
 
+            if (closestMatch != IntPtr.Zero)
+            {
+                WasapiComInterop.CoTaskMemFree(closestMatch);
+                closestMatch = IntPtr.Zero;
+            }
+
             string formatMode;
             bool initialized;
             if (hr == WasapiComInterop.S_OK)
             {
-                if (closestMatch != IntPtr.Zero)
-                {
-                    WasapiComInterop.CoTaskMemFree(closestMatch);
-                    closestMatch = IntPtr.Zero;
-                }
-
                 initialized = WasapiComInterop.TryInitializeSharedStreamWithAudioClient3(audioClient3, desiredFormat);
                 if (!initialized)
                 {
@@ -234,12 +234,6 @@ internal sealed class WasapiAudioPlayback : IDisposable
             }
             else
             {
-                if (closestMatch != IntPtr.Zero)
-                {
-                    WasapiComInterop.CoTaskMemFree(closestMatch);
-                    closestMatch = IntPtr.Zero;
-                }
-
                 const uint autoConvertFlags =
                     WasapiComInterop.AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM |
                     WasapiComInterop.AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY;

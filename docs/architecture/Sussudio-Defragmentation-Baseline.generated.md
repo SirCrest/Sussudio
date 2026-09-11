@@ -1,6 +1,6 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-09-11T18:48:07Z
+Generated UTC: 2026-09-11T18:52:04Z
 Root: C:\Users\crest\source\repos\Sussudio
 
 ## Summary
@@ -10,9 +10,9 @@ Root: C:\Users\crest\source\repos\Sussudio
 | Production .cs files | 149 |
 | Test .cs files | 88 |
 | Core app .cs files (Sussudio/) | 115 |
-| Core app nonblank LoC (Sussudio/) | 96406 |
+| Core app nonblank LoC (Sussudio/) | 96404 |
 | Sussudio.Tests .cs files | 87 |
-| Sussudio.Tests nonblank LoC | 74636 |
+| Sussudio.Tests nonblank LoC | 74637 |
 | Production .cs files under 60 lines | 3 (2.0%) |
 | Production .cs files under 80 lines | 7 (4.7%) |
 
@@ -62,7 +62,7 @@ Root: C:\Users\crest\source\repos\Sussudio
 | 1562 | Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs |
 | 1508 | Sussudio/Controllers/Flashback/FlashbackUiControllers.cs |
 | 1447 | Sussudio/Services/Capture/CaptureService.cs |
-| 1437 | Sussudio/Services/Audio/WasapiAudioPlayback.cs |
+| 1431 | Sussudio/Services/Audio/WasapiAudioPlayback.cs |
 | 1413 | Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs |
 | 1406 | Sussudio/Services/Recording/LibAvEncoder.cs |
 | 1317 | Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs |

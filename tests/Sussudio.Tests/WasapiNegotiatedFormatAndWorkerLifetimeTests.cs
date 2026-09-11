@@ -165,7 +165,8 @@ public sealed class WasapiNegotiatedFormatAndWorkerLifetimeTests
             "Sussudio/Services/Audio/WasapiWorkerQuarantine.cs");
         var windowSource = RuntimeContractSource.ReadRepoFile("Sussudio/MainWindow.xaml.cs");
 
-        Assert.Contains("EmergencyCloseRequested?.Invoke", quarantineSource, StringComparison.Ordinal);
+        Assert.Contains("var handler = EmergencyCloseRequested;", quarantineSource, StringComparison.Ordinal);
+        Assert.Contains("handler?.Invoke(", quarantineSource, StringComparison.Ordinal);
         Assert.Contains("StopRecordingForEmergencyAsync()", windowSource, StringComparison.Ordinal);
         Assert.Contains("Task.Delay(TimeSpan.FromSeconds(10))", windowSource, StringComparison.Ordinal);
         Assert.Contains("MarkRecordingFinalizationUnresolved", windowSource, StringComparison.Ordinal);

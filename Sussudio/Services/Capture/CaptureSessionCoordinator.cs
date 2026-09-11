@@ -923,6 +923,8 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
                 Interlocked.Increment(ref _commandsFailed);
                 UpdateSnapshot(pending.Command, CaptureCommandOutcome.Failed, ex.Message);
             }
+            // Not redundant with the arm above: cancellation that lands between
+            // that check and TrySetException makes TrySetException return false.
             else if (pending.Completion.Task.IsCanceled)
             {
                 Interlocked.Increment(ref _commandsCanceled);

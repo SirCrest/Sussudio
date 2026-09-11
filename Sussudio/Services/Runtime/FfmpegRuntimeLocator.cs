@@ -307,7 +307,7 @@ internal static unsafe class FfmpegRuntimeInit
             var msg = fmt?.TrimEnd('\n', '\r');
             if (!string.IsNullOrEmpty(msg))
             {
-                if (FfmpegLogSuppressionScope.ShouldSuppressRecoverableSeekFfmpegLog(msg))
+                if (FfmpegLogSuppressionScope.TryConsumeRecoverableSeekFfmpegLog(msg))
                 {
                     return;
                 }
@@ -461,7 +461,7 @@ internal static class FfmpegLogSuppressionScope
         return new RecoverableSeekLogSuppressionScope(_recoverableSeekLogSuppressedCount);
     }
 
-    internal static bool ShouldSuppressRecoverableSeekFfmpegLog(string message)
+    internal static bool TryConsumeRecoverableSeekFfmpegLog(string message)
     {
         if (_recoverableSeekLogSuppressionDepth <= 0)
         {

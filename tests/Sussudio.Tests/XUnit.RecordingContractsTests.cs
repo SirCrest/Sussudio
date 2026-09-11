@@ -4343,7 +4343,7 @@ static partial class Program
         // Suppression implementation lives with FFmpeg runtime resolution and log callback routing.
         var suppressionText = ReadRepoFile("Sussudio/Services/Runtime/FfmpegRuntimeLocator.cs")
             .Replace("\r\n", "\n");
-        AssertContains(suppressionText, "internal static bool ShouldSuppressRecoverableSeekFfmpegLog(string message)");
+        AssertContains(suppressionText, "internal static bool TryConsumeRecoverableSeekFfmpegLog(string message)");
         AssertContains(suppressionText, "[ThreadStatic]\n    private static int _recoverableSeekLogSuppressionDepth;");
         AssertContains(suppressionText, "message.Contains(\"Could not find ref with POC\", StringComparison.Ordinal)");
         AssertContains(suppressionText, "message.Contains(\"Error constructing the frame RPS\", StringComparison.Ordinal)");

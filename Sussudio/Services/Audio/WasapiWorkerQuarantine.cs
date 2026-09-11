@@ -62,12 +62,13 @@ internal static class WasapiWorkerQuarantine
             return;
         }
 
+        var handler = EmergencyCloseRequested;
         Logger.Log(
-            $"{timeoutEvent} role={role.ToString().ToLowerInvariant()} audio_restart_blocked=true emergency_close_requested=true");
+            $"{timeoutEvent} role={role.ToString().ToLowerInvariant()} audio_restart_blocked=true emergency_close_requested={handler is not null}");
 
         try
         {
-            EmergencyCloseRequested?.Invoke(
+            handler?.Invoke(
                 null,
                 new WasapiWorkerQuarantinedEventArgs(role, timeoutEvent));
         }
