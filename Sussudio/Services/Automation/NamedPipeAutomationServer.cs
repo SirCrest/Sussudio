@@ -288,7 +288,6 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
     }
 
     public string PipeName => _pipeName;
-    internal bool AuthTokenRequired => _authTokenRequired;
 
     private sealed class ConnectionSession
     {

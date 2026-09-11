@@ -238,7 +238,7 @@ public sealed class FlashbackSinkHardeningTests
         {
             if (DateTime.UtcNow > deadline)
             {
-                Assert.True(false, "Timed out waiting for condition.");
+                Assert.Fail("Timed out waiting for condition.");
             }
             await Task.Delay(15);
         }

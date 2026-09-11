@@ -1414,7 +1414,7 @@ static partial class Program
         AssertContains(dispatcherText, "var providedToken = request.AuthToken;");
         AssertContains(dispatcherText, "providedToken = GetString(request.Payload, \"authToken\");");
         AssertContains(dispatcherText, "CryptographicOperations.FixedTimeEquals(expected, actual)");
-        AssertContains(dispatcherText, "Logger.LogEvent(\"AUTH_FAILED\"");
+        AssertContains(dispatcherText, "Logger.LogEvent(\"AUTO-AUTH-FAILED\"");
         AssertContains(dispatcherText, "errorCode: authorized ? null : AutomationErrorCodes.Unauthorized");
         AssertContains(dispatcherText, "errorCode: AutomationErrorCodes.Unauthorized");
         AssertContains(dispatcherText, "status: authorized ? AutomationResponseStatus.Ok : AutomationResponseStatus.Error");

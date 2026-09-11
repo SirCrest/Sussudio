@@ -414,11 +414,6 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
     public long LastVideoQueueLatencyMs => _videoLatencyTracker.LastLatencyMs;
     public long VideoQueueOldestFrameAgeMs => _videoLatencyTracker.ReconcileDepthAndGetOldestFrameAgeMs(Volatile.Read(ref _videoQueueDepth));
     public (int SampleCount, double AverageMs, double P95Ms, double P99Ms, double MaxMs) VideoQueueLatencyMetrics => _videoLatencyTracker.GetMetrics();
-    public int VideoQueueLatencySampleCount => _videoLatencyTracker.GetMetrics().SampleCount;
-    public double VideoQueueLatencyAvgMs => _videoLatencyTracker.GetMetrics().AverageMs;
-    public double VideoQueueLatencyP95Ms => _videoLatencyTracker.GetMetrics().P95Ms;
-    public double VideoQueueLatencyP99Ms => _videoLatencyTracker.GetMetrics().P99Ms;
-    public double VideoQueueLatencyMaxMs => _videoLatencyTracker.GetMetrics().MaxMs;
     public long VideoBackpressureWaitMs => _videoLatencyTracker.BackpressureWaitMs;
     public long VideoBackpressureEvents => _videoLatencyTracker.BackpressureEvents;
     public long LastVideoBackpressureWaitMs => _videoLatencyTracker.LastBackpressureWaitMs;
@@ -1168,6 +1163,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
 
         return drainedAny;
     }
+
     private VideoEnqueueResult TryEnqueueVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)
     {
         Exception? overloadFailure = null;

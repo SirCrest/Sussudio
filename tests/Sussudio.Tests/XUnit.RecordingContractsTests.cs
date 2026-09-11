@@ -1561,8 +1561,6 @@ static partial class Program
         AssertContains(libAvSource, "public long VideoSequenceGaps");
         AssertContains(libAvSource, "public long VideoQueueOldestFrameAgeMs");
         AssertContains(libAvSource, "public (int SampleCount, double AverageMs, double P95Ms, double P99Ms, double MaxMs) VideoQueueLatencyMetrics");
-        AssertContains(libAvSource, "public double VideoQueueLatencyP95Ms");
-        AssertContains(libAvSource, "public double VideoQueueLatencyP99Ms");
         AssertContains(libAvSource, "public long VideoBackpressureWaitMs");
         AssertContains(libAvSource, "public long VideoBackpressureEvents");
         AssertDoesNotContain(libAvSource, "_videoLatencyTracker.RecordBackpressure(backpressureStartTick");
@@ -1682,8 +1680,6 @@ static partial class Program
         AssertContains(flashbackSource, "public long VideoSequenceGaps");
         AssertContains(flashbackSource, "public long VideoQueueOldestFrameAgeMs");
         AssertContains(flashbackSource, "public (int SampleCount, double AverageMs, double P95Ms, double P99Ms, double MaxMs) VideoQueueLatencyMetrics");
-        AssertContains(flashbackSource, "public double VideoQueueLatencyP95Ms");
-        AssertContains(flashbackSource, "public double VideoQueueLatencyP99Ms");
         AssertContains(flashbackSource, "public long VideoBackpressureWaitMs");
         AssertContains(flashbackSource, "public long VideoBackpressureEvents");
         AssertDoesNotContain(flashbackSource, "_videoLatencyTracker.RecordBackpressure(backpressureStartTick");

@@ -373,7 +373,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
             && CryptographicOperations.FixedTimeEquals(expected, actual);
         if (!ok)
         {
-            Logger.LogEvent("AUTH_FAILED", $"command={request.Command} correlationId={request.CorrelationId ?? "<none>"}");
+            Logger.LogEvent("AUTO-AUTH-FAILED", $"command={request.Command} correlationId={request.CorrelationId ?? "<none>"}");
         }
         return ok;
     }

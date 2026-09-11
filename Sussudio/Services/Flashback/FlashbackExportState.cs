@@ -96,7 +96,6 @@ internal sealed class FlashbackExportState
             }
 
             var exportId = Interlocked.Increment(ref _flashbackExportId);
-            _flashbackExportId = exportId;
             _flashbackExportActive = false;
             _flashbackExportStatus = FlashbackExportFailureCodes.IsCancelled(result) ? "Cancelled" : "Failed";
             _flashbackExportOutputPath = outputPath;
