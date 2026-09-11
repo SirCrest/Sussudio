@@ -2,7 +2,6 @@ using System;
 using System.IO;
 using System.Threading;
 using Sussudio.Models;
-using Sussudio.Services.Capture;
 
 namespace Sussudio.Services.Flashback;
 

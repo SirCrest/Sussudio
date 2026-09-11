@@ -4680,7 +4680,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var initializationText = rootText;
 
-        AssertContains(initializationText, "public static void InitializeFFmpeg(bool requireNativeRuntime = false)");
+        AssertContains(initializationText, "public static void InitializeFFmpeg(bool requireNativeRuntime)");
         AssertContains(initializationText, "public void Initialize(LibAvEncoderOptions options)");
         AssertContains(initializationText, "ThrowIfError(ffmpeg.avcodec_open2(_videoCodecCtx, codec, null), \"avcodec_open2\");");
         AssertContains(initializationText, "ApplyMuxerOptions(options.ContainerFormat, options.FragmentedMp4, &muxerOptions, \"open\");");

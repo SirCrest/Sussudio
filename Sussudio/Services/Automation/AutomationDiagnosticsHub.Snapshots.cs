@@ -8,7 +8,6 @@ using Sussudio.Models;
 using Sussudio.Services.Capture;
 using Sussudio.Services.Runtime;
 using Sussudio.Services.Telemetry;
-using Sussudio.ViewModels;
 using Sussudio.Services.Recording;
 
 namespace Sussudio.Services.Automation;

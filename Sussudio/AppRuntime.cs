@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Management;
 using System.Runtime.CompilerServices;
@@ -141,7 +142,7 @@ public static class RuntimePaths
         return true;
     }
 
-    private static bool TryCreateDirectoryInfo(string startPath, out DirectoryInfo? directory)
+    private static bool TryCreateDirectoryInfo(string startPath, [NotNullWhen(true)] out DirectoryInfo? directory)
     {
         try
         {

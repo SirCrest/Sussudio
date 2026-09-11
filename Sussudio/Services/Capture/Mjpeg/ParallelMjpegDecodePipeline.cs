@@ -2,6 +2,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -672,7 +673,7 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
         CleanupResources();
     }
 
-    public bool TryStop(TimeSpan timeout, out string? failureReason)
+    public bool TryStop(TimeSpan timeout, [NotNullWhen(false)] out string? failureReason)
     {
         failureReason = null;
 
@@ -726,7 +727,7 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
         }
     }
 
-    private bool TryWaitForShutdown(TimeSpan timeout, out string? failureReason)
+    private bool TryWaitForShutdown(TimeSpan timeout, [NotNullWhen(false)] out string? failureReason)
     {
         failureReason = null;
 

@@ -1305,14 +1305,14 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(rootText, "public void Dispose()");
-        AssertContains(rootText, "public bool TryStop(TimeSpan timeout, out string? failureReason)");
+        AssertContains(rootText, "public bool TryStop(TimeSpan timeout, [NotNullWhen(false)] out string? failureReason)");
         AssertContains(rootText, "private void BeginStop()");
         AssertContains(rootText, "private Thread? _emitThread;");
         AssertContains(rootText, "private readonly AutoResetEvent _emitSignal = new(false);");
         AssertContains(rootText, "private void StartEmitter()");
         AssertContains(rootText, "Name = \"MjpegEmitter\"");
         AssertContains(rootText, "private void SignalEmitter(string operation)");
-        AssertContains(rootText, "private bool TryWaitForShutdown(TimeSpan timeout, out string? failureReason)");
+        AssertContains(rootText, "private bool TryWaitForShutdown(TimeSpan timeout, [NotNullWhen(false)] out string? failureReason)");
         AssertContains(rootText, "private void SignalFatalError(Exception ex)");
         AssertContains(rootText, "private static TimeSpan GetRemainingTimeout(long deadlineTimestamp)");
         AssertContains(rootText, "private void CleanupResources()");

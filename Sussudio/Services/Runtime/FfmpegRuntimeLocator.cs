@@ -328,7 +328,7 @@ internal static unsafe class FfmpegRuntimeInit
     /// When <see langword="true"/>, throws <see cref="InvalidOperationException"/> if the
     /// native runtime cannot be located or fails to load.
     /// </param>
-    public static void EnsureInitialized(bool requireNativeRuntime = false)
+    public static void EnsureInitialized(bool requireNativeRuntime)
     {
         lock (InitSync)
         {
