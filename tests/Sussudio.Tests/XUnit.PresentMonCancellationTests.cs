@@ -167,11 +167,34 @@ static partial class Program
         }
     }
 
+    private static readonly object PresentMonTestExecutableLock = new();
+    private static string? presentMonTestExecutable;
+
+    // PresentMonProbe.ResolvePresentMonPath admits only known PresentMon
+    // executable names, so the fake PresentMon these tests inject cannot be the
+    // test apphost under its own name. Publish a copy of the apphost under an
+    // admitted name instead; the apphost resolves its managed dll by filename
+    // relative to itself, so the copy must sit beside the real one.
     private static string PresentMonTestExecutable()
     {
-        var path = Path.ChangeExtension(typeof(Sussudio.Tests.PresentMonCancellationTests).Assembly.Location, ".exe");
-        Assert.True(File.Exists(path), $"The test apphost is required: {path}");
-        return path;
+        lock (PresentMonTestExecutableLock)
+        {
+            if (presentMonTestExecutable is not null)
+            {
+                return presentMonTestExecutable;
+            }
+
+            var appHost = Path.ChangeExtension(typeof(Sussudio.Tests.PresentMonCancellationTests).Assembly.Location, ".exe");
+            Assert.True(File.Exists(appHost), $"The test apphost is required: {appHost}");
+            var aliased = Path.Combine(Path.GetDirectoryName(appHost)!, "PresentMon-2.4.1-x64.exe");
+            if (!File.Exists(aliased))
+            {
+                File.Copy(appHost, aliased);
+            }
+
+            presentMonTestExecutable = aliased;
+            return aliased;
+        }
     }
 
     private static async Task<int> WaitForPresentMonTestChildAsync(string pidPath, Task? run = null)
