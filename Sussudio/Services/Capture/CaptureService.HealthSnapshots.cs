@@ -545,7 +545,7 @@ private readonly record struct FlashbackPlaybackStateHealthSnapshotFields(
         long CommandsEnqueued,
         long CommandsProcessed,
         long CommandsDropped,
-        long CommandsSkippedNotReady,
+        long CommandsRejected,
         long ScrubUpdatesCoalesced,
         long SeekCommandsCoalesced,
         int CommandQueueCapacity,
@@ -637,7 +637,7 @@ private readonly record struct FlashbackPlaybackStateHealthSnapshotFields(
             commands.CommandsEnqueued,
             commands.CommandsProcessed,
             commands.CommandsDropped,
-            commands.CommandsSkippedNotReady,
+            commands.CommandsRejected,
             commands.ScrubUpdatesCoalesced,
             commands.SeekCommandsCoalesced,
             commands.CommandQueueCapacity,
@@ -782,7 +782,7 @@ private readonly record struct FlashbackPlaybackStateHealthSnapshotFields(
         long CommandsEnqueued,
         long CommandsProcessed,
         long CommandsDropped,
-        long CommandsSkippedNotReady,
+        long CommandsRejected,
         long ScrubUpdatesCoalesced,
         long SeekCommandsCoalesced,
         int CommandQueueCapacity,
@@ -804,7 +804,7 @@ private readonly record struct FlashbackPlaybackStateHealthSnapshotFields(
             fbPlayback?.CommandsEnqueued ?? 0,
             fbPlayback?.CommandsProcessed ?? 0,
             fbPlayback?.CommandsDropped ?? 0,
-            fbPlayback?.CommandsSkippedNotReady ?? 0,
+            fbPlayback?.CommandsRejected ?? 0,
             fbPlayback?.ScrubUpdatesCoalesced ?? 0,
             fbPlayback?.SeekCommandsCoalesced ?? 0,
             fbPlayback?.CommandQueueCapacityCommands ?? 0,
@@ -1106,7 +1106,7 @@ private RecordingHealthSnapshotFields CaptureRecordingHealthSnapshotFields(
 
         public long SnapshotUtcUnixMs { get; init; }
 
-        public FlashbackExportState.FlashbackExportHealthSnapshotFields FlashbackExport { get; init; }
+        public FlashbackExportState.HealthSnapshotFields FlashbackExport { get; init; }
 
         public FlashbackBufferHealthSnapshotFields FlashbackBuffer { get; init; }
 
@@ -1238,7 +1238,7 @@ private RecordingHealthSnapshotFields CaptureRecordingHealthSnapshotFields(
                 FlashbackPlaybackCommandsEnqueued = flashbackPlayback.CommandsEnqueued,
                 FlashbackPlaybackCommandsProcessed = flashbackPlayback.CommandsProcessed,
                 FlashbackPlaybackCommandsDropped = flashbackPlayback.CommandsDropped,
-                FlashbackPlaybackCommandsSkippedNotReady = flashbackPlayback.CommandsSkippedNotReady,
+                FlashbackPlaybackCommandsSkippedNotReady = flashbackPlayback.CommandsRejected,
                 FlashbackPlaybackScrubUpdatesCoalesced = flashbackPlayback.ScrubUpdatesCoalesced,
                 FlashbackPlaybackSeekCommandsCoalesced = flashbackPlayback.SeekCommandsCoalesced,
                 FlashbackPlaybackCommandQueueCapacity = flashbackPlayback.CommandQueueCapacity,

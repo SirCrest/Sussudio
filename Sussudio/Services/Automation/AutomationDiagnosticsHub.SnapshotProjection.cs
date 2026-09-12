@@ -966,7 +966,7 @@ public sealed partial class AutomationDiagnosticsHub
             FlashbackPlaybackCommandsEnqueued = flashbackPlayback.Commands.Enqueued,
             FlashbackPlaybackCommandsProcessed = flashbackPlayback.Commands.Processed,
             FlashbackPlaybackCommandsDropped = flashbackPlayback.Commands.Dropped,
-            FlashbackPlaybackCommandsSkippedNotReady = flashbackPlayback.Commands.SkippedNotReady,
+            FlashbackPlaybackCommandsSkippedNotReady = flashbackPlayback.Commands.Rejected,
             FlashbackPlaybackScrubUpdatesCoalesced = flashbackPlayback.Commands.ScrubUpdatesCoalesced,
             FlashbackPlaybackSeekCommandsCoalesced = flashbackPlayback.Commands.SeekCommandsCoalesced,
             FlashbackPlaybackCommandQueueCapacity = flashbackPlayback.Commands.QueueCapacity,

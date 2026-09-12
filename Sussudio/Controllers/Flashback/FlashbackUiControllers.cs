@@ -535,7 +535,7 @@ internal sealed class FlashbackPlaybackUiCoordinatorContext
     public required Action<double, double> ApplyTrackSize { get; init; }
     public required Action RequestPlayheadSnapOnNextUpdate { get; init; }
     public required Action UpdateMarkers { get; init; }
-    public required Action<string> RefreshCtiMotion { get; init; }
+    public required Action<string> RefreshPlayheadMotion { get; init; }
     public required Func<bool> IsScrubbing { get; init; }
     public required Action StartPlaybackPolling { get; init; }
     public required Action StopPlaybackPolling { get; init; }
@@ -561,7 +561,7 @@ internal sealed class FlashbackPlaybackUiCoordinator
 
         UpdatePosition();
         _context.UpdateMarkers();
-        _context.RefreshCtiMotion("size_changed");
+        _context.RefreshPlayheadMotion("size_changed");
     }
 
     public void UpdateState()
@@ -570,7 +570,7 @@ internal sealed class FlashbackPlaybackUiCoordinator
         _context.PlaybackPresentation.UpdateState(state);
 
         // Keep the 30Hz playback timer running during Playing; its writes to
-        // FlashbackPlaybackPosition still feed label text and VM consumers. CTI
+        // FlashbackPlaybackPosition still feed label text and VM consumers. Playhead
         // visuals are driven by long-horizon extrapolation re-anchored on edges.
         if (state == FlashbackPlaybackState.Playing)
         {
@@ -581,7 +581,7 @@ internal sealed class FlashbackPlaybackUiCoordinator
             _context.StopPlaybackPolling();
         }
 
-        _context.RefreshCtiMotion("state_change");
+        _context.RefreshPlayheadMotion("state_change");
     }
 
     public void UpdateBufferFill()
@@ -597,7 +597,7 @@ internal sealed class FlashbackPlaybackUiCoordinator
         _context.UpdateMarkers();
     }
 
-    // Position-changed handler. Visual CTI motion is driven by RefreshCtiMotion;
+    // Position-changed handler. Visual playhead motion is driven by RefreshPlayheadMotion;
     // this method refreshes label text. For Paused/Live states a position change
     // implies seek or scrub-end, so it also re-anchors. Playing ticks deliberately
     // skip re-anchor.
@@ -614,7 +614,7 @@ internal sealed class FlashbackPlaybackUiCoordinator
             && state != FlashbackPlaybackState.Playing
             && state != FlashbackPlaybackState.Scrubbing)
         {
-            _context.RefreshCtiMotion("position_change");
+            _context.RefreshPlayheadMotion("position_change");
         }
     }
 }
@@ -1036,7 +1036,7 @@ internal sealed class FlashbackScrubInteractionControllerContext
     public required MainViewModel ViewModel { get; init; }
     public required FrameworkElement ScrubArea { get; init; }
     public required Action<double, double> PositionMagneticPlayhead { get; init; }
-    public required Action<string> RefreshCtiMotion { get; init; }
+    public required Action<string> RefreshPlayheadMotion { get; init; }
     public required Func<long> GetTickCount64 { get; init; }
 }
 
@@ -1171,7 +1171,7 @@ internal sealed class FlashbackScrubInteractionController
         Logger.Log($"FLASHBACK_UI_SCRUB_END reason={reason}");
         // Hand the visual back to the extrapolation driver from wherever the
         // pointer left it.
-        _context.RefreshCtiMotion("scrub_end");
+        _context.RefreshPlayheadMotion("scrub_end");
     }
 
     private void ClearLocalState()
@@ -1280,13 +1280,13 @@ internal sealed class FlashbackPlayheadMotionController
     private CompositionEasingFunction? _flashbackPlayheadEaseWeighted;
     private bool _flashbackPlayheadVisualsReady;
     private bool _snapFlashbackPlayheadOnNextUpdate;
-    private FlashbackPlaybackState? _flashbackLastCtiState;
-    private DispatcherQueueTimer? _flashbackCtiAnchorTimer;
+    private FlashbackPlaybackState? _flashbackLastPlayheadState;
+    private DispatcherQueueTimer? _flashbackPlayheadAnchorTimer;
     private CompositionEasingFunction? _flashbackPlayheadEaseLinear;
-    private bool _flashbackCtiAnchorRunning;
+    private bool _flashbackPlayheadAnchorRunning;
     private static readonly TimeSpan FlashbackPlayheadDurationMagnetic = TimeSpan.FromMilliseconds(60);
-    private static readonly TimeSpan FlashbackCtiExtrapolationHorizon = TimeSpan.FromSeconds(60);
-    private static readonly TimeSpan FlashbackCtiAnchorDriftCorrection = TimeSpan.FromMilliseconds(1000);
+    private static readonly TimeSpan FlashbackPlayheadExtrapolationHorizon = TimeSpan.FromSeconds(60);
+    private static readonly TimeSpan FlashbackPlayheadAnchorDriftCorrection = TimeSpan.FromMilliseconds(1000);
 
     public FlashbackPlayheadMotionController(FlashbackPlayheadMotionControllerContext context)
     {
@@ -1303,7 +1303,7 @@ internal sealed class FlashbackPlayheadMotionController
         PositionFlashbackPlayhead(x, trackWidth, FlashbackPlayheadMotion.Magnetic);
     }
 
-    public void RefreshCtiMotion(string reason)
+    public void RefreshPlayheadMotion(string reason)
     {
         if (_context.IsScrubbing()) return;
         if (_context.IsWindowClosing()) return;
@@ -1317,12 +1317,12 @@ internal sealed class FlashbackPlayheadMotionController
 
         // Anchor-timer lifecycle: only run during steady states with motion.
         if (state == FlashbackPlaybackState.Playing || state == FlashbackPlaybackState.Paused)
-            StartFlashbackCtiAnchorTimer();
+            StartFlashbackPlayheadAnchorTimer();
         else
-            StopCtiAnchorTimer();
+            StopPlayheadAnchorTimer();
 
-        var stateChanged = state != _flashbackLastCtiState;
-        _flashbackLastCtiState = state;
+        var stateChanged = state != _flashbackLastPlayheadState;
+        _flashbackLastPlayheadState = state;
 
         var explicitStart = stateChanged
                           || _snapFlashbackPlayheadOnNextUpdate
@@ -1346,7 +1346,7 @@ internal sealed class FlashbackPlayheadMotionController
 
         var posRate = state == FlashbackPlaybackState.Playing ? 1.0 : 0.0;
         var bufRate = _context.ViewModel.IsFlashbackEnabled ? 1.0 : 0.0;
-        var horizonMs = FlashbackCtiExtrapolationHorizon.TotalMilliseconds;
+        var horizonMs = FlashbackPlayheadExtrapolationHorizon.TotalMilliseconds;
 
         var posHorizon = Math.Max(0.0, posMs + posRate * horizonMs);
         var bufHorizon = Math.Max(1.0, bufferDurMs + bufRate * horizonMs);
@@ -1354,35 +1354,35 @@ internal sealed class FlashbackPlayheadMotionController
         var fracNow = Math.Clamp(posMs / bufferDurMs, 0.0, 1.0);
         var fracHorizon = Math.Clamp(posHorizon / bufHorizon, 0.0, 1.0);
 
-        StartLinearPlayheadExtrapolation(fracNow, fracHorizon, trackW, FlashbackCtiExtrapolationHorizon, explicitStart);
+        StartLinearPlayheadExtrapolation(fracNow, fracHorizon, trackW, FlashbackPlayheadExtrapolationHorizon, explicitStart);
     }
 
-    public void StopCtiAnchorTimer()
+    public void StopPlayheadAnchorTimer()
     {
-        if (_flashbackCtiAnchorTimer == null || !_flashbackCtiAnchorRunning) return;
-        _flashbackCtiAnchorTimer.Stop();
-        _flashbackCtiAnchorTimer.Tick -= FlashbackCtiAnchorTimer_Tick;
-        _flashbackCtiAnchorRunning = false;
+        if (_flashbackPlayheadAnchorTimer == null || !_flashbackPlayheadAnchorRunning) return;
+        _flashbackPlayheadAnchorTimer.Stop();
+        _flashbackPlayheadAnchorTimer.Tick -= FlashbackPlayheadAnchorTimer_Tick;
+        _flashbackPlayheadAnchorRunning = false;
     }
 
-    private void StartFlashbackCtiAnchorTimer()
+    private void StartFlashbackPlayheadAnchorTimer()
     {
-        _flashbackCtiAnchorTimer ??= _context.DispatcherQueue.CreateTimer();
-        if (_flashbackCtiAnchorRunning) return;
-        _flashbackCtiAnchorTimer.Interval = FlashbackCtiAnchorDriftCorrection;
-        _flashbackCtiAnchorTimer.IsRepeating = true;
-        _flashbackCtiAnchorTimer.Tick -= FlashbackCtiAnchorTimer_Tick;
-        _flashbackCtiAnchorTimer.Tick += FlashbackCtiAnchorTimer_Tick;
-        _flashbackCtiAnchorTimer.Start();
-        _flashbackCtiAnchorRunning = true;
+        _flashbackPlayheadAnchorTimer ??= _context.DispatcherQueue.CreateTimer();
+        if (_flashbackPlayheadAnchorRunning) return;
+        _flashbackPlayheadAnchorTimer.Interval = FlashbackPlayheadAnchorDriftCorrection;
+        _flashbackPlayheadAnchorTimer.IsRepeating = true;
+        _flashbackPlayheadAnchorTimer.Tick -= FlashbackPlayheadAnchorTimer_Tick;
+        _flashbackPlayheadAnchorTimer.Tick += FlashbackPlayheadAnchorTimer_Tick;
+        _flashbackPlayheadAnchorTimer.Start();
+        _flashbackPlayheadAnchorRunning = true;
     }
 
-    private void FlashbackCtiAnchorTimer_Tick(DispatcherQueueTimer sender, object args)
+    private void FlashbackPlayheadAnchorTimer_Tick(DispatcherQueueTimer sender, object args)
     {
         try
         {
             if (_context.IsWindowClosing()) return;
-            RefreshCtiMotion("anchor_tick");
+            RefreshPlayheadMotion("anchor_tick");
         }
         catch (Exception ex)
         {

@@ -166,16 +166,16 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
         AssertContains(healthSnapshotAssemblerText, "FlashbackExportThroughputBytesPerSec = flashbackExport.ThroughputBytesPerSec,");
         AssertContains(healthSnapshotAssemblerText, "LastExportId = flashbackExport.LastResultId,");
         AssertDoesNotContain(healthSnapshotText, "lock (_flashbackExportDiagnosticsLock)");
-        AssertDoesNotContain(healthSnapshotText, "ComputeFlashbackExportElapsedMs(");
+        AssertDoesNotContain(healthSnapshotText, "ComputeElapsedMs(");
         AssertDoesNotContain(healthSnapshotText, "GetFileLengthOrZero(");
 
-        AssertContains(flashbackExportStateText, "public FlashbackExportHealthSnapshotFields CaptureHealthSnapshotFields(");
+        AssertContains(flashbackExportStateText, "public HealthSnapshotFields CaptureHealthSnapshotFields(");
         AssertContains(flashbackExportStateText, "lock (_flashbackExportDiagnosticsLock)");
-        AssertContains(flashbackExportStateText, "public static long ComputeFlashbackExportElapsedMs(");
-        AssertContains(flashbackExportStateText, "public static long ComputeFlashbackExportLastProgressAgeMs(");
+        AssertContains(flashbackExportStateText, "public static long ComputeElapsedMs(");
+        AssertContains(flashbackExportStateText, "public static long ComputeLastProgressAgeMs(");
         AssertContains(flashbackExportStateText, "public static long GetFileLengthOrZero(string? path)");
-        AssertContains(flashbackExportStateText, "var elapsedMs = ComputeFlashbackExportElapsedMs(");
-        AssertContains(flashbackExportStateText, "var lastProgressAgeMs = ComputeFlashbackExportLastProgressAgeMs(");
+        AssertContains(flashbackExportStateText, "var elapsedMs = ComputeElapsedMs(");
+        AssertContains(flashbackExportStateText, "var lastProgressAgeMs = ComputeLastProgressAgeMs(");
         AssertContains(flashbackExportStateText, "var outputBytes = GetFileLengthOrZero(");
         AssertContains(flashbackExportStateText, "ThroughputBytesPerSec = throughputBytesPerSec");
         AssertContains(flashbackExportStateText, "FinalizeResult? LastResult");

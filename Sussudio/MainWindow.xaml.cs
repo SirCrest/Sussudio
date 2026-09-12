@@ -291,7 +291,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private void StopFlashbackStatusPolling()
     {
         _flashbackPollingController.StopStatusPolling();
-        StopFlashbackCtiAnchorTimer();
+        StopFlashbackPlayheadAnchorTimer();
     }
 
     private void StartFlashbackPlaybackPolling()
@@ -322,11 +322,11 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private void PositionFlashbackMagneticPlayhead(double x, double trackWidth)
         => _flashbackPlayheadMotionController.PositionMagneticPlayhead(x, trackWidth);
 
-    private void RefreshFlashbackCtiMotion(string reason)
-        => _flashbackPlayheadMotionController.RefreshCtiMotion(reason);
+    private void RefreshFlashbackPlayheadMotion(string reason)
+        => _flashbackPlayheadMotionController.RefreshPlayheadMotion(reason);
 
-    private void StopFlashbackCtiAnchorTimer()
-        => _flashbackPlayheadMotionController.StopCtiAnchorTimer();
+    private void StopFlashbackPlayheadAnchorTimer()
+        => _flashbackPlayheadMotionController.StopPlayheadAnchorTimer();
 
     // XAML-facing Flashback pointer scrub adapter.
     private void InitializeFlashbackScrubInteractionController()
@@ -336,7 +336,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             ViewModel = ViewModel,
             ScrubArea = FlashbackScrubArea,
             PositionMagneticPlayhead = PositionFlashbackMagneticPlayhead,
-            RefreshCtiMotion = RefreshFlashbackCtiMotion,
+            RefreshPlayheadMotion = RefreshFlashbackPlayheadMotion,
             GetTickCount64 = () => Environment.TickCount64,
         });
     }
@@ -459,7 +459,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             ApplyTrackSize = _flashbackTimelineController.ApplyTrackSize,
             RequestPlayheadSnapOnNextUpdate = RequestFlashbackPlayheadSnapOnNextUpdate,
             UpdateMarkers = UpdateFlashbackMarkers,
-            RefreshCtiMotion = RefreshFlashbackCtiMotion,
+            RefreshPlayheadMotion = RefreshFlashbackPlayheadMotion,
             IsScrubbing = () => _flashbackScrubInteractionController.IsScrubbing,
             StartPlaybackPolling = StartFlashbackPlaybackPolling,
             StopPlaybackPolling = StopFlashbackPlaybackPolling,

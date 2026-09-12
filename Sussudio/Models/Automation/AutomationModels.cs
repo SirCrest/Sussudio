@@ -1028,6 +1028,7 @@ public sealed class PerformanceTimelineEntry
     public long FlashbackPlaybackCommandsEnqueued { get; init; }
     public long FlashbackPlaybackCommandsProcessed { get; init; }
     public long FlashbackPlaybackCommandsDropped { get; init; }
+    // Legacy name for readiness, thread, and disposal rejections; mailbox rejection/drop accounting is separate.
     public long FlashbackPlaybackCommandsSkippedNotReady { get; init; }
     public long FlashbackPlaybackScrubUpdatesCoalesced { get; init; }
     public long FlashbackPlaybackSeekCommandsCoalesced { get; init; }

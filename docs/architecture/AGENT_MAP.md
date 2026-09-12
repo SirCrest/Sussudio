@@ -1367,7 +1367,7 @@ Primary current owners:
 - `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs` owns MainWindow
   Flashback status/playback polling, scrub release/cancel/capture-lost behavior,
   fullscreen Flashback bridge hooks, timeline toggle rollback/lockout, timeline
-  geometry, timeline track layout, marker/export presentation, playhead/CTI
+  geometry, timeline track layout, marker/export presentation, playhead
   motion, playback presentation/coordinator, settings binding, and command
   controller ownership assertions. Keep the Flashback automation wrappers plus
   their backing `Program` method bodies together unless an independent fixture
@@ -2052,7 +2052,7 @@ Primary current owners:
   cleanup, fullscreen scrub termination, lockout clearing, scrub visual updates,
   pure timeline fraction/duration math, playhead motion context, playback-state
   sampling, scrub/window gating, live right-edge pinning, long-horizon
-  extrapolation scheduling, CTI anchor timing, compositor visual setup, snap
+  extrapolation scheduling, playhead anchor timing, compositor visual setup, snap
   placement, magnetic pointer-scrub movement, linear keyframe animation, and
   label clamp/positioning. `Sussudio/MainWindow.xaml.cs` owns the XAML-facing
   command, polling, playhead, scrub, settings, timeline, and presentation
@@ -2062,10 +2062,10 @@ Primary current owners:
   text formatting. `Sussudio/MainWindow.xaml.cs` wires marker
   presentation callbacks.
 - `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs` also owns
-  Flashback playback UI sequencing: track-resize snap/position/marker/CTI
+  Flashback playback UI sequencing: track-resize snap/position/marker/playhead
   refresh order, playback state polling start/stop, play/pause glyph policy,
   Go Live enabled state, buffer-duration text, buffer-fill/position/marker
-  refresh order, and position-label updates with CTI re-anchor gating.
+  refresh order, and position-label updates with playhead re-anchor gating.
 - `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs` also owns
   Flashback command semantics for in/out points, clear, play/pause, Go Live,
   fullscreen keyboard shortcuts including left/right nudge rejection logging,
@@ -2083,7 +2083,7 @@ Primary current owners:
   `FlashbackUiControllers.cs`.
 - `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs` owns Flashback status
   and playback-position polling timers. `Sussudio/MainWindow.xaml.cs`
-  is the XAML-facing adapter; CTI anchor timing lives with Flashback UI
+  is the XAML-facing adapter; playhead anchor timing lives with Flashback UI
   playhead motion in `FlashbackUiControllers.cs`. These presentation timers
   request prewarm but do not own health observation or playback subscriptions.
 - `Sussudio/Controllers/Shell/ShellChromeController.cs` owns settings shelf

@@ -9608,7 +9608,7 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "CaptureSettingsProjectionBuilder.cs")),
             "capture settings projection builder folded into ViewModelBuilders.cs");
-        AssertContains(captureStateText, "private CaptureSettings BuildCaptureSettings()");
+        AssertContains(captureStateText, "internal CaptureSettings BuildCaptureSettings()");
         AssertContains(captureStateText, "var runtime = _captureService.GetRuntimeSnapshot();");
         AssertContains(captureStateText, "var sourceTelemetry = _captureService.GetLatestSourceTelemetrySnapshot();");
         AssertContains(captureStateText, "return CaptureSettingsProjectionBuilder.Build(new CaptureSettingsProjectionInput");
@@ -9642,7 +9642,7 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertDoesNotContain(captureStateText, "ProjectCaptureSettingsFrameRate");
         AssertDoesNotContain(captureStateText, "private string? ResolveRequestedPixelFormat()");
         AssertDoesNotContain(captureStateText, "private bool ShouldForceMjpegDecode()");
-        AssertContains(captureText, "private CaptureSettings BuildCaptureSettings()");
+        AssertContains(captureText, "internal CaptureSettings BuildCaptureSettings()");
         AssertContains(previewLifecycleControllerText, "await _context.SessionCoordinator.StartVideoPreviewAsync(settings, cancellationToken)");
         AssertContains(recordingTransitionControllerText, "await _context.StartRecordingAsync(settings, cancellationToken);");
         AssertDoesNotContain(recordingLifecycleText, "await _sessionCoordinator.StartRecordingAsync(settings, cancellationToken);");

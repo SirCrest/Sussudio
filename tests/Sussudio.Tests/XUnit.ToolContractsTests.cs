@@ -3620,7 +3620,9 @@ static partial class Program
             AssertNotNull(entryType.GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance), $"PerformanceTimelineEntry.{propertyName}");
             if (propertyName.StartsWith("FlashbackPlayback", StringComparison.Ordinal))
             {
-                var projectionName = propertyName["FlashbackPlayback".Length..];
+                var projectionName = propertyName == "FlashbackPlaybackCommandsSkippedNotReady"
+                    ? "CommandsRejected"
+                    : propertyName["FlashbackPlayback".Length..];
                 AssertContains(diagnosticsHubSource, $"{propertyName} = flashbackPlayback.{projectionName}");
                 AssertContains(diagnosticsHubSource, $"{projectionName}: snapshot.{propertyName}");
             }
@@ -3684,7 +3686,7 @@ static partial class Program
                             118d)
                         .ConfigureAwait(false);
 
-                    AssertContains(output, "Flashback Cmd Counters: enqueued 1 -> 9, processed 0 -> 8, dropped 0 -> 2, skippedNotReady 0 -> 1, scrubCoalesced 0 -> 4, seekCoalesced 0 -> 3, lastQueued=Seek, lastProcessed=Pause");
+                    AssertContains(output, "Flashback Cmd Counters: enqueued 1 -> 9, processed 0 -> 8, dropped 0 -> 2, rejected 0 -> 1, scrubCoalesced 0 -> 4, seekCoalesced 0 -> 3, lastQueued=Seek, lastProcessed=Pause");
                     AssertContains(output, "cmdDropsDelta=2");
                     AssertContains(output, "Preview Slow Stage: Unknown/None -> CompositorMiss/High evidence=dxgiRecentMissed=4");
                 },

@@ -1668,13 +1668,13 @@ static partial class Program
         AssertContains(snapshotsText, "ObservedNv12FrameCount: isNv12 ? 1 : 0");
         AssertContains(snapshotsText, "ObservedOtherFrameCount: observedFormat != null");
         AssertContains(healthSnapshotText, "private static string ResolveFlashbackBackendSettingsStaleReason(");
-        AssertContains(flashbackExportText, "public static long ComputeFlashbackExportElapsedMs(");
-        AssertContains(flashbackExportText, "public static long ComputeFlashbackExportLastProgressAgeMs(");
+        AssertContains(flashbackExportText, "public static long ComputeElapsedMs(");
+        AssertContains(flashbackExportText, "public static long ComputeLastProgressAgeMs(");
         AssertContains(flashbackExportText, "public static long GetFileLengthOrZero(string? path)");
 
         AssertDoesNotContain(snapshotsText, "private static string ResolveFlashbackBackendSettingsStaleReason(");
-        AssertDoesNotContain(snapshotsText, "private static long ComputeFlashbackExportElapsedMs(");
-        AssertDoesNotContain(snapshotsText, "private static long ComputeFlashbackExportLastProgressAgeMs(");
+        AssertDoesNotContain(snapshotsText, "private static long ComputeElapsedMs(");
+        AssertDoesNotContain(snapshotsText, "private static long ComputeLastProgressAgeMs(");
         AssertDoesNotContain(snapshotsText, "private static long GetFileLengthOrZero(string? path)");
         AssertEqual(
             false,

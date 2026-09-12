@@ -41,7 +41,7 @@ internal sealed class FlashbackExportState
 
     public long ReadLastProgressUtcUnixMs() => Interlocked.Read(ref _flashbackExportLastProgressUtcUnixMs);
 
-    public void RecordLastFlashbackExportResult(long exportId, FinalizeResult result)
+    public void RecordLastResult(long exportId, FinalizeResult result)
     {
         lock (_flashbackExportDiagnosticsLock)
         {
@@ -50,7 +50,7 @@ internal sealed class FlashbackExportState
         }
     }
 
-    public long BeginFlashbackExportDiagnostics(TimeSpan inPoint, TimeSpan outPoint, string outputPath)
+    public long BeginDiagnostics(TimeSpan inPoint, TimeSpan outPoint, string outputPath)
     {
         var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         lock (_flashbackExportDiagnosticsLock)
@@ -74,7 +74,7 @@ internal sealed class FlashbackExportState
         }
     }
 
-    public void RecordRejectedFlashbackExportDiagnostics(
+    public void RecordRejectedDiagnostics(
         string outputPath,
         FinalizeResult result,
         TimeSpan? inPoint = null,
@@ -110,11 +110,11 @@ internal sealed class FlashbackExportState
                 : 0;
             _flashbackExportMessage = result.StatusMessage;
             _flashbackExportFailureKind = FlashbackExportFailureCodes.Classify(result);
-            RecordLastFlashbackExportResult(exportId, result);
+            RecordLastResult(exportId, result);
         }
     }
 
-    public void CompleteFlashbackExportDiagnostics(long exportId, FinalizeResult result)
+    public void CompleteDiagnostics(long exportId, FinalizeResult result)
     {
         if (Volatile.Read(ref _flashbackExportId) != exportId)
         {
@@ -146,13 +146,13 @@ internal sealed class FlashbackExportState
         }
     }
 
-    public IProgress<ExportProgress> CreateFlashbackExportProgressSink(
+    public IProgress<ExportProgress> CreateProgressSink(
         long exportId,
         IProgress<ExportProgress>? innerProgress)
     {
-        return new FlashbackExportProgressForwarder(progress =>
+        return new ProgressForwarder(progress =>
         {
-            UpdateFlashbackExportProgress(exportId, progress);
+            UpdateProgress(exportId, progress);
             try
             {
                 innerProgress?.Report(progress);
@@ -164,7 +164,7 @@ internal sealed class FlashbackExportState
         });
     }
 
-    public void UpdateFlashbackExportProgress(long exportId, ExportProgress progress)
+    public void UpdateProgress(long exportId, ExportProgress progress)
     {
         if (Volatile.Read(ref _flashbackExportId) != exportId)
         {
@@ -210,7 +210,7 @@ internal sealed class FlashbackExportState
         }
     }
 
-    public void RecordFlashbackExportForceRotateFallback(
+    public void RecordForceRotateFallback(
         long exportId,
         int segmentCount,
         TimeSpan inPoint,
@@ -238,13 +238,13 @@ internal sealed class FlashbackExportState
         }
     }
 
-    public FlashbackExportHealthSnapshotFields CaptureHealthSnapshotFields(
+    public HealthSnapshotFields CaptureHealthSnapshotFields(
         long snapshotUtcUnixMs)
     {
-        FlashbackExportHealthSnapshotFields export;
+        HealthSnapshotFields export;
         lock (_flashbackExportDiagnosticsLock)
         {
-            export = new FlashbackExportHealthSnapshotFields(
+            export = new HealthSnapshotFields(
                 _flashbackExportActive,
                 _flashbackExportId,
                 _flashbackExportStatus,
@@ -272,12 +272,12 @@ internal sealed class FlashbackExportState
                 0);
         }
 
-        var elapsedMs = ComputeFlashbackExportElapsedMs(
+        var elapsedMs = ComputeElapsedMs(
             export.Active,
             export.StartedUtcUnixMs,
             export.CompletedUtcUnixMs,
             snapshotUtcUnixMs);
-        var lastProgressAgeMs = ComputeFlashbackExportLastProgressAgeMs(
+        var lastProgressAgeMs = ComputeLastProgressAgeMs(
             export.Active,
             export.StartedUtcUnixMs,
             export.LastProgressUtcUnixMs,
@@ -299,7 +299,7 @@ internal sealed class FlashbackExportState
         };
     }
 
-    public static long ComputeFlashbackExportElapsedMs(
+    public static long ComputeElapsedMs(
         bool active,
         long startedUtcUnixMs,
         long completedUtcUnixMs,
@@ -319,7 +319,7 @@ internal sealed class FlashbackExportState
         return Math.Max(0, endUtcUnixMs - startedUtcUnixMs);
     }
 
-    public static long ComputeFlashbackExportLastProgressAgeMs(
+    public static long ComputeLastProgressAgeMs(
         bool active,
         long startedUtcUnixMs,
         long lastProgressUtcUnixMs,
@@ -356,11 +356,11 @@ internal sealed class FlashbackExportState
         }
     }
 
-    public sealed class FlashbackExportProgressForwarder : IProgress<ExportProgress>
+    public sealed class ProgressForwarder : IProgress<ExportProgress>
     {
         private readonly Action<ExportProgress> _onProgress;
 
-        public FlashbackExportProgressForwarder(Action<ExportProgress> onProgress)
+        public ProgressForwarder(Action<ExportProgress> onProgress)
         {
             _onProgress = onProgress;
         }
@@ -369,7 +369,7 @@ internal sealed class FlashbackExportState
             => _onProgress(value);
     }
 
-    public readonly record struct FlashbackExportHealthSnapshotFields(
+    public readonly record struct HealthSnapshotFields(
         bool Active,
         long Id,
         string Status,

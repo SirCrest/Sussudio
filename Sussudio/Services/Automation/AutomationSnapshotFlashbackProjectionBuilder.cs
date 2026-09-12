@@ -477,7 +477,7 @@ internal static class AutomationSnapshotFlashbackProjectionBuilder
             Enqueued = health.FlashbackPlaybackCommandsEnqueued,
             Processed = health.FlashbackPlaybackCommandsProcessed,
             Dropped = health.FlashbackPlaybackCommandsDropped,
-            SkippedNotReady = health.FlashbackPlaybackCommandsSkippedNotReady,
+            Rejected = health.FlashbackPlaybackCommandsSkippedNotReady,
             ScrubUpdatesCoalesced = health.FlashbackPlaybackScrubUpdatesCoalesced,
             SeekCommandsCoalesced = health.FlashbackPlaybackSeekCommandsCoalesced,
             QueueCapacity = health.FlashbackPlaybackCommandQueueCapacity,
@@ -500,7 +500,7 @@ internal static class AutomationSnapshotFlashbackProjectionBuilder
         public long Enqueued { get; init; }
         public long Processed { get; init; }
         public long Dropped { get; init; }
-        public long SkippedNotReady { get; init; }
+        public long Rejected { get; init; }
         public long ScrubUpdatesCoalesced { get; init; }
         public long SeekCommandsCoalesced { get; init; }
         public int QueueCapacity { get; init; }

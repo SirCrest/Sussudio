@@ -5135,7 +5135,7 @@ static partial class Program
         AssertContains(pollingAdapterText, "IsWindowClosing = () => _isWindowClosing,");
         AssertContains(pollingAdapterText, "=> _flashbackPollingController.StartStatusPolling();");
         AssertContains(pollingAdapterText, "_flashbackPollingController.StopStatusPolling();");
-        AssertContains(pollingAdapterText, "StopFlashbackCtiAnchorTimer();");
+        AssertContains(pollingAdapterText, "StopFlashbackPlayheadAnchorTimer();");
         AssertContains(pollingAdapterText, "=> _flashbackPollingController.StartPlaybackPolling();");
         AssertContains(pollingAdapterText, "=> _flashbackPollingController.StopPlaybackPolling();");
         AssertContains(mainWindowText, "InitializeFlashbackPollingController();");
@@ -5186,10 +5186,10 @@ static partial class Program
         AssertContains(playheadText, "IsScrubbing = () => _flashbackScrubInteractionController.IsScrubbing,");
         AssertContains(playheadText, "private void RequestFlashbackPlayheadSnapOnNextUpdate()");
         AssertContains(playheadText, "private void PositionFlashbackMagneticPlayhead(double x, double trackWidth)");
-        AssertContains(playheadText, "private void RefreshFlashbackCtiMotion(string reason)");
-        AssertContains(playheadText, "=> _flashbackPlayheadMotionController.RefreshCtiMotion(reason);");
-        AssertContains(playheadText, "private void StopFlashbackCtiAnchorTimer()");
-        AssertContains(playheadText, "=> _flashbackPlayheadMotionController.StopCtiAnchorTimer();");
+        AssertContains(playheadText, "private void RefreshFlashbackPlayheadMotion(string reason)");
+        AssertContains(playheadText, "=> _flashbackPlayheadMotionController.RefreshPlayheadMotion(reason);");
+        AssertContains(playheadText, "private void StopFlashbackPlayheadAnchorTimer()");
+        AssertContains(playheadText, "=> _flashbackPlayheadMotionController.StopPlayheadAnchorTimer();");
         AssertContains(mainWindowText, "InitializeFlashbackPlayheadMotionController();");
         AssertEqual(
             false,
@@ -5201,20 +5201,20 @@ static partial class Program
         AssertContains(controllerRootText, "internal sealed class FlashbackPlayheadMotionController");
         AssertContains(controllerRootText, "private enum FlashbackPlayheadMotion");
         AssertContains(controllerRootText, "private Visual? _flashbackPlayheadVisual;");
-        AssertContains(controllerRootText, "private DispatcherQueueTimer? _flashbackCtiAnchorTimer;");
+        AssertContains(controllerRootText, "private DispatcherQueueTimer? _flashbackPlayheadAnchorTimer;");
         AssertContains(controllerRootText, "private CompositionEasingFunction? _flashbackPlayheadEaseLinear;");
         AssertContains(controllerRootText, "private bool _snapFlashbackPlayheadOnNextUpdate;");
         AssertContains(controllerRootText, "public void RequestSnapOnNextUpdate()");
         AssertContains(controllerRootText, "public void PositionMagneticPlayhead(double x, double trackWidth)");
-        AssertContains(controllerText, "public void RefreshCtiMotion(string reason)");
-        AssertContains(controllerText, "public void StopCtiAnchorTimer()");
-        AssertContains(controllerText, "private void StartFlashbackCtiAnchorTimer()");
-        AssertContains(controllerText, "private void FlashbackCtiAnchorTimer_Tick(DispatcherQueueTimer sender, object args)");
+        AssertContains(controllerText, "public void RefreshPlayheadMotion(string reason)");
+        AssertContains(controllerText, "public void StopPlayheadAnchorTimer()");
+        AssertContains(controllerText, "private void StartFlashbackPlayheadAnchorTimer()");
+        AssertContains(controllerText, "private void FlashbackPlayheadAnchorTimer_Tick(DispatcherQueueTimer sender, object args)");
         AssertContains(controllerText, "FlashbackTimelineGeometry.IsUsableTrackDimension(trackW)");
         AssertContains(controllerText, "state == FlashbackPlaybackState.Live");
         AssertContains(controllerText, "SnapPlayheadVisualsToFraction(1.0, trackW);");
         AssertContains(controllerText, "StartLinearPlayheadExtrapolation(");
-        AssertContains(controllerText, "RefreshCtiMotion(\"anchor_tick\");");
+        AssertContains(controllerText, "RefreshPlayheadMotion(\"anchor_tick\");");
         AssertContains(controllerText, "FLASHBACK_CTI_ANCHOR_TICK_FAIL");
         AssertContains(controllerText, "private void EnsureFlashbackPlayheadVisuals()");
         AssertContains(controllerText, "private void PositionFlashbackPlayhead(double x, double trackWidth, FlashbackPlayheadMotion motion)");
@@ -5242,15 +5242,15 @@ static partial class Program
             "Flashback playhead motion folded into Flashback UI controllers");
         AssertContains(scrubText, "PositionMagneticPlayhead = PositionFlashbackMagneticPlayhead,");
         AssertContains(scrubControllerText, "_context.PositionMagneticPlayhead(x, width);");
-        AssertContains(playbackCoordinatorText, "_context.RefreshCtiMotion(\"state_change\");");
-        AssertContains(pollingAdapterText, "StopFlashbackCtiAnchorTimer();");
+        AssertContains(playbackCoordinatorText, "_context.RefreshPlayheadMotion(\"state_change\");");
+        AssertContains(pollingAdapterText, "StopFlashbackPlayheadAnchorTimer();");
         AssertContains(playbackCoordinatorText, "_context.RequestPlayheadSnapOnNextUpdate();");
-        AssertDoesNotContain(playheadText, "private DispatcherQueueTimer? _flashbackCtiAnchorTimer;");
+        AssertDoesNotContain(playheadText, "private DispatcherQueueTimer? _flashbackPlayheadAnchorTimer;");
         AssertDoesNotContain(playheadText, "private void StartLinearPlayheadExtrapolation(");
         AssertDoesNotContain(playheadText, "FLASHBACK_CTI_ANCHOR_TICK_FAIL");
         AssertDoesNotContain(flashbackText, "private enum FlashbackPlayheadMotion");
         AssertDoesNotContain(flashbackText, "private Visual? _flashbackPlayheadVisual;");
-        AssertDoesNotContain(flashbackText, "private DispatcherQueueTimer? _flashbackCtiAnchorTimer;");
+        AssertDoesNotContain(flashbackText, "private DispatcherQueueTimer? _flashbackPlayheadAnchorTimer;");
         AssertDoesNotContain(flashbackText, "private void StartLinearPlayheadExtrapolation(");
 
         return Task.CompletedTask;
@@ -5294,11 +5294,11 @@ static partial class Program
         AssertContains(playbackCoordinatorText, "_context.PlaybackPresentation.UpdateState(state);");
         AssertContains(playbackCoordinatorText, "_context.StartPlaybackPolling();");
         AssertContains(playbackCoordinatorText, "_context.StopPlaybackPolling();");
-        AssertContains(playbackCoordinatorText, "_context.RefreshCtiMotion(\"state_change\");");
+        AssertContains(playbackCoordinatorText, "_context.RefreshPlayheadMotion(\"state_change\");");
         AssertContains(playbackCoordinatorText, "public void UpdateBufferPresentation()\n    {\n        UpdateBufferFill();\n        UpdatePosition();\n        _context.UpdateMarkers();\n    }");
         AssertContains(playbackCoordinatorText, "_context.PlaybackPresentation.UpdateBufferFill(duration);");
         AssertContains(playbackCoordinatorText, "_context.PlaybackPresentation.UpdatePosition(");
-        AssertContains(playbackCoordinatorText, "_context.RefreshCtiMotion(\"position_change\");");
+        AssertContains(playbackCoordinatorText, "_context.RefreshPlayheadMotion(\"position_change\");");
         AssertContains(flashbackText, "private void UpdateFlashbackBufferPresentation()\n        => _flashbackPlaybackUiCoordinator.UpdateBufferPresentation();");
         AssertContains(flashbackPropertyChangedText, "UpdateBuffer = UpdateFlashbackBufferPresentation,");
         AssertContains(flashbackPropertyChangedControllerText, "case nameof(MainViewModel.FlashbackBufferFillPercent):");
@@ -5307,7 +5307,7 @@ static partial class Program
         AssertDoesNotContain(flashbackPropertyChangedText, "UpdateFlashbackBufferFill();\n        UpdateFlashbackPositionUI();");
         AssertDoesNotContain(flashbackText, "_flashbackPlaybackPresentationController.UpdateState(state);");
         AssertDoesNotContain(flashbackText, "if (state == FlashbackPlaybackState.Playing)");
-        AssertDoesNotContain(flashbackText, "RefreshFlashbackCtiMotion(\"position_change\");");
+        AssertDoesNotContain(flashbackText, "RefreshFlashbackPlayheadMotion(\"position_change\");");
         AssertDoesNotContain(flashbackText, "FlashbackPlayPauseIcon.Glyph =");
         AssertDoesNotContain(flashbackText, "FlashbackGoLiveButton.IsEnabled =");
         AssertDoesNotContain(flashbackText, "FlashbackBufferDurationText.Text =");
@@ -5491,7 +5491,7 @@ static partial class Program
         AssertOccursBefore(playbackCoordinatorText, "_context.ApplyTrackSize(width, height);", "_context.RequestPlayheadSnapOnNextUpdate();");
         AssertOccursBefore(playbackCoordinatorText, "_context.RequestPlayheadSnapOnNextUpdate();", "UpdatePosition();");
         AssertOccursBefore(playbackCoordinatorText, "UpdatePosition();", "_context.UpdateMarkers();");
-        AssertOccursBefore(playbackCoordinatorText, "_context.UpdateMarkers();", "_context.RefreshCtiMotion(\"size_changed\");");
+        AssertOccursBefore(playbackCoordinatorText, "_context.UpdateMarkers();", "_context.RefreshPlayheadMotion(\"size_changed\");");
         AssertContains(agentMapText, "timeline visibility, lockout, toggle synchronization, timeline track layout");
         AssertContains(agentMapText, "sizing, show/hide storyboard state");
         AssertContains(agentMapText, "show/hide storyboard state");
@@ -5614,7 +5614,7 @@ static partial class Program
         AssertContains(flashbackScrubText, "private FlashbackScrubInteractionController _flashbackScrubInteractionController = null!;");
         AssertContains(flashbackScrubText, "private void InitializeFlashbackScrubInteractionController()");
         AssertContains(flashbackScrubText, "PositionMagneticPlayhead = PositionFlashbackMagneticPlayhead,");
-        AssertContains(flashbackScrubText, "RefreshCtiMotion = RefreshFlashbackCtiMotion,");
+        AssertContains(flashbackScrubText, "RefreshPlayheadMotion = RefreshFlashbackPlayheadMotion,");
         AssertContains(flashbackScrubText, "GetTickCount64 = () => Environment.TickCount64,");
         AssertContains(flashbackScrubControllerText, "internal sealed class FlashbackScrubInteractionController");
         AssertContains(flashbackScrubControllerText, "private bool _isScrubbing;");
@@ -6948,7 +6948,7 @@ static partial class Program
         AssertContains(exportCoreText, "FLASHBACK_EXPORT_FORCE_ROTATE_FALLBACK reason=force_rotate_timeout");
         AssertContains(exportCore, "live-edge partial fallback: active segment was not closed before timeout; export may omit the newest frames");
         AssertContains(exportCore, "if (preparedExport.ForceRotateFallbackUsed && result.Succeeded)\n            {\n                result = FinalizeResult.Success(");
-        AssertContains(exportCore, "_flashbackExport.RecordLastFlashbackExportResult(exportId, result);\n            _flashbackExport.CompleteFlashbackExportDiagnostics(exportId, result);");
+        AssertContains(exportCore, "_flashbackExport.RecordLastResult(exportId, result);\n            _flashbackExport.CompleteDiagnostics(exportId, result);");
 
         var backendCleanup = ExtractTextBetween(
             backendResourcesText,
@@ -9399,13 +9399,13 @@ static partial class Program
         AssertContains(exportCoreText, "FlashbackExportPlanner.CreateRequest(");
         AssertContains(exportCoreText, "CreateFlashbackExportThrottleDelayProvider");
         AssertContains(plannerText, "internal static class FlashbackExportPlanner");
-        AssertContains(exportDiagnosticsText, "public long BeginFlashbackExportDiagnostics(");
-        AssertContains(exportDiagnosticsText, "public void RecordRejectedFlashbackExportDiagnostics(");
-        AssertContains(exportDiagnosticsText, "public void CompleteFlashbackExportDiagnostics(");
-        AssertContains(exportDiagnosticsText, "public IProgress<ExportProgress> CreateFlashbackExportProgressSink(");
-        AssertContains(exportDiagnosticsText, "public void UpdateFlashbackExportProgress(");
-        AssertContains(exportDiagnosticsText, "public void RecordFlashbackExportForceRotateFallback(");
-        AssertContains(exportDiagnosticsText, "public sealed class FlashbackExportProgressForwarder");
+        AssertContains(exportDiagnosticsText, "public long BeginDiagnostics(");
+        AssertContains(exportDiagnosticsText, "public void RecordRejectedDiagnostics(");
+        AssertContains(exportDiagnosticsText, "public void CompleteDiagnostics(");
+        AssertContains(exportDiagnosticsText, "public IProgress<ExportProgress> CreateProgressSink(");
+        AssertContains(exportDiagnosticsText, "public void UpdateProgress(");
+        AssertContains(exportDiagnosticsText, "public void RecordForceRotateFallback(");
+        AssertContains(exportDiagnosticsText, "public sealed class ProgressForwarder");
         AssertContains(captureServiceText, "await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);");
         AssertContains(captureServiceText, "FlashbackExporter? snapshotExporter = null,");
         AssertContains(captureServiceText, "var exporter = snapshotExporter;\n            if (exporter == null)\n            {\n                exporter = _flashbackBackend.Exporter ??= new FlashbackExporter();\n            }");
@@ -9437,9 +9437,9 @@ static partial class Program
         AssertContains(captureServiceText, "return FailFlashbackExport(outputPath, \"Flashback export cancelled.\", FlashbackExportFailureCodes.Cancelled, inPoint, outPoint);");
         AssertContains(captureServiceText, "var exportId = 0L;");
         AssertContains(captureServiceText, "var evictionPaused = false;");
-        AssertContains(captureServiceText, "exportId = _flashbackExport.BeginFlashbackExportDiagnostics(inPoint, outPoint, outputPath);");
+        AssertContains(captureServiceText, "exportId = _flashbackExport.BeginDiagnostics(inPoint, outPoint, outputPath);");
         AssertContains(captureServiceText, "var forceRotateResult = flashbackSink?.ForceRotateForExport(inPoint, outPoint, ct);");
-        AssertContains(captureServiceText, "_flashbackExport.RecordFlashbackExportForceRotateFallback(");
+        AssertContains(captureServiceText, "_flashbackExport.RecordForceRotateFallback(");
         AssertContains(captureServiceText, "FLASHBACK_EXPORT_FORCE_ROTATE_FALLBACK reason=force_rotate_timeout");
         AssertContains(captureServiceText, "private sealed class FlashbackRecordingBoundarySnapshot");
         AssertContains(captureServiceText, "captureBoundarySnapshot: sink => CaptureFlashbackRecordingBoundarySnapshot(sink, recordingBoundary)");
@@ -9453,14 +9453,14 @@ static partial class Program
         AssertContains(captureServiceText, "if (evictionPaused)");
         AssertContains(captureServiceText, "ResumeFlashbackEvictionBestEffort(bufferManager, \"flashback_export\");");
         AssertContains(flashbackBackendText, "resumeEvictionBestEffort(bufferManager, \"flashback_recording_finalize\");");
-        AssertContains(captureServiceText, "_flashbackExport.RecordLastFlashbackExportResult(exportId, failure);");
-        AssertContains(exportDiagnosticsText, "public void RecordLastFlashbackExportResult(long exportId, FinalizeResult result)");
+        AssertContains(captureServiceText, "_flashbackExport.RecordLastResult(exportId, failure);");
+        AssertContains(exportDiagnosticsText, "public void RecordLastResult(long exportId, FinalizeResult result)");
         AssertContains(exportDiagnosticsText, "Volatile.Write(ref _lastFlashbackExportResultId, exportId);");
         AssertContains(captureServiceText, "private FinalizeResult FailFlashbackExport(\n        string outputPath,\n        string statusMessage,\n        string failureCode,\n        TimeSpan? inPoint = null,\n        TimeSpan? outPoint = null)");
         AssertContains(captureServiceText, "Logger.Log($\"FLASHBACK_EXPORT_REJECTED status='{statusMessage}' output='{outputPath}'\");");
         AssertContains(exportDiagnosticsText, "_lastExportResult = result;");
-        AssertContains(captureServiceText, "_flashbackExport.RecordRejectedFlashbackExportDiagnostics(outputPath, result, inPoint, outPoint);");
-        AssertContains(exportDiagnosticsText, "public void RecordRejectedFlashbackExportDiagnostics(\n        string outputPath,\n        FinalizeResult result,\n        TimeSpan? inPoint = null,\n        TimeSpan? outPoint = null)");
+        AssertContains(captureServiceText, "_flashbackExport.RecordRejectedDiagnostics(outputPath, result, inPoint, outPoint);");
+        AssertContains(exportDiagnosticsText, "public void RecordRejectedDiagnostics(\n        string outputPath,\n        FinalizeResult result,\n        TimeSpan? inPoint = null,\n        TimeSpan? outPoint = null)");
         AssertContains(exportDiagnosticsText, "if (_flashbackExportActive)");
         AssertContains(exportDiagnosticsText, "Volatile.Write(ref _lastFlashbackExportResultId, 0);");
         AssertContains(exportDiagnosticsText, "FLASHBACK_EXPORT_REJECTED_DIAGNOSTICS_DEFERRED");
@@ -9471,7 +9471,7 @@ static partial class Program
         AssertContains(captureServiceText, "var failure = FlashbackExportFailureCodes.Create(");
         AssertContains(captureServiceText, "ex is OperationCanceledException && ct.IsCancellationRequested");
         AssertContains(captureServiceText, "FlashbackExportFailureCodes.FromException(ex)");
-        AssertContains(captureServiceText, "_flashbackExport.CompleteFlashbackExportDiagnostics(exportId, failure);\n            }\n            else\n            {\n                _flashbackExport.RecordRejectedFlashbackExportDiagnostics(outputPath, failure, inPoint, outPoint);\n            }\n            return failure;");
+        AssertContains(captureServiceText, "_flashbackExport.CompleteDiagnostics(exportId, failure);\n            }\n            else\n            {\n                _flashbackExport.RecordRejectedDiagnostics(outputPath, failure, inPoint, outPoint);\n            }\n            return failure;");
         AssertContains(exportDiagnosticsText, "_flashbackExportStartedUtcUnixMs = now;");
         AssertContains(exportDiagnosticsText, "_flashbackExportCompletedUtcUnixMs = now;");
         AssertContains(exportDiagnosticsText, "var completedUtcUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();");

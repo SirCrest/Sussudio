@@ -171,11 +171,11 @@ public sealed class FlashbackFailureTests
         stateType.GetField("_flashbackExportDiagnosticsLock", BindingFlags.Instance | BindingFlags.NonPublic)!
             .SetValue(state, new object());
 
-        InvokeInstance(state, "RecordRejectedFlashbackExportDiagnostics", "output.mp4", result, null, null);
+        InvokeInstance(state, "RecordRejectedDiagnostics", "output.mp4", result, null, null);
         AssertFields();
 
-        var exportId = InvokeInstance(state, "BeginFlashbackExportDiagnostics", TimeSpan.Zero, TimeSpan.FromSeconds(1), "output.mp4");
-        InvokeInstance(state, "CompleteFlashbackExportDiagnostics", exportId, result);
+        var exportId = InvokeInstance(state, "BeginDiagnostics", TimeSpan.Zero, TimeSpan.FromSeconds(1), "output.mp4");
+        InvokeInstance(state, "CompleteDiagnostics", exportId, result);
         AssertFields();
 
         void AssertFields()

@@ -1632,7 +1632,7 @@ public partial class CaptureService
     {
         var result = FlashbackExportFailureCodes.Create(outputPath, statusMessage, failureCode);
         Logger.Log($"FLASHBACK_EXPORT_REJECTED status='{statusMessage}' output='{outputPath}'");
-        _flashbackExport.RecordRejectedFlashbackExportDiagnostics(outputPath, result, inPoint, outPoint);
+        _flashbackExport.RecordRejectedDiagnostics(outputPath, result, inPoint, outPoint);
         return result;
     }
 
@@ -1704,8 +1704,8 @@ public partial class CaptureService
                 }
             }
 
-            exportId = _flashbackExport.BeginFlashbackExportDiagnostics(inPoint, outPoint, outputPath);
-            var diagnosticProgress = _flashbackExport.CreateFlashbackExportProgressSink(exportId, progress);
+            exportId = _flashbackExport.BeginDiagnostics(inPoint, outPoint, outputPath);
+            var diagnosticProgress = _flashbackExport.CreateProgressSink(exportId, progress);
 
             var preparedExport = PrepareFlashbackExportRequest(
                 bufferManager,
@@ -1732,8 +1732,8 @@ public partial class CaptureService
                     $"{result.StatusMessage} (live-edge partial fallback: active segment was not closed before timeout; export may omit the newest frames)");
             }
 
-            _flashbackExport.RecordLastFlashbackExportResult(exportId, result);
-            _flashbackExport.CompleteFlashbackExportDiagnostics(exportId, result);
+            _flashbackExport.RecordLastResult(exportId, result);
+            _flashbackExport.CompleteDiagnostics(exportId, result);
             return result;
         }
         catch (Exception ex)
@@ -1751,12 +1751,12 @@ public partial class CaptureService
                 cancelled ? FlashbackExportFailureCodes.Cancelled : FlashbackExportFailureCodes.FromException(ex));
             if (exportId != 0)
             {
-                _flashbackExport.RecordLastFlashbackExportResult(exportId, failure);
-                _flashbackExport.CompleteFlashbackExportDiagnostics(exportId, failure);
+                _flashbackExport.RecordLastResult(exportId, failure);
+                _flashbackExport.CompleteDiagnostics(exportId, failure);
             }
             else
             {
-                _flashbackExport.RecordRejectedFlashbackExportDiagnostics(outputPath, failure, inPoint, outPoint);
+                _flashbackExport.RecordRejectedDiagnostics(outputPath, failure, inPoint, outPoint);
             }
             return failure;
         }
@@ -1806,8 +1806,8 @@ public partial class CaptureService
                     _ => FlashbackExportFailureCodes.Failed
                 },
                 liveEdgePlan.PreservedArtifacts);
-            _flashbackExport.RecordLastFlashbackExportResult(exportId, result);
-            _flashbackExport.CompleteFlashbackExportDiagnostics(exportId, result);
+            _flashbackExport.RecordLastResult(exportId, result);
+            _flashbackExport.CompleteDiagnostics(exportId, result);
             LogFlashbackExportLiveEdgeFailure(
                 liveEdgePlan.FailureKind,
                 liveEdgePlan.PreservedArtifacts,
@@ -1818,7 +1818,7 @@ public partial class CaptureService
 
         if (liveEdgePlan.ForceRotateFallbackUsed)
         {
-            _flashbackExport.RecordFlashbackExportForceRotateFallback(
+            _flashbackExport.RecordForceRotateFallback(
                 exportId,
                 liveEdgePlan.SegmentPaths?.Count ?? 0,
                 inPoint,
@@ -1843,8 +1843,8 @@ public partial class CaptureService
         if (requestPlan.FailureMessage is { } requestFailureMessage)
         {
             var result = FlashbackExportFailureCodes.Create(outputPath, requestFailureMessage, FlashbackExportFailureCodes.InputUnavailable);
-            _flashbackExport.RecordLastFlashbackExportResult(exportId, result);
-            _flashbackExport.CompleteFlashbackExportDiagnostics(exportId, result);
+            _flashbackExport.RecordLastResult(exportId, result);
+            _flashbackExport.CompleteDiagnostics(exportId, result);
             return FlashbackExportPreparationResult.Failure(result);
         }
 

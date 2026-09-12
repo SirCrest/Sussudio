@@ -1533,9 +1533,6 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         return Task.FromResult(snapshotFactory());
     }
 
-
-    public CaptureSettings BuildCurrentSettings() => BuildCaptureSettings();
-
     public Task RefreshDevicesForAutomationAsync(CancellationToken cancellationToken = default)
         => InvokeOnUiThreadAsync(() => _deviceRefreshController.RefreshDevicesAsync(cancellationToken, throwOnScanFailure: true), cancellationToken);
 
@@ -2227,7 +2224,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         _pendingSdrAutoFriendlyFrameRateBucket = null;
     }
 
-    private CaptureSettings BuildCaptureSettings()
+    internal CaptureSettings BuildCaptureSettings()
     {
         var effectiveResolutionKnown = TryGetEffectiveResolutionSelection(out _, out var effectiveWidth, out var effectiveHeight);
         var runtime = _captureService.GetRuntimeSnapshot();

@@ -145,7 +145,11 @@ internal sealed partial class FlashbackPlaybackController
     {
         lock (_playbackThreadSync)
         {
-            if (_disposedFlag != 0) return RejectCommand(commandKind, "disposed", "disposed", false);
+            if (_disposedFlag != 0)
+            {
+                RecordCommandRejection(commandKind, "disposed", "disposed");
+                return false;
+            }
             if (Volatile.Read(ref _playbackThreadStarted) != 0)
             {
                 if (_playbackThread is { IsAlive: true })
@@ -186,11 +190,11 @@ internal sealed partial class FlashbackPlaybackController
                 _playCts = null;
                 _playbackThread = null;
                 Interlocked.Exchange(ref _playbackThreadStarted, 0);
-                return RejectCommand(
+                RecordCommandRejection(
                     commandKind,
                     $"thread_start_failed:{ex.GetType().Name}:{ex.Message}",
-                    $"thread_start_failed type={ex.GetType().Name}",
-                    false);
+                    $"thread_start_failed type={ex.GetType().Name}");
+                return false;
             }
             Logger.Log("FLASHBACK_PLAYBACK_THREAD_START");
             return true;

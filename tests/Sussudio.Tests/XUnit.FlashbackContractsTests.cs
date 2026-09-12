@@ -868,6 +868,63 @@ public sealed class FlashbackPlaybackContractsTests
         => global::Program.FlashbackPlaybackController_InOutPoints_DefaultToUnset();
 
     [Fact]
+    public void PlaybackRejectionsKeepReadinessThreadAndDisposalAccountingSeparateFromMailboxFailures()
+    {
+        var tempDirectory = Directory.CreateTempSubdirectory("sussudio-playback-rejections-").FullName;
+        try
+        {
+            const BindingFlags members = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+            var assembly = SussudioAssembly.Load();
+            var bufferManagerType = assembly.GetType("Sussudio.Services.Flashback.FlashbackBufferManager", throwOnError: true)!;
+            var optionsType = assembly.GetType("Sussudio.Models.FlashbackBufferOptions", throwOnError: true)!;
+            var options = Activator.CreateInstance(optionsType)!;
+            optionsType.GetProperty("TempDirectory")!.SetValue(options, tempDirectory);
+            using var bufferManager = (IDisposable)Activator.CreateInstance(bufferManagerType, new[] { options })!;
+            var controllerType = assembly.GetType("Sussudio.Services.Flashback.FlashbackPlaybackController", throwOnError: true)!;
+            using var controller = (IDisposable)Activator.CreateInstance(controllerType, new object[] { bufferManager })!;
+            var updateScrub = controllerType.GetMethod("UpdateScrub", members)!.CreateDelegate<Func<TimeSpan, bool>>(controller);
+            var position = TimeSpan.FromMilliseconds(1250);
+
+            Assert.False(updateScrub(position));
+            Assert.Equal(1L, RejectedCount());
+            Assert.Equal("not_ready:UpdateScrub pos_ms=1250", LastFailure());
+
+            controllerType.GetField("_initialized", members)!.SetValue(controller, true);
+            Assert.False(updateScrub(position));
+            Assert.Equal(2L, RejectedCount());
+            Assert.Equal("thread_not_running:UpdateScrub pos_ms=1250", LastFailure());
+
+            var goLive = controllerType.GetMethod("GoLive", members)!.CreateDelegate<Func<bool>>(controller);
+            Assert.False(goLive());
+            Assert.Equal(2L, RejectedCount());
+            Assert.Equal(string.Empty, LastFailure());
+
+            var mailbox = controllerType.GetField("_commandMailbox", members)!.GetValue(controller)!;
+            var generation = mailbox.GetType().GetProperty("CurrentGeneration", members)!.GetValue(mailbox)!;
+            mailbox.GetType().GetMethod("Complete", members)!.Invoke(mailbox, new[] { generation });
+            var sendSeek = controllerType.GetMethod("SendSeekCommand", members)!.CreateDelegate<Func<TimeSpan, bool>>(controller);
+            Assert.False(sendSeek(position));
+            Assert.Equal(2L, RejectedCount());
+            Assert.Equal("write_failed:Seek pos_ms=1250", LastFailure());
+
+            controller.Dispose();
+            var ensureThread = controllerType.GetMethod("EnsurePlaybackThread", members)!;
+            var pause = Enum.Parse(ensureThread.GetParameters()[0].ParameterType, "Pause");
+            Assert.False((bool)ensureThread.Invoke(controller, new[] { pause })!);
+            Assert.Equal(3L, RejectedCount());
+            Assert.Equal("disposed:Pause", LastFailure());
+            Assert.False((bool)controllerType.GetProperty("PlaybackThreadAlive", members)!.GetValue(controller)!);
+
+            long RejectedCount() => (long)controllerType.GetProperty("CommandsRejected", members)!.GetValue(controller)!;
+            string LastFailure() => (string)controllerType.GetProperty("LastCommandFailure", members)!.GetValue(controller)!;
+        }
+        finally
+        {
+            Directory.Delete(tempDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
     public Task FlashbackPlaybackInOutPointsClearInvalidCounterpart()
         => global::Program.FlashbackPlaybackController_InOutPoints_ClearInvalidCounterpart();
 
@@ -3773,7 +3830,7 @@ static partial class Program
                      "CommandsEnqueued",
                      "CommandsProcessed",
                      "CommandsDropped",
-                     "CommandsSkippedNotReady",
+                     "CommandsRejected",
                      "ScrubUpdatesCoalesced",
                      "PendingCommands",
                      "MaxPendingCommands",
