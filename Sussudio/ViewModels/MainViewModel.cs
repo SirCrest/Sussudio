@@ -214,7 +214,6 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private readonly DispatcherQueue _dispatcherQueue;
     private readonly AudioDeviceWatcher _audioDeviceWatcher;
     private readonly MainViewModelUiDispatchController _uiDispatchController;
-    private readonly MainViewModelDeviceFormatProbeController _deviceFormatProbeController;
     private readonly MainViewModelSourceTelemetryController _sourceTelemetryController;
     private readonly MainViewModelDeviceRefreshController _deviceRefreshController;
     private readonly MainViewModelRuntimeLifecycleController _runtimeLifecycleController;
@@ -254,7 +253,6 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         _captureSettingsAutomationController = controllerGraph.CaptureSettingsAutomationController;
         _recordingSettingsController = controllerGraph.RecordingSettingsController;
         _captureModeOptionRebuildController = controllerGraph.CaptureModeOptionRebuildController;
-        _deviceFormatProbeController = controllerGraph.DeviceFormatProbeController;
         _sourceTelemetryController = controllerGraph.SourceTelemetryController;
         _deviceRefreshController = controllerGraph.DeviceRefreshController;
         _runtimeLifecycleController = controllerGraph.RuntimeLifecycleController;

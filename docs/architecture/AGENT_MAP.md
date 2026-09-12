@@ -124,7 +124,12 @@ Preview renderer notes:
   render CPU timing, frame-latency wait metric state, DXGI frame statistics,
   optional DWM flush, opt-in composition-mode tracing
   (`SUSSUDIO_PREVIEW_COMPOSITION_MODE_PROBE=1`), display-clock projection, slow-frame diagnostic
-  ring/projection, and slow-frame reason classification.
+  ring/projection, and slow-frame reason classification. DXGI frame-statistics
+  sampling is tuned by `SUSSUDIO_PREVIEW_DXGI_FRAME_STATS_SAMPLE_INTERVAL` (poll
+  interval in milliseconds) and `SUSSUDIO_PREVIEW_DXGI_FRAME_STATS_DWM_FLUSH`
+  (non-zero forces a DWM flush inside the pacing path). Both are operator knobs
+  that nothing in the repository sets; they are read with defaults and exist for
+  live pacing investigation.
 - `Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs` owns
   render-pass selection plus VideoProcessor, NV12 shader, and HDR shader pass
   execution. Keep pass precedence, timing bucket attribution, viewport and

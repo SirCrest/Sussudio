@@ -81,7 +81,6 @@ internal sealed class LaunchEntranceAnimationController
 {
     private readonly LaunchEntranceAnimationControllerContext _context;
     private bool _played;
-    private Storyboard? _activeStoryboard;
 
     public LaunchEntranceAnimationController(LaunchEntranceAnimationControllerContext context)
     {
@@ -305,12 +304,6 @@ internal sealed class LaunchEntranceAnimationController
             Sussudio.Logger.Log("LAUNCH_PREVIEW_REVEAL_DEFERRED reason=waiting-for-first-visual");
         }
 
-        storyboard.Completed += (_, _) =>
-        {
-            _activeStoryboard = null;
-        };
-
-        _activeStoryboard = storyboard;
         storyboard.Begin();
 
         // 5. Control bar shadow depth fade-in (Composition animation, compositor thread)

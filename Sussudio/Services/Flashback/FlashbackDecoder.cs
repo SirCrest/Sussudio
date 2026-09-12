@@ -122,8 +122,6 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
     // D3D11VA hardware decode state (persistent across file opens)
     private AVBufferRef* _d3d11HwDeviceCtx;
     private bool _isD3D11HwAccelerated;
-    private IntPtr _d3dDevicePtr;
-    private IntPtr _d3dContextPtr;
 
     public bool IsOpen => _isOpen;
     public int VideoWidth => _videoWidth;
@@ -1403,9 +1401,6 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         }
 
         LibAvEncoder.InitializeFFmpeg(requireNativeRuntime: true);
-
-        _d3dDevicePtr = d3dDevicePtr;
-        _d3dContextPtr = d3dContextPtr;
 
         // Create persistent D3D11VA hw device context (reused across all file opens)
         if (d3dDevicePtr != IntPtr.Zero && d3dContextPtr != IntPtr.Zero)

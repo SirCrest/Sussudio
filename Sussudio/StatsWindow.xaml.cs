@@ -82,6 +82,9 @@ public sealed partial class StatsWindow : Window
 
     private const int MinWidth = 340;
     private const int MinHeight = 520;
+    // dead-surface: assigned but never read on purpose. MinSizeHandle owns the native
+    // window-subclass state installed by MinSizeWindowSubclass.Install, so the field
+    // keeps it alive for the lifetime of the window.
     private MinSizeWindowSubclass.MinSizeHandle? _minSizeHandle;
 
     private AppWindow ConfigureWindow()

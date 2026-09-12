@@ -6107,7 +6107,6 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertDoesNotContain(rootText, "_resolutionOptionRebuildController");
         AssertDoesNotContain(compositionText, "_resolutionOptionRebuildController");
         AssertDoesNotContain(compositionText, "new MainViewModelResolutionOptionRebuildController");
-        AssertContains(compositionText, "_deviceFormatProbeController = controllerGraph.DeviceFormatProbeController;");
         AssertContains(compositionText, "_sourceTelemetryController = controllerGraph.SourceTelemetryController;");
         AssertContains(compositionText, "_runtimeLifecycleController = controllerGraph.RuntimeLifecycleController;");
         AssertContains(compositionText, "_disposalController = controllerGraph.DisposalController;");
@@ -7290,7 +7289,6 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(startupText, "PlaySplashAndEntrance();");
         AssertContains(controllerText, "internal sealed class LaunchEntranceAnimationController");
         AssertContains(controllerText, "private bool _played;");
-        AssertContains(controllerText, "private Storyboard? _activeStoryboard;");
         AssertContains(controllerText, "public void PrepareInitialState()");
         AssertContains(controllerText, "_context.ControlBarBorder.RenderTransform = new TranslateTransform { Y = 16 };");
         AssertContains(controllerText, "_context.PreviewBorderScale.ScaleX = 0.97;");

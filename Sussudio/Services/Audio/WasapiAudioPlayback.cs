@@ -58,7 +58,6 @@ internal sealed class WasapiAudioPlayback : IDisposable
     private int _resourcesReleased;
     private TaskCompletionSource<bool>? _workerExited;
     private static string? _cachedDeviceId;
-    private static string _cachedFormatMode = "native";
     private static readonly object _formatCacheLock = new();
     private int _renderingPaused; // 0 = active, 1 = paused
     private readonly ManualResetEventSlim _renderPausedAcknowledged = new(false);
@@ -286,7 +285,6 @@ internal sealed class WasapiAudioPlayback : IDisposable
                 if (!string.Equals(_cachedDeviceId, deviceId, StringComparison.Ordinal))
                 {
                     _cachedDeviceId = deviceId;
-                    _cachedFormatMode = formatMode;
                     Logger.Log($"AUDIO_PLAYBACK_FORMAT_NEGOTIATED requested=f32le48k2ch result={formatMode} mode={formatMode}");
                 }
             }

@@ -52,6 +52,32 @@ function Get-ProductionFiles {
 
 $production = Get-ProductionFiles -RepoRoot $Root
 
+function Test-Annotated {
+    # Policy: an item is deleted, or annotated in place with a `dead-surface:`
+    # comment saying why it must stay. Honouring the marker is what lets the
+    # report reach empty; without it an annotated keeper is reported forever and
+    # the report stops being worth reading.
+    param([string]$Text, [int]$Index, [int]$Length)
+
+    $lineStart = $Index
+    while ($lineStart -gt 0 -and $Text[$lineStart - 1] -ne "`n") { $lineStart-- }
+    $lineEnd = $Index + $Length
+    while ($lineEnd -lt $Text.Length -and $Text[$lineEnd] -ne "`n") { $lineEnd++ }
+    if ($Text.Substring($lineStart, $lineEnd - $lineStart) -match 'dead-surface:') { return $true }
+
+    # Look back over a short comment block, not just one line: an explanation
+    # naturally runs to several lines above the declaration.
+    for ($offset = 1; $offset -le 5 -and $lineStart -gt 0; $offset++) {
+        $prevEnd = $lineStart - 1
+        $prevStart = $prevEnd
+        while ($prevStart -gt 0 -and $Text[$prevStart - 1] -ne "`n") { $prevStart-- }
+        if ($Text.Substring($prevStart, $prevEnd - $prevStart) -match 'dead-surface:') { return $true }
+        $lineStart = $prevStart
+    }
+
+    return $false
+}
+
 # Corpus: everything that could reference or set a symbol. Read once.
 # docs/ matters: an environment knob documented in AGENT_MAP.md is a deliberate
 # operator control, not dead surface. .xaml matters: a Click handler is wired by
@@ -134,7 +160,12 @@ foreach ($file in $production) {
 }
 
 if ($envReads.Count -gt 0) {
-    $alternation = ($envReads.Keys | Sort-Object | ForEach-Object { [regex]::Escape($_) }) -join '|'
+    # Longest name first: a shorter variable name that is a prefix of a longer
+    # one would otherwise match first and shadow it, so the longer name looks
+    # unmentioned no matter how often it appears.
+    $alternation = ($envReads.Keys |
+        Sort-Object -Property @{ Expression = { $_.Length }; Descending = $true }, @{ Expression = { $_ }; Descending = $false } |
+        ForEach-Object { [regex]::Escape($_) }) -join '|'
     $corpusMentions = @{}
     foreach ($m in [regex]::Matches($corpus, $alternation)) {
         $corpusMentions[$m.Value] = 1 + [int]$corpusMentions[$m.Value]
@@ -162,6 +193,7 @@ foreach ($file in $production) {
     $declPattern = '(?m)^[ \t]*private\s+(?:static\s+)?(?:readonly\s+)?[\w\?<>\[\],\.]+\s+(_\w+)\s*(?:=[^;]*)?;'
     foreach ($decl in [regex]::Matches($text, $declPattern)) {
         $field = $decl.Groups[1].Value
+        if (Test-Annotated -Text $text -Index $decl.Index -Length $decl.Length) { continue }
 
         # Event and delegate fields are read by the runtime when the event
         # fires, never by an explicit read in source. Reporting them is a false
@@ -189,7 +221,10 @@ foreach ($file in $production) {
         $isRead = $false
         foreach ($use in $uses) {
             $after = $body.Substring($use.Index + $use.Length)
-            if ($after -match '^\s*(?:=(?!=)|\+=|-=|\*=|/=|\|=|&=|\^=|\+\+|--)') { continue }
+            # Assignment targets are writes. Increment and decrement are NOT:
+            # x++ reads the current value, so a counter that is only ever
+            # incremented is live.
+            if ($after -match '^\s*(?:=(?!=)|\+=|-=|\*=|/=|\|=|&=|\^=)') { continue }
             $isRead = $true
             break
         }
@@ -214,6 +249,7 @@ foreach ($file in $production) {
     foreach ($decl in [regex]::Matches($text, $declPattern)) {
         $method = $decl.Groups[1].Value
         if ($method -in @('Main', 'Dispose', 'GetHashCode', 'Equals', 'ToString')) { continue }
+        if (Test-Annotated -Text $text -Index $decl.Index -Length $decl.Length) { continue }
         if ($xamlMentions.Contains($method)) { continue }
         if (-not $seenMethods.Add("$relative::$method")) { continue }
 

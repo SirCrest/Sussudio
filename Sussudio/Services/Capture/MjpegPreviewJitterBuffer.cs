@@ -134,7 +134,6 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
     private readonly Func<IPreviewFrameSink?> _getPreviewSink;
     private readonly Func<bool> _isPreviewSuppressed;
     private readonly PreviewFrameProbe? _previewFrameProbe;
-    private readonly double _fps;
     private readonly long _frameIntervalTicks;
     private const int DefaultMinAdaptiveTargetDepth = 2;
     private const int DefaultMaxAdaptiveTargetDepth = 8;
@@ -218,7 +217,6 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
             throw new ArgumentOutOfRangeException(nameof(fps));
         }
 
-        _fps = fps;
         _frameIntervalTicks = Math.Max(1, (long)Math.Round(Stopwatch.Frequency / fps));
         _minAdaptiveTargetDepth = EnvironmentHelpers.GetIntFromEnv(
             "SUSSUDIO_PREVIEW_JITTER_MIN_TARGET_DEPTH",

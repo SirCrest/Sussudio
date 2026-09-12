@@ -27,7 +27,6 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
     private SharedD3DDeviceManager? _d3dManager;
     private CancellationTokenSource? _readCts;
     private IPreviewFrameSink? _previewSink;
-    private IRecordingSink? _recordingSink;
     private IRawVideoFrameTryEncoder? _recordingEncoder;
     private IGpuVideoFrameTryEncoder? _gpuRecordingEncoder;
     private FlashbackEncoderSink? _flashbackSink;
@@ -158,7 +157,6 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
                 throw new InvalidOperationException("Cannot start recording before capture is initialized.");
             }
 
-            _recordingSink = sink;
             Volatile.Write(ref _recordingEncoder, encoder);
             Volatile.Write(ref _gpuRecordingEncoder, gpuEncoder);
             Interlocked.Exchange(ref _videoFramesWrittenToSink, 0);
@@ -193,7 +191,6 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
         {
             Volatile.Write(ref _recordingActive, false);
             Volatile.Write(ref _flashbackRecordingAccountingActive, false);
-            _recordingSink = null;
             Volatile.Write(ref _recordingEncoder, null);
             Volatile.Write(ref _gpuRecordingEncoder, null);
         }
@@ -463,7 +460,6 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             _started = false;
             _recordingActive = false;
             _flashbackRecordingAccountingActive = false;
-            _recordingSink = null;
             _recordingEncoder = null;
             _gpuRecordingEncoder = null;
             Volatile.Write(ref _flashbackSink, null);

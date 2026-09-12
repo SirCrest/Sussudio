@@ -1548,8 +1548,9 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private void SettingsToggleButton_Click(object sender, RoutedEventArgs e)
         => _settingsShelfController.Toggle();
 
-    // Retained despite having no call site: SettingsShelfLifecycle_LivesInController pins this
-    // exact forwarder body as the evidence that shelf visibility is owned by the controller.
+    // dead-surface: no call site, retained deliberately. SettingsShelfLifecycle_LivesInController
+    // pins this exact forwarder body as the evidence that shelf visibility is owned by the
+    // controller rather than by this adapter.
     private void ApplySettingsVisibility(bool visible)
         => _settingsShelfController.ApplyVisibility(visible);
 
@@ -2372,9 +2373,6 @@ private PreviewAudioFadeController _previewAudioFadeController = null!;
     private PreviewStartupReadinessSignalSnapshot PreviewStartupSignalSnapshot
         => _previewStartupSignalCoordinator.Snapshot;
 
-    private bool _previewGpuSignalMediaOpened => PreviewStartupSignalSnapshot.GpuSignalMediaOpened;
-    private bool _previewGpuSignalFirstFrame => PreviewStartupSignalSnapshot.GpuSignalFirstFrame;
-    private bool _previewGpuSignalPlaybackAdvancing => PreviewStartupSignalSnapshot.GpuSignalPlaybackAdvancing;
     private PreviewStartupSignalFlags _previewStartupRequiredSignals => PreviewStartupSignalSnapshot.RequiredSignals;
     private PreviewStartupSignalFlags _previewStartupReceivedSignals => PreviewStartupSignalSnapshot.ReceivedSignals;
     private PreviewStartupStrategy _previewStartupStrategy => PreviewStartupSignalSnapshot.Strategy;

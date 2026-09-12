@@ -263,6 +263,9 @@ internal sealed class NativeWindowBootstrapController
     private const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
     private const int DWMWA_CLOAK = 13;
 
+    // dead-surface: assigned but never read on purpose. MinSizeHandle owns the native
+    // window-subclass state installed by MinSizeWindowSubclass.Install, so the field
+    // keeps it alive for the lifetime of the window.
     private MinSizeWindowSubclass.MinSizeHandle? _minSizeHandle;
     private EventHandler<object>? _pendingFirstFrameReveal;
 

@@ -77,6 +77,9 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private readonly SemaphoreSlim _flashbackBackendLeaseLock = new(1, 1);
     private readonly object _captureSnapshotProducerEpochLock = new();
     private readonly ISourceSignalTelemetryProvider _sourceTelemetryProvider;
+    // dead-surface: assigned but never read. Retained because NewRecordingApplicationService
+    // resolves this three-parameter constructor by reflection to build a recording application
+    // service, so the parameter list is a test-visible contract.
     private readonly IProcessSupervisor _processSupervisor;
     private readonly RecordingArtifactManager _artifactManager = new();
     private readonly Func<CancellationToken, Task> _rebuildRecordingSettingsBackendAsync;
