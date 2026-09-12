@@ -31,6 +31,15 @@ For measured counts, use the
 [generated baseline](Sussudio-Defragmentation-Baseline.generated.md). Dated slice
 validation evidence lives in git history, not in a document.
 
+That history section looks like a removable slice log, and trimming it was tried
+and reverted. Roughly seventeen ownership tests assert that specific sentences
+appear somewhere in this plan, and about fifty of those sentences exist only
+inside the history. Removing the section therefore fails those tests until they
+are rewritten to assert behaviour instead of prose. Reducing this file means
+rewriting those assertions first; deleting the section alone is not sufficient.
+Note also that any edit here must keep every file path in the plan resolving,
+because a test extracts them and checks each one exists.
+
 ## Next Slices
 
 Small-file hygiene applies to every slice below: prefer a named owner when the
