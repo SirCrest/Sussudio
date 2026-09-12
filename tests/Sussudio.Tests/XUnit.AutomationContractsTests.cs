@@ -814,6 +814,14 @@ public sealed class AutomationCaptureFlashbackRoutingContractsTests
         => global::Program.ServiceNamespaces_FollowServiceFolders();
 
     [Fact]
+    public Task ServiceDependenciesEnforceOrchestratorDirection()
+        => global::Program.ServiceDependencies_EnforceOrchestratorDirection();
+
+    [Fact]
+    public Task ServiceDependenciesKeepAudioAndTelemetryConsumed()
+        => global::Program.ServiceDependencies_KeepAudioAndTelemetryConsumed();
+
+    [Fact]
     public Task MfDeviceEnumeratorSourceOwnershipLivesInCohesiveEnumerator()
         => global::Program.MfDeviceEnumerator_SourceOwnershipLivesInCohesiveEnumerator();
 
@@ -3785,7 +3793,7 @@ static partial class Program
         var previewLifecycleText = ReadCaptureServicePreviewLifecycleSource();
         var coordinatorText = ReadCaptureSessionCoordinatorSource();
         var flashbackPreviewBackendText = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.Flashback.cs");
-        var flashbackBackendResourcesText = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Flashback/FlashbackBackendResources.cs");
+        var flashbackBackendResourcesText = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/FlashbackBackendResources.cs");
         var viewModelPreviewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs")
             .Replace("\r\n", "\n");
         var startVideoPreview = ExtractTextBetween(
@@ -4000,7 +4008,7 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
                 .Replace("\r\n", "\n");
-        var flashbackBackendResourcesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.cs")
+        var flashbackBackendResourcesText = ReadRepoFile("Sussudio/Services/Capture/FlashbackBackendResources.cs")
             .Replace("\r\n", "\n");
         var flashbackText = string.Join("\n", flashbackTexts);
 
@@ -6857,7 +6865,7 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs")
                 .Replace("\r\n", "\n");
-        var backendResourcesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.cs")
+        var backendResourcesText = ReadRepoFile("Sussudio/Services/Capture/FlashbackBackendResources.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(exportOperationsText, "internal async Task<FinalizeResult> ExportFlashbackRangeAsync");
@@ -7173,14 +7181,14 @@ static partial class Program
         var settingsPersistenceText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
         var settingsLoadApplicationText = settingsPersistenceText;
         var settingsProjectionText = settingsPersistenceText[..settingsPersistenceText.IndexOf("public partial class MainViewModel", StringComparison.Ordinal)];
-        var settingsServiceText = ReadRepoFile("Sussudio/Services/Runtime/RuntimeHelpers.cs").Replace("\r\n", "\n");
+        var settingsServiceText = ReadRepoFile("Sussudio/Services/Runtime/SettingsService.cs").Replace("\r\n", "\n");
 
         AssertContains(settingsServiceText, "public bool? IsStatsVisible { get; set; }");
         AssertContains(settingsServiceText, "public string? SelectedVideoFormat { get; set; }");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Runtime", "SettingsService.cs")),
-            "SettingsService.cs folded into RuntimeHelpers.cs");
+        var runtimeHelpersText = ReadRepoFile("Sussudio/Services/Runtime/RuntimeHelpers.cs");
+        AssertDoesNotContain(runtimeHelpersText, "class UserSettings");
+        AssertDoesNotContain(runtimeHelpersText, "class SettingsJsonContext");
+        AssertDoesNotContain(runtimeHelpersText, "class SettingsService");
         AssertContains(settingsPersistenceText, "private void LoadSettings()");
         AssertContains(settingsPersistenceText, "private bool SaveSettings()");
         AssertContains(settingsPersistenceText, "SettingsService.Load()");
@@ -8918,7 +8926,7 @@ static partial class Program
 
     private static string ReadFlashbackBackendResourcesSource()
     {
-        return ReadNormalizedRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.cs");
+        return ReadNormalizedRepoFile("Sussudio/Services/Capture/FlashbackBackendResources.cs");
     }
 
     private static MfSourceReaderVideoCaptureSourceFamily ReadMfSourceReaderVideoCaptureSourceFamily()

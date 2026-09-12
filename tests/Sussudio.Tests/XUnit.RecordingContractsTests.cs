@@ -1510,7 +1510,7 @@ static partial class Program
     {
         var libAvSource = ReadLibAvRecordingSinkSource();
         var flashbackSource = ReadFlashbackEncoderSinkSource();
-        var flashbackBackendSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.cs");
+        var flashbackBackendSource = ReadRepoFile("Sussudio/Services/Capture/FlashbackBackendResources.cs");
         var flashbackBufferSource = ReadFlashbackBufferManagerSource();
         var flashbackCleanupSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackStartupCacheCleanup.cs");
         var captureServiceSource = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
@@ -3444,7 +3444,7 @@ static partial class Program
             .Replace("\r\n", "\n")
             + "\n" + ReadCaptureServiceFlashbackOrchestrationSource()
             + "\n" + ReadCaptureServiceRecordingFinalizationSource();
-        var backendSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.cs")
+        var backendSource = ReadRepoFile("Sussudio/Services/Capture/FlashbackBackendResources.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(backendSource, "internal sealed class FlashbackBackendResources");
@@ -3661,7 +3661,7 @@ static partial class Program
         var settingsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md");
-        var backendResourcesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.cs");
+        var backendResourcesText = ReadRepoFile("Sussudio/Services/Capture/FlashbackBackendResources.cs");
 
         AssertContains(flashbackStateText, "public bool IsFlashbackActive => _flashbackBackend.Sink != null;");
         AssertContains(flashbackStateText, "internal IReadOnlyList<FlashbackSegmentInfo> GetFlashbackSegments()");

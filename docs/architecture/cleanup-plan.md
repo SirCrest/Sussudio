@@ -1623,7 +1623,7 @@ Deferred unified-video cleanup after LibAv drains lives with the video pipeline
 resource owner. Pending LibAv drain task state and reentry policy live in
 `Sussudio/Services/Capture/CaptureService.cs`. Flashback backend
 artifact cleanup request/retry/dispose/purge mechanics live in
-`Sussudio/Services/Flashback/FlashbackBackendResources.cs`.
+`Sussudio/Services/Capture/FlashbackBackendResources.cs`.
 
 Capture read-only automation probes now live in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs` alongside
@@ -1649,7 +1649,7 @@ guardrails, delivered-cadence frame-rate rational preservation/inference, and
 legacy Flashback export verification/downgrade snapshot fields stay with that
 same Flashback recording owner.
 Preview-backend resource state now belongs to
-`Sussudio/Services/Flashback/FlashbackBackendResources.cs`, which owns the
+`Sussudio/Services/Capture/FlashbackBackendResources.cs`, which owns the
 preview backend resource grouping, install/take/clear state, and
 recovery-preserve flag storage and policy. It also owns recording-finalize
 handoff plus the video/audio/microphone attach and detach request shapes and

@@ -14,6 +14,14 @@ records measured counts at its stated checkpoint.
 
 ## Architecture Ownership Entry Points
 
+Service dependencies flow from Automation to Capture to Flashback. Capture owns
+integration with concrete video and audio producers. Audio and Telemetry are
+consumed services alongside Contracts, Runtime, Gpu, Preview, Recording, and
+NativeXu; these services may consume each other but must not depend on Capture,
+Flashback, or Automation. `tests/Sussudio.Tests/ArchitectureGuardrailsTests.cs`
+checks qualified service references and protects both directions with synthetic
+source cases.
+
 Preview performance regression coverage includes
 `tests/Sussudio.Tests/PreviewFrameTimeHistoryTests.cs` (history and geometry),
 `tests/Sussudio.Tests/XUnit.StatsUiSamplerTests.cs` (fanout, cadence, and demand),
@@ -214,8 +222,8 @@ Entry points:
 
 Do not reintroduce linked source for these files from `tools/Common`. Consumers
 should reference `Sussudio.Automation.Contracts`.
-`tools/Common` is the shared helper module for clients, formatters, diagnostic
-sessions, and probes; it should not own command IDs, catalog metadata, protocol
+`tools/Common` provides shared formatters and PresentMon support. Diagnostic
+sessions live in `tools/DiagnosticSession`; neither directory should own command IDs, catalog metadata, protocol
 constants, pipe-client handoff DTOs, response-state field parsing, synthetic
 automation error envelopes, unknown-command policy, or pipe security policy.
 
@@ -506,15 +514,16 @@ Important entry points:
   WASAPI and microphone input restoration for Flashback preview/recording
   backends, audio attachment, frame-encoded fan-out, recording topology
   validation, and Flashback session context construction.
-- `FlashbackBackendResources.cs` owns startup construction, install, playback
+- `Sussudio/Services/Capture/FlashbackBackendResources.cs` owns startup construction, install, playback
   initialization, rollback cleanup, producer attach/detach request contracts,
-  feed wiring, teardown mechanics, and backend artifact cleanup. Playback
+  feed wiring, teardown mechanics, and backend artifact cleanup. This is the
+  Capture-owned integration with Flashback resources and concrete producers. Playback
   replacement also owns state-event subscription transfer, generation stamps
   for rejecting retired notifications, and the per-instance prewarm latch.
 - `CaptureService.Flashback.cs` owns buffer-cycle transition
   coordination: backend/export lock ordering, purge-preserve decisions, and
   full rebuild fallbacks. Sink-only resource mechanics live in
-  `FlashbackBackendResources.cs`: playback disposal, old-sink stop/dispose,
+  `Sussudio/Services/Capture/FlashbackBackendResources.cs`: playback disposal, old-sink stop/dispose,
   replacement sink startup, playback restore, and failed replacement cleanup.
 - `CaptureService.Flashback.cs` owns Flashback export entry points, lock-scoped
   backend snapshotting, session/backend lock release before native export,
@@ -788,7 +797,8 @@ Primary current owner: `Sussudio/Services/Flashback/`
 
 Entry points:
 
-- `FlashbackBackendResources.cs` owns preview backend resource grouping,
+- `Sussudio/Services/Capture/FlashbackBackendResources.cs` is Capture-owned integration
+  with the Flashback subsystem. It owns preview backend resource grouping,
   install/take/clear state, recovery-preserve flag storage and policy,
   recording-finalize handoff, producer attach/detach request shapes, video,
   audio, and microphone feed wiring, preview backend startup
@@ -1735,11 +1745,13 @@ Primary current owners:
   encoder, Flashback integrity, recording-facing shared formatter, and
   dedicated LibAv verification script checks after their removal from the
   legacy offline harness catalog.
+- `Sussudio/Services/Runtime/SettingsService.cs` owns `UserSettings`, the
+  source-generated JSON context, and LocalAppData settings persistence:
+  serialized load/save, temporary-file replacement, and failure reporting.
 - `Sussudio/Services/Runtime/RuntimeHelpers.cs` owns runtime helper types
   shared across multiple services: AtomicMax, TelemetryAgeHelper,
   EnvironmentHelpers, RingBufferHelpers, PercentileHelpers, shared minimum-window-size Win32
-  subclassing, LocalAppData user-settings persistence and source-generated JSON
-  context, bounded external process supervision contracts and runner, and
+  subclassing, bounded external process supervision contracts and runner, and
   best-effort MMCSS worker registration. `ProcessRunResult` retains independent
   stdout/stderr read exceptions; diagnostic wrappers preserve each original
   cause. `AtomicCounter.TrySubtract` saturates at zero and reports success only
@@ -2659,6 +2671,10 @@ Refactor direction:
 
 ## Tooling And Diagnostics
 
+See `tools/README.md` for the seven C# tool projects, the separate RtkIoShim
+C++ build, and script placement. `tools/Common` and `tools/DiagnosticSession`
+are source linked into both ssctl and MCP; rebuild both consumers after changes.
+
 Primary owners:
 
 - `tools/ssctl/` for the preferred CLI.
@@ -2667,9 +2683,9 @@ Primary owners:
   registration, tool discovery, and the `PipeClient` DI adapter over the shared
   automation command transport.
 - `tools/Common/` for shared tool helpers that are not contracts, including
-  snapshot formatting, diagnostic sessions, diagnostic scenario cataloging,
-  diagnostic-session pipe retry policy, PresentMon probing, and shared JSON
-  options.
+  snapshot formatting, PresentMon probing, and shared JSON options.
+- `tools/DiagnosticSession/` for diagnostic sessions, scenario cataloging,
+  and diagnostic-session pipe retry policy.
 - `Sussudio.Automation.Contracts/AutomationPipeProtocol.cs` owns the shared
   pipe-client helper family used by ssctl, MCP, diagnostic sessions, and smoke
   tools.
@@ -2724,7 +2740,8 @@ Primary owners:
   AT read/write/input subcommands, the captured audio-switch replay workflow,
   RTK I2C unsafe-native-path probe workflow, service-control smoke/payload
   workflows, supported-device lookup, and
-  probe-local runtime shims for linked app service sources;
+  the probe-host Trace logging adapter for linked app service sources. Its
+  project compiles the shared production capture model instead of a local copy;
   `Program.DefaultExperiment.cs` owns the default baseline/experiment/restore
   runner, experiment spec records, shared Native XU command IDs, shared
   raw-payload formatting, analog-gain sequence, default experiment AT

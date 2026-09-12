@@ -210,10 +210,11 @@ static partial class Program
         AssertContains(previewBackendEntry, "resource-owner request construction");
         AssertContains(previewBackendEntry, "deferred cleanup handoff");
         AssertContains(previewBackendEntry, "preview backend disposal request construction");
-        AssertContains(previewBackendEntry, "`FlashbackBackendResources.cs` owns startup construction");
+        AssertContains(previewBackendEntry, "`Sussudio/Services/Capture/FlashbackBackendResources.cs` owns startup construction");
+        AssertContains(previewBackendEntry, "Capture-owned integration");
         AssertContains(previewBackendEntry, "producer attach/detach request");
         AssertContains(previewBackendEntry, "feed wiring");
-        AssertContains(previewBackendEntry, "`FlashbackBackendResources.cs`");
+        AssertContains(previewBackendEntry, "`Sussudio/Services/Capture/FlashbackBackendResources.cs`");
         AssertContains(previewBackendEntry, "rollback cleanup");
         AssertDoesNotContain(previewBackendEntry, "`FlashbackBackendResources.Startup.cs`");
         AssertDoesNotContain(previewBackendEntry, "`FlashbackBackendResources.Teardown.cs`");
@@ -1091,20 +1092,23 @@ static partial class Program
         }
     }
 
-    // Namespace-folder rules above pin where a service file lives, not which
-    // service it may import. That gap let two reverse dependencies into Capture
-    // and Flashback survive after their real usage was removed. Preview,
-    // Recording, Gpu, Runtime and Contracts are consumed by the capture and
-    // flashback pipelines, so an import in the other direction is a cycle.
+    // Automation consumes Capture, which integrates Flashback. Audio, Telemetry,
+    // and the other leaf services may consume each other, but not these lifecycle
+    // owners. Check qualified service references in type names and imports,
+    // including alias/static imports and nested service namespaces.
     private static readonly string[] LeafServiceDomains =
     {
-        "Contracts", "Runtime", "Gpu", "Preview", "Recording", "NativeXu"
+        "Contracts", "Runtime", "Gpu", "Preview", "Recording", "NativeXu", "Audio", "Telemetry"
     };
 
     private static readonly string[] OrchestrationServiceDomains =
     {
-        "Capture", "Flashback", "Automation", "Audio", "Telemetry"
+        "Capture", "Flashback", "Automation"
     };
+
+    private static readonly Regex ServiceDomainReferenceRegex = new(
+        @"\bSussudio\s*\.\s*Services\s*\.\s*(?<domain>\w+)\b",
+        RegexOptions.CultureInvariant);
 
     private static void AssertServiceDependencyDirection(string repoRoot)
     {
@@ -1113,26 +1117,105 @@ static partial class Program
         foreach (var file in EnumerateSourceFiles(servicesRoot, SearchOption.AllDirectories))
         {
             var relative = Path.GetRelativePath(servicesRoot, file);
-            var domain = relative.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)[0];
-            if (Array.IndexOf(LeafServiceDomains, domain) < 0)
+            AssertServiceSourceDependencyDirection(relative, File.ReadAllText(file));
+        }
+    }
+
+    private static void AssertServiceSourceDependencyDirection(string relativePath, string source)
+    {
+        var domain = relativePath.Split('/', '\\')[0];
+        var code = StripCSharpCommentsAndLiterals(source);
+        foreach (Match reference in ServiceDomainReferenceRegex.Matches(code))
+        {
+            var dependency = reference.Groups["domain"].Value;
+            if (dependency == domain)
             {
                 continue;
             }
 
-            var code = StripCSharpCommentsAndLiterals(File.ReadAllText(file));
-            foreach (var forbidden in OrchestrationServiceDomains)
+            var reverseOrchestration = domain switch
             {
-                if (Regex.IsMatch(
-                        code,
-                        $@"^\s*using\s+Sussudio\.Services\.{forbidden}\s*;",
-                        RegexOptions.Multiline | RegexOptions.CultureInvariant))
-                {
-                    throw new InvalidOperationException(
-                        $"Sussudio/Services/{relative} imports Sussudio.Services.{forbidden}; " +
-                        $"{domain} is consumed by {forbidden} and must not depend back on it.");
-                }
+                "Capture" => dependency == "Automation",
+                "Flashback" => dependency is "Capture" or "Automation",
+                _ => false
+            };
+            var leafDependsOnOwner = Array.IndexOf(LeafServiceDomains, domain) >= 0 &&
+                Array.IndexOf(OrchestrationServiceDomains, dependency) >= 0;
+            if (reverseOrchestration || leafDependsOnOwner)
+            {
+                throw new InvalidOperationException(
+                    $"Sussudio/Services/{relativePath} references Sussudio.Services.{dependency}; " +
+                    $"{domain} must not depend back on {dependency}.");
             }
         }
+    }
+
+    internal static Task ServiceDependencies_EnforceOrchestratorDirection()
+    {
+        var references = new[]
+        {
+            "using Sussudio.Services.DOMAIN;",
+            "using Backend = Sussudio.Services.DOMAIN.Backend;",
+            "global using Backend = global::Sussudio.Services.DOMAIN;",
+            "using static global::Sussudio.Services.DOMAIN.Backend;",
+            "using Sussudio.Services.DOMAIN.Nested;",
+            "class Example { Sussudio . Services . DOMAIN.Backend? Field; }"
+        };
+        foreach (var (consumer, dependency) in new[]
+        {
+            ("Automation", "Capture"), ("Automation", "Flashback"), ("Capture", "Flashback")
+        })
+        {
+            foreach (var reference in references)
+            {
+                AssertServiceSourceDependencyDirection(
+                    $"{consumer}/Example.cs", reference.Replace("DOMAIN", dependency, StringComparison.Ordinal));
+                var forbiddenSource = reference.Replace("DOMAIN", consumer, StringComparison.Ordinal);
+                var failure = Assert.Throws<InvalidOperationException>(() =>
+                    AssertServiceSourceDependencyDirection($"{dependency}/Example.cs", forbiddenSource));
+                Assert.Contains($"{dependency} must not depend back on {consumer}", failure.Message);
+            }
+        }
+
+        AssertServiceSourceDependencyDirection("Flashback/Example.cs", """"
+            namespace Sussudio.Services.Flashback.Nested;
+            // using Sussudio.Services.Capture;
+            /* using Sussudio.Services.Automation; */
+            class Example
+            {
+                string Plain = "Sussudio.Services.Capture.Backend";
+                string Verbatim = @"Sussudio.Services.Automation.Backend";
+                string Raw = """Sussudio.Services.Capture.Backend""";
+            }
+            """");
+        AssertServiceSourceDependencyDirection("Flashback/Example.cs", "using Sussudio.Services.CaptureDiagnostics;");
+        return Task.CompletedTask;
+    }
+
+    internal static Task ServiceDependencies_KeepAudioAndTelemetryConsumed()
+    {
+        foreach (var consumer in new[] { "Audio", "Telemetry" })
+        {
+            foreach (var dependency in new[] { "Capture", "Flashback", "Automation" })
+            {
+                var failure = Assert.Throws<InvalidOperationException>(() =>
+                    AssertServiceSourceDependencyDirection($"{consumer}/Example.cs",
+                        $"using Backend = global::Sussudio.Services.{dependency}.Backend;"));
+                Assert.Contains($"{consumer} must not depend back on {dependency}", failure.Message);
+            }
+        }
+
+        foreach (var (consumer, dependency) in new[]
+        {
+            ("Audio", "Telemetry"), ("Audio", "Recording"), ("Audio", "Runtime"),
+            ("Audio", "NativeXu"), ("Telemetry", "Contracts"), ("Telemetry", "NativeXu")
+        })
+        {
+            AssertServiceSourceDependencyDirection(
+                $"{consumer}/Example.cs", $"using Sussudio.Services.{dependency};");
+        }
+
+        return Task.CompletedTask;
     }
 
     private static void AssertServiceContractsBoundaryOwnership(string repoRoot)
@@ -1897,7 +1980,8 @@ static partial class Program
         }
         var probeProgramText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.cs"));
         var coreAudioEndpointProbeText = File.ReadAllText(Path.Combine(repoRoot, "tools", "CoreAudioEndpointProbe", "Program.cs"));
-        AssertContains(probeProgramText, "Probe-local runtime shims used by linked app service sources.");
+        AssertContains(nativeXuProbeProjectText, "CaptureModels.cs");
+        AssertDoesNotContain(StripCSharpCommentsAndLiterals(probeProgramText), "class CaptureDevice");
         AssertContains(probeProgramText, "NativeXuInterfacePath");
         AssertContains(probeProgramText, "EnumerateKsInterfaces(ElgatoVendorId");
         AssertContains(probeProgramText, "RTK_IO selects by name, not by native XU path");
@@ -2128,7 +2212,7 @@ static partial class Program
         string name,
         string? nativeXuInterfacePath)
     {
-        var deviceType = assembly.GetType("CaptureDevice")
+        var deviceType = assembly.GetType("Sussudio.Models.CaptureDevice")
             ?? throw new InvalidOperationException("NativeXuAudioProbe CaptureDevice type not found.");
         var device = Activator.CreateInstance(deviceType)
             ?? throw new InvalidOperationException("Failed to create NativeXuAudioProbe CaptureDevice.");

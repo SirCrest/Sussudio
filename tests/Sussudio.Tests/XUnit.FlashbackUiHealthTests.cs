@@ -125,7 +125,7 @@ public sealed class FlashbackUiHealthTests
         Assert.Contains("public void PreWarmFlashbackPlayback() => _sessionCoordinator.PreWarmFlashbackPlayback();", vmSource);
         Assert.DoesNotContain("_flashbackPreWarmedController", vmSource);
 
-        var backend = RuntimeContractSource.ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.cs");
+        var backend = RuntimeContractSource.ReadRepoFile("Sussudio/Services/Capture/FlashbackBackendResources.cs");
         var preWarmMethod = global::Program.ExtractDeclaredMemberCode(backend, "public void PreWarmPlayback()");
         Assert.Contains("controller == null || controller.IsDisposed || !controller.IsInitialized", preWarmMethod);
         Assert.Contains("controller.PreWarm();", preWarmMethod);

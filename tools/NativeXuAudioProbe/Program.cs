@@ -105,22 +105,12 @@ if (args.Any(arg => string.Equals(arg, "--service-smoke", StringComparison.Ordin
 
 return await NativeXuProbeDefaultExperiment.RunAsync(device);
 
-// Probe-local runtime shims used by linked app service sources.
+// Probe-host logging adapter for linked service sources. Keep tracing independent
+// of the app file logger and its background writer lifecycle.
 internal static class Logger
 {
     public static void Log(string message)
         => Trace.TraceInformation(message);
-}
-
-public sealed class CaptureDevice
-{
-    public string Id { get; set; } = string.Empty;
-    public string Name { get; set; } = string.Empty;
-    public string? NativeXuInterfacePath { get; set; }
-
-    public string DisplayName => string.IsNullOrWhiteSpace(Name) ? "Unknown Device" : Name;
-
-    public override string ToString() => DisplayName;
 }
 
 /// <summary>
@@ -352,8 +342,8 @@ static class RtkI2cProbe
 }
 
 // CLI-only device locator for NativeXuAudioProbe. It finds supported Elgato
-// KS/XU interfaces and turns the selected interface path into a lightweight
-// CaptureDevice model for the shared audio-control services.
+// KS/XU interfaces and constructs the shared production CaptureDevice model
+// from the selected interface path.
 internal static class NativeXuProbeDeviceLocator
 {
     private const ushort ElgatoVendorId = 0x0FD9;

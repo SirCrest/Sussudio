@@ -95,7 +95,7 @@ public sealed class FlashbackFailureIdentityTests
         var end = Activator.CreateInstance(type)!;
         Set(end, "PreservedArtifacts", new[] { "end.ts" });
 
-        var method = RequireType("Sussudio.Services.Flashback.FlashbackBackendResources")
+        var method = RequireType("Sussudio.Services.Capture.FlashbackBackendResources")
             .GetMethod("PreserveEndArtifactsOnFailure", BindingFlags.NonPublic | BindingFlags.Static)!;
         var result = method.Invoke(null, new[] { export, end })!;
 

@@ -75,7 +75,7 @@ public sealed class FlashbackFailureTests
         var endResult = CreateFailure("recording-finalization-failed", "Retained recording segments.");
         Set(endResult, "PreservedArtifacts", new[] { "segment.ts" });
         var preserved = InvokeStatic(
-            TypeOf("Sussudio.Services.Flashback.FlashbackBackendResources"),
+            TypeOf("Sussudio.Services.Capture.FlashbackBackendResources"),
             "PreserveEndArtifactsOnFailure",
             result,
             endResult);

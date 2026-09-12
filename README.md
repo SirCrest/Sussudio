@@ -64,9 +64,11 @@ complete x64 solution and shared-contract tools, runs the real xUnit suite with
 a nonzero-result check, runs the offline assembly/freshness harness separately,
 and checks the working diff.
 
-The app lives in `Sussudio/`, the automation tools in `tools/`, and tests in
-`tests/`. Logs land in `temp/logs/Sussudio_Debug.log` when running from the
-repo.
+The app lives in `Sussudio/`, automation programs and operational helpers in
+`tools/`, repository analysis and measurement workflows in `scripts/`, and tests
+in `tests/`. See the [tooling guide](tools/README.md) for project boundaries,
+shared source consumers, and script placement. Logs land in
+`temp/logs/Sussudio_Debug.log` when running from the repo.
 
 ## Releases
 

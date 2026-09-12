@@ -4,9 +4,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
 using Sussudio.Services.Audio;
-using Sussudio.Services.Capture;
+using Sussudio.Services.Flashback;
 
-namespace Sussudio.Services.Flashback;
+namespace Sussudio.Services.Capture;
 
 internal readonly record struct FlashbackProducerDetachRequest(
     UnifiedVideoCapture? VideoCapture,

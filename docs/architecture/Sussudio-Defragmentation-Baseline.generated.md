@@ -1,18 +1,18 @@
 # Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-09-12T06:54:28Z
+Generated UTC: 2026-09-12T07:07:21Z
 Root: C:\Users\crest\source\repos\Sussudio
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 148 |
+| Production .cs files | 149 |
 | Test .cs files | 90 |
-| Core app .cs files (Sussudio/) | 114 |
-| Core app nonblank LoC (Sussudio/) | 94206 |
+| Core app .cs files (Sussudio/) | 115 |
+| Core app nonblank LoC (Sussudio/) | 94209 |
 | Sussudio.Tests .cs files | 89 |
-| Sussudio.Tests nonblank LoC | 75119 |
+| Sussudio.Tests nonblank LoC | 75202 |
 | Production .cs files under 60 lines | 3 (2.0%) |
 | Production .cs files under 80 lines | 7 (4.7%) |
 
@@ -30,7 +30,7 @@ Root: C:\Users\crest\source\repos\Sussudio
 | DeviceFormatCacheJsonContext | 1 | 766 | Sussudio/Services/Capture/DeviceService.cs |
 | LoggingJsonContext | 1 | 635 | Sussudio/AppRuntime.cs |
 | MainWindow | 1 | 2541 | Sussudio/MainWindow.xaml.cs |
-| SettingsJsonContext | 1 | 907 | Sussudio/Services/Runtime/RuntimeHelpers.cs |
+| SettingsJsonContext | 1 | 118 | Sussudio/Services/Runtime/SettingsService.cs |
 | StatsWindow | 1 | 328 | Sussudio/StatsWindow.xaml.cs |
 
 ## Largest production files
