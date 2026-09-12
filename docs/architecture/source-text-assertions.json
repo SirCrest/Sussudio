@@ -1,18 +1,18 @@
 {
   "schemaVersion": 1,
   "description": "Ceiling on source-text assertions per test file. An assertion on repository source text cannot fail when behavior breaks; lower a ceiling when a slice removes some. The only reason to raise one is restoring coverage that a previous slice deleted by mistake.",
-  "totalCeiling": 7143,
+  "totalCeiling": 6995,
   "fileCeilings": {
     "ArchitectureGuardrailsTests.cs": 468,
     "CaptureServiceOwnershipTests.cs": 289,
     "MainWindowControllerOwnershipTests.cs": 685,
     "MjpegPipelineTests.cs": 82,
-    "XUnit.AutomationContractsTests.cs": 1076,
+    "XUnit.AutomationContractsTests.cs": 1022,
     "XUnit.CoreRuntimeContractsTests.cs": 168,
-    "XUnit.FlashbackContractsTests.cs": 1133,
+    "XUnit.FlashbackContractsTests.cs": 1112,
     "XUnit.ModelContractsTests.cs": 149,
-    "XUnit.PresentationPreviewContractsTests.cs": 1679,
-    "XUnit.RecordingContractsTests.cs": 716,
+    "XUnit.PresentationPreviewContractsTests.cs": 1637,
+    "XUnit.RecordingContractsTests.cs": 685,
     "XUnit.ToolContractsTests.cs": 698
   }
 }

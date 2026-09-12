@@ -457,10 +457,6 @@ public sealed class AutomationDispatcherContractsTests
         => global::Program.AutomationCommandDispatcher_WaitForCondition_RejectsUndefinedCondition();
 
     [Fact]
-    public Task AutomationDispatcherWaitAndAssertCommandsLiveWithSupportOwners()
-        => global::Program.AutomationCommandDispatcher_WaitAndAssertCommands_LiveWithSupportOwners();
-
-    [Fact]
     public Task AutomationDispatcherAssertSnapshotBoundsAndEvaluatesRequests()
         => global::Program.AutomationCommandDispatcher_AssertSnapshot_BoundsAndEvaluatesRequests();
 
@@ -495,10 +491,6 @@ public sealed class AutomationDispatcherContractsTests
     [Fact]
     public Task AutomationDispatcherCaptureControlCommandsLiveWithCustomRouter()
         => global::Program.AutomationCommandDispatcher_CaptureControlCommands_LiveWithCustomRouter();
-
-    [Fact]
-    public Task AutomationDispatcherIntrospectionCommandsLiveInFocusedPartial()
-        => global::Program.AutomationCommandDispatcher_IntrospectionCommands_LiveWithCustomRouter();
 
     [Fact]
     public Task AutomationDispatcherUiSettingsCommandsOwnUiSettingsApplication()
@@ -543,10 +535,6 @@ public sealed class AutomationDispatcherContractsTests
     [Fact]
     public Task AutomationDispatcherFlashbackCommandsLiveWithCustomRouter()
         => global::Program.AutomationCommandDispatcher_FlashbackCommands_LiveWithCustomRouter();
-
-    [Fact]
-    public Task AutomationDispatcherVerificationCommandsLiveInFocusedPartial()
-        => global::Program.AutomationCommandDispatcher_VerificationCommands_LiveWithCustomRouter();
 
     [Fact]
     public Task AutomationDispatcherVisualCaptureCommandsLiveInFocusedPartial()
@@ -802,14 +790,6 @@ public sealed class AutomationCaptureFlashbackRoutingContractsTests
         => global::Program.CaptureSessionCoordinator_QueueWorkerLivesInFocusedPartial();
 
     [Fact]
-    public Task CaptureSessionCoordinatorSnapshotProjectionLivesInFocusedPartial()
-        => global::Program.CaptureSessionCoordinator_SnapshotProjectionLivesInFocusedPartial();
-
-    [Fact]
-    public Task CaptureSessionCoordinatorDisposalLivesInCoordinatorRoot()
-        => global::Program.CaptureSessionCoordinator_DisposalLivesInCoordinatorRoot();
-
-    [Fact]
     public Task ServiceNamespacesFollowServiceFolders()
         => global::Program.ServiceNamespaces_FollowServiceFolders();
 
@@ -864,34 +844,6 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task AutomationCommandDispatcher_WaitAndAssertCommands_LiveWithSupportOwners()
-    {
-        var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(customCommandsText, "case AutomationCommandKind.WaitForCondition:");
-        AssertContains(customCommandsText, "ExecuteWaitForConditionCommandAsync(payload, correlationId, cancellationToken)");
-        AssertContains(customCommandsText, "case AutomationCommandKind.AssertSnapshot:");
-        AssertContains(customCommandsText, "ExecuteAssertSnapshotCommandAsync(payload, correlationId, cancellationToken)");
-
-        AssertContains(customCommandsText, "private async Task<AutomationCommandResponse> ExecuteWaitForConditionCommandAsync(");
-        AssertContains(customCommandsText, "var condition = ParseWaitCondition(payload);");
-        AssertContains(customCommandsText, "Math.Clamp(GetInt(payload, \"timeoutMs\") ?? DefaultWaitTimeoutMs, 250, 300_000)");
-        AssertContains(customCommandsText, "WaitForConditionAsync(condition, timeoutMs, pollMs, cancellationToken)");
-        AssertContains(customCommandsText, "errorCode: met ? null : AutomationErrorCodes.Timeout");
-        AssertContains(customCommandsText, "private async Task<(bool Met, AutomationSnapshot Snapshot)> WaitForConditionAsync(");
-        AssertContains(customCommandsText, "private static bool ConditionSatisfied(");
-
-        AssertContains(customCommandsText, "private async Task<AutomationCommandResponse> ExecuteAssertSnapshotCommandAsync(");
-        AssertContains(customCommandsText, "_diagnosticsHub.RefreshSnapshotNowAsync(cancellationToken)");
-        AssertContains(customCommandsText, "var assertions = ParseAssertions(payload);");
-        AssertContains(customCommandsText, "TryEvaluateAssertion(snapshot, assertion, out var failure)");
-        AssertContains(customCommandsText, "errorCode: passed ? null : AutomationErrorCodes.AssertionFailed");
-        AssertContains(customCommandsText, "private static List<SnapshotAssertion> ParseAssertions(");
-        AssertContains(customCommandsText, "private static bool TryEvaluateAssertion(");
-
-        return Task.CompletedTask;
-    }
 
     internal static async Task AutomationCommandDispatcher_AssertSnapshot_BoundsAndEvaluatesRequests()
     {
@@ -959,25 +911,6 @@ static partial class Program
         AssertEqual(2, Volatile.Read(ref refreshCount), "malformed assertions do not refresh snapshot");
     }
 
-    internal static Task AutomationCommandDispatcher_IntrospectionCommands_LiveWithCustomRouter()
-    {
-        var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(customCommandsText, "case AutomationCommandKind.GetSnapshot:");
-        AssertContains(customCommandsText, "ExecuteGetSnapshotCommandAsync(correlationId, cancellationToken)");
-        AssertContains(customCommandsText, "case AutomationCommandKind.GetAutomationManifest:");
-        AssertContains(customCommandsText, "ExecuteGetAutomationManifestCommand(correlationId)");
-        AssertContains(customCommandsText, "private async Task<AutomationCommandResponse> ExecuteGetSnapshotCommandAsync(");
-        AssertContains(customCommandsText, "_diagnosticsHub.RefreshSnapshotNowAsync(cancellationToken)");
-        AssertContains(customCommandsText, "Snapshot retrieved.");
-        AssertContains(customCommandsText, "private AutomationCommandResponse ExecuteGetAutomationManifestCommand(string correlationId)");
-        AssertContains(customCommandsText, "Automation manifest retrieved.");
-        AssertContains(customCommandsText, "AutomationCommandCatalog.CreateManifest()");
-        AssertContains(customCommandsText, "includeSnapshot: false");
-
-        return Task.CompletedTask;
-    }
 
     internal static Task AutomationCommandDispatcher_AudioControlCommands_LiveWithCustomRouter()
     {
@@ -1471,25 +1404,6 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task AutomationCommandDispatcher_VerificationCommands_LiveWithCustomRouter()
-    {
-        var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(customCommandsText, "case AutomationCommandKind.VerifyFile:");
-        AssertContains(customCommandsText, "ExecuteVerifyFileCommandAsync(payload, correlationId, cancellationToken)");
-        AssertContains(customCommandsText, "case AutomationCommandKind.VerifyLastRecording:");
-        AssertContains(customCommandsText, "ExecuteVerifyLastRecordingCommandAsync(correlationId, cancellationToken)");
-        AssertContains(customCommandsText, "private async Task<AutomationCommandResponse> ExecuteVerifyFileCommandAsync(");
-        AssertContains(customCommandsText, "private async Task<AutomationCommandResponse> ExecuteVerifyLastRecordingCommandAsync(");
-        AssertContains(customCommandsText, "ValidatePathPayload(\n            AutomationCommandKind.VerifyFile,\n            \"filePath\",");
-        AssertContains(customCommandsText, "_diagnosticsHub\n            .VerifyFileAsync(filePath, verificationProfile, cancellationToken)");
-        AssertContains(customCommandsText, "_diagnosticsHub.VerifyLastRecordingAsync(cancellationToken)");
-        AssertContains(customCommandsText, "HdrParity = verification.HdrParity");
-        AssertContains(customCommandsText, "errorCode: verification.Succeeded ? null : AutomationErrorCodes.VerificationFailed");
-
-        return Task.CompletedTask;
-    }
 
     internal static Task AutomationCommandDispatcher_VisualCaptureCommands_LiveWithCustomRouter()
     {
@@ -4958,37 +4872,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task CaptureSessionCoordinator_SnapshotProjectionLivesInFocusedPartial()
-    {
-        var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs")
-            .Replace("\r\n", "\n");
 
-        AssertContains(rootText, "public CaptureSessionSnapshot Snapshot");
-        AssertContains(rootText, "private void UpdateSnapshot(CaptureCommand command, CaptureCommandOutcome outcome, string? error)");
-        AssertContains(rootText, "private void TrackPendingCommandEnqueued(DateTimeOffset enqueuedAtUtc)");
-        AssertContains(rootText, "private void RemoveOldestPendingCommand()");
-        AssertContains(rootText, "private void RecordCommandQueueLatency(DateTimeOffset enqueuedAtUtc)");
-        AssertContains(rootText, "OldestPendingCommandAgeMs = oldestPendingCommandAgeMs,");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task CaptureSessionCoordinator_DisposalLivesInCoordinatorRoot()
-    {
-        var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(rootText, "private const int DefaultDisposeDrainTimeoutMs = 15_000;");
-        AssertContains(rootText, "public void Dispose()");
-        AssertContains(rootText, "public async ValueTask DisposeAsync()");
-        AssertContains(rootText, "private async ValueTask CoreDisposeAsync()");
-        AssertContains(rootText, "private async Task WaitForWorkerCancellationAsync()");
-        AssertContains(rootText, "private void DisposeWorkerCancellationWhenSafe()");
-        AssertContains(rootText, "private void CancelWorkerBestEffort()");
-        AssertContains(rootText, "SUSSUDIO_COORDINATOR_DISPOSE_TIMEOUT_MS");
-
-        return Task.CompletedTask;
-    }
 
 // MainWindow Flashback automation and presentation contracts live with their xUnit wrappers.
     internal static Task FlashbackPollingTimers_LiveInController()

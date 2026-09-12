@@ -257,9 +257,6 @@ public sealed class PresentationPreviewD3DDeviceLostContractsTests
     public Task DeviceLostExceptionsClassifyCorrectly()
         => global::Program.D3D11PreviewRenderer_IsDeviceLostException_ClassifiesCorrectly();
 
-    [Fact]
-    public Task DeviceLostRecoveryLivesInFocusedPartial()
-        => global::Program.D3D11PreviewRenderer_DeviceLostRecoveryLivesInFocusedPartial();
 }
 
 public sealed class PresentationPreviewD3DDiagnosticsContractsTests
@@ -325,9 +322,6 @@ public sealed class PresentationPreviewD3DRuntimeCaptureOwnershipTests
     public Task SubmissionLivesWithRendererRoot()
         => global::Program.D3D11PreviewRenderer_SubmissionLivesWithRendererRoot();
 
-    [Fact]
-    public Task PublicLifecycleLivesInRendererRoot()
-        => global::Program.D3D11PreviewRenderer_PublicLifecycleLivesInRendererRoot();
 }
 
 public sealed class PresentationPreviewD3DRenderSetupOwnershipTests
@@ -380,10 +374,6 @@ public sealed class PresentationPreviewD3DRenderPipelineOwnershipTests
     [Fact]
     public Task RenderThreadLivesInRendererRoot()
         => global::Program.D3D11PreviewRenderer_RenderThreadLivesInRendererRoot();
-
-    [Fact]
-    public Task ViewportHelpersLiveWithRenderPasses()
-        => global::Program.D3D11PreviewRenderer_ViewportHelpersLiveWithRenderPasses();
 
     [Fact]
     public Task ScreenshotEncodingLivesWithScreenshotCapture()
@@ -516,10 +506,6 @@ public sealed class PresentationPreviewMainViewModelRuntimeContractsTests
     [Fact]
     public Task AutomationRoutesPreviewVolumePersistenceThroughSaveHook()
         => global::Program.MainViewModelAutomation_RoutesPreviewVolumePersistenceThroughSaveHook();
-
-    [Fact]
-    public Task AutomationPreviewEnablementLivesInPreviewLifecycleController()
-        => global::Program.MainViewModelAutomation_PreviewEnablementLivesInPreviewLifecycleController();
 
     [Fact]
     public Task AutomationHdrEnablementLivesInCaptureSelection()
@@ -692,10 +678,6 @@ public sealed class PresentationPreviewCaptureSelectionContractsTests
     [Fact]
     public Task CaptureSelectionBindingSelectionOwnersLiveInFocusedPartials()
         => global::Program.CaptureSelectionBindingSelectionOwners_LiveInFocusedPartials();
-
-    [Fact]
-    public Task CaptureSelectionBindingDeviceAudioProjectionLivesInFocusedPartial()
-        => global::Program.CaptureSelectionBindingDeviceAudioProjection_LivesInFocusedPartial();
 
     [Fact]
     public Task CaptureComboBoxSelectionNormalizerPreservesSelectionFallbacks()
@@ -1402,18 +1384,6 @@ static partial class Program
     }
 
 
-    internal static Task D3D11PreviewRenderer_ViewportHelpersLiveWithRenderPasses()
-    {
-        var renderPassesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(renderPassesText, "private Viewport ComputeLetterboxViewport(int sourceWidth, int sourceHeight)");
-        AssertContains(renderPassesText, "private void UpdateViewportConstantBuffer(Viewport viewport)");
-        AssertContains(renderPassesText, "private static Vortice.RawRect ComputeLetterboxRect(");
-        AssertContains(renderPassesText, "MapMode.WriteDiscard");
-
-        return Task.CompletedTask;
-    }
 
     internal static Task D3D11PreviewRenderer_ComputeLetterboxRect_CalculatesCorrectly()
     {
@@ -1584,28 +1554,6 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task D3D11PreviewRenderer_PublicLifecycleLivesInRendererRoot()
-    {
-        var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(rootText, "private readonly object _lifecycleLock = new();");
-        AssertContains(rootText, "private Thread? _renderThread;");
-        AssertContains(rootText, "private int _disposed;");
-        AssertContains(rootText, "private double _startupFps = 60.0;");
-        AssertContains(rootText, "public void Start(int width, int height, double fps, bool isHdr)");
-        AssertContains(rootText, "public void Dispose()");
-        AssertContains(rootText, "private int _stopRequested;");
-        AssertContains(rootText, "private int _inNativeCall;");
-        AssertContains(rootText, "public void StopRenderThread()");
-        AssertContains(rootText, "public void Stop()");
-        AssertContains(rootText, "private void WaitForNativeCallToDrainOrThrow(string operation)");
-        AssertContains(rootText, "WaitForNativeCallToDrainOrThrow(\"stop\");");
-        AssertContains(rootText, "FailPendingFrameCapture(\"Preview renderer stopped before frame capture completed.\");");
-        AssertContains(rootText, "WinRT.CastExtensions.As<ISwapChainPanelNative>(_panel)");
-
-        return Task.CompletedTask;
-    }
 
     internal static Task D3D11PreviewRenderer_ScreenshotEncodingLivesWithScreenshotCapture()
     {
@@ -2065,20 +2013,6 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task D3D11PreviewRenderer_DeviceLostRecoveryLivesInFocusedPartial()
-    {
-        var resourcesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs")
-            .Replace("\r\n", "\n");
-        var deviceInitializationText = resourcesText;
-
-        AssertContains(deviceInitializationText, "private void HandleDeviceLost(Exception ex)");
-        AssertContains(deviceInitializationText, "private static bool IsDeviceLostException(Exception ex)");
-        AssertContains(deviceInitializationText, "TrackFrameDropped(stalePending, \"device-lost\");");
-        AssertContains(deviceInitializationText, "ResultCode.DeviceRemoved");
-        AssertContains(deviceInitializationText, "unchecked((int)0x887A0005)");
-
-        return Task.CompletedTask;
-    }
 
 
 
@@ -6349,39 +6283,6 @@ internal static Task MainViewModelPresentationControllers_UseDependencyCompositi
         return Task.CompletedTask;
     }
 
-    internal static Task MainViewModelAutomation_PreviewEnablementLivesInPreviewLifecycleController()
-    {
-        var mainViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
-            .Replace("\r\n", "\n");
-        var previewStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
-            .Replace("\r\n", "\n");
-        var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs")
-            .Replace("\r\n", "\n");
-        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
-            .Replace("\r\n", "\n")
-            + "\n" + ReadCaptureServiceAudioSource()
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
-                .Replace("\r\n", "\n");
-
-        AssertContains(previewStateText, "public Task SetPreviewEnabledAsync(bool enabled, CancellationToken cancellationToken = default)\n        => _previewLifecycleController.SetPreviewEnabledAsync(enabled, cancellationToken);");
-        AssertContains(previewStateText, "private Task InitializeDeviceAsync(CancellationToken cancellationToken = default)");
-        AssertContains(previewStateText, "=> _previewLifecycleController.InitializeDeviceAsync(cancellationToken);");
-        AssertContains(previewStateText, "public Task StartPreviewAsync(bool userInitiated = true, CancellationToken cancellationToken = default)");
-        AssertContains(previewStateText, "public Task StopPreviewAsync(bool userInitiated, bool teardownPipeline, CancellationToken cancellationToken)");
-        AssertContains(mainViewModelText, "public Task SetPreviewEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
-        AssertContains(mainViewModelText, "private Task InitializeDeviceAsync(CancellationToken cancellationToken = default)");
-        AssertContains(previewLifecycleControllerText, "public Task SetPreviewEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
-        AssertContains(previewLifecycleControllerText, "return _context.InvokeOnUiThreadAsync(async () =>");
-        AssertContains(previewLifecycleControllerText, "CancelPendingPreviewRestart();");
-        AssertContains(previewLifecycleControllerText, "if (enabled == _context.IsPreviewing())");
-        AssertContains(previewLifecycleControllerText, "await StartPreviewAsync(userInitiated: true, cancellationToken);");
-        AssertContains(previewLifecycleControllerText, "await StopPreviewAsync(userInitiated: true, teardownPipeline: false, cancellationToken);");
-        AssertContains(captureServiceText, "private const int PreviewFrameCaptureRendererWaitTimeoutMs = 2000;");
-        AssertContains(captureServiceText, "while (_isVideoPreviewActive && !cancellationToken.IsCancellationRequested)");
-        AssertContains(captureServiceText, "await Task.Delay(PreviewFrameCaptureRendererPollMs, cancellationToken).ConfigureAwait(false);");
-
-        return Task.CompletedTask;
-    }
 
 internal static Task MainViewModelCaptureDeviceControllers_UseDependencyCompositionContexts()
     {
@@ -8005,16 +7906,6 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         return Task.CompletedTask;
     }
 
-    internal static Task CaptureSelectionBindingDeviceAudioProjection_LivesInFocusedPartial()
-    {
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureBindingControllers.cs").Replace("\r\n", "\n");
-
-        AssertContains(controllerText, "internal sealed class CaptureSelectionBindingController");
-        AssertContains(controllerText, "public void ApplyDeviceAudioControlState()");
-        AssertContains(controllerText, "public void EnsureDeviceAudioModeSelection()");
-
-        return Task.CompletedTask;
-    }
 
     internal static Task CaptureSelectionBindingCollectionSync_LivesInControllerPartial()
     {

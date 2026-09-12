@@ -73,10 +73,6 @@ public sealed class RecordingPipelineContractsTests
         => global::Program.WasapiAudioCapture_HotAudioWritesRejectIncompleteTasks();
 
     [Fact]
-    public Task WasapiComInteropContractsLiveWithInteropOwner()
-        => global::Program.WasapiComInterop_ContractsLiveWithInteropOwner();
-
-    [Fact]
     public Task WasapiAudioCaptureStopUsesBoundedThreadJoin()
         => global::Program.WasapiAudioCapture_StopUsesBoundedThreadJoin();
 
@@ -307,10 +303,6 @@ public sealed class CoreRuntimeRecordingContractsTests
     [Fact]
     public Task LibAvEncoderInitializationLivesInFocusedPartial()
         => global::Program.LibAvEncoder_InitializationLivesInFocusedPartial();
-
-    [Fact]
-    public Task LibAvEncoderDiagnosticsHelpersLiveWithCoreState()
-        => global::Program.LibAvEncoder_DiagnosticsHelpersLiveWithCoreState();
 
     [Fact]
     public Task LibAvEncoderSetupAndModelsLiveInFocusedPartials()
@@ -2976,40 +2968,6 @@ static partial class Program
 
 
 
-    internal static Task WasapiComInterop_ContractsLiveWithInteropOwner()
-    {
-        var rootSource = ReadRepoFile("Sussudio/Services/Audio/WasapiComInterop.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(rootSource, "internal static class WasapiComInterop");
-        AssertContains(rootSource, "internal static void ThrowIfFailed(int hr, string operation)");
-        AssertContains(rootSource, "internal static void ReleaseComObject<T>(ref T? comObject)");
-        AssertContains(rootSource, "internal static WasapiAudioFormat ReadAudioFormat(IntPtr formatPtr)");
-        AssertContains(rootSource, "private static WasapiSampleType ResolveSampleType(");
-        AssertContains(rootSource, "internal static IMMDeviceEnumerator CreateDeviceEnumerator()");
-        AssertContains(rootSource, "internal static IAudioClient ActivateAudioClient(IMMDevice device, out IAudioClient3? audioClient3)");
-        AssertContains(rootSource, "internal static bool TryInitializeSharedStreamWithAudioClient3(");
-        AssertContains(rootSource, "internal static float GetEndpointVolume(string deviceId)");
-        AssertContains(rootSource, "internal static void SetEndpointVolume(string deviceId, float level)");
-        AssertContains(rootSource, "internal enum EDataFlow");
-        AssertContains(rootSource, "internal enum WasapiSampleType");
-        AssertContains(rootSource, "internal readonly record struct WasapiAudioFormat(");
-        AssertContains(rootSource, "internal struct WAVEFORMATEX");
-        AssertContains(rootSource, "internal struct WAVEFORMATEXTENSIBLE");
-        AssertContains(rootSource, "internal struct PropVariant : IDisposable");
-        AssertContains(rootSource, "internal interface IMMDeviceEnumerator");
-        AssertContains(rootSource, "internal interface IMMDevice");
-        AssertContains(rootSource, "internal interface IMMDeviceCollection");
-        AssertContains(rootSource, "internal interface IPropertyStore");
-        AssertContains(rootSource, "internal interface IMMNotificationClient");
-        AssertContains(rootSource, "internal interface IAudioClient");
-        AssertContains(rootSource, "internal interface IAudioClient3 : IAudioClient");
-        AssertContains(rootSource, "internal interface IAudioCaptureClient");
-        AssertContains(rootSource, "internal interface IAudioRenderClient");
-        AssertContains(rootSource, "internal interface IAudioEndpointVolume");
-
-        return Task.CompletedTask;
-    }
 
     internal static Task WasapiAudioCapture_StopUsesBoundedThreadJoin()
     {
@@ -3862,19 +3820,6 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task LibAvEncoder_DiagnosticsHelpersLiveWithCoreState()
-    {
-        var rootText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(rootText, "private void EnsureOpen()");
-        AssertContains(rootText, "private static void ThrowIfError(int errorCode, string operation)");
-        AssertContains(rootText, "private static string GetErrorString(int errorCode)");
-        AssertContains(rootText, "private static InvalidOperationException CreateLibAvException(string message)");
-        AssertContains(rootText, "private static void CheckDeviceRemoved(IntPtr d3d11Device)");
-
-        return Task.CompletedTask;
-    }
 
 
     internal static Task LibAvEncoder_GetHdrBitstreamFilterName_MapsCodecs()
