@@ -1102,15 +1102,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
         }
 
         var baseDiagnosticSummary = BuildDiagnosticSummary(vicCode, timing, frameRateExact, hdrInfo, aviInfo, vfreqHz100, hdr2SdrState, systemInfo);
-        var fullDiagnosticSummary = AppendExtendedDiagnostics(
-            baseDiagnosticSummary,
-            results.AudioFormat, results.AudioSamplingRate, results.InputSource,
-            results.UsbHostProtocol, results.UsbCdc, results.UsbLinkState, results.UsbForceSpeed,
-            results.TxHpd, results.TxVrr,
-            results.UvcOutputTiming, results.UvcVideoFormat, results.UvcErrStatus,
-            results.HdcpMode, results.HdcpVersion, results.RxTxHdcpVersion,
-            results.Hdr2SdrExtended, results.Hdr2SdrColorParam, results.ColorRangeSetting,
-            results.Vtem, results.BitError, results.RawTiming);
+        var fullDiagnosticSummary = AppendExtendedDiagnostics(baseDiagnosticSummary, in results);
 
         var effectiveInputSource = results.InputSource;
         if (IsValidFlashAudioData(results.FlashAudio))
@@ -1122,16 +1114,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
 
         var detailEntries = BuildDetailEntries(
             aviInfo, hdrInfo, hdr2SdrState, systemInfo,
-            results.AudioFormat, results.AudioSamplingRate, effectiveInputSource,
-            results.AdcOnOff, results.AdcVolumeGain, results.UacVolumeGain,
-            results.UacOut1Mute, results.UacOut2Mute, results.UacOut2MixerSource,
-            results.UsbHostProtocol, results.UsbCdc, results.UsbLinkState, results.UsbForceSpeed,
-            results.TxHpd, results.TxVrr, results.TxEdidValid,
-            results.UvcOutputTiming, results.UvcVideoFormat, results.UvcErrStatus,
-            results.HdcpMode, results.HdcpVersion, results.RxTxHdcpVersion,
-            results.Hdr2SdrExtended, results.CustomerVersion, results.RescueVersion,
-            results.Hdr2SdrColorParam, results.ColorRangeSetting,
-            results.RawTiming, vicCode, vfreqHz100);
+            in results, effectiveInputSource, vicCode, vfreqHz100);
 
         detailEntries = AppendFlashAudioAnalogGainDetail(detailEntries, results.FlashAudio);
         var analogGainByte = ResolveAnalogGainByte(results.FlashAudio);
@@ -1226,51 +1209,31 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
 
     private static string AppendExtendedDiagnostics(
         string baseSummary,
-        AtCommandResult audioFormat,
-        AtCommandResult audioSamplingRate,
-        AtCommandResult inputSource,
-        AtCommandResult usbHostProtocol,
-        AtCommandResult usbCdc,
-        AtCommandResult usbLinkState,
-        AtCommandResult usbForceSpeed,
-        AtCommandResult txHpd,
-        AtCommandResult txVrr,
-        AtCommandResult uvcOutputTiming,
-        AtCommandResult uvcVideoFormat,
-        AtCommandResult uvcErrStatus,
-        AtCommandResult hdcpMode,
-        AtCommandResult hdcpVersion,
-        AtCommandResult rxTxHdcpVersion,
-        AtCommandResult hdr2SdrExtended,
-        AtCommandResult hdr2SdrColorParam,
-        AtCommandResult colorRangeSetting,
-        AtCommandResult vtem,
-        AtCommandResult bitError,
-        AtCommandResult rawTiming)
+        in NativeXuSnapshotCommandResults results)
     {
         var sb = new StringBuilder(baseSummary);
 
-        AppendResultField(sb, "audiofmt", audioFormat, FormatByte);
-        AppendResultField(sb, "audiosrate", audioSamplingRate, FormatByte);
-        AppendResultField(sb, "inputsrc", inputSource, FormatByte);
-        AppendResultField(sb, "usbproto", usbHostProtocol, FormatInt32);
-        AppendResultField(sb, "usbcdc", usbCdc, FormatByte);
-        AppendResultField(sb, "usblinkst", usbLinkState, FormatByte);
-        AppendResultField(sb, "usbspeed", usbForceSpeed, FormatByte);
-        AppendResultField(sb, "txhpd", txHpd, FormatInt32);
-        AppendResultField(sb, "txvrr", txVrr, FormatInt32);
-        AppendResultField(sb, "uvctiming", uvcOutputTiming, FormatHex);
-        AppendResultField(sb, "uvcfmt", uvcVideoFormat, FormatByte);
-        AppendResultField(sb, "uvcerr", uvcErrStatus, FormatByte);
-        AppendResultField(sb, "hdcpmode", hdcpMode, FormatByte);
-        AppendResultField(sb, "hdcpver", hdcpVersion, FormatHex);
-        AppendResultField(sb, "rxtxhdcp", rxTxHdcpVersion, FormatInt16);
-        AppendResultField(sb, "hdr2sdrext", hdr2SdrExtended, FormatInt32);
-        AppendResultField(sb, "hdr2sdrcolor", hdr2SdrColorParam, FormatInt32);
-        AppendResultField(sb, "colorrangesetting", colorRangeSetting, FormatByte);
-        AppendResultField(sb, "vtem", vtem, FormatInt16);
-        AppendResultField(sb, "biterr", bitError, FormatInt64);
-        AppendResultField(sb, "rawtiming", rawTiming, FormatHex);
+        AppendResultField(sb, "audiofmt", results.AudioFormat, FormatByte);
+        AppendResultField(sb, "audiosrate", results.AudioSamplingRate, FormatByte);
+        AppendResultField(sb, "inputsrc", results.InputSource, FormatByte);
+        AppendResultField(sb, "usbproto", results.UsbHostProtocol, FormatInt32);
+        AppendResultField(sb, "usbcdc", results.UsbCdc, FormatByte);
+        AppendResultField(sb, "usblinkst", results.UsbLinkState, FormatByte);
+        AppendResultField(sb, "usbspeed", results.UsbForceSpeed, FormatByte);
+        AppendResultField(sb, "txhpd", results.TxHpd, FormatInt32);
+        AppendResultField(sb, "txvrr", results.TxVrr, FormatInt32);
+        AppendResultField(sb, "uvctiming", results.UvcOutputTiming, FormatHex);
+        AppendResultField(sb, "uvcfmt", results.UvcVideoFormat, FormatByte);
+        AppendResultField(sb, "uvcerr", results.UvcErrStatus, FormatByte);
+        AppendResultField(sb, "hdcpmode", results.HdcpMode, FormatByte);
+        AppendResultField(sb, "hdcpver", results.HdcpVersion, FormatHex);
+        AppendResultField(sb, "rxtxhdcp", results.RxTxHdcpVersion, FormatInt16);
+        AppendResultField(sb, "hdr2sdrext", results.Hdr2SdrExtended, FormatInt32);
+        AppendResultField(sb, "hdr2sdrcolor", results.Hdr2SdrColorParam, FormatInt32);
+        AppendResultField(sb, "colorrangesetting", results.ColorRangeSetting, FormatByte);
+        AppendResultField(sb, "vtem", results.Vtem, FormatInt16);
+        AppendResultField(sb, "biterr", results.BitError, FormatInt64);
+        AppendResultField(sb, "rawtiming", results.RawTiming, FormatHex);
 
         return sb.ToString();
     }
@@ -1315,34 +1278,8 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
         HdrMetadataInfo hdrInfo,
         byte? hdr2SdrState,
         string? systemInfo,
-        AtCommandResult audioFormat,
-        AtCommandResult audioSamplingRate,
-        AtCommandResult inputSource,
-        AtCommandResult adcOnOff,
-        AtCommandResult adcVolumeGain,
-        AtCommandResult uacVolumeGain,
-        AtCommandResult uacOut1Mute,
-        AtCommandResult uacOut2Mute,
-        AtCommandResult uacOut2MixerSource,
-        AtCommandResult usbHostProtocol,
-        AtCommandResult usbCdc,
-        AtCommandResult usbLinkState,
-        AtCommandResult usbForceSpeed,
-        AtCommandResult txHpd,
-        AtCommandResult txVrr,
-        AtCommandResult txEdidValid,
-        AtCommandResult uvcOutputTiming,
-        AtCommandResult uvcVideoFormat,
-        AtCommandResult uvcErrStatus,
-        AtCommandResult hdcpMode,
-        AtCommandResult hdcpVersion,
-        AtCommandResult rxTxHdcpVersion,
-        AtCommandResult hdr2SdrExtended,
-        AtCommandResult customerVersion,
-        AtCommandResult rescueVersion,
-        AtCommandResult hdr2SdrColorParam,
-        AtCommandResult colorRangeSetting,
-        AtCommandResult rawTiming,
+        in NativeXuSnapshotCommandResults results,
+        AtCommandResult effectiveInputSource,
         int? vicCode,
         int? vfreqHz100)
     {
@@ -1371,38 +1308,38 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
         AddDetail(details, "Signal Details", "VIC", vicCode?.ToString(CultureInfo.InvariantCulture));
         AddDetail(details, "Signal Details", "Vert Freq", vfreqHz100.HasValue ? $"{vfreqHz100.Value / 100.0:0.##} Hz" : null, vfreqHz100?.ToString(CultureInfo.InvariantCulture));
 
-        AddAtDetail(details, TelemetryLabels.GroupAudioInput, "Input Source", inputSource, FormatInputSourceDetail);
-        AddAtDetail(details, TelemetryLabels.GroupAudioInput, "Audio Format", audioFormat, FormatAudioFormatDetail);
-        AddAtDetail(details, TelemetryLabels.GroupAudioInput, "Audio Sample Rate", audioSamplingRate, FormatAudioSampleRateDetail);
-        AddAtDetail(details, TelemetryLabels.GroupAudioInput, TelemetryLabels.AdcAnalog, adcOnOff, FormatOnOffByteDetail);
-        AddAtDetail(details, TelemetryLabels.GroupAudioInput, "ADC Gain", adcVolumeGain, FormatDecimalInt16Detail);
+        AddAtDetail(details, TelemetryLabels.GroupAudioInput, "Input Source", effectiveInputSource, FormatInputSourceDetail);
+        AddAtDetail(details, TelemetryLabels.GroupAudioInput, "Audio Format", results.AudioFormat, FormatAudioFormatDetail);
+        AddAtDetail(details, TelemetryLabels.GroupAudioInput, "Audio Sample Rate", results.AudioSamplingRate, FormatAudioSampleRateDetail);
+        AddAtDetail(details, TelemetryLabels.GroupAudioInput, TelemetryLabels.AdcAnalog, results.AdcOnOff, FormatOnOffByteDetail);
+        AddAtDetail(details, TelemetryLabels.GroupAudioInput, "ADC Gain", results.AdcVolumeGain, FormatDecimalInt16Detail);
 
-        AddAtDetail(details, "Audio / USB", "UAC Volume", uacVolumeGain, FormatDecimalInt16Detail);
-        AddAtDetail(details, "Audio / USB", "UAC Out1 Mute", uacOut1Mute, FormatMuteByteDetail);
-        AddAtDetail(details, "Audio / USB", "UAC Out2 Mute", uacOut2Mute, FormatMuteByteDetail);
-        AddAtDetail(details, "Audio / USB", "UAC Out2 Mixer", uacOut2MixerSource, FormatDecimalInt16Detail);
+        AddAtDetail(details, "Audio / USB", "UAC Volume", results.UacVolumeGain, FormatDecimalInt16Detail);
+        AddAtDetail(details, "Audio / USB", "UAC Out1 Mute", results.UacOut1Mute, FormatMuteByteDetail);
+        AddAtDetail(details, "Audio / USB", "UAC Out2 Mute", results.UacOut2Mute, FormatMuteByteDetail);
+        AddAtDetail(details, "Audio / USB", "UAC Out2 Mixer", results.UacOut2MixerSource, FormatDecimalInt16Detail);
 
-        AddAtDetail(details, "Link / Protection", "USB Protocol", usbHostProtocol, FormatUsbHostProtocolDetail);
-        AddAtDetail(details, "Link / Protection", "USB CDC", usbCdc, FormatCodeByteDetail);
-        AddAtDetail(details, "Link / Protection", "USB Link State", usbLinkState, FormatCodeByteDetail);
-        AddAtDetail(details, "Link / Protection", "USB Speed", usbForceSpeed, FormatCodeByteDetail);
-        AddAtDetail(details, "Link / Protection", "TX Hot Plug", txHpd, FormatModeInt32Detail);
-        AddAtDetail(details, "Link / Protection", "TX VRR", txVrr, FormatModeInt32Detail);
-        AddAtDetail(details, "Link / Protection", "TX EDID Valid", txEdidValid, FormatValidByteDetail);
-        AddAtDetail(details, "Link / Protection", "HDCP Mode", hdcpMode, FormatHdcpModeDetail);
-        AddAtDetail(details, "Link / Protection", "HDCP Version", hdcpVersion, FormatHdcpVersionDetail);
-        AddAtDetail(details, "Link / Protection", "RX/TX HDCP", rxTxHdcpVersion, FormatRxTxHdcpVersionDetail);
+        AddAtDetail(details, "Link / Protection", "USB Protocol", results.UsbHostProtocol, FormatUsbHostProtocolDetail);
+        AddAtDetail(details, "Link / Protection", "USB CDC", results.UsbCdc, FormatCodeByteDetail);
+        AddAtDetail(details, "Link / Protection", "USB Link State", results.UsbLinkState, FormatCodeByteDetail);
+        AddAtDetail(details, "Link / Protection", "USB Speed", results.UsbForceSpeed, FormatCodeByteDetail);
+        AddAtDetail(details, "Link / Protection", "TX Hot Plug", results.TxHpd, FormatModeInt32Detail);
+        AddAtDetail(details, "Link / Protection", "TX VRR", results.TxVrr, FormatModeInt32Detail);
+        AddAtDetail(details, "Link / Protection", "TX EDID Valid", results.TxEdidValid, FormatValidByteDetail);
+        AddAtDetail(details, "Link / Protection", "HDCP Mode", results.HdcpMode, FormatHdcpModeDetail);
+        AddAtDetail(details, "Link / Protection", "HDCP Version", results.HdcpVersion, FormatHdcpVersionDetail);
+        AddAtDetail(details, "Link / Protection", "RX/TX HDCP", results.RxTxHdcpVersion, FormatRxTxHdcpVersionDetail);
 
-        AddAtDetail(details, "Capture Card / UVC", "UVC Timing", uvcOutputTiming, FormatHexDetail);
-        AddAtDetail(details, "Capture Card / UVC", "UVC Format", uvcVideoFormat, FormatHexDetail);
-        AddAtDetail(details, "Capture Card / UVC", "UVC Error", uvcErrStatus, FormatCodeByteDetail);
+        AddAtDetail(details, "Capture Card / UVC", "UVC Timing", results.UvcOutputTiming, FormatHexDetail);
+        AddAtDetail(details, "Capture Card / UVC", "UVC Format", results.UvcVideoFormat, FormatHexDetail);
+        AddAtDetail(details, "Capture Card / UVC", "UVC Error", results.UvcErrStatus, FormatCodeByteDetail);
 
-        AddAtDetail(details, "Raw / Firmware", "HDR2SDR Status", hdr2SdrExtended, FormatModeInt32Detail);
-        AddAtDetail(details, "Raw / Firmware", "Customer Version", customerVersion, FormatAsciiOrHexDetail);
-        AddAtDetail(details, "Raw / Firmware", "Rescue Version", rescueVersion, FormatDecimalInt32Detail);
-        AddAtDetail(details, "Raw / Firmware", "HDR2SDR Color", hdr2SdrColorParam, FormatHexDetail);
-        AddAtDetail(details, "Raw / Firmware", "Color Range", colorRangeSetting, FormatCodeByteDetail);
-        AddAtDetail(details, "Raw / Firmware", "Raw Timing", rawTiming, FormatHexDetail);
+        AddAtDetail(details, "Raw / Firmware", "HDR2SDR Status", results.Hdr2SdrExtended, FormatModeInt32Detail);
+        AddAtDetail(details, "Raw / Firmware", "Customer Version", results.CustomerVersion, FormatAsciiOrHexDetail);
+        AddAtDetail(details, "Raw / Firmware", "Rescue Version", results.RescueVersion, FormatDecimalInt32Detail);
+        AddAtDetail(details, "Raw / Firmware", "HDR2SDR Color", results.Hdr2SdrColorParam, FormatHexDetail);
+        AddAtDetail(details, "Raw / Firmware", "Color Range", results.ColorRangeSetting, FormatCodeByteDetail);
+        AddAtDetail(details, "Raw / Firmware", "Raw Timing", results.RawTiming, FormatHexDetail);
 
         return details;
     }

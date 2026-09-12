@@ -861,7 +861,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         return ExtractMemberCodeFromDeclaration(
             source,
-            "private static AutomationSnapshot BuildAutomationSnapshotFromProjections(");
+            "private AutomationSnapshot BuildAutomationSnapshot(");
     }
 
     private static string ExtractMemberCodeFromDeclaration(string source, string declarationToken)

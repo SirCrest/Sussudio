@@ -66,7 +66,7 @@ mentions the moved files.
 | MJPEG decode pipeline | `Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.cs`, `Sussudio/Services/Capture/Mjpeg/FrameFingerprintCadenceTracker.cs` | Bounded compressed input, CPU decode workers, output ordering, and source-packet cadence metrics. |
 | GPU telemetry | `Sussudio/Services/Gpu/NvmlMonitor.cs` | Optional NVML sampling and graceful unavailable telemetry. |
 | FFmpeg D3D11 ownership | `Sussudio/Services/Gpu/FfmpegD3D11Ownership.cs` | Atomic device/context reference transfer to FFmpeg with rollback before publication. |
-| Automation diagnostics | `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`, `AutomationDiagnosticsHub.Evaluation.cs`, `AutomationDiagnosticsHub.FlashbackEvaluation.cs`, `AutomationDiagnosticsHub.Snapshots.cs`, `AutomationDiagnosticsHub.SnapshotProjection.cs`, `AutomationSnapshotFlashbackProjectionBuilder.cs` | Snapshot assembly and health evaluation. See [automation](#automation) for collector/projection boundaries. |
+| Automation diagnostics | `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`, `AutomationDiagnosticsHub.Evaluation.cs`, `AutomationDiagnosticsHub.FlashbackEvaluation.cs`, `AutomationDiagnosticsHub.Snapshots.cs`, `AutomationDiagnosticsHub.SnapshotProjection.cs` | Snapshot assembly and health evaluation. See [automation](#automation) for collector/assembly boundaries. |
 | Automation snapshot models | `Sussudio/Models/Automation/AutomationSnapshot.cs`, `AutomationModels.cs` | Flattened evidence snapshots and command/runtime DTOs; preserve wire shape. |
 | Capture models | `Sussudio/Models/Capture/CaptureModels.cs` | Capture configuration, input media formats, health, cadence, and runtime DTOs. `MediaFormat` owns input frame-rate and pixel-format behavior beside `CaptureDevice`. |
 | Recording models | `Sussudio/Models/Recording/RecordingModels.cs` | Encoder capabilities, recording statistics, and integrity DTOs. `EncoderSupport` owns recording-format-to-NVENC codec-name mapping. |
@@ -101,7 +101,7 @@ do not use these rows as permission for cosmetic file-count churn.
 | System | Status | Current evidence | Closure guidance |
 |--------|--------|------------------|------------------|
 | CaptureService | Leave As-Is For Now | `Sussudio/Services/Capture/CaptureService.cs`, `Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs`, `Sussudio/Services/Capture/CaptureService.Flashback.cs`, `Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs`, `Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs`, and `Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs` form a six-file family in the generated baseline. The files now map to transition serialization/root state, preview lifecycle, Flashback backend/export/recording, health snapshots, recording lifecycle, and runtime snapshots. | Do not merge this family just to reduce partial count. A future boundary pass should happen only if one named behavior, such as Flashback export or snapshot assembly, can move behind an independently testable collaborator without changing capture/preview/recording hot-path ordering. |
-| AutomationDiagnosticsHub | Ready | `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs` owns computed projection groups and the final `AutomationSnapshot` wire initializer. `Sussudio/Services/Automation/AutomationSnapshotFlashbackProjectionBuilder.cs` owns Flashback export, recording, and playback projections. The initializer maps these groups directly without duplicate flattened records. `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`, `Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs`, and `Sussudio/Services/Automation/AutomationDiagnosticsHub.Evaluation.cs` remain the polling/timeline, stateful refresh/alerts, and diagnostic verdict owners. `tests/Sussudio.Tests/ArchitectureGuardrailsTests.cs` and `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs` protect wire fields and the builder boundary. | Preserve computation and sampling order, the final JSON fields, and CLI/MCP/tool contracts. Keep mapping changes local to the hub/builder family; verify values rather than requiring copy-only intermediate types. |
+| AutomationDiagnosticsHub | Ready | `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs` owns the single `BuildAutomationSnapshot` initializer: captured domain inputs supply copy-only fields directly, while twelve computed/stateful projection helpers preserve normalization and sampling order. Flashback export, recording and playback fields share that initializer, including runtime-first null fallback for backend diagnostics. `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`, `Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs`, and `Sussudio/Services/Automation/AutomationDiagnosticsHub.Evaluation.cs` remain the polling/timeline, stateful refresh/alerts, and diagnostic verdict owners. `tests/Sussudio.Tests/AutomationSnapshotRegressionTests.cs` protects every serialized field against populated/default input fixtures; ownership tests protect the collector/initializer boundary. | Preserve the 18 captured inputs, computation/sampling order, JSON field names and CLI/MCP/tool contracts. Keep raw mapping in the existing initializer and retain helpers only for computation or state sampling. |
 | FlashbackPlaybackController | Ready | `Sussudio/Services/Flashback/FlashbackPlaybackController.cs`, `Sussudio/Services/Flashback/FlashbackPlaybackCommandMailbox.cs`, `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs`, and `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs` align to public playback state/command admission/metrics, a per-generation bounded command mailbox, playback-thread command execution, and frame decode/submit pacing. Existing Flashback contract tests and this map document command, frame, audio-master, marker, and lifecycle ownership. | Treat the mailbox and three controller partials as intentional. Keep the mailbox bounded and state-free: it owns queue admission, drop/coalescing, generation completion, yield, and queue telemetry; the controller owns public command/state admission; `ThreadCommands` owns decoder/state execution. Preserve playback command names, capacity, queue telemetry, live-restore behavior, A/V drift policy, and segment-edge recovery. |
 | D3D11PreviewRenderer | Ready | `Sussudio/Services/Preview/D3D11PreviewRenderer.cs`, `Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs`, and `Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs` now align to renderer facade/thread/submission/metrics, render-pass execution plus screenshot staging, and D3D resource/device/swap-chain/shader ownership. Presentation preview tests guard removed renderer shards, diagnostics contracts, device-lost recovery, present accounting, screenshots, and frame-ready signaling. | Treat the three-file split as intentional. Reopen only if a named resource/pass collaborator gains an independent test seam. Preserve preview pacing, swap-chain binding, device-lost recovery, screenshot capture, HDR pass behavior, and GPU synchronization boundaries. |
 
@@ -344,99 +344,40 @@ Automation diagnostics ownership:
   explicit verification events, automatic post-recording verification
   scheduling, and recording-start verification reset.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs`
-  owns the `BuildAutomationSnapshot` shell, projection-set composition from
-  runtime/view-model snapshots and diagnostic classifiers, and the final
-  `AutomationSnapshot` initializer. That initializer reads the computed
-  projection groups directly; there is no second set of records that merely
-  copies the same fields. Preserve normalization, sampling order, and JSON
-  names when changing mappings. Use output/value tests for mapping correctness
-  and ownership tests for the hub/Flashback-builder boundary.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs`
-  owns root snapshot construction, timestamp/status projection, view-model
-  lifecycle/audio flags, verification-in-progress, session state, status-text
-  projection, performance score, diagnostic lane, preview pacing classifier,
-  performance threshold projection, selected device/capture/recording settings,
-  preview volume/stats visibility projection, AV-sync projection, capture
-  command projection, and final status/evaluation/settings/AV-sync/capture-
-  command flattening.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs`
-  owns audio/ingest projection routing, view-model audio peak/clipping and
-  detected audio-signal projection inputs, capture-ingest and WASAPI projection
-  groups, capture audio/video reader, source-reader and ingest counters, WASAPI
-  capture/playback callback, queue, gap, glitch, and latency projection, final
-  audio/ingest/source-reader/WASAPI projection-to-`AutomationSnapshot`
-  flattening, audio drop counter projection, derived real-time/file-writer drop
-  totals, and final audio-drop projection-to-`AutomationSnapshot` field
-  flattening.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs`
-  owns snapshot construction routing, AV-sync projection/flattening, capture
-  session command queue counters, latency, last-command, last-error projection
-  inputs consumed by `AutomationSnapshot`, final capture-command
-  projection-to-`AutomationSnapshot` field flattening, source capture cadence,
-  preview visual cadence, center-crop visual cadence, source signal metadata,
-  source telemetry fallback/age policy, source-target summary inputs, and final
-  source/cadence projection flattening.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs`
-  owns capture-format projection routing and groups requested, HDR-request,
-  actual, negotiated, reader-observation, and encoder format modules consumed
-  by `AutomationSnapshot`, plus HDR activation/auto-downgrade projection,
-  actual capture dimensions/frame-rate projection, requested capture
-  format/quality/HDR toggle/audio toggle, negotiated capture
-  dimensions/frame-rate/pixel format, source-reader subtype and observed
-  pixel/surface format projection inputs, encoder format/codec/profile and
-  ten-bit confirmation projection, HDR truth classification from capture
-  runtime, UI state, and recording verification, HDR availability/request state,
-  runtime/readiness fallback, HDR warmup/downgrade, pipeline parity, telemetry
-  alignment, HDR truth verdict projection, preview HDR input detection,
-  tone-map state projection, capture memory preference, requested/negotiated
-  video subtype, frame-ledger projection, CPU MJPEG totals, compressed queue,
-  failure, decode/interop-copy/callback/reorder/pipeline timing, decoder count,
-  per-decoder, packet duplicate-run / unique-frame projection inputs, final
-  capture-format/capture-transport/HDR-pipeline flattening, final CPU MJPEG
-  totals, compressed queue, timing, packet-hash field flattening, MJPEG preview
-  jitter projection routing, queue counters, timing samples, adaptive drop/depth
-  counters, last scheduler event projection, and final preview-jitter
-  projection-to-`AutomationSnapshot` flattening.
-- `Sussudio/Services/Automation/AutomationSnapshotFlashbackProjectionBuilder.cs`
-  owns active Flashback export progress, failure, force-rotate fallback, final
-  Flashback export last-result projection, recording failure, cleanup,
-  force-rotate, temp-drive/startup-cache, active output/runtime, backend
-  settings drift, export-verification, codec downgrade, encoder
-  identity/bitrate/dimensions/frame-rate, and focused projection routing.
-  It also owns Flashback video, GPU, and audio queue/backpressure projections and
-  Flashback playback state/frame summary, audio-master delay/fallback
-  projection, playback event/cadence/PTS-cadence/A/V drift projection,
-  seek-cap/decode timing projection, and playback command queue projection.
-  The hub maps these values into the final `AutomationSnapshot` directly.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs`
-  owns preview runtime projection routing, preview frame counters, estimated
-  pipeline latency, preview surface visibility, renderer attachment, GPU
-  playback state/position, preview HDR/tone-map/color metadata, the frame,
-  cadence, surface, startup, GPU-playback, and color groups consumed by
-  `AutomationSnapshot`, preview display-cadence projection inputs, preview
-  startup/readiness and renderer mode projection inputs, D3D preview swap-chain
-  and renderer-state projection, D3D pipeline-latency projection, waitable frame-
-  latency projection, DXGI frame-statistics projection including recent missed-
-  refresh and stats failure deltas, D3D CPU upload/render/present/total-frame
-  timing, submitted/rendered/dropped frame ownership, recent slow-frame
-  projection, and final preview runtime/D3D flattening.
-  It also owns process memory, CPU, GC, and thread-pool projection consumed by
-  `AutomationSnapshot`, plus final process resource
-  projection-to-`AutomationSnapshot` field flattening.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs`
-  owns recording-integrity normalization through one canonical
-  `RecordingIntegrityProjection`: build it once from `CaptureRuntimeSnapshot`
-  and map its nested values directly to the final `AutomationSnapshot` wire
-  DTO without mirrored copy-only flattened records. It also owns status/reason,
-  video-frame counters, queue/backpressure, audio integrity, A/V sync inputs,
-  recording-pipeline projection routing, encoder queue age/count/failure health,
-  conversion/ffmpeg/video ingest queue health, recording video queue latency,
-  backpressure, encoder-output health, GPU/CUDA queue health, recording
-  backend/audio-path/mux-result projection, recording UI output text,
-  accumulated recording bytes, file-growth state, last finalized output
-  metadata, last verification result projection consumed by `AutomationSnapshot`,
-  and final recording integrity/pipeline/backend/output projection-to-
-  `AutomationSnapshot` field flattening.
+  owns the single `BuildAutomationSnapshot` initializer. It consumes the 18
+  already-collected runtime, view-model, health, recording, preview, evaluation,
+  output and process-resource inputs and assigns the final `AutomationSnapshot`
+  fields directly. It does not query providers or construct a second snapshot
+  input/projection aggregate. Arrays and retained verdicts pass through without
+  copying, except the existing MJPEG per-decoder type conversion.
+- The same file retains twelve computed/stateful projection helpers, called in
+  their original relative order: `SnapshotStatus`, `SnapshotEvaluation`,
+  `AudioDrops`, `UserSettings`, `CaptureFormatNegotiated`, `SourceSignal`,
+  `SourceTelemetry`, `PreviewRuntimeFrame`, `PreviewRuntimeStartup`,
+  `RecordingBackend`, `MjpegTiming`, and `HdrPipeline`. These own verification
+  and threshold sampling, derived audio-drop totals, selected/negotiated format
+  fallbacks, source telemetry preference/age, preview latency truncation,
+  startup strategy formatting, mux-result normalization, per-decoder conversion
+  and HDR policy. Keep those computations beside the initializer.
+- Direct mappings in that initializer own capture command counters, requested
+  and observed media formats, AV-sync, source and visual cadence, capture/recording
+  ingest, WASAPI state, recording integrity, recording and GPU/CUDA queues,
+  preview surface/display/D3D telemetry, MJPEG packet/jitter counters, recording
+  output/verification evidence and process-resource fields. Recording integrity
+  reads `CaptureRuntimeSnapshot` directly; there is no intermediate integrity
+  record or additional normalization layer.
+- Flashback export progress/last result, recording cleanup/force-rotation,
+  startup cache, encoder/queue/runtime state, and playback cadence/decode/audio/
+  command diagnostics also map directly in that initializer. Backend
+  `FlashbackExportVerificationFormat` and `FlashbackCodecDowngradeReason` prefer
+  capture-runtime values with `??` health fallback; empty strings still win.
+- `tests/Sussudio.Tests/AutomationSnapshotRegressionTests.cs` compares all
+  serialized fields, nested values and ordered arrays for deterministic populated
+  and default inputs. `tests/Sussudio.Tests/AutomationSnapshotValuesTests.cs`
+  separately verifies null/empty backend precedence, latency truncation and
+  reference forwarding. Keep those frozen expected values independent of the
+  mapping implementation; ownership tests protect the collector/initializer
+  boundary rather than requiring copy-only projection types.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs` owns
   stateful snapshot bookkeeping for audio mute suspicion and recording file
   growth tracking.

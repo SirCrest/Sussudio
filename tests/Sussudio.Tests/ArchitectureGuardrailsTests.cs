@@ -176,7 +176,7 @@ static partial class Program
 
         AssertContains(closureSection, "| AutomationDiagnosticsHub | Ready |");
         AssertContains(closureSection, "`Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs`");
-        AssertContains(closureSection, "`Sussudio/Services/Automation/AutomationSnapshotFlashbackProjectionBuilder.cs`");
+        AssertContains(closureSection, "`tests/Sussudio.Tests/AutomationSnapshotRegressionTests.cs`");
         AssertContains(closureSection, "`Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`");
         AssertContains(closureSection, "`Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs`");
         AssertContains(closureSection, "`Sussudio/Services/Automation/AutomationDiagnosticsHub.Evaluation.cs`");

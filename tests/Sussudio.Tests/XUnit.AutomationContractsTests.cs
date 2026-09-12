@@ -4132,19 +4132,9 @@ static partial class Program
         var contractsText = ReadAutomationSnapshotFamilyText();
         AssertContains(contractsText, "public string? FlashbackExportVerificationFormat { get; init; }");
         AssertContains(contractsText, "public string? FlashbackCodecDowngradeReason { get; init; }");
-        var automationDiagnosticsHubText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs")
-            .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationSnapshotFlashbackProjectionBuilder.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadAutomationSnapshotInitializerText()
-            + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationSnapshotFlashbackProjectionBuilder.cs")
-                .Replace("\r\n", "\n");
-        AssertContains(automationDiagnosticsHubText, "ExportVerificationFormat = captureRuntime.FlashbackExportVerificationFormat ?? health.FlashbackExportVerificationFormat,");
-        AssertContains(automationDiagnosticsHubText, "CodecDowngradeReason = captureRuntime.FlashbackCodecDowngradeReason ?? health.FlashbackCodecDowngradeReason");
+        var automationDiagnosticsHubText = ReadAutomationSnapshotInitializerText();
+        AssertContains(automationDiagnosticsHubText, "FlashbackExportVerificationFormat = captureRuntime.FlashbackExportVerificationFormat ?? health.FlashbackExportVerificationFormat,");
+        AssertContains(automationDiagnosticsHubText, "FlashbackCodecDowngradeReason = captureRuntime.FlashbackCodecDowngradeReason ?? health.FlashbackCodecDowngradeReason");
         AssertDoesNotContain(captureServiceText, "var fbFileNameFormatOverride =");
         AssertDoesNotContain(captureServiceText, "FileNameFormatOverride = fbFileNameFormatOverride");
         AssertContains(ensureFlashbackPreviewBackend, "var failureToken = ex is OperationCanceledException && cancellationToken.IsCancellationRequested");
@@ -8352,9 +8342,11 @@ static partial class Program
 
     private static void AssertDiagnosticsRefreshSnapshotProjectionOwnership(AutomationDiagnosticsHubSourceFamily diagnostics)
     {
-        AssertContains(diagnostics.SnapshotProjectionText, "BuildAutomationSnapshotProjectionSet(");
-        AssertContains(diagnostics.SnapshotProjectionText, "BuildAutomationSnapshotFromProjections(projections);");
-        AssertContains(diagnostics.SnapshotProjectionText, "return new AutomationSnapshotProjectionSet(");
+        AssertContains(diagnostics.SnapshotInitializerText, "RecordingVideoQueueLatencyP95Ms = health.RecordingVideoQueueLatencyP95Ms,");
+        AssertContains(diagnostics.SnapshotInitializerText, "RecordingIntegrityStatus = captureRuntime.RecordingIntegrityStatus,");
+        AssertContains(diagnostics.SnapshotInitializerText, "MemoryWorkingSetMb = processResources.MemoryWorkingSetMb,");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionText, "AutomationSnapshotProjectionSet");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionText, "BuildAutomationSnapshotFromProjections");
     }
 
     private static void AssertDiagnosticSessionPreviewMetricsOwnership(string diagnosticSessionText, AutomationDiagnosticsHubSourceFamily diagnostics)
@@ -8606,34 +8598,20 @@ static partial class Program
 
     private static void AssertDiagnosticsPreviewRuntimeProjectionOwnership(AutomationDiagnosticsHubSourceFamily diagnostics)
     {
-        AssertContains(diagnostics.SnapshotProjectionText, "var previewSummary = BuildPreviewRuntimeProjection(previewRuntime, previewHdrState, captureRuntime);");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "private static PreviewRuntimeProjection BuildPreviewRuntimeProjection(");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "Frame = BuildPreviewRuntimeFrameProjection(previewRuntime),");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "Cadence = BuildPreviewRuntimeCadenceProjection(previewRuntime),");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "Surface = BuildPreviewRuntimeSurfaceProjection(previewRuntime),");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "Startup = BuildPreviewRuntimeStartupProjection(previewRuntime),");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "GpuPlayback = BuildPreviewRuntimeGpuPlaybackProjection(previewRuntime),");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "Color = BuildPreviewRuntimeColorProjection(previewHdrState, captureRuntime)");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "private static PreviewRuntimeFrameProjection BuildPreviewRuntimeFrameProjection(");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "EstimatedPipelineLatencyMs = (long)previewRuntime.EstimatedPipelineLatencyMs");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "private static PreviewRuntimeCadenceProjection BuildPreviewRuntimeCadenceProjection(");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "OnePercentLowFps = previewRuntime.DisplayCadenceOnePercentLowFps,");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "SlowFramePercent = previewRuntime.DisplayCadenceSlowFramePercent");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "private static PreviewRuntimeSurfaceProjection BuildPreviewRuntimeSurfaceProjection(");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "RendererAttached = previewRuntime.RendererAttached");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "private static PreviewRuntimeStartupProjection BuildPreviewRuntimeStartupProjection(");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "Strategy = previewRuntime.StartupStrategy.ToString(),");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "RendererMode = previewRuntime.RendererMode");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "private static PreviewRuntimeGpuPlaybackProjection BuildPreviewRuntimeGpuPlaybackProjection(");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "PlaybackState = previewRuntime.GpuPlaybackState,");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "private static PreviewRuntimeColorProjection BuildPreviewRuntimeColorProjection(");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "HdrInputDetected = previewHdrState.InputDetected,");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "AdapterColorMetadata = captureRuntime.PreviewColorMetadata");
-        AssertDoesNotContain(diagnostics.SnapshotProjectionText, "PreviewFramesArrived = previewRuntime.FramesArrived,");
-        AssertDoesNotContain(diagnostics.SnapshotProjectionText, "EstimatedPipelineLatencyMs = (long)previewRuntime.EstimatedPipelineLatencyMs,");
-        AssertDoesNotContain(diagnostics.SnapshotProjectionText, "PreviewStartupStrategy = previewRuntime.StartupStrategy.ToString(),");
-        AssertDoesNotContain(diagnostics.SnapshotProjectionText, "PreviewHdrInputDetected = previewHdrState.InputDetected,");
-        AssertDoesNotContain(diagnostics.SnapshotProjectionText, "PreviewAdapterColorMetadata = captureRuntime.PreviewColorMetadata,");
+        AssertContains(diagnostics.SnapshotInitializerText, "var previewFrame = BuildPreviewRuntimeFrameProjection(previewRuntime);");
+        AssertContains(diagnostics.SnapshotInitializerText, "var previewStartup = BuildPreviewRuntimeStartupProjection(previewRuntime);");
+        AssertContains(diagnostics.SnapshotProjectionText, "private static PreviewRuntimeFrameProjection BuildPreviewRuntimeFrameProjection(");
+        AssertContains(diagnostics.SnapshotProjectionText, "EstimatedPipelineLatencyMs = (long)previewRuntime.EstimatedPipelineLatencyMs");
+        AssertContains(diagnostics.SnapshotProjectionText, "private static PreviewRuntimeStartupProjection BuildPreviewRuntimeStartupProjection(");
+        AssertContains(diagnostics.SnapshotProjectionText, "Strategy = previewRuntime.StartupStrategy.ToString(),");
+        AssertContains(diagnostics.SnapshotInitializerText, "EstimatedPipelineLatencyMs = previewFrame.EstimatedPipelineLatencyMs,");
+        AssertContains(diagnostics.SnapshotInitializerText, "PreviewStartupStrategy = previewStartup.Strategy,");
+        AssertContains(diagnostics.SnapshotInitializerText, "PreviewCadenceOnePercentLowFps = previewRuntime.DisplayCadenceOnePercentLowFps,");
+        AssertContains(diagnostics.SnapshotInitializerText, "PreviewCadenceSlowFramePercent = previewRuntime.DisplayCadenceSlowFramePercent,");
+        AssertContains(diagnostics.SnapshotInitializerText, "PreviewRendererAttached = previewRuntime.RendererAttached,");
+        AssertContains(diagnostics.SnapshotInitializerText, "PreviewGpuPlaybackState = previewRuntime.GpuPlaybackState,");
+        AssertContains(diagnostics.SnapshotInitializerText, "PreviewHdrInputDetected = previewHdrState.InputDetected,");
+        AssertContains(diagnostics.SnapshotInitializerText, "PreviewAdapterColorMetadata = captureRuntime.PreviewColorMetadata,");
     }
 
     private static void AssertDiagnosticSessionToolSurfaceOwnership()
@@ -8824,16 +8802,14 @@ static partial class Program
     private static void AssertDiagnosticsRefreshSnapshotConstructionOwnership(AutomationDiagnosticsHubSourceFamily diagnostics)
     {
         AssertContains(diagnostics.SnapshotProjectionText, "private AutomationSnapshot BuildAutomationSnapshot(");
-        AssertContains(diagnostics.SnapshotProjectionText, "private static AutomationSnapshot BuildAutomationSnapshotFromProjections(");
         AssertContains(diagnostics.SnapshotInitializerText, "return new AutomationSnapshot");
+        AssertEqual(1, diagnostics.SnapshotProjectionText.Split("return new AutomationSnapshot", StringSplitOptions.None).Length - 1,
+            "one final snapshot initializer owns the wire mapping");
         AssertDoesNotContain(diagnostics.HubText, "new AutomationSnapshot");
-
-        var flashbackBuilder = ReadAutomationDiagnosticsHubSourceFile("AutomationSnapshotFlashbackProjectionBuilder.cs");
-        foreach (var method in new[] { "BuildFlashbackExportProjection(", "BuildFlashbackRecordingProjection(", "BuildFlashbackPlaybackProjection(" })
-        {
-            AssertContains(flashbackBuilder, method);
-            AssertDoesNotContain(diagnostics.SnapshotProjectionText, method["Build".Length..^1] + " " + method);
-        }
+        AssertContains(diagnostics.SnapshotInitializerText, "FlashbackExportId = health.FlashbackExportId,");
+        AssertContains(diagnostics.SnapshotInitializerText, "FlashbackPlaybackTargetFps = health.FlashbackPlaybackTargetFps,");
+        AssertContains(diagnostics.SnapshotInitializerText, "FlashbackVideoQueueLatencyP95Ms = health.FlashbackVideoQueueLatencyP95Ms,");
+        Assert.False(File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationSnapshotFlashbackProjectionBuilder.cs")));
     }
 
     private static AutomationDiagnosticsHubSourceFamily ReadAutomationDiagnosticsHubSourceFamily()
@@ -8852,28 +8828,6 @@ static partial class Program
             SnapshotsCoreText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Snapshots.cs"),
             SnapshotProjectionText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
             SnapshotInitializerText = ReadAutomationSnapshotInitializerText(),
-            SnapshotProjectionAudioText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
-            SnapshotProjectionCaptureIngestText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
-            SnapshotProjectionWasapiAudioText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
-            SnapshotProjectionCaptureFormatText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
-            SnapshotProjectionCaptureCadenceText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
-            SnapshotProjectionVisualCadenceText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
-            SnapshotProjectionMjpegText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
-            SnapshotProjectionMjpegPreviewJitterText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
-            SnapshotProjectionFlashbackExportText = ReadAutomationDiagnosticsHubSourceFile("AutomationSnapshotFlashbackProjectionBuilder.cs"),
-            SnapshotProjectionFlashbackPlaybackText = ReadAutomationDiagnosticsHubSourceFile("AutomationSnapshotFlashbackProjectionBuilder.cs"),
-            SnapshotProjectionFlashbackRecordingText = ReadAutomationDiagnosticsHubSourceFile("AutomationSnapshotFlashbackProjectionBuilder.cs"),
-            SnapshotProjectionFlashbackRecordingQueuesText = ReadAutomationDiagnosticsHubSourceFile("AutomationSnapshotFlashbackProjectionBuilder.cs"),
-            SnapshotProjectionPreviewD3DText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
-            SnapshotProjectionPreviewD3DFrameFlowText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
-            SnapshotProjectionPreviewD3DCpuTimingText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
-            SnapshotProjectionPreviewRuntimeText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
-            SnapshotProjectionProcessResourcesText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
-            SnapshotProjectionRecordingIntegrityText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
-            SnapshotProjectionRecordingPipelineText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
-            SnapshotProjectionSourceSignalText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
-            SnapshotProjectionSourceTelemetryText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
-            SnapshotProjectionUserSettingsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
             PreviewPacingText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Snapshots.cs"),
             TimelineText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.cs"),
             TimelineProjectionPreviewText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.cs"),
@@ -8913,28 +8867,6 @@ static partial class Program
         public string SnapshotsCoreText { get; init; } = string.Empty;
         public string SnapshotProjectionText { get; init; } = string.Empty;
         public string SnapshotInitializerText { get; init; } = string.Empty;
-        public string SnapshotProjectionAudioText { get; init; } = string.Empty;
-        public string SnapshotProjectionCaptureIngestText { get; init; } = string.Empty;
-        public string SnapshotProjectionWasapiAudioText { get; init; } = string.Empty;
-        public string SnapshotProjectionCaptureFormatText { get; init; } = string.Empty;
-        public string SnapshotProjectionCaptureCadenceText { get; init; } = string.Empty;
-        public string SnapshotProjectionVisualCadenceText { get; init; } = string.Empty;
-        public string SnapshotProjectionMjpegText { get; init; } = string.Empty;
-        public string SnapshotProjectionMjpegPreviewJitterText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlashbackExportText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlashbackPlaybackText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlashbackRecordingText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlashbackRecordingQueuesText { get; init; } = string.Empty;
-        public string SnapshotProjectionPreviewD3DText { get; init; } = string.Empty;
-        public string SnapshotProjectionPreviewD3DFrameFlowText { get; init; } = string.Empty;
-        public string SnapshotProjectionPreviewD3DCpuTimingText { get; init; } = string.Empty;
-        public string SnapshotProjectionPreviewRuntimeText { get; init; } = string.Empty;
-        public string SnapshotProjectionProcessResourcesText { get; init; } = string.Empty;
-        public string SnapshotProjectionRecordingIntegrityText { get; init; } = string.Empty;
-        public string SnapshotProjectionRecordingPipelineText { get; init; } = string.Empty;
-        public string SnapshotProjectionSourceSignalText { get; init; } = string.Empty;
-        public string SnapshotProjectionSourceTelemetryText { get; init; } = string.Empty;
-        public string SnapshotProjectionUserSettingsText { get; init; } = string.Empty;
         public string PreviewPacingText { get; init; } = string.Empty;
         public string TimelineText { get; init; } = string.Empty;
         public string TimelineProjectionPreviewText { get; init; } = string.Empty;
@@ -8955,32 +8887,11 @@ static partial class Program
                 SnapshotsText,
                 SnapshotProjectionText,
                 SnapshotInitializerText,
-                SnapshotProjectionAudioText,
-                SnapshotProjectionCaptureIngestText,
-                SnapshotProjectionWasapiAudioText,
-                SnapshotProjectionCaptureFormatText,
-                SnapshotProjectionCaptureCadenceText,
-                SnapshotProjectionMjpegText,
-                SnapshotProjectionMjpegPreviewJitterText,
-                SnapshotProjectionFlashbackExportText,
-                SnapshotProjectionFlashbackPlaybackText,
-                SnapshotProjectionFlashbackRecordingText,
-                SnapshotProjectionFlashbackRecordingQueuesText,
-                SnapshotProjectionPreviewD3DText,
-                SnapshotProjectionPreviewD3DFrameFlowText,
-                SnapshotProjectionPreviewRuntimeText,
-                SnapshotProjectionProcessResourcesText,
-                SnapshotProjectionRecordingIntegrityText,
-                SnapshotProjectionRecordingPipelineText,
-                SnapshotProjectionSourceSignalText,
-                SnapshotProjectionSourceTelemetryText,
-                SnapshotProjectionUserSettingsText,
                 HdrText,
                 PreviewPacingText,
                 TimelineText,
                 TimelineProjectionPreviewText,
                 TimelineProjectionFlashbackPlaybackText,
-                SnapshotProjectionPreviewD3DCpuTimingText,
             });
     }
 
@@ -9176,10 +9087,8 @@ static partial class Program
         AssertContains(diagnostics.AlertsText, "Flashback export rotation skipped live-edge frames:");
         AssertContains(diagnostics.SourceFamilyText, "forceRotate={snapshot.FlashbackForceRotateActive}");
         AssertContains(diagnostics.SourceFamilyText, "requested={snapshot.FlashbackForceRotateRequested} draining={snapshot.FlashbackForceRotateDraining}");
-        AssertContains(diagnostics.SourceFamilyText, "FatalCleanupInProgress = flashbackRecording.FatalCleanupInProgress");
         AssertContains(diagnostics.SourceFamilyText, "FatalCleanupInProgress = health.FatalCleanupInProgress");
-        AssertContains(diagnostics.SourceFamilyText, "CleanupInProgress = flashbackRecording.CleanupInProgress");
-        AssertContains(diagnostics.SourceFamilyText, "CleanupInProgress = health.FlashbackCleanupInProgress");
+        AssertContains(diagnostics.SourceFamilyText, "FlashbackCleanupInProgress = health.FlashbackCleanupInProgress");
         AssertContains(diagnostics.SourceFamilyText, "recentBackpressureEvents={flashbackRecordingRecent.BackpressureEvents}");
         AssertContains(diagnostics.SourceFamilyText, "private static bool IsFlashbackRecordingQueueBackedUp(");
         AssertContains(diagnostics.SourceFamilyText, "queueDepth >= Math.Ceiling(queueCapacity * FlashbackRecordingQueueDepthWarningRatio)");
@@ -9959,9 +9868,7 @@ public sealed class PreviewPacingClassifierTests
         Assert.Contains("private static PreviewPacingClassification ClassifyPreviewPacing(", diagnosticsSnapshotsText);
         Assert.Contains("PreviewPacingSlowStageClassifier.Classify", diagnosticsSnapshotsText);
         Assert.Contains("PreviewCadenceOnePercentLowFps = previewRuntime.DisplayCadenceOnePercentLowFps", diagnosticsHubText);
-        Assert.Contains("CaptureCadenceEstimatedDroppedFrames = captureCadence.EstimatedDroppedFrames", diagnosticsHubText);
-        Assert.Contains("EstimatedDroppedFrames = captureCadence.EstimatedDroppedFrames", diagnosticsHubText);
-        Assert.Contains("EstimatedDroppedFrames = health.CaptureCadenceEstimatedDroppedFrames", diagnosticsHubText);
+        Assert.Contains("CaptureCadenceEstimatedDroppedFrames = health.CaptureCadenceEstimatedDroppedFrames", diagnosticsHubText);
         Assert.Contains("RecentD3DMissedRefreshes = recentD3DMissedRefreshes", diagnosticsHubText);
         Assert.Contains("RecentPreviewJitterScheduleLateCount = recentPreviewJitter.ScheduleLateCount", diagnosticsHubText);
         Assert.Contains("RecentD3DFrameLatencyWaitTimeoutCount = recentD3DFrameLatencyWaitTimeouts", diagnosticsHubText);

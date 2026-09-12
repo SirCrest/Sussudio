@@ -188,7 +188,7 @@ public sealed class RecordingFinalizationTruthTests
             projection,
             StringComparison.Ordinal);
         Assert.Contains(
-            "RecordingRecoveryPath = recordingOutput.RecordingRecoveryPath",
+            "RecordingRecoveryPath = captureRuntime.RecordingRecoveryPath",
             projection,
             StringComparison.Ordinal);
     }
