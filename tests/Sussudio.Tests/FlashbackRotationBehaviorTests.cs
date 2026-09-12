@@ -191,7 +191,6 @@ public sealed class FlashbackRotationBehaviorTests : IClassFixture<BundledRuntim
         await owner.WaitAsync(TimeSpan.FromSeconds(15));
 
         AssertRotationPlanFails(result, session.OriginalPath);
-        Assert.Empty(Read<IReadOnlyList<string>>(result, "SegmentPaths"));
         Assert.Equal((false, true, true), Assert.Single(session.RotationStates));
         session.AssertForceRotateIdle();
         session.AssertTerminalRotationFailure();

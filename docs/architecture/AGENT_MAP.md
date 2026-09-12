@@ -457,7 +457,7 @@ Important entry points:
   owns refresh generations, disposal checks, and selection resolution at commit.
   A committed full device scan invalidates older pending audio-only results.
 - `Sussudio/Services/NativeXu/KsExtensionUnitNative.cs` owns supported
-  4K X VID/PID recognition, selected-interface projection, and the shared
+  4K X VID/PID recognition, exact selected-interface path projection, and the shared
   native XU transport gate used by telemetry, audio controls, discovery, and
   NativeXuAudioProbe linked-source builds. The same owner frames topology and
   extension-unit GET/SET requests, captures native errors at its per-call IO
@@ -2788,7 +2788,10 @@ Primary owners:
   shaping. Fixed ssctl automation routes should call shared enum overloads with
   `AutomationCommandKind` values; labels and wire command IDs remain catalog
   owned. Dynamic diagnostic-session runner command names stay string-based at
-  the transport seam. Do not reintroduce `CommandHandlers.*.cs` partial files
+  the transport seam. The diagnostic handler passes request cancellation to the
+  runner and each runner-supplied command token to the transport so restoration
+  can complete independently after cancellation. Do not reintroduce
+  `CommandHandlers.*.cs` partial files
   unless a command family becomes an independently tested collaborator with a
   real boundary.
   MCP and ssctl export clients send their existing relative generated defaults
@@ -2994,7 +2997,10 @@ Primary owners:
   scenario background task registration, deterministic await order, normal
   registered scenario completion, PresentMon and deferred recording-settings
   task tracking, interrupted task observation, warning collection, and the drain
-  result handoff. Preserve sample-loop ordering: append the cloned sample before
+  result handoff. Registrations with locally bounded cleanup remain owned through
+  fault drain before global cleanup, result publication, or channel disposal; other
+  background tasks retain their existing interruption observation policy.
+  Preserve sample-loop ordering: append the cloned sample before
   running checkpoint callbacks. Keep the `timeline` and `final-snapshot` stage
   names stable there. It also owns the per-output-directory exclusive lock that
   prevents concurrent diagnostic sessions from writing the same artifact set.
@@ -3009,6 +3015,14 @@ Primary owners:
   Flashback/encoder validation, export-while-preview-off verification,
   playback-under-preview-stop validation, recording-backed readiness/counter
   validation, and restart frame-flow validation.
+  Each of the six cycles owns restoration from its first attempted mutation.
+  Required cleanup senders use independent bounded tokens; restart completion
+  must be observed Live, preset restore preserves the original failure, and
+  interrupted preview/Flashback cycles restore their state before finishing.
+  Their registered tasks retain the command channel until this bounded cleanup
+  settles. `tests/Sussudio.Tests/XUnit.DiagnosticCycleLifetimeTests.cs` exercises
+  mutation faults, cancellation, secondary cleanup failures, and full-runner
+  restoration with pre-existing preview, Flashback, and recording sessions.
 - `tools/DiagnosticSession/DiagnosticSessionMetrics.cs` owns read-only diagnostic-session
   metric DTOs and projections: source/preview/visual cadence aggregation,
   visual-cadence health classification, D3D metric aggregation, playback
@@ -3048,6 +3062,13 @@ Primary owners:
   Range export owns selection cleanup from the first marking mutation and awaits
   audio restoration before finishing a failed export; cleanup preserves the original
   operation failure and reports its own failed commands.
+  Export during playback owns returning to Live from its first playback mutation;
+  disable during export observes both started requests before re-enabling Flashback.
+  Both use independent bounded cleanup tokens and observe restored state before
+  completion, preserving the original operation failure if restoration fails.
+  Their registered tasks retain the runner command channel until cleanup finishes.
+  `XUnit.DiagnosticExportCleanupTests.cs` verifies these lifetimes, failure identity,
+  cancellation, and delayed restoration through the complete runner.
 - `tools/DiagnosticSession/DiagnosticSessionFlashbackScenarioTasks.cs` owns deferred
   recording-settings preset state, during-recording preset mutation,
   restart/disable rejection-message policy, active-recording backend/file/

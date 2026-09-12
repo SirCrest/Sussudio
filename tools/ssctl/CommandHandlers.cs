@@ -67,7 +67,7 @@ internal static class CommandHandlers
         public PipeTransport Transport { get; }
         public bool GlobalJson { get; }
         public List<string> Rest { get; }
-        private CancellationToken RequestCancellationToken { get; }
+        public CancellationToken RequestCancellationToken { get; }
 
         public Task<JsonElement> SendCommandAsync(
             string commandName,
@@ -584,7 +584,9 @@ internal static class CommandHandlers
                     VerifyRecording = verify,
                     LeaveRunning = leaveRunning
                 },
-                (command, payload, responseTimeoutMs) => context.SendCommandAsync(command, payload, responseTimeoutMs))
+                (command, payload, responseTimeoutMs, commandToken) =>
+                    context.Transport.SendCommandAsync(command, payload, responseTimeoutMs, commandToken),
+                context.RequestCancellationToken)
             .ConfigureAwait(false);
 
         Console.WriteLine(json ? PrettyJson(result) : DiagnosticSessionRunner.Format(result));

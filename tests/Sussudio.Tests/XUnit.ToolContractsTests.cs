@@ -788,6 +788,12 @@ public sealed class ToolFormatterContractsTests
 
 public sealed class SsctlCommandHandlerContractsTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public Task DiagnosticCancellationRestoresPreviewThroughTheCliTransport(bool loseStartupReply)
+        => global::Program.SsctlCommandHandlers_DiagnosticCancellationRestoresPreview(loseStartupReply);
+
     [Fact]
     public Task RoutesDeviceCommands()
         => global::Program.SsctlCommandHandlers_RouteDeviceCommands();
@@ -5952,7 +5958,7 @@ static partial class Program
     {
         AssertContains(
             commandHandlersSource,
-            "(command, payload, responseTimeoutMs) => context.SendCommandAsync(command, payload, responseTimeoutMs)");
+            "(command, payload, responseTimeoutMs, commandToken) =>");
         AssertDoesNotContain(
             ReadRepoFile("tools/ssctl/CommandHandlers.cs"),
             "private static async Task<int> HandleSimpleCommandAsync(\n        CommandContext context,\n        string commandName,");
@@ -6225,6 +6231,111 @@ static partial class Program
         };
 
         return string.Join('\n', lines);
+    }
+
+    internal static async Task SsctlCommandHandlers_DiagnosticCancellationRestoresPreview(bool loseStartupReply)
+    {
+        var context = CreateSsctlCommandRoutingContext();
+        var pipeName = $"ssctl-diagnostic-cancellation-{Guid.NewGuid():N}";
+        var outputDirectory = Path.Combine(GetRepoRoot(), "temp", $"ssctl-diagnostic-cancellation-{Guid.NewGuid():N}");
+        using var requestCancellation = new CancellationTokenSource();
+        using var serverLifetime = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        var requests = new List<(AutomationCommandKind Command, bool? Enabled)>();
+        var preview = false;
+        var canceledRequestObserved = false;
+        var canceledConnectionClosed = false;
+
+        async Task ServeAsync()
+        {
+            while (true)
+            {
+                await using var pipe = new System.IO.Pipes.NamedPipeServerStream(
+                    pipeName, System.IO.Pipes.PipeDirection.InOut, 1,
+                    System.IO.Pipes.PipeTransmissionMode.Byte, System.IO.Pipes.PipeOptions.Asynchronous);
+                await pipe.WaitForConnectionAsync(serverLifetime.Token).ConfigureAwait(false);
+                using var reader = new StreamReader(pipe, leaveOpen: true);
+                var line = await reader.ReadLineAsync(serverLifetime.Token).ConfigureAwait(false)
+                    ?? throw new InvalidOperationException("Diagnostic handler disconnected before sending its request.");
+                using var request = JsonDocument.Parse(line);
+                var command = (AutomationCommandKind)request.RootElement.GetProperty("command").GetInt32();
+                var enabled = command == AutomationCommandKind.SetPreviewEnabled
+                    ? request.RootElement.GetProperty("payload").GetProperty("enabled").GetBoolean()
+                    : (bool?)null;
+                requests.Add((command, enabled));
+                if (enabled.HasValue) preview = enabled.Value;
+
+                var interrupt = !requestCancellation.IsCancellationRequested &&
+                    (loseStartupReply ? command == AutomationCommandKind.SetPreviewEnabled && enabled == true
+                        : command == AutomationCommandKind.WaitForCondition);
+                if (interrupt)
+                {
+                    canceledRequestObserved = true;
+                    requestCancellation.Cancel();
+                    // Leave the response pending: the real client must close this pipe on cancellation.
+                    Assert.Null(await reader.ReadLineAsync(serverLifetime.Token).ConfigureAwait(false));
+                    canceledConnectionClosed = true;
+                    continue;
+                }
+
+                var response = command == AutomationCommandKind.GetSnapshot
+                    ? DiagnosticCancellationSnapshot(preview, false, false, "Live").GetRawText()
+                    : "{\"Success\":true,\"Message\":\"ok\",\"Data\":[]}";
+                using var writer = new StreamWriter(pipe, leaveOpen: true) { AutoFlush = true };
+                await writer.WriteLineAsync(response.AsMemory(), serverLifetime.Token).ConfigureAwait(false);
+            }
+        }
+
+        var serverTask = ServeAsync();
+        Task<int>? commandTask = null;
+        try
+        {
+            var transport = CreateSsctlTransport(context, pipeName);
+            commandTask = (Task<int>)context.ExecuteAsync.Invoke(null, new object?[]
+            {
+                transport,
+                new List<string> { "diagnostic-session", "--scenario", "preview-only", "--seconds", "1",
+                    "--sample-ms", "100", "--output", outputDirectory },
+                false,
+                requestCancellation.Token
+            })!;
+            var exitCode = await commandTask.WaitAsync(serverLifetime.Token).ConfigureAwait(false);
+            serverLifetime.Cancel();
+            try { await serverTask.ConfigureAwait(false); }
+            catch (OperationCanceledException) when (serverLifetime.IsCancellationRequested) { }
+
+            Assert.Equal(3, exitCode);
+            Assert.True(canceledRequestObserved);
+            Assert.True(canceledConnectionClosed);
+            Assert.False(preview, "The diagnostic handler must restore preview using a token independent of the canceled request.");
+            Assert.Equal(new bool?[] { true, false }, requests
+                .Where(request => request.Command == AutomationCommandKind.SetPreviewEnabled)
+                .Select(request => request.Enabled));
+            Assert.Equal(new[] { AutomationCommandKind.GetPerformanceTimeline, AutomationCommandKind.GetSnapshot },
+                requests.TakeLast(2).Select(request => request.Command));
+            using var summary = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(outputDirectory, "summary.json"))
+                .ConfigureAwait(false));
+            Assert.Equal("canceled", summary.RootElement.GetProperty("TerminalState").GetString());
+            Assert.Contains("preview stopped", summary.RootElement.GetProperty("Actions").EnumerateArray()
+                .Select(action => action.GetString()));
+            if (loseStartupReply)
+            {
+                Assert.Contains("unconfirmed startup effects reconciled from app snapshot", summary.RootElement.GetProperty("Actions")
+                    .EnumerateArray().Select(action => action.GetString()));
+            }
+        }
+        finally
+        {
+            requestCancellation.Cancel();
+            serverLifetime.Cancel();
+            if (commandTask is not null)
+            {
+                try { await commandTask.WaitAsync(TimeSpan.FromSeconds(5)).ConfigureAwait(false); }
+                catch (OperationCanceledException) when (requestCancellation.IsCancellationRequested) { }
+            }
+            try { await serverTask.ConfigureAwait(false); }
+            catch (OperationCanceledException) when (serverLifetime.IsCancellationRequested) { }
+            if (Directory.Exists(outputDirectory)) Directory.Delete(outputDirectory, recursive: true);
+        }
     }
 
     private readonly record struct SsctlCommandRoutingContext(Type TransportType, MethodInfo ExecuteAsync);
@@ -6648,7 +6759,7 @@ static partial class Program
         AssertContains(tasksText, "private readonly List<DiagnosticSessionBackgroundTaskRegistration> _scenarioTasks = [];");
         AssertContains(tasksText, "private Task<PresentMonProbeResult>? _presentMonTask;");
         AssertContains(tasksText, "private Task<FlashbackRecordingSettingsDeferredPresetState>? _recordingSettingsDeferredTask;");
-        AssertContains(tasksText, "internal void AddScenario(int awaitOrder, string stage, Task task)");
+        AssertContains(tasksText, "internal void AddScenario(int awaitOrder, string stage, Task task, bool ownsBoundedCleanup = false)");
         AssertContains(tasksText, "internal void SetPresentMon(Task<PresentMonProbeResult> task)");
         AssertContains(tasksText, "internal void SetRecordingSettingsDeferred(Task<FlashbackRecordingSettingsDeferredPresetState> task)");
         AssertContains(tasksText, "internal async Task<FlashbackRecordingSettingsDeferredPresetState> CompleteRegisteredScenarioWorkAsync(");
@@ -8593,11 +8704,11 @@ static partial class Program
         AssertContains(disableDuringExportText, "ValidateFlashbackDisableDuringExportFileAsync(");
         AssertContains(disableDuringExportText, "ValidateFlashbackDisabledAfterExportAsync(");
         AssertContains(disableDuringExportText, "ValidateFlashbackReenabledAfterDisableDuringExportAsync(");
-        AssertContains(disableDuringExportText, "private static async Task ValidateFlashbackDisableDuringExportFileAsync(");
+        AssertContains(disableDuringExportText, "private static async Task<bool> ValidateFlashbackDisableDuringExportFileAsync(");
         AssertContains(disableDuringExportText, "CreateFlashbackExportVerifyPayload(exportPath)");
         AssertContains(disableDuringExportText, "private static async Task ValidateFlashbackDisabledAfterExportAsync(");
         AssertContains(disableDuringExportText, "flashback disable during export: pending playback commands remained after disable");
-        AssertContains(disableDuringExportText, "private static async Task ValidateFlashbackReenabledAfterDisableDuringExportAsync(");
+        AssertContains(disableDuringExportText, "private static async Task<bool> ValidateFlashbackReenabledAfterDisableDuringExportAsync(");
         AssertContains(scenariosText, "internal static async Task RunFlashbackRotatedExportAsync(");
         AssertContains(scenariosText, "TryParseFlashbackExportSegmentCount(exportMessage)");
         AssertContains(scenariosText, "flashback rotated export requested via live-edge force rotation");
@@ -8615,8 +8726,7 @@ static partial class Program
         AssertContains(playbackText, "BuildPlaybackCommandHealth(finalSnapshot, baselineSnapshot)");
         AssertContains(playbackText, "flashback export playback: pending commands remained after go-live");
         AssertContains(scenariosText, "internal static async Task RunFlashbackRangeExportAsync(");
-        AssertContains(rangeText, "private static async Task<FlashbackSelectionRange?> PrepareFlashbackSelectionRangeAsync(");
-        AssertContains(rangeText, "private readonly record struct FlashbackSelectionRange(");
+        AssertContains(rangeText, "private static async Task<JsonElement?> PrepareFlashbackSelectionRangeAsync(");
         AssertContains(rangeText, "WaitForFlashbackStressBufferReadyAsync(");
         AssertContains(rangeText, "private static async Task MarkFlashbackSelectionPointAsync(");
         AssertContains(rangeText, "WaitForFlashbackPlaybackPositionAsync(");
@@ -8792,7 +8902,7 @@ static partial class Program
         AssertContains(flashbackCycleText, "private static async Task<long> CaptureFlashbackPreviewCycleEncodedFramesBeforeStopAsync(");
         AssertContains(flashbackCycleText, "private static async Task<bool> ValidateFlashbackPreviewCycleStoppedAsync(");
         AssertContains(flashbackCycleText, "flashback preview cycle: Flashback frames did not advance while preview was off");
-        AssertContains(flashbackCycleText, "private static async Task ValidateFlashbackPreviewCycleRestartedAsync(");
+        AssertContains(flashbackCycleText, "private static async Task<bool> ValidateFlashbackPreviewCycleRestartedAsync(");
         AssertContains(flashbackCycleText, "VideoFramesFlowing");
         AssertContains(flashbackCycleText, "VerifyCycleExportAsync(");
         AssertDoesNotContain(flashbackCycleText, "VerifyFlashbackPreviewCycleExportAsync(");
@@ -8808,7 +8918,7 @@ static partial class Program
         AssertContains(playbackCycleText, "WaitForFlashbackPlaybackWarmSampleAsync(");
         AssertContains(playbackCycleText, "private static async Task<bool> ValidatePlaybackPreviewCycleStoppedAsync(");
         AssertContains(playbackCycleText, "flashback playback preview cycle: playback did not return live after preview stop");
-        AssertContains(playbackCycleText, "private static async Task ValidatePlaybackPreviewCycleRestartedAsync(");
+        AssertContains(playbackCycleText, "private static async Task<(bool PreviewActive, bool PlaybackLive)> ValidatePlaybackPreviewCycleRestartedAsync(");
         AssertContains(playbackCycleText, "VideoFramesFlowing");
         AssertContains(playbackCycleText, "VerifyCycleExportAsync(");
         AssertDoesNotContain(playbackCycleText, "VerifyFlashbackPlaybackPreviewCycleExportAsync(");
@@ -8826,7 +8936,7 @@ static partial class Program
         AssertContains(recordingCycleText, "WaitForPreviewActiveAsync(");
         AssertContains(recordingCycleText, "private static async Task<bool> ValidateRecordingPreviewCycleStoppedAsync(");
         AssertContains(recordingCycleText, "flashback recording preview cycle: recording counters did not advance while preview was off");
-        AssertContains(recordingCycleText, "private static async Task ValidateRecordingPreviewCycleRestartedAsync(");
+        AssertContains(recordingCycleText, "private static async Task<bool> ValidateRecordingPreviewCycleRestartedAsync(");
         AssertContains(recordingCycleText, "VideoFramesFlowing");
         AssertContains(recordingCycleText, "flashback recording preview cycle: preview frames did not resume");
         AssertDoesNotContain(cyclesText, "internal static bool IsPreviewCycleScenario(");
@@ -8995,7 +9105,7 @@ static partial class Program
         AssertContains(lifecycleText, "private static async Task ValidateFlashbackLifecycleDisabledAsync(");
         AssertContains(lifecycleText, "flashback lifecycle: playback worker still alive after disable");
         AssertContains(lifecycleText, "flashback lifecycle: pending commands remained after disable");
-        AssertContains(lifecycleText, "private static async Task ValidateFlashbackLifecycleReenabledAsync(");
+        AssertContains(lifecycleText, "private static async Task<bool> ValidateFlashbackLifecycleReenabledAsync(");
         AssertContains(startupText, "DiagnosticSessionFlashbackLifecycleScenarios.RegisterSelectedFlashbackLifecycleScenarioTask(");
         AssertDoesNotContain(startupText, "using static Sussudio.Tools.DiagnosticSessionFlashbackLifecycleScenarios;");
         AssertDoesNotContain(startupText, "RunFlashbackLifecycleAsync(");
@@ -11397,7 +11507,8 @@ public sealed class AutomationToolContractsProtocolXunitTests
         Assert.Contains("=> Transport.SendCommandAsync(commandName, payload, responseTimeoutMs, RequestCancellationToken);", ssctlCommandHandlersText);
         Assert.Contains("=> Transport.SendCommandAsync(kind, payload, responseTimeoutMs, RequestCancellationToken);", ssctlCommandHandlersText);
         Assert.Contains("cancellationToken: cancellationToken", ssctlCommandHandlersText);
-        Assert.DoesNotContain("context.Transport.SendCommandAsync", ssctlCommandHandlersText);
+        Assert.Contains("(command, payload, responseTimeoutMs, commandToken) =>\n                    context.Transport.SendCommandAsync(command, payload, responseTimeoutMs, commandToken),\n                context.RequestCancellationToken)", ssctlCommandHandlersText);
+        Assert.Single(Regex.Matches(ssctlCommandHandlersText, Regex.Escape("context.Transport.SendCommandAsync")));
         Assert.Contains("options.AuthToken,\n                    cancellationToken: cts.Token)", automationClientText);
         Assert.Contains("CancellationToken cancellationToken = default", sharedClientText);
         Assert.Contains("cancellationToken: cancellationToken", sharedClientText);

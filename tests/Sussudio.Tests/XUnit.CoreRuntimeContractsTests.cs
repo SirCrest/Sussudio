@@ -1363,8 +1363,8 @@ static partial class Program
             "Native XU public read commands stay folded into DeviceCommands.cs with the generic SET surface.");
         AssertContains(deviceCommandsText, "public static async Task<bool> SwitchAudioInputAsync(");
         AssertContains(deviceCommandsText, "public static async Task<bool> SetAnalogGainAsync(");
-        AssertContains(deviceCommandsText, "NativeXuDeviceSupport.TryGetSupported4kXIds(device, out var vendorId, out var productId)");
-        AssertContains(deviceCommandsText, "NativeXuDeviceSupport.EnumerateSelectedInterfaces(vendorId, productId, device)");
+        AssertContains(deviceCommandsText, "NativeXuDeviceSupport.TryGetSupported4kXIds(device, out _, out _)");
+        AssertContains(deviceCommandsText, "NativeXuDeviceSupport.EnumerateSelectedInterfacePath(device.NativeXuInterfacePath)");
         AssertContains(deviceCommandsText, "ExecuteAudioSwitch(handle, node.NodeId, analog, gainByte, sourceLabel, ct)");
         AssertContains(deviceCommandsText, "ExecuteGainChange(handle, node.NodeId, gainByte, persistFlash, ct)");
         AssertContains(deviceCommandsText, "private static bool ExecuteAudioSwitch(");

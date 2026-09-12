@@ -103,7 +103,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
             return SourceSignalTelemetrySnapshot.CreateUnavailable("device-unavailable");
         }
 
-        if (!NativeXuDeviceSupport.TryGetSupported4kXIds(device, out var vendorId, out var productId))
+        if (!NativeXuDeviceSupport.TryGetSupported4kXIds(device, out _, out _))
         {
             return SourceSignalTelemetrySnapshot.CreateUnavailable("nativexu-device-unsupported");
         }
@@ -132,7 +132,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
             IReadOnlyList<KsExtensionUnitNative.KsInterfacePath> interfaces;
             try
             {
-                interfaces = NativeXuDeviceSupport.EnumerateSelectedInterfaces(vendorId, productId, device);
+                interfaces = NativeXuDeviceSupport.EnumerateSelectedInterfacePath(device.NativeXuInterfacePath);
             }
             catch (Exception ex)
             {
@@ -1689,7 +1689,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
             return false;
         }
 
-        if (!NativeXuDeviceSupport.TryGetSupported4kXIds(device, out var vendorId, out var productId))
+        if (!NativeXuDeviceSupport.TryGetSupported4kXIds(device, out _, out _))
         {
             return false;
         }
@@ -1708,7 +1708,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
                 return false;
             }
 
-            var interfaces = NativeXuDeviceSupport.EnumerateSelectedInterfaces(vendorId, productId, device);
+            var interfaces = NativeXuDeviceSupport.EnumerateSelectedInterfacePath(device.NativeXuInterfacePath);
             foreach (var ksInterface in interfaces)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -1771,7 +1771,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
             return null;
         }
 
-        if (!NativeXuDeviceSupport.TryGetSupported4kXIds(device, out var vendorId, out var productId))
+        if (!NativeXuDeviceSupport.TryGetSupported4kXIds(device, out _, out _))
         {
             return null;
         }
@@ -1790,7 +1790,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
                 return null;
             }
 
-            var interfaces = NativeXuDeviceSupport.EnumerateSelectedInterfaces(vendorId, productId, device);
+            var interfaces = NativeXuDeviceSupport.EnumerateSelectedInterfacePath(device.NativeXuInterfacePath);
             foreach (var ksInterface in interfaces)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -1974,7 +1974,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
             return false;
         }
 
-        if (!NativeXuDeviceSupport.TryGetSupported4kXIds(device, out var vendorId, out var productId))
+        if (!NativeXuDeviceSupport.TryGetSupported4kXIds(device, out _, out _))
         {
             return false;
         }
@@ -1996,7 +1996,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
                 return false;
             }
 
-            var interfaces = NativeXuDeviceSupport.EnumerateSelectedInterfaces(vendorId, productId, device);
+            var interfaces = NativeXuDeviceSupport.EnumerateSelectedInterfacePath(device.NativeXuInterfacePath);
             foreach (var ksInterface in interfaces)
             {
                 ct.ThrowIfCancellationRequested();
@@ -2071,7 +2071,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
             return false;
         }
 
-        if (!NativeXuDeviceSupport.TryGetSupported4kXIds(device, out var vendorId, out var productId))
+        if (!NativeXuDeviceSupport.TryGetSupported4kXIds(device, out _, out _))
         {
             return false;
         }
@@ -2093,7 +2093,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
                 return false;
             }
 
-            var interfaces = NativeXuDeviceSupport.EnumerateSelectedInterfaces(vendorId, productId, device);
+            var interfaces = NativeXuDeviceSupport.EnumerateSelectedInterfacePath(device.NativeXuInterfacePath);
             foreach (var ksInterface in interfaces)
             {
                 ct.ThrowIfCancellationRequested();

@@ -86,8 +86,16 @@ implementations and shared fixtures out of the oversized `Program` helper namesp
   fields and scenario contracts with fixtures captured before the refactor.
 - `XUnit.DiagnosticCycleExportTests.cs` checks shared cycle export/verification
   command payloads, ordering, failures and cancellation.
+- `XUnit.DiagnosticCycleLifetimeTests.cs` covers restoration after attempted
+  restart, preset, lifecycle, and preview mutations, independent cleanup tokens,
+  original/secondary exception precedence, and full-runner cancellation while
+  retaining an existing active session. It uses real managed orchestration with
+  synthetic commands and snapshots, without native capture or live app state.
 - `XUnit.DiagnosticFlashbackScenarioTests.cs` covers actual stress and export
   scenarios with controlled transport and private artifacts.
+- `XUnit.DiagnosticExportCleanupTests.cs` verifies playback restoration, joined
+  export/disable requests, original failure identity, independent cleanup tokens,
+  and full-runner channel ownership through delayed restoration.
 - `XUnit.DiagnosticFlashbackRangeFailureTests.cs` verifies selection cleanup and
   joined audio restoration through transport failures and cancellation.
 - `tests/Sussudio.Tests/XUnit.DiagnosticCancellationTests.cs` covers startup

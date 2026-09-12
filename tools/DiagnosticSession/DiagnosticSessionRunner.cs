@@ -488,7 +488,8 @@ internal static class DiagnosticSessionScenarioPhaseRunner
 internal readonly record struct DiagnosticSessionBackgroundTaskRegistration(
     int AwaitOrder,
     string Stage,
-    Task Task);
+    Task Task,
+    bool OwnsBoundedCleanup);
 
 internal readonly record struct DiagnosticSessionBackgroundTaskDrainResult(
     PresentMonProbeResult? PresentMon,
@@ -500,9 +501,9 @@ internal sealed class DiagnosticSessionBackgroundTasks
     private Task<PresentMonProbeResult>? _presentMonTask;
     private Task<FlashbackRecordingSettingsDeferredPresetState>? _recordingSettingsDeferredTask;
 
-    internal void AddScenario(int awaitOrder, string stage, Task task)
+    internal void AddScenario(int awaitOrder, string stage, Task task, bool ownsBoundedCleanup = false)
     {
-        _scenarioTasks.Add(new DiagnosticSessionBackgroundTaskRegistration(awaitOrder, stage, task));
+        _scenarioTasks.Add(new DiagnosticSessionBackgroundTaskRegistration(awaitOrder, stage, task, ownsBoundedCleanup));
     }
 
     internal void SetPresentMon(Task<PresentMonProbeResult> task)
@@ -543,6 +544,7 @@ internal sealed class DiagnosticSessionBackgroundTasks
             await ObserveTaskAfterFaultAsync(
                     registration.Task,
                     registration.Stage,
+                    registration.OwnsBoundedCleanup,
                     warnings,
                     recordTerminalException)
                 .ConfigureAwait(false);
@@ -676,6 +678,7 @@ internal sealed class DiagnosticSessionBackgroundTasks
     private static async Task ObserveTaskAfterFaultAsync(
         Task? task,
         string stage,
+        bool ownsBoundedCleanup,
         List<string> warnings,
         Action<Exception, string> recordTerminalException)
     {
@@ -686,6 +689,13 @@ internal sealed class DiagnosticSessionBackgroundTasks
 
         try
         {
+            // These scenarios retain the channel until their locally bounded restoration finishes.
+            if (ownsBoundedCleanup)
+            {
+                await task.ConfigureAwait(false);
+                return;
+            }
+
             var completedTask = task.IsCompleted
                 ? task
                 : await Task.WhenAny(task, Task.Delay(TimeSpan.FromSeconds(2))).ConfigureAwait(false);

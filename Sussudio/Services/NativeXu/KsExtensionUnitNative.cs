@@ -519,12 +519,6 @@ internal static class NativeXuDeviceSupport
 
     public static void ReleaseTransportGate() => TransportGate.Release();
 
-    public static IReadOnlyList<KsExtensionUnitNative.KsInterfacePath> EnumerateSelectedInterfaces(
-        ushort vendorId,
-        ushort productId,
-        CaptureDevice? device)
-        => EnumerateSelectedInterfacePath(device?.NativeXuInterfacePath);
-
     public static IReadOnlyList<KsExtensionUnitNative.KsInterfacePath> EnumerateSelectedInterfacePath(
         string? selectedInterfacePath)
     {

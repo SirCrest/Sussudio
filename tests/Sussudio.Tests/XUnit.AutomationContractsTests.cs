@@ -9837,7 +9837,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "flashback concurrent exports verified");
         AssertContains(diagnosticSessionText, "internal static async Task RunFlashbackDisableDuringExportAsync(");
         AssertContains(diagnosticSessionText, "\"flashback-disable-during-export.mp4\"");
-        AssertContains(diagnosticSessionText, "var disableTask = SendCommandWithConnectRetryAsync(");
+        AssertContains(diagnosticSessionText, "disableTask = SendCommandWithConnectRetryAsync(");
         AssertContains(diagnosticSessionText, "flashback disable/export requests issued");
         AssertContains(diagnosticSessionText, "flashback disable during export verified");
         AssertContains(diagnosticSessionText, "internal static async Task RunFlashbackRotatedExportAsync(");

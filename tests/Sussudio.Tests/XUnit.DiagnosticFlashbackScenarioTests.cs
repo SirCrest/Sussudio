@@ -349,6 +349,230 @@ public sealed class DiagnosticFlashbackScenarioTests
         Assert.Equal(outcome is not ("export-failure" or "verification-failure"), fixture.Actions.Contains("flashback rotated export verified"));
     }
 
+    [Theory]
+    [InlineData("success")]
+    [InlineData("restart-rejected")]
+    [InlineData("unclean-playback")]
+    public async Task RestartCycleVerifiesTheReplacementAndKeepsRejectedRestartEvidence(string outcome)
+    {
+        await using var fixture = new ScenarioFixture();
+        var restarted = false;
+        fixture.Script = request =>
+        {
+            if (request.Command == "GetSnapshot") return Reply(Snapshot(
+                ("FlashbackPlaybackThreadAlive", restarted && outcome == "unclean-playback"),
+                ("FlashbackPlaybackPendingCommands", restarted && outcome == "unclean-playback" ? 2 : 0)));
+            if (request.Command == "RestartFlashback")
+            {
+                Assert.Equal(305000, request.TimeoutMs);
+                restarted = true;
+                return Reply(outcome == "restart-rejected" ? Failure("restart sentinel") : Success());
+            }
+            if (request.Command == "VerifyFile") AssertVerification(request);
+            else Assert.Contains(request.Command, new[] { "FlashbackAction", "FlashbackExport" });
+            return Reply(Success());
+        };
+
+        await fixture.RunCycle("DiagnosticSessionFlashbackCycleScenarios", "RunFlashbackRestartCycleAsync")
+            .WaitAsync(ScenarioFixture.WaitLimit);
+
+        Assert.Equal(outcome == "restart-rejected"
+            ? new[] { "pause", "seek", "RestartFlashback", "go-live" }
+            : new[] { "pause", "seek", "RestartFlashback", "FlashbackExport", "VerifyFile" },
+            fixture.Requests.Where(request => request.Command != "GetSnapshot").Select(request => request.Action ?? request.Command));
+        Assert.Equal(750, Assert.Single(fixture.Requests, request => request.Action == "seek").Payload!["positionMs"]);
+        if (outcome == "restart-rejected") Assert.Contains("restart failed - restart sentinel", Assert.Single(fixture.Warnings));
+        else if (outcome == "unclean-playback")
+        {
+            Assert.Equal(2, fixture.Warnings.Count);
+            Assert.Contains(fixture.Warnings, warning => warning.Contains("worker still alive", StringComparison.Ordinal));
+            Assert.Contains(fixture.Warnings, warning => warning.Contains("pending=2", StringComparison.Ordinal));
+        }
+        else Assert.Empty(fixture.Warnings);
+    }
+
+    [Theory]
+    [InlineData("P1", "success")]
+    [InlineData("P7", "success")]
+    [InlineData("P7", "preset-rejected")]
+    [InlineData("P7", "export-rejected")]
+    [InlineData("P7", "export-threw")]
+    [InlineData("P7", "verification-threw")]
+    public async Task EncoderCycleRestoresTheOriginalPresetAfterSuccessOrOperationFailure(string originalPreset, string outcome)
+    {
+        await using var fixture = new ScenarioFixture();
+        var selectedPreset = originalPreset;
+        var presetCalls = 0;
+        var primary = new IOException("cycle operation sentinel");
+        fixture.Script = request =>
+        {
+            if (request.Command == "GetSnapshot") return Reply(Snapshot(
+                ("SelectedPreset", selectedPreset), ("FlashbackFilePath", presetCalls == 0 ? "original.ts" : "replacement.ts")));
+            if (request.Command == "SetPreset")
+            {
+                presetCalls++;
+                if (presetCalls == 1 && outcome == "preset-rejected") return Reply(Failure("preset sentinel"));
+                selectedPreset = (string)request.Payload!["preset"]!;
+                return Reply(Success());
+            }
+            if (request.Command == "FlashbackExport") return outcome switch
+            {
+                "export-rejected" => Reply(Failure("export sentinel")),
+                "export-threw" => Task.FromException<JsonElement>(primary),
+                _ => Reply(Success())
+            };
+            AssertVerification(request);
+            return outcome == "verification-threw" ? Task.FromException<JsonElement>(primary) : Reply(Success());
+        };
+
+        var cycle = fixture.RunCycle("DiagnosticSessionFlashbackCycleScenarios", "RunFlashbackEncoderCycleAsync");
+        if (outcome.EndsWith("-threw", StringComparison.Ordinal))
+            Assert.Same(primary, await Assert.ThrowsAsync<IOException>(() => cycle.WaitAsync(ScenarioFixture.WaitLimit)));
+        else await cycle.WaitAsync(ScenarioFixture.WaitLimit);
+
+        Assert.Equal(new[] { originalPreset == "P1" ? "P2" : "P1", originalPreset },
+            fixture.Requests.Where(request => request.Command == "SetPreset").Select(request => (string)request.Payload!["preset"]!));
+        Assert.Equal(originalPreset, selectedPreset);
+        Assert.Equal("SetPreset", fixture.Requests.Last(request => request.Command != "GetSnapshot").Command);
+        Assert.Contains($"flashback encoder preset restored to {originalPreset}", fixture.Actions);
+        Assert.Equal(outcome == "preset-rejected" ? 0 : 1, fixture.Requests.Count(request => request.Command == "FlashbackExport"));
+        Assert.Equal(outcome is "success" or "verification-threw" ? 1 : 0, fixture.Requests.Count(request => request.Command == "VerifyFile"));
+        if (outcome == "preset-rejected") Assert.Contains("preset change failed - preset sentinel", Assert.Single(fixture.Warnings));
+        else if (outcome == "export-rejected") Assert.Contains("export failed - export sentinel", Assert.Single(fixture.Warnings));
+        else Assert.Empty(fixture.Warnings);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task LifecycleCycleReenablesAfterCheckingPlaybackTeardown(bool uncleanPlayback)
+    {
+        await using var fixture = new ScenarioFixture();
+        var enabled = true;
+        fixture.Script = request =>
+        {
+            if (request.Command == "GetSnapshot") return Reply(Snapshot(
+                ("FlashbackActive", enabled), ("FlashbackPlaybackThreadAlive", !enabled && uncleanPlayback),
+                ("FlashbackPlaybackPendingCommands", !enabled && uncleanPlayback ? 3 : 0)));
+            if (request.Command == "SetFlashbackEnabled") enabled = (bool)request.Payload!["enabled"]!;
+            else Assert.Equal("FlashbackAction", request.Command);
+            return Reply(Success());
+        };
+
+        await fixture.RunCycle("DiagnosticSessionFlashbackLifecycleScenarios", "RunFlashbackLifecycleAsync", withOutput: false)
+            .WaitAsync(ScenarioFixture.WaitLimit);
+
+        Assert.True(enabled);
+        Assert.Equal(new[] { "pause", "seek", "play", "SetFlashbackEnabled", "SetFlashbackEnabled" },
+            fixture.Requests.Where(request => request.Command != "GetSnapshot").Select(request => request.Action ?? request.Command));
+        Assert.Equal(new[] { false, true }, fixture.Requests.Where(request => request.Command == "SetFlashbackEnabled").Select(request => (bool)request.Payload!["enabled"]!));
+        Assert.Equal(1000, Assert.Single(fixture.Requests, request => request.Action == "seek").Payload!["positionMs"]);
+        if (uncleanPlayback)
+        {
+            Assert.Equal(2, fixture.Warnings.Count);
+            Assert.Contains(fixture.Warnings, warning => warning.Contains("worker still alive after disable", StringComparison.Ordinal));
+            Assert.Contains(fixture.Warnings, warning => warning.Contains("pending=3", StringComparison.Ordinal));
+        }
+        else Assert.Empty(fixture.Warnings);
+    }
+
+    [Theory]
+    [InlineData("buffer", false)]
+    [InlineData("buffer", true)]
+    [InlineData("playback", false)]
+    [InlineData("playback", true)]
+    [InlineData("recording", false)]
+    [InlineData("recording", true)]
+    public async Task PreviewCyclesResumePreviewAndPreserveBufferOrRecordingEvidence(string mode, bool unhealthy)
+    {
+        await using var fixture = new ScenarioFixture();
+        var previewing = true;
+        var stopped = false;
+        var playbackState = "Live";
+        fixture.Script = request =>
+        {
+            if (request.Command == "GetSnapshot") return Reply(Snapshot(
+                ("IsPreviewing", previewing), ("FlashbackPlaybackState", playbackState), ("FlashbackPlaybackFrameCount", 10),
+                ("FlashbackEncodedFrames", stopped && !unhealthy ? 1100 : 1000),
+                ("IsRecording", true), ("RecordingBackend", "Flashback"), ("RecordingFileGrowing", true),
+                ("FlashbackVideoFramesSubmittedToEncoder", stopped && !unhealthy ? 1100 : 1000),
+                ("FlashbackVideoEncoderPacketsWritten", stopped && !unhealthy ? 1000 : 900)));
+            if (request.Command == "SetPreviewEnabled")
+            {
+                Assert.Equal(60000, request.TimeoutMs);
+                previewing = (bool)request.Payload!["enabled"]!;
+                if (!previewing)
+                {
+                    stopped = true;
+                    playbackState = mode == "playback" && unhealthy ? "Paused" : "Live";
+                }
+            }
+            else if (request.Command == "FlashbackAction")
+            {
+                if (request.Action == "go-live")
+                {
+                    Assert.Equal("playback", mode);
+                    Assert.True(unhealthy);
+                    playbackState = "Live";
+                }
+                else
+                {
+                    Assert.Equal("play", request.Action);
+                    Assert.Equal(1000, request.Payload!["positionMs"]);
+                    playbackState = "Playing";
+                }
+            }
+            else if (request.Command == "FlashbackExport") Assert.False(previewing);
+            else if (request.Command == "VerifyFile")
+            {
+                Assert.False(previewing);
+                AssertVerification(request);
+            }
+            else
+            {
+                Assert.Equal("WaitForCondition", request.Command);
+                Assert.True(previewing);
+                Assert.Equal("VideoFramesFlowing", request.Payload!["condition"]);
+                Assert.Equal(15000, request.Payload["timeoutMs"]);
+                Assert.Equal(250, request.Payload["pollMs"]);
+                Assert.Equal(17000, request.TimeoutMs);
+            }
+            return Reply(Success());
+        };
+        var method = mode switch
+        {
+            "buffer" => "RunFlashbackPreviewCycleAsync",
+            "playback" => "RunFlashbackPlaybackPreviewCycleAsync",
+            _ => "RunFlashbackRecordingPreviewCycleAsync"
+        };
+
+        await fixture.RunCycle("DiagnosticSessionFlashbackPreviewCycleScenarios", method, withOutput: mode != "recording")
+            .WaitAsync(ScenarioFixture.WaitLimit);
+
+        Assert.True(previewing);
+        Assert.Equal(new[] { false, true }, fixture.Requests.Where(request => request.Command == "SetPreviewEnabled").Select(request => (bool)request.Payload!["enabled"]!));
+        Assert.DoesNotContain(fixture.Requests, request => request.Command is "SetRecordingEnabled" or "SetFlashbackEnabled");
+        Assert.Equal(mode == "recording" ? 0 : 1, fixture.Requests.Count(request => request.Command == "FlashbackExport"));
+        Assert.Equal(mode == "recording" ? 0 : 1, fixture.Requests.Count(request => request.Command == "VerifyFile"));
+        var expectedCommands = mode switch
+        {
+            "buffer" => new[] { "SetPreviewEnabled", "FlashbackExport", "VerifyFile", "SetPreviewEnabled", "WaitForCondition" },
+            "playback" => new[] { "play", "SetPreviewEnabled", "FlashbackExport", "VerifyFile", "SetPreviewEnabled", "WaitForCondition" },
+            _ => new[] { "SetPreviewEnabled", "SetPreviewEnabled", "WaitForCondition" }
+        };
+        if (mode == "playback" && unhealthy) expectedCommands = expectedCommands.Append("go-live").ToArray();
+        Assert.Equal(expectedCommands,
+            fixture.Requests.Where(request => request.Command != "GetSnapshot").Select(request => request.Action ?? request.Command));
+        Assert.Equal("Live", playbackState);
+        if (!unhealthy) Assert.Empty(fixture.Warnings);
+        else Assert.Contains(mode switch
+        {
+            "buffer" => "frames did not advance while preview was off",
+            "playback" => "playback did not return live after preview stop state=Paused",
+            _ => "recording counters did not advance while preview was off"
+        }, Assert.Single(fixture.Warnings));
+    }
+
     private static void AssertVerification(Request request)
     {
         Assert.Equal("VerifyFile", request.Command);
@@ -406,8 +630,13 @@ public sealed class DiagnosticFlashbackScenarioTests
             ? Invoke("DiagnosticSessionFlashbackStressScenario", method, OutputDirectory, Actions, Warnings, Sender, _cancellation.Token)
             : Invoke("DiagnosticSessionFlashbackStressScenario", method, Actions, Warnings, Sender, _cancellation.Token);
 
-        internal Task RunExport(string method) => Invoke("DiagnosticSessionFlashbackExportScenarios", method,
-            OutputDirectory, Actions, Warnings, Sender, _cancellation.Token);
+        internal Task RunCycle(string owner, string method, bool withOutput = true) => withOutput
+            ? Invoke(owner, method, OutputDirectory, Actions, Warnings, Sender, CleanupSender, _cancellation.Token)
+            : Invoke(owner, method, Actions, Warnings, Sender, CleanupSender, _cancellation.Token);
+
+        internal Task RunExport(string method) => method is "RunFlashbackExportPlaybackAsync" or "RunFlashbackDisableDuringExportAsync"
+            ? Invoke("DiagnosticSessionFlashbackExportScenarios", method, OutputDirectory, Actions, Warnings, Sender, CleanupSender, _cancellation.Token)
+            : Invoke("DiagnosticSessionFlashbackExportScenarios", method, OutputDirectory, Actions, Warnings, Sender, _cancellation.Token);
 
         internal Task RunRejected(bool recording)
         {
@@ -422,8 +651,14 @@ public sealed class DiagnosticFlashbackScenarioTests
         private Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> Sender => (command, payload, timeoutMs) => Send(command, payload, timeoutMs, false);
 
         private Task<JsonElement> Send(string command, Dictionary<string, object?>? payload, int? timeoutMs, bool allowFailure)
+            => Send(command, payload, timeoutMs, allowFailure, _cancellation.Token);
+
+        private Func<string, Dictionary<string, object?>?, int?, CancellationToken, Task<JsonElement>> CleanupSender
+            => (command, payload, timeoutMs, cancellationToken) => Send(command, payload, timeoutMs, false, cancellationToken);
+
+        private Task<JsonElement> Send(string command, Dictionary<string, object?>? payload, int? timeoutMs, bool allowFailure, CancellationToken cancellationToken)
         {
-            _cancellation.Token.ThrowIfCancellationRequested();
+            cancellationToken.ThrowIfCancellationRequested();
             var request = new Request(command, payload is null ? null : new(payload), timeoutMs, allowFailure);
             Requests.Enqueue(request);
             return Script(request);

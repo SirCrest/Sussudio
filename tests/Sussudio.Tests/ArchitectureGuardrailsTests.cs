@@ -2768,8 +2768,8 @@ static partial class Program
         var nativeXuAtRollingPollText = nativeXuAtProviderText;
         var nativeXuDeviceSupportText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "NativeXu", "KsExtensionUnitNative.cs"));
         AssertContains(nativeXuAtProviderText, "device.NativeXuInterfacePath");
-        AssertContains(nativeXuAtProviderText, "NativeXuDeviceSupport.TryGetSupported4kXIds(device, out var vendorId, out var productId)");
-        AssertContains(nativeXuAtProviderText, "NativeXuDeviceSupport.EnumerateSelectedInterfaces(vendorId, productId, device)");
+        AssertContains(nativeXuAtProviderText, "NativeXuDeviceSupport.TryGetSupported4kXIds(device, out _, out _)");
+        AssertContains(nativeXuAtProviderText, "NativeXuDeviceSupport.EnumerateSelectedInterfacePath(device.NativeXuInterfacePath)");
         AssertContains(nativeXuAtProviderText, "NativeXuDeviceSupport.TryAcquireTransportGateAsync(cancellationToken)");
         AssertDoesNotContain(nativeXuAtProviderText, "new KsExtensionUnitNative.KsInterfacePath(selectedInterfacePath, Guid.Empty)");
         AssertContains(nativeXuAtProviderText, "nativexu-interface-ambiguous");
@@ -2779,7 +2779,7 @@ static partial class Program
         AssertContains(nativeXuDeviceSupportText, "internal static class NativeXuDeviceSupport");
         AssertContains(nativeXuDeviceSupportText, "public static readonly Guid ExtensionUnitGuid");
         AssertContains(nativeXuDeviceSupportText, "private static readonly SemaphoreSlim TransportGate");
-        AssertContains(nativeXuDeviceSupportText, "public static IReadOnlyList<KsExtensionUnitNative.KsInterfacePath> EnumerateSelectedInterfaces(");
+        AssertContains(nativeXuDeviceSupportText, "public static IReadOnlyList<KsExtensionUnitNative.KsInterfacePath> EnumerateSelectedInterfacePath(");
         AssertContains(nativeXuDeviceSupportText, "public static bool HasSelectedInterface(CaptureDevice? device, string operation)");
         AssertContains(nativeXuDeviceSupportText, "public static bool TryGetSupported4kXIds(");
         AssertContains(nativeXuDeviceSupportText, "public static bool TryParseVendorProductIds(");
