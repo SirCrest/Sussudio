@@ -431,15 +431,8 @@ public class MediaFormat
             return false;
         }
 
-        foreach (var token in HdrSubtypeTokens)
-        {
-            if (pixelFormat.Contains(token, StringComparison.OrdinalIgnoreCase))
-            {
-                return true;
-            }
-        }
-
-        return pixelFormat.Contains("BT2020", StringComparison.OrdinalIgnoreCase) ||
+        return IsTrue10BitPixelFormat(pixelFormat) ||
+               pixelFormat.Contains("BT2020", StringComparison.OrdinalIgnoreCase) ||
                pixelFormat.Contains("ST2084", StringComparison.OrdinalIgnoreCase) ||
                pixelFormat.Contains("HDR", StringComparison.OrdinalIgnoreCase);
     }
@@ -451,14 +444,15 @@ public class MediaFormat
             return false;
         }
 
-        return pixelFormat.Contains("P010", StringComparison.OrdinalIgnoreCase) ||
-               pixelFormat.Contains("P016", StringComparison.OrdinalIgnoreCase) ||
-               pixelFormat.Contains("I010", StringComparison.OrdinalIgnoreCase) ||
-               pixelFormat.Contains("Y210", StringComparison.OrdinalIgnoreCase) ||
-               pixelFormat.Contains("Y410", StringComparison.OrdinalIgnoreCase) ||
-               pixelFormat.Contains("Y416", StringComparison.OrdinalIgnoreCase) ||
-               pixelFormat.Contains("R10G10B10", StringComparison.OrdinalIgnoreCase) ||
-               pixelFormat.Contains("XR10", StringComparison.OrdinalIgnoreCase);
+        foreach (var token in HdrSubtypeTokens)
+        {
+            if (pixelFormat.Contains(token, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
 

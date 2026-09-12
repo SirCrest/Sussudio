@@ -2408,7 +2408,7 @@ static partial class Program
         AssertContains(rootText, "private static HdrValidationResult ValidateHdrMetadata(");
         AssertContains(rootText, "private static string ResolveExpectedFormat(");
         AssertContains(rootText, "private static bool IsFlashbackRecording(");
-        AssertContains(rootText, "private static (string? Code, string? Expected, string? Actual) ParsePrimaryMismatch(");
+        AssertContains(rootText, "private static (string? Code, string? Expected, string? Actual) ParseMismatch(");
         AssertContains(rootText, "private static HdrParityResult BuildHdrParityResult(");
         AssertContains(rootText, "private static IReadOnlyList<MismatchTaxonomyEntry> BuildMismatchTaxonomy(");
         AssertContains(rootText, "private static string? TryGetMismatchPart(");

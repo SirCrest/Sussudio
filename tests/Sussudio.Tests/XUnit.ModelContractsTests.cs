@@ -3356,6 +3356,55 @@ public sealed class CaptureConfigurationModelsTests
         Assert.Equal("libaom-av1", Get<string>(softwareFallbacks, "PreferredAv1Encoder"));
     }
 
+    [Theory]
+    [InlineData(null, false, false)]
+    [InlineData("", false, false)]
+    [InlineData(" \t\r\n", false, false)]
+    [InlineData("\u2003\u00a0", false, false)]
+    [InlineData("p010", true, true)]
+    [InlineData("P016", true, true)]
+    [InlineData("i010", true, true)]
+    [InlineData("y210", true, true)]
+    [InlineData("Y410", true, true)]
+    [InlineData("y416", true, true)]
+    [InlineData("r10G10b10", true, true)]
+    [InlineData("xR10", true, true)]
+    [InlineData("prefix-p010-suffix", true, true)]
+    [InlineData(" \tXr10 texture\n", true, true)]
+    [InlineData("R10G10B10A2", true, true)]
+    [InlineData("BT2020", false, true)]
+    [InlineData("st2084", false, true)]
+    [InlineData("hdr", false, true)]
+    [InlineData("Nv12 (bT2020 sT2084 hDr)", false, true)]
+    [InlineData("HDR10", false, true)]
+    [InlineData("notHDR", false, true)]
+    [InlineData("HDR/P010", true, true)]
+    [InlineData("BT.2020", false, false)]
+    [InlineData("ST 2084", false, false)]
+    [InlineData("P 010", false, false)]
+    [InlineData("NV12", false, false)]
+    [InlineData("YUY2", false, false)]
+    [InlineData("MJPG", false, false)]
+    [InlineData("BGRA8", false, false)]
+    [InlineData("RGB32", false, false)]
+    [InlineData("I420", false, false)]
+    [InlineData("P012", false, false)]
+    [InlineData("Y216", false, false)]
+    [InlineData("P01", false, false)]
+    [InlineData("unknown", false, false)]
+    public void MediaFormat_PixelFormatPredicatesPreserveSubtypeAndHdrMarkerDistinctions(
+        string? pixelFormat, bool expectedTrue10Bit, bool expectedHdr)
+    {
+        var mediaFormatType = RequireType(SussudioAssembly.Load(), "Sussudio.Models.MediaFormat");
+        var isTrue10Bit = RequireMethod(mediaFormatType, "IsTrue10BitPixelFormat", ReflectionFlags.Static)
+            .CreateDelegate<Func<string?, bool>>();
+        var isHdr = RequireMethod(mediaFormatType, "IsHdrPixelFormat", ReflectionFlags.Static)
+            .CreateDelegate<Func<string?, bool>>();
+
+        Assert.Equal(expectedTrue10Bit, isTrue10Bit(pixelFormat));
+        Assert.Equal(expectedHdr, isHdr(pixelFormat));
+    }
+
     [Fact]
     public void MediaFormat_Equality_WithMatchingRationalFrameRates()
     {

@@ -186,8 +186,10 @@ public sealed class RecordingVerifier : IRecordingVerifier
             $"color_space={colorSpaceRaw ?? "unknown"}, side_data_types={string.Join("|", hdrSideDataProbe.SideDataTypes)}");
 
         var success = mismatches.Count == 0;
-        var primaryMismatch = ParsePrimaryMismatch(mismatches);
         var hdrParity = BuildHdrParityResult(runtimeSnapshot, hdrValidation, mismatches);
+        var primaryMismatch = mismatches.Count > 0 && !string.IsNullOrWhiteSpace(mismatches[0])
+            ? hdrParity.MismatchTaxonomy[0]
+            : null;
         return new RecordingVerificationResult
         {
             Succeeded = success,
@@ -223,9 +225,9 @@ public sealed class RecordingVerifier : IRecordingVerifier
             CadenceSevereGapPercent = cadenceMetrics?.SevereGapPercent,
             CadenceEstimatedDroppedFrames = cadenceMetrics?.EstimatedDroppedFrames,
             CadenceEstimatedDropPercent = cadenceMetrics?.EstimatedDropPercent,
-            PrimaryMismatchCode = primaryMismatch.Code,
-            PrimaryMismatchExpected = primaryMismatch.Expected,
-            PrimaryMismatchActual = primaryMismatch.Actual,
+            PrimaryMismatchCode = primaryMismatch?.Code,
+            PrimaryMismatchExpected = primaryMismatch?.Expected,
+            PrimaryMismatchActual = primaryMismatch?.Actual,
             Mismatches = mismatches,
             HdrParity = hdrParity
         };
@@ -549,14 +551,8 @@ public sealed class RecordingVerifier : IRecordingVerifier
         => string.Equals(runtimeSnapshot.RecordingBackend, "Flashback", StringComparison.OrdinalIgnoreCase) ||
            string.Equals(runtimeSnapshot.RecordingIntegrityBackend, "Flashback", StringComparison.OrdinalIgnoreCase);
 
-    private static (string? Code, string? Expected, string? Actual) ParsePrimaryMismatch(IReadOnlyList<string> mismatches)
+    private static (string? Code, string? Expected, string? Actual) ParseMismatch(string? raw)
     {
-        if (mismatches == null || mismatches.Count == 0)
-        {
-            return (null, null, null);
-        }
-
-        var raw = mismatches[0];
         if (string.IsNullOrWhiteSpace(raw))
         {
             return (null, null, null);
@@ -618,7 +614,7 @@ public sealed class RecordingVerifier : IRecordingVerifier
         var entries = new List<MismatchTaxonomyEntry>(mismatches.Count);
         foreach (var mismatch in mismatches)
         {
-            var (code, expected, actual) = ParsePrimaryMismatch(new[] { mismatch });
+            var (code, expected, actual) = ParseMismatch(mismatch);
             var normalizedCode = code ?? mismatch;
             var category = normalizedCode switch
             {
