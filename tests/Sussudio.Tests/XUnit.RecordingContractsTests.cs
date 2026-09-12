@@ -476,10 +476,6 @@ public sealed class RecordingModelContractsTests
         => global::Program.FlashbackBufferManager_TryDeleteFileRejectsOutsidePaths();
 
     [Fact]
-    public Task FlashbackBufferManagerSegmentDiagnosticsClampActiveCounters()
-        => global::Program.FlashbackBufferManager_SegmentDiagnosticsClampActiveCounters();
-
-    [Fact]
     public Task FlashbackBufferManagerMathHelpersLiveWithRootState()
         => global::Program.FlashbackBufferManager_MathHelpersLiveWithRootState();
 
@@ -4239,26 +4235,6 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackBufferManager_SegmentDiagnosticsClampActiveCounters()
-    {
-        var source = ReadFlashbackBufferManagerSource();
-
-        AssertContains(source, "var activeEndPts = TimeSpan.FromTicks(Math.Max(activeStartPts.Ticks, Interlocked.Read(ref _latestPtsTicks)));");
-        AssertContains(source, "var activeSizeBytes = Math.Max(0, _totalDiskBytes - _completedSegmentBytes);");
-        AssertContains(source, "EndPtsMs = (long)activeEndPts.TotalMilliseconds,");
-        AssertContains(source, "SizeBytes = activeSizeBytes,");
-        AssertContains(source, "var safeActiveSegmentBytes = Math.Max(0, activeSegmentBytes);");
-        AssertContains(source, "var accountedActiveSegmentBytes = safeActiveSegmentBytes;");
-        AssertContains(source, "accountedActiveSegmentBytes = SubtractNonNegative(safeActiveSegmentBytes, _completedSegments[^1].SizeBytes);");
-        AssertContains(source, "_totalDiskBytes = AddNonNegativeSaturated(_completedSegmentBytes, accountedActiveSegmentBytes);");
-        AssertContains(source, "_completedSegmentBytes = GetCompletedSegmentBytesSaturated();");
-        AssertContains(source, "private long GetCompletedSegmentBytesSaturated()");
-        AssertContains(source, "_totalDiskBytes = AddNonNegativeSaturated(_completedSegmentBytes, retainedActiveBytes);");
-        AssertContains(source, "freedBytes = AddNonNegativeSaturated(freedBytes, _completedSegments[i].SizeBytes);");
-        AssertContains(source, "FLASHBACK_BUFFER_DELETE_WARN path='{filePath}' type={ex.GetType().Name} msg='{ex.Message}'");
-
-        return Task.CompletedTask;
-    }
 
     internal static Task FlashbackBufferManager_UpdateLatestPts_ClampsInvalidBufferDuration()
     {

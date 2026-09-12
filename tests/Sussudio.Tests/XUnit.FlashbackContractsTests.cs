@@ -445,10 +445,6 @@ public sealed class FlashbackDecoderContractsTests
         => global::Program.FlashbackDecoder_D3D11FramesAreValidated();
 
     [Fact]
-    public Task FlashbackDecoderHeldFrameCleanupIsBestEffort()
-        => global::Program.FlashbackDecoder_HeldFrameCleanupIsBestEffort();
-
-    [Fact]
     public Task FlashbackDecoderDecodeLoopsObserveCancellation()
         => global::Program.FlashbackDecoder_DecodeLoopsObserveCancellation();
 
@@ -566,10 +562,6 @@ public sealed class FlashbackEncoderSinkContractsTests
     [Fact]
     public Task FlashbackEncoderSinkStopAndDisposeLifecyclesShareShutdownOwner()
         => global::Program.FlashbackEncoderSink_StopAndDisposeLifecyclesShareShutdownOwner();
-
-    [Fact]
-    public Task FlashbackEncoderSinkProducerInputsLiveInCohesivePartial()
-        => global::Program.FlashbackEncoderSink_ProducerInputsLiveInCohesivePartial();
 
     [Fact]
     public Task FlashbackEncoderSinkRuntimeStateLivesWithRoot()
@@ -828,20 +820,8 @@ public sealed class FlashbackPlaybackContractsTests
         => global::Program.FlashbackPlaybackController_InOutPoints_DefaultToUnset();
 
     [Fact]
-    public Task FlashbackPlaybackInOutPointsClearInvalidCounterpart()
-        => global::Program.FlashbackPlaybackController_InOutPoints_ClearInvalidCounterpart();
-
-    [Fact]
-    public Task FlashbackPlaybackInOutPointSettersNormalizeMarkers()
-        => global::Program.FlashbackPlaybackController_InOutPointSettersNormalizeMarkers();
-
-    [Fact]
     public Task FlashbackPlaybackInOutPointChangesStopAfterDispose()
         => global::Program.FlashbackPlaybackController_InOutPointChangesStopAfterDispose();
-
-    [Fact]
-    public Task FlashbackPlaybackClampPositionBoundsMarkersToBufferedDuration()
-        => global::Program.FlashbackPlaybackController_ClampPosition_BoundsMarkersToBufferedDuration();
 
     [Fact]
     public Task FlashbackPlaybackTransitionsUseBestEffortAudioPreviewGuards()
@@ -3698,47 +3678,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackPlaybackController_InOutPoints_ClearInvalidCounterpart()
-    {
-        var sourceText = ReadFlashbackPlaybackControllerSource();
 
-        AssertContains(sourceText, "var outTicks = Interlocked.Read(ref _outPointTicks);\n        if (outTicks != long.MinValue && outTicks <= pos.Ticks)\n        {\n            OutPoint = null;\n            Logger.Log(\"FLASHBACK_PLAYBACK_CLEAR_OUT invalid_range\");\n        }");
-        AssertContains(sourceText, "var inTicks = Interlocked.Read(ref _inPointTicks);\n        if (inTicks != long.MinValue && inTicks >= pos.Ticks)\n        {\n            InPoint = null;\n            Logger.Log(\"FLASHBACK_PLAYBACK_CLEAR_IN invalid_range\");\n        }");
-        AssertContains(sourceText, "var pos = overridePosition.HasValue\n            ? NormalizeMarkerPosition(overridePosition.Value)\n            : PlaybackPosition;\n        ClearLastCommandFailure();\n        InPoint = pos;");
-        AssertContains(sourceText, "var pos = overridePosition.HasValue\n            ? NormalizeMarkerPosition(overridePosition.Value)\n            : PlaybackPosition;\n        ClearLastCommandFailure();\n        OutPoint = pos;");
-        AssertContains(sourceText, "public TimeSpan SetInPoint() => SetInPointAt(null);");
-        AssertContains(sourceText, "public TimeSpan SetInPointAt(TimeSpan position) => SetInPointAt((TimeSpan?)position);");
-        AssertContains(sourceText, "public TimeSpan SetOutPoint() => SetOutPointAt(null);");
-        AssertContains(sourceText, "public TimeSpan SetOutPointAt(TimeSpan position) => SetOutPointAt((TimeSpan?)position);");
-        AssertContains(sourceText, "InPoint = null;\n        OutPoint = null;\n        ClearLastCommandFailure();");
-
-        var flashbackCommandController = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackUiControllers.cs")
-            .Replace("\r\n", "\n");
-        AssertContains(flashbackCommandController, "_context.ViewModel.FlashbackSetInPointAt(_context.ViewModel.FlashbackPlaybackPosition)");
-        AssertContains(flashbackCommandController, "_context.ViewModel.FlashbackSetOutPointAt(_context.ViewModel.FlashbackPlaybackPosition)");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task FlashbackPlaybackController_InOutPointSettersNormalizeMarkers()
-    {
-        var sourceText = ReadFlashbackPlaybackControllerSource();
-        var markersText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(markersText, "private long _inPointFilePtsTicks = long.MinValue;");
-        AssertContains(markersText, "private long _outPointFilePtsTicks = long.MinValue;");
-        AssertContains(markersText, "Interlocked.Exchange(ref _inPointTicks, normalized?.Ticks ?? long.MinValue);\n            Interlocked.Exchange(ref _inPointFilePtsTicks, normalized.HasValue ? SaturatingAdd(normalized.Value, _bufferManager.ValidStartPts).Ticks : long.MinValue);");
-        AssertContains(markersText, "Interlocked.Exchange(ref _outPointTicks, normalized?.Ticks ?? long.MinValue);\n            Interlocked.Exchange(ref _outPointFilePtsTicks, normalized.HasValue ? SaturatingAdd(normalized.Value, _bufferManager.ValidStartPts).Ticks : long.MinValue);");
-        AssertContains(markersText, "public TimeSpan? InPointFilePts");
-        AssertContains(markersText, "public TimeSpan? OutPointFilePts");
-        AssertContains(markersText, "public void RestoreInOutPoints(\n        TimeSpan? inPoint,\n        TimeSpan? outPoint,\n        TimeSpan? inPointFilePts,\n        TimeSpan? outPointFilePts)");
-        AssertContains(markersText, "Interlocked.Exchange(ref _inPointFilePtsTicks, inPointFilePts.Value.Ticks);");
-        AssertContains(markersText, "Interlocked.Exchange(ref _outPointFilePtsTicks, outPointFilePts.Value.Ticks);");
-        AssertContains(sourceText, "private TimeSpan NormalizeMarkerPosition(TimeSpan position)\n    {\n        if (position <= TimeSpan.Zero)\n        {\n            return TimeSpan.Zero;\n        }\n\n        var bufferDuration = _bufferManager.BufferedDuration;\n        return position > bufferDuration ? bufferDuration : position;\n    }");
-
-        return Task.CompletedTask;
-    }
 
     internal static Task FlashbackPlaybackController_InOutPointChangesStopAfterDispose()
     {
@@ -3774,19 +3714,6 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackPlaybackController_ClampPosition_BoundsMarkersToBufferedDuration()
-    {
-        var sourceText = ReadFlashbackPlaybackControllerSource();
-
-        AssertContains(sourceText, "var bufferDuration = _bufferManager.BufferedDuration;\n        var inTicks = Interlocked.Read(ref _inPointTicks);");
-        AssertContains(sourceText, "var max = outTicks == long.MinValue ? bufferDuration : TimeSpan.FromTicks(outTicks);\n        if (max > bufferDuration) max = bufferDuration;");
-        AssertContains(sourceText, "private TimeSpan ClampPosition(TimeSpan position) => ClampPosition(position, null);");
-        AssertContains(sourceText, "private TimeSpan ClampPosition(TimeSpan position, TimeSpan? frozenValidStart)");
-        AssertContains(sourceText, "var currentValidStart = _bufferManager.ValidStartPts;");
-        AssertContains(sourceText, "var evictedDelta = currentValidStart - frozenValidStart.Value;");
-
-        return Task.CompletedTask;
-    }
     internal static Task FlashbackPlaybackController_FrameDuration_GuardsInvalidDecoderFps()
     {
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
@@ -4887,40 +4814,6 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackEncoderSink_ProducerInputsLiveInCohesivePartial()
-    {
-        var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
-            .Replace("\r\n", "\n");
-        var inputsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
-            .Replace("\r\n", "\n");
-        var docsText = ReadRepoFile("docs/architecture/cleanup-plan.md")
-            .Replace("\r\n", "\n") + "\n" +
-            ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
-
-        AssertContains(inputsText, "public bool TryEnqueueRawVideoFrame(ReadOnlySpan<byte> data, int expectedSize)");
-        AssertContains(inputsText, "bool IRawVideoFrameLeaseTryEncoder.TryEnqueueRawVideoFrame(PooledVideoFrameLease frame)");
-        AssertContains(inputsText, "public bool TryEnqueueGpuVideoFrame(IntPtr d3d11Texture2D, int subresourceIndex)");
-        AssertContains(inputsText, "PooledVideoFrame.GetFrameSizeBytes");
-        AssertContains(inputsText, "Marshal.AddRef(d3d11Texture2D);");
-        AssertContains(inputsText, "TrackVideoQueueRejected(rejectReason);");
-        AssertContains(inputsText, "TrackGpuQueueRejected(rejectReason);");
-        AssertContains(inputsText, "public void EnqueueAudioSamples(ReadOnlyMemory<byte> samples)");
-        AssertContains(inputsText, "public void EnqueueMicrophoneSamples(ReadOnlyMemory<byte> samples)");
-        AssertContains(inputsText, "public Task WriteAudioAsync(ReadOnlyMemory<byte> samples, CancellationToken cancellationToken = default)");
-        AssertContains(inputsText, "public Task WriteMicrophoneAudioAsync(ReadOnlyMemory<byte> samples, CancellationToken cancellationToken = default)");
-        AssertContains(inputsText, "Hot WASAPI callback path: copy/enqueue only, never await or block.");
-        AssertContains(inputsText, "TryValidateAudioPacketLength(samples.Length, \"audio\")");
-        AssertContains(inputsText, "TryValidateAudioPacketLength(samples.Length, \"microphone\")");
-        AssertContains(inputsText, "private VideoEnqueueResult TryEnqueueVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)");
-        AssertContains(inputsText, "private bool TryEnqueueAudioPacket(");
-        AssertContains(inputsText, "private void TrackVideoQueueRejected(string reason)");
-
-        AssertContains(rootText, "public bool TryEnqueueRawVideoFrame(ReadOnlySpan<byte> data, int expectedSize)");
-        AssertContains(rootText, "public void EnqueueAudioSamples(ReadOnlyMemory<byte> samples)");
-        AssertContains(docsText, "FlashbackEncoderSink.cs");
-
-        return Task.CompletedTask;
-    }
 
     internal static Task FlashbackEncoderSink_RuntimeStateLivesWithRoot()
     {
@@ -5305,22 +5198,6 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackDecoder_HeldFrameCleanupIsBestEffort()
-    {
-        var sourceText = ReadFlashbackDecoderSource();
-
-        AssertContains(sourceText, "private static void ReleaseHeldFrameBestEffort(DecodedVideoFrame frame, string operation)");
-        AssertContains(sourceText, "FLASHBACK_DECODER_RELEASE_HELD_FRAME_WARN");
-        AssertContains(sourceText, "ReleaseHeldFrameBestEffort(_pendingVideoFrame, \"seek_keyframe_pending\");");
-        AssertContains(sourceText, "ReleaseHeldFrameBestEffort(bestFrame.Value, \"seek_replace_best\");");
-        AssertContains(sourceText, "ReleaseHeldFrameBestEffort(bestFrame.Value, \"seek_best_superseded\");");
-        AssertContains(sourceText, "var bestFrameTransferred = false;");
-        AssertContains(sourceText, "bestFrameTransferred = true;\n                        return true;");
-        AssertContains(sourceText, "finally\n        {\n            if (!bestFrameTransferred && bestFrame != null)\n            {\n                ReleaseHeldFrameBestEffort(bestFrame.Value, \"seek_best_abandoned\");\n            }\n        }");
-        AssertContains(sourceText, "ReleaseHeldFrameBestEffort(_pendingVideoFrame, \"close_pending\");");
-
-        return Task.CompletedTask;
-    }
 
     internal static Task FlashbackDecoder_DecodeLoopsObserveCancellation()
     {

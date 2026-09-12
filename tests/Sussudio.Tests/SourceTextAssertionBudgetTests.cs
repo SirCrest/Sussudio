@@ -106,7 +106,10 @@ static partial class Program
                     "Ceiling on source-text assertions per test file. " +
                     "An assertion on repository source text cannot fail when behavior breaks; " +
                     "lower a ceiling when a slice removes some. The only reason to raise one is " +
-                    "restoring coverage that a previous slice deleted by mistake.",
+                    "restoring coverage that a previous slice deleted by mistake. A small number " +
+                    "of deliberate configuration and documentation pins remain because no " +
+                    "behavioral equivalent exists for them: project-file publish policy, the " +
+                    "release script's inventory checks, and scope documents.",
                 totalCeiling = counts.Values.Sum(),
                 fileCeilings = counts
             };

@@ -340,10 +340,6 @@ public sealed class PresentationPreviewD3DRenderSetupOwnershipTests
         => global::Program.D3D11PreviewRenderer_SharedDeviceLivesInFocusedPartial();
 
     [Fact]
-    public Task RenderPassesOwnInputUpload()
-        => global::Program.D3D11PreviewRenderer_RenderPassesOwnInputUpload();
-
-    [Fact]
     public Task InputResourcesLiveWithD3DResources()
         => global::Program.D3D11PreviewRenderer_InputResourcesLiveWithD3DResources();
 
@@ -1364,24 +1360,6 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task D3D11PreviewRenderer_RenderPassesOwnInputUpload()
-    {
-        var renderPassesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(renderPassesText, "private bool TryResolveInputView(PendingFrame frame, out ID3D11VideoProcessorInputView? inputView, out bool disposeInputView)");
-        AssertContains(renderPassesText, "private ID3D11VideoProcessorInputView CreateInputViewFromTexture(ID3D11Texture2D texture, int subresourceIndex, int mipLevels)");
-        AssertContains(renderPassesText, "inputView = ResolveExternalInputView(frame.D3DTexture, frame.D3DSubresourceIndex);");
-        AssertContains(renderPassesText, "UploadRawFrameToTexture(frame.RawData, frame.RawDataLength");
-        AssertContains(renderPassesText, "private bool _loggedDirectUploadFallback;");
-        AssertContains(renderPassesText, "private unsafe bool UploadRawFrameToTexture(");
-        AssertContains(renderPassesText, "private unsafe bool TryUpdateRawFrameTexture(");
-        AssertContains(renderPassesText, "private unsafe bool UploadRawFrameViaStaging(");
-        AssertContains(renderPassesText, "_deviceContext.UpdateSubresource(");
-        AssertContains(renderPassesText, "_deviceContext.CopyResource(inputTexture, stagingTexture);");
-
-        return Task.CompletedTask;
-    }
 
 
 

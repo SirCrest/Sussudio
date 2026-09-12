@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "description": "Ceiling on source-text assertions per test file. An assertion on repository source text cannot fail when behavior breaks; lower a ceiling when a slice removes some. The only reason to raise one is restoring coverage that a previous slice deleted by mistake.",
-  "totalCeiling": 6995,
+  "description": "Ceiling on source-text assertions per test file. An assertion on repository source text cannot fail when behavior breaks; lower a ceiling when a slice removes some. The only reason to raise one is restoring coverage that a previous slice deleted by mistake. A small number of deliberate configuration and documentation pins remain because no behavioral equivalent exists for them: project-file publish policy, the release script\u0027s inventory checks, and scope documents.",
+  "totalCeiling": 6916,
   "fileCeilings": {
     "ArchitectureGuardrailsTests.cs": 468,
     "CaptureServiceOwnershipTests.cs": 289,
@@ -9,10 +9,10 @@
     "MjpegPipelineTests.cs": 82,
     "XUnit.AutomationContractsTests.cs": 1022,
     "XUnit.CoreRuntimeContractsTests.cs": 168,
-    "XUnit.FlashbackContractsTests.cs": 1112,
+    "XUnit.FlashbackContractsTests.cs": 1056,
     "XUnit.ModelContractsTests.cs": 149,
-    "XUnit.PresentationPreviewContractsTests.cs": 1637,
-    "XUnit.RecordingContractsTests.cs": 685,
+    "XUnit.PresentationPreviewContractsTests.cs": 1627,
+    "XUnit.RecordingContractsTests.cs": 672,
     "XUnit.ToolContractsTests.cs": 698
   }
 }
