@@ -18,6 +18,12 @@ rather than folded into the test totals.
 
 Use -Restore only outside a confined agent sandbox. NuGet writes to the
 global package cache, which a workspace-scoped sandbox denies silently.
+
+A running copy of the app or of McpServer locks the binaries those projects
+copy into their own output directories, which fails the build with MSB3027
+rather than anything wrong in the source. Pass -ClearToolLocks to stop known
+lockers first; the JSON records what was stopped. The Codex desktop app
+relaunches McpServer whenever it opens, so this recurs.
 #>
 
 param(
@@ -26,7 +32,8 @@ param(
     [string]$Configuration = "Debug",
     [string]$Output = "artifacts/validation.json",
     [switch]$Restore,
-    [switch]$SkipBuild
+    [switch]$SkipBuild,
+    [switch]$ClearToolLocks
 )
 
 Set-StrictMode -Version Latest
@@ -119,6 +126,11 @@ function Invoke-Step {
     $stderr = if (Test-Path -LiteralPath $stderrPath) { Get-Content -LiteralPath $stderrPath -Raw } else { "" }
     $text = (@($stdout, $stderr) | Where-Object { $_ }) -join "`n"
 
+    # A locked output binary is an environment problem, not a source problem.
+    # Report it as its own flag so nobody debugs the code for it.
+    $lockDetected = $text -match 'MSB3027|MSB3021|MSB3026' -or
+        $text -match 'because it is being used by another process'
+
     [pscustomobject]@{
         name = $Name
         kind = $Kind
@@ -126,7 +138,50 @@ function Invoke-Step {
         exitCode = $exit
         durationMs = [int]$started.ElapsedMilliseconds
         succeeded = ($exit -eq 0)
+        lockDetected = $lockDetected
         output = $text.Trim()
+    }
+}
+
+# Stops processes known to lock this repository's build outputs and returns a
+# record of what was stopped. Only ever called when the caller passes
+# -ClearToolLocks, because stopping a tool can interrupt whoever is using it.
+function Clear-KnownOutputLockers {
+    param([string]$RepoRoot)
+
+    $targets = @('McpServer', 'Sussudio')
+    $stopped = @()
+    foreach ($name in $targets) {
+        $processes = @(Get-Process -Name $name -ErrorAction SilentlyContinue)
+        foreach ($process in $processes) {
+            # Only stop processes whose image lives under this repository.
+            $path = $null
+            try { $path = $process.MainModule.FileName } catch { }
+            if ($path -and -not $path.StartsWith($RepoRoot, [StringComparison]::OrdinalIgnoreCase)) { continue }
+
+            $stopped += "$name($($process.Id))"
+            try { Stop-Process -Id $process.Id -Force -ErrorAction Stop } catch { }
+        }
+    }
+
+    if ($stopped.Count -gt 0) { Start-Sleep -Seconds 2 }
+
+    # Report anything that came straight back, so a respawning launcher is
+    # visible instead of showing up later as a mysterious build failure.
+    $respawned = @()
+    foreach ($name in $targets) {
+        foreach ($process in @(Get-Process -Name $name -ErrorAction SilentlyContinue)) {
+            $path = $null
+            try { $path = $process.MainModule.FileName } catch { }
+            if ($path -and $path.StartsWith($RepoRoot, [StringComparison]::OrdinalIgnoreCase)) {
+                $respawned += "$name($($process.Id))"
+            }
+        }
+    }
+
+    return [pscustomobject]@{
+        stopped = $stopped
+        respawned = $respawned
     }
 }
 
@@ -158,6 +213,18 @@ function Get-FailedTestNames {
 }
 
 $steps = @()
+$lockClearing = $null
+
+if ($ClearToolLocks) {
+    $lockClearing = Clear-KnownOutputLockers -RepoRoot $Root
+    if ($lockClearing.stopped.Count -gt 0) {
+        Write-Host ("cleared build-output locks: {0}" -f ($lockClearing.stopped -join ", "))
+    }
+    if ($lockClearing.respawned.Count -gt 0) {
+        Write-Host ("WARNING: these came straight back and will still lock outputs: {0}" -f ($lockClearing.respawned -join ", "))
+    }
+}
+
 
 if ($Restore) {
     $steps += Invoke-Step -Name "restore" -Kind "build" -Command @(
@@ -217,6 +284,8 @@ $result = [pscustomobject]@{
     workingTreeClean = [string]::IsNullOrWhiteSpace($status)
     targetAssemblySha256 = $assemblyHash
     succeeded = (@($steps | Where-Object { -not $_.succeeded }).Count -eq 0)
+    environmentLockDetected = (@($steps | Where-Object { $_.lockDetected }).Count -gt 0)
+    lockClearing = $lockClearing
     tests = $totals
     failedTests = $failedTests
     notCovered = $notCovered
@@ -228,6 +297,7 @@ $result = [pscustomobject]@{
             exitCode = $_.exitCode
             durationMs = $_.durationMs
             succeeded = $_.succeeded
+            lockDetected = $_.lockDetected
         }
     })
 }
@@ -261,6 +331,12 @@ else {
 
 Write-Host ("result: {0}" -f $outputPath)
 Write-Host ("not covered by this run: {0}" -f ($notCovered -join "; "))
+
+if ($result.environmentLockDetected) {
+    Write-Host ""
+    Write-Host "A build output was locked by a running tool, which is an environment problem and not a source problem."
+    Write-Host "Re-run with -ClearToolLocks to stop it first, or close the Codex desktop app, which relaunches McpServer."
+}
 
 if (-not $result.succeeded) { exit 1 }
 exit 0

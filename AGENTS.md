@@ -62,6 +62,14 @@ Passing automated checks does not prove live capture, audible output, HDR displa
 
 Treat build failures diagnostically. Check for locked app/tool processes and stale binaries before assuming the source is broken. Before stopping a process such as `Sussudio.exe` or `McpServer.exe` that locks build outputs, check whether it is recording or serving an active session. Coordinate any interruption with the session owner, using existing authorization where applicable. Once the lock is safely cleared, rerun the real build path and restore the session afterward where possible.
 
+The common case is `MSB3027`/`MSB3026` on `tools\McpServer\bin\...\Sussudio.Automation.Contracts.dll`: a running `McpServer` locks the copy step, which fails the build even though `McpServer.csproj` compiled fine. **The Codex desktop app relaunches McpServer whenever it opens**, so this recurs and killing the processes by hand is not a fix. Run validation with `-ClearToolLocks`, which stops only lockers whose image lives under this repository and records what it stopped:
+
+```powershell
+powershell -NoProfile -File scripts\validate.ps1 -ClearToolLocks
+```
+
+`artifacts/validation.json` reports `environmentLockDetected` and the `lockClearing` record, so a locked build is never mistaken for broken source. If `lockClearing.respawned` lists anything, the launcher won the race and the build will still fail.
+
 ## Dead Surface
 
 Run before starting work in an area, and after finishing a cleanup slice:
