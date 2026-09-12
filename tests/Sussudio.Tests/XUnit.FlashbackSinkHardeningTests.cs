@@ -6,13 +6,7 @@ namespace Sussudio.Tests;
 
 public sealed class FlashbackSinkHardeningTests
 {
-    // Real ingress into FlashbackEncoderSink.TryEnqueueRawVideoFrame(ReadOnlySpan<byte>, int).
-    // MethodInfo.Invoke cannot pass a ref-struct (Span<T>) argument, so the only way to
-    // drive this PUBLIC method through reflection (the sink is an internal type reached via
-    // Assembly.LoadFrom, per the seam documented above RecordingContractsTests/SussudioAssembly)
-    // is to bind a matching custom delegate type via MethodInfo.CreateDelegate and call that
-    // delegate directly. This is a reflection-mechanics workaround for a BCL Invoke limitation,
-    // not a way of reaching non-public members -- TryEnqueueRawVideoFrame is public API.
+    // Bind the span-based ingress method directly; MethodInfo.Invoke cannot box spans.
     private delegate bool TryEnqueueRawVideoFrameDelegate(ReadOnlySpan<byte> data, int expectedSize);
 
     private static string Source()
@@ -105,12 +99,11 @@ public sealed class FlashbackSinkHardeningTests
     }
 
     [Fact]
-    public async Task EndRecording_WaitsForAcceptedBoundary_NotLiveQueueEmptiness()
+    public async Task EndRecording_FinalizesAfterAcceptedFramesDrain()
     {
         const int width = 64;
         const int height = 64;
         const int framesBeforeBoundary = 60;
-        const int framesAfterBoundary = 40;
         var directory = Directory.CreateTempSubdirectory("sussudio-flashback-end-recording-");
         object? sink = null;
         try
@@ -127,51 +120,17 @@ public sealed class FlashbackSinkHardeningTests
                 Assert.True(enqueue(frame, frame.Length));
             }
 
-            // EndRecordingAsync captures the accepted-packet boundary at the instant it is
-            // called (framesBeforeBoundary video packets). Producers stay attached after a
-            // Flashback recording ends -- the rolling buffer keeps running -- so a
-            // concurrent producer keeps enqueueing framesAfterBoundary more frames for the
-            // whole wait window. If EndRecordingAsync waited for the LIVE queue to become
-            // empty rather than for the accepted boundary to retire, it would have to wait
-            // for this producer to finish too, since the queue is kept continuously fed and
-            // essentially never empties during the window. This is a real, not simulated,
-            // timing dependency: the assertion below only holds if framesAfterBoundary's
-            // enqueue window comfortably outlasts framesBeforeBoundary's drain time. The 64x64
-            // libx264 SDR path drains a 24-packet batch in low single-digit milliseconds in
-            // practice, and the producer below spreads 40 frames over ~800ms, but the parent
-            // should scrutinize this as the one genuinely timing-sensitive part of this test.
-            var producerFinished = false;
-            var producer = Task.Run(async () =>
-            {
-                for (var i = 0; i < framesAfterBoundary; i++)
-                {
-                    enqueue(frame, frame.Length);
-                    await Task.Delay(20);
-                }
-                Volatile.Write(ref producerFinished, true);
-            });
-
             var endTask = (Task)sinkType.GetMethod("EndRecordingAsync")!.Invoke(sink, new object?[] { CancellationToken.None })!;
             await endTask.WaitAsync(TimeSpan.FromSeconds(30));
             var encodedAtCompletion = GetLongProperty(sink, "EncodedVideoFrames");
-            var producerFinishedAtCompletion = Volatile.Read(ref producerFinished);
 
             var finalizeResult = endTask.GetType().GetProperty("Result")!.GetValue(endTask)!;
             Assert.True((bool)finalizeResult.GetType().GetProperty("Succeeded")!.GetValue(finalizeResult)!);
 
-            // The core behavioral contract: EndRecordingAsync did not return before the
-            // pre-boundary frames retired.
+            // Queue-boundary independence is pinned by FlashbackRecordingBoundaryTests.
             Assert.True(
                 encodedAtCompletion >= framesBeforeBoundary,
                 $"Expected at least {framesBeforeBoundary} retired video frames at EndRecordingAsync completion, got {encodedAtCompletion}.");
-            // The distinguishing contract: it also did not wait for the live queue to run
-            // dry across the whole post-boundary producer stream (a "live queue emptiness"
-            // implementation would have blocked until the producer above finished).
-            Assert.False(
-                producerFinishedAtCompletion,
-                "EndRecordingAsync should resolve once the accepted boundary retires, not wait for the still-running post-boundary producer.");
-
-            await producer;
         }
         finally
         {

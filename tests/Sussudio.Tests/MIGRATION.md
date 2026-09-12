@@ -14,6 +14,19 @@ implementations and shared fixtures out of the oversized `Program` helper namesp
   It covers managed binding and presentation logic, not native WinUI rendering.
 - `XUnit.LoggerTests.cs` executes isolated production loggers against temporary
   files, covering drain, saturation, fatal writes, rotation and I/O failures.
+  `LoggerLifecycleTests.cs` checks explicit initialization, admission rejection,
+  private probe roots, early diagnostics and failed listeners in owned children.
+- `XUnit.SettingsServiceTests.cs` exercises actual load/save behavior against
+  private settings files, including malformed documents and unset preferences.
+- `XUnit.FlashbackExportStateTests.cs` owns export progress, completion,
+  cancellation and snapshot-state behavior.
+- `FlashbackBackendCleanupTests.cs` covers canceled-purge resource handoff,
+  segment preservation and existing export-lock ownership.
+- `FlashbackPlaybackWorkerBehaviorTests.cs` exercises missing-file commands,
+  cancellation unwinding and worker decoder ownership.
+- `WasapiPlaybackTransitionFailureTests.cs` drives the actual render worker with
+  controlled audio-client replies, covering failed transitions and bounded waits
+  without opening an audio endpoint.
 - `XUnit.AppEmergencyFinalizationTests.cs` executes the actual App emergency-stop
   helper with synthetic tasks, covering recovery marking without WinUI activation.
 - `XUnit.NativeXuAudioControlTests.cs` executes native audio payload comparison
@@ -32,7 +45,11 @@ implementations and shared fixtures out of the oversized `Program` helper namesp
 - `tests/Sussudio.Tests/ProcessFailureEvidenceTests.cs` owns redirected-output and
   file-stat error propagation; `AtomicCounterTests.cs` covers saturating subtraction.
 - `tests/Sussudio.Tests/FlashbackRotationBehaviorTests.cs` executes native rotation
-  failure, original-error retention, and normal audio/microphone finalization.
+  failure, original-error retention, and normal audio/microphone finalization. Force
+  rotation cases protect planner failure classification, shutdown abandonment,
+  cancellation before commit, and ownership after the caller stops waiting.
+- `tests/Sussudio.Tests/FlashbackForceRotateResultTests.cs` protects the actual
+  request's typed completion, cancellation/commit states and planner handoff.
 - `tests/Sussudio.Tests/XUnit.PreviewRendererPerformanceTests.cs` owns bounded
   texture/subresource cache reuse, eviction, and allocation checks.
 - `tests/Sussudio.Tests/XUnit.StatsUiSamplerTests.cs` owns shared fanout, cadence,
@@ -67,6 +84,12 @@ implementations and shared fixtures out of the oversized `Program` helper namesp
   [Media Foundation layout contract](https://learn.microsoft.com/en-us/windows/win32/medfound/image-stride).
 - `tests/Sussudio.Tests/XUnit.DiagnosticCompositionTests.cs` compares diagnostic
   fields and scenario contracts with fixtures captured before the refactor.
+- `XUnit.DiagnosticCycleExportTests.cs` checks shared cycle export/verification
+  command payloads, ordering, failures and cancellation.
+- `XUnit.DiagnosticFlashbackScenarioTests.cs` covers actual stress and export
+  scenarios with controlled transport and private artifacts.
+- `XUnit.DiagnosticFlashbackRangeFailureTests.cs` verifies selection cleanup and
+  joined audio restoration through transport failures and cancellation.
 - `tests/Sussudio.Tests/XUnit.DiagnosticCancellationTests.cs` covers startup
   ownership, uncertain transport outcomes, reconciliation, and bounded cleanup.
 - `tests/Sussudio.Tests/XUnit.DiagnosticInfrastructureTests.cs` owns the command
@@ -76,6 +99,11 @@ implementations and shared fixtures out of the oversized `Program` helper namesp
 - `tests/Sussudio.Tests/XUnit.NativeXuProbePayloadContractsTests.cs` owns I2C
   frame construction, envelope payload extraction, and experiment payload
   encode/decode and restore-target contracts.
+- `tests/Sussudio.Tests/XUnit.KsExtensionUnitNativeTests.cs` executes the built
+  probe's KS topology and GET/SET operations with per-call fake IO, checking
+  request bytes, bounded replies/retries and native error propagation. Private
+  ordinary files exercise read/write open, read-only fallback and handle
+  ownership; these tests do not establish real device-driver behavior.
 - `tests/Sussudio.Tests/XUnit.McpCancellationTests.cs` and
   `tests/Sussudio.Tests/XUnit.McpPresentMonResultTests.cs` execute MCP cancellation
   and raw/formatted errors through actual host protocol traffic.
@@ -206,10 +234,11 @@ implementations and shared fixtures out of the oversized `Program` helper namesp
   checks for the flashback free-disk policy (`IsDiskSpaceLow` /
   `IsDiskCriticallyLow` via the injectable `FreeDiskBytesProvider` seam) and
   the 7-day recovery-preserve marker aging in startup cache cleanup.
-- `tests/Sussudio.Tests/XUnit.FlashbackSinkHardeningTests.cs` owns the encoder
-  sink hardening source contracts: depth-aware force-rotate enqueue guard,
-  consecutive rotation-failure escalation, drain-aware recording end, and the
-  disk-critical fail-fast in `OnVideoFrameEncoded`.
+- `XUnit.FlashbackSinkHardeningTests.cs` exercises real encoder force rotation
+  and successful recording finalization after accepted frames drain. The narrow
+  source check preserves path reservation before the encoder-lane handoff.
+  `XUnit.FlashbackRecordingBoundaryTests.cs` deterministically proves that later
+  queued preview work cannot extend the captured recording boundary.
 - `tests/Sussudio.Tests/XUnit.FlashbackResumeHardeningTests.cs` owns the
   playback resume hardening source contracts: keep-frames audio prebuffer
   (bounded, CPU frames only, rewind only on release) and the

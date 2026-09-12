@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
@@ -1239,7 +1240,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         {
             if (!TryEvaluateAssertion(snapshot, assertion, out var failure))
             {
-                failures.Add(failure ?? $"assertion-failed({assertion.Field})");
+                failures.Add(failure);
             }
         }
 
@@ -1312,7 +1313,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
     private static bool TryEvaluateAssertion(
         AutomationSnapshot snapshot,
         SnapshotAssertion assertion,
-        out string? failure)
+        [NotNullWhen(false)] out string? failure)
     {
         if (!SnapshotPropertyMap.Properties.TryGetValue(assertion.Field, out var property))
         {

@@ -42,6 +42,13 @@ internal static class KsExtensionUnitNative
     internal const int ErrorInvalidFunction = 1;
     private const int ErrorNoMoreItems = 259;
 
+    internal delegate bool KsPropertyIo(
+        SafeFileHandle handle,
+        byte[] input,
+        byte[] output,
+        out int bytesReturned,
+        out int errorCode);
+
     internal readonly record struct KsInterfacePath(string Path, Guid CategoryGuid);
 
     internal readonly record struct KsTopologyNode(int NodeId, bool IsDevSpecific, Guid NodeType);
@@ -166,6 +173,13 @@ internal static class KsExtensionUnitNative
         SafeFileHandle handle,
         [NotNullWhen(true)] out IReadOnlyList<KsTopologyNode>? nodes,
         [NotNullWhen(false)] out string? error)
+        => TryReadTopologyNodesCore(handle, out nodes, out error, InvokeKsProperty);
+
+    internal static bool TryReadTopologyNodesCore(
+        SafeFileHandle handle,
+        [NotNullWhen(true)] out IReadOnlyList<KsTopologyNode>? nodes,
+        [NotNullWhen(false)] out string? error,
+        KsPropertyIo propertyIo)
     {
         nodes = null;
         error = null;
@@ -179,27 +193,18 @@ internal static class KsExtensionUnitNative
 
         var input = StructureToBytes(property);
         var bufferSize = 4096;
-        byte[]? output = null;
-        int bytesReturned = 0;
+        byte[] output;
+        int bytesReturned;
 
-        while (bufferSize <= MaxTopologyBuffer)
+        while (true)
         {
             output = new byte[bufferSize];
-            if (DeviceIoControl(
-                    handle,
-                    IoctlKsProperty,
-                    input,
-                    input.Length,
-                    output,
-                    output.Length,
-                    out bytesReturned,
-                    IntPtr.Zero))
+            if (propertyIo(handle, input, output, out bytesReturned, out var errorCode))
             {
                 break;
             }
 
-            var errorCode = Marshal.GetLastWin32Error();
-            if (errorCode is ErrorInsufficientBuffer or ErrorMoreData)
+            if (errorCode is ErrorInsufficientBuffer or ErrorMoreData && bufferSize < MaxTopologyBuffer)
             {
                 bufferSize *= 2;
                 continue;
@@ -209,27 +214,21 @@ internal static class KsExtensionUnitNative
             return false;
         }
 
-        if (output is null)
-        {
-            error = "topology-query-failed output-null";
-            return false;
-        }
-
         const int headerSize = 8;
-        if (bytesReturned < headerSize)
+        if (bytesReturned < headerSize || bytesReturned > output.Length)
         {
             nodes = Array.Empty<KsTopologyNode>();
             return true;
         }
 
-        var count = (int)BitConverter.ToUInt32(output, 4);
-        if (count <= 0 || headerSize + count * 16 > bytesReturned)
+        var count = BitConverter.ToUInt32(output, 4);
+        if (count == 0 || count > (bytesReturned - headerSize) / 16)
         {
             nodes = Array.Empty<KsTopologyNode>();
             return true;
         }
 
-        var parsed = new List<KsTopologyNode>(count);
+        var parsed = new List<KsTopologyNode>((int)count);
         for (var i = 0; i < count; i++)
         {
             var offset = headerSize + i * 16;
@@ -250,6 +249,18 @@ internal static class KsExtensionUnitNative
         out byte[] data,
         out int bytesReturned,
         out int? win32Code)
+        => TryXuGetDirectCore(handle, nodeId, propertySet, selector, bufferSize, out data, out bytesReturned, out win32Code, InvokeKsProperty);
+
+    internal static bool TryXuGetDirectCore(
+        SafeFileHandle handle,
+        int nodeId,
+        Guid propertySet,
+        int selector,
+        int bufferSize,
+        out byte[] data,
+        out int bytesReturned,
+        out int? win32Code,
+        KsPropertyIo propertyIo)
     {
         data = Array.Empty<byte>();
         bytesReturned = 0;
@@ -269,15 +280,7 @@ internal static class KsExtensionUnitNative
 
         var input = StructureToBytes(request);
         var output = new byte[bufferSize];
-        if (DeviceIoControl(
-                handle,
-                IoctlKsProperty,
-                input,
-                input.Length,
-                output,
-                output.Length,
-                out bytesReturned,
-                IntPtr.Zero))
+        if (propertyIo(handle, input, output, out bytesReturned, out var errorCode))
         {
             var copiedLength = Math.Min(Math.Max(bytesReturned, 0), output.Length);
             data = copiedLength > 0
@@ -286,7 +289,7 @@ internal static class KsExtensionUnitNative
             return true;
         }
 
-        win32Code = Marshal.GetLastWin32Error();
+        win32Code = errorCode;
         return false;
     }
 
@@ -297,6 +300,16 @@ internal static class KsExtensionUnitNative
         int selector,
         byte[] valueData,
         out int? win32Code)
+        => TryXuSetViaOutputCore(handle, nodeId, propertySet, selector, valueData, out win32Code, InvokeKsProperty);
+
+    internal static bool TryXuSetViaOutputCore(
+        SafeFileHandle handle,
+        int nodeId,
+        Guid propertySet,
+        int selector,
+        byte[] valueData,
+        out int? win32Code,
+        KsPropertyIo propertyIo)
     {
         win32Code = null;
 
@@ -313,20 +326,12 @@ internal static class KsExtensionUnitNative
         };
 
         var input = StructureToBytes(request);
-        if (DeviceIoControl(
-                handle,
-                IoctlKsProperty,
-                input,
-                input.Length,
-                valueData,
-                valueData.Length,
-                out _,
-                IntPtr.Zero))
+        if (propertyIo(handle, input, valueData, out _, out var errorCode))
         {
             return true;
         }
 
-        win32Code = Marshal.GetLastWin32Error();
+        win32Code = errorCode;
         return false;
     }
 
@@ -341,6 +346,16 @@ internal static class KsExtensionUnitNative
         int selector,
         byte[] valueData,
         out int? win32Code)
+        => TryXuSetViaInputCore(handle, nodeId, propertySet, selector, valueData, out win32Code, InvokeKsProperty);
+
+    internal static bool TryXuSetViaInputCore(
+        SafeFileHandle handle,
+        int nodeId,
+        Guid propertySet,
+        int selector,
+        byte[] valueData,
+        out int? win32Code,
+        KsPropertyIo propertyIo)
     {
         win32Code = null;
 
@@ -361,21 +376,33 @@ internal static class KsExtensionUnitNative
         Array.Copy(headerBytes, input, headerBytes.Length);
         Array.Copy(valueData, 0, input, headerBytes.Length, valueData.Length);
 
-        if (DeviceIoControl(
-                handle,
-                IoctlKsProperty,
-                input,
-                input.Length,
-                Array.Empty<byte>(),
-                0,
-                out _,
-                IntPtr.Zero))
+        if (propertyIo(handle, input, Array.Empty<byte>(), out _, out var errorCode))
         {
             return true;
         }
 
-        win32Code = Marshal.GetLastWin32Error();
+        win32Code = errorCode;
         return false;
+    }
+
+    private static bool InvokeKsProperty(
+        SafeFileHandle handle,
+        byte[] input,
+        byte[] output,
+        out int bytesReturned,
+        out int errorCode)
+    {
+        var succeeded = DeviceIoControl(
+            handle,
+            IoctlKsProperty,
+            input,
+            input.Length,
+            output,
+            output.Length,
+            out bytesReturned,
+            IntPtr.Zero);
+        errorCode = succeeded ? 0 : Marshal.GetLastWin32Error();
+        return succeeded;
     }
 
     private static byte[] StructureToBytes<T>(T value)

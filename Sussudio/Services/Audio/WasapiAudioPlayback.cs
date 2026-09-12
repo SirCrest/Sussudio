@@ -3,6 +3,7 @@ using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -61,6 +62,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
     private static string _cachedFormatMode = "native";
     private static readonly object _formatCacheLock = new();
     private int _renderingPaused; // 0 = active, 1 = paused
+    private ExceptionDispatchInfo? _renderTransitionFailure;
     private readonly ManualResetEventSlim _renderPausedAcknowledged = new(false);
     private readonly ManualResetEventSlim _renderRunningAcknowledged = new(true);
     private volatile bool _pauseRequested;
@@ -433,40 +435,58 @@ internal sealed class WasapiAudioPlayback : IDisposable
 
     public void PauseRendering()
     {
-        if (Volatile.Read(ref _started) == 0) return;
-        if (Volatile.Read(ref _renderingPaused) != 0 && !_resumeRequested)
+        ThrowIfRenderTransitionFailed();
+        try
         {
-            _renderPausedAcknowledged.Set();
-            _renderRunningAcknowledged.Reset();
-            return;
-        }
+            if (Volatile.Read(ref _started) == 0) return;
+            if (Volatile.Read(ref _renderingPaused) != 0 && !_resumeRequested)
+            {
+                _renderPausedAcknowledged.Set();
+                _renderRunningAcknowledged.Reset();
+                return;
+            }
 
-        _resumeRequested = false;
-        _pauseRequested = true;
-        _renderRunningAcknowledged.Reset();
-        _renderPausedAcknowledged.Reset();
-        _renderEvent?.Set();
+            _resumeRequested = false;
+            _pauseRequested = true;
+            _renderRunningAcknowledged.Reset();
+            _renderPausedAcknowledged.Reset();
+            _renderEvent?.Set();
+        }
+        catch (ObjectDisposedException)
+        {
+            ThrowIfRenderTransitionFailed();
+            throw;
+        }
     }
 
     public void ResumeRendering(double prebufferMs = 0, int prebufferTimeoutMs = 0)
     {
-        if (Volatile.Read(ref _started) == 0) return;
-        if (Volatile.Read(ref _renderingPaused) == 0 && !_pauseRequested)
+        ThrowIfRenderTransitionFailed();
+        try
         {
-            _renderRunningAcknowledged.Set();
-            _renderPausedAcknowledged.Reset();
-            return;
-        }
+            if (Volatile.Read(ref _started) == 0) return;
+            if (Volatile.Read(ref _renderingPaused) == 0 && !_pauseRequested)
+            {
+                _renderRunningAcknowledged.Set();
+                _renderPausedAcknowledged.Reset();
+                return;
+            }
 
-        var prebufferFrames = prebufferMs > 0
-            ? (int)Math.Ceiling(prebufferMs * OutputSampleRate / 1000.0)
-            : 0;
-        Volatile.Write(ref _resumePrebufferFrames, Math.Max(0, prebufferFrames));
-        Volatile.Write(ref _resumePrebufferTimeoutMs, Math.Max(0, prebufferTimeoutMs));
-        _renderPausedAcknowledged.Reset();
-        _renderRunningAcknowledged.Reset();
-        _resumeRequested = true;
-        _renderEvent?.Set();
+            var prebufferFrames = prebufferMs > 0
+                ? (int)Math.Ceiling(prebufferMs * OutputSampleRate / 1000.0)
+                : 0;
+            Volatile.Write(ref _resumePrebufferFrames, Math.Max(0, prebufferFrames));
+            Volatile.Write(ref _resumePrebufferTimeoutMs, Math.Max(0, prebufferTimeoutMs));
+            _renderPausedAcknowledged.Reset();
+            _renderRunningAcknowledged.Reset();
+            _resumeRequested = true;
+            _renderEvent?.Set();
+        }
+        catch (ObjectDisposedException)
+        {
+            ThrowIfRenderTransitionFailed();
+            throw;
+        }
     }
 
     public bool WaitForRenderingPaused(int timeoutMs)
@@ -477,28 +497,46 @@ internal sealed class WasapiAudioPlayback : IDisposable
 
     private bool WaitForRenderState(bool paused, int timeoutMs)
     {
-        if (Volatile.Read(ref _started) == 0)
+        ThrowIfRenderTransitionFailed();
+        try
         {
-            return true;
-        }
-
-        var boundedTimeoutMs = Math.Max(0, timeoutMs);
-        if (paused)
-        {
-            if (Volatile.Read(ref _renderingPaused) != 0 && !_resumeRequested)
+            var boundedTimeoutMs = Math.Max(0, timeoutMs);
+            bool reachedState;
+            if (Volatile.Read(ref _started) == 0)
             {
-                return true;
+                reachedState = true;
+            }
+            else if (paused)
+            {
+                reachedState = (Volatile.Read(ref _renderingPaused) != 0 && !_resumeRequested) ||
+                    _renderPausedAcknowledged.Wait(boundedTimeoutMs);
+            }
+            else
+            {
+                reachedState = (Volatile.Read(ref _renderingPaused) == 0 && !_pauseRequested) ||
+                    _renderRunningAcknowledged.Wait(boundedTimeoutMs);
             }
 
-            return _renderPausedAcknowledged.Wait(boundedTimeoutMs);
+            ThrowIfRenderTransitionFailed();
+            return reachedState;
         }
-
-        if (Volatile.Read(ref _renderingPaused) == 0 && !_pauseRequested)
+        catch (ObjectDisposedException)
         {
-            return true;
+            // Worker cleanup can dispose the wake event before a failed transition's waiter resumes.
+            ThrowIfRenderTransitionFailed();
+            throw;
         }
+    }
 
-        return _renderRunningAcknowledged.Wait(boundedTimeoutMs);
+    private void ThrowIfRenderTransitionFailed()
+        => Volatile.Read(ref _renderTransitionFailure)?.Throw();
+
+    private void RecordRenderTransitionFailure(Exception exception)
+    {
+        Interlocked.CompareExchange(ref _renderTransitionFailure, ExceptionDispatchInfo.Capture(exception), null);
+        // Wake either waiter. The latched exception takes precedence over a signaled event or stopped worker.
+        _renderPausedAcknowledged.Set();
+        _renderRunningAcknowledged.Set();
     }
 
     /// <summary>
@@ -724,12 +762,15 @@ internal sealed class WasapiAudioPlayback : IDisposable
                     _pauseRequested = false;
                     try
                     {
-                        _audioClient?.Stop();
-                        _audioClient?.Reset();
+                        var audioClient = _audioClient ?? throw new InvalidOperationException("WASAPI render client is unavailable during pause.");
+                        WasapiComInterop.ThrowIfFailed(audioClient.Stop(), "IAudioClient.Stop(pause)");
+                        WasapiComInterop.ThrowIfFailed(audioClient.Reset(), "IAudioClient.Reset(pause)");
                     }
                     catch (Exception ex)
                     {
+                        RecordRenderTransitionFailure(ex);
                         Logger.Log($"WASAPI_PAUSE_RENDER_WARN: {ex.Message}");
+                        return;
                     }
 
                     Flush();
@@ -757,11 +798,14 @@ internal sealed class WasapiAudioPlayback : IDisposable
                     WaitForResumePrebuffer();
                     try
                     {
-                        _audioClient?.Start();
+                        var audioClient = _audioClient ?? throw new InvalidOperationException("WASAPI render client is unavailable during resume.");
+                        WasapiComInterop.ThrowIfFailed(audioClient.Start(), "IAudioClient.Start(resume)");
                     }
                     catch (Exception ex)
                     {
+                        RecordRenderTransitionFailure(ex);
                         Logger.Log($"WASAPI_RESUME_RENDER_WARN: {ex.Message}");
+                        return;
                     }
 
                     Interlocked.Exchange(ref _renderingPaused, 0);

@@ -1,3 +1,4 @@
+using System.Runtime.ExceptionServices;
 using System.Text.Json;
 using static Sussudio.Tools.AutomationSnapshotFormatter;
 using static Sussudio.Tools.DiagnosticSessionFlashbackExports;
@@ -451,21 +452,28 @@ internal static class DiagnosticSessionFlashbackExportScenarios
         int outPointMs = 5_000,
         bool switchAudioDuringExport = false)
     {
-        var selection = await PrepareFlashbackSelectionRangeAsync(
-                outPointMs,
-                scenarioLabel,
-                actions,
-                warnings,
-                sendCommandAsync,
-                cancellationToken)
-            .ConfigureAwait(false);
-        if (selection is null)
+        FlashbackSelectionRange? selection = null;
+        var selectionNeedsCleanup = false;
+        var operationFailed = false;
+        var cleanupSucceeded = false;
+        try
         {
-            return;
-        }
+            selection = await PrepareFlashbackSelectionRangeAsync(
+                    outPointMs,
+                    scenarioLabel,
+                    actions,
+                    warnings,
+                    sendCommandAsync,
+                    cancellationToken,
+                    () => selectionNeedsCleanup = true)
+                .ConfigureAwait(false);
+            if (selection is null)
+            {
+                return;
+            }
 
-        var exportPath = ResolveFlashbackExportOutputPath(outputDirectory, exportFileName);
-        var exportTask = sendCommandAsync(
+            var exportPath = ResolveFlashbackExportOutputPath(outputDirectory, exportFileName);
+            var exportTask = sendCommandAsync(
                 "FlashbackExport",
                 new Dictionary<string, object?>
                 {
@@ -473,61 +481,97 @@ internal static class DiagnosticSessionFlashbackExportScenarios
                     [AutomationPayloadKeys.OutputPath] = exportPath,
                     [AutomationPayloadKeys.UseSelectionRange] = true
                 },
-                60_000)
-            ;
-        Task? audioSwitchTask = null;
-        if (switchAudioDuringExport)
+                60_000);
+            Task? audioSwitchTask = null;
+            if (switchAudioDuringExport)
+            {
+                audioSwitchTask = ToggleAudioEnabledDuringFlashbackExportAsync(
+                    exportTask,
+                    selection.Value.BaselineSnapshot,
+                    actions,
+                    warnings,
+                    sendCommandAsync,
+                    cancellationToken);
+            }
+
+            JsonElement exportResponse;
+            try
+            {
+                exportResponse = await exportTask.ConfigureAwait(false);
+            }
+            catch
+            {
+                // The audio task still owns its restore even when export fails.
+                // Observe its outcome before selection cleanup, preserving export's failure.
+                if (audioSwitchTask is not null)
+                {
+                    try
+                    {
+                        await audioSwitchTask.ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        warnings.Add($"{scenarioLabel}: audio switch failed after export failure - {ex.GetType().Name}: {ex.Message}");
+                    }
+                }
+                throw;
+            }
+
+            if (audioSwitchTask is not null)
+            {
+                await audioSwitchTask.ConfigureAwait(false);
+            }
+
+            actions.Add($"{scenarioLabel} requested");
+            if (!AutomationSnapshotFormatter.IsSuccess(exportResponse))
+            {
+                warnings.Add($"{scenarioLabel}: export failed - {AutomationSnapshotFormatter.Get(exportResponse, "Message", "unknown error")}");
+                return;
+            }
+
+            var verifyResponse = await sendCommandAsync(
+                    "VerifyFile",
+                    CreateFlashbackExportVerifyPayload(exportPath),
+                    60_000)
+                .ConfigureAwait(false);
+            if (!AutomationSnapshotFormatter.IsSuccess(verifyResponse))
+            {
+                warnings.Add(
+                    $"{scenarioLabel} verification: {AutomationSnapshotFormatter.Get(verifyResponse, "Message", "verification failed")}");
+            }
+            else
+            {
+                actions.Add($"{scenarioLabel} verified");
+            }
+
+            var snapshotResponse = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
+            if (!TryGetSnapshot(snapshotResponse, out var snapshot))
+            {
+                warnings.Add($"{scenarioLabel}: no snapshot returned after export");
+                return;
+            }
+
+            ValidateFlashbackRangeExportResult(snapshot, outPointMs, scenarioLabel, warnings);
+        }
+        catch
         {
-            audioSwitchTask = ToggleAudioEnabledDuringFlashbackExportAsync(
-                exportTask,
-                selection.Value.BaselineSnapshot,
-                actions,
-                warnings,
-                sendCommandAsync,
-                cancellationToken);
+            operationFailed = true;
+            throw;
+        }
+        finally
+        {
+            if (selectionNeedsCleanup)
+            {
+                cleanupSucceeded = await CleanupFlashbackRangeSelectionAsync(
+                        sendCommandAsync, scenarioLabel, warnings, operationFailed)
+                    .ConfigureAwait(false);
+            }
         }
 
-        var exportResponse = await exportTask.ConfigureAwait(false);
-        if (audioSwitchTask is not null)
+        if (cleanupSucceeded)
         {
-            await audioSwitchTask.ConfigureAwait(false);
+            actions.Add($"{scenarioLabel} cleared range and went live");
         }
-
-        actions.Add($"{scenarioLabel} requested");
-        if (!AutomationSnapshotFormatter.IsSuccess(exportResponse))
-        {
-            warnings.Add($"{scenarioLabel}: export failed - {AutomationSnapshotFormatter.Get(exportResponse, "Message", "unknown error")}");
-            await CleanupFlashbackSelectionAsync(sendCommandAsync).ConfigureAwait(false);
-            return;
-        }
-
-        var verifyResponse = await sendCommandAsync(
-                "VerifyFile",
-                CreateFlashbackExportVerifyPayload(exportPath),
-                60_000)
-            .ConfigureAwait(false);
-        if (!AutomationSnapshotFormatter.IsSuccess(verifyResponse))
-        {
-            warnings.Add(
-                $"{scenarioLabel} verification: {AutomationSnapshotFormatter.Get(verifyResponse, "Message", "verification failed")}");
-        }
-        else
-        {
-            actions.Add($"{scenarioLabel} verified");
-        }
-
-        var snapshotResponse = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
-        if (!TryGetSnapshot(snapshotResponse, out var snapshot))
-        {
-            warnings.Add($"{scenarioLabel}: no snapshot returned after export");
-            await CleanupFlashbackSelectionAsync(sendCommandAsync).ConfigureAwait(false);
-            return;
-        }
-
-        ValidateFlashbackRangeExportResult(snapshot, outPointMs, scenarioLabel, warnings);
-
-        await CleanupFlashbackSelectionAsync(sendCommandAsync).ConfigureAwait(false);
-        actions.Add($"{scenarioLabel} cleared range and went live");
 
         await ValidateFlashbackRangeExportCleanupAsync(
                 selection.Value.BaselineSnapshot,
@@ -536,6 +580,42 @@ internal static class DiagnosticSessionFlashbackExportScenarios
                 sendCommandAsync,
                 cancellationToken)
             .ConfigureAwait(false);
+    }
+
+    private static async Task<bool> CleanupFlashbackRangeSelectionAsync(
+        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
+        string scenarioLabel,
+        List<string> warnings,
+        bool preserveOperationFailure)
+    {
+        ExceptionDispatchInfo? firstFailure = null;
+        var succeeded = true;
+        foreach (var action in new[] { "clear-in-out-points", "go-live" })
+        {
+            try
+            {
+                var response = await sendCommandAsync(
+                        "FlashbackAction", new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = action }, null)
+                    .ConfigureAwait(false);
+                if (!IsSuccess(response))
+                {
+                    succeeded = false;
+                    warnings.Add($"{scenarioLabel}: cleanup {action} failed - {Get(response, "Message", "unknown error")}");
+                }
+            }
+            catch (Exception ex)
+            {
+                succeeded = false;
+                firstFailure ??= ExceptionDispatchInfo.Capture(ex);
+                warnings.Add($"{scenarioLabel}: cleanup {action} threw {ex.GetType().Name}: {ex.Message}");
+            }
+        }
+        if (!preserveOperationFailure)
+        {
+            firstFailure?.Throw();
+        }
+
+        return succeeded;
     }
 
     private readonly record struct FlashbackSelectionRange(
@@ -549,7 +629,8 @@ internal static class DiagnosticSessionFlashbackExportScenarios
         List<string> actions,
         List<string> warnings,
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Action markSelectionCleanupRequired)
     {
         const int liveEdgeSafetyMarginMs = 5_000;
         const int leftEdgeSafetyMarginMs = 10_000;
@@ -584,6 +665,7 @@ internal static class DiagnosticSessionFlashbackExportScenarios
             return null;
         }
 
+        markSelectionCleanupRequired();
         await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "clear-in-out-points" }, null)
             .ConfigureAwait(false);
         await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "pause" }, null)

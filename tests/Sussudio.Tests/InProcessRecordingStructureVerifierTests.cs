@@ -136,8 +136,9 @@ public sealed class InProcessRecordingStructureVerifierTests
     public sealed class BundledRuntime
     {
         private readonly Assembly _assembly = SussudioAssembly.Load();
+        private readonly Lazy<IReadOnlyDictionary<string, string>> _fixtureHashes;
         public string FixtureDirectory { get; } = Path.Combine(AppContext.BaseDirectory, "Fixtures", "RecordingStructure");
-        public IReadOnlyDictionary<string, string> FixtureHashes { get; }
+        public IReadOnlyDictionary<string, string> FixtureHashes => _fixtureHashes.Value;
 
         public BundledRuntime()
         {
@@ -155,10 +156,13 @@ public sealed class InProcessRecordingStructureVerifierTests
             Type("Sussudio.Services.Recording.LibAvEncoder").GetMethod("InitializeFFmpeg")!
                 .Invoke(null, new object[] { true });
 
-            using var fixtures = JsonDocument.Parse(File.ReadAllText(Path.Combine(FixtureDirectory, "manifest.json")));
-            FixtureHashes = fixtures.RootElement.EnumerateArray().ToDictionary(
-                entry => entry.GetProperty("Name").GetString()!,
-                entry => entry.GetProperty("Sha256").GetString()!, StringComparer.Ordinal);
+            _fixtureHashes = new Lazy<IReadOnlyDictionary<string, string>>(() =>
+            {
+                using var fixtures = JsonDocument.Parse(File.ReadAllText(Path.Combine(FixtureDirectory, "manifest.json")));
+                return fixtures.RootElement.EnumerateArray().ToDictionary(
+                    entry => entry.GetProperty("Name").GetString()!,
+                    entry => entry.GetProperty("Sha256").GetString()!, StringComparer.Ordinal);
+            });
         }
 
         internal Type Type(string name) => _assembly.GetType(name, throwOnError: true)!;

@@ -72,7 +72,7 @@ public sealed class FlashbackForceRotateDrainTests
         var result = Drain(request, 512, 128, () =>
         {
             calls++;
-            request.GetType().GetMethod("CompleteEmpty")!.Invoke(request, null);
+            request.GetType().GetMethod("Fail")!.Invoke(request, null);
             return true;
         });
 

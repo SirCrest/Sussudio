@@ -1484,7 +1484,7 @@ static partial class Program
         var renderPassesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(renderPassesText, "private bool TryResolveInputView(PendingFrame frame, out ID3D11VideoProcessorInputView? inputView, out bool disposeInputView)");
+        AssertContains(renderPassesText, "private bool TryResolveInputView(PendingFrame frame, [NotNullWhen(true)] out ID3D11VideoProcessorInputView? inputView, out bool disposeInputView)");
         AssertContains(renderPassesText, "private ID3D11VideoProcessorInputView CreateInputViewFromTexture(ID3D11Texture2D texture, int subresourceIndex, int mipLevels)");
         AssertContains(renderPassesText, "inputView = ResolveExternalInputView(frame.D3DTexture, frame.D3DSubresourceIndex);");
         AssertContains(renderPassesText, "UploadRawFrameToTexture(frame.RawData, frame.RawDataLength");

@@ -371,9 +371,9 @@ namespace Sussudio.Services.Contracts
     }
 
     /// <summary>
-    /// On either normal return the callee has taken and released any reference it
-    /// needed, including when admission is rejected; the caller may release its
-    /// texture after return.
+    /// Accepted work retains the callee's own AddRef until consumption or cleanup.
+    /// Rejected admission releases any reference the callee acquired. The caller
+    /// keeps its own reference until return and may release it after either normal return.
     /// </summary>
     public interface IGpuVideoFrameTryEncoder
     {

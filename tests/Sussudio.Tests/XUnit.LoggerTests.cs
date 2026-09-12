@@ -4,7 +4,6 @@ using Xunit;
 
 namespace Sussudio.Tests;
 
-[Collection(RecoveryEnvironmentCollection.Name)]
 public sealed class LoggerTests
 {
     [Fact]
@@ -128,17 +127,6 @@ public sealed class LoggerTests
         await logger.Shutdown();
     }
 
-    [Fact]
-    public void DirectoryResolutionRunsInsideLoggerInitialization()
-    {
-        var source = RuntimeContractSource.ReadRepoFile("Sussudio/AppRuntime.cs");
-        Assert.Contains("private static readonly string LogFilePath;", source, StringComparison.Ordinal);
-        Assert.Contains("LogFilePath = TryResolveLogFilePath(() => RuntimePaths.GetRepoLogFile(", source, StringComparison.Ordinal);
-        Assert.DoesNotContain("private static readonly string LogFilePath = RuntimePaths.", source, StringComparison.Ordinal);
-        Assert.Contains("var fileIoOk = !string.IsNullOrEmpty(LogFilePath);", source, StringComparison.Ordinal);
-    }
-
-
     private sealed class IsolatedLogger : IAsyncDisposable
     {
         private readonly LoggerLoadContext _context;
@@ -152,17 +140,11 @@ public sealed class LoggerTests
             prepare?.Invoke(FilePath);
             var appPath = SussudioAssembly.Load().Location;
             _context = new LoggerLoadContext(appPath);
-            var previous = Environment.GetEnvironmentVariable("SUSSUDIO_LOG_ROOT");
-            try
-            {
-                Environment.SetEnvironmentVariable("SUSSUDIO_LOG_ROOT", DirectoryPath);
-                Type = _context.LoadFromAssemblyPath(appPath).GetType("Sussudio.Logger", throwOnError: true)!;
-                Assert.Equal(FilePath, (string)Call("GetLogFilePath")!);
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable("SUSSUDIO_LOG_ROOT", previous);
-            }
+            Type = _context.LoadFromAssemblyPath(appPath).GetType("Sussudio.Logger", throwOnError: true)!;
+            Assert.Empty((string)Call("GetLogFilePath")!);
+            Assert.Equal("NotInitialized", Type.GetProperty("InitState")!.GetValue(null)!.ToString());
+            Call("Initialize", DirectoryPath);
+            Assert.Equal(FilePath, (string)Call("GetLogFilePath")!);
         }
 
         public object? Call(string method, params object?[] args)

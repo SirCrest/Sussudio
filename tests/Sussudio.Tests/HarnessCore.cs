@@ -28,6 +28,11 @@ static partial class Program
 
     private static int Main(string[] args)
     {
+        if (Sussudio.Tests.LoggerLifecycleTests.TryRunChildProcess(args, out var loggerExitCode))
+        {
+            return loggerExitCode;
+        }
+
         if (Sussudio.Tests.AppProcessStartupTests.TryRunChildProcess(args, out var startupExitCode))
         {
             return startupExitCode;
@@ -1344,7 +1349,7 @@ static partial class Program
         }
     }
 
-    private static Assembly LoadToolAssemblyIsolated(string relativeAssemblyPath)
+    internal static Assembly LoadToolAssemblyIsolated(string relativeAssemblyPath)
     {
         var fullPath = Path.GetFullPath(Path.Combine(GetRepoRoot(), relativeAssemblyPath));
         lock (ToolAssemblyCacheLock)

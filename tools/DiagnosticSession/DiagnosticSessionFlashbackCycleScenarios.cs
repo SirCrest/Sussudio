@@ -94,8 +94,9 @@ internal static class DiagnosticSessionFlashbackCycleScenarios
             return;
         }
 
-        await VerifyFlashbackRestartCycleExportAsync(
-                outputDirectory,
+        await VerifyCycleExportAsync(
+                Path.Combine(outputDirectory, "flashback-restart-cycle-export.mp4"),
+                "flashback restart cycle",
                 actions,
                 warnings,
                 sendCommandAsync)
@@ -155,8 +156,9 @@ internal static class DiagnosticSessionFlashbackCycleScenarios
 
             ValidateFlashbackEncoderCycleSnapshot(afterSnapshot, originalFilePath, warnings);
 
-            await VerifyFlashbackEncoderCycleExportAsync(
-                    outputDirectory,
+            await VerifyCycleExportAsync(
+                    Path.Combine(outputDirectory, "flashback-encoder-cycle-export.mp4"),
+                    "flashback encoder cycle",
                     actions,
                     warnings,
                     sendCommandAsync)
@@ -206,40 +208,6 @@ internal static class DiagnosticSessionFlashbackCycleScenarios
         return true;
     }
 
-    private static async Task VerifyFlashbackRestartCycleExportAsync(
-        string outputDirectory,
-        List<string> actions,
-        List<string> warnings,
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync)
-    {
-        var exportPath = Path.Combine(outputDirectory, "flashback-restart-cycle-export.mp4");
-        var exportResponse = await sendCommandAsync(
-                "FlashbackExport",
-                new Dictionary<string, object?> { [AutomationPayloadKeys.Seconds] = 1, [AutomationPayloadKeys.OutputPath] = exportPath },
-                60_000)
-            .ConfigureAwait(false);
-        actions.Add("flashback restart cycle export requested");
-        if (!AutomationSnapshotFormatter.IsSuccess(exportResponse))
-        {
-            warnings.Add($"flashback restart cycle: export failed - {AutomationSnapshotFormatter.Get(exportResponse, "Message", "unknown error")}");
-            return;
-        }
-
-        var verifyResponse = await sendCommandAsync(
-                "VerifyFile",
-                CreateFlashbackExportVerifyPayload(exportPath),
-                60_000)
-            .ConfigureAwait(false);
-        if (!AutomationSnapshotFormatter.IsSuccess(verifyResponse))
-        {
-            warnings.Add(
-                $"flashback restart cycle export verification: {AutomationSnapshotFormatter.Get(verifyResponse, "Message", "verification failed")}");
-            return;
-        }
-
-        actions.Add("flashback restart cycle export verified");
-    }
-
     private static void ValidateFlashbackEncoderCycleSnapshot(
         JsonElement afterSnapshot,
         string originalFilePath,
@@ -265,40 +233,6 @@ internal static class DiagnosticSessionFlashbackCycleScenarios
                 $"pending={GetInt(afterSnapshot, "FlashbackPlaybackPendingCommands")} " +
                 $"threadAlive={GetBool(afterSnapshot, "FlashbackPlaybackThreadAlive")}");
         }
-    }
-
-    private static async Task VerifyFlashbackEncoderCycleExportAsync(
-        string outputDirectory,
-        List<string> actions,
-        List<string> warnings,
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync)
-    {
-        var exportPath = Path.Combine(outputDirectory, "flashback-encoder-cycle-export.mp4");
-        var exportResponse = await sendCommandAsync(
-                "FlashbackExport",
-                new Dictionary<string, object?> { [AutomationPayloadKeys.Seconds] = 1, [AutomationPayloadKeys.OutputPath] = exportPath },
-                60_000)
-            .ConfigureAwait(false);
-        actions.Add("flashback encoder cycle export requested");
-        if (!AutomationSnapshotFormatter.IsSuccess(exportResponse))
-        {
-            warnings.Add($"flashback encoder cycle: export failed - {AutomationSnapshotFormatter.Get(exportResponse, "Message", "unknown error")}");
-            return;
-        }
-
-        var verifyResponse = await sendCommandAsync(
-                "VerifyFile",
-                CreateFlashbackExportVerifyPayload(exportPath),
-                60_000)
-            .ConfigureAwait(false);
-        if (!AutomationSnapshotFormatter.IsSuccess(verifyResponse))
-        {
-            warnings.Add(
-                $"flashback encoder cycle export verification: {AutomationSnapshotFormatter.Get(verifyResponse, "Message", "verification failed")}");
-            return;
-        }
-
-        actions.Add("flashback encoder cycle export verified");
     }
 
     private static async Task RestoreFlashbackEncoderCyclePresetAsync(
@@ -554,11 +488,13 @@ internal static class DiagnosticSessionFlashbackPreviewCycleScenarios
             return;
         }
 
-        await VerifyFlashbackPreviewCycleExportAsync(
-                outputDirectory,
+        await VerifyCycleExportAsync(
+                Path.Combine(outputDirectory, "flashback-preview-off-export.mp4"),
+                "flashback preview cycle",
                 actions,
                 warnings,
-                sendCommandAsync)
+                sendCommandAsync,
+                previewStopped: true)
             .ConfigureAwait(false);
 
         var startPreviewResponse = await sendCommandAsync(
@@ -632,42 +568,6 @@ internal static class DiagnosticSessionFlashbackPreviewCycleScenarios
         }
 
         return true;
-    }
-
-    private static async Task VerifyFlashbackPreviewCycleExportAsync(
-        string outputDirectory,
-        List<string> actions,
-        List<string> warnings,
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync)
-    {
-        var exportPath = Path.Combine(outputDirectory, "flashback-preview-off-export.mp4");
-        var exportResponse = await sendCommandAsync(
-                "FlashbackExport",
-                new Dictionary<string, object?> { [AutomationPayloadKeys.Seconds] = 1, [AutomationPayloadKeys.OutputPath] = exportPath },
-                60_000)
-            .ConfigureAwait(false);
-        actions.Add("flashback preview cycle export while preview off requested");
-        if (!AutomationSnapshotFormatter.IsSuccess(exportResponse))
-        {
-            warnings.Add(
-                $"flashback preview cycle: export while preview off failed - {AutomationSnapshotFormatter.Get(exportResponse, "Message", "unknown error")}");
-            return;
-        }
-
-        var verifyResponse = await sendCommandAsync(
-                "VerifyFile",
-                CreateFlashbackExportVerifyPayload(exportPath),
-                60_000)
-            .ConfigureAwait(false);
-        if (!AutomationSnapshotFormatter.IsSuccess(verifyResponse))
-        {
-            warnings.Add(
-                $"flashback preview cycle export verification: {AutomationSnapshotFormatter.Get(verifyResponse, "Message", "verification failed")}");
-        }
-        else
-        {
-            actions.Add("flashback preview cycle export verified");
-        }
     }
 
     private static async Task ValidateFlashbackPreviewCycleRestartedAsync(
@@ -767,11 +667,13 @@ internal static class DiagnosticSessionFlashbackPreviewCycleScenarios
             return;
         }
 
-        await VerifyFlashbackPlaybackPreviewCycleExportAsync(
-                outputDirectory,
+        await VerifyCycleExportAsync(
+                Path.Combine(outputDirectory, "flashback-playback-preview-cycle.mp4"),
+                "flashback playback preview cycle",
                 actions,
                 warnings,
-                sendCommandAsync)
+                sendCommandAsync,
+                previewStopped: true)
             .ConfigureAwait(false);
 
         var startPreviewResponse = await sendCommandAsync(
@@ -857,42 +759,6 @@ internal static class DiagnosticSessionFlashbackPreviewCycleScenarios
         }
 
         return true;
-    }
-
-    private static async Task VerifyFlashbackPlaybackPreviewCycleExportAsync(
-        string outputDirectory,
-        List<string> actions,
-        List<string> warnings,
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync)
-    {
-        var exportPath = Path.Combine(outputDirectory, "flashback-playback-preview-cycle.mp4");
-        var exportResponse = await sendCommandAsync(
-                "FlashbackExport",
-                new Dictionary<string, object?> { [AutomationPayloadKeys.Seconds] = 1, [AutomationPayloadKeys.OutputPath] = exportPath },
-                60_000)
-            .ConfigureAwait(false);
-        actions.Add("flashback playback preview cycle export while preview off requested");
-        if (!AutomationSnapshotFormatter.IsSuccess(exportResponse))
-        {
-            warnings.Add(
-                $"flashback playback preview cycle: export while preview off failed - {AutomationSnapshotFormatter.Get(exportResponse, "Message", "unknown error")}");
-            return;
-        }
-
-        var verifyResponse = await sendCommandAsync(
-                "VerifyFile",
-                CreateFlashbackExportVerifyPayload(exportPath),
-                60_000)
-            .ConfigureAwait(false);
-        if (!AutomationSnapshotFormatter.IsSuccess(verifyResponse))
-        {
-            warnings.Add(
-                $"flashback playback preview cycle export verification: {AutomationSnapshotFormatter.Get(verifyResponse, "Message", "verification failed")}");
-        }
-        else
-        {
-            actions.Add("flashback playback preview cycle export verified");
-        }
     }
 
     private static async Task ValidatePlaybackPreviewCycleRestartedAsync(

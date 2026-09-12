@@ -10,6 +10,41 @@ using static Sussudio.Tools.DiagnosticSessionOptionalTextFormatter;
 namespace Sussudio.Tools;
 internal static class DiagnosticSessionFlashbackExports
 {
+    internal static async Task VerifyCycleExportAsync(
+        string exportPath,
+        string scenario,
+        List<string> actions,
+        List<string> warnings,
+        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
+        bool previewStopped = false)
+    {
+        var exportDescription = previewStopped ? "export while preview off" : "export";
+        var exportResponse = await sendCommandAsync(
+                "FlashbackExport",
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Seconds] = 1, [AutomationPayloadKeys.OutputPath] = exportPath },
+                60_000)
+            .ConfigureAwait(false);
+        actions.Add($"{scenario} {exportDescription} requested");
+        if (!AutomationSnapshotFormatter.IsSuccess(exportResponse))
+        {
+            warnings.Add($"{scenario}: {exportDescription} failed - {AutomationSnapshotFormatter.Get(exportResponse, "Message", "unknown error")}");
+            return;
+        }
+
+        var verifyResponse = await sendCommandAsync(
+                "VerifyFile",
+                CreateFlashbackExportVerifyPayload(exportPath),
+                60_000)
+            .ConfigureAwait(false);
+        if (!AutomationSnapshotFormatter.IsSuccess(verifyResponse))
+        {
+            warnings.Add($"{scenario} export verification: {AutomationSnapshotFormatter.Get(verifyResponse, "Message", "verification failed")}");
+            return;
+        }
+
+        actions.Add($"{scenario} export verified");
+    }
+
     internal static int? TryParseFlashbackExportSegmentCount(string message)
     {
         const string marker = " from ";
@@ -58,15 +93,6 @@ internal static class DiagnosticSessionFlashbackExports
             ["strict"] = true,
             [AutomationPayloadKeys.VerificationProfile] = "flashback-export"
         };
-
-    internal static async Task CleanupFlashbackSelectionAsync(
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync)
-    {
-        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "clear-in-out-points" }, null)
-            .ConfigureAwait(false);
-        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "go-live" }, null)
-            .ConfigureAwait(false);
-    }
 
     internal static async Task ToggleAudioEnabledDuringFlashbackExportAsync(
         Task<JsonElement> exportTask,

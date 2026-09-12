@@ -54,30 +54,35 @@ public static class SettingsService
         var settingsFilePath = GetSettingsFilePath();
         lock (_lock)
         {
-            try
-            {
-                if (!File.Exists(settingsFilePath))
-                {
-                    Logger.Log("SETTINGS_LOAD: no settings file found, using defaults.");
-                    return new UserSettings();
-                }
+            return LoadFromFile(settingsFilePath);
+        }
+    }
 
-                var json = File.ReadAllText(settingsFilePath);
-                var settings = JsonSerializer.Deserialize(json, SettingsJsonContext.Default.UserSettings);
-                if (settings == null)
-                {
-                    Logger.Log("SETTINGS_LOAD: deserialization returned null, using defaults.");
-                    return new UserSettings();
-                }
-
-                Logger.Log($"SETTINGS_LOAD: loaded from {settingsFilePath}");
-                return settings;
-            }
-            catch (Exception ex)
+    internal static UserSettings LoadFromFile(string settingsFilePath)
+    {
+        try
+        {
+            if (!File.Exists(settingsFilePath))
             {
-                Logger.Log($"SETTINGS_LOAD: failed to load ({ex.GetType().Name}: {ex.Message}), using defaults.");
+                Logger.Log("SETTINGS_LOAD: no settings file found, using defaults.");
                 return new UserSettings();
             }
+
+            var json = File.ReadAllText(settingsFilePath);
+            var settings = JsonSerializer.Deserialize(json, SettingsJsonContext.Default.UserSettings);
+            if (settings == null)
+            {
+                Logger.Log("SETTINGS_LOAD: deserialization returned null, using defaults.");
+                return new UserSettings();
+            }
+
+            Logger.Log($"SETTINGS_LOAD: loaded from {settingsFilePath}");
+            return settings;
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"SETTINGS_LOAD: failed to load ({ex.GetType().Name}: {ex.Message}), using defaults.");
+            return new UserSettings();
         }
     }
 

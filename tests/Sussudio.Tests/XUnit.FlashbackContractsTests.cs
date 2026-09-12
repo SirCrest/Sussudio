@@ -800,6 +800,10 @@ public sealed class FlashbackPlaybackContractsTests
     }
 
     [Fact]
+    public Task FlashbackPlaybackPublicStateLivesInRoot()
+        => global::Program.FlashbackPlaybackController_PublicPlaybackState_LivesInRoot();
+
+    [Fact]
     public Task FlashbackPlaybackInitialStateIsLive()
         => global::Program.FlashbackPlaybackController_InitialState_IsLive();
 
@@ -1771,182 +1775,154 @@ static partial class Program
 
     internal static Task FlashbackExporter_OwnsFfmpegExportLifecycle()
     {
-        var requestsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs")
+        var exporterText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs")
             .Replace("\r\n", "\n");
-        var lifecycleText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs")
-            .Replace("\r\n", "\n");
-        var singleFilePacketReadLoopText = requestsText;
-        var singleFilePacketWritingText = singleFilePacketReadLoopText;
-        var singleFilePacketWriteStateText = singleFilePacketReadLoopText;
-        var singleFilePacketRebasingText = singleFilePacketReadLoopText;
-        var segmentPacketWritingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs")
-            .Replace("\r\n", "\n");
-        var segmentsText = segmentPacketWritingText;
-        var segmentPacketReadLoopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs")
-            .Replace("\r\n", "\n");
-        var segmentPacketWriteStateText = segmentPacketReadLoopText;
-        var segmentPacketRebasingText = segmentPacketReadLoopText;
-        var segmentRangeProjectionText = segmentPacketWritingText;
-        var segmentSkipTrackingText = segmentPacketWritingText;
-        var segmentTemplateText = segmentsText;
-        var segmentInputPreflightText = segmentTemplateText;
-        var executionPolicyText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs")
-            .Replace("\r\n", "\n");
-        var singleFileText = executionPolicyText;
-        var validationText = executionPolicyText;
-        var segmentValidationText = validationText;
-        var libAvErrorsText = lifecycleText;
-        var packetTimingText = segmentPacketWritingText;
-        var streamsText = lifecycleText;
-        var streamTemplatesText = streamsText;
-        var timeMathText = packetTimingText;
-        var packetBuffersText = packetTimingText;
 
-        AssertContains(lifecycleText, "internal sealed unsafe class FlashbackExporter : IDisposable");
-        AssertDoesNotContain(lifecycleText, "partial class FlashbackExporter");
-        AssertContains(requestsText, "public Task<FinalizeResult> ExportAsync(");
-        AssertContains(requestsText, "ExportSegmentsAsync(request.Segments,");
-        AssertContains(lifecycleText, "private const int MaxSupportedInputStreams = 64;");
-        AssertContains(lifecycleText, "private readonly SemaphoreSlim _exportLock = new(1, 1);");
-        AssertContains(lifecycleText, "private AVFormatContext* _activeInputContext;");
-        AssertContains(lifecycleText, "public void Dispose()");
-        AssertContains(lifecycleText, "FLASHBACK_EXPORT_DISPOSE_TIMEOUT_OK");
-        AssertContains(singleFileText, "private FinalizeResult ExportCore(");
-        AssertContains(singleFileText, "WriteSingleFilePacketsToActiveOutput(");
-        AssertContains(singleFileText, "ReleaseExportLockBestEffort(\"single_export\");");
-        AssertContains(singleFilePacketWritingText, "private SingleFilePacketWriteResult WriteSingleFilePacketsToActiveOutput(");
-        AssertContains(singleFilePacketWritingText, "private readonly record struct SingleFilePacketWriteResult(FinalizeResult? Failure, long TotalPackets);");
-        AssertContains(singleFilePacketWritingText, "WriteSingleFilePacketReadLoop(");
-        AssertContains(singleFilePacketWritingText, "LogTimestampBaseDrift(packetState.TimestampBasesUs, packetState.HasTimestampBase);");
-        AssertContains(singleFilePacketWritingText, "Flashback export failed: no video packets were written.");
-        AssertContains(singleFilePacketReadLoopText, "private void WriteSingleFilePacketReadLoop(");
-        AssertContains(singleFilePacketReadLoopText, "var packet = ffmpeg.av_packet_alloc();");
-        AssertContains(singleFilePacketReadLoopText, "var readResult = ffmpeg.av_read_frame(_activeInputContext, packet);");
-        AssertContains(singleFilePacketReadLoopText, "FreeBufferedPackets(packetState.BufferedPackets, packetState.BufferedStreamIndices);");
-        AssertContains(singleFilePacketReadLoopText, "var clone = ClonePacketOrThrow(packet, \"single_buffer\");");
-        AssertContains(singleFilePacketReadLoopText, "private struct SingleFilePacketWriteState");
-        AssertContains(singleFilePacketWriteStateText, "private struct SingleFilePacketWriteState");
-        AssertContains(singleFilePacketWriteStateText, "private static readonly AVRational SingleFilePacketUsTimeBase");
-        AssertContains(singleFilePacketWriteStateText, "var clone = ClonePacketOrThrow(packet, \"single_buffer\");");
-        AssertContains(singleFilePacketWriteStateText, "private void FlushSingleFileBufferedPacketsAtEof(");
-        AssertContains(singleFilePacketRebasingText, "private void WriteSingleFilePacket(");
-        AssertContains(singleFilePacketRebasingText, "private static bool PacketPtsExceedsSingleFileOutPoint(");
-        AssertContains(singleFilePacketRebasingText, "ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, packet), \"av_interleaved_write_frame\", FlashbackExportFailureCodes.OutputWriteFailed);");
+        AssertContains(exporterText, "internal sealed unsafe class FlashbackExporter : IDisposable");
+        AssertDoesNotContain(exporterText, "partial class FlashbackExporter");
+        AssertContains(exporterText, "public Task<FinalizeResult> ExportAsync(");
+        AssertContains(exporterText, "ExportSegmentsAsync(request.Segments,");
+        AssertContains(exporterText, "private const int MaxSupportedInputStreams = 64;");
+        AssertContains(exporterText, "private readonly SemaphoreSlim _exportLock = new(1, 1);");
+        AssertContains(exporterText, "private AVFormatContext* _activeInputContext;");
+        AssertContains(exporterText, "public void Dispose()");
+        AssertContains(exporterText, "FLASHBACK_EXPORT_DISPOSE_TIMEOUT_OK");
+        AssertContains(exporterText, "private FinalizeResult ExportCore(");
+        AssertContains(exporterText, "WriteSingleFilePacketsToActiveOutput(");
+        AssertContains(exporterText, "ReleaseExportLockBestEffort(\"single_export\");");
+        AssertContains(exporterText, "private SingleFilePacketWriteResult WriteSingleFilePacketsToActiveOutput(");
+        AssertContains(exporterText, "private readonly record struct SingleFilePacketWriteResult(FinalizeResult? Failure, long TotalPackets);");
+        AssertContains(exporterText, "WriteSingleFilePacketReadLoop(");
+        AssertContains(exporterText, "LogTimestampBaseDrift(packetState.TimestampBasesUs, packetState.HasTimestampBase);");
+        AssertContains(exporterText, "Flashback export failed: no video packets were written.");
+        AssertContains(exporterText, "private void WriteSingleFilePacketReadLoop(");
+        AssertContains(exporterText, "var packet = ffmpeg.av_packet_alloc();");
+        AssertContains(exporterText, "var readResult = ffmpeg.av_read_frame(_activeInputContext, packet);");
+        AssertContains(exporterText, "FreeBufferedPackets(packetState.BufferedPackets, packetState.BufferedStreamIndices);");
+        AssertContains(exporterText, "var clone = ClonePacketOrThrow(packet, \"single_buffer\");");
+        AssertContains(exporterText, "private struct SingleFilePacketWriteState");
+        AssertContains(exporterText, "private struct SingleFilePacketWriteState");
+        AssertContains(exporterText, "private static readonly AVRational SingleFilePacketUsTimeBase");
+        AssertContains(exporterText, "var clone = ClonePacketOrThrow(packet, \"single_buffer\");");
+        AssertContains(exporterText, "private void FlushSingleFileBufferedPacketsAtEof(");
+        AssertContains(exporterText, "private void WriteSingleFilePacket(");
+        AssertContains(exporterText, "private static bool PacketPtsExceedsSingleFileOutPoint(");
+        AssertContains(exporterText, "ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, packet), \"av_interleaved_write_frame\", FlashbackExportFailureCodes.OutputWriteFailed);");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackExporter.SingleFilePacketReadLoop.cs")),
             "single-file packet pump folded into FlashbackExporter.cs");
-        AssertDoesNotContain(singleFileText, "var timestampBasesUs = new long[streamCount];");
-        AssertDoesNotContain(singleFileText, "LogTimestampBaseDrift(timestampBasesUs, hasTimestampBase);");
-        AssertContains(segmentsText, "private FinalizeResult ExportSegmentsCore(");
-        AssertContains(segmentsText, "TryValidateSegmentExportInputs(");
-        AssertContains(segmentsText, "TryEstimateSegmentExportReadableBytes(");
-        AssertContains(segmentsText, "WriteSegmentPacketsToActiveOutput(");
-        AssertOccursBefore(segmentsText, "private FinalizeResult ExportSegmentsCore(", "private SegmentPacketWriteResult WriteSegmentPacketsToActiveOutput(");
-        AssertContains(segmentsText, "var requestedSegmentSkips = new RequestedSegmentSkipTracker(inPoint, outPoint);");
-        AssertContains(segmentsText, "var segmentExportWindow = ProjectSegmentExportWindow(segment, inPoint, outPoint, outPtsLimitUs);");
-        AssertContains(segmentPacketWritingText, "private SegmentPacketWriteResult WriteSegmentPacketsToActiveOutput(");
-        AssertContains(segmentPacketWritingText, "var requestedSegmentSkips = new RequestedSegmentSkipTracker(inPoint, outPoint);");
-        AssertContains(segmentPacketWritingText, "var segmentExportWindow = ProjectSegmentExportWindow(segment, inPoint, outPoint, outPtsLimitUs);");
-        AssertContains(segmentPacketWritingText, "WriteSegmentPacketReadLoop(");
-        AssertContains(segmentPacketReadLoopText, "private void WriteSegmentPacketReadLoop(");
-        AssertContains(segmentPacketReadLoopText, "var readResult = ffmpeg.av_read_frame(_activeInputContext, packet);");
-        AssertContains(segmentPacketReadLoopText, "ffmpeg.av_packet_unref(packet);");
-        AssertContains(segmentPacketReadLoopText, "var clone = ClonePacketOrThrow(packet, \"segment_buffer\");");
-        AssertContains(segmentPacketReadLoopText, "FLASHBACK_EXPORT_SEGMENT_PARTIAL_BASE_FLUSH");
-        AssertContains(segmentPacketReadLoopText, "FreeBufferedPackets(segmentPacketState.BufferedPackets, segmentPacketState.BufferedStreamIndices);");
-        AssertContains(segmentPacketWriteStateText, "private struct SegmentPacketWriteState");
-        AssertContains(segmentPacketWriteStateText, "private int FlushSegmentBufferedPackets(");
-        AssertContains(segmentPacketRebasingText, "private SegmentPacketWriteOutcome WriteRebasedSegmentPacket(");
-        AssertContains(segmentPacketRebasingText, "ResolveSegmentBoundaryTimestampRepairUs(");
-        AssertContains(segmentPacketRebasingText, "packet->dts = lastDtsPerOutputStream[outputStreamIndex] + 1;");
-        AssertContains(segmentPacketRebasingText, "ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, packet), \"av_interleaved_write_frame\", FlashbackExportFailureCodes.OutputWriteFailed);");
-        AssertContains(segmentPacketWriteStateText, "private enum SegmentPacketWriteOutcome");
-        AssertContains(segmentPacketWriteStateText, "public List<IntPtr> BufferedPackets { get; }");
-        AssertContains(segmentPacketWriteStateText, "public long VideoTimestampRepairUs { get; set; }");
-        AssertContains(segmentRangeProjectionText, "private readonly record struct SegmentExportWindow(");
-        AssertContains(segmentRangeProjectionText, "private static SegmentExportWindow ProjectSegmentExportWindow(");
-        AssertContains(segmentRangeProjectionText, "SkipBecauseEmpty: segmentOutDelta <= TimeSpan.Zero");
-        AssertContains(segmentPacketWritingText, "TryOpenSegmentInputForExport(");
-        AssertContains(segmentsText, "avformat_find_stream_info(_activeInputContext, null)");
-        AssertContains(segmentSkipTrackingText, "private struct RequestedSegmentSkipTracker");
-        AssertContains(segmentSkipTrackingText, "public void Track(FlashbackExportSegment segment, string reason)");
-        AssertContains(segmentSkipTrackingText, "public bool TryCreateFailureMessage(out string message)");
-        AssertContains(segmentsText, "ReleaseExportLockBestEffort(\"segment_export\");");
-        AssertContains(segmentInputPreflightText, "private bool TryOpenSegmentInputForExport(");
-        AssertContains(segmentInputPreflightText, "ThrowIfError(ffmpeg.avformat_find_stream_info(_activeInputContext, null), \"avformat_find_stream_info\", FlashbackExportFailureCodes.InputReadFailed);");
-        AssertContains(segmentInputPreflightText, "requestedSegmentSkips.Track(segment, \"not_found\");");
-        AssertContains(segmentInputPreflightText, "requestedSegmentSkips.Track(segment, \"invalid_stream_count\");");
-        AssertContains(segmentInputPreflightText, "requestedSegmentSkips.Track(segment, \"stream_count_mismatch\");");
-        AssertContains(segmentInputPreflightText, "requestedSegmentSkips.Track(segment, \"stream_layout_mismatch\");");
-        AssertContains(segmentTemplateText, "private bool TryInitializeSegmentOutputTemplate(");
-        AssertContains(segmentTemplateText, "FLASHBACK_EXPORT_TEMPLATE_SELECTED");
-        AssertContains(segmentsText, "FLASHBACK_EXPORT_TEMPLATE_SELECTED");
-        AssertContains(segmentValidationText, "private static bool TryValidateSegmentExportInputs(");
-        AssertContains(segmentValidationText, "private static bool TryEstimateSegmentExportReadableBytes(");
-        AssertContains(segmentValidationText, "private static int FindInvalidSegmentPathIndex(IReadOnlyList<FlashbackExportSegment> segments)");
-        AssertContains(segmentValidationText, "private static int FindDuplicateSegmentPathIndex(IReadOnlyList<FlashbackExportSegment> segments)");
-        AssertContains(executionPolicyText, "private static void ReportProgress(IProgress<ExportProgress>? progress, ExportProgress value, string stage)");
-        AssertContains(executionPolicyText, "private static bool ShouldReportProgressHeartbeat(ref long lastHeartbeatTick)");
-        AssertContains(executionPolicyText, "private const int ExportWriterYieldPacketInterval = 256;");
-        AssertContains(executionPolicyText, "private const int ExportWriterThrottlePacketInterval = 4096;");
-        AssertContains(executionPolicyText, "private const int ExportWriterThrottleSleepMs = 1;");
-        AssertContains(executionPolicyText, "private const int ExportWriterAdaptiveThrottlePacketInterval = 4;");
-        AssertContains(executionPolicyText, "private const int ExportWriterMaxAdaptiveThrottleSleepMs = 25;");
-        AssertContains(executionPolicyText, "private readonly object _adaptiveThrottleSync = new();");
-        AssertContains(executionPolicyText, "private void SetNextAdaptiveThrottleDelayProvider(Func<int>? adaptiveThrottleDelayMsProvider)");
-        AssertContains(executionPolicyText, "private Func<int>? ConsumeNextAdaptiveThrottleDelayProvider()");
-        AssertContains(executionPolicyText, "private static FinalizeResult RunWithAdaptiveThrottle(");
-        AssertContains(executionPolicyText, "private static void ThrottleExportWriterIfNeeded(long packetsWritten)");
-        AssertContains(executionPolicyText, "private bool TryFinalizeActiveOutputFile(");
-        AssertContains(executionPolicyText, "ThrowIfError(ffmpeg.av_write_trailer(_activeOutputContext), \"av_write_trailer\", FlashbackExportFailureCodes.OutputWriteFailed);");
-        AssertContains(executionPolicyText, "ThrowIfError(CloseOutputIo(), \"avio_closep\", FlashbackExportFailureCodes.OutputWriteFailed);");
-        AssertContains(executionPolicyText, "outputTransaction.TryPublish(outputPath, out outputBytes, out failureMessage, out failureCode)");
-        AssertContains(executionPolicyText, "Logger.Log($\"FLASHBACK_EXPORT_FAIL reason='{failureMessage}'\");");
-        AssertContains(singleFileText, "av_write_trailer(_activeOutputContext)");
-        AssertContains(singleFileText, "ThrowIfError(CloseOutputIo(), \"avio_closep\", FlashbackExportFailureCodes.OutputWriteFailed);\n\n        if (!outputTransaction.TryPublish");
-        AssertContains(singleFileText, "if (!TryFinalizeActiveOutputFile(outputTransaction, outputPath, out var outputBytes, out var outputFailure, out var outputFailureCode))");
-        AssertContains(segmentsText, "if (!TryFinalizeActiveOutputFile(outputTransaction, outputPath, out var outputBytes, out var outputFailure, out var outputFailureCode))");
-        AssertContains(lifecycleText, "private bool TryWaitForExportLock(string outputPath, CancellationToken ct, [NotNullWhen(false)] out FinalizeResult? cancellationResult)");
-        AssertContains(lifecycleText, "private void ReleaseExportLockBestEffort(string operation)");
-        AssertContains(lifecycleText, "private void DisposeExportLockBestEffort()");
-        AssertContains(lifecycleText, "private static FinalizeResult CreateCancelledExportResult(string outputPath)");
-        AssertContains(lifecycleText, "private static FinalizeResult CreateDisposedExportResult(string outputPath)");
-        AssertContains(validationText, "private static bool IsSamePath(string? left, string? right)");
-        AssertContains(validationText, "private static bool TryValidateOutputPath(string outputPath, out string fullOutputPath, out string failureMessage)");
-        AssertContains(validationText, "private static bool SegmentOverlapsExportRange(");
-        AssertContains(validationText, "private static bool TryValidateExportRange(TimeSpan inPoint, TimeSpan outPoint, out string failureMessage)");
-        AssertContains(lifecycleText, "private void CloseActiveInput()");
-        AssertContains(lifecycleText, "private int CloseOutputIo()");
-        AssertContains(lifecycleText, "private void CleanupNativeState()");
-        AssertContains(lifecycleText, "private CancellationTokenSource CreateExportCancellationSource(CancellationToken ct)");
-        AssertContains(lifecycleText, "private static void DisposeLinkedCtsBestEffort(CancellationTokenSource? cts, string operation)");
-        AssertContains(lifecycleText, "private void ClearDisposeCtsReference(CancellationTokenSource? disposeCts)");
-        AssertContains(lifecycleText, "private void EnsureNotDisposed()");
-        AssertContains(libAvErrorsText, "private static void ThrowIfError(int errorCode, string operation, string failureCode)");
-        AssertContains(libAvErrorsText, "private static string GetErrorString(int errorCode)");
-        AssertContains(packetTimingText, "private static long ResolveFrameDurationUs(AVStream* videoStream)");
-        AssertContains(packetTimingText, "private static long ResolveSegmentBoundaryTimestampRepairUs(");
-        AssertContains(packetTimingText, "private static void NormalizePacketTimestampsBeforeWrite(AVPacket* packet, bool preservePreroll = false)");
-        AssertContains(packetBuffersText, "private long FlushBufferedPackets(");
-        AssertContains(packetBuffersText, "private static void FreeBufferedPackets(");
-        AssertContains(packetBuffersText, "private static AVPacket* ClonePacketOrThrow(AVPacket* packet, string operation)");
-        AssertContains(packetBuffersText, "finally\n        {\n            FreeBufferedPackets(bufferedPackets, bufferedStreamIndices);\n        }");
+        AssertDoesNotContain(exporterText, "var timestampBasesUs = new long[streamCount];");
+        AssertDoesNotContain(exporterText, "LogTimestampBaseDrift(timestampBasesUs, hasTimestampBase);");
+        AssertContains(exporterText, "private FinalizeResult ExportSegmentsCore(");
+        AssertContains(exporterText, "TryValidateSegmentExportInputs(");
+        AssertContains(exporterText, "TryEstimateSegmentExportReadableBytes(");
+        AssertContains(exporterText, "WriteSegmentPacketsToActiveOutput(");
+        AssertOccursBefore(exporterText, "private FinalizeResult ExportSegmentsCore(", "private SegmentPacketWriteResult WriteSegmentPacketsToActiveOutput(");
+        AssertContains(exporterText, "var requestedSegmentSkips = new RequestedSegmentSkipTracker(inPoint, outPoint);");
+        AssertContains(exporterText, "var segmentExportWindow = ProjectSegmentExportWindow(segment, inPoint, outPoint, outPtsLimitUs);");
+        AssertContains(exporterText, "private SegmentPacketWriteResult WriteSegmentPacketsToActiveOutput(");
+        AssertContains(exporterText, "var requestedSegmentSkips = new RequestedSegmentSkipTracker(inPoint, outPoint);");
+        AssertContains(exporterText, "var segmentExportWindow = ProjectSegmentExportWindow(segment, inPoint, outPoint, outPtsLimitUs);");
+        AssertContains(exporterText, "WriteSegmentPacketReadLoop(");
+        AssertContains(exporterText, "private void WriteSegmentPacketReadLoop(");
+        AssertContains(exporterText, "var readResult = ffmpeg.av_read_frame(_activeInputContext, packet);");
+        AssertContains(exporterText, "ffmpeg.av_packet_unref(packet);");
+        AssertContains(exporterText, "var clone = ClonePacketOrThrow(packet, \"segment_buffer\");");
+        AssertContains(exporterText, "FLASHBACK_EXPORT_SEGMENT_PARTIAL_BASE_FLUSH");
+        AssertContains(exporterText, "FreeBufferedPackets(segmentPacketState.BufferedPackets, segmentPacketState.BufferedStreamIndices);");
+        AssertContains(exporterText, "private struct SegmentPacketWriteState");
+        AssertContains(exporterText, "private int FlushSegmentBufferedPackets(");
+        AssertContains(exporterText, "private SegmentPacketWriteOutcome WriteRebasedSegmentPacket(");
+        AssertContains(exporterText, "ResolveSegmentBoundaryTimestampRepairUs(");
+        AssertContains(exporterText, "packet->dts = lastDtsPerOutputStream[outputStreamIndex] + 1;");
+        AssertContains(exporterText, "ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, packet), \"av_interleaved_write_frame\", FlashbackExportFailureCodes.OutputWriteFailed);");
+        AssertContains(exporterText, "private enum SegmentPacketWriteOutcome");
+        AssertContains(exporterText, "public List<IntPtr> BufferedPackets { get; }");
+        AssertContains(exporterText, "public long VideoTimestampRepairUs { get; set; }");
+        AssertContains(exporterText, "private readonly record struct SegmentExportWindow(");
+        AssertContains(exporterText, "private static SegmentExportWindow ProjectSegmentExportWindow(");
+        AssertContains(exporterText, "SkipBecauseEmpty: segmentOutDelta <= TimeSpan.Zero");
+        AssertContains(exporterText, "TryOpenSegmentInputForExport(");
+        AssertContains(exporterText, "avformat_find_stream_info(_activeInputContext, null)");
+        AssertContains(exporterText, "private struct RequestedSegmentSkipTracker");
+        AssertContains(exporterText, "public void Track(FlashbackExportSegment segment, string reason)");
+        AssertContains(exporterText, "public bool TryCreateFailureMessage(out string message)");
+        AssertContains(exporterText, "ReleaseExportLockBestEffort(\"segment_export\");");
+        AssertContains(exporterText, "private bool TryOpenSegmentInputForExport(");
+        AssertContains(exporterText, "ThrowIfError(ffmpeg.avformat_find_stream_info(_activeInputContext, null), \"avformat_find_stream_info\", FlashbackExportFailureCodes.InputReadFailed);");
+        AssertContains(exporterText, "requestedSegmentSkips.Track(segment, \"not_found\");");
+        AssertContains(exporterText, "requestedSegmentSkips.Track(segment, \"invalid_stream_count\");");
+        AssertContains(exporterText, "requestedSegmentSkips.Track(segment, \"stream_count_mismatch\");");
+        AssertContains(exporterText, "requestedSegmentSkips.Track(segment, \"stream_layout_mismatch\");");
+        AssertContains(exporterText, "private bool TryInitializeSegmentOutputTemplate(");
+        AssertContains(exporterText, "FLASHBACK_EXPORT_TEMPLATE_SELECTED");
+        AssertContains(exporterText, "FLASHBACK_EXPORT_TEMPLATE_SELECTED");
+        AssertContains(exporterText, "private static bool TryValidateSegmentExportInputs(");
+        AssertContains(exporterText, "private static bool TryEstimateSegmentExportReadableBytes(");
+        AssertContains(exporterText, "private static int FindInvalidSegmentPathIndex(IReadOnlyList<FlashbackExportSegment> segments)");
+        AssertContains(exporterText, "private static int FindDuplicateSegmentPathIndex(IReadOnlyList<FlashbackExportSegment> segments)");
+        AssertContains(exporterText, "private static void ReportProgress(IProgress<ExportProgress>? progress, ExportProgress value, string stage)");
+        AssertContains(exporterText, "private static bool ShouldReportProgressHeartbeat(ref long lastHeartbeatTick)");
+        AssertContains(exporterText, "private const int ExportWriterYieldPacketInterval = 256;");
+        AssertContains(exporterText, "private const int ExportWriterThrottlePacketInterval = 4096;");
+        AssertContains(exporterText, "private const int ExportWriterThrottleSleepMs = 1;");
+        AssertContains(exporterText, "private const int ExportWriterAdaptiveThrottlePacketInterval = 4;");
+        AssertContains(exporterText, "private const int ExportWriterMaxAdaptiveThrottleSleepMs = 25;");
+        AssertContains(exporterText, "private readonly object _adaptiveThrottleSync = new();");
+        AssertContains(exporterText, "private void SetNextAdaptiveThrottleDelayProvider(Func<int>? adaptiveThrottleDelayMsProvider)");
+        AssertContains(exporterText, "private Func<int>? ConsumeNextAdaptiveThrottleDelayProvider()");
+        AssertContains(exporterText, "private static FinalizeResult RunWithAdaptiveThrottle(");
+        AssertContains(exporterText, "private static void ThrottleExportWriterIfNeeded(long packetsWritten)");
+        AssertContains(exporterText, "private bool TryFinalizeActiveOutputFile(");
+        AssertContains(exporterText, "ThrowIfError(ffmpeg.av_write_trailer(_activeOutputContext), \"av_write_trailer\", FlashbackExportFailureCodes.OutputWriteFailed);");
+        AssertContains(exporterText, "ThrowIfError(CloseOutputIo(), \"avio_closep\", FlashbackExportFailureCodes.OutputWriteFailed);");
+        AssertContains(exporterText, "outputTransaction.TryPublish(outputPath, out outputBytes, out failureMessage, out failureCode)");
+        AssertContains(exporterText, "Logger.Log($\"FLASHBACK_EXPORT_FAIL reason='{failureMessage}'\");");
+        AssertContains(exporterText, "av_write_trailer(_activeOutputContext)");
+        AssertContains(exporterText, "ThrowIfError(CloseOutputIo(), \"avio_closep\", FlashbackExportFailureCodes.OutputWriteFailed);\n\n        if (!outputTransaction.TryPublish");
+        AssertContains(exporterText, "if (!TryFinalizeActiveOutputFile(outputTransaction, outputPath, out var outputBytes, out var outputFailure, out var outputFailureCode))");
+        AssertContains(exporterText, "if (!TryFinalizeActiveOutputFile(outputTransaction, outputPath, out var outputBytes, out var outputFailure, out var outputFailureCode))");
+        AssertContains(exporterText, "private bool TryWaitForExportLock(string outputPath, CancellationToken ct, [NotNullWhen(false)] out FinalizeResult? cancellationResult)");
+        AssertContains(exporterText, "private void ReleaseExportLockBestEffort(string operation)");
+        AssertContains(exporterText, "private void DisposeExportLockBestEffort()");
+        AssertContains(exporterText, "private static FinalizeResult CreateCancelledExportResult(string outputPath)");
+        AssertContains(exporterText, "private static FinalizeResult CreateDisposedExportResult(string outputPath)");
+        AssertContains(exporterText, "private static bool IsSamePath(string? left, string? right)");
+        AssertContains(exporterText, "private static bool TryValidateOutputPath(string outputPath, out string fullOutputPath, out string failureMessage)");
+        AssertContains(exporterText, "private static bool SegmentOverlapsExportRange(");
+        AssertContains(exporterText, "private static bool TryValidateExportRange(TimeSpan inPoint, TimeSpan outPoint, out string failureMessage)");
+        AssertContains(exporterText, "private void CloseActiveInput()");
+        AssertContains(exporterText, "private int CloseOutputIo()");
+        AssertContains(exporterText, "private void CleanupNativeState()");
+        AssertContains(exporterText, "private CancellationTokenSource CreateExportCancellationSource(CancellationToken ct)");
+        AssertContains(exporterText, "private static void DisposeLinkedCtsBestEffort(CancellationTokenSource? cts, string operation)");
+        AssertContains(exporterText, "private void ClearDisposeCtsReference(CancellationTokenSource? disposeCts)");
+        AssertContains(exporterText, "private void EnsureNotDisposed()");
+        AssertContains(exporterText, "private static void ThrowIfError(int errorCode, string operation, string failureCode)");
+        AssertContains(exporterText, "private static string GetErrorString(int errorCode)");
+        AssertContains(exporterText, "private static long ResolveFrameDurationUs(AVStream* videoStream)");
+        AssertContains(exporterText, "private static long ResolveSegmentBoundaryTimestampRepairUs(");
+        AssertContains(exporterText, "private static void NormalizePacketTimestampsBeforeWrite(AVPacket* packet, bool preservePreroll = false)");
+        AssertContains(exporterText, "private long FlushBufferedPackets(");
+        AssertContains(exporterText, "private static void FreeBufferedPackets(");
+        AssertContains(exporterText, "private static AVPacket* ClonePacketOrThrow(AVPacket* packet, string operation)");
+        AssertContains(exporterText, "finally\n        {\n            FreeBufferedPackets(bufferedPackets, bufferedStreamIndices);\n        }");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackExporter.PacketBuffers.cs")),
             "FlashbackExporter.PacketBuffers.cs folded into FlashbackExporter.cs");
-        AssertContains(streamsText, "private void OpenInput(string inputPath)");
-        AssertContains(streamsText, "private void CreateOutputContext(string tmpPath, bool fastStart)");
-        AssertContains(streamsText, "private static void OpenOutputIoAndWriteHeader(AVFormatContext* outputContext, string tmpPath, bool fastStart)");
-        AssertContains(streamTemplatesText, "private static int[] CopyTemplateStreams(");
-        AssertContains(streamTemplatesText, "private static string? FindSegmentStreamLayoutMismatch(");
-        AssertContains(streamTemplatesText, "private static bool VideoDimensionsMatchOrCanUseTemplate(");
-        AssertContains(timeMathText, "private static long AddNonNegativeSaturated(long left, long right)");
-        AssertContains(timeMathText, "private static long ToAvTimeBaseTimestampOrMax(TimeSpan value)");
-        AssertContains(timeMathText, "private static long ToAvTimeBaseTimestamp(TimeSpan value)");
-        AssertContains(timeMathText, "private static long ToMicrosecondsSaturated(TimeSpan value)");
-        AssertContains(timeMathText, "private static TimeSpan SaturatingSubtract(TimeSpan left, TimeSpan right)");
+        AssertContains(exporterText, "private void OpenInput(string inputPath)");
+        AssertContains(exporterText, "private void CreateOutputContext(string tmpPath, bool fastStart)");
+        AssertContains(exporterText, "private static void OpenOutputIoAndWriteHeader(AVFormatContext* outputContext, string tmpPath, bool fastStart)");
+        AssertContains(exporterText, "private static int[] CopyTemplateStreams(");
+        AssertContains(exporterText, "private static string? FindSegmentStreamLayoutMismatch(");
+        AssertContains(exporterText, "private static bool VideoDimensionsMatchOrCanUseTemplate(");
+        AssertContains(exporterText, "private static long AddNonNegativeSaturated(long left, long right)");
+        AssertContains(exporterText, "private static long ToAvTimeBaseTimestampOrMax(TimeSpan value)");
+        AssertContains(exporterText, "private static long ToAvTimeBaseTimestamp(TimeSpan value)");
+        AssertContains(exporterText, "private static long ToMicrosecondsSaturated(TimeSpan value)");
+        AssertContains(exporterText, "private static TimeSpan SaturatingSubtract(TimeSpan left, TimeSpan right)");
         AssertEqual(
             true,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackExporter.cs")),
@@ -2977,26 +2953,25 @@ static partial class Program
         return published;
     }
 
-    private static Task FlashbackPlaybackController_PublicPlaybackState_LivesInRoot()
+    internal static Task FlashbackPlaybackController_PublicPlaybackState_LivesInRoot()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
-        var playbackStateText = rootText;
 
-        AssertContains(playbackStateText, "private volatile FlashbackPlaybackState _state = FlashbackPlaybackState.Live;");
-        AssertContains(playbackStateText, "private long _playbackPositionTicks;");
-        AssertContains(playbackStateText, "private volatile string _decoderHwAccel = \"N/A\";");
-        AssertContains(playbackStateText, "private long _lastAudioPtsTicks;");
-        AssertContains(playbackStateText, "private long _lastVideoPtsTicks;");
-        AssertContains(playbackStateText, "private bool _wasPlayingBeforeScrub;");
-        AssertContains(playbackStateText, "public bool GpuDecodeEnabled { get; set; } = true;");
-        AssertContains(playbackStateText, "public FlashbackPlaybackState State => _state;");
-        AssertContains(playbackStateText, "public TimeSpan PlaybackPosition");
-        AssertContains(playbackStateText, "public TimeSpan GapFromLive");
-        AssertContains(playbackStateText, "public bool IsInitialized => _initialized;");
-        AssertContains(playbackStateText, "public bool IsDisposed => _disposedFlag != 0;");
-        AssertContains(playbackStateText, "public string DecoderHwAccel => _decoderHwAccel;");
-        AssertContains(playbackStateText, "private void SetState(FlashbackPlaybackState newState, string reason = \"\")");
+        AssertContains(rootText, "private volatile FlashbackPlaybackState _state = FlashbackPlaybackState.Live;");
+        AssertContains(rootText, "private long _playbackPositionTicks;");
+        AssertContains(rootText, "private volatile string _decoderHwAccel = \"N/A\";");
+        AssertContains(rootText, "private long _lastAudioPtsTicks;");
+        AssertContains(rootText, "private long _lastVideoPtsTicks;");
+        AssertContains(rootText, "private bool _wasPlayingBeforeScrub;");
+        AssertContains(rootText, "public bool GpuDecodeEnabled { get; set; } = true;");
+        AssertContains(rootText, "public FlashbackPlaybackState State => _state;");
+        AssertContains(rootText, "public TimeSpan PlaybackPosition");
+        AssertContains(rootText, "public TimeSpan GapFromLive");
+        AssertContains(rootText, "public bool IsInitialized => _initialized;");
+        AssertContains(rootText, "public bool IsDisposed => _disposedFlag != 0;");
+        AssertContains(rootText, "public string DecoderHwAccel => _decoderHwAccel;");
+        AssertContains(rootText, "private void SetState(FlashbackPlaybackState newState, string reason = \"\")");
         AssertContains(rootText, "private readonly FlashbackBufferManager _bufferManager;");
 
         return Task.CompletedTask;
@@ -3146,21 +3121,21 @@ static partial class Program
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
         // All three scrub-related command paths must clamp via the eviction-aware
         // overload so a long-held scrub doesn't resolve to evicted file PTS.
-        const string seekClampBeforeOpen = "cmd = cmd with { Position = ClampPosition(cmd.Position, frozenValidStart) };\n        var seekResumeTarget = ClampPlaybackTargetToMinimumLiveLead(";
-        const string scrubClampBeforeOpen = "cmd = cmd with { Position = ClampPosition(cmd.Position, frozenValidStart) };\n        decoder ??= CreateDecoder();\n        EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(cmd.Position, frozenValidStart));";
+        const string seekClampBeforeOpen = "cmd = cmd with { Position = ClampPosition(cmd.Position, worker.FrozenValidStart) };\n        var seekResumeTarget = ClampPlaybackTargetToMinimumLiveLead(";
+        const string scrubClampBeforeOpen = "cmd = cmd with { Position = ClampPosition(cmd.Position, worker.FrozenValidStart) };\n        worker.Decoder ??= CreateDecoder();\n        EnsureFileOpen(worker.Decoder, ref worker.FileOpen, SaturatingAdd(cmd.Position, worker.FrozenValidStart));";
 
         AssertContains(sourceText, seekClampBeforeOpen);
-        AssertContains(sourceText, "SaturatingAdd(cmd.Position, frozenValidStart),\n            frozenValidStart,\n            \"seek\");");
-        AssertContains(sourceText, "cmd = cmd with { Position = ClampPosition(SaturatingSubtract(seekResumeTarget, frozenValidStart), frozenValidStart) };");
-        AssertContains(sourceText, "if (_commandMailbox.ShouldYieldSeekToQueuedPlay(commandChannel))\n        {\n            PlaybackPosition = cmd.Position;\n            pendingExactResumeTarget = seekResumeTarget;");
-        AssertContains(sourceText, "decoder ??= CreateDecoder();\n        EnsureFileOpen(decoder, ref fileOpen, seekResumeTarget);");
+        AssertContains(sourceText, "SaturatingAdd(cmd.Position, worker.FrozenValidStart),\n            worker.FrozenValidStart,\n            \"seek\");");
+        AssertContains(sourceText, "cmd = cmd with { Position = ClampPosition(SaturatingSubtract(seekResumeTarget, worker.FrozenValidStart), worker.FrozenValidStart) };");
+        AssertContains(sourceText, "if (_commandMailbox.ShouldYieldSeekToQueuedPlay(commandChannel))\n        {\n            PlaybackPosition = cmd.Position;\n            worker.PendingExactResumeTarget = seekResumeTarget;");
+        AssertContains(sourceText, "worker.Decoder ??= CreateDecoder();\n        EnsureFileOpen(worker.Decoder, ref worker.FileOpen, seekResumeTarget);");
         AssertEqual(1, sourceText.Split(scrubClampBeforeOpen, StringSplitOptions.None).Length - 1, "BeginScrub clamps before file lookup with frozen reference");
         var updateScrubBlock = ExtractTextBetween(
             sourceText,
             "private void HandleUpdateScrubCommand(",
             "    private void HandleEndScrubCommand(");
-        AssertContains(updateScrubBlock, "cmd = cmd with { Position = ClampPosition(cmd.Position, frozenValidStart) };\n        if (_commandMailbox.ShouldYieldScrubUpdateToQueuedControl(commandChannel))");
-        AssertContains(updateScrubBlock, "decoder ??= CreateDecoder();\n        EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(cmd.Position, frozenValidStart));");
+        AssertContains(updateScrubBlock, "cmd = cmd with { Position = ClampPosition(cmd.Position, worker.FrozenValidStart) };\n        if (_commandMailbox.ShouldYieldScrubUpdateToQueuedControl(commandChannel))");
+        AssertContains(updateScrubBlock, "worker.Decoder ??= CreateDecoder();\n        EnsureFileOpen(worker.Decoder, ref worker.FileOpen, SaturatingAdd(cmd.Position, worker.FrozenValidStart));");
 
         return Task.CompletedTask;
     }
@@ -3175,12 +3150,12 @@ static partial class Program
         AssertContains(sourceText, "if (rightTicks < 0 && leftTicks < long.MinValue - rightTicks)");
         AssertContains(sourceText, "if (rightTicks < 0 && leftTicks > long.MaxValue + rightTicks)");
         AssertContains(sourceText, "if (rightTicks > 0 && leftTicks < long.MinValue + rightTicks)");
-        AssertDoesNotContain(sourceText, "cmd.Position + frozenValidStart");
-        AssertDoesNotContain(sourceText, "PlaybackPosition + frozenValidStart");
+        AssertDoesNotContain(sourceText, "cmd.Position + worker.FrozenValidStart");
+        AssertDoesNotContain(sourceText, "PlaybackPosition + worker.FrozenValidStart");
         AssertDoesNotContain(sourceText, "PlaybackPosition + cmd.Delta");
         AssertDoesNotContain(sourceText, "bufferPosition + validStartPts");
         AssertDoesNotContain(sourceText, "pos + frozenValidStart");
-        AssertDoesNotContain(sourceText, "nudgeFrame.Pts - frozenValidStart");
+        AssertDoesNotContain(sourceText, "nudgeFrame.Pts - worker.FrozenValidStart");
         AssertDoesNotContain(sourceText, "frame.Pts - validStartPts");
         AssertDoesNotContain(sourceText, "videoFrame.Pts - frozenValidStart");
         AssertDoesNotContain(sourceText, "latestAbsPts - lastFrameAbsPts");
@@ -3287,10 +3262,10 @@ static partial class Program
         AssertContains(ensureFileOpenBlock, "if (string.IsNullOrWhiteSpace(filePath))\n        {\n            Logger.Log(\"FLASHBACK_PLAYBACK_NO_FILE\");\n            if (decoder.IsOpen)\n            {\n                CloseDecoderFileBestEffort(decoder, \"ensure_file_open_no_file\");\n            }\n\n            fileOpen = false;\n            _currentOpenFilePath = null;\n            _decoderHwAccel = \"N/A\";\n            return;\n        }");
         AssertContains(ensureFileOpenBlock, "Logger.Log($\"FLASHBACK_PLAYBACK_FILE_OPEN_ERROR path='{filePath}' type={ex.GetType().Name} error='{ex.Message}'\");\n            if (decoder.IsOpen)\n            {\n                CloseDecoderFileBestEffort(decoder, \"ensure_file_open_error\");\n            }\n            _decoderHwAccel = \"N/A\";\n            fileOpen = false;");
         AssertContains(ensureFileOpenBlock, "private static bool IsDecoderFileReady(FlashbackDecoder decoder, bool fileOpen)\n        => fileOpen && decoder.IsOpen;");
-        AssertDoesNotContain(sourceText, "EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(cmd.Position, frozenValidStart));\n                        if (!decoder.IsOpen)");
-        AssertDoesNotContain(sourceText, "EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(PlaybackPosition, frozenValidStart));\n                        if (!decoder.IsOpen)");
-        AssertDoesNotContain(sourceText, "EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(nudgedPos, frozenValidStart));\n                        if (!decoder.IsOpen)");
-        AssertEqual(6, sourceText.Split("if (!IsDecoderFileReady(decoder, fileOpen))", StringSplitOptions.None).Length - 1, "All EnsureFileOpen callers gate on fileOpen and decoder.IsOpen");
+        AssertDoesNotContain(sourceText, "EnsureFileOpen(worker.Decoder, ref worker.FileOpen, SaturatingAdd(cmd.Position, worker.FrozenValidStart));\n                        if (!worker.Decoder.IsOpen)");
+        AssertDoesNotContain(sourceText, "EnsureFileOpen(worker.Decoder, ref worker.FileOpen, SaturatingAdd(PlaybackPosition, worker.FrozenValidStart));\n                        if (!worker.Decoder.IsOpen)");
+        AssertDoesNotContain(sourceText, "EnsureFileOpen(worker.Decoder, ref worker.FileOpen, SaturatingAdd(nudgedPos, worker.FrozenValidStart));\n                        if (!worker.Decoder.IsOpen)");
+        AssertEqual(6, sourceText.Split("if (!IsDecoderFileReady(worker.Decoder, worker.FileOpen))", StringSplitOptions.None).Length - 1, "All EnsureFileOpen callers gate on fileOpen and decoder.IsOpen");
 
         return Task.CompletedTask;
     }
@@ -3312,15 +3287,15 @@ static partial class Program
         AssertDoesNotContain(publicPauseBlock, "SeekAndDisplay");
         AssertContains(pauseFromLiveBlock, "SafeSuppressPreviewSubmission(\"pause_from_live\");");
         AssertContains(pauseFromLiveBlock, "SafePauseRendering(\"pause_from_live\");");
-        AssertContains(pauseFromLiveBlock, "var pauseTarget = ResolvePauseFromLiveTarget(frozenValidStart);");
-        AssertContains(pauseFromLiveBlock, "EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(pausePos, frozenValidStart));");
-        AssertContains(pauseFromLiveBlock, "if (!IsDecoderFileReady(decoder, fileOpen))");
+        AssertContains(pauseFromLiveBlock, "var pauseTarget = ResolvePauseFromLiveTarget(worker.FrozenValidStart);");
+        AssertContains(pauseFromLiveBlock, "EnsureFileOpen(worker.Decoder, ref worker.FileOpen, SaturatingAdd(pausePos, worker.FrozenValidStart));");
+        AssertContains(pauseFromLiveBlock, "if (!IsDecoderFileReady(worker.Decoder, worker.FileOpen))");
         AssertContains(pauseFromLiveBlock, "SetNoFileFailure(CommandKind.Pause, pausePos);");
         AssertContains(pauseFromLiveBlock, "if (_commandMailbox.ShouldYieldPauseFromLiveToQueuedSeekOrPlay(commandChannel))");
         AssertContains(pauseFromLiveBlock, "FLASHBACK_PLAYBACK_PAUSE_FROM_LIVE_DEFER_DISPLAY");
-        AssertContains(pauseFromLiveBlock, "if (!SeekAndDisplayKeyframe(decoder, ref fileOpen, pausePos, frozenValidStart, CommandKind.Pause, cts.Token))");
-        AssertContains(pauseFromLiveBlock, "RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, \"pause_from_live_display_failed\");");
-        AssertContains(pauseFromLiveBlock, "pendingExactResumeTarget = SaturatingAdd(PlaybackPosition, frozenValidStart);");
+        AssertContains(pauseFromLiveBlock, "if (!SeekAndDisplayKeyframe(worker.Decoder, ref worker.FileOpen, pausePos, worker.FrozenValidStart, CommandKind.Pause, cts.Token))");
+        AssertContains(pauseFromLiveBlock, "RestoreLiveAfterSeekDisplayFailure(worker.Decoder, ref worker.FileOpen, \"pause_from_live_display_failed\");");
+        AssertContains(pauseFromLiveBlock, "worker.PendingExactResumeTarget = SaturatingAdd(PlaybackPosition, worker.FrozenValidStart);");
         AssertContains(pauseFromLiveBlock, "SetState(FlashbackPlaybackState.Paused, \"user\");");
         AssertContains(pauseFromLiveBlock, "frozen_frame=true");
         AssertContains(sourceText, "private TimeSpan ResolvePauseFromLiveTarget(TimeSpan frozenValidStart)");
@@ -3340,18 +3315,16 @@ static partial class Program
             "private void HandleNudgeCommand(",
             "\n}");
 
-        AssertContains(nudgeBlock, "decoder ??= CreateDecoder();");
-        AssertContains(nudgeBlock, "EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(nudgedPos, frozenValidStart));");
-        AssertContains(nudgeBlock, "if (!IsDecoderFileReady(decoder, fileOpen))");
+        AssertContains(nudgeBlock, "worker.Decoder ??= CreateDecoder();");
+        AssertContains(nudgeBlock, "EnsureFileOpen(worker.Decoder, ref worker.FileOpen, SaturatingAdd(nudgedPos, worker.FrozenValidStart));");
+        AssertContains(nudgeBlock, "if (!IsDecoderFileReady(worker.Decoder, worker.FileOpen))");
         AssertContains(nudgeBlock, "FLASHBACK_PLAYBACK_NUDGE_NO_FILE");
-        AssertContains(nudgeBlock, "ReleasePlaybackFrameForLive(\"nudge_no_file\");");
-        AssertContains(nudgeBlock, "RestoreLiveAudio();");
-        AssertContains(nudgeBlock, "SafeResumePreviewSubmission(\"nudge_no_file\");");
-        AssertContains(nudgeBlock, "SafeResumeRendering(\"nudge_no_file\");");
-        AssertContains(nudgeBlock, "SetState(FlashbackPlaybackState.Live, \"nudge_no_file\");");
-        AssertContains(nudgeBlock, "if (!SeekAndDisplayKeyframe(decoder, ref fileOpen, nudgedPos, frozenValidStart, CommandKind.Nudge, cts.Token))");
-        AssertContains(nudgeBlock, "RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, \"nudge_display_failed\");");
-        AssertDoesNotContain(nudgeBlock, "if (decoder != null)");
+        AssertContains(nudgeBlock, "RestoreLiveAfterNoFile(\"nudge_no_file\");");
+        AssertContains(nudgeBlock, "if (!SeekAndDisplayKeyframe(worker.Decoder, ref worker.FileOpen, nudgedPos, worker.FrozenValidStart, CommandKind.Nudge, cts.Token))");
+        AssertContains(nudgeBlock, "RestoreLiveAfterSeekDisplayFailure(worker.Decoder, ref worker.FileOpen, \"nudge_display_failed\");");
+        AssertDoesNotContain(nudgeBlock, "if (worker.Decoder != null)");
+        var noFileRestore = ExtractDeclaredMemberCode(sourceText, "private void RestoreLiveAfterNoFile(");
+        AssertContains(noFileRestore, "ReleasePlaybackFrameForLive(operation);\n        RestoreLiveAudio();\n        SafeResumePreviewSubmission(operation);\n        SafeResumeRendering(operation);\n        SetState(FlashbackPlaybackState.Live, operation);");
 
         return Task.CompletedTask;
     }
@@ -3420,7 +3393,8 @@ static partial class Program
         AssertContains(audioPrebufferText, "private const int PlaybackAudioPrebufferTimeoutMs = 1000;");
         AssertContains(audioPrebufferText, "private const int PlaybackAudioPrebufferRetryDelayMs = 20;");
         AssertContains(audioPrebufferText, "private const int PlaybackAudioPrebufferDecodeFrameBudget = 96;");
-        AssertContains(sourceText, "var prebufferedFrames = new Queue<DecodedVideoFrame>();");
+        AssertContains(sourceText, "var worker = new PlaybackWorkerState();");
+        AssertContains(sourceText, "public readonly Queue<DecodedVideoFrame> PrebufferedFrames = new();");
         var hardwareReadAhead = ExtractTextBetween(sourceText,
             "private bool FillHardwarePlaybackReadAhead(", "private void ClearPrebufferedFrames(");
         AssertContains(hardwareReadAhead, "if (!decoder.IsD3D11HwAccelerated)");
@@ -3432,8 +3406,8 @@ static partial class Program
         var decoderSource = ReadFlashbackDecoderSource();
         AssertContains(decoderSource, "internal const int MaxRetainedHardwareFrames = 12;");
         AssertContains(decoderSource, "decoderCtx->extra_hw_frames = MaxRetainedHardwareFrames + 4;");
-        AssertContains(sourceText, "ClearPrebufferedFrames(prebufferedFrames, $\"command_{cmd.Kind}\");");
-        AssertContains(sourceText, "ClearPrebufferedFrames(prebufferedFrames, \"playback_stopped\");");
+        AssertContains(sourceText, "ClearPrebufferedFrames(worker.PrebufferedFrames, $\"command_{cmd.Kind}\");");
+        AssertContains(sourceText, "ClearPrebufferedFrames(worker.PrebufferedFrames, \"playback_stopped\");");
         AssertContains(sourceText, "private void PrimePlaybackAudioBuffer(");
         AssertContains(sourceText, "ChannelReader<PlaybackCommand> commandChannel,");
         AssertContains(sourceText, "TimeSpan resumeTarget,");
@@ -3460,13 +3434,13 @@ static partial class Program
         AssertContains(sourceText, "WaitForRenderingPaused(AudioRenderStateTransitionTimeoutMs)");
         AssertContains(sourceText, "WaitForRenderingRunning(AudioRenderStateTransitionTimeoutMs)");
         AssertContains(sourceText, "SafeSuppressPreviewSubmission(\"begin_scrub\")");
-        AssertContains(sourceText, "SafeResumePreviewSubmission(\"scrub_no_file\")");
-        AssertContains(sourceText, "RestoreLiveForPlaybackThreadExit(ref decoder, ref fileOpen, \"go_live\")");
+        AssertContains(sourceText, "RestoreLiveAfterNoFile(\"scrub_no_file\")");
+        AssertContains(sourceText, "RestoreLiveForPlaybackThreadExit(worker, \"go_live\")");
         AssertContains(sourceText, "SafeResumePreviewSubmission(operation);");
         AssertContains(sourceText, "RestoreLiveAfterPlaybackDecodeError(decoder, ref fileOpen);");
         AssertContains(sourceText, "SafeFlushPlayback(\"restore_live_audio\")");
-        AssertContains(sourceText, "SafeResumeRendering(\"play_no_file\")");
-        AssertContains(sourceText, "SafeResumeRendering(\"nudge_no_file\")");
+        AssertContains(sourceText, "RestoreLiveAfterNoFile(\"play_no_file\")");
+        AssertContains(sourceText, "RestoreLiveAfterNoFile(\"nudge_no_file\")");
         AssertContains(sourceText, "if (_audioPlayback == null)\n        {\n            decoder.AudioChunkCallback = null;\n            return;\n        }");
         AssertContains(sourceText, "if (!TryValidatePlaybackAudioChunk(chunk, out var invalidReason))");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_AUDIO_DROP reason={invalidReason}");
@@ -3501,7 +3475,7 @@ static partial class Program
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_SOFTWARE_DECODE_SNAP_TO_LIVE");
         AssertContains(sourceText, "SetLastCommandFailure($\"software_decode_over_budget:{operation}{FormatCommandDetail(position: pos)}\");");
         AssertContains(sourceText, "RestoreLiveAfterSoftwarePlaybackBudgetSnap(decoder, ref fileOpen, operation);");
-        AssertContains(sourceText, "TrySnapLiveForSoftwarePlaybackBudget(decoder, ref fileOpen, \"play\")");
+        AssertContains(sourceText, "TrySnapLiveForSoftwarePlaybackBudget(worker.Decoder, ref worker.FileOpen, \"play\")");
         AssertContains(sourceText, "SnapLiveForSoftwarePlaybackBudget(decoder, ref fileOpen, \"playback_decode\");");
         AssertContains(sourceText, "private void UpdateDecoderHwAccel(FlashbackDecoder decoder)");
         AssertContains(sourceText, "const double syncThresholdMs = 10.0;");
@@ -3543,11 +3517,11 @@ static partial class Program
         AssertContains(sourceText, "CommitAudioMasterFallback(");
         AssertContains(sourceText, "if (Math.Abs(diffMs) > MaxAudioMasterCorrectionMs)\n            {\n                // WASAPI render PTS can lag decoded video by the endpoint buffer/device");
         AssertContains(sourceText, "WallClockPace(pacingStopwatch, frameDuration);\n                return;");
-        AssertContains(sourceText, "PrimePlaybackAudioBuffer(decoder, prebufferedFrames, commandChannel, ref fileOpen, coalescedSeekTarget, \"seek_resume\", cts.Token);");
+        AssertContains(sourceText, "PrimePlaybackAudioBuffer(worker.Decoder, worker.PrebufferedFrames, commandChannel, ref worker.FileOpen, coalescedSeekTarget, \"seek_resume\", cts.Token);");
         AssertContains(sourceText, "SafeResumePlaybackRendering(\"seek_resume\");");
-        AssertContains(sourceText, "PrimePlaybackAudioBuffer(decoder, prebufferedFrames, commandChannel, ref fileOpen, endScrubTarget, \"end_scrub_resume\", cts.Token);");
+        AssertContains(sourceText, "PrimePlaybackAudioBuffer(worker.Decoder, worker.PrebufferedFrames, commandChannel, ref worker.FileOpen, endScrubTarget, \"end_scrub_resume\", cts.Token);");
         AssertContains(sourceText, "SafeResumePlaybackRendering(\"end_scrub_resume\");");
-        AssertContains(sourceText, "PrimePlaybackAudioBuffer(decoder, prebufferedFrames, commandChannel, ref fileOpen, seekTarget, \"play\", cts.Token);");
+        AssertContains(sourceText, "PrimePlaybackAudioBuffer(worker.Decoder, worker.PrebufferedFrames, commandChannel, ref worker.FileOpen, seekTarget, \"play\", cts.Token);");
         AssertContains(sourceText, "SafeResumePlaybackRendering(\"play\");");
         AssertContains(sourceText, "private void ResetPlaybackPtsCadenceBaseline()");
         AssertContains(playbackSegmentSwitchText, "ResetPlaybackPtsCadenceBaseline();\n            pacingStopwatch.Restart();\n            playbackContinues = true;\n            return true;");
@@ -3564,17 +3538,15 @@ static partial class Program
         AssertContains(wasapiPlaybackText, "private readonly ManualResetEventSlim _renderPausedAcknowledged = new(false);");
         AssertContains(wasapiPlaybackText, "private readonly ManualResetEventSlim _renderRunningAcknowledged = new(true);");
         AssertContains(wasapiPlaybackText, "if (Volatile.Read(ref _renderingPaused) != 0 && !_resumeRequested)");
-        AssertContains(wasapiPlaybackText, "_resumeRequested = false;\n        _pauseRequested = true;");
-        AssertContains(wasapiPlaybackText, "_renderRunningAcknowledged.Reset();\n        _renderPausedAcknowledged.Reset();");
+        AssertContains(wasapiPlaybackText, "_resumeRequested = false;\n            _pauseRequested = true;");
+        AssertContains(wasapiPlaybackText, "_renderRunningAcknowledged.Reset();\n            _renderPausedAcknowledged.Reset();");
         AssertContains(wasapiPlaybackText, "if (Volatile.Read(ref _renderingPaused) == 0 && !_pauseRequested)");
         AssertContains(wasapiPlaybackText, "public void ResumeRendering(double prebufferMs = 0, int prebufferTimeoutMs = 0)");
         AssertContains(wasapiPlaybackText, "Volatile.Write(ref _resumePrebufferFrames, Math.Max(0, prebufferFrames));");
-        AssertContains(wasapiPlaybackText, "_resumeRequested = true;\n        _renderEvent?.Set();");
+        AssertContains(wasapiPlaybackText, "_resumeRequested = true;\n            _renderEvent?.Set();");
         AssertContains(wasapiPlaybackText, "public bool WaitForRenderingPaused(int timeoutMs)");
         AssertContains(wasapiPlaybackText, "public bool WaitForRenderingRunning(int timeoutMs)");
         AssertContains(wasapiPlaybackText, "private bool WaitForRenderState(bool paused, int timeoutMs)");
-        AssertContains(wasapiPlaybackText, "return _renderPausedAcknowledged.Wait(boundedTimeoutMs);");
-        AssertContains(wasapiPlaybackText, "return _renderRunningAcknowledged.Wait(boundedTimeoutMs);");
         AssertContains(wasapiPlaybackRenderText, "internal sealed class WasapiAudioPlayback : IDisposable");
         AssertContains(wasapiPlaybackRenderText, "private void RenderThreadMain()");
         AssertContains(wasapiPlaybackRenderText, "if (!_resumeRequested)");
@@ -3726,9 +3698,9 @@ static partial class Program
         AssertContains(sourceText, "SetReopenFailure(reason, ex.GetType().Name, seekTarget);");
         AssertContains(sourceText, "private void SetReopenFailure(string reason, string detail, TimeSpan position)");
         AssertContains(sourceText, "SetLastCommandFailure($\"reopen_failed:{reason}:{detail}{FormatCommandDetail(position: position)}\");");
-        AssertContains(sourceText, "if (!SeekAndDisplayKeyframe(decoder, ref fileOpen, cmd.Position, frozenValidStart, CommandKind.Seek, cts.Token))");
-        AssertContains(sourceText, "if (!SeekAndDisplayKeyframe(decoder, ref fileOpen, cmd.Position, frozenValidStart, CommandKind.BeginScrub, cts.Token))");
-        AssertContains(sourceText, "if (!SeekAndDisplayKeyframe(decoder, ref fileOpen, cmd.Position, frozenValidStart, CommandKind.UpdateScrub, cts.Token))");
+        AssertContains(sourceText, "if (!SeekAndDisplayKeyframe(worker.Decoder, ref worker.FileOpen, cmd.Position, worker.FrozenValidStart, CommandKind.Seek, cts.Token))");
+        AssertContains(sourceText, "if (!SeekAndDisplayKeyframe(worker.Decoder, ref worker.FileOpen, cmd.Position, worker.FrozenValidStart, CommandKind.BeginScrub, cts.Token))");
+        AssertContains(sourceText, "if (!SeekAndDisplayKeyframe(worker.Decoder, ref worker.FileOpen, cmd.Position, worker.FrozenValidStart, CommandKind.UpdateScrub, cts.Token))");
         AssertContains(sourceText, "SetSeekDisplayFailure(kind, \"no_file\", bufferPosition);");
         AssertContains(sourceText, "SetSeekDisplayFailure(kind, \"seek_failed\", bufferPosition);");
         AssertContains(sourceText, "SetSeekDisplayFailure(kind, \"submit_failed\", bufferPosition);");
@@ -3769,26 +3741,26 @@ static partial class Program
         AssertContains(sourceText, "private void RestoreLiveAfterSeekDisplayFailure(FlashbackDecoder decoder, ref bool fileOpen, string operation)");
         AssertContains(sourceText, "CloseDecoderFileBestEffort(decoder, operation);\n        fileOpen = false;\n        _currentOpenFilePath = null;\n        _decoderHwAccel = \"N/A\";\n        ReleasePlaybackFrameForLive(operation);");
         AssertContains(sourceText, "ReleasePlaybackFrameForLive(operation);\n        RestoreLiveAudio();\n        SafeResumePreviewSubmission(operation);\n        if (resumeRendering)\n        {\n            SafeResumeRendering(operation);\n        }\n\n        SetState(FlashbackPlaybackState.Live, operation);");
-        AssertContains(sourceText, "RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, \"seek_display_failed\");");
-        AssertContains(sourceText, "RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, \"begin_scrub_display_failed\");");
-        AssertContains(sourceText, "RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, \"scrub_update_display_failed\");");
+        AssertContains(sourceText, "RestoreLiveAfterSeekDisplayFailure(worker.Decoder, ref worker.FileOpen, \"seek_display_failed\");");
+        AssertContains(sourceText, "RestoreLiveAfterSeekDisplayFailure(worker.Decoder, ref worker.FileOpen, \"begin_scrub_display_failed\");");
+        AssertContains(sourceText, "RestoreLiveAfterSeekDisplayFailure(worker.Decoder, ref worker.FileOpen, \"scrub_update_display_failed\");");
         AssertContains(sourceText, "private void SetSeekDisplayFailure(CommandKind kind, string detail, TimeSpan position)");
         AssertContains(sourceText, "SetLastCommandFailure($\"seek_display_failed:{kind}:{detail}{FormatCommandDetail(position: position)}\");");
-        AssertContains(sourceText, "TimeSpan? pendingExactResumeTarget = null;");
+        AssertContains(sourceText, "public TimeSpan? PendingExactResumeTarget;");
         AssertContains(sourceText, "var seekResumeTarget = ClampPlaybackTargetToMinimumLiveLead(");
         AssertContains(sourceText, "var coalescedSeekTarget = seekResumeTarget;");
-        AssertContains(sourceText, "pendingExactResumeTarget = seekResumeTarget;");
+        AssertContains(sourceText, "worker.PendingExactResumeTarget = seekResumeTarget;");
         AssertContains(sourceText, "var pendingPlayTarget = ClampPlaybackTargetToMinimumLiveLead(");
-        AssertContains(sourceText, "pendingExactResumeTarget ?? SaturatingAdd(PlaybackPosition, frozenValidStart),");
-        AssertContains(sourceText, "var requireExactResumeSeek = pendingExactResumeTarget.HasValue;");
+        AssertContains(sourceText, "worker.PendingExactResumeTarget ?? SaturatingAdd(PlaybackPosition, worker.FrozenValidStart),");
+        AssertContains(sourceText, "var requireExactResumeSeek = worker.PendingExactResumeTarget.HasValue;");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_RESUME_EXACT_SEEK");
         AssertContains(sourceText, "if (_commandMailbox.ShouldYieldSeekToQueuedPlay(commandChannel))");
         AssertContains(sourceText, "MarkCommandNoOp(CommandKind.Seek, \"superseded_by_play\", cmd.Position);");
         AssertContains(sourceText, "if (_commandMailbox.ShouldYieldPauseFromLiveToQueuedSeekOrPlay(commandChannel))");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_PAUSE_FROM_LIVE_DEFER_DISPLAY");
-        AssertContains(sourceText, "if (!TrySeekWithActiveFmp4Reopen(decoder, ref fileOpen, coalescedSeekTarget, \"seek_resume\", cts.Token))");
-        AssertContains(sourceText, "if (!TrySeekWithActiveFmp4Reopen(decoder, ref fileOpen, endScrubTarget, \"end_scrub\", cts.Token))");
-        AssertContains(sourceText, "if (!TrySeekWithActiveFmp4Reopen(decoder, ref fileOpen, seekTarget, \"play\", cts.Token))");
+        AssertContains(sourceText, "if (!TrySeekWithActiveFmp4Reopen(worker.Decoder, ref worker.FileOpen, coalescedSeekTarget, \"seek_resume\", cts.Token))");
+        AssertContains(sourceText, "if (!TrySeekWithActiveFmp4Reopen(worker.Decoder, ref worker.FileOpen, endScrubTarget, \"end_scrub\", cts.Token))");
+        AssertContains(sourceText, "if (!TrySeekWithActiveFmp4Reopen(worker.Decoder, ref worker.FileOpen, seekTarget, \"play\", cts.Token))");
         AssertContains(sourceText, "if (!ShouldSkipActiveFmp4ReopenNearLive(filePts, \"seek_keyframe\"))\n                    {\n                        Logger.Log($\"FLASHBACK_PLAYBACK_SEEK_REOPEN_ACTIVE offset_ms={(long)filePts.TotalMilliseconds}\");\n                        if (TryReopenCurrentFileAndSeekKeyframe(decoder, ref fileOpen, filePts, \"seek_keyframe\", cancellationToken))\n                            goto seekSuccess;\n                    }");
         AssertContains(sourceText, "SetReopenFailure(\"segment_switch\", \"seek_failed\", segSwitchTarget);");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_SEGMENT_SWITCH_SEEK_FAIL");
@@ -4229,15 +4201,15 @@ static partial class Program
         AssertContains(sourceText, "private void ReleasePlaybackFrameForLive(string operation)");
         AssertContains(sourceText, "private void ReleasePlaybackFrameForLive(string operation)\n    {\n        Interlocked.Exchange(ref _lastAudioPtsTicks, 0);\n        Interlocked.Exchange(ref _lastVideoPtsTicks, 0);");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_RELEASE_HELD_FOR_LIVE op={operation}");
-        AssertContains(sourceText, "ReleasePlaybackFrameForLive(\"seek_no_file\");");
+        AssertContains(sourceText, "RestoreLiveAfterNoFile(\"seek_no_file\");");
         AssertContains(sourceText, "SetNoFileFailure(CommandKind.Seek, cmd.Position);");
-        AssertContains(sourceText, "ReleasePlaybackFrameForLive(\"scrub_no_file\");");
+        AssertContains(sourceText, "RestoreLiveAfterNoFile(\"scrub_no_file\");");
         AssertContains(sourceText, "SetNoFileFailure(CommandKind.BeginScrub, cmd.Position);");
-        AssertContains(sourceText, "ReleasePlaybackFrameForLive(\"scrub_update_no_file\");");
+        AssertContains(sourceText, "RestoreLiveAfterNoFile(\"scrub_update_no_file\");");
         AssertContains(sourceText, "SetNoFileFailure(CommandKind.UpdateScrub, cmd.Position);");
-        AssertContains(sourceText, "ReleasePlaybackFrameForLive(\"play_no_file\");");
+        AssertContains(sourceText, "RestoreLiveAfterNoFile(\"play_no_file\");");
         AssertContains(sourceText, "SetNoFileFailure(CommandKind.Play, PlaybackPosition);");
-        AssertContains(sourceText, "ReleasePlaybackFrameForLive(\"nudge_no_file\");");
+        AssertContains(sourceText, "RestoreLiveAfterNoFile(\"nudge_no_file\");");
         AssertContains(sourceText, "SetNoFileFailure(CommandKind.Nudge, nudgedPos);");
         AssertContains(sourceText, "RestoreLiveAfterNearLiveSnap(decoder, ref fileOpen);");
         AssertContains(sourceText, "RestoreLiveAfterPlaybackDecodeError(decoder, ref fileOpen);");
@@ -4685,7 +4657,7 @@ static partial class Program
             "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)",
             "        catch (Exception ex)\n        {\n            Logger.Log($\"FLASHBACK_SINK_ENCODING_LOOP_FATAL");
         AssertContains(cancelBlock, "Logger.Log(\"FLASHBACK_SINK_ENCODING_LOOP_CANCELLED\");");
-        AssertContains(cancelBlock, "CompletePendingForceRotateWithEmptyResult();");
+        AssertContains(cancelBlock, "FailPendingForceRotate();");
         AssertContains(cancelBlock, "var cancelPts = ResolveEncoderPts();");
         AssertContains(cancelBlock, "if (cancelPts > _segmentStartPts)");
         AssertContains(cancelBlock, "var cancelSegmentBytes = NonNegativeByteDelta(_encoder.TotalBytesWritten, Interlocked.Read(ref _segmentStartBytes));");
@@ -4759,9 +4731,9 @@ static partial class Program
         AssertContains(forceRotateText, "private sealed class ForceRotateRequest");
         AssertContains(forceRotateText, "public bool TryBeginCommit()\n            => Interlocked.CompareExchange(ref _state, StateCommitting, StatePending) == StatePending;");
         AssertContains(forceRotateText, "public bool TryCancel()");
-        AssertContains(forceRotateText, "public void Complete(IReadOnlyList<string> paths)");
+        AssertContains(forceRotateText, "public void Complete(FlashbackForceRotateResult result)");
         AssertContains(forceRotateText, "private bool TryCancelForceRotate(ForceRotateRequest request)");
-        AssertContains(forceRotateText, "private void CompletePendingForceRotateWithEmptyResult()");
+        AssertContains(forceRotateText, "private void FailPendingForceRotate()");
         AssertContains(forceRotateText, "private static bool ShouldAbortForceRotateDrain(");
         AssertEqual(
             false,
@@ -4798,8 +4770,8 @@ static partial class Program
         AssertContains(sourceText, "private bool DrainAudioPackets(ChannelReader<AudioSamplePacket> reader, int maxPackets = int.MaxValue)");
         AssertContains(sourceText, "private bool DrainMicrophonePackets(ChannelReader<AudioSamplePacket> reader, int maxPackets = int.MaxValue)");
         AssertContains(sourceText, "while (drainedCount < maxPackets && reader.TryRead(out var packet))");
-        AssertContains(executionBlock, "catch (Exception ex)\n        {\n            Logger.Log($\"FLASHBACK_SINK_FORCE_ROTATE_FAIL type={ex.GetType().Name} msg={ex.Message}\");\n            localRequest?.CompleteEmpty();\n            throw;\n        }");
-        AssertOccursBefore(executionBlock, "localRequest?.CompleteEmpty();\n            throw;", "finally\n        {\n            lock (_videoQueueSync)");
+        AssertContains(executionBlock, "catch (Exception ex)\n        {\n            Logger.Log($\"FLASHBACK_SINK_FORCE_ROTATE_FAIL type={ex.GetType().Name} msg={ex.Message}\");\n            localRequest?.Fail();\n            throw;\n        }");
+        AssertOccursBefore(executionBlock, "localRequest?.Fail();\n            throw;", "finally\n        {\n            lock (_videoQueueSync)");
         AssertContains(executionBlock, "finally\n        {\n            lock (_videoQueueSync)\n            {\n                Volatile.Write(ref _forceRotateDraining, false);\n            }\n        }");
 
         var forceRotateBlock = ExtractTextBetween(
@@ -4812,12 +4784,12 @@ static partial class Program
         AssertContains(forceRotateBlock, "var cancelled = TryCancelForceRotate(request);");
         AssertContains(forceRotateBlock, "FLASHBACK_SINK_FORCE_ROTATE_TIMEOUT_COMMITTED");
         AssertContains(sourceText, "private const int ForceRotateCommittedGraceMs = 1_000;");
-        AssertContains(forceRotateBlock, "if (request.Task.Wait(TimeSpan.FromMilliseconds(ForceRotateCommittedGraceMs)))\n                    {\n                        return FlashbackForceRotateResult.Completed(request.Task.GetAwaiter().GetResult());\n                    }");
+        AssertContains(forceRotateBlock, "if (request.Task.Wait(TimeSpan.FromMilliseconds(ForceRotateCommittedGraceMs)))\n                    {\n                        return request.Task.GetAwaiter().GetResult();\n                    }");
         AssertContains(forceRotateBlock, "FLASHBACK_SINK_FORCE_ROTATE_TIMEOUT_COMMITTED_PENDING");
         AssertContains(forceRotateBlock, "return FlashbackForceRotateResult.CommittedPending();");
         AssertContains(forceRotateBlock, "FLASHBACK_SINK_FORCE_ROTATE_CANCELLED_COMMITTED");
         AssertContains(forceRotateBlock, "return FlashbackForceRotateResult.CanceledBeforeCommit();");
-        AssertContains(forceRotateBlock, "return FlashbackForceRotateResult.Completed(request.Task.GetAwaiter().GetResult());");
+        AssertContains(forceRotateBlock, "return request.Task.GetAwaiter().GetResult();");
         AssertDoesNotContain(forceRotateBlock, "FLASHBACK_SINK_FORCE_ROTATE_CANCELLED_COMMITTED\");\n                _ = request.Task.GetAwaiter().GetResult();");
         AssertDoesNotContain(forceRotateBlock, "return request.Task.Result;");
         AssertDoesNotContain(sourceText, "_forceRotateTcs");
@@ -4845,33 +4817,30 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
             .Replace("\r\n", "\n");
-        var startupText = rootText;
-        var startupQueuesText = startupText;
-        var startupRollbackText = startupText;
         var docsText = ReadRepoFile("docs/architecture/cleanup-plan.md")
             .Replace("\r\n", "\n") + "\n" +
             ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
 
-        AssertContains(startupText, "public Task StartAsync(FlashbackSessionContext context, TimeSpan ptsBaseOffset = default, CancellationToken cancellationToken = default)");
-        AssertContains(startupText, "ValidateSessionContext(context);");
-        AssertContains(startupText, "var tsPath = _bufferManager.AcquireSegmentPath(out var startupGeneratedSegment);");
-        AssertContains(startupText, "InitializeStartupQueues(sessionContext);");
-        AssertContains(startupText, "_encodingTask = Task.Factory.StartNew(");
-        AssertContains(startupText, "RollBackStartFailure(ex, startupGeneratedSegmentPath);");
+        AssertContains(rootText, "public Task StartAsync(FlashbackSessionContext context, TimeSpan ptsBaseOffset = default, CancellationToken cancellationToken = default)");
+        AssertContains(rootText, "ValidateSessionContext(context);");
+        AssertContains(rootText, "var tsPath = _bufferManager.AcquireSegmentPath(out var startupGeneratedSegment);");
+        AssertContains(rootText, "InitializeStartupQueues(sessionContext);");
+        AssertContains(rootText, "_encodingTask = Task.Factory.StartNew(");
+        AssertContains(rootText, "RollBackStartFailure(ex, startupGeneratedSegmentPath);");
 
-        AssertContains(startupQueuesText, "private void InitializeStartupQueues(FlashbackSessionContext sessionContext)");
-        AssertContains(startupQueuesText, "Channel.CreateBounded<GpuFramePacket>");
-        AssertContains(startupQueuesText, "Channel.CreateBounded<VideoFramePacket>");
-        AssertContains(startupQueuesText, "Channel.CreateBounded<AudioSamplePacket>");
-        AssertContains(startupQueuesText, "FLASHBACK_SINK_CPU_INPUT_UPLOAD");
-        AssertContains(startupQueuesText, "FLASHBACK_SINK_GPU_QUEUE_INIT");
+        AssertContains(rootText, "private void InitializeStartupQueues(FlashbackSessionContext sessionContext)");
+        AssertContains(rootText, "Channel.CreateBounded<GpuFramePacket>");
+        AssertContains(rootText, "Channel.CreateBounded<VideoFramePacket>");
+        AssertContains(rootText, "Channel.CreateBounded<AudioSamplePacket>");
+        AssertContains(rootText, "FLASHBACK_SINK_CPU_INPUT_UPLOAD");
+        AssertContains(rootText, "FLASHBACK_SINK_GPU_QUEUE_INIT");
 
-        AssertContains(startupRollbackText, "private void RollBackStartFailure(Exception ex, string? startupGeneratedSegmentPath)");
-        AssertContains(startupRollbackText, "FLASHBACK_SINK_START_FAIL");
-        AssertContains(startupRollbackText, "CompleteWriter(_videoQueue);");
-        AssertContains(startupRollbackText, "DisposeCtsBestEffort(_cts, \"start_fail\");");
-        AssertContains(startupRollbackText, "DisposeEncoderBestEffort(\"start_fail\");");
-        AssertContains(startupRollbackText, "_bufferManager.AbandonGeneratedSegmentPath(startupGeneratedSegmentPath, restoreActivePath: null);");
+        AssertContains(rootText, "private void RollBackStartFailure(Exception ex, string? startupGeneratedSegmentPath)");
+        AssertContains(rootText, "FLASHBACK_SINK_START_FAIL");
+        AssertContains(rootText, "CompleteWriter(_videoQueue);");
+        AssertContains(rootText, "DisposeCtsBestEffort(_cts, \"start_fail\");");
+        AssertContains(rootText, "DisposeEncoderBestEffort(\"start_fail\");");
+        AssertContains(rootText, "_bufferManager.AbandonGeneratedSegmentPath(startupGeneratedSegmentPath, restoreActivePath: null);");
 
         AssertEqual(
             false,
@@ -4888,9 +4857,6 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
             .Replace("\r\n", "\n");
-        var startupPolicyText = rootText;
-        var diagnosticsResetText = startupPolicyText;
-        var runtimeStateText = rootText;
         var docsText = ReadRepoFile("docs/architecture/cleanup-plan.md")
             .Replace("\r\n", "\n") + "\n" +
             ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
@@ -4900,21 +4866,21 @@ static partial class Program
         AssertContains(rootText, "private static int ResolveVideoQueueCapacity");
         AssertContains(rootText, "private void ResetEncodingCounters()");
 
-        AssertContains(startupPolicyText, "private static int ResolveVideoQueueCapacity(FlashbackSessionContext context, bool useHardwareFrames)");
-        AssertContains(startupPolicyText, "private static bool IsHighResolutionFrame(FlashbackSessionContext context)");
-        AssertContains(startupPolicyText, "private static double ResolveSessionFrameRate(double frameRate)");
-        AssertContains(startupPolicyText, "private static void ValidateSessionContext(FlashbackSessionContext context)");
+        AssertContains(rootText, "private static int ResolveVideoQueueCapacity(FlashbackSessionContext context, bool useHardwareFrames)");
+        AssertContains(rootText, "private static bool IsHighResolutionFrame(FlashbackSessionContext context)");
+        AssertContains(rootText, "private static double ResolveSessionFrameRate(double frameRate)");
+        AssertContains(rootText, "private static void ValidateSessionContext(FlashbackSessionContext context)");
 
-        AssertContains(diagnosticsResetText, "private void ResetEncodingCounters()");
-        AssertContains(diagnosticsResetText, "ResetVideoDiagnostics();");
-        AssertContains(diagnosticsResetText, "private void ResetVideoDiagnostics()");
-        AssertContains(diagnosticsResetText, "Interlocked.Exchange(ref _segmentStartBytes, 0);");
+        AssertContains(rootText, "private void ResetEncodingCounters()");
+        AssertContains(rootText, "ResetVideoDiagnostics();");
+        AssertContains(rootText, "private void ResetVideoDiagnostics()");
+        AssertContains(rootText, "Interlocked.Exchange(ref _segmentStartBytes, 0);");
 
-        AssertContains(runtimeStateText, "private static long ToNonNegativeLongSaturated(double value)");
-        AssertContains(runtimeStateText, "private static long NonNegativeByteDelta(long currentBytes, long startBytes)");
-        AssertContains(runtimeStateText, "private static TimeSpan NonNegativeDuration(TimeSpan end, TimeSpan start)");
-        AssertContains(runtimeStateText, "private static (TimeSpan StartPts, TimeSpan EndPts) ResumeEvictionBestEffort(");
-        AssertContains(runtimeStateText, "FLASHBACK_SINK_EVICTION_RESUME_WARN");
+        AssertContains(rootText, "private static long ToNonNegativeLongSaturated(double value)");
+        AssertContains(rootText, "private static long NonNegativeByteDelta(long currentBytes, long startBytes)");
+        AssertContains(rootText, "private static TimeSpan NonNegativeDuration(TimeSpan end, TimeSpan start)");
+        AssertContains(rootText, "private static (TimeSpan StartPts, TimeSpan EndPts) ResumeEvictionBestEffort(");
+        AssertContains(rootText, "FLASHBACK_SINK_EVICTION_RESUME_WARN");
 
         AssertContains(docsText, "FlashbackEncoderSink.cs");
         AssertContains(docsText, "session validation");
@@ -5089,12 +5055,12 @@ static partial class Program
         AssertContains(forceRotateText, "var request = new ForceRotateRequest(preparedPath);");
         AssertContains(forceRotateText, "TryCancelForceRotate(request)");
         AssertContains(forceRotateText, "private bool TryCancelForceRotate(ForceRotateRequest request)");
-        AssertContains(forceRotateText, "private void CompletePendingForceRotateWithEmptyResult()");
+        AssertContains(forceRotateText, "private void FailPendingForceRotate()");
         AssertContains(forceRotateText, "private static bool ShouldAbortForceRotateDrain(");
         AssertContains(forceRotateText, "private sealed class ForceRotateRequest");
         AssertContains(forceRotateText, "public bool TryBeginCommit()");
         AssertContains(forceRotateText, "public bool TryCancel()");
-        AssertContains(forceRotateText, "public void Complete(IReadOnlyList<string> paths)");
+        AssertContains(forceRotateText, "public void Complete(FlashbackForceRotateResult result)");
         AssertContains(forceRotateText, "private bool TryCompleteForceRotateRequest(");
         AssertContains(forceRotateText, "Volatile.Write(ref _forceRotateDraining, true);");
         AssertContains(forceRotateText, "private static bool TryDrainForceRotatePhase(");
@@ -5104,7 +5070,7 @@ static partial class Program
         AssertContains(forceRotateText, "() => DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit)");
         AssertContains(forceRotateText, "if (!localRequest.TryBeginCommit())");
         AssertContains(forceRotateText, "if (!RotateSegment(currentPts, localRequest.PreparedPath))");
-        AssertContains(forceRotateText, "localRequest.Complete(_bufferManager.GetExistingCompletedSegmentPathsInRange(localIn, localOut));");
+        AssertContains(forceRotateText, "localRequest.Complete(FlashbackForceRotateResult.Completed(\n                _bufferManager.GetExistingCompletedSegmentPathsInRange(localIn, localOut)));");
         AssertContains(rootText, "public FlashbackForceRotateResult ForceRotateForExport(");
         AssertContains(rootText, "public bool IsForceRotateActive =>");
         AssertContains(rootText, "public bool WaitForForceRotateIdle(TimeSpan timeout)");
@@ -5168,29 +5134,27 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
             .Replace("\r\n", "\n");
-        var inputsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
-            .Replace("\r\n", "\n");
         var docsText = ReadRepoFile("docs/architecture/cleanup-plan.md")
             .Replace("\r\n", "\n") + "\n" +
             ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
 
-        AssertContains(inputsText, "public bool TryEnqueueRawVideoFrame(ReadOnlySpan<byte> data, int expectedSize)");
-        AssertContains(inputsText, "bool IRawVideoFrameLeaseTryEncoder.TryEnqueueRawVideoFrame(PooledVideoFrameLease frame)");
-        AssertContains(inputsText, "public bool TryEnqueueGpuVideoFrame(IntPtr d3d11Texture2D, int subresourceIndex)");
-        AssertContains(inputsText, "PooledVideoFrame.GetFrameSizeBytes");
-        AssertContains(inputsText, "Marshal.AddRef(d3d11Texture2D);");
-        AssertContains(inputsText, "TrackVideoQueueRejected(rejectReason);");
-        AssertContains(inputsText, "TrackGpuQueueRejected(rejectReason);");
-        AssertContains(inputsText, "public void EnqueueAudioSamples(ReadOnlyMemory<byte> samples)");
-        AssertContains(inputsText, "public void EnqueueMicrophoneSamples(ReadOnlyMemory<byte> samples)");
-        AssertContains(inputsText, "public Task WriteAudioAsync(ReadOnlyMemory<byte> samples, CancellationToken cancellationToken = default)");
-        AssertContains(inputsText, "public Task WriteMicrophoneAudioAsync(ReadOnlyMemory<byte> samples, CancellationToken cancellationToken = default)");
-        AssertContains(inputsText, "Hot WASAPI callback path: copy/enqueue only, never await or block.");
-        AssertContains(inputsText, "TryValidateAudioPacketLength(samples.Length, \"audio\")");
-        AssertContains(inputsText, "TryValidateAudioPacketLength(samples.Length, \"microphone\")");
-        AssertContains(inputsText, "private VideoEnqueueResult TryEnqueueVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)");
-        AssertContains(inputsText, "private bool TryEnqueueAudioPacket(");
-        AssertContains(inputsText, "private void TrackVideoQueueRejected(string reason)");
+        AssertContains(rootText, "public bool TryEnqueueRawVideoFrame(ReadOnlySpan<byte> data, int expectedSize)");
+        AssertContains(rootText, "bool IRawVideoFrameLeaseTryEncoder.TryEnqueueRawVideoFrame(PooledVideoFrameLease frame)");
+        AssertContains(rootText, "public bool TryEnqueueGpuVideoFrame(IntPtr d3d11Texture2D, int subresourceIndex)");
+        AssertContains(rootText, "PooledVideoFrame.GetFrameSizeBytes");
+        AssertContains(rootText, "Marshal.AddRef(d3d11Texture2D);");
+        AssertContains(rootText, "TrackVideoQueueRejected(rejectReason);");
+        AssertContains(rootText, "TrackGpuQueueRejected(rejectReason);");
+        AssertContains(rootText, "public void EnqueueAudioSamples(ReadOnlyMemory<byte> samples)");
+        AssertContains(rootText, "public void EnqueueMicrophoneSamples(ReadOnlyMemory<byte> samples)");
+        AssertContains(rootText, "public Task WriteAudioAsync(ReadOnlyMemory<byte> samples, CancellationToken cancellationToken = default)");
+        AssertContains(rootText, "public Task WriteMicrophoneAudioAsync(ReadOnlyMemory<byte> samples, CancellationToken cancellationToken = default)");
+        AssertContains(rootText, "Hot WASAPI callback path: copy/enqueue only, never await or block.");
+        AssertContains(rootText, "TryValidateAudioPacketLength(samples.Length, \"audio\")");
+        AssertContains(rootText, "TryValidateAudioPacketLength(samples.Length, \"microphone\")");
+        AssertContains(rootText, "private VideoEnqueueResult TryEnqueueVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)");
+        AssertContains(rootText, "private bool TryEnqueueAudioPacket(");
+        AssertContains(rootText, "private void TrackVideoQueueRejected(string reason)");
 
         AssertContains(rootText, "public bool TryEnqueueRawVideoFrame(ReadOnlySpan<byte> data, int expectedSize)");
         AssertContains(rootText, "public void EnqueueAudioSamples(ReadOnlyMemory<byte> samples)");

@@ -55,9 +55,9 @@ mentions the moved files.
 | Diagnostic sessions | `tools/DiagnosticSession/DiagnosticSessionRunner.cs`, `tools/DiagnosticSession/DiagnosticSessionRunContext.cs`, `tools/DiagnosticSession/DiagnosticSessionResult.cs` | Run phases, mutable session context, and result handoffs. See [tooling](#tooling-and-diagnostics) for scenario owners. |
 | Offline regression harness | `tests/Sussudio.Tests/HarnessCore.cs`, focused `tests/Sussudio.Tests/XUnit.*.cs` slices | Assembly-load smoke entry point and shared test helpers; xUnit slices and focused contract tests own regression execution. |
 | Capture runtime | `Sussudio/Services/Capture/CaptureService.cs`, `CaptureService.PreviewLifecycle.cs`, `CaptureService.Flashback.cs`, `CaptureService.HealthSnapshots.cs`, `CaptureService.RecordingLifecycle.cs`, `CaptureService.RuntimeSnapshots.cs` | Lifecycle transitions, resource ownership, recording/Flashback orchestration, and snapshots. See [capture](#capture-runtime) for the responsibility split. |
-| App shell | `Sussudio/Program.cs`, `Sussudio/Services/Runtime/AppProcessStartup.cs`, `Sussudio/App.xaml.cs` | Private native probe routing, single-instance admission before shared logging, WinUI startup, and recoverable/fatal exception policy. |
+| App shell | `Sussudio/Program.cs`, `Sussudio/Services/Runtime/AppProcessStartup.cs`, `Sussudio/App.xaml.cs` | Private native probe routing, single-instance admission before explicit app logging initialization, WinUI startup, and recoverable/fatal exception policy. |
 | App surface helpers | `Sussudio/AppSurface.cs` | Display formatters and XAML converters; preserve public binding type names. |
-| App runtime | `Sussudio/AppRuntime.cs` | Repository/log paths, bounded asynchronous logging, rotation, fatal breadcrumbs, and best-effort startup system diagnostics. |
+| App runtime | `Sussudio/AppRuntime.cs` | Repository/log paths and an explicit idempotent Logger.Initialize(logRoot) lifetime; getters and early diagnostics do not start shared-file logging. The admitted App and validated private probe select their own roots before bounded asynchronous logging, rotation, fatal breadcrumbs, and best-effort system diagnostics. |
 | App project build workflow | `Sussudio/Sussudio.csproj`, `Sussudio/Sussudio.Build.targets` | Project identity and dependencies in the project; publish/staging policy and deferred Windows App SDK initialization in imported targets. The SDK initializer body is retained in an obj copy, with its module hook removed so `Program` invokes it only after normal process admission. |
 | Device discovery | `Sussudio/Services/Capture/DeviceService.cs`, `Sussudio/Services/Capture/MfInterop.cs`, `Sussudio/Services/Capture/DeviceDiscovery/MfDeviceEnumerator.cs` | Enumeration, capability/format probing, endpoint association, and shared Media Foundation helpers. |
 | Native XU KS bridge | `Sussudio/Services/NativeXu/KsExtensionUnitNative.cs` | KS interface discovery, topology parsing, native transfers, and transport gates. |
@@ -67,7 +67,7 @@ mentions the moved files.
 | Capture fan-out | `Sussudio/Services/Capture/UnifiedVideoCapture.cs` | Source/decoder lifecycle, preview ingress, and recording/Flashback sink delivery. MJPEG above 60 fps defaults to parallel decode; native MF conversion remains available at lower rates and through its environment override. Uncompressed inputs never enter JPEG decode fallback. |
 | Capture cadence trackers | `Sussudio/Services/Capture/CaptureCadenceTrackers.cs` | Decoded-frame visual cadence and luma sampling. Source-packet hashing belongs to the MJPEG decoder below. |
 | Audio capture | `Sussudio/Services/Audio/WasapiAudioCapture.cs` | WASAPI capture lifecycle, conversion/resampling, pooled packets, and sink fan-out. |
-| Audio playback | `Sussudio/Services/Audio/WasapiAudioPlayback.cs` | WASAPI render lifecycle, bounded sample buffering, PTS advancement, and volume ramps. |
+| Audio playback | `Sussudio/Services/Audio/WasapiAudioPlayback.cs` | WASAPI render lifecycle, retained transition failures and bounded acknowledgements, bounded sample buffering, PTS advancement, and volume ramps. |
 | WASAPI interop | `Sussudio/Services/Audio/WasapiComInterop.cs` | Core Audio COM contracts, native formats, endpoint helpers, and device-change notification. |
 | WASAPI worker quarantine | `Sussudio/Services/Audio/WasapiWorkerQuarantine.cs` | Retain native resources for late-exiting workers and block unsafe restart until they exit. |
 | MJPEG preview pacing | `Sussudio/Services/Capture/MjpegPreviewJitterBuffer.cs` | Paced frame emission anchored to capture cadence, optional display-clock alignment, adaptive depth, and lease ownership. |
@@ -459,7 +459,11 @@ Important entry points:
 - `Sussudio/Services/NativeXu/KsExtensionUnitNative.cs` owns supported
   4K X VID/PID recognition, selected-interface projection, and the shared
   native XU transport gate used by telemetry, audio controls, discovery, and
-  NativeXuAudioProbe linked-source builds.
+  NativeXuAudioProbe linked-source builds. The same owner frames topology and
+  extension-unit GET/SET requests, captures native errors at its per-call IO
+  boundary, and bounds topology retries and reply parsing to 64 KiB.
+  `XUnit.KsExtensionUnitNativeTests.cs` executes the probe's linked bridge with
+  synthetic IO plus ordinary-file open/fallback/handle-ownership checks.
 - `Sussudio/Services/Capture/DeviceDiscovery/MfDeviceEnumerator.cs` owns shared Media Foundation constants, GUIDs,
   P/Invoke declarations, native MF video-device enumeration, WASAPI capture
   endpoint enumeration and friendly-name reads, native video format probing,
@@ -533,7 +537,12 @@ Important entry points:
 - `Sussudio/Services/Capture/FlashbackBackendResources.cs` owns startup construction, install, playback
   initialization, rollback cleanup, producer attach/detach request contracts,
   feed wiring, teardown mechanics, and backend artifact cleanup. This is the
-  Capture-owned integration with Flashback resources and concrete producers. Playback
+  Capture-owned integration with Flashback resources and concrete producers. Resource
+  replacement is private to this owner, including lazy exporter creation through
+  `GetOrCreateExporter`; startup and cycling share the artifact-cleanup request contract.
+  Cancellation before a completed backend's purge transfers its resources to deferred
+  nonpurging cleanup before reporting cancellation, preserving the segment files.
+  Playback
   replacement also owns state-event subscription transfer, generation stamps
   for rejecting retired notifications, and the per-instance prewarm latch.
 - `CaptureService.Flashback.cs` owns buffer-cycle transition
@@ -804,6 +813,10 @@ Entry points:
   process lifetime, native bundle selection and capability selection preservation.
   `AppProcessStartupTests.cs` covers process admission before shared startup work,
   compiled SDK initialization ordering, and private apphost rejection with an empty PATH.
+  `LoggerLifecycleTests.cs` exercises early diagnostics, explicit initialization,
+  admission rejection, private probe roots, idempotence and IO fallback in owned
+  child processes. `XUnit.LoggerTests.cs` covers bounded-channel saturation,
+  drain, rotation and direct fatal writes using explicitly initialized isolated loggers.
 - `Sussudio/Services/Recording/Verification/RecordingVerifier.cs` owns strict verification orchestration, early
   failure results, dimensions/frame-rate/cadence/container/codec/HDR validation policy, Flashback export
   format resolution, primary mismatch parsing, HDR parity, mismatch taxonomy, ffprobe path resolution, process specs,
@@ -919,6 +932,13 @@ Entry points:
   seek/scrub resolution, exact resume targets, playback resume handoff, frozen
   valid-start sampling, scrub-display failure recovery, audio/preview
   suppression/resume ordering, and terminal go-live/stop live-restore handoff.
+  Its private `PlaybackWorkerState` is created once inside `PlaybackThreadEntry`
+  and holds that thread's decoder, playback flags, timing, exact resume target,
+  frozen position origin, and prebuffer queue. Command handlers share this
+  worker state; captured cancellation and mailbox generations retain their
+  existing exit ownership. `RestoreLiveAfterNoFile` owns the six no-file
+  branches' common frame-release, audio, preview, rendering, and Live-state
+  restoration sequence; each command retains its own failure and state updates.
 - `FlashbackPlaybackController.ThreadCommands.cs` owns playback-thread play
   command execution, including exact resume, file-open/reopen, audio prebuffer,
   and rendering resume ordering.
@@ -971,6 +991,12 @@ Entry points:
   Recoverable preflight failures retain bounded retries; terminal failures leave
   the packet drain immediately and publish the first cause through `FailEncoding`.
   Inactive and failed recording ends use the existing failed-result factories.
+  `ForceRotateRequest` carries the existing `FlashbackForceRotateResult` through
+  completion: rotation errors, encoding failure observed after drain, and abandoned
+  requests remain `Failed`; successful empty ranges remain `Completed`. Cancellation
+  before commit and committed-pending timeout keep their distinct outcomes. The
+  export planner consumes that status without reconstructing success from paths.
+  `FlashbackForceRotateResultTests.cs` protects typed completion and commit ownership.
 - `tests/Sussudio.Tests/FlashbackRotationBehaviorTests.cs` exercises bundled
   libav/libx264 output, retry recovery/escalation, scheduled and forced terminal
   rotation, lease cleanup, retained artifacts, and failed recording results.
@@ -1733,7 +1759,9 @@ Primary current owners:
   catalog.
 - `tests/Sussudio.Tests/XUnit.CoreRuntimeContractsTests.cs` owns
   `RuntimeContractSource`, including shared tool source-family readers used by
-  legacy harness and xUnit contract tests.
+  legacy harness and xUnit contract tests. Its current-directory `.git` lookup
+  also resolves relative assembly paths for `SussudioAssembly`. The offline
+  harness retains its separate assembly-directory solution-root lookup.
 - `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns pipe-captured ssctl
   routing contract checks for device, capture controls, recordings, Flashback,
   window, manifest, observability, automation-flow, UI visibility, and
@@ -2999,8 +3027,8 @@ Primary owners:
   gating. These helpers remain snapshot-only projections and must not send
   automation commands.
 - `tools/DiagnosticSession/DiagnosticSessionFlashbackSupport.cs` owns Flashback diagnostic
-  support helpers: rotated-export segment-count parsing, strict export
-  verification payload construction, range-selection cleanup, the audio-toggle
+  support helpers: cycle export requests and strict verification, rotated-export
+  segment-count parsing, strict verification payload construction, the audio-toggle
   companion used by the range export audio-switch scenario, read-only
   `FlashbackGetSegments` response parsing, completed-segment discovery,
   playable completed-segment target selection, buffered-boundary projection,
@@ -3008,7 +3036,7 @@ Primary owners:
   Flashback, recording, stress-buffer, playback-state, warmed-playback, and
   position convergence, parsed segment DTOs, and Flashback recording, playback,
   and preview scheduler warning policy over already projected metrics. Keep
-  state-mutating scenario steps in the scenario owners.
+  scenario-specific setup and post-transition assertions in the scenario owners.
 - `tools/DiagnosticSession/DiagnosticSessionFlashbackExportScenarios.cs` owns Flashback
   export diagnostic scenario task registration plus concurrent export, rotated
   export, disable-during-export command coordination, export-during-playback
@@ -3017,6 +3045,9 @@ Primary owners:
   backend-stability assertions. Keep the scenario registration, command flows,
   verification, cleanup, and playback command-health checks together in this
   scenario-family owner.
+  Range export owns selection cleanup from the first marking mutation and awaits
+  audio restoration before finishing a failed export; cleanup preserves the original
+  operation failure and reports its own failed commands.
 - `tools/DiagnosticSession/DiagnosticSessionFlashbackScenarioTasks.cs` owns deferred
   recording-settings preset state, during-recording preset mutation,
   restart/disable rejection-message policy, active-recording backend/file/

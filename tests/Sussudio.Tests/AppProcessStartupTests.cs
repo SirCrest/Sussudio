@@ -198,6 +198,7 @@ public sealed class AppProcessStartupTests
         {
             var assembly = Assembly.LoadFrom(args[3]);
             var logger = assembly.GetType("Sussudio.Logger", throwOnError: true)!;
+            logger.GetMethod("Initialize", BindingFlags.Public | BindingFlags.Static)!.Invoke(null, new object[] { args[2] });
             logger.GetMethod("Log", BindingFlags.Public | BindingFlags.Static)!
                 .Invoke(null, new object[] { AdmittedMarker, "startup-test" });
             var shutdown = (Task)logger.GetMethod("ShutdownAsync", BindingFlags.Public | BindingFlags.Static)!

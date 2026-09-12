@@ -190,7 +190,7 @@ public sealed class FlashbackRotationBehaviorTests : IClassFixture<BundledRuntim
         var result = await Task.Run(session.ForceRotate).WaitAsync(TimeSpan.FromSeconds(15));
         await owner.WaitAsync(TimeSpan.FromSeconds(15));
 
-        Assert.Equal("Completed", Read<object>(result, "Status").ToString());
+        AssertRotationPlanFails(result, session.OriginalPath);
         Assert.Empty(Read<IReadOnlyList<string>>(result, "SegmentPaths"));
         Assert.Equal((false, true, true), Assert.Single(session.RotationStates));
         session.AssertForceRotateIdle();
@@ -198,6 +198,172 @@ public sealed class FlashbackRotationBehaviorTests : IClassFixture<BundledRuntim
         session.AssertFramesReturned();
         session.AssertOriginalSegmentPreserved();
         AssertFailureResult(await session.EndRecordingAsync(), session, "recording-flashback-encode-failed");
+    }
+
+    [Fact]
+    public async Task EncodingFailureAfterAdmissionRejectsRotationAndPreservesItsCause()
+    {
+        await using var session = new RotationSession(_runtime);
+        session.EncodeFrames(60);
+        var failure = new IOException("encoder failed after export admission");
+        var forceRotate = Task.Run(session.ForceRotate);
+        try
+        {
+            var preparedPath = await session.WaitForPendingRequest();
+            session.FailEncoding(failure);
+            var owner = session.StartOwner();
+
+            var result = await forceRotate.WaitAsync(TimeSpan.FromSeconds(5));
+            await owner.WaitAsync(TimeSpan.FromSeconds(15));
+
+            AssertRotationPlanFails(result, session.OriginalPath);
+            Assert.Same(failure, session.Failure);
+            Assert.Same(failure, Assert.Single(session.FatalErrors));
+            Assert.False(File.Exists(preparedPath));
+            Assert.Equal(0, session.RotationAttempts);
+            session.AssertForceRotateIdle();
+            session.AssertOriginalSegmentPreserved();
+        }
+        finally
+        {
+            session.FailPendingForceRotate();
+            await forceRotate.WaitAsync(TimeSpan.FromSeconds(5));
+        }
+    }
+
+    [Fact]
+    public async Task ForcedPreflightFailureReportsFailedWithoutClosingTheUsableEncoder()
+    {
+        await using var session = new RotationSession(_runtime);
+        var blockedPath = session.CreateInvalidParentPath();
+        session.RotationTarget = _ => blockedPath;
+        session.SetRotationDuration(TimeSpan.FromMinutes(1));
+        session.EncodeFrames(60);
+        var owner = session.StartOwner();
+
+        var result = await Task.Run(session.ForceRotate).WaitAsync(TimeSpan.FromSeconds(15));
+
+        AssertRotationPlanFails(result, session.OriginalPath);
+        Assert.Equal(1, session.RotationAttempts);
+        Assert.Single(session.RotationErrors);
+        Assert.Equal((false, true, true), Assert.Single(session.RotationStates));
+        Assert.Equal(1, session.ConsecutiveFailures);
+        Assert.True(session.EncoderIsOpen);
+        Assert.Equal(session.OriginalPath, session.ActivePath);
+        Assert.Null(session.Failure);
+        Assert.Empty(session.FatalErrors);
+        session.AssertForceRotateIdle();
+
+        session.EnqueueFrames(30);
+        session.CompleteQueues();
+        await owner.WaitAsync(TimeSpan.FromSeconds(15));
+
+        Assert.Equal(90L, session.SubmittedFrames);
+        Assert.Null(session.Failure);
+        session.AssertFramesReturned();
+        session.AssertOriginalSegmentPreserved();
+    }
+
+    [Fact]
+    public async Task ShutdownAbandonmentReportsFailedAndDeletesThePreparedPlaceholder()
+    {
+        await using var session = new RotationSession(_runtime);
+        var forceRotate = Task.Run(session.ForceRotate);
+        try
+        {
+            var preparedPath = await session.WaitForPendingRequest();
+            Assert.True(File.Exists(preparedPath));
+
+            session.FailPendingForceRotate();
+            var result = await forceRotate.WaitAsync(TimeSpan.FromSeconds(5));
+
+            AssertRotationPlanFails(result, session.OriginalPath);
+            Assert.False(File.Exists(preparedPath));
+            Assert.Equal(0, session.RotationAttempts);
+            session.AssertForceRotateIdle();
+        }
+        finally
+        {
+            session.FailPendingForceRotate();
+            await forceRotate.WaitAsync(TimeSpan.FromSeconds(5));
+        }
+    }
+
+    [Fact]
+    public async Task TimeoutBeforeCommitReportsCanceledAndDeletesThePreparedPlaceholder()
+    {
+        await using var session = new RotationSession(_runtime);
+        var forceRotate = Task.Run(session.ForceRotate);
+        try
+        {
+            var preparedPath = await session.WaitForPendingRequest();
+
+            var result = await forceRotate.WaitAsync(TimeSpan.FromSeconds(10));
+
+            Assert.Equal("CanceledBeforeCommit", Read<object>(result, "Status").ToString());
+            Assert.Empty(Read<IReadOnlyList<string>>(result, "SegmentPaths"));
+            Assert.False(File.Exists(preparedPath));
+            Assert.Equal(0, session.RotationAttempts);
+            session.AssertForceRotateIdle();
+        }
+        finally
+        {
+            session.FailPendingForceRotate();
+            await forceRotate.WaitAsync(TimeSpan.FromSeconds(5));
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task CommittedRotationKeepsOwnershipAfterTheCallerStopsWaiting(bool cancelCaller)
+    {
+        await using var session = new RotationSession(_runtime);
+        using var cancellation = new CancellationTokenSource();
+        using var releaseRotation = new ManualResetEventSlim();
+        var enteredRotation = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        session.RotationTarget = path =>
+        {
+            enteredRotation.TrySetResult();
+            Assert.True(releaseRotation.Wait(TimeSpan.FromSeconds(15)));
+            return path;
+        };
+        session.EncodeFrames(60);
+        _ = session.StartOwner();
+        var forceRotate = Task.Run(() => session.ForceRotate(cancellation.Token));
+        try
+        {
+            await enteredRotation.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.True(session.IsForceRotateDraining);
+            if (cancelCaller)
+            {
+                cancellation.Cancel();
+                var failure = await Assert.ThrowsAnyAsync<OperationCanceledException>(
+                    () => forceRotate.WaitAsync(TimeSpan.FromSeconds(5)));
+                Assert.Equal(cancellation.Token, failure.CancellationToken);
+            }
+            else
+            {
+                var result = await forceRotate.WaitAsync(TimeSpan.FromSeconds(10));
+                Assert.Equal("CommittedPending", Read<object>(result, "Status").ToString());
+                Assert.Empty(Read<IReadOnlyList<string>>(result, "SegmentPaths"));
+            }
+            Assert.True(session.IsForceRotateDraining);
+        }
+        finally
+        {
+            releaseRotation.Set();
+            cancellation.Cancel();
+            try { await forceRotate.WaitAsync(TimeSpan.FromSeconds(5)); }
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { }
+            session.AssertForceRotateIdle();
+        }
+
+        Assert.Equal(1, session.RotationAttempts);
+        Assert.True(session.EncoderIsOpen);
+        Assert.Null(session.Failure);
+        Assert.Empty(session.FatalErrors);
+        session.AssertOriginalSegmentPreserved();
     }
 
     [Fact]
@@ -257,6 +423,23 @@ public sealed class FlashbackRotationBehaviorTests : IClassFixture<BundledRuntim
         session.AssertFramesReturned();
         session.AssertOriginalSegmentPreserved();
         AssertOutputHasVideoAndBothAudioTracks(session.OriginalPath);
+    }
+
+    private void AssertRotationPlanFails(object result, string preservedPath)
+    {
+        Assert.Equal("Failed", Read<object>(result, "Status").ToString());
+        Assert.Empty(Read<IReadOnlyList<string>>(result, "SegmentPaths"));
+        var planner = _runtime.Type("Sussudio.Services.Flashback.FlashbackExportPlanner");
+        var preserved = new[] { preservedPath };
+        foreach (var requireCompleteLiveEdge in new[] { false, true })
+        {
+            var plan = planner.GetMethod("PlanLiveEdge", BindingFlags.Static | BindingFlags.NonPublic)!
+                .Invoke(null, new object[] { result, requireCompleteLiveEdge, preserved, preserved })!;
+            Assert.Equal("ForceRotateFailed", Read<object>(plan, "FailureKind").ToString());
+            Assert.Equal("Flashback export failed: live-edge segment rotation failed.", Read<string>(plan, "FailureMessage"));
+            Assert.Same(preserved, Read<IReadOnlyList<string>>(plan, "PreservedArtifacts"));
+            Assert.False(Read<bool>(plan, "ForceRotateFallbackUsed"));
+        }
     }
 
     private static void AssertFailureResult(object result, RotationSession session, string failureCode)
@@ -473,6 +656,18 @@ public sealed class FlashbackRotationBehaviorTests : IClassFixture<BundledRuntim
 
         public object ForceRotate(CancellationToken cancellationToken)
             => Invoke(_sink, "ForceRotateForExport", TimeSpan.Zero, TimeSpan.FromSeconds(2), cancellationToken)!;
+
+        public void FailPendingForceRotate() => Invoke(_sink, "FailPendingForceRotate");
+        public void FailEncoding(Exception failure) => Invoke(_sink, "FailEncoding", failure);
+
+        public async Task<string> WaitForPendingRequest()
+        {
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            object? request;
+            while ((request = GetField(_sink, "_forceRotateRequest")) == null)
+                await Task.Delay(10, timeout.Token);
+            return Read<string>(request, "PreparedPath");
+        }
 
         public void AssertForceRotateIdle()
         {

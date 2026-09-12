@@ -45,8 +45,6 @@ internal enum FlashbackBufferCycleOutcome
     FallbackFullRebuild
 }
 
-internal readonly record struct FlashbackBufferCycleResult(FlashbackBufferCycleOutcome Outcome);
-
 internal readonly record struct FlashbackBufferCyclePlaybackState(
     TimeSpan? InPoint,
     TimeSpan? OutPoint,
@@ -88,7 +86,7 @@ internal readonly record struct FlashbackPreviewBackendStartRequest(
     Func<FlashbackSessionContext> CreateSessionContext,
     Action<Exception> FatalErrorCallback,
     EventHandler<long> FrameEncodedHandler,
-    Action<Task, FlashbackBufferManager?, FlashbackExporter?, string, bool> ScheduleDeferredCleanup,
+    Action<Task, FlashbackBackendArtifactCleanupRequest> ScheduleDeferredCleanup,
     CancellationToken CancellationToken);
 
 /// <summary>
@@ -103,16 +101,19 @@ internal sealed class FlashbackBackendResources
     private Action<FlashbackPlaybackState, FlashbackPlaybackState, string>? _playbackStateChangedHandler;
     private long _playbackControllerGeneration;
 
-    public FlashbackBufferManager? BufferManager { get; set; }
+    public FlashbackBufferManager? BufferManager { get; private set; }
 
-    public FlashbackEncoderSink? Sink { get; set; }
+    public FlashbackEncoderSink? Sink { get; private set; }
 
-    public FlashbackExporter? Exporter { get; set; }
+    public FlashbackExporter? Exporter { get; private set; }
+
+    public FlashbackExporter GetOrCreateExporter()
+        => Exporter ??= new FlashbackExporter();
 
     public FlashbackPlaybackController? PlaybackController
     {
         get => Volatile.Read(ref _playbackController);
-        set => ReplacePlaybackController(value);
+        private set => ReplacePlaybackController(value);
     }
 
     public event Action<FlashbackPlaybackStateChange>? PlaybackStateChanged;
@@ -177,7 +178,7 @@ internal sealed class FlashbackBackendResources
         controller.PreWarm();
     }
 
-    public CaptureSettings? SettingsSnapshot { get; set; }
+    public CaptureSettings? SettingsSnapshot { get; private set; }
 
     public bool PreserveSegmentsAfterFailedRecordingFinalize { get; private set; }
 
@@ -187,7 +188,7 @@ internal sealed class FlashbackBackendResources
         Exporter != null ||
         PlaybackController != null;
 
-    public void Install(
+    private void Install(
         FlashbackBufferManager bufferManager,
         FlashbackEncoderSink sink,
         FlashbackExporter exporter,
@@ -201,20 +202,20 @@ internal sealed class FlashbackBackendResources
         SettingsSnapshot = settingsSnapshot;
     }
 
-    public FlashbackPlaybackController? TakePlaybackController()
+    private FlashbackPlaybackController? TakePlaybackController()
     {
         var playbackController = PlaybackController;
         PlaybackController = null;
         return playbackController;
     }
 
-    public void ClearSinkAndSettings()
+    private void ClearSinkAndSettings()
     {
         Sink = null;
         SettingsSnapshot = null;
     }
 
-    public void Clear()
+    private void Clear()
     {
         BufferManager = null;
         Sink = null;
@@ -223,7 +224,7 @@ internal sealed class FlashbackBackendResources
         SettingsSnapshot = null;
     }
 
-    public void ClearRecoveryPreserve()
+    private void ClearRecoveryPreserve()
     {
         PreserveSegmentsAfterFailedRecordingFinalize = false;
     }
@@ -317,7 +318,7 @@ internal sealed class FlashbackBackendResources
             exportResult.RecoveryPath);
     }
 
-    public void AttachProducers(FlashbackProducerAttachRequest request)
+    private void AttachProducers(FlashbackProducerAttachRequest request)
     {
         var flashbackSink = Sink;
         if (flashbackSink == null)
@@ -330,7 +331,7 @@ internal sealed class FlashbackBackendResources
         AttachMicrophoneProducer(request.MicrophoneCapture, flashbackSink, request.Reason);
     }
 
-    public void DetachProducers(FlashbackProducerDetachRequest request)
+    private void DetachProducers(FlashbackProducerDetachRequest request)
     {
         if (request.DetachMicrophoneWriter)
         {
@@ -379,7 +380,7 @@ internal sealed class FlashbackBackendResources
         Logger.Log($"FLASHBACK_MIC_ATTACH_OK reason='{reason}'");
     }
 
-    public async Task<FlashbackBufferCycleResult> CycleSinkOnlyAsync(
+    public async Task<FlashbackBufferCycleOutcome> CycleSinkOnlyAsync(
         FlashbackBufferCycleRequest request)
     {
         ArgumentNullException.ThrowIfNull(request.VideoCapture);
@@ -425,7 +426,7 @@ internal sealed class FlashbackBackendResources
                     "buffer_cycle_deferred_cleanup",
                     request.PurgeSegments));
 
-            return new FlashbackBufferCycleResult(FlashbackBufferCycleOutcome.DeferredFullRebuild);
+            return FlashbackBufferCycleOutcome.DeferredFullRebuild;
         }
 
         // When the codec/format changed, purge stale segments (incompatible with
@@ -442,7 +443,7 @@ internal sealed class FlashbackBackendResources
             if (bufferManager.SegmentCount > 0)
             {
                 Logger.Log($"FLASHBACK_CYCLE_PURGE_INCOMPLETE remaining={bufferManager.SegmentCount} - falling back to full teardown");
-                return new FlashbackBufferCycleResult(FlashbackBufferCycleOutcome.PurgeFallbackRebuild);
+                return FlashbackBufferCycleOutcome.PurgeFallbackRebuild;
             }
         }
 
@@ -455,7 +456,7 @@ internal sealed class FlashbackBackendResources
             preservedPlaybackState,
             committedCycleToken).ConfigureAwait(false))
         {
-            return new FlashbackBufferCycleResult(FlashbackBufferCycleOutcome.FallbackFullRebuild);
+            return FlashbackBufferCycleOutcome.FallbackFullRebuild;
         }
 
         if (request.CancellationToken.IsCancellationRequested)
@@ -464,7 +465,7 @@ internal sealed class FlashbackBackendResources
             request.CancellationToken.ThrowIfCancellationRequested();
         }
 
-        return new FlashbackBufferCycleResult(FlashbackBufferCycleOutcome.SinkOnly);
+        return FlashbackBufferCycleOutcome.SinkOnly;
     }
 
     private FlashbackBufferCyclePlaybackState DisposePlaybackForBufferCycle(bool preserveSegments)
@@ -680,33 +681,36 @@ internal sealed class FlashbackBackendResources
         // a half-disposed backend.
         Clear();
 
+        var cleanupRequest = new FlashbackBackendArtifactCleanupRequest(
+            flashbackBufferManager,
+            flashbackExporter,
+            request.PurgeSegments ? "preview_backend_dispose_purge" : "preview_backend_dispose",
+            request.PurgeSegments);
         if (!sinkCompletionTask.IsCompleted)
         {
             ScheduleDeferredArtifactCleanup(
                 sinkCompletionTask,
-                new FlashbackBackendArtifactCleanupRequest(
-                    flashbackBufferManager,
-                    flashbackExporter,
-                    request.PurgeSegments ? "preview_backend_dispose_purge" : "preview_backend_dispose",
-                    request.PurgeSegments),
+                cleanupRequest,
                 request.AcquireExportOperationLockAsync,
                 request.ReleaseExportOperationLock);
-            flashbackBufferManager = null;
-            flashbackExporter = null;
+            cleanupRequest = cleanupRequest with { BufferManager = null, FlashbackExporter = null };
             request.CancellationToken.ThrowIfCancellationRequested();
         }
 
-        if (request.PurgeSegments)
+        if (request.PurgeSegments && request.CancellationToken.IsCancellationRequested)
         {
+            // Cancellation still prevents the requested purge, but the detached
+            // resources need an owner until they can be retired and disposed.
+            ScheduleDeferredArtifactCleanup(
+                Task.CompletedTask,
+                cleanupRequest with { Reason = "preview_backend_dispose_cancelled", PurgeSegments = false },
+                request.AcquireExportOperationLockAsync,
+                request.ReleaseExportOperationLock);
             request.CancellationToken.ThrowIfCancellationRequested();
         }
 
         var cleanupCompleted = await CleanupArtifactsAfterExportAsync(
-                new FlashbackBackendArtifactCleanupRequest(
-                    flashbackBufferManager,
-                    flashbackExporter,
-                    request.PurgeSegments ? "preview_backend_dispose_purge" : "preview_backend_dispose",
-                    request.PurgeSegments),
+                cleanupRequest,
                 "preview_backend_dispose",
                 request.AcquireExportOperationLockAsync,
                 request.ReleaseExportOperationLock,
@@ -717,11 +721,10 @@ internal sealed class FlashbackBackendResources
         {
             ScheduleDeferredArtifactCleanup(
                 Task.Delay(TimeSpan.FromSeconds(1)),
-                new FlashbackBackendArtifactCleanupRequest(
-                    flashbackBufferManager,
-                    flashbackExporter,
-                    request.PurgeSegments ? "preview_backend_dispose_purge_retry" : "preview_backend_dispose_retry",
-                    request.PurgeSegments),
+                cleanupRequest with
+                {
+                    Reason = request.PurgeSegments ? "preview_backend_dispose_purge_retry" : "preview_backend_dispose_retry"
+                },
                 request.AcquireExportOperationLockAsync,
                 request.ReleaseExportOperationLock);
         }
@@ -782,7 +785,7 @@ internal sealed class FlashbackBackendResources
         });
     }
 
-    public async Task<bool> CleanupArtifactsAfterExportAsync(
+    private async Task<bool> CleanupArtifactsAfterExportAsync(
         FlashbackBackendArtifactCleanupRequest request,
         string mode,
         Func<Task<bool>> acquireExportOperationLockAsync,
@@ -868,7 +871,7 @@ internal sealed class FlashbackBackendResources
         }
     }
 
-    public async Task<FlashbackPlaybackController> StartPreviewBackendAsync(
+    public async Task StartPreviewBackendAsync(
         FlashbackPreviewBackendStartRequest request)
     {
         ArgumentNullException.ThrowIfNull(request.VideoCapture);
@@ -936,7 +939,6 @@ internal sealed class FlashbackBackendResources
 
             ClearRecoveryPreserve();
             Logger.Log($"FLASHBACK_PREVIEW_INIT_OK session='{bufferManager.SessionId}' controller_initialized={playbackController.IsInitialized}");
-            return playbackController;
         }
         catch
         {
@@ -978,10 +980,11 @@ internal sealed class FlashbackBackendResources
         {
             request.ScheduleDeferredCleanup(
                 sinkCompletionTask,
-                cleanupBufferManager,
-                cleanupExporter,
-                "preview_init_rollback",
-                true);
+                new FlashbackBackendArtifactCleanupRequest(
+                    cleanupBufferManager,
+                    cleanupExporter,
+                    "preview_init_rollback",
+                    true));
             cleanupBufferManager = null;
             cleanupExporter = null;
         }

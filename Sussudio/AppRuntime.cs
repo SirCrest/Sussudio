@@ -264,7 +264,7 @@ public static class Logger
     // path that is already failing. Everywhere else in the app, diagnostics
     // go to Logger.Log so they reach the log file operators actually read.
     private const int MaxDrainBatchEntries = 256;
-    private static readonly string LogFilePath;
+    private static string LogFilePath = string.Empty;
 
     private static readonly object LockObject = new();
     private static readonly Channel<string> LogChannel = Channel.CreateBounded<string>(new BoundedChannelOptions(8192)
@@ -273,7 +273,9 @@ public static class Logger
         SingleWriter = false,
         FullMode = BoundedChannelFullMode.Wait
     });
-    private static readonly Task LogWriterTask;
+    private static Task LogWriterTask = Task.CompletedTask;
+    private static readonly object InitializationLock = new();
+    private static int _initialized;
     public static bool VerboseEnabled { get; set; }
     private static int _systemInfoLogged;
     private static long _droppedLogMessages;
@@ -281,7 +283,7 @@ public static class Logger
 
     // Categorized init outcome so callers can distinguish "log file isn't being
     // written" from "log file rotation failed but writer started anyway".
-    // Keeps the static-ctor-must-not-throw invariant by *recording* failure
+    // Keeps initialization non-throwing by recording failure
     // rather than rethrowing. AccessViolationException remains uncatchable per
     // CLAUDE.md — this enum only covers ordinary I/O.
     public enum LoggerInitState
@@ -292,7 +294,8 @@ public static class Logger
         WriterStartFailed,
     }
 
-    public static LoggerInitState InitState { get; private set; } = LoggerInitState.NotInitialized;
+    private static volatile LoggerInitState _initState;
+    public static LoggerInitState InitState => _initState;
     private static long DroppedMessageCount => Interlocked.Read(ref _droppedLogMessages);
 
     static Logger()
@@ -302,33 +305,54 @@ public static class Logger
 #else
         VerboseEnabled = false;
 #endif
-        LogFilePath = TryResolveLogFilePath(() => RuntimePaths.GetRepoLogFile("Sussudio_Debug.log"));
-        var fileIoOk = !string.IsNullOrEmpty(LogFilePath);
-        if (fileIoOk)
+    }
+
+    // The admitted app or private probe selects one root for this process.
+    // Repeated calls, including calls after shutdown or failure, never rotate
+    // again or redirect an already selected log to another directory.
+    public static void Initialize(string logRoot)
+    {
+        lock (InitializationLock)
         {
+            if (_initialized != 0)
+            {
+                return;
+            }
+
+            LogFilePath = TryResolveLogFilePath(() =>
+            {
+                var directory = Path.GetFullPath(logRoot);
+                Directory.CreateDirectory(directory);
+                return Path.Combine(directory, "Sussudio_Debug.log");
+            });
+            var fileIoOk = !string.IsNullOrEmpty(LogFilePath);
+            if (fileIoOk)
+            {
+                try
+                {
+                    RotatePriorLog();
+                    var header = $"=== Sussudio Debug Log ===\nStarted: {DateTime.Now:yyyy-MM-dd HH:mm:ss}\nPID: {Environment.ProcessId}\n\n";
+                    File.WriteAllText(LogFilePath, header);
+                }
+                catch
+                {
+                    // Keep the resolved path so later writes can recover from a
+                    // transient file lock. InitState still records the startup failure.
+                    fileIoOk = false;
+                }
+            }
+
             try
             {
-                RotatePriorLog();
-                var header = $"=== Sussudio Debug Log ===\nStarted: {DateTime.Now:yyyy-MM-dd HH:mm:ss}\nPID: {Environment.ProcessId}\n\n";
-                File.WriteAllText(LogFilePath, header);
+                LogWriterTask = Task.Run(RunLogWriterAsync);
+                _initState = fileIoOk ? LoggerInitState.Healthy : LoggerInitState.FileIoFailed;
             }
             catch
             {
-                // Keep the resolved path so later writes can recover from a
-                // transient file lock. InitState still records the startup failure.
-                fileIoOk = false;
+                LogWriterTask = Task.CompletedTask;
+                _initState = LoggerInitState.WriterStartFailed;
             }
-        }
-
-        try
-        {
-            LogWriterTask = Task.Run(RunLogWriterAsync);
-            InitState = fileIoOk ? LoggerInitState.Healthy : LoggerInitState.FileIoFailed;
-        }
-        catch
-        {
-            LogWriterTask = Task.CompletedTask;
-            InitState = LoggerInitState.WriterStartFailed;
+            Volatile.Write(ref _initialized, 1);
         }
     }
 
@@ -362,8 +386,21 @@ public static class Logger
         var timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
         var logMessage = $"[{timestamp}] [{caller}] {message}\n";
 
+        if (Volatile.Read(ref _initialized) == 0 || InitState == LoggerInitState.WriterStartFailed)
+        {
+            TraceFallback(logMessage);
+            return;
+        }
+
         // Write to debug output
-        System.Diagnostics.Debug.WriteLine(logMessage.TrimEnd());
+        try
+        {
+            System.Diagnostics.Debug.WriteLine(logMessage.TrimEnd());
+        }
+        catch
+        {
+            // A diagnostic listener must not interrupt the caller or queued file logging.
+        }
 
         if (LogChannel.Writer.TryWrite(logMessage))
         {
@@ -386,14 +423,22 @@ public static class Logger
 
     public static async Task ShutdownAsync(TimeSpan timeout)
     {
-        LogChannel.Writer.TryComplete();
+        lock (InitializationLock)
+        {
+            if (_initialized == 0)
+            {
+                return;
+            }
+
+            LogChannel.Writer.TryComplete();
+        }
         try
         {
             await LogWriterTask.WaitAsync(timeout).ConfigureAwait(false);
         }
         catch (TimeoutException)
         {
-            Trace.TraceWarning($"Logger shutdown drain timed out after {timeout.TotalMilliseconds:0} ms.");
+            TraceFallback($"Logger shutdown drain timed out after {timeout.TotalMilliseconds:0} ms.");
         }
     }
 
@@ -431,13 +476,13 @@ public static class Logger
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Trace.TraceWarning($"Suppressed exception in Logger.LogWriterLoop: {ex.Message}");
+            TraceFallback($"Suppressed exception in Logger.LogWriterLoop: {ex.Message}");
         }
     }
 
     private static void WriteDirect(string entry)
     {
-        if (string.IsNullOrEmpty(LogFilePath))
+        if (Volatile.Read(ref _initialized) == 0 || string.IsNullOrEmpty(LogFilePath))
         {
             TraceFallback(entry);
             return;
@@ -451,7 +496,7 @@ public static class Logger
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Trace.TraceWarning($"Suppressed exception in Logger.WriteDirect: {ex.Message}");
+                TraceFallback($"Suppressed exception in Logger.WriteDirect: {ex.Message}");
             }
         }
     }
@@ -478,7 +523,7 @@ public static class Logger
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Trace.TraceWarning($"Suppressed exception in Logger.RotatePriorLog: {ex.Message}");
+            TraceFallback($"Suppressed exception in Logger.RotatePriorLog: {ex.Message}");
         }
     }
 
@@ -489,6 +534,12 @@ public static class Logger
 
     public static void LogSystemInfo()
     {
+        if (Volatile.Read(ref _initialized) == 0)
+        {
+            TraceFallback("System diagnostics deferred until Logger.Initialize.");
+            return;
+        }
+
         if (!VerboseEnabled || Interlocked.Exchange(ref _systemInfoLogged, 1) == 1)
         {
             return;
@@ -618,12 +669,12 @@ public static class Logger
         }
         catch (Exception debugEx)
         {
-            System.Diagnostics.Trace.TraceWarning($"Suppressed exception in Logger.LogFatalBreadcrumb debug write: {debugEx.Message}");
+            TraceFallback($"Suppressed exception in Logger.LogFatalBreadcrumb debug write: {debugEx.Message}");
         }
     }
 
-    /// <summary>Returns the log path, or an empty string if its directory could not be resolved.</summary>
-    public static string GetLogFilePath() => LogFilePath;
+    /// <summary>Returns the selected log path, or empty before initialization or if directory resolution failed.</summary>
+    public static string GetLogFilePath() => Volatile.Read(ref _initialized) != 0 ? LogFilePath : string.Empty;
 }
 
 // Source-generated JSON metadata for diagnostic snapshots written to the log.

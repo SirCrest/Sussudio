@@ -106,6 +106,9 @@ internal static class RecordingNativeTestChild
                 return path == null ? null : context.LoadFromAssemblyPath(path);
             };
             assembly = Assembly.LoadFrom(args[1]);
+            assembly.GetType("Sussudio.Logger", throwOnError: true)!
+                .GetMethod("Initialize", BindingFlags.Public | BindingFlags.Static)!
+                .Invoke(null, new object[] { Path.Combine(args[2], "logs") });
             if (args[3] == "capability")
             {
                 var runtime = assembly.GetType("Sussudio.Services.Runtime.FfmpegRuntimeInit", throwOnError: true)!;

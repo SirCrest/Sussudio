@@ -14,6 +14,19 @@ namespace Sussudio
 
         public App()
         {
+            // Program constructs App only after acquiring process admission.
+            string logRoot;
+            try
+            {
+                logRoot = RuntimePaths.GetRepoLogRoot();
+            }
+            catch (Exception ex)
+            {
+                // Preserve Trace-only fallback when every log directory is unavailable.
+                Logger.Log($"Logger directory resolution failed: {ex.Message}");
+                logRoot = string.Empty;
+            }
+            Logger.Initialize(logRoot);
             InitializeComponent();
 
             // Add global exception handlers
