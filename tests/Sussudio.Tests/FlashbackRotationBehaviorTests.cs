@@ -100,6 +100,82 @@ public sealed class FlashbackRotationBehaviorTests : IClassFixture<BundledRuntim
     }
 
     [Fact]
+    public async Task ForcedRotationCompletesTheLiveSegmentAndReleasesItsFence()
+    {
+        await using var session = new RotationSession(_runtime);
+        session.EncodeFrames(60);
+        _ = session.StartOwner();
+
+        var result = await Task.Run(session.ForceRotate).WaitAsync(TimeSpan.FromSeconds(15));
+
+        Assert.Equal("Completed", Read<object>(result, "Status").ToString());
+        Assert.Equal(new[] { session.OriginalPath }, Read<IReadOnlyList<string>>(result, "SegmentPaths"));
+        Assert.Equal(1, session.RotationAttempts);
+        Assert.Equal((false, true, true), Assert.Single(session.RotationStates));
+        session.AssertForceRotateIdle();
+        Assert.NotEqual(session.OriginalPath, session.ActivePath);
+        Assert.True(session.EncoderIsOpen);
+        Assert.Null(session.Failure);
+        Assert.Empty(session.FatalErrors);
+        session.AssertFramesReturned();
+        session.AssertOriginalSegmentPreserved();
+    }
+
+    [Fact]
+    public async Task EmptyLiveEdgeCompletesWithoutRotating()
+    {
+        await using var session = new RotationSession(_runtime);
+        _ = session.StartOwner();
+
+        var result = await Task.Run(session.ForceRotate).WaitAsync(TimeSpan.FromSeconds(15));
+
+        Assert.Equal("Completed", Read<object>(result, "Status").ToString());
+        Assert.Empty(Read<IReadOnlyList<string>>(result, "SegmentPaths"));
+        Assert.Equal(0, session.RotationAttempts);
+        Assert.Empty(session.RotationStates);
+        session.AssertForceRotateIdle();
+        Assert.Equal(session.OriginalPath, session.ActivePath);
+        Assert.True(session.EncoderIsOpen);
+        Assert.Null(session.Failure);
+    }
+
+    [Fact]
+    public async Task CallerCancellationClearsAPendingRequestBeforeTheOwnerConsumesIt()
+    {
+        await using var session = new RotationSession(_runtime);
+        using var cancellation = new CancellationTokenSource();
+        var forceRotate = Task.Run(() => session.ForceRotate(cancellation.Token));
+        try
+        {
+            using var publicationTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            while (!session.IsForceRotateRequested && !forceRotate.IsCompleted)
+                await Task.Delay(10, publicationTimeout.Token);
+
+            Assert.True(session.IsForceRotateRequested);
+            Assert.True(session.IsForceRotateActive);
+            Assert.False(session.IsForceRotateDraining);
+            cancellation.Cancel();
+
+            var error = await Assert.ThrowsAnyAsync<OperationCanceledException>(
+                () => forceRotate.WaitAsync(TimeSpan.FromSeconds(15)));
+
+            Assert.Equal(cancellation.Token, error.CancellationToken);
+            session.AssertForceRotateIdle();
+            Assert.Equal(0, session.RotationAttempts);
+            Assert.Empty(session.RotationStates);
+            Assert.Equal(session.OriginalPath, session.ActivePath);
+            Assert.Null(session.Failure);
+        }
+        finally
+        {
+            // Join the export caller before fixture disposal can start the owner.
+            cancellation.Cancel();
+            try { await forceRotate; }
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { }
+        }
+    }
+
+    [Fact]
     public async Task ForcedNativeRotationFailureCompletesTheRequestAndReleasesItsFence()
     {
         await using var session = new RotationSession(_runtime);
@@ -116,7 +192,8 @@ public sealed class FlashbackRotationBehaviorTests : IClassFixture<BundledRuntim
 
         Assert.Equal("Completed", Read<object>(result, "Status").ToString());
         Assert.Empty(Read<IReadOnlyList<string>>(result, "SegmentPaths"));
-        Assert.False(session.IsForceRotateActive);
+        Assert.Equal((false, true, true), Assert.Single(session.RotationStates));
+        session.AssertForceRotateIdle();
         session.AssertTerminalRotationFailure();
         session.AssertFramesReturned();
         session.AssertOriginalSegmentPreserved();
@@ -285,6 +362,7 @@ public sealed class FlashbackRotationBehaviorTests : IClassFixture<BundledRuntim
         public string RecordingPath { get; } = string.Empty;
         public Func<string, string>? RotationTarget { get; set; }
         public List<Exception> RotationErrors { get; } = new();
+        public List<(bool Requested, bool Draining, bool Active)> RotationStates { get; } = new();
         public List<Exception> FatalErrors { get; } = new();
         public bool ThrowFromFatalCallback { get; set; }
         public int RotationAttempts { get; private set; }
@@ -296,6 +374,8 @@ public sealed class FlashbackRotationBehaviorTests : IClassFixture<BundledRuntim
         public bool EncoderIsOpen => Read<bool>(_encoder, "IsEncoding");
         public bool IsStarted => (bool)GetField(_sink, "_started")!;
         public bool IsForceRotateActive => Read<bool>(_sink, "IsForceRotateActive");
+        public bool IsForceRotateRequested => Read<bool>(_sink, "IsForceRotateRequested");
+        public bool IsForceRotateDraining => Read<bool>(_sink, "IsForceRotateDraining");
         public Exception? Failure => (Exception?)GetField(_sink, "_encodingFailure");
         public string ActivePath => (string)GetField(_sink, "_tsFilePath")!;
         public int ConsecutiveFailures => (int)GetField(_sink, "_consecutiveRotationFailures")!;
@@ -319,6 +399,7 @@ public sealed class FlashbackRotationBehaviorTests : IClassFixture<BundledRuntim
         private object RotateNativeOutput(string requestedPath)
         {
             RotationAttempts++;
+            RotationStates.Add((IsForceRotateRequested, IsForceRotateDraining, IsForceRotateActive));
             try { return Invoke(_encoder, "RotateOutput", RotationTarget?.Invoke(requestedPath) ?? requestedPath)!; }
             catch (Exception error)
             {
@@ -388,7 +469,19 @@ public sealed class FlashbackRotationBehaviorTests : IClassFixture<BundledRuntim
         public void BeginRecording() => Invoke(_sink, "BeginRecording", RecordingPath);
         public void RollBackRecordingStart() => Invoke(_sink, "CancelRecordingStartRollback", "behavior_test");
         public object ForceRotate()
-            => Invoke(_sink, "ForceRotateForExport", TimeSpan.Zero, TimeSpan.FromSeconds(2), CancellationToken.None)!;
+            => ForceRotate(CancellationToken.None);
+
+        public object ForceRotate(CancellationToken cancellationToken)
+            => Invoke(_sink, "ForceRotateForExport", TimeSpan.Zero, TimeSpan.FromSeconds(2), cancellationToken)!;
+
+        public void AssertForceRotateIdle()
+        {
+            // Request completion may precede the owner's draining-clear finally.
+            Assert.True((bool)Invoke(_sink, "WaitForForceRotateIdle", TimeSpan.FromSeconds(5))!);
+            Assert.False(IsForceRotateRequested);
+            Assert.False(IsForceRotateDraining);
+            Assert.False(IsForceRotateActive);
+        }
 
         public async Task<object> EndRecordingAsync()
         {

@@ -262,7 +262,7 @@ private FlashbackBufferHealthSnapshotFields CaptureFlashbackBufferHealthSnapshot
             bufMgr?.SegmentCount ?? 0,
             bufMgr?.TotalDiskBytes ?? 0,
             bufMgr?.TotalBytesWritten ?? 0,
-            bufMgr?.TempDriveAvailableFreeBytes ?? 0,
+            bufMgr?.TempDriveAvailableFreeBytes ?? -1,
             bufMgr?.StartupCacheBudgetBytes ?? 0,
             bufMgr?.StartupCacheBytes ?? 0,
             bufMgr?.StartupCacheSessionCount ?? 0,

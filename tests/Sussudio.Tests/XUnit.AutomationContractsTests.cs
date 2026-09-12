@@ -3446,7 +3446,11 @@ static partial class Program
         AssertDoesNotContain(logMethod, "File.");
         AssertContains(loggerText, "private static void RotatePriorLog()");
         AssertContains(loggerText, "public static void LogSystemInfo()");
-        AssertContains(loggerText, "new ManagementObjectSearcher(");
+        AssertDoesNotContain(loggerText, "System.Management");
+        AssertDoesNotContain(loggerText, "ManagementObjectSearcher");
+        AssertContains(loggerText, "CPU info unavailable:");
+        AssertContains(loggerText, "RAM info unavailable:");
+        AssertContains(loggerText, "GPU info unavailable:");
         AssertContains(loggerText, "public static void LogStructured(");
         AssertContains(loggerText, "public static void LogFatalBreadcrumb(");
         AssertContains(

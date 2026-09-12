@@ -1650,13 +1650,13 @@ static partial class Program
         AssertContains(flashbackSource, "FLASHBACK_SINK_FORCE_ROTATE_SUPERSEDED");
         AssertContains(flashbackSource, "if (supersededRequest.TryCancel())");
         AssertContains(flashbackSource, "_bufferManager.AbandonReservedSegmentPath(supersededRequest.PreparedPath);");
-        AssertContains(flashbackSource, "if (!RotateSegment(currentPts, localRequest.PreparedPath))\n                {\n                    localRequest.CompleteEmpty();\n                    return true;\n                }");
+        AssertContains(flashbackSource, "if (!RotateSegment(currentPts, localRequest.PreparedPath))\n                {\n                    localRequest.CompleteEmpty();\n                    return false;\n                }");
         AssertContains(flashbackSource, "return true;\n        }\n        catch (Exception ex)");
         AssertContains(flashbackSource, "Logger.Log($\"FLASHBACK_SINK_ROTATE_FAIL type={ex.GetType().Name} msg={ex.Message}\");\n            return false;");
         AssertContains(flashbackSource, "TryCancelForceRotate(request)");
         AssertContains(flashbackSource, "ReferenceEquals(_forceRotateRequest, request)");
         AssertContains(flashbackSource, "cancelled={cancelled}");
-        AssertContains(flashbackSource, "_forceRotateRequested = false;");
+        AssertContains(flashbackSource, "_forceRotateRequest = null;");
         AssertContains(flashbackSource, "Volatile.Write(ref _forceRotateDraining, false);");
         AssertContains(flashbackSource, "CancelEncodingCts(\"stop_timeout\");\n                CompletePendingForceRotateWithEmptyResult();\n                Logger.Log(\"FLASHBACK_SINK_STOP_DRAIN_TIMEOUT\");");
         AssertContains(flashbackSource, "Cannot begin recording: flashback export rotation is still draining.");
@@ -1831,7 +1831,7 @@ static partial class Program
         AssertContains(captureSnapshotsSource, "FlashbackStartupCacheBytes = flashbackBuffer.StartupCacheBytes");
         AssertContains(captureSnapshotsSource, "bufMgr?.StartupCacheBytes ?? 0");
         AssertContains(captureSnapshotsSource, "FlashbackTempDriveFreeBytes = flashbackBuffer.TempDriveFreeBytes");
-        AssertContains(captureSnapshotsSource, "bufMgr?.TempDriveAvailableFreeBytes ?? 0");
+        AssertContains(captureSnapshotsSource, "bufMgr?.TempDriveAvailableFreeBytes ?? -1");
 
         var sharedFormatterSource = global::Sussudio.Tests.RuntimeContractSource.ReadAutomationSnapshotFormatterSource();
         var ssctlFormatterSource = global::Sussudio.Tests.RuntimeContractSource.ReadSsctlSnapshotFormatterSource();
@@ -5972,7 +5972,7 @@ static partial class Program
         AssertContains(scannerText, "internal static bool IsPlausibleFlashbackSessionDirectoryName(string name)");
 
         AssertContains(bufferText, "var normalizedExtension = FlashbackSessionRecoveryScanner.NormalizeSegmentExtension(extension);");
-        AssertContains(bufferText, "public long TempDriveAvailableFreeBytes => FlashbackStartupCacheCleanup.TryGetTempDriveAvailableFreeBytes(_options.TempDirectory);");
+        AssertContains(bufferText, "public long TempDriveAvailableFreeBytes => ProbeFreeDiskBytes();");
 
         AssertContains(cleanupText, "FLASHBACK_STALE_SESSION_SKIP reason=reparse_point");
         AssertContains(cleanupText, "FLASHBACK_STALE_SESSION_SKIP reason=unrecognized_empty_dir");

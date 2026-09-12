@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Management;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -12,7 +11,9 @@ using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using Microsoft.Win32;
 using Sussudio.Models;
+using Vortice.DXGI;
 
 namespace Sussudio;
 
@@ -502,11 +503,9 @@ public static class Logger
 
         try
         {
-            using var cpuSearcher = new ManagementObjectSearcher("SELECT Name, NumberOfCores, NumberOfLogicalProcessors, MaxClockSpeed FROM Win32_Processor");
-            foreach (var obj in cpuSearcher.Get())
-            {
-                Log($"CPU: {obj["Name"]} | Cores={obj["NumberOfCores"]} | Logical={obj["NumberOfLogicalProcessors"]} | MaxMHz={obj["MaxClockSpeed"]}");
-            }
+            using var cpuKey = Registry.LocalMachine.OpenSubKey(@"HARDWARE\DESCRIPTION\System\CentralProcessor\0");
+            var name = (cpuKey?.GetValue("ProcessorNameString") as string)?.Trim();
+            Log(string.IsNullOrEmpty(name) ? "CPU info unavailable: processor name missing" : $"CPU: {name}");
         }
         catch (Exception ex)
         {
@@ -515,13 +514,14 @@ public static class Logger
 
         try
         {
-            using var memSearcher = new ManagementObjectSearcher("SELECT TotalPhysicalMemory FROM Win32_ComputerSystem");
-            foreach (var obj in memSearcher.Get())
+            if (GetPhysicallyInstalledSystemMemory(out var totalKilobytes))
             {
-                if (obj["TotalPhysicalMemory"] is ulong bytes)
-                {
-                    Log($"RAM: {DisplayFormatters.FormatBytes((long)Math.Min(bytes, long.MaxValue))}");
-                }
+                var bytes = (long)Math.Min(totalKilobytes, (ulong)long.MaxValue / 1024) * 1024;
+                Log($"RAM: {DisplayFormatters.FormatBytes(bytes)} installed");
+            }
+            else
+            {
+                Log($"RAM info unavailable: Win32 error {Marshal.GetLastWin32Error()}");
             }
         }
         catch (Exception ex)
@@ -531,14 +531,31 @@ public static class Logger
 
         try
         {
-            using var gpuSearcher = new ManagementObjectSearcher("SELECT Name, DriverVersion, DriverDate, AdapterRAM FROM Win32_VideoController");
-            foreach (var obj in gpuSearcher.Get())
+            var result = DXGI.CreateDXGIFactory1<IDXGIFactory1>(out var factory);
+            using (factory)
             {
-                var name = obj["Name"];
-                var driverVersion = obj["DriverVersion"];
-                var driverDate = obj["DriverDate"];
-                var ram = obj["AdapterRAM"] is uint adapterRam ? DisplayFormatters.FormatBytes(adapterRam) : "unknown";
-                Log($"GPU: {name} | Driver={driverVersion} | DriverDate={driverDate} | VRAM={ram}");
+                result.CheckError();
+                if (factory is null)
+                {
+                    throw new InvalidOperationException("DXGI factory returned no interface.");
+                }
+
+                for (uint index = 0; ; index++)
+                {
+                    result = factory.EnumAdapters1(index, out var adapter);
+                    using (adapter)
+                    {
+                        if (result == ResultCode.NotFound)
+                        {
+                            break;
+                        }
+
+                        result.CheckError();
+                        var description = adapter.Description1;
+                        var bytes = (long)Math.Min((ulong)description.DedicatedVideoMemory, (ulong)long.MaxValue);
+                        Log($"GPU: {description.Description} | Vendor=0x{description.VendorId:X4} | Device=0x{description.DeviceId:X4} | Flags={description.Flags} | VRAM={DisplayFormatters.FormatBytes(bytes)}");
+                    }
+                }
             }
         }
         catch (Exception ex)
@@ -546,6 +563,10 @@ public static class Logger
             Log($"GPU info unavailable: {ex.Message}");
         }
     }
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetPhysicallyInstalledSystemMemory(out ulong totalKilobytes);
 
     public static void LogException(Exception ex, [CallerMemberName] string caller = "")
     {

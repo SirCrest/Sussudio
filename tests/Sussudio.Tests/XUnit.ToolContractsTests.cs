@@ -585,6 +585,21 @@ public sealed class SsctlFormatterContractsTests
 
 public sealed class ToolFormatterContractsTests
 {
+    [Theory]
+    [InlineData(-1L, "N/A")]
+    [InlineData(0L, "0 B")]
+    public void SnapshotFormatter_DistinguishesUnknownAndExhaustedFreeSpace(long freeBytes, string expected)
+    {
+        var formatterType = RequireSharedToolType("Sussudio.Tools.AutomationSnapshotFormatter");
+        var formatSnapshot = RequireStaticMethod(formatterType, "FormatCliSnapshot");
+        using var document = JsonDocument.Parse(
+            JsonSerializer.Serialize(new { Snapshot = new { FlashbackActive = true, FlashbackTempDriveFreeBytes = freeBytes } }));
+
+        var output = (string)formatSnapshot.Invoke(null, new object[] { document.RootElement })!;
+
+        Assert.Contains($"free={expected} sessions=", output, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void ResponseFormatter_IsSuccess_ParsesSuccessAndFailureJson()
     {

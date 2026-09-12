@@ -147,7 +147,7 @@ internal sealed class FlashbackBufferManager : IDisposable
         }
     }
 
-    public long TempDriveAvailableFreeBytes => FlashbackStartupCacheCleanup.TryGetTempDriveAvailableFreeBytes(_options.TempDirectory);
+    public long TempDriveAvailableFreeBytes => ProbeFreeDiskBytes();
 
     public TimeSpan LatestPts
     {

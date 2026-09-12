@@ -12,8 +12,12 @@ namespace Sussudio.Tests;
 // the staged Sussudio.dll + reflection, matching every other ported xUnit test
 // in this project (e.g. FlashbackBufferManager_RejectsUnsafeSessionIds in
 // XUnit.RecordingContractsTests.cs) rather than a direct `using` + `new`.
-public sealed class FlashbackDiskPolicyTests
+public sealed class FlashbackDiskPolicyTests : IDisposable
 {
+    private readonly string _tempDirectory = Directory.CreateTempSubdirectory("sussudio-disk-policy-").FullName;
+
+    public void Dispose() => Directory.Delete(_tempDirectory, recursive: true);
+
     [Theory]
     [InlineData((2L * 1024 * 1024 * 1024) - 1, true)]
     [InlineData(2L * 1024 * 1024 * 1024, false)]
@@ -36,6 +40,63 @@ public sealed class FlashbackDiskPolicyTests
         using var manager = CreateManager(options);
 
         Assert.Equal(expected, GetBoolProperty(manager, "IsDiskCriticallyLow"));
+    }
+
+    [Theory]
+    [InlineData(-1L, false)]
+    [InlineData(0L, true)]
+    [InlineData(3L * 1024 * 1024 * 1024, false)]
+    public void FreeSpaceAndDiskPolicy_ShareTheInjectedCachedProbe(long freeBytes, bool expectedLow)
+    {
+        var calls = 0;
+        var options = CreateOptions(() =>
+        {
+            calls++;
+            return freeBytes;
+        });
+        using var manager = CreateManager(options);
+
+        Assert.Equal(freeBytes, GetLongProperty(manager, "TempDriveAvailableFreeBytes"));
+        Assert.Equal(expectedLow, GetBoolProperty(manager, "IsDiskSpaceLow"));
+        Assert.Equal(expectedLow, GetBoolProperty(manager, "IsDiskCriticallyLow"));
+        Assert.Equal(freeBytes, GetLongProperty(manager, "TempDriveAvailableFreeBytes"));
+        Assert.Equal(1, calls);
+    }
+
+    [Fact]
+    public void FreeSpace_RefreshesTheSharedValueAfterTheProbeInterval()
+    {
+        var freeBytes = 3L * 1024 * 1024 * 1024;
+        var calls = 0;
+        using var manager = CreateManager(CreateOptions(() =>
+        {
+            calls++;
+            return freeBytes;
+        }));
+
+        Assert.Equal(freeBytes, GetLongProperty(manager, "TempDriveAvailableFreeBytes"));
+        freeBytes = 0;
+        Assert.False(GetBoolProperty(manager, "IsDiskCriticallyLow"));
+        Assert.Equal(1, calls);
+
+        // Expire only the cache timestamp, avoiding a five-second wall-clock wait.
+        manager.GetType().GetField("_lastFreeDiskProbeMs", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .SetValue(manager, Environment.TickCount64 - 5_000);
+
+        Assert.Equal(0L, GetLongProperty(manager, "TempDriveAvailableFreeBytes"));
+        Assert.True(GetBoolProperty(manager, "IsDiskCriticallyLow"));
+        Assert.Equal(2, calls);
+    }
+
+    [Fact]
+    public async Task HealthWithoutABuffer_ReportsUnknownFreeSpace()
+    {
+        var serviceType = RequireType("Sussudio.Services.Capture.CaptureService");
+        await using var service = (IAsyncDisposable)Activator.CreateInstance(serviceType)!;
+
+        var snapshot = serviceType.GetMethod("GetHealthSnapshot")!.Invoke(service, null)!;
+
+        Assert.Equal(-1L, GetLongProperty(snapshot, "FlashbackTempDriveFreeBytes"));
     }
 
     [Fact]
@@ -88,11 +149,12 @@ public sealed class FlashbackDiskPolicyTests
     private static Type RequireType(string typeName)
         => SussudioAssembly.Load().GetType(typeName, throwOnError: true)!;
 
-    private static object CreateOptions(Func<long>? freeDiskBytesProvider = null)
+    private object CreateOptions(Func<long>? freeDiskBytesProvider = null)
     {
         var optionsType = RequireType("Sussudio.Models.FlashbackBufferOptions");
         var options = Activator.CreateInstance(optionsType)
             ?? throw new InvalidOperationException("Failed to create FlashbackBufferOptions.");
+        optionsType.GetProperty("TempDirectory")!.SetValue(options, _tempDirectory);
         if (freeDiskBytesProvider != null)
         {
             SetPropertyBackingField(options, "FreeDiskBytesProvider", freeDiskBytesProvider);
@@ -131,4 +193,7 @@ public sealed class FlashbackDiskPolicyTests
             ?? throw new InvalidOperationException($"{instance.GetType().Name}.{name} not found.");
         return (bool)property.GetValue(instance)!;
     }
+
+    private static long GetLongProperty(object instance, string name)
+        => (long)instance.GetType().GetProperty(name)!.GetValue(instance)!;
 }
