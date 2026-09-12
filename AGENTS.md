@@ -62,6 +62,20 @@ Passing automated checks does not prove live capture, audible output, HDR displa
 
 Treat build failures diagnostically. Check for locked app/tool processes and stale binaries before assuming the source is broken. Before stopping a process such as `Sussudio.exe` or `McpServer.exe` that locks build outputs, check whether it is recording or serving an active session. Coordinate any interruption with the session owner, using existing authorization where applicable. Once the lock is safely cleared, rerun the real build path and restore the session afterward where possible.
 
+## Dead Surface
+
+Run before starting work in an area, and after finishing a cleanup slice:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\architecture\Report-DeadSurface.ps1
+```
+
+It writes `artifacts/dead-surface.json` and reports production code that nothing uses: environment variables read but never set or documented, private fields assigned but never read, and private methods with no call site.
+
+**Every reported item is either deleted, or annotated in place with a comment saying why it must stay.** There is no third option. A report that is read and then ignored is worse than no report, because the next agent cannot tell a deliberate keeper from an oversight.
+
+The detection is deliberately conservative: false negatives are fine, false positives are not, because a report that cries wolf gets ignored. A `ref`/`out` use counts as a read, event and delegate fields are skipped, XAML-wired handlers are resolved from markup, and field reads are resolved across partial-class siblings. If you find a new false-positive class, fix the script rather than dismissing the report.
+
 ## Windows And Worktree Notes
 
 - Read `.claude/napkin.md` before substantial work; it contains repo-specific traps and recent lessons.

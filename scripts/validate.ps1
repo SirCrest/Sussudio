@@ -32,6 +32,10 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
+# Reusable MSBuild worker nodes outlive the build and hold the log files, which
+# breaks the next run on Windows. Validation is not a hot path.
+$env:MSBUILDDISABLENODEREUSE = "1"
+
 $Root = (Resolve-Path -LiteralPath $Root).Path
 $solution = Join-Path $Root "Sussudio.slnx"
 $testProject = Join-Path $Root "tests\Sussudio.Tests\Sussudio.Tests.csproj"
@@ -87,10 +91,20 @@ function Invoke-Step {
 
     Push-Location $Root
     try {
-        $process = Start-Process -FilePath $exe -ArgumentList $arguments `
-            -NoNewWindow -Wait -PassThru `
-            -RedirectStandardOutput $stdoutPath -RedirectStandardError $stderrPath
-        $exit = $process.ExitCode
+        # Run through cmd.exe with native redirection. Two PowerShell-only
+        # approaches both failed here:
+        #   & exe 2>file   promotes native stderr to a terminating
+        #                  NativeCommandError while ErrorActionPreference is Stop
+        #   Start-Process  -Wait waits for the whole process tree, and MSBuild
+        #                  leaves a persistent Roslyn compiler server behind, so
+        #                  it never returns; without -Wait, ExitCode comes back
+        #                  null.
+        $quoted = @($arguments | ForEach-Object {
+            if ($_ -match '[\s"]') { '"' + ($_ -replace '"', '\"') + '"' } else { $_ }
+        })
+        $commandLine = '"{0}" {1} 1> "{2}" 2> "{3}"' -f $exe, ($quoted -join ' '), $stdoutPath, $stderrPath
+        & cmd.exe /c $commandLine
+        $exit = $LASTEXITCODE
     }
     catch {
         Set-Content -LiteralPath $stderrPath -Value $_.Exception.Message -Encoding utf8
