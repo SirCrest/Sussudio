@@ -624,7 +624,7 @@ internal sealed class StatsOverlayCompositionController : IDisposable
         var statsDockPresentationController = new StatsDockPresentationController(context.DockTargets);
         var statsDockRowChromeController = CreateRowChromeController(context);
         var statsDiagnosticRowsController = CreateDiagnosticRowsController(context);
-        var statsHardwareRowsInputProvider = CreateHardwareRowsInputProvider(context);
+        var statsHardwareRowsInputProvider = new StatsHardwareRowsInputProvider(context.HardwareSources);
         var statsHardwareRowsController = CreateHardwareRowsController(
             context,
             statsDockRowChromeController,
@@ -653,17 +653,6 @@ internal sealed class StatsOverlayCompositionController : IDisposable
         {
             ResourceOwner = context.Shell.StatsDockPanel,
             DiagnosticsContent = context.DockTargets.DiagnosticsContent
-        });
-    }
-
-    private static StatsHardwareRowsInputProvider CreateHardwareRowsInputProvider(
-        StatsOverlayCompositionControllerContext context)
-    {
-        return new StatsHardwareRowsInputProvider(new StatsHardwareRowsInputProviderContext
-        {
-            GetMjpegPipelineTimingDetails = context.HardwareSources.GetMjpegPipelineTimingDetails,
-            GetPendingPreviewFrameCount = context.HardwareSources.GetPendingPreviewFrameCount,
-            GetNvmlSnapshot = context.HardwareSources.GetNvmlSnapshot
         });
     }
 
@@ -1187,18 +1176,11 @@ internal sealed class StatsHardwareRowsControllerContext
     public required StatsHardwareRowsInputProvider InputProvider { get; init; }
 }
 
-internal sealed class StatsHardwareRowsInputProviderContext
-{
-    public required Func<ParallelMjpegDecodePipeline.PipelineTimingMetrics?> GetMjpegPipelineTimingDetails { get; init; }
-    public required Func<int?> GetPendingPreviewFrameCount { get; init; }
-    public required Func<NvmlSnapshot?> GetNvmlSnapshot { get; init; }
-}
-
 internal sealed class StatsHardwareRowsInputProvider
 {
-    private readonly StatsHardwareRowsInputProviderContext _context;
+    private readonly StatsOverlayHardwareSourceContext _context;
 
-    public StatsHardwareRowsInputProvider(StatsHardwareRowsInputProviderContext context)
+    public StatsHardwareRowsInputProvider(StatsOverlayHardwareSourceContext context)
     {
         _context = context;
     }

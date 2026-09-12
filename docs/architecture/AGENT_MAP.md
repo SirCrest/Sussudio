@@ -1263,7 +1263,8 @@ Primary current owners:
   simple row pools, diagnostic row presentation, empty-state rows, group
   headers, diagnostic row pooling, hardware row refresh, availability, and
   decode/GPU minimum pool sizing. It also keeps
-  the hardware input provider that owns live MJPEG/NVML input acquisition,
+  the hardware input provider, which shares `StatsOverlayHardwareSourceContext`
+  directly with shell composition and owns live MJPEG/NVML input acquisition,
   decode availability policy, and pure telemetry projection into the hardware-row
   presentation input DTOs;
   `Sussudio/ViewModels/StatsPresentationBuilder.cs` owns pure decode/GPU row

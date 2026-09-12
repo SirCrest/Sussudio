@@ -3917,8 +3917,8 @@ public class StatsPresentationTests
         AssertOccursBefore(statsOverlayCompositionText, "_statsDockRefreshController = CreateDockRefreshController(context);", "_statsOverlayController = CreateOverlayController(context);");
         AssertOccursBefore(statsDockCompositionText, "var statsDockPresentationController = new StatsDockPresentationController(context.DockTargets);", "var statsDockRowChromeController = CreateRowChromeController(context);");
         AssertOccursBefore(statsDockCompositionText, "var statsDockRowChromeController = CreateRowChromeController(context);", "var statsDiagnosticRowsController = CreateDiagnosticRowsController(context);");
-        AssertOccursBefore(statsDockCompositionText, "var statsDiagnosticRowsController = CreateDiagnosticRowsController(context);", "var statsHardwareRowsInputProvider = CreateHardwareRowsInputProvider(context);");
-        AssertOccursBefore(statsDockCompositionText, "var statsHardwareRowsInputProvider = CreateHardwareRowsInputProvider(context);", "var statsHardwareRowsController = CreateHardwareRowsController(");
+        AssertOccursBefore(statsDockCompositionText, "var statsDiagnosticRowsController = CreateDiagnosticRowsController(context);", "var statsHardwareRowsInputProvider = new StatsHardwareRowsInputProvider(context.HardwareSources);");
+        AssertOccursBefore(statsDockCompositionText, "var statsHardwareRowsInputProvider = new StatsHardwareRowsInputProvider(context.HardwareSources);", "var statsHardwareRowsController = CreateHardwareRowsController(");
         AssertOccursBefore(statsDockCompositionText, "var statsHardwareRowsController = CreateHardwareRowsController(", "return CreateRefreshController(");
         AssertContains(refreshControllerText, "internal sealed class StatsDockRefreshControllerContext");
         AssertContains(refreshControllerText, "internal sealed class StatsDockRefreshController");
@@ -3984,13 +3984,17 @@ public class StatsPresentationTests
             StringComparison.Ordinal);
         var hardwareRowsControllerContextText = refreshControllerText.Substring(
             refreshControllerText.IndexOf("internal sealed class StatsHardwareRowsControllerContext", StringComparison.Ordinal),
-            refreshControllerText.IndexOf("internal sealed class StatsHardwareRowsInputProviderContext", StringComparison.Ordinal)
+            refreshControllerText.IndexOf("internal sealed class StatsHardwareRowsInputProvider", StringComparison.Ordinal)
                 - refreshControllerText.IndexOf("internal sealed class StatsHardwareRowsControllerContext", StringComparison.Ordinal));
         var hardwareRowsControllerText = hardwareRowsControllerContextText + refreshControllerText.Substring(hardwareRowsControllerStart);
         var hardwareRowsInputProviderText = refreshControllerText.Substring(
-            refreshControllerText.IndexOf("internal sealed class StatsHardwareRowsInputProviderContext", StringComparison.Ordinal),
+            refreshControllerText.IndexOf("internal sealed class StatsHardwareRowsInputProvider", StringComparison.Ordinal),
             hardwareRowsControllerStart
-                - refreshControllerText.IndexOf("internal sealed class StatsHardwareRowsInputProviderContext", StringComparison.Ordinal));
+                - refreshControllerText.IndexOf("internal sealed class StatsHardwareRowsInputProvider", StringComparison.Ordinal));
+        var hardwareSourcesText = ExtractTextBetween(
+            statsOverlayCompositionText,
+            "internal sealed class StatsOverlayHardwareSourceContext",
+            "internal sealed class StatsOverlayFrameTimeTargetsContext");
         var hardwareRowsInputBuilderText = hardwareRowsInputProviderText;
         var hardwareRowsBuilderText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.cs").Replace("\r\n", "\n");
 
@@ -4000,12 +4004,9 @@ public class StatsPresentationTests
         AssertContains(statsDockCompositionText, "ResourceOwner = context.Shell.StatsDockPanel");
         AssertContains(statsDockCompositionText, "DiagnosticsContent = context.DockTargets.DiagnosticsContent");
         AssertContains(statsDockCompositionText, "RowChromeController = statsDockRowChromeController");
-        AssertContains(statsDockCompositionText, "private static StatsHardwareRowsInputProvider CreateHardwareRowsInputProvider(");
-        AssertContains(statsDockCompositionText, "GetMjpegPipelineTimingDetails = context.HardwareSources.GetMjpegPipelineTimingDetails,");
-        AssertContains(statsDockCompositionText, "GetPendingPreviewFrameCount = context.HardwareSources.GetPendingPreviewFrameCount,");
-        AssertContains(statsDockCompositionText, "GetNvmlSnapshot = context.HardwareSources.GetNvmlSnapshot");
+        AssertContains(statsDockCompositionText, "new StatsHardwareRowsInputProvider(context.HardwareSources)");
         AssertContains(statsDockCompositionText, "InputProvider = statsHardwareRowsInputProvider");
-        AssertOccursBefore(statsDockCompositionText, "var statsHardwareRowsInputProvider = CreateHardwareRowsInputProvider(context);", "var statsHardwareRowsController = CreateHardwareRowsController(");
+        AssertOccursBefore(statsDockCompositionText, "var statsHardwareRowsInputProvider = new StatsHardwareRowsInputProvider(context.HardwareSources);", "var statsHardwareRowsController = CreateHardwareRowsController(");
         AssertDoesNotContain(statsDockCompositionText, "GetDecodeRowsInput = () =>");
         AssertDoesNotContain(statsDockCompositionText, "StatsHardwareRowsInputBuilder.BuildDecodeRowsInput(");
         AssertDoesNotContain(statsDockCompositionText, "StatsHardwareRowsInputBuilder.BuildGpuRowsInput(");
@@ -4025,11 +4026,11 @@ public class StatsPresentationTests
         AssertContains(hardwareRowsControllerText, "StatsPresentationBuilder.BuildHardwareGpuRows(_context.InputProvider.GetGpuRowsInput())");
         AssertDoesNotContain(hardwareRowsControllerText, "public required Func<StatsHardwareDecodeRowsInput?> GetDecodeRowsInput { get; init; }");
         AssertDoesNotContain(hardwareRowsControllerText, "public required Func<StatsHardwareGpuRowsInput?> GetGpuRowsInput { get; init; }");
-        AssertContains(hardwareRowsInputProviderText, "internal sealed class StatsHardwareRowsInputProviderContext");
         AssertContains(hardwareRowsInputProviderText, "internal sealed class StatsHardwareRowsInputProvider");
-        AssertContains(hardwareRowsInputProviderText, "public required Func<ParallelMjpegDecodePipeline.PipelineTimingMetrics?> GetMjpegPipelineTimingDetails { get; init; }");
-        AssertContains(hardwareRowsInputProviderText, "public required Func<int?> GetPendingPreviewFrameCount { get; init; }");
-        AssertContains(hardwareRowsInputProviderText, "public required Func<NvmlSnapshot?> GetNvmlSnapshot { get; init; }");
+        AssertContains(hardwareRowsInputProviderText, "public StatsHardwareRowsInputProvider(StatsOverlayHardwareSourceContext context)");
+        AssertContains(hardwareSourcesText, "public required Func<ParallelMjpegDecodePipeline.PipelineTimingMetrics?> GetMjpegPipelineTimingDetails { get; init; }");
+        AssertContains(hardwareSourcesText, "public required Func<int?> GetPendingPreviewFrameCount { get; init; }");
+        AssertContains(hardwareSourcesText, "public required Func<NvmlSnapshot?> GetNvmlSnapshot { get; init; }");
         AssertContains(hardwareRowsInputProviderText, "var mjpegMetrics = _context.GetMjpegPipelineTimingDetails();");
         AssertContains(hardwareRowsInputProviderText, "if (!mjpegMetrics.HasValue || mjpegMetrics.Value.DecoderCount <= 0)");
         AssertContains(hardwareRowsInputProviderText, "StatsHardwareRowsInputBuilder.BuildDecodeRowsInput(");
@@ -4501,10 +4502,10 @@ public class StatsHardwareRowsTests
         int? pendingPreviewFrameCount,
         object? nvmlSnapshot)
     {
-        var contextType = RequireType("Sussudio.Controllers.StatsHardwareRowsInputProviderContext");
+        var contextType = RequireType("Sussudio.Controllers.StatsOverlayHardwareSourceContext");
         var providerType = RequireType("Sussudio.Controllers.StatsHardwareRowsInputProvider");
         var context = Activator.CreateInstance(contextType)
-                      ?? throw new InvalidOperationException("Failed to create StatsHardwareRowsInputProviderContext.");
+                      ?? throw new InvalidOperationException("Failed to create StatsOverlayHardwareSourceContext.");
 
         SetPropertyOrBackingField(
             context,

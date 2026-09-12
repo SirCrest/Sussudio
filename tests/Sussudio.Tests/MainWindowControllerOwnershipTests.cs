@@ -252,6 +252,8 @@ static partial class Program
         AssertContains(composition, "private readonly StatsUiSampler _sampler;");
         AssertContains(composition, "private readonly FrameTimeGraphController _frameTimeGraph;");
         AssertContains(composition, "private readonly StatsDockMotionController _dockMotion;");
+        AssertContains(composition, "new StatsHardwareRowsInputProvider(context.HardwareSources)");
+        AssertContains(composition, "public StatsHardwareRowsInputProvider(StatsOverlayHardwareSourceContext context)");
         AssertContains(composition, "_context.StatsToggle.Checked += StatsToggle_Checked;");
         AssertContains(composition, "_context.StatsToggle.Checked -= StatsToggle_Checked;");
         AssertContains(composition, "_context.FrameTimeOverlayToggle.Checked += FrameTimeOverlayToggle_Checked;");

@@ -1,6 +1,6 @@
 # Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-09-12T06:23:04Z
+Generated UTC: 2026-09-12T06:29:55Z
 Root: C:\Users\crest\source\repos\Sussudio
 
 ## Summary
@@ -8,11 +8,11 @@ Root: C:\Users\crest\source\repos\Sussudio
 | Metric | Value |
 | --- | ---: |
 | Production .cs files | 149 |
-| Test .cs files | 88 |
+| Test .cs files | 90 |
 | Core app .cs files (Sussudio/) | 115 |
-| Core app nonblank LoC (Sussudio/) | 96429 |
-| Sussudio.Tests .cs files | 87 |
-| Sussudio.Tests nonblank LoC | 74852 |
+| Core app nonblank LoC (Sussudio/) | 96413 |
+| Sussudio.Tests .cs files | 89 |
+| Sussudio.Tests nonblank LoC | 75065 |
 | Production .cs files under 60 lines | 3 (2.0%) |
 | Production .cs files under 80 lines | 7 (4.7%) |
 
@@ -65,8 +65,8 @@ Root: C:\Users\crest\source\repos\Sussudio
 | 1431 | Sussudio/Services/Audio/WasapiAudioPlayback.cs |
 | 1413 | Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs |
 | 1406 | Sussudio/Services/Recording/LibAvEncoder.cs |
-| 1317 | Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs |
 | 1307 | Sussudio/Services/Capture/MjpegPreviewJitterBuffer.cs |
+| 1303 | Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs |
 
 ## Sample production files under 60 lines
 
