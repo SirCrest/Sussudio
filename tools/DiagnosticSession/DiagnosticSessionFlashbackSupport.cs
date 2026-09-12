@@ -54,17 +54,17 @@ internal static class DiagnosticSessionFlashbackExports
     internal static Dictionary<string, object?> CreateFlashbackExportVerifyPayload(string filePath) =>
         new()
         {
-            ["filePath"] = filePath,
+            [AutomationPayloadKeys.FilePath] = filePath,
             ["strict"] = true,
-            ["verificationProfile"] = "flashback-export"
+            [AutomationPayloadKeys.VerificationProfile] = "flashback-export"
         };
 
     internal static async Task CleanupFlashbackSelectionAsync(
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync)
     {
-        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "clear-in-out-points" }, null)
+        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "clear-in-out-points" }, null)
             .ConfigureAwait(false);
-        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "go-live" }, null)
+        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "go-live" }, null)
             .ConfigureAwait(false);
     }
 
@@ -95,7 +95,7 @@ internal static class DiagnosticSessionFlashbackExports
 
             var toggleResponse = await sendCommandAsync(
                     "SetAudioEnabled",
-                    new Dictionary<string, object?> { ["enabled"] = toggledAudioEnabled },
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = toggledAudioEnabled },
                     10_000)
                 .ConfigureAwait(false);
             if (IsSuccess(toggleResponse))
@@ -123,7 +123,7 @@ internal static class DiagnosticSessionFlashbackExports
             {
                 var restoreResponse = await sendCommandAsync(
                         "SetAudioEnabled",
-                        new Dictionary<string, object?> { ["enabled"] = baselineAudioEnabled },
+                        new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = baselineAudioEnabled },
                         10_000)
                     .ConfigureAwait(false);
                 if (IsSuccess(restoreResponse))

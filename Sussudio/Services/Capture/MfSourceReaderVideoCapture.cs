@@ -1521,8 +1521,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             throw new ArgumentException("Destination span is too small for packed frame.");
         }
 
-        var strideAbs = Math.Abs(stride);
-        if (strideAbs < rowBytes)
+        if (stride < rowBytes)
         {
             throw new InvalidOperationException(
                 $"Source stride ({stride}) is smaller than packed row width ({rowBytes}).");
@@ -1530,29 +1529,18 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
 
         var yDest = destination[..yBytes];
         var uvDest = destination.Slice(yBytes, uvBytes);
-        var yStart = sourceStart;
         var uvStart = sourceStart + (stride * height);
-
-        if (stride < 0)
-        {
-            yStart = sourceStart + (stride * (height - 1));
-            uvStart = sourceStart + (stride * (height + uvHeight - 1));
-        }
 
         for (var row = 0; row < height; row++)
         {
-            var src = stride >= 0
-                ? yStart + (row * stride)
-                : yStart - (row * strideAbs);
+            var src = sourceStart + (row * stride);
             var dst = yDest.Slice(row * rowBytes, rowBytes);
             new ReadOnlySpan<byte>(src, rowBytes).CopyTo(dst);
         }
 
         for (var row = 0; row < uvHeight; row++)
         {
-            var src = stride >= 0
-                ? uvStart + (row * stride)
-                : uvStart - (row * strideAbs);
+            var src = uvStart + (row * stride);
             var dst = uvDest.Slice(row * rowBytes, rowBytes);
             new ReadOnlySpan<byte>(src, rowBytes).CopyTo(dst);
         }

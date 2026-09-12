@@ -70,14 +70,14 @@ internal static class DiagnosticSessionFlashbackStressScenario
         var baselineSnapshotResponse = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
         TryGetSnapshot(baselineSnapshotResponse, out var baselineSnapshot);
 
-        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "pause" }, null)
+        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "pause" }, null)
             .ConfigureAwait(false);
         actions.Add("flashback pause requested");
 
         await Task.Delay(500, cancellationToken).ConfigureAwait(false);
         await sendCommandAsync(
                 "FlashbackAction",
-                new Dictionary<string, object?> { ["action"] = "seek", ["positionMs"] = 500 },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "seek", [AutomationPayloadKeys.PositionMs] = 500 },
                 null)
             .ConfigureAwait(false);
         actions.Add("flashback seek requested");
@@ -87,14 +87,14 @@ internal static class DiagnosticSessionFlashbackStressScenario
             await Task.Delay(100, cancellationToken).ConfigureAwait(false);
             await sendCommandAsync(
                     "FlashbackAction",
-                    new Dictionary<string, object?> { ["action"] = "seek", ["positionMs"] = positionMs },
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "seek", [AutomationPayloadKeys.PositionMs] = positionMs },
                     null)
                 .ConfigureAwait(false);
         }
         actions.Add("flashback scrub burst requested");
 
         await Task.Delay(500, cancellationToken).ConfigureAwait(false);
-        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "play" }, null)
+        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "play" }, null)
             .ConfigureAwait(false);
         actions.Add("flashback play requested");
 
@@ -122,7 +122,7 @@ internal static class DiagnosticSessionFlashbackStressScenario
                 cancellationToken)
             .ConfigureAwait(false);
 
-        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "go-live" }, null)
+        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "go-live" }, null)
             .ConfigureAwait(false);
         actions.Add("flashback go-live requested");
 
@@ -155,13 +155,13 @@ internal static class DiagnosticSessionFlashbackStressScenario
         var baselineSnapshotResponse = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
         TryGetSnapshot(baselineSnapshotResponse, out var baselineSnapshot);
 
-        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "pause" }, null)
+        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "pause" }, null)
             .ConfigureAwait(false);
         actions.Add("flashback scrub stress pause requested");
 
         var beginResponse = await sendCommandAsync(
                 "FlashbackAction",
-                new Dictionary<string, object?> { ["action"] = "begin-scrub", ["positionMs"] = 500 },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "begin-scrub", [AutomationPayloadKeys.PositionMs] = 500 },
                 null)
             .ConfigureAwait(false);
         actions.Add("flashback scrub stress begin requested");
@@ -190,7 +190,7 @@ internal static class DiagnosticSessionFlashbackStressScenario
 
         var endResponse = await sendCommandAsync(
                 "FlashbackAction",
-                new Dictionary<string, object?> { ["action"] = "end-scrub", ["positionMs"] = finalScrubPositionMs },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "end-scrub", [AutomationPayloadKeys.PositionMs] = finalScrubPositionMs },
                 null)
             .ConfigureAwait(false);
         actions.Add("flashback scrub stress end requested");
@@ -200,12 +200,12 @@ internal static class DiagnosticSessionFlashbackStressScenario
             return;
         }
 
-        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "play" }, null)
+        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "play" }, null)
             .ConfigureAwait(false);
         actions.Add("flashback scrub stress play requested");
 
         await Task.Delay(500, cancellationToken).ConfigureAwait(false);
-        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "go-live" }, null)
+        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "go-live" }, null)
             .ConfigureAwait(false);
         actions.Add("flashback scrub stress go-live requested");
 
@@ -460,7 +460,7 @@ internal static class DiagnosticSessionFlashbackStressScenario
         var exportPath = Path.Combine(outputDirectory, "flashback-stress-export.mp4");
         var exportResponse = await sendCommandAsync(
                 "FlashbackExport",
-                new Dictionary<string, object?> { ["seconds"] = 1, ["outputPath"] = exportPath },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Seconds] = 1, [AutomationPayloadKeys.OutputPath] = exportPath },
                 60_000)
             .ConfigureAwait(false);
         actions.Add("flashback stress export requested");
@@ -491,7 +491,7 @@ internal static class DiagnosticSessionFlashbackStressScenario
         {
             updateTasks[i] = sendCommandAsync(
                 "FlashbackAction",
-                new Dictionary<string, object?> { ["action"] = "update-scrub", ["positionMs"] = positions[i] },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "update-scrub", [AutomationPayloadKeys.PositionMs] = positions[i] },
                 null);
         }
 

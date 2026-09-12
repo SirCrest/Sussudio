@@ -61,12 +61,12 @@ internal static class DiagnosticSessionFlashbackCycleScenarios
 
         await sendCommandAsync(
                 "FlashbackAction",
-                new Dictionary<string, object?> { ["action"] = "pause" },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "pause" },
                 null)
             .ConfigureAwait(false);
         await sendCommandAsync(
                 "FlashbackAction",
-                new Dictionary<string, object?> { ["action"] = "seek", ["positionMs"] = 750 },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "seek", [AutomationPayloadKeys.PositionMs] = 750 },
                 null)
             .ConfigureAwait(false);
         actions.Add("flashback restart cycle playback primed");
@@ -130,7 +130,7 @@ internal static class DiagnosticSessionFlashbackCycleScenarios
         {
             var setResponse = await sendCommandAsync(
                     "SetPreset",
-                    new Dictionary<string, object?> { ["preset"] = cycledPreset },
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.Preset] = cycledPreset },
                     null)
                 .ConfigureAwait(false);
             actions.Add($"flashback encoder preset changed to {cycledPreset}");
@@ -215,7 +215,7 @@ internal static class DiagnosticSessionFlashbackCycleScenarios
         var exportPath = Path.Combine(outputDirectory, "flashback-restart-cycle-export.mp4");
         var exportResponse = await sendCommandAsync(
                 "FlashbackExport",
-                new Dictionary<string, object?> { ["seconds"] = 1, ["outputPath"] = exportPath },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Seconds] = 1, [AutomationPayloadKeys.OutputPath] = exportPath },
                 60_000)
             .ConfigureAwait(false);
         actions.Add("flashback restart cycle export requested");
@@ -276,7 +276,7 @@ internal static class DiagnosticSessionFlashbackCycleScenarios
         var exportPath = Path.Combine(outputDirectory, "flashback-encoder-cycle-export.mp4");
         var exportResponse = await sendCommandAsync(
                 "FlashbackExport",
-                new Dictionary<string, object?> { ["seconds"] = 1, ["outputPath"] = exportPath },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Seconds] = 1, [AutomationPayloadKeys.OutputPath] = exportPath },
                 60_000)
             .ConfigureAwait(false);
         actions.Add("flashback encoder cycle export requested");
@@ -310,7 +310,7 @@ internal static class DiagnosticSessionFlashbackCycleScenarios
     {
         var restoreResponse = await sendCommandAsync(
                 "SetPreset",
-                new Dictionary<string, object?> { ["preset"] = originalPreset },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Preset] = originalPreset },
                 null)
             .ConfigureAwait(false);
         actions.Add($"flashback encoder preset restored to {originalPreset}");
@@ -365,7 +365,7 @@ internal static class DiagnosticSessionFlashbackLifecycleScenarios
 
         await sendCommandAsync(
                 "FlashbackAction",
-                new Dictionary<string, object?> { ["action"] = "pause" },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "pause" },
                 null)
             .ConfigureAwait(false);
         actions.Add("flashback lifecycle pause requested");
@@ -373,7 +373,7 @@ internal static class DiagnosticSessionFlashbackLifecycleScenarios
         await Task.Delay(250, cancellationToken).ConfigureAwait(false);
         await sendCommandAsync(
                 "FlashbackAction",
-                new Dictionary<string, object?> { ["action"] = "seek", ["positionMs"] = 1_000 },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "seek", [AutomationPayloadKeys.PositionMs] = 1_000 },
                 null)
             .ConfigureAwait(false);
         actions.Add("flashback lifecycle seek requested");
@@ -381,7 +381,7 @@ internal static class DiagnosticSessionFlashbackLifecycleScenarios
         await Task.Delay(250, cancellationToken).ConfigureAwait(false);
         await sendCommandAsync(
                 "FlashbackAction",
-                new Dictionary<string, object?> { ["action"] = "play" },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "play" },
                 null)
             .ConfigureAwait(false);
         actions.Add("flashback lifecycle play requested");
@@ -389,7 +389,7 @@ internal static class DiagnosticSessionFlashbackLifecycleScenarios
         await Task.Delay(250, cancellationToken).ConfigureAwait(false);
         await sendCommandAsync(
                 "SetFlashbackEnabled",
-                new Dictionary<string, object?> { ["enabled"] = false },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = false },
                 null)
             .ConfigureAwait(false);
         actions.Add("flashback lifecycle disabled during playback");
@@ -402,7 +402,7 @@ internal static class DiagnosticSessionFlashbackLifecycleScenarios
 
         await sendCommandAsync(
                 "SetFlashbackEnabled",
-                new Dictionary<string, object?> { ["enabled"] = true },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = true },
                 null)
             .ConfigureAwait(false);
         actions.Add("flashback lifecycle re-enabled");
@@ -533,7 +533,7 @@ internal static class DiagnosticSessionFlashbackPreviewCycleScenarios
 
         var stopPreviewResponse = await sendCommandAsync(
                 "SetPreviewEnabled",
-                new Dictionary<string, object?> { ["enabled"] = false },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = false },
                 60_000)
             .ConfigureAwait(false);
         actions.Add("flashback preview cycle preview stopped");
@@ -563,7 +563,7 @@ internal static class DiagnosticSessionFlashbackPreviewCycleScenarios
 
         var startPreviewResponse = await sendCommandAsync(
                 "SetPreviewEnabled",
-                new Dictionary<string, object?> { ["enabled"] = true },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = true },
                 60_000)
             .ConfigureAwait(false);
         actions.Add("flashback preview cycle preview restarted");
@@ -643,7 +643,7 @@ internal static class DiagnosticSessionFlashbackPreviewCycleScenarios
         var exportPath = Path.Combine(outputDirectory, "flashback-preview-off-export.mp4");
         var exportResponse = await sendCommandAsync(
                 "FlashbackExport",
-                new Dictionary<string, object?> { ["seconds"] = 1, ["outputPath"] = exportPath },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Seconds] = 1, [AutomationPayloadKeys.OutputPath] = exportPath },
                 60_000)
             .ConfigureAwait(false);
         actions.Add("flashback preview cycle export while preview off requested");
@@ -696,9 +696,9 @@ internal static class DiagnosticSessionFlashbackPreviewCycleScenarios
                 "WaitForCondition",
                 new Dictionary<string, object?>
                 {
-                    ["condition"] = "VideoFramesFlowing",
-                    ["timeoutMs"] = 15_000,
-                    ["pollMs"] = 250
+                    [AutomationPayloadKeys.Condition] = "VideoFramesFlowing",
+                    [AutomationPayloadKeys.TimeoutMs] = 15_000,
+                    [AutomationPayloadKeys.PollMs] = 250
                 },
                 17_000)
             .ConfigureAwait(false);
@@ -725,7 +725,7 @@ internal static class DiagnosticSessionFlashbackPreviewCycleScenarios
 
         var playResponse = await sendCommandAsync(
                 "FlashbackAction",
-                new Dictionary<string, object?> { ["action"] = "play", ["positionMs"] = 1000 },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "play", [AutomationPayloadKeys.PositionMs] = 1000 },
                 null)
             .ConfigureAwait(false);
         actions.Add("flashback playback preview cycle playback started");
@@ -750,7 +750,7 @@ internal static class DiagnosticSessionFlashbackPreviewCycleScenarios
 
         var stopPreviewResponse = await sendCommandAsync(
                 "SetPreviewEnabled",
-                new Dictionary<string, object?> { ["enabled"] = false },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = false },
                 60_000)
             .ConfigureAwait(false);
         actions.Add("flashback playback preview cycle preview stopped during playback");
@@ -776,7 +776,7 @@ internal static class DiagnosticSessionFlashbackPreviewCycleScenarios
 
         var startPreviewResponse = await sendCommandAsync(
                 "SetPreviewEnabled",
-                new Dictionary<string, object?> { ["enabled"] = true },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = true },
                 60_000)
             .ConfigureAwait(false);
         actions.Add("flashback playback preview cycle preview restarted");
@@ -868,7 +868,7 @@ internal static class DiagnosticSessionFlashbackPreviewCycleScenarios
         var exportPath = Path.Combine(outputDirectory, "flashback-playback-preview-cycle.mp4");
         var exportResponse = await sendCommandAsync(
                 "FlashbackExport",
-                new Dictionary<string, object?> { ["seconds"] = 1, ["outputPath"] = exportPath },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Seconds] = 1, [AutomationPayloadKeys.OutputPath] = exportPath },
                 60_000)
             .ConfigureAwait(false);
         actions.Add("flashback playback preview cycle export while preview off requested");
@@ -916,9 +916,9 @@ internal static class DiagnosticSessionFlashbackPreviewCycleScenarios
                 "WaitForCondition",
                 new Dictionary<string, object?>
                 {
-                    ["condition"] = "VideoFramesFlowing",
-                    ["timeoutMs"] = 15_000,
-                    ["pollMs"] = 250
+                    [AutomationPayloadKeys.Condition] = "VideoFramesFlowing",
+                    [AutomationPayloadKeys.TimeoutMs] = 15_000,
+                    [AutomationPayloadKeys.PollMs] = 250
                 },
                 17_000)
             .ConfigureAwait(false);
@@ -948,7 +948,7 @@ internal static class DiagnosticSessionFlashbackPreviewCycleScenarios
 
         var stopPreviewResponse = await sendCommandAsync(
                 "SetPreviewEnabled",
-                new Dictionary<string, object?> { ["enabled"] = false },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = false },
                 60_000)
             .ConfigureAwait(false);
         actions.Add("flashback recording preview cycle preview stopped");
@@ -971,7 +971,7 @@ internal static class DiagnosticSessionFlashbackPreviewCycleScenarios
 
         var startPreviewResponse = await sendCommandAsync(
                 "SetPreviewEnabled",
-                new Dictionary<string, object?> { ["enabled"] = true },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = true },
                 60_000)
             .ConfigureAwait(false);
         actions.Add("flashback recording preview cycle preview restarted");
@@ -1090,9 +1090,9 @@ internal static class DiagnosticSessionFlashbackPreviewCycleScenarios
                 "WaitForCondition",
                 new Dictionary<string, object?>
                 {
-                    ["condition"] = "VideoFramesFlowing",
-                    ["timeoutMs"] = 15_000,
-                    ["pollMs"] = 250
+                    [AutomationPayloadKeys.Condition] = "VideoFramesFlowing",
+                    [AutomationPayloadKeys.TimeoutMs] = 15_000,
+                    [AutomationPayloadKeys.PollMs] = 250
                 },
                 17_000)
             .ConfigureAwait(false);

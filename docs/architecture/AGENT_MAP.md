@@ -205,12 +205,24 @@ Entry points:
   command IDs only and never renumber or reuse values. Keep payload shape,
   readiness gating, timeout policy, CLI help, MCP descriptions, and path-policy
   assignments beside the command family they describe.
+  Its public `AutomationPayloadKeys` vocabulary covers the 40 catalog fields and
+  nested assertion `Field`/`Op`/`Value` keys, shared by dispatcher, CLI, MCP, and
+  diagnostic senders. `AutomationCommandCatalogTests.cs` protects the wire spellings.
+  Manifest authentication metadata describes the static credential locations and
+  precedence; it never reads or serializes a configured credential. The dispatcher
+  owns enforcement, including blank-only legacy payload fallback for all commands.
 - `AutomationPipeProtocol.cs` owns pipe names, auth env var, manifest revision,
   command resolution, request envelope shape, the fallback-security predicate
   shared by app and tests, pipe command result handoff, pipe client exception
   taxonomy, tolerant response-state parsing, synthetic error-envelope factory,
   exception-to-error-code mapping, and throw-vs-synthetic unknown-command
   policy shared by command transports and retry policy.
+  `AutomationPipeErrorCodes` owns the nine legacy client transport values and
+  immutable registry consumed by diagnostic retry classification.
+  `FailureCodeRegistryContractsTests.cs` checks exact values, membership, and uniqueness.
+  Shared transport forwards an optional explicit token before its trailing
+  cancellation token. Request writes await the actual cancellable pipe operation
+  before releasing resources, with UTF-8 and newline framing preserved.
 - `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns the golden
   numeric command-ID adapter plus shared automation/tool contract legacy
   `Program` implementations for catalog/manifest/path-policy reliability,
@@ -254,6 +266,10 @@ Automation diagnostics ownership:
   the aggregate automation ViewModel dependency. Keep the dispatcher in a
   single non-partial class body unless a command group becomes a named injected
   collaborator rather than an in-file section.
+  Required string and boolean extraction have one owner in the dispatcher,
+  shared by custom routes and table handlers. Its narrow request-validation
+  exception maps existing caller rejections to `invalid-request`; invoked port
+  failures remain `command-failed`, and cancellation remains `canceled`.
 - `Sussudio/Services/Automation/IAutomationViewModel.cs` owns the aggregate
   automation ViewModel contract plus feature-shaped ports for readiness,
   snapshot queries, device selection, capture settings, audio, preview/recording,
@@ -778,6 +794,12 @@ Entry points:
   verification against the committed `Fixtures/RecordingStructure` media corpus;
   `RecordingFailureEvidenceTests.cs` and `LibAvRecordingDrainBehaviorTests.cs`
   cover failure evidence and actual queued audio/video drain behavior.
+  The latter also drives CaptureService recording start, synthetic source ingress,
+  verified finalization, and format-mismatch rollback. `HevcP010Capability.cs`
+  owns the independent codec-open capability decision; `RecordingNativeTestChild.cs`
+  owns child-process deadlines, private recovery paths, and cleanup after confirmed exit.
+  `MfSourceReaderFrameStrideTests` in `XUnit.AutomationContractsTests.cs` directly
+  exercises NV12/P010 row packing and rejects invalid pitches before memory access.
 - `tests/Sussudio.Tests/NativeFfmpegCapabilitiesTests.cs` covers private probe protocol,
   process lifetime, native bundle selection and capability selection preservation.
   `AppProcessStartupTests.cs` covers process admission before shared startup work,
@@ -790,6 +812,9 @@ Entry points:
   failures return `output-stat-failed`; explicit output-read failures in any
   probe return `ffprobe-failed` with stream and original exception details.
   Optional empty or malformed secondary probe output retains its existing policy.
+- `Sussudio/Services/Recording/RecordingFailureCodes.cs` owns recording failure
+  vocabulary, including the six legacy file/ffprobe verifier codes. These remain
+  distinct from the in-process verifier's `recording-output-*` values.
 
 ## Flashback
 
@@ -2682,6 +2707,8 @@ Primary owners:
 - `tools/McpServer/Program.cs` owns MCP host bootstrap, stdio transport
   registration, tool discovery, and the `PipeClient` DI adapter over the shared
   automation command transport.
+  MCP startup `--token` and ssctl global `--token`/`-t` feed the shared explicit
+  token path; omitted tokens retain the existing environment fallback.
 - `tools/Common/` for shared tool helpers that are not contracts, including
   snapshot formatting, PresentMon probing, and shared JSON options.
 - `tools/DiagnosticSession/` for diagnostic sessions, scenario cataloging,
@@ -2736,6 +2763,9 @@ Primary owners:
   the transport seam. Do not reintroduce `CommandHandlers.*.cs` partial files
   unless a command family becomes an independently tested collaborator with a
   real boundary.
+  MCP and ssctl export clients send their existing relative generated defaults
+  or explicit paths unchanged. Destination directory creation belongs to the
+  server path policy; `outputPath` remains required on raw export requests.
 - `tools/NativeXuAudioProbe/Program.cs` owns probe command routing, direct
   AT read/write/input subcommands, the captured audio-switch replay workflow,
   RTK I2C unsafe-native-path probe workflow, service-control smoke/payload
@@ -2784,6 +2814,9 @@ Primary owners:
 - `tools/McpServer/Tools/ToolCommandFormatter.cs` owns shared command text and
   MCP result construction, including required-object validation and structured
   payload/error outcomes for raw app state and capture options.
+  `McpToolResultFactory` owns response-message fallback and failure-code
+  formatting for both single and batch results. Tool contract tests compare
+  advertised action tokens with the app enums and preserve codes exactly once.
 - `tools/McpServer/Tools/AppStateTools.cs` owns the public app-state,
   diagnostic-event, memory/GC/thread-pool, and diagnostic-session MCP entry
   points while preserving the `AppStateTools`, `DiagnosticsTools`,

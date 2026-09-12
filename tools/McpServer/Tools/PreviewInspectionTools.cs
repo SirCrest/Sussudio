@@ -21,7 +21,7 @@ public static class PreviewColorProbeTools
         var response = await pipeClient.SendCommandAsync(AutomationCommandKind.ProbePreviewColor, cancellationToken: cancellationToken).ConfigureAwait(false);
         if (!AutomationSnapshotFormatter.IsSuccess(response))
         {
-            return McpToolResultFactory.FromResponse(response, GetMessage(response));
+            return McpToolResultFactory.FromResponse(response, McpToolResultFactory.GetMessage(response));
         }
 
         if (!response.TryGetProperty("Data", out var data) || data.ValueKind != JsonValueKind.Object)
@@ -124,11 +124,6 @@ public static class PreviewColorProbeTools
         return McpToolResultFactory.FromResponse(response, builder.ToString().TrimEnd());
     }
 
-    private static string GetMessage(JsonElement response)
-    {
-        return AutomationSnapshotFormatter.Get(response, "Message", "Command failed.");
-    }
-
     private static string Get(JsonElement el, string prop, string fallback = "N/A")
     {
         return AutomationSnapshotFormatter.Get(el, prop, fallback);
@@ -146,7 +141,7 @@ public static class VideoSourceProbeTools
         var response = await pipeClient.SendCommandAsync(AutomationCommandKind.ProbeVideoSource, cancellationToken: cancellationToken).ConfigureAwait(false);
         if (!AutomationSnapshotFormatter.IsSuccess(response))
         {
-            return McpToolResultFactory.FromResponse(response, GetMessage(response));
+            return McpToolResultFactory.FromResponse(response, McpToolResultFactory.GetMessage(response));
         }
 
         if (!response.TryGetProperty("Data", out var data) || data.ValueKind != JsonValueKind.Object)
@@ -206,11 +201,6 @@ public static class VideoSourceProbeTools
         return McpToolResultFactory.FromResponse(response, builder.ToString().TrimEnd());
     }
 
-    private static string GetMessage(JsonElement response)
-    {
-        return AutomationSnapshotFormatter.Get(response, "Message", "Command failed.");
-    }
-
     private static string Get(JsonElement el, string prop, string fallback = "N/A")
     {
         return AutomationSnapshotFormatter.Get(el, prop, fallback);
@@ -234,13 +224,13 @@ public static class PreviewFrameCaptureTools
 
         var payload = new Dictionary<string, object?>
         {
-            ["outputPath"] = effectiveOutputPath
+            [AutomationPayloadKeys.OutputPath] = effectiveOutputPath
         };
 
         var response = await pipeClient.SendCommandAsync(AutomationCommandKind.CapturePreviewFrame, payload, cancellationToken: cancellationToken).ConfigureAwait(false);
         if (!AutomationSnapshotFormatter.IsSuccess(response))
         {
-            return McpToolResultFactory.FromResponse(response, AutomationSnapshotFormatter.Get(response, "Message", "Command failed."));
+            return McpToolResultFactory.FromResponse(response, McpToolResultFactory.GetMessage(response));
         }
 
         if (!response.TryGetProperty("Data", out var data) || data.ValueKind != JsonValueKind.Object)
@@ -413,13 +403,13 @@ public static class WindowScreenshotTools
 
         var payload = new Dictionary<string, object?>
         {
-            ["outputPath"] = effectiveOutputPath
+            [AutomationPayloadKeys.OutputPath] = effectiveOutputPath
         };
 
         var response = await pipeClient.SendCommandAsync(AutomationCommandKind.CaptureWindowScreenshot, payload, cancellationToken: cancellationToken).ConfigureAwait(false);
         if (!AutomationSnapshotFormatter.IsSuccess(response))
         {
-            return McpToolResultFactory.FromResponse(response, AutomationSnapshotFormatter.Get(response, "Message", "Screenshot failed."));
+            return McpToolResultFactory.FromResponse(response, McpToolResultFactory.GetMessage(response, "Screenshot failed."));
         }
 
         if (!response.TryGetProperty("Data", out var data) || data.ValueKind != JsonValueKind.Object)

@@ -133,7 +133,7 @@ public static class DiagnosticSessionRunner
             setStage("timeline");
             var timelineResponse = await sendAsync(
                     "GetPerformanceTimeline",
-                    new Dictionary<string, object?> { ["maxEntries"] = 240 },
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.MaxEntries] = 240 },
                     null)
                 .ConfigureAwait(false);
             if (timelineResponse.TryGetProperty("Data", out var timelineData))
@@ -751,7 +751,7 @@ internal static class DiagnosticSessionCleanupActions
             using var cleanupCts = CreateCleanupCts(TimeSpan.FromMilliseconds(recordingCleanupTimeoutMs));
             var stopResponse = await commandChannel.SendWithTokenAsync(
                     AutomationCommandKind.SetRecordingEnabled,
-                    new Dictionary<string, object?> { ["enabled"] = false },
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = false },
                     recordingCleanupTimeoutMs,
                     false,
                     cleanupCts.Token)
@@ -796,7 +796,7 @@ internal static class DiagnosticSessionCleanupActions
             using var cleanupCts = CreateCleanupCts(TimeSpan.FromSeconds(15));
             await commandChannel.SendWithTokenAsync(
                     AutomationCommandKind.FlashbackAction,
-                    new Dictionary<string, object?> { ["action"] = "go-live" },
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "go-live" },
                     15_000,
                     false,
                     cleanupCts.Token)
@@ -845,7 +845,7 @@ internal static class DiagnosticSessionCleanupActions
             using var cleanupCts = CreateCleanupCts(TimeSpan.FromSeconds(15));
             await commandChannel.SendWithTokenAsync(
                     AutomationCommandKind.SetPreviewEnabled,
-                    new Dictionary<string, object?> { ["enabled"] = false },
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = false },
                     15_000,
                     false,
                     cleanupCts.Token)
@@ -878,7 +878,7 @@ internal static class DiagnosticSessionCleanupActions
                 using var cleanupCts = CreateCleanupCts(TimeSpan.FromMilliseconds(cleanupTimeoutMs));
                 await commandChannel.SendWithTokenAsync(
                         AutomationCommandKind.SetFlashbackEnabled,
-                        new Dictionary<string, object?> { ["enabled"] = false },
+                        new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = false },
                         cleanupTimeoutMs,
                         false,
                         cleanupCts.Token)
@@ -900,7 +900,7 @@ internal static class DiagnosticSessionCleanupActions
                 using var cleanupCts = CreateCleanupCts(TimeSpan.FromMilliseconds(cleanupTimeoutMs));
                 await commandChannel.SendWithTokenAsync(
                         AutomationCommandKind.SetFlashbackEnabled,
-                        new Dictionary<string, object?> { ["enabled"] = true },
+                        new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = true },
                         cleanupTimeoutMs,
                         false,
                         cleanupCts.Token)
@@ -1026,9 +1026,9 @@ internal static class DiagnosticSessionRecordingChecks
                 verificationCommand = "VerifyFile";
                 verificationPayload = new Dictionary<string, object?>
                 {
-                    ["filePath"] = flashbackExportVerificationPath,
+                    [AutomationPayloadKeys.FilePath] = flashbackExportVerificationPath,
                     ["strict"] = true,
-                    ["verificationProfile"] = "flashback-export"
+                    [AutomationPayloadKeys.VerificationProfile] = "flashback-export"
                 };
             }
 

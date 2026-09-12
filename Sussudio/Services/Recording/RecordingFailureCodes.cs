@@ -14,6 +14,8 @@ internal static class RecordingFailureCodes
     internal const string AudioDurationMismatch = "recording-audio-duration-mismatch";
     internal const string AudioMetadataInvalid = "recording-audio-metadata-invalid";
     internal const string ContextMissing = "recording-context-missing";
+    internal const string FfprobeFailed = "ffprobe-failed";
+    internal const string FfprobeUnavailable = "ffprobe-unavailable";
     internal const string FinalOutputInvalid = "recording-final-output-invalid";
     internal const string FinalizationFailed = "recording-finalization-failed";
     internal const string FinalizationTimeout = "recording-finalization-timeout";
@@ -51,6 +53,10 @@ internal static class RecordingFailureCodes
     internal const string StructureVerificationIncomplete = "recording-structure-verification-incomplete";
     internal const string UnifiedStopFailed = "recording-unified-stop-failed";
     internal const string VerificationContextMissing = "recording-verification-context-missing";
+    internal const string VerificationMissingOutputPath = "missing-output-path";
+    internal const string VerificationOutputEmpty = "output-empty";
+    internal const string VerificationOutputNotFound = "output-not-found";
+    internal const string VerificationOutputStatFailed = "output-stat-failed";
     internal const string VideoCaptureCleanupTimeout = "recording-video-capture-cleanup-timeout";
     internal const string VideoCaptureDisposeFailed = "recording-video-capture-dispose-failed";
     internal const string VideoCodecMismatch = "recording-video-codec-mismatch";
@@ -67,6 +73,8 @@ internal static class RecordingFailureCodes
         AudioDurationMismatch,
         AudioMetadataInvalid,
         ContextMissing,
+        FfprobeFailed,
+        FfprobeUnavailable,
         FinalOutputInvalid,
         FinalizationFailed,
         FinalizationTimeout,
@@ -104,6 +112,10 @@ internal static class RecordingFailureCodes
         StructureVerificationIncomplete,
         UnifiedStopFailed,
         VerificationContextMissing,
+        VerificationMissingOutputPath,
+        VerificationOutputEmpty,
+        VerificationOutputNotFound,
+        VerificationOutputStatFailed,
         VideoCaptureCleanupTimeout,
         VideoCaptureDisposeFailed,
         VideoCodecMismatch,

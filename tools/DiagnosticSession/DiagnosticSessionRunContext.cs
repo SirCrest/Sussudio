@@ -435,8 +435,8 @@ internal static class DiagnosticSessionAutomationResponseJson
 {
     internal static bool HasUnconfirmedCommandOutcome(JsonElement response)
         => !IsSuccess(response) && GetString(response, "ErrorCode") is
-            "pipe-response-timeout" or "pipe-protocol-error" or "pipe-invalid-json" or
-            "pipe-io-error" or "pipe-canceled";
+            AutomationPipeErrorCodes.ResponseTimeout or AutomationPipeErrorCodes.ProtocolError or AutomationPipeErrorCodes.InvalidJson or
+            AutomationPipeErrorCodes.IoError or AutomationPipeErrorCodes.Canceled;
 
     internal static bool TryGetSnapshot(JsonElement response, out JsonElement snapshot)
     {
@@ -672,9 +672,9 @@ internal sealed class DiagnosticSessionCommandChannel : IDisposable
                 AutomationCommandKind.WaitForCondition,
                 new Dictionary<string, object?>
                 {
-                    ["condition"] = condition,
-                    ["timeoutMs"] = timeoutMs,
-                    ["pollMs"] = 250
+                    [AutomationPayloadKeys.Condition] = condition,
+                    [AutomationPayloadKeys.TimeoutMs] = timeoutMs,
+                    [AutomationPayloadKeys.PollMs] = 250
                 },
                 timeoutMs + 2_000,
                 false,
@@ -804,11 +804,11 @@ internal static class DiagnosticSessionPipeRetryPolicy
             catch (AutomationPipeException ex) when (ex is not AutomationPipeConnectException)
             {
                 return BuildLocalFailureResponse(command, ex.Message,
-                    ex is AutomationPipeResponseTimeoutException ? "pipe-response-timeout" : "pipe-protocol-error");
+                    ex is AutomationPipeResponseTimeoutException ? AutomationPipeErrorCodes.ResponseTimeout : AutomationPipeErrorCodes.ProtocolError);
             }
             catch (JsonException ex)
             {
-                return BuildLocalFailureResponse(command, ex.Message, "pipe-invalid-json");
+                return BuildLocalFailureResponse(command, ex.Message, AutomationPipeErrorCodes.InvalidJson);
             }
         }
 
@@ -849,10 +849,10 @@ internal static class DiagnosticSessionPipeRetryPolicy
         }
 
         var errorCode = GetString(response, "ErrorCode");
-        return string.Equals(errorCode, "pipe-connect-failed", StringComparison.OrdinalIgnoreCase) ||
-               string.Equals(errorCode, "pipe-connect-timeout", StringComparison.OrdinalIgnoreCase);
+        return string.Equals(errorCode, AutomationPipeErrorCodes.ConnectFailed, StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(errorCode, AutomationPipeErrorCodes.ConnectTimeout, StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool IsPermanentPipeConnectFailure(string? errorCode)
-        => string.Equals(errorCode, "pipe-access-denied", StringComparison.OrdinalIgnoreCase);
+        => string.Equals(errorCode, AutomationPipeErrorCodes.AccessDenied, StringComparison.OrdinalIgnoreCase);
 }

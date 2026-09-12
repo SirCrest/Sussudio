@@ -76,7 +76,7 @@ public sealed class EncoderDomainTypesTests
         foreach (var input in new[] { "999", "-999", "not-a-value" })
         {
             var exception = Assert.Throws<TargetInvocationException>(() => ParseAutomationValue(parserName, propertyName, input));
-            Assert.IsType<InvalidOperationException>(exception.InnerException);
+            Assert.IsType(RequireType("Sussudio.Services.Automation.AutomationRequestValidationException"), exception.InnerException);
         }
     }
 
@@ -94,7 +94,7 @@ public sealed class EncoderDomainTypesTests
         using var payload = JsonDocument.Parse("{}");
         var exception = Assert.Throws<TargetInvocationException>(() => AutomationParser("ParseFlashbackAction")
             .Invoke(null, new object[] { payload.RootElement }));
-        Assert.IsType<InvalidOperationException>(exception.InnerException);
+        Assert.IsType(RequireType("Sussudio.Services.Automation.AutomationRequestValidationException"), exception.InnerException);
     }
 
     [Theory]

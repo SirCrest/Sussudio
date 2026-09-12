@@ -2301,44 +2301,44 @@ namespace Sussudio.Tests
         var statsSnapshotBuilderText = statsSnapshotText;
         var statsWindowText = ReadRepoFile("Sussudio/StatsWindow.xaml.cs");
 
-        AssertContains(statsSnapshotBuilderText, "internal static class StatsSnapshotBuilder");
-        AssertContains(statsSnapshotBuilderText, "public static StatsSnapshot Build(");
-        AssertContains(statsSnapshotBuilderText, "internal readonly record struct StatsSnapshotRenderMetrics(");
-        AssertContains(statsSnapshotBuilderText, "internal readonly record struct StatsSnapshotViewState(");
-        AssertContains(statsSnapshotBuilderText, "return new StatsSnapshot(");
-        AssertContains(statsSnapshotText, "public sealed record StatsSnapshot(");
+        Assert.Contains("internal static class StatsSnapshotBuilder", statsSnapshotBuilderText, StringComparison.Ordinal);
+        Assert.Contains("public static StatsSnapshot Build(", statsSnapshotBuilderText, StringComparison.Ordinal);
+        Assert.Contains("internal readonly record struct StatsSnapshotRenderMetrics(", statsSnapshotBuilderText, StringComparison.Ordinal);
+        Assert.Contains("internal readonly record struct StatsSnapshotViewState(", statsSnapshotBuilderText, StringComparison.Ordinal);
+        Assert.Contains("return new StatsSnapshot(", statsSnapshotBuilderText, StringComparison.Ordinal);
+        Assert.Contains("public sealed record StatsSnapshot(", statsSnapshotText, StringComparison.Ordinal);
         Assert.False(
             File.Exists(Path.Combine(Environment.CurrentDirectory, "Sussudio", "ViewModels", "StatsSnapshot.cs")),
             "stats snapshot DTO and builder folded into StatsPresentationBuilder.cs");
-        AssertContains(mainWindowText, "InitializeStatsOverlayCompositionController();");
-        AssertContains(statsOverlayText, "private StatsSnapshot RefreshStatsIfDueAndGetSnapshot()");
-        AssertContains(statsOverlayCompositionText, "private readonly StatsSnapshotProvider _statsSnapshotProvider;");
-        AssertContains(statsOverlayText, "GetCaptureHealthSnapshot = ViewModel.GetCaptureHealthSnapshot,");
-        AssertContains(statsOverlayText, "GetRenderer = () => _previewRendererHostController.Renderer,");
-        AssertContains(statsOverlayText, "GetPreviewMinPresentationIntervalMs = () => _previewRendererHostController.PreviewMinPresentationIntervalMs");
-        AssertContains(statsOverlayText, "IsPreviewing = () => ViewModel.IsPreviewing,");
-        AssertContains(statsOverlayText, "IsRecording = () => ViewModel.IsRecording");
-        AssertContains(statsOverlayText, "=> _statsOverlayCompositionController.RefreshStatsIfDueAndGetSnapshot();");
-        AssertContains(statsOverlayCompositionText, "private static StatsSnapshotProvider CreateSnapshotProvider(");
-        AssertContains(statsOverlayCompositionText, "=> _sampler.RefreshIfDueAndGetSnapshot();");
-        AssertContains(statsSnapshotProviderText, "internal sealed class StatsSnapshotProvider");
-        AssertDoesNotContain(statsSnapshotProviderText, "internal sealed partial class StatsSnapshotProvider");
-        AssertContains(statsSnapshotProviderText, "private StatsSnapshotRenderMetrics _renderMetrics;");
-        AssertContains(statsSnapshotProviderText, "public StatsSnapshot GetSnapshot(CaptureHealthSnapshot health, bool refreshDetails)");
-        AssertContains(statsSnapshotProviderText, "BuildRenderMetrics(renderer, expectedIntervalMs)");
-        AssertContains(statsSnapshotProviderText, "new StatsSnapshotViewState(_context.IsPreviewing(), _context.IsRecording())");
-        AssertContains(statsSnapshotProviderText, "return StatsSnapshotBuilder.Build(health, renderMetrics, viewState);");
-        AssertDoesNotContain(statsSnapshotProviderText, "MainViewModel ViewModel");
-        AssertContains(statsSnapshotProviderText, "var presentCadence = renderer?.GetPresentCadenceMetrics(previewMinPresentationIntervalMs);");
-        AssertContains(statsSnapshotProviderText, "PreviewRecentPresentIntervalsMs: presentCadence?.RecentIntervalsMs ?? Array.Empty<double>()");
+        Assert.Contains("InitializeStatsOverlayCompositionController();", mainWindowText, StringComparison.Ordinal);
+        Assert.Contains("private StatsSnapshot RefreshStatsIfDueAndGetSnapshot()", statsOverlayText, StringComparison.Ordinal);
+        Assert.Contains("private readonly StatsSnapshotProvider _statsSnapshotProvider;", statsOverlayCompositionText, StringComparison.Ordinal);
+        Assert.Contains("GetCaptureHealthSnapshot = ViewModel.GetCaptureHealthSnapshot,", statsOverlayText, StringComparison.Ordinal);
+        Assert.Contains("GetRenderer = () => _previewRendererHostController.Renderer,", statsOverlayText, StringComparison.Ordinal);
+        Assert.Contains("GetPreviewMinPresentationIntervalMs = () => _previewRendererHostController.PreviewMinPresentationIntervalMs", statsOverlayText, StringComparison.Ordinal);
+        Assert.Contains("IsPreviewing = () => ViewModel.IsPreviewing,", statsOverlayText, StringComparison.Ordinal);
+        Assert.Contains("IsRecording = () => ViewModel.IsRecording", statsOverlayText, StringComparison.Ordinal);
+        Assert.Contains("=> _statsOverlayCompositionController.RefreshStatsIfDueAndGetSnapshot();", statsOverlayText, StringComparison.Ordinal);
+        Assert.Contains("private static StatsSnapshotProvider CreateSnapshotProvider(", statsOverlayCompositionText, StringComparison.Ordinal);
+        Assert.Contains("=> _sampler.RefreshIfDueAndGetSnapshot();", statsOverlayCompositionText, StringComparison.Ordinal);
+        Assert.Contains("internal sealed class StatsSnapshotProvider", statsSnapshotProviderText, StringComparison.Ordinal);
+        Assert.DoesNotContain("internal sealed partial class StatsSnapshotProvider", statsSnapshotProviderText, StringComparison.Ordinal);
+        Assert.Contains("private StatsSnapshotRenderMetrics _renderMetrics;", statsSnapshotProviderText, StringComparison.Ordinal);
+        Assert.Contains("public StatsSnapshot GetSnapshot(CaptureHealthSnapshot health, bool refreshDetails)", statsSnapshotProviderText, StringComparison.Ordinal);
+        Assert.Contains("BuildRenderMetrics(renderer, expectedIntervalMs)", statsSnapshotProviderText, StringComparison.Ordinal);
+        Assert.Contains("new StatsSnapshotViewState(_context.IsPreviewing(), _context.IsRecording())", statsSnapshotProviderText, StringComparison.Ordinal);
+        Assert.Contains("return StatsSnapshotBuilder.Build(health, renderMetrics, viewState);", statsSnapshotProviderText, StringComparison.Ordinal);
+        Assert.DoesNotContain("MainViewModel ViewModel", statsSnapshotProviderText, StringComparison.Ordinal);
+        Assert.Contains("var presentCadence = renderer?.GetPresentCadenceMetrics(previewMinPresentationIntervalMs);", statsSnapshotProviderText, StringComparison.Ordinal);
+        Assert.Contains("PreviewRecentPresentIntervalsMs: presentCadence?.RecentIntervalsMs ?? Array.Empty<double>()", statsSnapshotProviderText, StringComparison.Ordinal);
         Assert.False(
             File.Exists(Path.Combine(Environment.CurrentDirectory, "Sussudio", "Controllers", "Stats", "StatsSnapshotProvider.cs")),
             "stats snapshot provider lives with stats overlay composition");
-        AssertDoesNotContain(statsOverlayText, "var renderer = new StatsSnapshotRenderMetrics(");
-        AssertDoesNotContain(statsOverlayText, "return new StatsSnapshot(");
-        AssertDoesNotContain(statsOverlayText, "return StatsSnapshotBuilder.Build(health, renderMetrics, viewState);");
-        AssertContains(statsWindowText, "private readonly Func<Action<StatsSnapshot>, IDisposable> _subscribe;");
-        AssertDoesNotContain(statsWindowText, "public sealed record StatsSnapshot(");
+        Assert.DoesNotContain("var renderer = new StatsSnapshotRenderMetrics(", statsOverlayText, StringComparison.Ordinal);
+        Assert.DoesNotContain("return new StatsSnapshot(", statsOverlayText, StringComparison.Ordinal);
+        Assert.DoesNotContain("return StatsSnapshotBuilder.Build(health, renderMetrics, viewState);", statsOverlayText, StringComparison.Ordinal);
+        Assert.Contains("private readonly Func<Action<StatsSnapshot>, IDisposable> _subscribe;", statsWindowText, StringComparison.Ordinal);
+        Assert.DoesNotContain("public sealed record StatsSnapshot(", statsWindowText, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -2519,12 +2519,6 @@ namespace Sussudio.Tests
 
     private static string ReadRepoFile(string relativePath)
         => RuntimeContractSource.ReadRepoFile(relativePath).Replace("\r\n", "\n");
-
-    private static void AssertContains(string actual, string expectedSubstring)
-        => Assert.Contains(expectedSubstring, actual, StringComparison.Ordinal);
-
-    private static void AssertDoesNotContain(string actual, string unexpectedSubstring)
-        => Assert.DoesNotContain(unexpectedSubstring, actual, StringComparison.Ordinal);
 
     private static void AssertNearlyEqual(double expected, double actual, double tolerance)
         => Assert.True(

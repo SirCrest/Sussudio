@@ -43,6 +43,11 @@ static partial class Program
             return presentMonExitCode;
         }
 
+        if (Sussudio.Tests.RecordingNativeTestChild.TryRunChildProcess(args, out var recordingExitCode))
+        {
+            return recordingExitCode;
+        }
+
         var assemblyPath = ResolveAssemblyPath(args);
         if (!File.Exists(assemblyPath))
         {
@@ -1651,12 +1656,17 @@ static partial class Program
 
     // Shared MCP tool-surface helpers used by the legacy Program harness and xUnit wrappers.
 
-    private static Process StartMcpServerProcess(string assemblyPath, string? pipeName = null)
+    private static Process StartMcpServerProcess(
+        string assemblyPath,
+        string? pipeName = null,
+        string? workingDirectory = null,
+        IReadOnlyList<string>? arguments = null,
+        IReadOnlyDictionary<string, string?>? environmentVariables = null)
     {
         var startInfo = new ProcessStartInfo
         {
             FileName = "dotnet",
-            WorkingDirectory = GetRepoRoot(),
+            WorkingDirectory = workingDirectory ?? GetRepoRoot(),
             UseShellExecute = false,
             RedirectStandardInput = true,
             RedirectStandardOutput = true,
@@ -1667,9 +1677,30 @@ static partial class Program
             ? assemblyPath
             : Path.Combine(GetRepoRoot(), assemblyPath);
         startInfo.ArgumentList.Add(Path.GetFullPath(resolvedAssemblyPath));
+        if (arguments != null)
+        {
+            foreach (var argument in arguments)
+            {
+                startInfo.ArgumentList.Add(argument);
+            }
+        }
         if (!string.IsNullOrWhiteSpace(pipeName))
         {
             startInfo.Environment["SUSSUDIO_AUTOMATION_PIPE"] = pipeName;
+        }
+        if (environmentVariables != null)
+        {
+            foreach (var (name, value) in environmentVariables)
+            {
+                if (value == null)
+                {
+                    startInfo.Environment.Remove(name);
+                }
+                else
+                {
+                    startInfo.Environment[name] = value;
+                }
+            }
         }
 
         var process = new Process { StartInfo = startInfo };

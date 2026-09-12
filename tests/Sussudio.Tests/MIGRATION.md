@@ -52,6 +52,19 @@ implementations and shared fixtures out of the oversized `Program` helper namesp
   native frame cleanup. `InProcessRecordingStructureVerifierTests.cs` verifies
   committed media fixtures, and `LibAvRecordingDrainBehaviorTests.cs` exercises
   actual queued video and audio encoding into a verified file.
+  It also drives real CaptureService recording start, source ingress, stop,
+  verified finalization, and format-mismatch rollback over a synthetic source
+  boundary. HEVC/P010 success cases use a cached independent native codec-open
+  probe in a bounded child process; only recognized environment limitations skip.
+  The format-mismatch case runs without NVENC. Both lifecycle cases run in bounded
+  child processes with private recovery directories; the parent confirms child
+  exit before deleting files. These tests do not establish live device capture,
+  HDR display, or the full Flashback lifecycle.
+- `MfSourceReaderFrameStrideTests` in `XUnit.AutomationContractsTests.cs` executes
+  the actual NV12/P010 row-copy helper with packed and padded planes, byte-exact
+  fixtures, guard regions, short destinations, and invalid pitches. YUV frames
+  require positive stride, consistent with the
+  [Media Foundation layout contract](https://learn.microsoft.com/en-us/windows/win32/medfound/image-stride).
 - `tests/Sussudio.Tests/XUnit.DiagnosticCompositionTests.cs` compares diagnostic
   fields and scenario contracts with fixtures captured before the refactor.
 - `tests/Sussudio.Tests/XUnit.DiagnosticCancellationTests.cs` covers startup

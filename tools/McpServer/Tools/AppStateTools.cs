@@ -19,7 +19,7 @@ public static class AppStateTools
         var response = await pipeClient.SendCommandAsync(AutomationCommandKind.GetSnapshot, cancellationToken: cancellationToken).ConfigureAwait(false);
         if (!AutomationSnapshotFormatter.IsSuccess(response))
         {
-            return McpToolResultFactory.FromResponse(response, GetMessage(response));
+            return McpToolResultFactory.FromResponse(response, McpToolResultFactory.GetMessage(response));
         }
 
         return McpToolResultFactory.FromResponse(
@@ -33,11 +33,6 @@ public static class AppStateTools
         cancellationToken.ThrowIfCancellationRequested();
         var response = await pipeClient.SendCommandAsync(AutomationCommandKind.GetSnapshot, cancellationToken: cancellationToken).ConfigureAwait(false);
         return McpToolResultFactory.FromStructuredResponse(response, "Snapshot", "Snapshot data was not available.");
-    }
-
-    private static string GetMessage(JsonElement response)
-    {
-        return AutomationSnapshotFormatter.Get(response, "Message", "Command failed.");
     }
 }
 
@@ -54,13 +49,13 @@ public static class DiagnosticsTools
         cancellationToken.ThrowIfCancellationRequested();
         var payload = new Dictionary<string, object?>
         {
-            ["maxEvents"] = maxEvents
+            [AutomationPayloadKeys.MaxEvents] = maxEvents
         };
 
         var response = await pipeClient.SendCommandAsync(AutomationCommandKind.GetDiagnostics, payload, cancellationToken: cancellationToken).ConfigureAwait(false);
         if (!AutomationSnapshotFormatter.IsSuccess(response))
         {
-            return McpToolResultFactory.FromResponse(response, GetMessage(response));
+            return McpToolResultFactory.FromResponse(response, McpToolResultFactory.GetMessage(response));
         }
 
         if (!response.TryGetProperty("Data", out var data) || data.ValueKind != JsonValueKind.Array)
@@ -85,11 +80,6 @@ public static class DiagnosticsTools
             : lines.ToString().TrimEnd();
         return McpToolResultFactory.FromResponse(response, text);
     }
-
-    private static string GetMessage(JsonElement response)
-    {
-        return AutomationSnapshotFormatter.Get(response, "Message", "Command failed.");
-    }
 }
 
 [McpServerToolType]
@@ -103,7 +93,7 @@ public static class MemoryDiagnosticsTools
         var response = await pipeClient.SendCommandAsync(AutomationCommandKind.GetSnapshot, cancellationToken: cancellationToken).ConfigureAwait(false);
         if (!AutomationSnapshotFormatter.IsSuccess(response))
         {
-            return McpToolResultFactory.FromResponse(response, GetMessage(response));
+            return McpToolResultFactory.FromResponse(response, McpToolResultFactory.GetMessage(response));
         }
 
         if (!response.TryGetProperty("Snapshot", out var snapshot) ||
@@ -132,11 +122,6 @@ public static class MemoryDiagnosticsTools
         builder.AppendLine($"IO Threads:     {AutomationSnapshotFormatter.Get(snapshot, "ThreadPoolIoAvailable")} available / {AutomationSnapshotFormatter.Get(snapshot, "ThreadPoolIoMax")} max");
 
         return McpToolResultFactory.FromResponse(response, builder.ToString().TrimEnd());
-    }
-
-    private static string GetMessage(JsonElement response)
-    {
-        return AutomationSnapshotFormatter.Get(response, "Message", "Command failed.");
     }
 }
 

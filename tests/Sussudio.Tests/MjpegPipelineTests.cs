@@ -441,12 +441,12 @@ namespace Sussudio.Tests
             var rootText = ReadRepoFile("Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.cs");
             var decoderType = RequireType("Sussudio.Services.Capture.Mjpeg.SoftwareMjpegDecoder");
 
-            AssertContains(rootText, "internal sealed unsafe class SoftwareMjpegDecoder : IDisposable");
-            AssertContains(rootText, "public void Initialize(int width, int height)");
-            AssertContains(rootText, "public void Dispose()");
-            AssertContains(rootText, "public bool DecodeToNv12(ReadOnlySpan<byte> jpegData, Span<byte> nv12Destination)");
-            AssertContains(rootText, "SW_MJPEG_DECODE_DIAG");
-            AssertContains(rootText, "Buffer.MemoryCopy(");
+            Assert.Contains("internal sealed unsafe class SoftwareMjpegDecoder : IDisposable", rootText, StringComparison.Ordinal);
+            Assert.Contains("public void Initialize(int width, int height)", rootText, StringComparison.Ordinal);
+            Assert.Contains("public void Dispose()", rootText, StringComparison.Ordinal);
+            Assert.Contains("public bool DecodeToNv12(ReadOnlySpan<byte> jpegData, Span<byte> nv12Destination)", rootText, StringComparison.Ordinal);
+            Assert.Contains("SW_MJPEG_DECODE_DIAG", rootText, StringComparison.Ordinal);
+            Assert.Contains("Buffer.MemoryCopy(", rootText, StringComparison.Ordinal);
             Assert.False(
                 File.Exists(Path.Combine(RuntimeContractSource.GetRepoRoot(), "Sussudio", "Services", "Capture", "Mjpeg", "SoftwareMjpegDecoder.Decode.cs")),
                 "Software MJPEG decode path folded into decoder state/lifetime owner");
@@ -457,10 +457,10 @@ namespace Sussudio.Tests
             // The policy in Sussudio-Defragmentation-Goal.md requires a written rationale
             // for any file left above 1200 lines; keep the pipeline's entry honest.
             var cleanupPlanText = RuntimeContractSource.ReadRepoFile("docs/architecture/cleanup-plan.md");
-            AssertContains(cleanupPlanText, "## Retained Large Files");
-            AssertContains(cleanupPlanText, "`Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.cs` (");
-            AssertContains(cleanupPlanText, "one _reorderLock-guarded sequencing invariant");
-            AssertContains(cleanupPlanText, "SoftwareMjpegDecoder is the per-worker leaf");
+            Assert.Contains("## Retained Large Files", cleanupPlanText, StringComparison.Ordinal);
+            Assert.Contains("`Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.cs` (", cleanupPlanText, StringComparison.Ordinal);
+            Assert.Contains("one _reorderLock-guarded sequencing invariant", cleanupPlanText, StringComparison.Ordinal);
+            Assert.Contains("SoftwareMjpegDecoder is the per-worker leaf", cleanupPlanText, StringComparison.Ordinal);
 
             var widthProp = decoderType.GetProperty("Width", BindingFlags.Public | BindingFlags.Instance);
             var heightProp = decoderType.GetProperty("Height", BindingFlags.Public | BindingFlags.Instance);
@@ -632,9 +632,6 @@ namespace Sussudio.Tests
 
         private static string ReadRepoFile(string relativePath)
             => RuntimeContractSource.ReadRepoFile(relativePath).Replace("\r\n", "\n");
-
-        private static void AssertContains(string actual, string expectedSubstring)
-            => Assert.Contains(expectedSubstring, actual, StringComparison.Ordinal);
     }
 }
 

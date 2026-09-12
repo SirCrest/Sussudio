@@ -32,15 +32,15 @@ public static class CaptureSettingsTools
                 pipeClient,
                 "No capture setting changes requested.",
                 cancellationToken,
-                ToolCommandFormatter.Optional(AutomationCommandKind.SetResolution, "resolution", resolution),
-                ToolCommandFormatter.Optional(AutomationCommandKind.SetFrameRate, "frameRate", frameRate),
-                ToolCommandFormatter.Optional(AutomationCommandKind.SetVideoFormat, "videoFormat", videoFormat),
-                ToolCommandFormatter.Optional(AutomationCommandKind.SetRecordingFormat, "format", format),
-                ToolCommandFormatter.Optional(AutomationCommandKind.SetQuality, "quality", quality),
-                ToolCommandFormatter.Optional(AutomationCommandKind.SetCustomBitrate, "bitrateMbps", bitrateMbps),
-                ToolCommandFormatter.Optional(AutomationCommandKind.SetPreset, "preset", preset),
-                ToolCommandFormatter.Optional(AutomationCommandKind.SetSplitEncodeMode, "splitEncodeMode", splitEncodeMode),
-                ToolCommandFormatter.Optional(AutomationCommandKind.SetMjpegDecoderCount, "decoderCount", mjpegDecoderCount))
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetResolution, AutomationPayloadKeys.Resolution, resolution),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetFrameRate, AutomationPayloadKeys.FrameRate, frameRate),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetVideoFormat, AutomationPayloadKeys.VideoFormat, videoFormat),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetRecordingFormat, AutomationPayloadKeys.Format, format),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetQuality, AutomationPayloadKeys.Quality, quality),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetCustomBitrate, AutomationPayloadKeys.BitrateMbps, bitrateMbps),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetPreset, AutomationPayloadKeys.Preset, preset),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetSplitEncodeMode, AutomationPayloadKeys.SplitEncodeMode, splitEncodeMode),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetMjpegDecoderCount, AutomationPayloadKeys.DecoderCount, mjpegDecoderCount))
             .ConfigureAwait(false);
 
 }
@@ -73,29 +73,29 @@ public static class DeviceTools
                     !string.IsNullOrWhiteSpace(deviceId) || !string.IsNullOrWhiteSpace(deviceName),
                     new Dictionary<string, object?>
                     {
-                        ["deviceId"] = string.IsNullOrWhiteSpace(deviceId) ? null : deviceId,
-                        ["deviceName"] = string.IsNullOrWhiteSpace(deviceName) ? null : deviceName
+                        [AutomationPayloadKeys.DeviceId] = string.IsNullOrWhiteSpace(deviceId) ? null : deviceId,
+                        [AutomationPayloadKeys.DeviceName] = string.IsNullOrWhiteSpace(deviceName) ? null : deviceName
                     }),
                 ToolCommandFormatter.Optional(
                     AutomationCommandKind.SelectAudioInputDevice,
                     !string.IsNullOrWhiteSpace(audioDeviceId) || !string.IsNullOrWhiteSpace(audioDeviceName),
                     new Dictionary<string, object?>
                     {
-                        ["deviceId"] = string.IsNullOrWhiteSpace(audioDeviceId) ? null : audioDeviceId,
-                        ["deviceName"] = string.IsNullOrWhiteSpace(audioDeviceName) ? null : audioDeviceName
+                        [AutomationPayloadKeys.DeviceId] = string.IsNullOrWhiteSpace(audioDeviceId) ? null : audioDeviceId,
+                        [AutomationPayloadKeys.DeviceName] = string.IsNullOrWhiteSpace(audioDeviceName) ? null : audioDeviceName
                     }),
                 ToolCommandFormatter.Optional(
                     AutomationCommandKind.SelectMicrophoneDevice,
                     !string.IsNullOrWhiteSpace(microphoneDeviceId) || !string.IsNullOrWhiteSpace(microphoneDeviceName),
                     new Dictionary<string, object?>
                     {
-                        ["deviceId"] = string.IsNullOrWhiteSpace(microphoneDeviceId) ? null : microphoneDeviceId,
-                        ["deviceName"] = string.IsNullOrWhiteSpace(microphoneDeviceName) ? null : microphoneDeviceName
+                        [AutomationPayloadKeys.DeviceId] = string.IsNullOrWhiteSpace(microphoneDeviceId) ? null : microphoneDeviceId,
+                        [AutomationPayloadKeys.DeviceName] = string.IsNullOrWhiteSpace(microphoneDeviceName) ? null : microphoneDeviceName
                     }),
                 ToolCommandFormatter.Optional(
                     AutomationCommandKind.SetCustomAudioInput,
                     customAudioInput.HasValue,
-                    customAudioInput.HasValue ? new Dictionary<string, object?> { ["enabled"] = customAudioInput.Value } : null))
+                    customAudioInput.HasValue ? new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = customAudioInput.Value } : null))
             .ConfigureAwait(false);
 }
 
@@ -131,13 +131,13 @@ public static class PipelineSettingsTools
                 pipeClient,
                 "No pipeline setting changes requested.",
                 cancellationToken,
-                ToolCommandFormatter.Optional(AutomationCommandKind.SetHdrEnabled, "enabled", hdrEnabled),
-                ToolCommandFormatter.Optional(AutomationCommandKind.SetTrueHdrPreviewEnabled, "enabled", trueHdrPreviewEnabled),
-                ToolCommandFormatter.Optional(AutomationCommandKind.SetAudioEnabled, "enabled", audioEnabled),
-                ToolCommandFormatter.Optional(AutomationCommandKind.SetAudioPreviewEnabled, "enabled", audioPreviewEnabled),
-                ToolCommandFormatter.Optional(AutomationCommandKind.SetMicrophoneEnabled, "enabled", microphoneEnabled),
-                ToolCommandFormatter.Optional(AutomationCommandKind.SetMicrophoneVolume, "microphoneVolumePercent", microphoneVolumePercent),
-                ToolCommandFormatter.Optional(AutomationCommandKind.SetOutputPath, "outputPath", outputPath))
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetHdrEnabled, AutomationPayloadKeys.Enabled, hdrEnabled),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetTrueHdrPreviewEnabled, AutomationPayloadKeys.Enabled, trueHdrPreviewEnabled),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetAudioEnabled, AutomationPayloadKeys.Enabled, audioEnabled),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetAudioPreviewEnabled, AutomationPayloadKeys.Enabled, audioPreviewEnabled),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetMicrophoneEnabled, AutomationPayloadKeys.Enabled, microphoneEnabled),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetMicrophoneVolume, AutomationPayloadKeys.MicrophoneVolumePercent, microphoneVolumePercent),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetOutputPath, AutomationPayloadKeys.OutputPath, outputPath))
             .ConfigureAwait(false);
 
     [McpServerTool, Description("Set device audio mode to HDMI or analog")]
@@ -147,7 +147,7 @@ public static class PipelineSettingsTools
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var payload = new Dictionary<string, object?> { ["mode"] = mode.ToLowerInvariant() };
+        var payload = new Dictionary<string, object?> { [AutomationPayloadKeys.Mode] = mode.ToLowerInvariant() };
         return await ToolCommandFormatter.ExecuteAndFormatResultAsync(pipeClient, AutomationCommandKind.SetDeviceAudioMode, payload, cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
@@ -158,7 +158,7 @@ public static class PipelineSettingsTools
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var payload = new Dictionary<string, object?> { ["gain"] = gainPercent };
+        var payload = new Dictionary<string, object?> { [AutomationPayloadKeys.Gain] = gainPercent };
         return await ToolCommandFormatter.ExecuteAndFormatResultAsync(pipeClient, AutomationCommandKind.SetAnalogAudioGain, payload, cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
@@ -187,7 +187,7 @@ public static class WindowTools
 
         var actionPayload = new Dictionary<string, object?>
         {
-            ["action"] = normalizedAction
+            [AutomationPayloadKeys.Action] = normalizedAction
         };
 
         if (armClose && string.Equals(normalizedAction, "Close", StringComparison.Ordinal))
@@ -195,10 +195,10 @@ public static class WindowTools
             var actionId = Guid.NewGuid().ToString("N");
             var armPayload = new Dictionary<string, object?>
             {
-                ["armed"] = true,
-                ["actionId"] = actionId
+                [AutomationPayloadKeys.Armed] = true,
+                [AutomationPayloadKeys.ActionId] = actionId
             };
-            actionPayload["actionId"] = actionId;
+            actionPayload[AutomationPayloadKeys.ActionId] = actionId;
             var armResponse = await pipeClient.SendCommandAsync(AutomationCommandKind.ArmClose, armPayload, cancellationToken: cancellationToken).ConfigureAwait(false);
             results.Add(ToolCommandFormatter.FormatCommandResponse(armResponse, AutomationCommandKind.ArmClose));
             if (!Sussudio.Tools.AutomationSnapshotFormatter.IsSuccess(armResponse))
@@ -207,10 +207,10 @@ public static class WindowTools
             }
         }
 
-        if (x.HasValue) actionPayload["x"] = x.Value;
-        if (y.HasValue) actionPayload["y"] = y.Value;
-        if (width.HasValue) actionPayload["width"] = width.Value;
-        if (height.HasValue) actionPayload["height"] = height.Value;
+        if (x.HasValue) actionPayload[AutomationPayloadKeys.X] = x.Value;
+        if (y.HasValue) actionPayload[AutomationPayloadKeys.Y] = y.Value;
+        if (width.HasValue) actionPayload[AutomationPayloadKeys.Width] = width.Value;
+        if (height.HasValue) actionPayload[AutomationPayloadKeys.Height] = height.Value;
 
         var actionResponse = await pipeClient.SendCommandAsync(AutomationCommandKind.WindowAction, actionPayload, cancellationToken: cancellationToken).ConfigureAwait(false);
         results.Add(ToolCommandFormatter.FormatCommandResponse(actionResponse, AutomationCommandKind.WindowAction));
@@ -228,7 +228,7 @@ public static class WindowTools
         return await ToolCommandFormatter.ExecuteAndFormatResultAsync(
                 pipeClient,
                 AutomationCommandKind.SetFullScreenEnabled,
-                new Dictionary<string, object?> { ["enabled"] = enabled },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = enabled },
                 cancellationToken: cancellationToken)
             .ConfigureAwait(false);
     }
@@ -261,9 +261,9 @@ public static class UiSettingsTools
                 pipeClient,
                 "No UI setting changes requested.",
                 cancellationToken,
-                ToolCommandFormatter.Optional(AutomationCommandKind.SetShowAllCaptureOptions, "enabled", showAllCaptureOptions),
-                ToolCommandFormatter.Optional(AutomationCommandKind.SetPreviewVolume, "previewVolumePercent", previewVolumePercent),
-                ToolCommandFormatter.Optional(AutomationCommandKind.SetStatsVisible, "visible", statsVisible))
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetShowAllCaptureOptions, AutomationPayloadKeys.Enabled, showAllCaptureOptions),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetPreviewVolume, AutomationPayloadKeys.PreviewVolumePercent, previewVolumePercent),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetStatsVisible, AutomationPayloadKeys.Visible, statsVisible))
             .ConfigureAwait(false);
 
     [McpServerTool, Description("Show or hide the settings panel")]
@@ -273,7 +273,7 @@ public static class UiSettingsTools
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var payload = new Dictionary<string, object?> { ["visible"] = visible };
+        var payload = new Dictionary<string, object?> { [AutomationPayloadKeys.Visible] = visible };
         return await ToolCommandFormatter.ExecuteAndFormatResultAsync(pipeClient, AutomationCommandKind.SetSettingsVisible, payload, cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
@@ -284,7 +284,7 @@ public static class UiSettingsTools
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var payload = new Dictionary<string, object?> { ["visible"] = visible };
+        var payload = new Dictionary<string, object?> { [AutomationPayloadKeys.Visible] = visible };
         return await ToolCommandFormatter.ExecuteAndFormatResultAsync(pipeClient, AutomationCommandKind.SetFrameTimeOverlayVisible, payload, cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
@@ -295,7 +295,7 @@ public static class UiSettingsTools
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var payload = new Dictionary<string, object?> { ["visible"] = visible };
+        var payload = new Dictionary<string, object?> { [AutomationPayloadKeys.Visible] = visible };
         return await ToolCommandFormatter.ExecuteAndFormatResultAsync(pipeClient, AutomationCommandKind.SetFlashbackTimelineVisible, payload, cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
@@ -309,8 +309,8 @@ public static class UiSettingsTools
         cancellationToken.ThrowIfCancellationRequested();
         var payload = new Dictionary<string, object?>
         {
-            ["section"] = section,
-            ["visible"] = visible
+            [AutomationPayloadKeys.Section] = section,
+            [AutomationPayloadKeys.Visible] = visible
         };
         return await ToolCommandFormatter.ExecuteAndFormatResultAsync(pipeClient, AutomationCommandKind.SetStatsSectionVisible, payload, cancellationToken: cancellationToken).ConfigureAwait(false);
     }
@@ -329,7 +329,7 @@ public static class PreviewTools
         cancellationToken.ThrowIfCancellationRequested();
         var payload = new Dictionary<string, object?>
         {
-            ["enabled"] = enabled
+            [AutomationPayloadKeys.Enabled] = enabled
         };
 
         return await ToolCommandFormatter.ExecuteAndFormatResultAsync(
@@ -354,7 +354,7 @@ public static class RecordingTools
         cancellationToken.ThrowIfCancellationRequested();
         var payload = new Dictionary<string, object?>
         {
-            ["enabled"] = enabled
+            [AutomationPayloadKeys.Enabled] = enabled
         };
 
         return await ToolCommandFormatter.ExecuteAndFormatResultAsync(
@@ -384,9 +384,9 @@ public static class WaitTools
         cancellationToken.ThrowIfCancellationRequested();
         var payload = new Dictionary<string, object?>
         {
-            ["condition"] = condition,
-            ["timeoutMs"] = timeoutMs,
-            ["pollMs"] = pollMs
+            [AutomationPayloadKeys.Condition] = condition,
+            [AutomationPayloadKeys.TimeoutMs] = timeoutMs,
+            [AutomationPayloadKeys.PollMs] = pollMs
         };
 
         var responseTimeoutMs = GetWaitForConditionResponseTimeoutMs(timeoutMs);
@@ -432,7 +432,7 @@ public static class FlashbackTools
         return await ToolCommandFormatter.ExecuteAndFormatResultAsync(
                 pipeClient,
                 AutomationCommandKind.SetFlashbackEnabled,
-                payload: new Dictionary<string, object?> { ["enabled"] = enabled },
+                payload: new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = enabled },
                 cancellationToken: cancellationToken)
             .ConfigureAwait(false);
     }
@@ -458,8 +458,8 @@ public static class FlashbackTools
                 pipeClient,
                 "No Flashback setting changes requested.",
                 cancellationToken,
-                ToolCommandFormatter.Optional(AutomationCommandKind.SetFlashbackBufferMinutes, "minutes", bufferMinutes),
-                ToolCommandFormatter.Optional(AutomationCommandKind.SetFlashbackGpuDecode, "enabled", gpuDecode))
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetFlashbackBufferMinutes, AutomationPayloadKeys.Minutes, bufferMinutes),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetFlashbackGpuDecode, AutomationPayloadKeys.Enabled, gpuDecode))
             .ConfigureAwait(false);
 
     [McpServerTool, Description("List all flashback buffer segments with their file paths, durations, and frame counts")]
@@ -509,13 +509,13 @@ public static class FlashbackTools
 
         var payload = new Dictionary<string, object?>
         {
-            ["action"] = normalizedAction
+            [AutomationPayloadKeys.Action] = normalizedAction
         };
 
         if (positionMs.HasValue)
         {
             AutomationFlashbackValidation.ValidatePositionMs(positionMs.Value);
-            payload["positionMs"] = positionMs.Value;
+            payload[AutomationPayloadKeys.PositionMs] = positionMs.Value;
         }
 
         return await ToolCommandFormatter.ExecuteAndFormatResultAsync(
@@ -546,10 +546,10 @@ public static class FlashbackTools
 
         var payload = new Dictionary<string, object?>
         {
-            ["seconds"] = seconds,
-            ["outputPath"] = outputPath,
-            ["useSelectionRange"] = useSelectionRange,
-            ["force"] = force
+            [AutomationPayloadKeys.Seconds] = seconds,
+            [AutomationPayloadKeys.OutputPath] = outputPath,
+            [AutomationPayloadKeys.UseSelectionRange] = useSelectionRange,
+            [AutomationPayloadKeys.Force] = force
         };
 
         var response = await pipeClient.SendCommandAsync(AutomationCommandKind.FlashbackExport, payload, cancellationToken: cancellationToken).ConfigureAwait(false);
@@ -608,7 +608,7 @@ public static class VerificationTools
 
         var payload = new Dictionary<string, object?>
         {
-            ["assertions"] = parsedAssertions
+            [AutomationPayloadKeys.Assertions] = parsedAssertions
         };
 
         var response = await pipeClient.SendCommandAsync(AutomationCommandKind.AssertSnapshot, payload, cancellationToken: cancellationToken).ConfigureAwait(false);
@@ -623,10 +623,10 @@ public static class VerificationTools
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var payload = new Dictionary<string, object?> { ["filePath"] = filePath };
+        var payload = new Dictionary<string, object?> { [AutomationPayloadKeys.FilePath] = filePath };
         if (!string.IsNullOrWhiteSpace(verificationProfile))
         {
-            payload["verificationProfile"] = verificationProfile;
+            payload[AutomationPayloadKeys.VerificationProfile] = verificationProfile;
         }
 
         var response = await pipeClient.SendCommandAsync(AutomationCommandKind.VerifyFile, payload, cancellationToken: cancellationToken).ConfigureAwait(false);

@@ -29,68 +29,68 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         new Dictionary<AutomationCommandKind, AutomationCommandHandler<IAutomationDeviceSelectionPort>>
         {
             [AutomationCommandKind.SetCustomAudioInput] = AutomationCommandHandler<IAutomationDeviceSelectionPort>.Bool(
-                (vm, v, ct) => vm.SetCustomAudioInputEnabledAsync(v, ct), "enabled"),
+                (vm, v, ct) => vm.SetCustomAudioInputEnabledAsync(v, ct), AutomationPayloadKeys.Enabled),
         };
 
     private static readonly IReadOnlyDictionary<AutomationCommandKind, AutomationCommandHandler<IAutomationCaptureSettingsPort>> TrivialCaptureSettingsHandlers =
         new Dictionary<AutomationCommandKind, AutomationCommandHandler<IAutomationCaptureSettingsPort>>
         {
             [AutomationCommandKind.SetResolution] = AutomationCommandHandler<IAutomationCaptureSettingsPort>.String(
-                (vm, v, ct) => vm.SetResolutionAsync(v, ct), "resolution"),
+                (vm, v, ct) => vm.SetResolutionAsync(v, ct), AutomationPayloadKeys.Resolution),
             [AutomationCommandKind.SetFrameRate] = AutomationCommandHandler<IAutomationCaptureSettingsPort>.Double(
-                (vm, v, ct) => vm.SetFrameRateAsync(v, ct), "frameRate"),
+                (vm, v, ct) => vm.SetFrameRateAsync(v, ct), AutomationPayloadKeys.FrameRate),
             [AutomationCommandKind.SetVideoFormat] = AutomationCommandHandler<IAutomationCaptureSettingsPort>.String(
-                (vm, v, ct) => vm.SetVideoFormatAsync(v, ct), "videoFormat"),
+                (vm, v, ct) => vm.SetVideoFormatAsync(v, ct), AutomationPayloadKeys.VideoFormat),
             [AutomationCommandKind.SetPreset] = AutomationCommandHandler<IAutomationCaptureSettingsPort>.String(
-                (vm, v, ct) => vm.SetPresetAsync(v, ct), "preset"),
+                (vm, v, ct) => vm.SetPresetAsync(v, ct), AutomationPayloadKeys.Preset),
             [AutomationCommandKind.SetSplitEncodeMode] = AutomationCommandHandler<IAutomationCaptureSettingsPort>.String(
-                (vm, v, ct) => vm.SetSplitEncodeModeAsync(v, ct), "splitEncodeMode"),
+                (vm, v, ct) => vm.SetSplitEncodeModeAsync(v, ct), AutomationPayloadKeys.SplitEncodeMode),
             [AutomationCommandKind.SetRecordingFormat] = AutomationCommandHandler<IAutomationCaptureSettingsPort>.String(
-                (vm, v, ct) => vm.SetRecordingFormatAsync(v, ct), "format"),
+                (vm, v, ct) => vm.SetRecordingFormatAsync(v, ct), AutomationPayloadKeys.Format),
             [AutomationCommandKind.SetQuality] = AutomationCommandHandler<IAutomationCaptureSettingsPort>.String(
-                (vm, v, ct) => vm.SetQualityAsync(v, ct), "quality"),
+                (vm, v, ct) => vm.SetQualityAsync(v, ct), AutomationPayloadKeys.Quality),
             [AutomationCommandKind.SetCustomBitrate] = AutomationCommandHandler<IAutomationCaptureSettingsPort>.Double(
-                (vm, v, ct) => vm.SetCustomBitrateAsync(v, ct), "bitrateMbps"),
+                (vm, v, ct) => vm.SetCustomBitrateAsync(v, ct), AutomationPayloadKeys.BitrateMbps),
             [AutomationCommandKind.SetHdrEnabled] = AutomationCommandHandler<IAutomationCaptureSettingsPort>.Bool(
-                (vm, v, ct) => vm.SetHdrEnabledAsync(v, ct), "enabled"),
+                (vm, v, ct) => vm.SetHdrEnabledAsync(v, ct), AutomationPayloadKeys.Enabled),
             [AutomationCommandKind.SetTrueHdrPreviewEnabled] = AutomationCommandHandler<IAutomationCaptureSettingsPort>.Bool(
-                (vm, v, ct) => vm.SetTrueHdrPreviewEnabledAsync(v, ct), "enabled"),
+                (vm, v, ct) => vm.SetTrueHdrPreviewEnabledAsync(v, ct), AutomationPayloadKeys.Enabled),
         };
 
     private static readonly IReadOnlyDictionary<AutomationCommandKind, AutomationCommandHandler<IAutomationAudioPort>> TrivialAudioHandlers =
         new Dictionary<AutomationCommandKind, AutomationCommandHandler<IAutomationAudioPort>>
         {
             [AutomationCommandKind.SetAudioEnabled] = AutomationCommandHandler<IAutomationAudioPort>.Bool(
-                (vm, v, ct) => vm.SetAudioEnabledAsync(v, ct), "enabled"),
+                (vm, v, ct) => vm.SetAudioEnabledAsync(v, ct), AutomationPayloadKeys.Enabled),
             [AutomationCommandKind.SetAudioPreviewEnabled] = AutomationCommandHandler<IAutomationAudioPort>.Bool(
-                (vm, v, ct) => vm.SetAudioPreviewEnabledAsync(v, ct), "enabled"),
+                (vm, v, ct) => vm.SetAudioPreviewEnabledAsync(v, ct), AutomationPayloadKeys.Enabled),
         };
 
     private static readonly IReadOnlyDictionary<AutomationCommandKind, AutomationCommandHandler<IAutomationPreviewRecordingPort>> TrivialPreviewRecordingHandlers =
         new Dictionary<AutomationCommandKind, AutomationCommandHandler<IAutomationPreviewRecordingPort>>
         {
             [AutomationCommandKind.SetPreviewEnabled] = AutomationCommandHandler<IAutomationPreviewRecordingPort>.Bool(
-                (vm, v, ct) => vm.SetPreviewEnabledAsync(v, ct), "enabled"),
+                (vm, v, ct) => vm.SetPreviewEnabledAsync(v, ct), AutomationPayloadKeys.Enabled),
         };
 
     private static readonly IReadOnlyDictionary<AutomationCommandKind, AutomationCommandHandler<IAutomationPreviewRecordingPort>> UiPreviewRecordingHandlers =
         new Dictionary<AutomationCommandKind, AutomationCommandHandler<IAutomationPreviewRecordingPort>>
         {
             [AutomationCommandKind.SetPreviewVolume] = AutomationCommandHandler<IAutomationPreviewRecordingPort>.Double(
-                (vm, v, ct) => vm.SetPreviewVolumeAsync(v, ct), "previewVolumePercent"),
+                (vm, v, ct) => vm.SetPreviewVolumeAsync(v, ct), AutomationPayloadKeys.PreviewVolumePercent),
         };
 
     private static readonly IReadOnlyDictionary<AutomationCommandKind, AutomationCommandHandler<IAutomationUiPort>> UiStateHandlers =
         new Dictionary<AutomationCommandKind, AutomationCommandHandler<IAutomationUiPort>>
         {
             [AutomationCommandKind.SetStatsVisible] = AutomationCommandHandler<IAutomationUiPort>.Bool(
-                (vm, v, ct) => vm.SetStatsVisibleAsync(v, ct), "visible"),
+                (vm, v, ct) => vm.SetStatsVisibleAsync(v, ct), AutomationPayloadKeys.Visible),
             [AutomationCommandKind.SetSettingsVisible] = AutomationCommandHandler<IAutomationUiPort>.Bool(
-                (vm, v, ct) => vm.SetSettingsVisibleAsync(v, ct), "visible"),
+                (vm, v, ct) => vm.SetSettingsVisibleAsync(v, ct), AutomationPayloadKeys.Visible),
             [AutomationCommandKind.SetFrameTimeOverlayVisible] = AutomationCommandHandler<IAutomationUiPort>.Bool(
-                (vm, v, ct) => vm.SetFrameTimeOverlayVisibleAsync(v, ct), "visible"),
+                (vm, v, ct) => vm.SetFrameTimeOverlayVisibleAsync(v, ct), AutomationPayloadKeys.Visible),
             [AutomationCommandKind.SetFlashbackTimelineVisible] = AutomationCommandHandler<IAutomationUiPort>.Bool(
-                (vm, v, ct) => vm.SetFlashbackTimelineVisibleAsync(v, ct), "visible"),
+                (vm, v, ct) => vm.SetFlashbackTimelineVisibleAsync(v, ct), AutomationPayloadKeys.Visible),
         };
 
     private readonly IAutomationReadinessPort _readinessPort;
@@ -174,6 +174,16 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                 status: AutomationResponseStatus.Error,
                 includeSnapshot: false);
         }
+        catch (AutomationRequestValidationException ex)
+        {
+            return CreateResponse(
+                correlationId,
+                ex.Message,
+                errorCode: AutomationErrorCodes.InvalidRequest,
+                success: false,
+                status: AutomationResponseStatus.Error,
+                elapsedMs: (long)Math.Round(Stopwatch.GetElapsedTime(commandStartedAt).TotalMilliseconds));
+        }
         catch (Exception ex)
         {
             Logger.Log(
@@ -242,7 +252,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
     {
         if (command == AutomationCommandKind.SetShowAllCaptureOptions)
         {
-            _ = RequireBool(payload, "enabled");
+            _ = RequireBool(payload, AutomationPayloadKeys.Enabled);
             return CreateAcknowledgedResponse(correlationId, "Show-all capture options are always enabled.");
         }
 
@@ -271,8 +281,8 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         string correlationId,
         CancellationToken cancellationToken)
     {
-        var section = RequireString(payload, "section");
-        var visible = RequireBool(payload, "visible");
+        var section = RequireString(payload, AutomationPayloadKeys.Section);
+        var visible = RequireBool(payload, AutomationPayloadKeys.Visible);
         await _uiPort.SetStatsSectionVisibleAsync(section, visible, cancellationToken).ConfigureAwait(false);
         return CreateAcknowledgedResponse(correlationId, $"Stats section '{section}' {(visible ? "expanded" : "collapsed")}.");
     }
@@ -361,7 +371,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         var providedToken = request.AuthToken;
         if (string.IsNullOrWhiteSpace(providedToken))
         {
-            providedToken = GetString(request.Payload, "authToken");
+            providedToken = GetString(request.Payload, AutomationPayloadKeys.AuthToken);
         }
 
         // Constant-time comparison: even on a local pipe, sidechannel timing
@@ -378,23 +388,23 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         return ok;
     }
 
-    private static string RequireString(JsonElement payload, string propertyName)
+    internal static string RequireString(JsonElement payload, string propertyName)
     {
         var value = GetString(payload, propertyName);
         if (string.IsNullOrWhiteSpace(value))
         {
-            throw new InvalidOperationException($"Missing required string property '{propertyName}'.");
+            throw new AutomationRequestValidationException($"Missing required string property '{propertyName}'.");
         }
 
         return value;
     }
 
-    private static bool RequireBool(JsonElement payload, string propertyName)
+    internal static bool RequireBool(JsonElement payload, string propertyName)
     {
         var value = GetBool(payload, propertyName);
         if (!value.HasValue)
         {
-            throw new InvalidOperationException($"Missing required boolean property '{propertyName}'.");
+            throw new AutomationRequestValidationException($"Missing required boolean property '{propertyName}'.");
         }
 
         return value.Value;
@@ -408,7 +418,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         var value = GetDouble(payload, propertyName);
         if (!value.HasValue)
         {
-            throw new InvalidOperationException($"Missing required numeric property '{propertyName}'.");
+            throw new AutomationRequestValidationException($"Missing required numeric property '{propertyName}'.");
         }
 
         return value.Value;
@@ -502,11 +512,20 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         AutomationCommandKind command,
         string payloadKey,
         string path)
-        => AutomationCommandCatalog.ValidatePath(command, payloadKey, path);
+    {
+        try
+        {
+            return AutomationCommandCatalog.ValidatePath(command, payloadKey, path);
+        }
+        catch (InvalidOperationException ex)
+        {
+            throw new AutomationRequestValidationException(ex.Message, ex);
+        }
+    }
 
     private static AutomationWindowAction ParseWindowAction(JsonElement payload)
     {
-        var raw = GetString(payload, "action");
+        var raw = GetString(payload, AutomationPayloadKeys.Action);
         if (string.IsNullOrWhiteSpace(raw))
         {
             return AutomationWindowAction.Restore;
@@ -517,12 +536,12 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
             return parsed;
         }
 
-        throw new InvalidOperationException($"Invalid window action: '{raw}'.");
+        throw new AutomationRequestValidationException($"Invalid window action: '{raw}'.");
     }
 
     private static AutomationFlashbackAction ParseFlashbackAction(JsonElement payload)
     {
-        var raw = RequireString(payload, "action");
+        var raw = RequireString(payload, AutomationPayloadKeys.Action);
         var normalized = raw.Replace("-", string.Empty, StringComparison.Ordinal)
             .Replace("_", string.Empty, StringComparison.Ordinal)
             .Trim();
@@ -532,13 +551,13 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
             return parsed;
         }
 
-        throw new InvalidOperationException(
+        throw new AutomationRequestValidationException(
             $"Invalid flashback action: '{raw}'. Expected play, pause, go-live, seek, begin-scrub, update-scrub, end-scrub, set-in-point, set-out-point, or clear-in-out-points.");
     }
 
     private static AutomationWaitCondition ParseWaitCondition(JsonElement payload)
     {
-        var raw = GetString(payload, "condition");
+        var raw = GetString(payload, AutomationPayloadKeys.Condition);
         if (string.IsNullOrWhiteSpace(raw))
         {
             return AutomationWaitCondition.PreviewFramesActive;
@@ -549,12 +568,12 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
             return parsed;
         }
 
-        throw new InvalidOperationException($"Invalid wait condition: '{raw}'.");
+        throw new AutomationRequestValidationException($"Invalid wait condition: '{raw}'.");
     }
 
     private static string? NormalizeCloseActionId(JsonElement payload)
     {
-        var actionId = GetString(payload, "actionId")?.Trim();
+        var actionId = GetString(payload, AutomationPayloadKeys.ActionId)?.Trim();
         return string.IsNullOrWhiteSpace(actionId) ? null : actionId;
     }
 
@@ -773,8 +792,8 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         string correlationId,
         CancellationToken cancellationToken)
     {
-        var deviceId = GetString(payload, "deviceId");
-        var deviceName = GetString(payload, "deviceName");
+        var deviceId = GetString(payload, AutomationPayloadKeys.DeviceId);
+        var deviceName = GetString(payload, AutomationPayloadKeys.DeviceName);
         await _deviceSelectionPort.SelectDeviceAsync(deviceId, deviceName, cancellationToken).ConfigureAwait(false);
         return CreateAcknowledgedResponse(correlationId, "Capture device selection requested.");
     }
@@ -784,8 +803,8 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         string correlationId,
         CancellationToken cancellationToken)
     {
-        var deviceId = GetString(payload, "deviceId");
-        var deviceName = GetString(payload, "deviceName");
+        var deviceId = GetString(payload, AutomationPayloadKeys.DeviceId);
+        var deviceName = GetString(payload, AutomationPayloadKeys.DeviceName);
         await _deviceSelectionPort.SelectAudioInputDeviceAsync(deviceId, deviceName, cancellationToken).ConfigureAwait(false);
         return CreateAcknowledgedResponse(correlationId, "Audio input device selection requested.");
     }
@@ -795,8 +814,8 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         string correlationId,
         CancellationToken cancellationToken)
     {
-        var deviceId = GetString(payload, "deviceId");
-        var deviceName = GetString(payload, "deviceName");
+        var deviceId = GetString(payload, AutomationPayloadKeys.DeviceId);
+        var deviceName = GetString(payload, AutomationPayloadKeys.DeviceName);
         await _deviceSelectionPort.SelectMicrophoneDeviceAsync(deviceId, deviceName, cancellationToken).ConfigureAwait(false);
         return CreateAcknowledgedResponse(correlationId, "Microphone device selection requested.");
     }
@@ -814,10 +833,10 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         string correlationId,
         CancellationToken cancellationToken)
     {
-        var decoderCount = GetInt(payload, "decoderCount");
+        var decoderCount = GetInt(payload, AutomationPayloadKeys.DecoderCount);
         if (!decoderCount.HasValue)
         {
-            throw new InvalidOperationException("Missing required integer property 'decoderCount'.");
+            throw new AutomationRequestValidationException("Missing required integer property 'decoderCount'.");
         }
 
         await _captureSettingsPort.SetMjpegDecoderCountAsync(decoderCount.Value, cancellationToken).ConfigureAwait(false);
@@ -831,8 +850,8 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
     {
         var outputPath = ValidatePathPayload(
             AutomationCommandKind.SetOutputPath,
-            "outputPath",
-            RequireString(payload, "outputPath"));
+            AutomationPayloadKeys.OutputPath,
+            RequireString(payload, AutomationPayloadKeys.OutputPath));
         await _previewRecordingPort.SetOutputPathAsync(outputPath, cancellationToken).ConfigureAwait(false);
         return CreateAcknowledgedResponse(correlationId, $"Output path change requested: {outputPath}.");
     }
@@ -842,7 +861,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         string correlationId,
         CancellationToken cancellationToken)
     {
-        var enabled = RequireBool(payload, "enabled");
+        var enabled = RequireBool(payload, AutomationPayloadKeys.Enabled);
         await _previewRecordingPort.SetRecordingEnabledAsync(enabled, cancellationToken).ConfigureAwait(false);
         var snapshot = await _diagnosticsHub.RefreshSnapshotNowAsync(cancellationToken).ConfigureAwait(false);
         return CreateResponse(correlationId, $"Recording {(enabled ? "started" : "stopped")}.", snapshot: snapshot);
@@ -853,7 +872,15 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         string correlationId,
         CancellationToken cancellationToken)
     {
-        var mode = DeviceAudioModeParser.NormalizeOrThrow(RequireString(payload, "mode"));
+        var mode = RequireString(payload, AutomationPayloadKeys.Mode);
+        try
+        {
+            mode = DeviceAudioModeParser.NormalizeOrThrow(mode);
+        }
+        catch (InvalidOperationException ex)
+        {
+            throw new AutomationRequestValidationException(ex.Message, ex);
+        }
         await _audioPort.SetDeviceAudioModeAsync(mode, cancellationToken).ConfigureAwait(false);
         return CreateResponse(correlationId, $"Device audio mode changed: {mode}.");
     }
@@ -863,7 +890,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         string correlationId,
         CancellationToken cancellationToken)
     {
-        var gain = RequireDouble(payload, "gain");
+        var gain = RequireDouble(payload, AutomationPayloadKeys.Gain);
         await _audioPort.SetAnalogAudioGainAsync(gain, cancellationToken).ConfigureAwait(false);
         return CreateResponse(correlationId, $"Analog audio gain set to {gain:0.###}%.");
     }
@@ -873,7 +900,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         string correlationId,
         CancellationToken cancellationToken)
     {
-        var enabled = GetBool(payload, "enabled") ?? throw new InvalidOperationException("Missing 'enabled' parameter.");
+        var enabled = GetBool(payload, AutomationPayloadKeys.Enabled) ?? throw new AutomationRequestValidationException("Missing 'enabled' parameter.");
         await _audioPort.SetMicrophoneEnabledAsync(enabled, cancellationToken).ConfigureAwait(false);
         return CreateResponse(correlationId, $"Microphone {(enabled ? "enabled" : "disabled")}.");
     }
@@ -883,7 +910,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         string correlationId,
         CancellationToken cancellationToken)
     {
-        var volume = RequireDouble(payload, "microphoneVolumePercent");
+        var volume = RequireDouble(payload, AutomationPayloadKeys.MicrophoneVolumePercent);
         await _audioPort.SetMicrophoneVolumeAsync(volume, cancellationToken).ConfigureAwait(false);
         return CreateResponse(correlationId, $"Microphone volume set to {Math.Clamp(volume, 0.0, 100.0):0.###}%.");
     }
@@ -896,16 +923,23 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         var action = ParseFlashbackAction(payload);
         var positionMs = action switch
         {
-            AutomationFlashbackAction.Play => GetDouble(payload, "positionMs"),
-            AutomationFlashbackAction.Seek => RequireDouble(payload, "positionMs"),
-            AutomationFlashbackAction.BeginScrub => RequireDouble(payload, "positionMs"),
-            AutomationFlashbackAction.UpdateScrub => RequireDouble(payload, "positionMs"),
-            AutomationFlashbackAction.EndScrub => GetDouble(payload, "positionMs"),
+            AutomationFlashbackAction.Play => GetDouble(payload, AutomationPayloadKeys.PositionMs),
+            AutomationFlashbackAction.Seek => RequireDouble(payload, AutomationPayloadKeys.PositionMs),
+            AutomationFlashbackAction.BeginScrub => RequireDouble(payload, AutomationPayloadKeys.PositionMs),
+            AutomationFlashbackAction.UpdateScrub => RequireDouble(payload, AutomationPayloadKeys.PositionMs),
+            AutomationFlashbackAction.EndScrub => GetDouble(payload, AutomationPayloadKeys.PositionMs),
             _ => null
         };
         if (positionMs.HasValue)
         {
-            AutomationFlashbackValidation.ValidatePositionMs(positionMs.Value);
+            try
+            {
+                AutomationFlashbackValidation.ValidatePositionMs(positionMs.Value);
+            }
+            catch (ArgumentOutOfRangeException ex)
+            {
+                throw new AutomationRequestValidationException(ex.Message, ex);
+            }
         }
 
         var position = positionMs.HasValue
@@ -958,21 +992,21 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         string correlationId,
         CancellationToken cancellationToken)
     {
-        var seconds = GetDouble(payload, "seconds") ?? 300;
+        var seconds = GetDouble(payload, AutomationPayloadKeys.Seconds) ?? 300;
         if (!double.IsFinite(seconds) ||
             seconds <= 0 ||
             seconds > TimeSpan.MaxValue.TotalSeconds)
         {
-            throw new InvalidOperationException("Flashback export seconds must be finite, greater than zero, and within TimeSpan range.");
+            throw new AutomationRequestValidationException("Flashback export seconds must be finite, greater than zero, and within TimeSpan range.");
         }
 
         var outputPath = ValidatePathPayload(
             AutomationCommandKind.FlashbackExport,
-            "outputPath",
-            RequireString(payload, "outputPath"));
-        var useSelectionRange = GetBool(payload, "useSelectionRange") ?? false;
+            AutomationPayloadKeys.OutputPath,
+            RequireString(payload, AutomationPayloadKeys.OutputPath));
+        var useSelectionRange = GetBool(payload, AutomationPayloadKeys.UseSelectionRange) ?? false;
         // Older clients may send force; export always refuses existing destinations.
-        _ = GetBool(payload, "force") ?? false;
+        _ = GetBool(payload, AutomationPayloadKeys.Force) ?? false;
         var exportResult = await _flashbackPort.ExportFlashbackAutomationAsync(seconds, outputPath, useSelectionRange, cancellationToken).ConfigureAwait(false);
         var failureKind = FlashbackExportFailureCodes.Classify(exportResult);
         return CreateResponse(
@@ -1020,7 +1054,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         string correlationId,
         CancellationToken cancellationToken)
     {
-        var enabled = GetBool(payload, "enabled") ?? throw new InvalidOperationException("Missing 'enabled' parameter.");
+        var enabled = GetBool(payload, AutomationPayloadKeys.Enabled) ?? throw new AutomationRequestValidationException("Missing 'enabled' parameter.");
         await _flashbackPort.SetFlashbackEnabledAsync(enabled, cancellationToken).ConfigureAwait(false);
         return CreateResponse(correlationId, $"Flashback {(enabled ? "enabled" : "disabled")}.");
     }
@@ -1030,7 +1064,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         string correlationId,
         CancellationToken cancellationToken)
     {
-        var minutes = GetInt(payload, "minutes") ?? throw new InvalidOperationException("Missing 'minutes' parameter.");
+        var minutes = GetInt(payload, AutomationPayloadKeys.Minutes) ?? throw new AutomationRequestValidationException("Missing 'minutes' parameter.");
         await _flashbackPort.SetFlashbackBufferMinutesAsync(minutes, cancellationToken).ConfigureAwait(false);
         return CreateResponse(correlationId, $"Flashback buffer duration set to {minutes} minute{(minutes == 1 ? string.Empty : "s")}.");
     }
@@ -1040,7 +1074,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         string correlationId,
         CancellationToken cancellationToken)
     {
-        var enabled = RequireBool(payload, "enabled");
+        var enabled = RequireBool(payload, AutomationPayloadKeys.Enabled);
         await _flashbackPort.SetFlashbackGpuDecodeAsync(enabled, cancellationToken).ConfigureAwait(false);
         return CreateResponse(correlationId, $"Flashback GPU decode {(enabled ? "enabled" : "disabled")}.");
     }
@@ -1050,7 +1084,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         string correlationId,
         CancellationToken cancellationToken)
     {
-        var enabled = RequireBool(payload, "enabled");
+        var enabled = RequireBool(payload, AutomationPayloadKeys.Enabled);
         await _windowControl.SetFullScreenEnabledAsync(enabled, cancellationToken).ConfigureAwait(false);
         return CreateAcknowledgedResponse(correlationId, $"Full screen {(enabled ? "enter" : "exit")} requested.");
     }
@@ -1067,7 +1101,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         JsonElement payload,
         string correlationId)
     {
-        var armed = GetBool(payload, "armed") ?? true;
+        var armed = GetBool(payload, AutomationPayloadKeys.Armed) ?? true;
         var actionId = NormalizeCloseActionId(payload);
         if (armed && actionId == null)
         {
@@ -1164,13 +1198,13 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                 await _windowControl.CloseAsync(cancellationToken).ConfigureAwait(false);
                 break;
             case AutomationWindowAction.Move:
-                var mx = GetInt(payload, "x") ?? throw new InvalidOperationException("Move requires 'x' parameter.");
-                var my = GetInt(payload, "y") ?? throw new InvalidOperationException("Move requires 'y' parameter.");
+                var mx = GetInt(payload, AutomationPayloadKeys.X) ?? throw new AutomationRequestValidationException("Move requires 'x' parameter.");
+                var my = GetInt(payload, AutomationPayloadKeys.Y) ?? throw new AutomationRequestValidationException("Move requires 'y' parameter.");
                 await _windowControl.MoveToAsync(mx, my, cancellationToken).ConfigureAwait(false);
                 break;
             case AutomationWindowAction.Resize:
-                var rw = GetInt(payload, "width") ?? throw new InvalidOperationException("Resize requires 'width' parameter.");
-                var rh = GetInt(payload, "height") ?? throw new InvalidOperationException("Resize requires 'height' parameter.");
+                var rw = GetInt(payload, AutomationPayloadKeys.Width) ?? throw new AutomationRequestValidationException("Resize requires 'width' parameter.");
+                var rh = GetInt(payload, AutomationPayloadKeys.Height) ?? throw new AutomationRequestValidationException("Resize requires 'height' parameter.");
                 await _windowControl.ResizeToAsync(rw, rh, cancellationToken).ConfigureAwait(false);
                 break;
             case AutomationWindowAction.SnapLeft:
@@ -1230,16 +1264,16 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
     private static List<SnapshotAssertion> ParseAssertions(JsonElement payload)
     {
         if (payload.ValueKind != JsonValueKind.Object ||
-            !payload.TryGetProperty("assertions", out var assertionsElement) ||
+            !payload.TryGetProperty(AutomationPayloadKeys.Assertions, out var assertionsElement) ||
             assertionsElement.ValueKind != JsonValueKind.Array)
         {
-            throw new InvalidOperationException("AssertSnapshot requires an 'assertions' array.");
+            throw new AutomationRequestValidationException("AssertSnapshot requires an 'assertions' array.");
         }
 
         var assertionCount = assertionsElement.GetArrayLength();
         if (assertionCount > MaxSnapshotAssertionCount)
         {
-            throw new InvalidOperationException(
+            throw new AutomationRequestValidationException(
                 $"AssertSnapshot accepts at most {MaxSnapshotAssertionCount} assertions per request; received {assertionCount}.");
         }
 
@@ -1251,9 +1285,9 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                 continue;
             }
 
-            var field = GetString(item, "field");
-            var op = GetString(item, "op") ?? "eq";
-            var value = GetString(item, "value");
+            var field = GetString(item, AutomationPayloadKeys.Field);
+            var op = GetString(item, AutomationPayloadKeys.Op) ?? "eq";
+            var value = GetString(item, AutomationPayloadKeys.Value);
             if (string.IsNullOrWhiteSpace(field))
             {
                 continue;
@@ -1269,7 +1303,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
 
         if (assertions.Count == 0)
         {
-            throw new InvalidOperationException("AssertSnapshot requires at least one valid assertion object.");
+            throw new AutomationRequestValidationException("AssertSnapshot requires at least one valid assertion object.");
         }
 
         return assertions;
@@ -1388,8 +1422,8 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         CancellationToken cancellationToken)
     {
         var condition = ParseWaitCondition(payload);
-        var timeoutMs = Math.Clamp(GetInt(payload, "timeoutMs") ?? DefaultWaitTimeoutMs, 250, 300_000);
-        var pollMs = Math.Clamp(GetInt(payload, "pollMs") ?? DefaultWaitPollMs, 50, 5_000);
+        var timeoutMs = Math.Clamp(GetInt(payload, AutomationPayloadKeys.TimeoutMs) ?? DefaultWaitTimeoutMs, 250, 300_000);
+        var pollMs = Math.Clamp(GetInt(payload, AutomationPayloadKeys.PollMs) ?? DefaultWaitPollMs, 50, 5_000);
         var (met, snapshot) = await WaitForConditionAsync(condition, timeoutMs, pollMs, cancellationToken).ConfigureAwait(false);
 
         return CreateResponse(
@@ -1506,7 +1540,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         JsonElement payload,
         string correlationId)
     {
-        var maxEvents = GetInt(payload, "maxEvents") ?? 100;
+        var maxEvents = GetInt(payload, AutomationPayloadKeys.MaxEvents) ?? 100;
         var events = _diagnosticsHub.GetRecentEvents(maxEvents);
         return CreateResponse(correlationId, "Diagnostics retrieved.", data: events);
     }
@@ -1515,7 +1549,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         JsonElement payload,
         string correlationId)
     {
-        var maxEntries = GetInt(payload, "maxEntries") ?? 240;
+        var maxEntries = GetInt(payload, AutomationPayloadKeys.MaxEntries) ?? 240;
         var timeline = _diagnosticsHub.GetPerformanceTimeline(maxEntries);
         return CreateResponse(correlationId, "Performance timeline retrieved.", data: timeline);
     }
@@ -1525,7 +1559,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         string correlationId,
         CancellationToken cancellationToken)
     {
-        var maxEntries = GetInt(payload, "maxEntries") ?? 512;
+        var maxEntries = GetInt(payload, AutomationPayloadKeys.MaxEntries) ?? 512;
         var trace = await _snapshotQueryPort.GetAudioRampTraceSnapshotAsync(maxEntries, cancellationToken).ConfigureAwait(false);
         return CreateResponse(correlationId, "Audio ramp trace retrieved.", data: trace);
     }
@@ -1537,9 +1571,9 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
     {
         var filePath = ValidatePathPayload(
             AutomationCommandKind.VerifyFile,
-            "filePath",
-            RequireString(payload, "filePath"));
-        var verificationProfile = GetString(payload, "verificationProfile");
+            AutomationPayloadKeys.FilePath,
+            RequireString(payload, AutomationPayloadKeys.FilePath));
+        var verificationProfile = GetString(payload, AutomationPayloadKeys.VerificationProfile);
         var verifyStartedAt = Stopwatch.GetTimestamp();
         var verification = await _diagnosticsHub
             .VerifyFileAsync(filePath, verificationProfile, cancellationToken)
@@ -1600,8 +1634,8 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
     {
         var outputPath = ValidatePathPayload(
             AutomationCommandKind.CapturePreviewFrame,
-            "outputPath",
-            GetString(payload, "outputPath")
+            AutomationPayloadKeys.OutputPath,
+            GetString(payload, AutomationPayloadKeys.OutputPath)
                 ?? Path.Combine(Path.GetTempPath(), $"preview_capture_{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss_fff}_{Guid.NewGuid():N}.bmp"));
         var result = await _probePort.CapturePreviewFrameAsync(outputPath, cancellationToken).ConfigureAwait(false);
         return CreateCaptureResponse(correlationId, result.Message, result, result.Succeeded);
@@ -1614,8 +1648,8 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
     {
         var outputPath = ValidatePathPayload(
             AutomationCommandKind.CaptureWindowScreenshot,
-            "outputPath",
-            GetString(payload, "outputPath")
+            AutomationPayloadKeys.OutputPath,
+            GetString(payload, AutomationPayloadKeys.OutputPath)
                 ?? Path.Combine(Path.GetTempPath(), $"window_screenshot_{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss_fff}_{Guid.NewGuid():N}.png"));
         var result = await _windowControl.CaptureWindowScreenshotAsync(outputPath, cancellationToken).ConfigureAwait(false);
         return CreateCaptureResponse(correlationId, result.Message, result, result.Succeeded);
@@ -1688,46 +1722,22 @@ internal sealed record AutomationCommandHandler<TTarget>(
             AutomationPayloadFieldType.Number);
 
     private static bool GetBoolRequired(JsonElement payload, string propertyName)
-    {
-        if (payload.ValueKind != JsonValueKind.Object || !payload.TryGetProperty(propertyName, out var property))
-        {
-            throw new InvalidOperationException($"Missing required boolean property '{propertyName}'.");
-        }
-
-        var result = property.ValueKind switch
-        {
-            JsonValueKind.True => (bool?)true,
-            JsonValueKind.False => false,
-            JsonValueKind.String when bool.TryParse(property.GetString(), out var parsed) => parsed,
-            JsonValueKind.Number when property.TryGetInt32(out var number) => number != 0,
-            _ => null
-        };
-
-        return result ?? throw new InvalidOperationException($"Missing required boolean property '{propertyName}'.");
-    }
+        => AutomationCommandDispatcher.RequireBool(payload, propertyName);
 
     private static string GetStringRequired(JsonElement payload, string propertyName)
-    {
-        if (payload.ValueKind != JsonValueKind.Object || !payload.TryGetProperty(propertyName, out var property))
-        {
-            throw new InvalidOperationException($"Missing required string property '{propertyName}'.");
-        }
-
-        var value = property.ValueKind == JsonValueKind.String
-            ? property.GetString()
-            : property.ValueKind != JsonValueKind.Null ? property.ToString() : null;
-
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            throw new InvalidOperationException($"Missing required string property '{propertyName}'.");
-        }
-
-        return value;
-    }
+        => AutomationCommandDispatcher.RequireString(payload, propertyName);
 
     // Delegates rather than re-implementing the coercion: the local copy omitted the
     // finiteness check, so NumberStyles.Float parsed a "NaN" or "Infinity" string payload
     // straight through to handlers that then computed positions and volumes from it.
     private static double GetDoubleRequired(JsonElement payload, string propertyName)
         => AutomationCommandDispatcher.RequireDouble(payload, propertyName);
+}
+
+internal sealed class AutomationRequestValidationException : InvalidOperationException
+{
+    internal AutomationRequestValidationException(string message, Exception? innerException = null)
+        : base(message, innerException)
+    {
+    }
 }

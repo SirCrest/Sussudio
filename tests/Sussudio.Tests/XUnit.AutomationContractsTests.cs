@@ -415,6 +415,86 @@ public sealed class AutomationDispatcherContractsTests
         => global::Program.AutomationCommandDispatcher_GetBool_ExtractsFromJsonPayload();
 
     [Theory]
+    [InlineData(null, null)]
+    [InlineData("null", null)]
+    [InlineData("\"\"", null)]
+    [InlineData("\" \"", null)]
+    [InlineData("\" 1080p \"", " 1080p ")]
+    [InlineData("42", "42")]
+    [InlineData("{}", "{}")]
+    [InlineData("[]", "[]")]
+    public Task RequiredStringCoercionMatchesAcrossDispatchRoutes(string? valueJson, string? expected)
+        => global::Program.AutomationCommandDispatcher_RequiredCoercionMatchesRoutes("string", valueJson, expected);
+
+    [Theory]
+    [InlineData(null, null)]
+    [InlineData("null", null)]
+    [InlineData("\"\"", null)]
+    [InlineData("\"invalid\"", null)]
+    [InlineData("{}", null)]
+    [InlineData("1.5", null)]
+    [InlineData("2147483648", null)]
+    [InlineData("true", true)]
+    [InlineData("false", false)]
+    [InlineData("\"true\"", true)]
+    [InlineData("\"False\"", false)]
+    [InlineData("0", false)]
+    [InlineData("-1", true)]
+    public Task RequiredBoolCoercionMatchesAcrossDispatchRoutes(string? valueJson, bool? expected)
+        => global::Program.AutomationCommandDispatcher_RequiredCoercionMatchesRoutes("bool", valueJson, expected);
+
+    [Theory]
+    [InlineData(null, null)]
+    [InlineData("null", null)]
+    [InlineData("\"NaN\"", null)]
+    [InlineData("\"Infinity\"", null)]
+    [InlineData("1e400", null)]
+    [InlineData("1.25", 1.25)]
+    [InlineData("\"1.25\"", 1.25)]
+    public Task RequiredNumberCoercionMatchesAcrossDispatchRoutes(string? valueJson, double? expected)
+        => global::Program.AutomationCommandDispatcher_RequiredCoercionMatchesRoutes("number", valueJson, expected);
+
+    [Theory]
+    [InlineData("WindowAction", "{\"action\":\"unknown\"}", "Invalid window action")]
+    [InlineData("WindowAction", "{\"action\":\"Move\",\"x\":1}", "Move requires 'y'")]
+    [InlineData("WindowAction", "{\"action\":\"Resize\",\"width\":640}", "Resize requires 'height'")]
+    [InlineData("FlashbackAction", "{}", "Missing required string")]
+    [InlineData("FlashbackAction", "{\"action\":\"unknown\"}", "Invalid flashback action")]
+    [InlineData("FlashbackAction", "{\"action\":\"seek\"}", "Missing required numeric")]
+    [InlineData("FlashbackAction", "{\"action\":\"seek\",\"positionMs\":-1}", "Flashback positionMs must be finite")]
+    [InlineData("FlashbackExport", "{\"seconds\":0}", "Flashback export seconds must be finite")]
+    [InlineData("FlashbackExport", "{}", "Missing required string")]
+    [InlineData("SetMicrophoneEnabled", "{}", "Missing 'enabled'")]
+    [InlineData("SetFlashbackEnabled", "{}", "Missing 'enabled'")]
+    [InlineData("SetFlashbackBufferMinutes", "{}", "Missing 'minutes'")]
+    [InlineData("SetMjpegDecoderCount", "{\"decoderCount\":1.5}", "Missing required integer")]
+    [InlineData("SetOutputPath", "{\"outputPath\":\"\\u0000\"}", "not a valid path")]
+    [InlineData("AssertSnapshot", "{\"assertions\":[42]}", "at least one valid assertion")]
+    public Task MalformedCustomRequestsDoNotReachMutationPorts(string command, string payload, string message)
+        => global::Program.AutomationCommandDispatcher_MalformedRequestDoesNotMutate(command, payload, message);
+
+    [Theory]
+    [InlineData("SetStatsVisible", "{\"visible\":true}", "execution")]
+    [InlineData("SetDeviceAudioMode", "{\"mode\":\"hdmi\"}", "execution")]
+    [InlineData("SetDeviceAudioMode", "{\"mode\":\"hdmi\"}", "argument")]
+    [InlineData("SetDeviceAudioMode", "{\"mode\":\"hdmi\"}", "canceled")]
+    public Task MutationPortFailuresKeepExecutionOrCancellationIdentity(string command, string payload, string failure)
+        => global::Program.AutomationCommandDispatcher_MutationFailureKeepsIdentity(command, payload, failure);
+
+    [Fact]
+    public Task DirectoryIoFailureKeepsExecutionIdentity()
+        => global::Program.AutomationCommandDispatcher_DirectoryIoFailureKeepsExecutionIdentity();
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("null")]
+    [InlineData("\"NaN\"")]
+    [InlineData("\"Infinity\"")]
+    [InlineData("{}")]
+    public Task MalformedOptionalNumbersKeepExistingFallbacks(string? valueJson)
+        => global::Program.AutomationCommandDispatcher_OptionalNumbersKeepFallbacks(valueJson);
+
+    [Theory]
     [InlineData(null)]
     [InlineData("false")]
     [InlineData("true")]
@@ -884,7 +964,7 @@ static partial class Program
 
         AssertContains(customCommandsText, "private async Task<AutomationCommandResponse> ExecuteWaitForConditionCommandAsync(");
         AssertContains(customCommandsText, "var condition = ParseWaitCondition(payload);");
-        AssertContains(customCommandsText, "Math.Clamp(GetInt(payload, \"timeoutMs\") ?? DefaultWaitTimeoutMs, 250, 300_000)");
+        AssertContains(customCommandsText, "Math.Clamp(GetInt(payload, AutomationPayloadKeys.TimeoutMs) ?? DefaultWaitTimeoutMs, 250, 300_000)");
         AssertContains(customCommandsText, "WaitForConditionAsync(condition, timeoutMs, pollMs, cancellationToken)");
         AssertContains(customCommandsText, "errorCode: met ? null : AutomationErrorCodes.Timeout");
         AssertContains(customCommandsText, "private async Task<(bool Met, AutomationSnapshot Snapshot)> WaitForConditionAsync(");
@@ -944,7 +1024,7 @@ static partial class Program
                 dispatcher,
                 CreateAutomationCommandRequest("AssertSnapshot", null, oversizedPayload))
             .ConfigureAwait(false);
-        AssertAutomationResponse(oversizedResponse, success: false, errorCode: "command-failed", status: "error", "oversized assertions are rejected");
+        AssertAutomationResponse(oversizedResponse, success: false, errorCode: "invalid-request", status: "error", "oversized assertions are rejected");
         AssertEqual(0, Volatile.Read(ref refreshCount), "oversized assertions do not refresh snapshot");
 
         var knownFieldResponse = await ExecuteAutomationCommandAsync(
@@ -971,7 +1051,7 @@ static partial class Program
                 dispatcher,
                 CreateAutomationCommandRequest("AssertSnapshot", null, "{}"))
             .ConfigureAwait(false);
-        AssertAutomationResponse(malformedResponse, success: false, errorCode: "command-failed", status: "error", "malformed assertions are rejected");
+        AssertAutomationResponse(malformedResponse, success: false, errorCode: "invalid-request", status: "error", "malformed assertions are rejected");
         AssertEqual(2, Volatile.Read(ref refreshCount), "malformed assertions do not refresh snapshot");
     }
 
@@ -1019,11 +1099,12 @@ static partial class Program
         AssertDoesNotContain(customCommandsText, "_viewModel.SetMicrophoneEnabledAsync");
         AssertDoesNotContain(customCommandsText, "_viewModel.SetMicrophoneVolumeAsync");
         AssertContains(audioControlCommandsText, "private async Task<AutomationCommandResponse> ExecuteSetDeviceAudioModeCommandAsync(");
-        AssertContains(audioControlCommandsText, "var mode = DeviceAudioModeParser.NormalizeOrThrow(RequireString(payload, \"mode\"));");
+        AssertContains(audioControlCommandsText, "var mode = RequireString(payload, AutomationPayloadKeys.Mode);");
+        AssertContains(audioControlCommandsText, "mode = DeviceAudioModeParser.NormalizeOrThrow(mode);");
         AssertContains(audioControlCommandsText, "_audioPort.SetDeviceAudioModeAsync(mode, cancellationToken)");
         AssertContains(audioControlCommandsText, "Device audio mode changed: {mode}.");
         AssertContains(audioControlCommandsText, "private async Task<AutomationCommandResponse> ExecuteSetAnalogAudioGainCommandAsync(");
-        AssertContains(audioControlCommandsText, "var gain = RequireDouble(payload, \"gain\");");
+        AssertContains(audioControlCommandsText, "var gain = RequireDouble(payload, AutomationPayloadKeys.Gain);");
         AssertContains(audioControlCommandsText, "_audioPort.SetAnalogAudioGainAsync(gain, cancellationToken)");
         AssertContains(audioControlCommandsText, "Analog audio gain set to {gain:0.###}%.");
         AssertContains(audioControlCommandsText, "private async Task<AutomationCommandResponse> ExecuteSetMicrophoneEnabledCommandAsync(");
@@ -1031,7 +1112,7 @@ static partial class Program
         AssertContains(audioControlCommandsText, "_audioPort.SetMicrophoneEnabledAsync(enabled, cancellationToken)");
         AssertContains(audioControlCommandsText, "Microphone {(enabled ? \"enabled\" : \"disabled\")}.");
         AssertContains(audioControlCommandsText, "private async Task<AutomationCommandResponse> ExecuteSetMicrophoneVolumeCommandAsync(");
-        AssertContains(audioControlCommandsText, "var volume = RequireDouble(payload, \"microphoneVolumePercent\");");
+        AssertContains(audioControlCommandsText, "var volume = RequireDouble(payload, AutomationPayloadKeys.MicrophoneVolumePercent);");
         AssertContains(audioControlCommandsText, "_audioPort.SetMicrophoneVolumeAsync(volume, cancellationToken)");
         AssertContains(audioControlCommandsText, "Microphone volume set to {Math.Clamp(volume, 0.0, 100.0):0.###}%.");
 
@@ -1083,7 +1164,7 @@ static partial class Program
             AssertAutomationResponse(
                 response,
                 success: false,
-                errorCode: "command-failed",
+                errorCode: "invalid-request",
                 status: "error",
                 "invalid audio mode");
             AssertEqual(0, Volatile.Read(ref mutationCalls), "invalid audio mode invokes no settings mutation");
@@ -1122,7 +1203,7 @@ static partial class Program
         AssertDoesNotContain(customCommandsText, "_viewModel.SetOutputPathAsync");
         AssertDoesNotContain(customCommandsText, "_viewModel.SetRecordingEnabledAsync");
         AssertContains(captureControlCommandsText, "private async Task<AutomationCommandResponse> ExecuteSetMjpegDecoderCountCommandAsync(");
-        AssertContains(captureControlCommandsText, "var decoderCount = GetInt(payload, \"decoderCount\");");
+        AssertContains(captureControlCommandsText, "var decoderCount = GetInt(payload, AutomationPayloadKeys.DecoderCount);");
         AssertContains(captureControlCommandsText, "Missing required integer property 'decoderCount'.");
         AssertContains(captureControlCommandsText, "_captureSettingsPort.SetMjpegDecoderCountAsync(decoderCount.Value, cancellationToken)");
         AssertContains(captureControlCommandsText, "private async Task<AutomationCommandResponse> ExecuteSetOutputPathCommandAsync(");
@@ -1156,8 +1237,8 @@ static partial class Program
         AssertContains(portMappedDispatchText, "if (command == AutomationCommandKind.SetStatsSectionVisible)");
         AssertContains(portMappedDispatchText, "ExecuteSetStatsSectionVisibleCommandAsync(payload, correlationId, cancellationToken)");
         AssertContains(portMappedDispatchText, "private async Task<AutomationCommandResponse> ExecuteSetStatsSectionVisibleCommandAsync(");
-        AssertContains(portMappedDispatchText, "var section = RequireString(payload, \"section\");");
-        AssertContains(portMappedDispatchText, "var visible = RequireBool(payload, \"visible\");");
+        AssertContains(portMappedDispatchText, "var section = RequireString(payload, AutomationPayloadKeys.Section);");
+        AssertContains(portMappedDispatchText, "var visible = RequireBool(payload, AutomationPayloadKeys.Visible);");
         AssertContains(portMappedDispatchText, "_uiPort.SetStatsSectionVisibleAsync(section, visible, cancellationToken)");
         AssertContains(portMappedDispatchText, "Stats section '{section}' {(visible ? \"expanded\" : \"collapsed\")}.");
         AssertEqual(
@@ -1195,8 +1276,8 @@ static partial class Program
         AssertContains(deviceCommandsText, "_deviceSelectionPort.RefreshDevicesForAutomationAsync(cancellationToken)");
         AssertContains(deviceCommandsText, "Device list refresh requested.");
         AssertContains(deviceCommandsText, "private async Task<AutomationCommandResponse> ExecuteSelectDeviceCommandAsync(");
-        AssertContains(deviceCommandsText, "var deviceId = GetString(payload, \"deviceId\");");
-        AssertContains(deviceCommandsText, "var deviceName = GetString(payload, \"deviceName\");");
+        AssertContains(deviceCommandsText, "var deviceId = GetString(payload, AutomationPayloadKeys.DeviceId);");
+        AssertContains(deviceCommandsText, "var deviceName = GetString(payload, AutomationPayloadKeys.DeviceName);");
         AssertContains(deviceCommandsText, "_deviceSelectionPort.SelectDeviceAsync(deviceId, deviceName, cancellationToken)");
         AssertContains(deviceCommandsText, "private async Task<AutomationCommandResponse> ExecuteSelectAudioInputDeviceCommandAsync(");
         AssertContains(deviceCommandsText, "_deviceSelectionPort.SelectAudioInputDeviceAsync(deviceId, deviceName, cancellationToken)");
@@ -1416,11 +1497,57 @@ static partial class Program
             .ConfigureAwait(false);
         AssertAutomationResponse(protectedCommandResponse, success: false, errorCode: "unauthorized", status: "error", "missing token rejects non-authenticate command");
 
+        const string manifestToken = "manifest-auth-dummy-20260912";
+        const string wrongManifestToken = "wrong-manifest-auth-dummy";
+        var manifestDispatcher = CreateAutomationCommandDispatcher(authToken: manifestToken);
+        var matchingPayload = JsonSerializer.Serialize(new Dictionary<string, string> { ["authToken"] = manifestToken });
+        var wrongPayload = JsonSerializer.Serialize(new Dictionary<string, string> { ["authToken"] = wrongManifestToken });
+        (string? TopLevel, string Payload, bool Success, string Scenario)[] manifestRequests =
+        {
+            (manifestToken, "{}", true, "exact top-level token authorizes manifest retrieval"),
+            (manifestToken, wrongPayload, true, "matching top-level token takes precedence over wrong payload"),
+            (null, matchingPayload, true, "null top-level token allows legacy fallback on manifest retrieval"),
+            (string.Empty, matchingPayload, true, "empty top-level token allows legacy fallback on manifest retrieval"),
+            (" \t\r\n", matchingPayload, true, "whitespace top-level token allows legacy fallback on manifest retrieval"),
+            (wrongManifestToken, matchingPayload, false, "wrong nonblank top-level token prevents legacy rescue"),
+            (manifestToken + " ", matchingPayload, false, "nonblank top-level token is compared without trimming"),
+            (manifestToken.ToUpperInvariant(), matchingPayload, false, "top-level token comparison is case-sensitive"),
+            (null, "{}", false, "manifest retrieval requires configured credentials"),
+            (wrongManifestToken, "{}", false, "wrong top-level token cannot retrieve manifest"),
+            (null, wrongPayload, false, "wrong legacy payload token cannot retrieve manifest")
+        };
+        var staticManifestJson = AutomationCommandCatalog.CreateManifestJson();
+        Assert.DoesNotContain(manifestToken, staticManifestJson, StringComparison.Ordinal);
+        Assert.DoesNotContain(wrongManifestToken, staticManifestJson, StringComparison.Ordinal);
+
+        foreach (var testCase in manifestRequests)
+        {
+            var response = await ExecuteAutomationCommandAsync(manifestDispatcher,
+                CreateAutomationCommandRequest("GetAutomationManifest", testCase.TopLevel, testCase.Payload))
+                .ConfigureAwait(false);
+            AssertAutomationResponse(response, testCase.Success, testCase.Success ? null : "unauthorized",
+                testCase.Success ? "ok" : "error", testCase.Scenario);
+            Assert.Null(GetPublicProperty(response, "Snapshot"));
+            var manifest = GetPublicProperty(response, "Data");
+            if (testCase.Success)
+            {
+                Assert.NotNull(manifest);
+                var manifestJson = JsonSerializer.Serialize(manifest, manifest!.GetType());
+                Assert.Equal(staticManifestJson, manifestJson);
+                Assert.DoesNotContain(manifestToken, manifestJson, StringComparison.Ordinal);
+                Assert.DoesNotContain(wrongManifestToken, manifestJson, StringComparison.Ordinal);
+            }
+            else
+            {
+                Assert.Null(manifest);
+            }
+        }
+
         var dispatcherText = ReadAutomationCommandDispatcherFamilyText();
 
         AssertContains(dispatcherText, "if (string.IsNullOrWhiteSpace(_authToken))\n        {\n            return true;\n        }");
         AssertContains(dispatcherText, "var providedToken = request.AuthToken;");
-        AssertContains(dispatcherText, "providedToken = GetString(request.Payload, \"authToken\");");
+        AssertContains(dispatcherText, "providedToken = GetString(request.Payload, AutomationPayloadKeys.AuthToken);");
         AssertContains(dispatcherText, "CryptographicOperations.FixedTimeEquals(expected, actual)");
         AssertContains(dispatcherText, "Logger.LogEvent(\"AUTO-AUTH-FAILED\"");
         AssertContains(dispatcherText, "errorCode: authorized ? null : AutomationErrorCodes.Unauthorized");
@@ -1502,7 +1629,7 @@ static partial class Program
         AssertContains(windowCommandsText, "Full screen {(enabled ? \"enter\" : \"exit\")} requested.");
         AssertContains(windowCommandsText, "_windowControl.OpenRecordingsFolderAsync(cancellationToken)");
         AssertContains(windowCommandsText, "Recordings folder open requested.");
-        AssertContains(windowCommandsText, "var armed = GetBool(payload, \"armed\") ?? true;");
+        AssertContains(windowCommandsText, "var armed = GetBool(payload, AutomationPayloadKeys.Armed) ?? true;");
         AssertContains(windowCommandsText, "var actionId = NormalizeCloseActionId(payload);");
         AssertContains(windowCommandsText, "if (armed && actionId == null)");
         AssertContains(windowCommandsText, "_closeArmActionId = armed ? actionId : null;");
@@ -1542,7 +1669,7 @@ static partial class Program
         AssertContains(customCommandsText, "ExecuteVerifyLastRecordingCommandAsync(correlationId, cancellationToken)");
         AssertContains(customCommandsText, "private async Task<AutomationCommandResponse> ExecuteVerifyFileCommandAsync(");
         AssertContains(customCommandsText, "private async Task<AutomationCommandResponse> ExecuteVerifyLastRecordingCommandAsync(");
-        AssertContains(customCommandsText, "ValidatePathPayload(\n            AutomationCommandKind.VerifyFile,\n            \"filePath\",");
+        AssertContains(customCommandsText, "ValidatePathPayload(\n            AutomationCommandKind.VerifyFile,\n            AutomationPayloadKeys.FilePath,");
         AssertContains(customCommandsText, "_diagnosticsHub\n            .VerifyFileAsync(filePath, verificationProfile, cancellationToken)");
         AssertContains(customCommandsText, "_diagnosticsHub.VerifyLastRecordingAsync(cancellationToken)");
         AssertContains(customCommandsText, "HdrParity = verification.HdrParity");
@@ -1947,6 +2074,183 @@ static partial class Program
                ?? throw new InvalidOperationException($"Failed to create Task<{resultType.Name}>.");
     }
 
+    internal static async Task AutomationCommandDispatcher_RequiredCoercionMatchesRoutes(
+        string kind, string? valueJson, object? expected)
+    {
+        (string Command, string Key, string OtherFields, string Method, int Argument)[] routes = kind switch
+        {
+            "string" => new[]
+            {
+                ("SetResolution", "resolution", "", "SetResolutionAsync", 0),
+                ("SetStatsSectionVisible", "section", "\"visible\":false", "SetStatsSectionVisibleAsync", 0)
+            },
+            "bool" => new[]
+            {
+                ("SetStatsVisible", "visible", "", "SetStatsVisibleAsync", 0),
+                ("SetStatsSectionVisible", "visible", "\"section\":\"preview\"", "SetStatsSectionVisibleAsync", 1)
+            },
+            "number" => new[]
+            {
+                ("SetFrameRate", "frameRate", "", "SetFrameRateAsync", 0),
+                ("SetAnalogAudioGain", "gain", "", "SetAnalogAudioGainAsync", 0)
+            },
+            _ => throw new ArgumentOutOfRangeException(nameof(kind))
+        };
+
+        foreach (var route in routes)
+        {
+            var observed = new List<(string Method, object? Value)>();
+            var dispatcher = CreatePayloadValidationTestDispatcher((method, arguments) =>
+            {
+                observed.Add((method.Name, arguments![route.Argument]));
+                return GetDefaultReturnValue(method);
+            });
+            var fields = new List<string>();
+            if (route.OtherFields.Length > 0) fields.Add(route.OtherFields);
+            if (valueJson != null) fields.Add($"\"{route.Key}\":{valueJson}");
+            var request = CreateAutomationCommandRequest(route.Command, null, "{" + string.Join(',', fields) + "}");
+            var response = await ExecuteAutomationCommandAsync(dispatcher, request).ConfigureAwait(false);
+
+            AssertAutomationResponse(response, expected != null, expected == null ? "invalid-request" : null,
+                expected == null ? "error" : "ok", $"{route.Command} {valueJson ?? "missing"}");
+            Assert.Equal(GetPublicProperty(request, "CorrelationId"), GetPublicProperty(response, "CorrelationId"));
+            if (expected == null)
+            {
+                Assert.Empty(observed);
+                Assert.Equal("failed", GetAutomationLifecycle(response));
+                Assert.NotNull(GetPublicProperty(response, "ElapsedMs"));
+            }
+            else
+            {
+                var mutation = Assert.Single(observed);
+                Assert.Equal(route.Method, mutation.Method);
+                Assert.Equal(expected, mutation.Value);
+            }
+        }
+    }
+
+    internal static async Task AutomationCommandDispatcher_MalformedRequestDoesNotMutate(
+        string command, string payload, string message)
+    {
+        var mutationCalls = new List<string>();
+        var dispatcher = CreatePayloadValidationTestDispatcher((method, _) =>
+        {
+            mutationCalls.Add(method.Name);
+            return CreateNoHardwareReturnValue(method.ReturnType);
+        });
+        var response = await ExecuteAutomationCommandAsync(
+            dispatcher, CreateAutomationCommandRequest(command, null, payload)).ConfigureAwait(false);
+
+        AssertAutomationResponse(response, false, "invalid-request", "error", command);
+        Assert.Contains(message, (string)GetPublicProperty(response, "Message")!, StringComparison.Ordinal);
+        Assert.Empty(mutationCalls);
+    }
+
+    internal static async Task AutomationCommandDispatcher_MutationFailureKeepsIdentity(
+        string command, string payload, string failure)
+    {
+        var mutationCalls = 0;
+        Exception cause = failure switch
+        {
+            "execution" => new InvalidOperationException("injected mutation failure"),
+            "argument" => new ArgumentOutOfRangeException("value", "injected mutation failure"),
+            "canceled" => new OperationCanceledException("injected cancellation"),
+            _ => throw new ArgumentOutOfRangeException(nameof(failure))
+        };
+        var dispatcher = CreatePayloadValidationTestDispatcher((_, _) =>
+        {
+            mutationCalls++;
+            return Task.FromException(cause);
+        });
+        var response = await ExecuteAutomationCommandAsync(
+            dispatcher, CreateAutomationCommandRequest(command, null, payload)).ConfigureAwait(false);
+
+        Assert.Equal(1, mutationCalls);
+        AssertAutomationResponse(response, false, failure == "canceled" ? "canceled" : "command-failed", "error", command);
+        Assert.Equal(failure == "canceled" ? "Command canceled." : cause.Message, GetPublicProperty(response, "Message"));
+    }
+
+    internal static async Task AutomationCommandDispatcher_DirectoryIoFailureKeepsExecutionIdentity()
+    {
+        var filePath = Path.Combine(Path.GetTempPath(), $"automation_directory_conflict_{Guid.NewGuid():N}.tmp");
+        File.WriteAllBytes(filePath, Array.Empty<byte>());
+        try
+        {
+            var mutationCalls = 0;
+            var dispatcher = CreatePayloadValidationTestDispatcher((method, _) =>
+            {
+                mutationCalls++;
+                return GetDefaultReturnValue(method);
+            });
+            var response = await ExecuteAutomationCommandAsync(dispatcher, CreateAutomationCommandRequest(
+                "SetOutputPath", null, $"{{\"outputPath\":{JsonSerializer.Serialize(filePath)}}}")).ConfigureAwait(false);
+
+            AssertAutomationResponse(response, false, "command-failed", "error", "directory conflicts with a file");
+            Assert.Equal(0, mutationCalls);
+            Assert.True(File.Exists(filePath));
+        }
+        finally
+        {
+            File.Delete(filePath);
+        }
+    }
+
+    internal static async Task AutomationCommandDispatcher_OptionalNumbersKeepFallbacks(string? valueJson)
+    {
+        var outputPath = Path.Combine(Path.GetTempPath(), $"fb_optional_numbers_{Guid.NewGuid():N}.mp4");
+        const string failureCode = "flashback-export-buffer-inactive";
+        var failure = RequireType("Sussudio.Services.Flashback.FlashbackExportFailureCodes")
+            .GetMethod("Create", BindingFlags.Static | BindingFlags.NonPublic)!
+            .Invoke(null, new object?[] { outputPath, "buffer inactive", failureCode, null })!;
+        var observed = new List<(string Method, object?[] Arguments)>();
+        var dispatcher = CreatePayloadValidationTestDispatcher((method, arguments) =>
+        {
+            observed.Add((method.Name, arguments!));
+            return method.Name == "ExportFlashbackAutomationAsync"
+                ? CreateTaskFromResult(failure.GetType(), failure)
+                : Task.FromResult(true);
+        });
+        var secondsField = valueJson == null ? "" : $",\"seconds\":{valueJson}";
+        var export = await ExecuteAutomationCommandAsync(dispatcher, CreateAutomationCommandRequest(
+            "FlashbackExport", null, $"{{\"outputPath\":{JsonSerializer.Serialize(outputPath)}{secondsField}}}")).ConfigureAwait(false);
+        AssertAutomationResponse(export, false, failureCode, "error", "optional export seconds");
+        var exported = Assert.Single(observed);
+        Assert.Equal("ExportFlashbackAutomationAsync", exported.Method);
+        Assert.Equal(300d, exported.Arguments[0]);
+        Assert.Equal(outputPath, exported.Arguments[1]);
+        Assert.False(File.Exists(outputPath));
+
+        foreach (var action in new[] { "play", "end-scrub" })
+        {
+            observed.Clear();
+            var positionField = valueJson == null ? "" : $",\"positionMs\":{valueJson}";
+            var response = await ExecuteAutomationCommandAsync(dispatcher, CreateAutomationCommandRequest(
+                "FlashbackAction", null, $"{{\"action\":\"{action}\"{positionField}}}")).ConfigureAwait(false);
+            AssertAutomationResponse(response, true, null, "ok", $"optional {action} position");
+            var mutation = Assert.Single(observed);
+            Assert.Equal("ExecuteFlashbackActionAsync", mutation.Method);
+            Assert.Null(mutation.Arguments[1]);
+        }
+    }
+
+    private static object CreatePayloadValidationTestDispatcher(Func<MethodInfo, object?[]?, object?> mutation)
+    {
+        object? HandleMutation(MethodInfo? method, object?[]? arguments)
+        {
+            if (method?.Name == "get_IsInitialized") return true;
+            if (method == null || method.IsSpecialName) return GetDefaultReturnValue(method);
+            return mutation(method, arguments);
+        }
+
+        var snapshot = CreateInstance("Sussudio.Models.AutomationSnapshot");
+        return CreateAutomationCommandDispatcher(
+            CreateConfiguredProxy(RequireType("Sussudio.Services.Automation.IAutomationViewModel"), HandleMutation),
+            CreateConfiguredProxy(RequireType("Sussudio.Services.Contracts.IAutomationDiagnosticsHub"), (method, _) =>
+                method?.Name == "GetLatestSnapshot" ? snapshot : GetDefaultReturnValue(method)),
+            CreateConfiguredProxy(RequireType("Sussudio.Services.Contracts.IAutomationWindowControl"), HandleMutation),
+            authToken: null);
+    }
+
     internal static Task AutomationCommandDispatcher_GetString_ExtractsFromJsonPayload()
     {
         var dispatcherType = RequireType("Sussudio.Services.Automation.AutomationCommandDispatcher");
@@ -2107,7 +2411,7 @@ static partial class Program
                 authToken: null,
                 payloadJson: "{\"condition\":\"999\",\"timeoutMs\":250,\"pollMs\":50}"));
 
-        AssertAutomationResponse(response, false, "command-failed", "error", "undefined wait condition");
+        AssertAutomationResponse(response, false, "invalid-request", "error", "undefined wait condition");
         AssertEqual("Invalid wait condition: '999'.", GetPublicProperty(response, "Message"), "undefined wait condition message");
     }
 
@@ -2178,10 +2482,10 @@ static partial class Program
         AssertContains(dispatcherText, "ExecuteGetPerformanceTimelineCommand(payload, correlationId)");
         AssertContains(dispatcherText, "ExecuteGetAudioRampTraceCommandAsync(payload, correlationId, cancellationToken)");
         AssertContains(customCommandsText, "private AutomationCommandResponse ExecuteGetDiagnosticsCommand(");
-        AssertContains(customCommandsText, "var maxEvents = GetInt(payload, \"maxEvents\") ?? 100;");
+        AssertContains(customCommandsText, "var maxEvents = GetInt(payload, AutomationPayloadKeys.MaxEvents) ?? 100;");
         AssertContains(customCommandsText, "private AutomationCommandResponse ExecuteGetPerformanceTimelineCommand(");
-        AssertContains(customCommandsText, "var maxEntries = GetInt(payload, \"maxEntries\") ?? 240;");
-        AssertContains(customCommandsText, "var maxEntries = GetInt(payload, \"maxEntries\") ?? 512;");
+        AssertContains(customCommandsText, "var maxEntries = GetInt(payload, AutomationPayloadKeys.MaxEntries) ?? 240;");
+        AssertContains(customCommandsText, "var maxEntries = GetInt(payload, AutomationPayloadKeys.MaxEntries) ?? 512;");
         AssertContains(customCommandsText, "GetAudioRampTraceSnapshotAsync(maxEntries, cancellationToken)");
         AssertEqual(
             false,
@@ -6008,8 +6312,8 @@ static partial class Program
         AssertContains(dispatcherText, "errorCode: AutomationErrorCodes.FlashbackActionFailed");
         AssertContains(dispatcherText, "RequestedPositionMs = requestedPositionMs");
         AssertContains(dispatcherText, "LastCommandFailureUtcUnixMs = snapshot.FlashbackPlaybackLastCommandFailureUtcUnixMs");
-        AssertContains(dispatcherText, "var useSelectionRange = GetBool(payload, \"useSelectionRange\") ?? false;");
-        AssertContains(dispatcherText, "_ = GetBool(payload, \"force\") ?? false;");
+        AssertContains(dispatcherText, "var useSelectionRange = GetBool(payload, AutomationPayloadKeys.UseSelectionRange) ?? false;");
+        AssertContains(dispatcherText, "_ = GetBool(payload, AutomationPayloadKeys.Force) ?? false;");
         AssertContains(dispatcherText, "ExportFlashbackAutomationAsync(seconds, outputPath, useSelectionRange, cancellationToken)");
         AssertContains(dispatcherText, "FlashbackExportFailureCodes.Classify(exportResult)");
         AssertContains(dispatcherText, "FailureKind = failureKind");
@@ -6017,9 +6321,9 @@ static partial class Program
         var flashbackValidationText = ReadRepoFile("Sussudio.Automation.Contracts/AutomationCommandCatalog.cs")
             .Replace("\r\n", "\n");
         AssertContains(flashbackValidationText, "Flashback positionMs must be finite, non-negative, and within TimeSpan range.");
-        AssertContains(dispatcherText, "AutomationFlashbackAction.BeginScrub => RequireDouble(payload, \"positionMs\")");
-        AssertContains(dispatcherText, "AutomationFlashbackAction.UpdateScrub => RequireDouble(payload, \"positionMs\")");
-        AssertContains(dispatcherText, "AutomationFlashbackAction.EndScrub => GetDouble(payload, \"positionMs\")");
+        AssertContains(dispatcherText, "AutomationFlashbackAction.BeginScrub => RequireDouble(payload, AutomationPayloadKeys.PositionMs)");
+        AssertContains(dispatcherText, "AutomationFlashbackAction.UpdateScrub => RequireDouble(payload, AutomationPayloadKeys.PositionMs)");
+        AssertContains(dispatcherText, "AutomationFlashbackAction.EndScrub => GetDouble(payload, AutomationPayloadKeys.PositionMs)");
         AssertContains(dispatcherText, "private readonly IAutomationReadinessPort _readinessPort;");
         AssertContains(dispatcherText, "private readonly IAutomationDeviceSelectionPort _deviceSelectionPort;");
         AssertContains(dispatcherText, "private readonly IAutomationSnapshotQueryPort _snapshotQueryPort;");
@@ -8706,7 +9010,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "skipped state-mutating scenario");
         AssertContains(diagnosticSessionText, "CreateCleanupCts(TimeSpan.FromMilliseconds(recordingCleanupTimeoutMs))");
         AssertContains(diagnosticSessionText, "AutomationCommandKind.SetRecordingEnabled,");
-        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"enabled\"] = false }");
+        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = false }");
         AssertContains(diagnosticSessionText, "recordingCleanupTimeoutMs,");
         AssertContains(diagnosticSessionText, "private static async Task<bool> StopRecordingForCleanupAsync(");
         AssertContains(diagnosticSessionText, "var shouldStopRecordingForVerification = startedRecording && options.VerifyRecording;");
@@ -8768,7 +9072,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "var shouldRunVerification =");
         AssertContains(diagnosticSessionText, "recording verification skipped: scenario does not produce a recording or export artifact");
         AssertContains(diagnosticSessionText, "verificationCommand = \"VerifyFile\"");
-        AssertContains(diagnosticSessionText, "[\"verificationProfile\"] = \"flashback-export\"");
+        AssertContains(diagnosticSessionText, "[AutomationPayloadKeys.VerificationProfile] = \"flashback-export\"");
         AssertContains(diagnosticScenariosText, "FlashbackRangeExport,");
         AssertContains(diagnosticScenariosText, "FlashbackExportVerificationFileName: \"flashback-range-export.mp4\"");
         AssertContains(diagnosticScenariosText, "FlashbackRangeExportAudioSwitch,");
@@ -9519,7 +9823,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "coalescedSeekEnd={result.FlashbackPlaybackSeekCommandsCoalescedAtEnd}");
         AssertContains(diagnosticSessionText, "failureUtcEnd={result.FlashbackPlaybackLastCommandFailureUtcUnixMsAtEnd}");
         AssertContains(diagnosticSessionText, "Flashback Playback Perf:");
-        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"action\"] = \"play\", [\"positionMs\"] = playPositionMs }");
+        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = \"play\", [AutomationPayloadKeys.PositionMs] = playPositionMs }");
         AssertContains(diagnosticSessionText, "flashback playback started at completed segment");
         AssertContains(diagnosticSessionText, "flashback playback returned live");
         AssertContains(diagnosticSessionText, "ValidateFlashbackPlaybackSession(");
@@ -9624,7 +9928,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "internal static async Task ToggleAudioEnabledDuringFlashbackExportAsync(");
         AssertContains(diagnosticSessionText, "\"SetAudioEnabled\"");
         AssertContains(diagnosticSessionText, "FlashbackExportActive");
-        AssertContains(diagnosticSessionText, "[\"useSelectionRange\"] = true");
+        AssertContains(diagnosticSessionText, "[AutomationPayloadKeys.UseSelectionRange] = true");
         AssertContains(diagnosticSessionText, "actions.Add($\"{scenarioLabel} verified\")");
         AssertContains(diagnosticSessionText, "internal static async Task RunFlashbackLifecycleAsync(");
         AssertContains(diagnosticSessionText, "internal static async Task RunFlashbackExportConcurrentAsync(");
@@ -9657,7 +9961,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "flashback recording preview cycle preview stopped");
         AssertContains(diagnosticSessionText, "const int recordingCleanupTimeoutMs = 300_000;");
         AssertContains(diagnosticSessionText, "AutomationCommandKind.SetRecordingEnabled,");
-        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"enabled\"] = false }");
+        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = false }");
         AssertContains(diagnosticSessionText, "recordingCleanupTimeoutMs,");
         AssertContains(diagnosticSessionText, "internal static async Task<JsonElement?> WaitForFlashbackRecordingReadyAsync(");
         AssertContains(diagnosticSessionText, "internal static async Task<FlashbackRecordingSettingsDeferredPresetState> RunFlashbackRecordingSettingsDeferredAsync(");
@@ -9688,16 +9992,16 @@ static partial class Program
         AssertContains(diagnosticSessionText, "var rangeStartMs = Math.Max(0, rangeEndMs - outPointMs);");
         AssertContains(diagnosticSessionText, "requiredStartMs>={leftEdgeSafetyMarginMs}");
         AssertContains(diagnosticSessionText, "\"flashback stress: Flashback buffer did not become export-ready within 30s\"");
-        AssertContains(diagnosticSessionText, "\"FlashbackAction\", new Dictionary<string, object?> { [\"action\"] = \"pause\" }");
-        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"action\"] = \"seek\", [\"positionMs\"] = 500 }");
+        AssertContains(diagnosticSessionText, "\"FlashbackAction\", new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = \"pause\" }");
+        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = \"seek\", [AutomationPayloadKeys.PositionMs] = 500 }");
         AssertContains(diagnosticSessionText, "foreach (var positionMs in new[] { 750, 1_250, 2_000, 3_250, 1_500 })");
         AssertContains(diagnosticSessionText, "actions.Add(\"flashback scrub burst requested\");");
-        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"action\"] = \"begin-scrub\", [\"positionMs\"] = 500 }");
+        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = \"begin-scrub\", [AutomationPayloadKeys.PositionMs] = 500 }");
         AssertContains(diagnosticSessionText, "private static async Task<int> RunFlashbackScrubStressUpdateBurstAsync(");
-        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"action\"] = \"update-scrub\", [\"positionMs\"] = positions[i] }");
+        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = \"update-scrub\", [AutomationPayloadKeys.PositionMs] = positions[i] }");
         AssertContains(diagnosticSessionText, "return positions[^1];");
-        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"action\"] = \"end-scrub\", [\"positionMs\"] = finalScrubPositionMs }");
-        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"seconds\"] = 1, [\"outputPath\"] = exportPath }");
+        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = \"end-scrub\", [AutomationPayloadKeys.PositionMs] = finalScrubPositionMs }");
+        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [AutomationPayloadKeys.Seconds] = 1, [AutomationPayloadKeys.OutputPath] = exportPath }");
         AssertContains(diagnosticSessionText, "internal static Dictionary<string, object?> CreateFlashbackExportVerifyPayload(string filePath)");
         AssertContains(diagnosticSessionText, "\"flashback stress: playback command queue did not drain within 10s \"");
         AssertContains(diagnosticSessionText, "$\"maxPending={GetInt(lastSnapshot, \"FlashbackPlaybackMaxPendingCommands\")} \"");
@@ -10162,5 +10466,157 @@ public sealed class PreviewPacingClassifierTests
         throw new InvalidOperationException(
             $"Could not locate repository root from '{AppContext.BaseDirectory}'.");
     }
+}
+}
+
+namespace Sussudio.Tests
+{
+public sealed unsafe class MfSourceReaderFrameStrideTests
+{
+    private const int Width = 6;
+    private const int Height = 4;
+    private const int GuardBytes = 16;
+    private const byte SourceGuard = 0xA5;
+    private const byte SourcePadding = 0xEE;
+    private const byte DestinationGuard = 0xB6;
+
+    private delegate void CopyFrameDelegate(
+        byte* sourceStart, int stride, Span<byte> destination, int width, int height, bool isP010);
+
+    private static readonly CopyFrameDelegate CopyFrame = BindCopyFrame();
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void CopyYuvWithStride_PreservesPackedBytesAndGuardRegions(bool isP010, bool padded)
+    {
+        var expected = ExpectedPackedFrame(isP010);
+        var rowBytes = isP010 ? Width * 2 : Width;
+        var stride = rowBytes + (padded ? 4 : 0);
+        var source = CreatePitchedSource(expected, rowBytes, stride);
+        var originalSource = (byte[])source.Clone();
+        var destination = Enumerable.Repeat(DestinationGuard, GuardBytes + expected.Length + GuardBytes).ToArray();
+        var expectedDestination = (byte[])destination.Clone();
+        expected.CopyTo(expectedDestination, GuardBytes);
+
+        InvokeCopy(source, GuardBytes, stride, destination, GuardBytes, expected.Length + GuardBytes, isP010);
+
+        Assert.Equal(expectedDestination, destination);
+        Assert.Equal(originalSource, source);
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void CopyYuvWithStride_RejectsShortDestinationWithoutCopying(bool isP010, bool padded)
+    {
+        var expected = ExpectedPackedFrame(isP010);
+        var rowBytes = isP010 ? Width * 2 : Width;
+        var stride = rowBytes + (padded ? 4 : 0);
+        var source = CreatePitchedSource(expected, rowBytes, stride);
+        var originalSource = (byte[])source.Clone();
+        var destination = Enumerable.Repeat(DestinationGuard, GuardBytes + expected.Length + GuardBytes).ToArray();
+        var originalDestination = (byte[])destination.Clone();
+
+        var error = Assert.Throws<ArgumentException>(() =>
+            InvokeCopy(source, GuardBytes, stride, destination, GuardBytes, expected.Length - 1, isP010));
+
+        Assert.Equal("Destination span is too small for packed frame.", error.Message);
+        Assert.Equal(originalDestination, destination);
+        Assert.Equal(originalSource, source);
+    }
+
+    [Theory]
+    [InlineData(false, 0)]
+    [InlineData(false, -1)]
+    [InlineData(false, -6)]
+    [InlineData(false, -10)]
+    [InlineData(false, int.MinValue)]
+    [InlineData(false, 5)]
+    [InlineData(true, 0)]
+    [InlineData(true, -1)]
+    [InlineData(true, -12)]
+    [InlineData(true, -16)]
+    [InlineData(true, int.MinValue)]
+    [InlineData(true, 11)]
+    public void CopyYuvWithStride_RejectsUnsupportedStrideWithoutCopying(bool isP010, int stride)
+    {
+        var rowBytes = isP010 ? Width * 2 : Width;
+        var packedBytes = rowBytes * (Height + Height / 2);
+        // Keep backward addresses in bounds so a negative-pitch regression fails safely.
+        var source = Enumerable.Repeat(SourceGuard, 256).ToArray();
+        var originalSource = (byte[])source.Clone();
+        var destination = Enumerable.Repeat(DestinationGuard, GuardBytes + packedBytes + GuardBytes).ToArray();
+        var originalDestination = (byte[])destination.Clone();
+
+        var error = Assert.Throws<InvalidOperationException>(() =>
+            InvokeCopy(source, 128, stride, destination, GuardBytes, packedBytes, isP010));
+
+        Assert.Equal($"Source stride ({stride}) is smaller than packed row width ({rowBytes}).", error.Message);
+        Assert.Equal(originalDestination, destination);
+        Assert.Equal(originalSource, source);
+    }
+
+    private static CopyFrameDelegate BindCopyFrame()
+    {
+        var type = SussudioAssembly.Load().GetType("Sussudio.Services.Capture.MfSourceReaderVideoCapture", throwOnError: true)!;
+        var method = type.GetMethod(
+            "CopyYuvWithStride",
+            BindingFlags.Static | BindingFlags.NonPublic,
+            binder: null,
+            types: new[] { typeof(byte*), typeof(int), typeof(Span<byte>), typeof(int), typeof(int), typeof(bool) },
+            modifiers: null)
+            ?? throw new InvalidOperationException("MfSourceReaderVideoCapture.CopyYuvWithStride was not found.");
+        return method.CreateDelegate<CopyFrameDelegate>();
+    }
+
+    private static void InvokeCopy(
+        byte[] source, int sourceOffset, int stride, byte[] destination, int destinationOffset,
+        int destinationLength, bool isP010)
+    {
+        fixed (byte* sourceStart = source)
+        {
+            CopyFrame(sourceStart + sourceOffset, stride,
+                destination.AsSpan(destinationOffset, destinationLength), Width, Height, isP010);
+        }
+    }
+
+    private static byte[] CreatePitchedSource(byte[] packedFrame, int rowBytes, int stride)
+    {
+        var source = Enumerable.Repeat(SourceGuard, GuardBytes + stride * 6 + GuardBytes).ToArray();
+        for (var row = 0; row < 6; row++)
+        {
+            var pitchedRow = source.AsSpan(GuardBytes + row * stride, stride);
+            pitchedRow.Fill(SourcePadding);
+            packedFrame.AsSpan(row * rowBytes, rowBytes).CopyTo(pitchedRow);
+        }
+        return source;
+    }
+
+    private static byte[] ExpectedPackedFrame(bool isP010)
+        => isP010
+            ? new byte[]
+            {
+                // Four Y rows followed by two interleaved UV rows; every low six-bit value is nonzero.
+                0x01, 0x04, 0x02, 0x08, 0x03, 0x0C, 0x04, 0x10, 0x05, 0x14, 0x06, 0x18,
+                0x07, 0x24, 0x08, 0x28, 0x09, 0x2C, 0x0A, 0x30, 0x0B, 0x34, 0x0C, 0x38,
+                0x0D, 0x44, 0x0E, 0x48, 0x0F, 0x4C, 0x10, 0x50, 0x11, 0x54, 0x12, 0x58,
+                0x13, 0x64, 0x14, 0x68, 0x15, 0x6C, 0x16, 0x70, 0x17, 0x74, 0x18, 0x78,
+                0x19, 0x84, 0x1A, 0xC4, 0x1B, 0x88, 0x1C, 0xC8, 0x1D, 0x8C, 0x1E, 0xCC,
+                0x1F, 0x94, 0x20, 0xD4, 0x21, 0x98, 0x22, 0xD8, 0x23, 0x9C, 0x24, 0xDC
+            }
+            : new byte[]
+            {
+                0x01, 0x02, 0x03, 0x04, 0x05, 0x06,
+                0x11, 0x12, 0x13, 0x14, 0x15, 0x16,
+                0x21, 0x22, 0x23, 0x24, 0x25, 0x26,
+                0x31, 0x32, 0x33, 0x34, 0x35, 0x36,
+                0x81, 0xC1, 0x82, 0xC2, 0x83, 0xC3,
+                0x91, 0xD1, 0x92, 0xD2, 0x93, 0xD3
+            };
 }
 }

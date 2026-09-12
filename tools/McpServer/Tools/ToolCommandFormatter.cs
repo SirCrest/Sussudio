@@ -133,10 +133,12 @@ internal static class ToolCommandFormatter
 
     internal static string FormatCommandResponse(JsonElement response, AutomationCommandKind kind, string? detail = null)
     {
-        var status = AutomationSnapshotFormatter.IsSuccess(response) ? "OK" : "ERROR";
+        var isSuccess = AutomationSnapshotFormatter.IsSuccess(response);
+        var status = isSuccess ? "OK" : "ERROR";
         var message = AutomationSnapshotFormatter.Get(response, "Message", "No message.");
         var label = detail is null ? kind.ToString() : $"{kind}({detail})";
-        return $"[{status}] {label}: {message}";
+        var text = $"[{status}] {label}: {message}";
+        return isSuccess ? text : McpToolResultFactory.AppendErrorCode(response, text);
     }
 }
 
@@ -169,17 +171,16 @@ internal static class McpToolResultFactory
     internal static CallToolResult FromResponse(JsonElement response, string text)
     {
         var isError = !AutomationSnapshotFormatter.IsSuccess(response);
-        if (isError)
-        {
-            var errorCode = AutomationSnapshotFormatter.Get(response, "ErrorCode", string.Empty);
-            if (!string.IsNullOrWhiteSpace(errorCode) &&
-                !text.Contains(errorCode, StringComparison.OrdinalIgnoreCase))
-            {
-                text = $"{text}{Environment.NewLine}ErrorCode: {errorCode}";
-            }
-        }
+        return FromText(isError ? AppendErrorCode(response, text) : text, isError);
+    }
 
-        return FromText(text, isError);
+    internal static string AppendErrorCode(JsonElement response, string text)
+    {
+        var errorCode = AutomationSnapshotFormatter.Get(response, "ErrorCode", string.Empty);
+        return !string.IsNullOrWhiteSpace(errorCode) &&
+            !text.Contains(errorCode, StringComparison.OrdinalIgnoreCase)
+            ? $"{text}{Environment.NewLine}ErrorCode: {errorCode}"
+            : text;
     }
 
     internal static CallToolResult FromText(string text, bool isError = false)

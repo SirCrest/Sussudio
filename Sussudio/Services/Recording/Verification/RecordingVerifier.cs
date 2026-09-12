@@ -46,12 +46,12 @@ public sealed class RecordingVerifier : IRecordingVerifier
     {
         if (string.IsNullOrWhiteSpace(outputPath))
         {
-            return CreateEarlyFailure(outputPath, "No output file path is available for verification.", "missing-output-path");
+            return CreateEarlyFailure(outputPath, "No output file path is available for verification.", RecordingFailureCodes.VerificationMissingOutputPath);
         }
 
         if (!File.Exists(outputPath))
         {
-            return CreateEarlyFailure(outputPath, $"Output file does not exist: {outputPath}", "output-not-found");
+            return CreateEarlyFailure(outputPath, $"Output file does not exist: {outputPath}", RecordingFailureCodes.VerificationOutputNotFound);
         }
 
         long fileSize;
@@ -63,12 +63,12 @@ public sealed class RecordingVerifier : IRecordingVerifier
         {
             return CreateEarlyFailure(outputPath,
                 $"Output file length is unavailable ({ex.GetType().Name}: {ex.Message}): {outputPath}",
-                "output-stat-failed", fileExists: true);
+                RecordingFailureCodes.VerificationOutputStatFailed, fileExists: true);
         }
 
         if (fileSize <= 0)
         {
-            return CreateEarlyFailure(outputPath, $"Output file is empty: {outputPath}", "output-empty", fileExists: true, fileSizeBytes: fileSize);
+            return CreateEarlyFailure(outputPath, $"Output file is empty: {outputPath}", RecordingFailureCodes.VerificationOutputEmpty, fileExists: true, fileSizeBytes: fileSize);
         }
 
         var availability = await ProbeFfprobeAvailabilityAsync(cancellationToken).ConfigureAwait(false);
@@ -79,7 +79,7 @@ public sealed class RecordingVerifier : IRecordingVerifier
 
         if (!availability.Started || availability.TimedOut || availability.ExitCode != 0)
         {
-            return CreateEarlyFailure(outputPath, "Strict verification failed: ffprobe is not accessible.", "ffprobe-unavailable", fileExists: true, fileSizeBytes: fileSize);
+            return CreateEarlyFailure(outputPath, "Strict verification failed: ffprobe is not accessible.", RecordingFailureCodes.FfprobeUnavailable, fileExists: true, fileSizeBytes: fileSize);
         }
 
         var ffprobeArgs =
@@ -696,8 +696,8 @@ public sealed class RecordingVerifier : IRecordingVerifier
             FileExists = true,
             FileSizeBytes = fileSize,
             VerificationMode = "ffprobe",
-            PrimaryMismatchCode = "ffprobe-failed",
-            Mismatches = new[] { "ffprobe-failed" }
+            PrimaryMismatchCode = RecordingFailureCodes.FfprobeFailed,
+            Mismatches = new[] { RecordingFailureCodes.FfprobeFailed }
         };
 
     private readonly record struct CadenceMetrics(

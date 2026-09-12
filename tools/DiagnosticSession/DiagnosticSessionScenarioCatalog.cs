@@ -574,7 +574,7 @@ internal static class DiagnosticSessionScenarioStartup
         var prerollExportPath = Path.Combine(outputDirectory, "flashback-playback-preroll.mp4");
         var prerollExportResponse = await commandChannel.SendAsync(
                 "FlashbackExport",
-                new Dictionary<string, object?> { ["seconds"] = 1, ["outputPath"] = prerollExportPath },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Seconds] = 1, [AutomationPayloadKeys.OutputPath] = prerollExportPath },
                 AutomationPipeProtocol.GetDefaultResponseTimeout("FlashbackExport"))
             .ConfigureAwait(false);
         if (!IsSuccess(prerollExportResponse))
@@ -601,7 +601,7 @@ internal static class DiagnosticSessionScenarioStartup
         phaseState.PlaybackStartUnconfirmed = true;
         var playResponse = await commandChannel.SendAsync(
                 "FlashbackAction",
-                new Dictionary<string, object?> { ["action"] = "play", ["positionMs"] = playPositionMs },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "play", [AutomationPayloadKeys.PositionMs] = playPositionMs },
                 null)
             .ConfigureAwait(false);
         phaseState.PlaybackStartUnconfirmed = HasUnconfirmedCommandOutcome(playResponse);
@@ -683,7 +683,7 @@ internal static class DiagnosticSessionScenarioSetup
             phaseState.FlashbackEnableUnconfirmed = true;
             var response = await commandChannel.SendAsync(
                     AutomationCommandKind.SetFlashbackEnabled,
-                    new Dictionary<string, object?> { ["enabled"] = true },
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = true },
                     null)
                 .ConfigureAwait(false);
             phaseState.FlashbackEnableUnconfirmed = HasUnconfirmedCommandOutcome(response);
@@ -699,7 +699,7 @@ internal static class DiagnosticSessionScenarioSetup
             phaseState.FlashbackDisableUnconfirmed = true;
             var response = await commandChannel.SendAsync(
                     AutomationCommandKind.SetFlashbackEnabled,
-                    new Dictionary<string, object?> { ["enabled"] = false },
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = false },
                     null)
                 .ConfigureAwait(false);
             phaseState.FlashbackDisableUnconfirmed = HasUnconfirmedCommandOutcome(response);
@@ -727,7 +727,7 @@ internal static class DiagnosticSessionScenarioSetup
         phaseState.PreviewStartUnconfirmed = true;
         var response = await commandChannel.SendAsync(
                 AutomationCommandKind.SetPreviewEnabled,
-                new Dictionary<string, object?> { ["enabled"] = true },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = true },
                 null)
             .ConfigureAwait(false);
         phaseState.PreviewStartUnconfirmed = HasUnconfirmedCommandOutcome(response);
@@ -767,7 +767,7 @@ internal static class DiagnosticSessionScenarioSetup
         phaseState.RecordingStartUnconfirmed = true;
         var response = await commandChannel.SendAsync(
                 AutomationCommandKind.SetRecordingEnabled,
-                new Dictionary<string, object?> { ["enabled"] = true },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = true },
                 null)
             .ConfigureAwait(false);
         phaseState.RecordingStartUnconfirmed = HasUnconfirmedCommandOutcome(response);

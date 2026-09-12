@@ -25,13 +25,13 @@ public static class PerformanceTimelineTools
         cancellationToken.ThrowIfCancellationRequested();
         var payload = new Dictionary<string, object?>
         {
-            ["maxEntries"] = maxEntries
+            [AutomationPayloadKeys.MaxEntries] = maxEntries
         };
 
         var response = await pipeClient.SendCommandAsync(AutomationCommandKind.GetPerformanceTimeline, payload, cancellationToken: cancellationToken).ConfigureAwait(false);
         if (!AutomationSnapshotFormatter.IsSuccess(response))
         {
-            return McpToolResultFactory.FromResponse(response, GetMessage(response));
+            return McpToolResultFactory.FromResponse(response, McpToolResultFactory.GetMessage(response));
         }
 
         if (!response.TryGetProperty("Data", out var data) || data.ValueKind != JsonValueKind.Array)
@@ -389,11 +389,6 @@ public static class PerformanceTimelineTools
         builder.AppendLine($"Export Progress: {first.FlashbackExportPercent:F1}% -> {last.FlashbackExportPercent:F1}% segments={last.FlashbackExportSegmentsProcessed}/{last.FlashbackExportTotalSegments}");
         builder.AppendLine($"Export Range:    in={last.FlashbackExportInPointMs}ms out={FormatExportOutPoint(last.FlashbackExportOutPointMs)}");
         builder.AppendLine($"Export Output:   {FormatBytes(first.FlashbackExportOutputBytes)} -> {FormatBytes(last.FlashbackExportOutputBytes)} throughput={FormatBytesPerSecond(last.FlashbackExportThroughputBytesPerSec)} elapsed={last.FlashbackExportElapsedMs}ms lastProgressAge={last.FlashbackExportLastProgressAgeMs}ms");
-    }
-
-    private static string GetMessage(JsonElement response)
-    {
-        return AutomationSnapshotFormatter.Get(response, "Message", "Command failed.");
     }
 
     private static string FormatOptional(string value)

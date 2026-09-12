@@ -20,6 +20,16 @@ namespace Sussudio.Tests
             => global::Program.McpCancellation_CancelingResponseWaitClosesThePipe(typedCommand);
 
         [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public Task CancelingBlockedRequestWriteClosesThePipe(bool typedCommand)
+            => global::Program.McpCancellation_CancelingBlockedRequestWriteClosesThePipe(typedCommand);
+
+        [Fact]
+        public Task PipeRequestPreservesUtf8AndNewline()
+            => global::Program.McpCancellation_PipeRequestPreservesUtf8AndNewline();
+
+        [Theory]
         [InlineData("ExecuteBatchAsync")]
         [InlineData("ExecuteBatchResultAsync")]
         public Task CancelingBatchClosesFirstRequestAndDoesNotSendSecond(string methodName)
@@ -75,6 +85,70 @@ static partial class Program
 
         Assert.Equal(cancellation.Token, error.CancellationToken);
         Assert.True(command.IsCanceled);
+        await AssertMcpCancellationPipeDisconnectedAsync(reader, deadline.Token).ConfigureAwait(false);
+    }
+
+    internal static async Task McpCancellation_CancelingBlockedRequestWriteClosesThePipe(bool typedCommand)
+    {
+        var pipeName = NewMcpToolPipeName("cancel-write");
+        using var server = new NamedPipeServerStream(
+            pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous,
+            inBufferSize: 4096, outBufferSize: 4096);
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        using var cancellation = new CancellationTokenSource();
+        var accept = server.WaitForConnectionAsync(deadline.Token);
+        var command = StartMcpCancellationPipeCommand(
+            CreateMcpPipeClient(pipeName), typedCommand, cancellation.Token,
+            new Dictionary<string, object?> { ["padding"] = new string('x', 512 * 1024) });
+
+        await accept.ConfigureAwait(false);
+        // Read only the first byte so the request cannot fit in the remaining pipe buffer.
+        var firstByte = new byte[1];
+        Assert.Equal(1, await server.ReadAsync(firstByte, deadline.Token).ConfigureAwait(false));
+        Assert.Equal((byte)'{', firstByte[0]);
+        cancellation.Cancel();
+
+        var error = await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => command.WaitAsync(TimeSpan.FromSeconds(5))).ConfigureAwait(false);
+        Assert.Equal(cancellation.Token, error.CancellationToken);
+        Assert.True(command.IsCanceled);
+
+        // Cancellation must finish before the server resumes draining the partial request.
+        try
+        {
+            await server.CopyToAsync(Stream.Null, deadline.Token)
+                .WaitAsync(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
+        }
+        catch (IOException)
+        {
+            // Windows can report the canceled connection as a broken pipe.
+        }
+    }
+
+    internal static async Task McpCancellation_PipeRequestPreservesUtf8AndNewline()
+    {
+        var pipeName = NewMcpToolPipeName("utf8-request");
+        using var server = CreateMcpCancellationTestPipe(pipeName);
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var accept = server.WaitForConnectionAsync(deadline.Token);
+        var sendRequest = typeof(Sussudio.Tools.AutomationPipeProtocol).Assembly
+            .GetType("Sussudio.Tools.AutomationPipeClient", throwOnError: true)!
+            .GetMethod("SendRequestAsync", BindingFlags.Static | BindingFlags.NonPublic,
+                new[] { typeof(string), typeof(string), typeof(int), typeof(int), typeof(CancellationToken) })!;
+        const string requestJson = "{\"text\":\"caf\u00E9 \U0001F680\"}";
+        var command = (Task<string>)sendRequest.Invoke(null,
+            new object?[] { pipeName, requestJson, 5_000, 5_000, deadline.Token })!;
+
+        await accept.ConfigureAwait(false);
+        var expectedBytes = Convert.FromHexString("7B2274657874223A22636166C3A920F09F9A80227D")
+            .Concat(Environment.NewLine.Select(character => (byte)character)).ToArray();
+        var actualBytes = new byte[expectedBytes.Length];
+        await server.ReadExactlyAsync(actualBytes, deadline.Token).ConfigureAwait(false);
+        Assert.Equal(expectedBytes, actualBytes);
+        await server.WriteAsync(new byte[] { (byte)'o', (byte)'k', (byte)'\n' }, deadline.Token)
+            .ConfigureAwait(false);
+        Assert.Equal("ok", await command.WaitAsync(TimeSpan.FromSeconds(5)).ConfigureAwait(false));
+        using var reader = new StreamReader(server, leaveOpen: true);
         await AssertMcpCancellationPipeDisconnectedAsync(reader, deadline.Token).ConfigureAwait(false);
     }
 
@@ -202,14 +276,18 @@ static partial class Program
     private static NamedPipeServerStream CreateMcpCancellationTestPipe(string pipeName)
         => new(pipeName, PipeDirection.InOut, 2, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
 
-    private static Task StartMcpCancellationPipeCommand(object pipeClient, bool typedCommand, CancellationToken cancellationToken)
+    private static Task StartMcpCancellationPipeCommand(
+        object pipeClient,
+        bool typedCommand,
+        CancellationToken cancellationToken,
+        Dictionary<string, object?>? payload = null)
     {
         var method = pipeClient.GetType().GetMethods(BindingFlags.Instance | BindingFlags.Public)
             .Single(candidate => candidate.Name == "SendCommandAsync" && candidate.GetParameters().Length == 4 &&
                 (candidate.GetParameters()[0].ParameterType == typeof(string)) != typedCommand);
         var commandType = method.GetParameters()[0].ParameterType;
         var command = typedCommand ? Enum.Parse(commandType, "GetSnapshot") : "GetSnapshot";
-        return (Task)method.Invoke(pipeClient, new object?[] { command, null, 30_000, cancellationToken })!;
+        return (Task)method.Invoke(pipeClient, new object?[] { command, payload, 30_000, cancellationToken })!;
     }
 
     // Proving a connection never arrives is a negative/absence assertion: there is

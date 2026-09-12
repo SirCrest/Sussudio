@@ -26,8 +26,8 @@ internal static class DiagnosticSessionFlashbackExportScenarios
 
         var exportPathA = ResolveFlashbackExportOutputPath(outputDirectory, "flashback-concurrent-a.mp4");
         var exportPathB = ResolveFlashbackExportOutputPath(outputDirectory, "flashback-concurrent-b.mp4");
-        var exportPayloadA = new Dictionary<string, object?> { ["seconds"] = 1, ["outputPath"] = exportPathA };
-        var exportPayloadB = new Dictionary<string, object?> { ["seconds"] = 1, ["outputPath"] = exportPathB };
+        var exportPayloadA = new Dictionary<string, object?> { [AutomationPayloadKeys.Seconds] = 1, [AutomationPayloadKeys.OutputPath] = exportPathA };
+        var exportPayloadB = new Dictionary<string, object?> { [AutomationPayloadKeys.Seconds] = 1, [AutomationPayloadKeys.OutputPath] = exportPathB };
 
         var exportTimeoutMs = AutomationPipeProtocol.GetDefaultResponseTimeout("FlashbackExport");
         var exportTaskA = sendCommandAsync("FlashbackExport", exportPayloadA, exportTimeoutMs);
@@ -79,7 +79,7 @@ internal static class DiagnosticSessionFlashbackExportScenarios
         var exportPath = Path.Combine(outputDirectory, "flashback-rotated-export.mp4");
         var exportResponse = await sendCommandAsync(
                 "FlashbackExport",
-                new Dictionary<string, object?> { ["seconds"] = 12, ["outputPath"] = exportPath },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Seconds] = 12, [AutomationPayloadKeys.OutputPath] = exportPath },
                 300_000)
             .ConfigureAwait(false);
         actions.Add("flashback rotated export requested via live-edge force rotation");
@@ -286,14 +286,14 @@ internal static class DiagnosticSessionFlashbackExportScenarios
         var baselineSnapshotResponse = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
         TryGetSnapshot(baselineSnapshotResponse, out var baselineSnapshot);
 
-        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "pause" }, null)
+        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "pause" }, null)
             .ConfigureAwait(false);
         await sendCommandAsync(
                 "FlashbackAction",
-                new Dictionary<string, object?> { ["action"] = "seek", ["positionMs"] = 1_000 },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "seek", [AutomationPayloadKeys.PositionMs] = 1_000 },
                 null)
             .ConfigureAwait(false);
-        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "play" }, null)
+        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "play" }, null)
             .ConfigureAwait(false);
         actions.Add("flashback export playback play requested");
 
@@ -306,7 +306,7 @@ internal static class DiagnosticSessionFlashbackExportScenarios
         var exportPath = Path.Combine(outputDirectory, "flashback-export-playback.mp4");
         var exportResponse = await sendCommandAsync(
                 "FlashbackExport",
-                new Dictionary<string, object?> { ["seconds"] = 1, ["outputPath"] = exportPath },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Seconds] = 1, [AutomationPayloadKeys.OutputPath] = exportPath },
                 60_000)
             .ConfigureAwait(false);
         actions.Add("flashback export during playback requested");
@@ -336,7 +336,7 @@ internal static class DiagnosticSessionFlashbackExportScenarios
                 sendCommandAsync)
             .ConfigureAwait(false);
 
-        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "go-live" }, null)
+        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "go-live" }, null)
             .ConfigureAwait(false);
         actions.Add("flashback export playback go-live requested");
 
@@ -469,9 +469,9 @@ internal static class DiagnosticSessionFlashbackExportScenarios
                 "FlashbackExport",
                 new Dictionary<string, object?>
                 {
-                    ["seconds"] = 1,
-                    ["outputPath"] = exportPath,
-                    ["useSelectionRange"] = true
+                    [AutomationPayloadKeys.Seconds] = 1,
+                    [AutomationPayloadKeys.OutputPath] = exportPath,
+                    [AutomationPayloadKeys.UseSelectionRange] = true
                 },
                 60_000)
             ;
@@ -584,9 +584,9 @@ internal static class DiagnosticSessionFlashbackExportScenarios
             return null;
         }
 
-        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "clear-in-out-points" }, null)
+        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "clear-in-out-points" }, null)
             .ConfigureAwait(false);
-        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "pause" }, null)
+        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "pause" }, null)
             .ConfigureAwait(false);
         await MarkFlashbackSelectionPointAsync(
                 rangeStartMs,
@@ -624,7 +624,7 @@ internal static class DiagnosticSessionFlashbackExportScenarios
     {
         await sendCommandAsync(
                 "FlashbackAction",
-                new Dictionary<string, object?> { ["action"] = "seek", ["positionMs"] = positionMs },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "seek", [AutomationPayloadKeys.PositionMs] = positionMs },
                 null)
             .ConfigureAwait(false);
         if (!await WaitForFlashbackPlaybackPositionAsync(sendCommandAsync, positionMs, TimeSpan.FromSeconds(5), cancellationToken).ConfigureAwait(false))
@@ -632,7 +632,7 @@ internal static class DiagnosticSessionFlashbackExportScenarios
             warnings.Add($"{scenarioLabel}: playback did not reach {label}-point seek before marking range");
         }
 
-        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = action }, null)
+        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = action }, null)
             .ConfigureAwait(false);
         actions.Add($"{scenarioLabel} {label} point set positionMs={positionMs}");
     }
@@ -717,14 +717,14 @@ internal static class DiagnosticSessionFlashbackExportScenarios
         var exportPath = ResolveFlashbackExportOutputPath(outputDirectory, "flashback-disable-during-export.mp4");
         var exportTask = sendCommandAsync(
             "FlashbackExport",
-            new Dictionary<string, object?> { ["seconds"] = 3, ["outputPath"] = exportPath },
+            new Dictionary<string, object?> { [AutomationPayloadKeys.Seconds] = 3, [AutomationPayloadKeys.OutputPath] = exportPath },
             AutomationPipeProtocol.GetDefaultResponseTimeout("FlashbackExport"));
 
         await Task.Delay(100, cancellationToken).ConfigureAwait(false);
         var disableTask = SendCommandWithConnectRetryAsync(
             sendCommandAsync,
             "SetFlashbackEnabled",
-            new Dictionary<string, object?> { ["enabled"] = false },
+            new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = false },
             305_000,
             TimeSpan.FromSeconds(30),
             cancellationToken);
@@ -762,7 +762,7 @@ internal static class DiagnosticSessionFlashbackExportScenarios
         var enableResponse = await SendCommandWithConnectRetryAsync(
                 sendCommandAsync,
                 "SetFlashbackEnabled",
-                new Dictionary<string, object?> { ["enabled"] = true },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = true },
                 305_000,
                 TimeSpan.FromSeconds(30),
                 cancellationToken)
@@ -903,7 +903,7 @@ internal static class DiagnosticSessionFlashbackExportScenarios
         var exportPath = Path.Combine(outputDirectory, "flashback-rejected-export.mp4");
         var exportResponse = await sendCommandAsync(
                 "FlashbackExport",
-                new Dictionary<string, object?> { ["seconds"] = 1, ["outputPath"] = exportPath },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Seconds] = 1, [AutomationPayloadKeys.OutputPath] = exportPath },
                 60_000,
                 true)
             .ConfigureAwait(false);
@@ -969,7 +969,7 @@ internal static class DiagnosticSessionFlashbackExportScenarios
         var exportPath = Path.Combine(outputDirectory, "flashback-recording-rejected-export.mp4");
         var exportResponse = await sendCommandAsync(
                 "FlashbackExport",
-                new Dictionary<string, object?> { ["seconds"] = 1, ["outputPath"] = exportPath },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Seconds] = 1, [AutomationPayloadKeys.OutputPath] = exportPath },
                 60_000,
                 true)
             .ConfigureAwait(false);

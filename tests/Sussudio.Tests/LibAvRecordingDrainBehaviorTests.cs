@@ -2,6 +2,7 @@ using System.Buffers;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading.Channels;
+using FFmpeg.AutoGen;
 using Xunit;
 
 namespace Sussudio.Tests;
@@ -155,8 +156,7 @@ internal static class LibAvRecordingDrainBehaviorTests
     // P010/HDR encoding in this codebase is coupled to NVENC everywhere it is
     // configured (LibAvRecordingSink.CreateOptions), there is no software P010
     // encoder path to fall back to. This requires an NVENC-capable GPU at test
-    // time; unlike the SDR test's "libx264" (always-available software encoder),
-    // this is an environmental dependency the parent should confirm.
+    // time; the xUnit adapter independently probes this exact codec/input format.
     internal static async Task VerifyP010EncodeRoundTripAsync()
     {
         const int totalFrames = 30;
@@ -276,6 +276,244 @@ internal static class LibAvRecordingDrainBehaviorTests
             if (owner != null) await owner.WaitAsync(TimeSpan.FromSeconds(15));
             await ((IAsyncDisposable)sink).DisposeAsync();
             directory.Delete(recursive: true);
+        }
+    }
+
+    internal static Task VerifyCaptureServiceP010LifecycleAsync()
+        => RecordingNativeTestChild.VerifyLifecycleAsync("p010");
+
+    internal static Task VerifyCaptureServiceP010MismatchRollbackAsync()
+        => RecordingNativeTestChild.VerifyLifecycleAsync("mismatch");
+
+    internal static async Task RunCaptureServiceChildAsync(string scenario, Assembly assembly, string directory)
+    {
+        await using var fixture = new CaptureServiceFixture(assembly, directory, sourceIsP010: scenario == "p010");
+        try
+        {
+            if (scenario == "p010") await VerifyCaptureServiceP010LifecycleCoreAsync(fixture);
+            else if (scenario == "mismatch") await VerifyCaptureServiceP010MismatchRollbackCoreAsync(fixture);
+            else throw new ArgumentException("Unknown recording lifecycle scenario.", nameof(scenario));
+        }
+        catch (Exception error)
+        {
+            // Preserve the assertion if cleanup also fails or the parent must terminate cleanup.
+            Console.Error.WriteLine(error);
+            throw;
+        }
+    }
+
+    private static async Task VerifyCaptureServiceP010LifecycleCoreAsync(CaptureServiceFixture fixture)
+    {
+        const int totalFrames = 30;
+        await fixture.InitializeAsync();
+        Assert.Equal("Ready", Read<object>(fixture.Service, "SessionState").ToString());
+        var frames = Channel.CreateUnbounded<ulong>(new UnboundedChannelOptions { SingleReader = true, SingleWriter = true });
+        EventHandler<ulong> captured = (_, count) => frames.Writer.TryWrite(count);
+        fixture.Service.GetType().GetEvent("FrameCaptured")!.AddEventHandler(fixture.Service, captured);
+        await fixture.StartAsync();
+        Assert.True(Read<bool>(fixture.Service, "IsRecording"));
+        Assert.Equal("Recording", Read<object>(fixture.Service, "SessionState").ToString());
+        Assert.True(Read<bool>(fixture.RuntimeSnapshot(), "IsRecording"));
+        Assert.True(Read<bool>(fixture.HealthSnapshot(), "IsRecording"));
+        var context = Read<object>(GetField(fixture.Service, "_recordingBackend")!, "Context");
+        Assert.True(Read<bool>(context, "HdrPipelineActive"));
+        Assert.Equal("p010le", Read<string>(context, "VideoInputPixelFormat"));
+
+        var bytes = new byte[CaptureServiceFixture.Width * CaptureServiceFixture.Height * 3];
+        FillP010Fixture(bytes, bytes.Length, CaptureServiceFixture.Width * CaptureServiceFixture.Height);
+        for (var frame = 0; frame < totalFrames; frame++) fixture.DeliverFrame(bytes);
+        using (var encodedDeadline = new CancellationTokenSource(TimeSpan.FromSeconds(15)))
+        {
+            ulong encoded;
+            do { encoded = await frames.Reader.ReadAsync(encodedDeadline.Token); }
+            while (encoded < totalFrames);
+            Assert.Equal((ulong)totalFrames, encoded);
+        }
+        Assert.Equal(totalFrames, Read<long>(fixture.Source, "RecordingFramesDelivered"));
+        Assert.Equal(totalFrames, Read<long>(fixture.Source, "VideoFramesWrittenToSink"));
+        Assert.Equal(0, Read<long>(fixture.Source, "RecordingFramesRejected"));
+        Assert.Equal(0, Read<long>(fixture.Source, "RecordingQueueRejectedFrames"));
+
+        await fixture.StopAsync();
+        var runtime = fixture.RuntimeSnapshot();
+        Assert.False(Read<bool>(fixture.Service, "IsRecording"));
+        Assert.Equal("Ready", Read<object>(fixture.Service, "SessionState").ToString());
+        Assert.True(Read<bool>(runtime, "RecordingFinalizationVerificationCompleted"));
+        Assert.False(Read<bool>(runtime, "RecordingFinalizationCleanupPending"));
+        Assert.Equal("Saved", Read<string>(runtime, "RecordingFinalizeOutcome"));
+        Assert.Equal(new[] { "video" }, Read<IReadOnlyList<string>>(runtime, "RecordingRequestedTracks"));
+        Assert.Equal(new[] { "video" }, Read<IReadOnlyList<string>>(runtime, "RecordingObservedTracks"));
+        Assert.True(Read<bool>(runtime, "RecordingIntegrityComplete"));
+        foreach (var name in new[] { "SourceFrames", "AcceptedFrames", "SubmittedFrames", "EncodedFrames" })
+            Assert.Equal(totalFrames, Read<long>(runtime, "RecordingIntegrity" + name));
+        foreach (var name in new[] { "PipelineDroppedFrames", "QueueDroppedFrames", "EncoderDroppedFrames", "SequenceGaps" })
+            Assert.Equal(0, Read<long>(runtime, "RecordingIntegrity" + name));
+
+        var health = fixture.HealthSnapshot();
+        Assert.False(Read<bool>(health, "IsRecording"));
+        Assert.Equal("Ready", Read<object>(health, "SessionState").ToString());
+        Assert.False(Read<bool>(health, "RecordingEncodingFailed"));
+        Assert.Equal(0, Read<int>(health, "FfmpegVideoQueueDepth"));
+        Assert.Equal(0, Read<int>(health, "FfmpegAudioQueueDepth"));
+        var outputPath = Read<string>(runtime, "LastOutputPath");
+        Assert.Equal(Read<string>(context, "FinalOutputPath"), outputPath);
+        using (var reopened = File.Open(outputPath, FileMode.Open, FileAccess.Read, FileShare.None))
+            Assert.True(reopened.Length > 0);
+        var verifier = Activator.CreateInstance(fixture.TypeOf("Sussudio.Services.Recording.InProcessRecordingStructureVerifier"), nonPublic: true)!;
+        var verification = verifier.GetType().GetMethod("Verify")!.Invoke(verifier, new object?[] { context, null })!;
+        Assert.True(Read<bool>(verification, "Succeeded"), Read<string>(verification, "Detail"));
+        AssertTenBitHevcOutput(outputPath);
+        Assert.Empty(Directory.EnumerateFiles(fixture.RecoveryDirectory));
+
+        await fixture.StopAsync();
+        Assert.Equal(outputPath, Read<string>(fixture.RuntimeSnapshot(), "LastOutputPath"));
+        Assert.False(Read<bool>(fixture.Service, "IsRecording"));
+        Assert.Equal(0, fixture.ProcessCalls);
+    }
+
+    private static async Task VerifyCaptureServiceP010MismatchRollbackCoreAsync(CaptureServiceFixture fixture)
+    {
+        await fixture.InitializeAsync();
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(fixture.StartAsync);
+        Assert.Equal("Recording requires P010, but the active source-reader session negotiated NV12.", error.Message);
+        Assert.False(Read<bool>(fixture.Service, "IsRecording"));
+        Assert.Equal("Faulted", Read<object>(fixture.Service, "SessionState").ToString());
+        var backend = GetField(fixture.Service, "_recordingBackend")!;
+        Assert.False(Read<bool>(backend, "HasActiveBackend"));
+        Assert.Null(Read<object?>(backend, "Context"));
+        Assert.Null(Read<object?>(backend, "PendingLibAvDrainTask"));
+        Assert.False((bool)GetField(fixture.Source, "_recordingActive")!);
+        Assert.Null(GetField(fixture.Source, "_recordingEncoder"));
+        Assert.Equal(0, (int)GetField(fixture.Service, "_recordingAudioStartInProgress")!);
+        Assert.Empty(Directory.EnumerateFileSystemEntries(fixture.OutputDirectory));
+        Assert.Equal(0, fixture.ProcessCalls);
+
+        await fixture.CleanupAsync();
+        Assert.Null(Read<object?>(GetField(fixture.Service, "_videoPipeline")!, "Capture"));
+        await fixture.InitializeAsync();
+        Assert.Equal("Ready", Read<object>(fixture.Service, "SessionState").ToString());
+        Assert.False(Read<bool>(fixture.Service, "IsRecording"));
+        Assert.Equal(0, fixture.ProcessCalls);
+    }
+
+    private static unsafe void AssertTenBitHevcOutput(string outputPath)
+    {
+        AVFormatContext* input = null;
+        try
+        {
+            Assert.True(ffmpeg.avformat_open_input(&input, outputPath, null, null) >= 0);
+            Assert.True(ffmpeg.avformat_find_stream_info(input, null) >= 0);
+            var video = ffmpeg.av_find_best_stream(input, AVMediaType.AVMEDIA_TYPE_VIDEO, -1, -1, null, 0);
+            Assert.True(video >= 0);
+            var parameters = input->streams[video]->codecpar;
+            Assert.Equal(AVCodecID.AV_CODEC_ID_HEVC, parameters->codec_id);
+            // P010 is the input memory layout; decoded HEVC describes the stored bit depth.
+            var descriptor = ffmpeg.av_pix_fmt_desc_get((AVPixelFormat)parameters->format);
+            Assert.True(descriptor != null);
+            Assert.Equal(3, descriptor->nb_components);
+            for (var component = 0; component < 3; component++)
+                Assert.Equal(10, descriptor->comp[(uint)component].depth);
+            Assert.Equal(1, descriptor->log2_chroma_w);
+            Assert.Equal(1, descriptor->log2_chroma_h);
+        }
+        finally
+        {
+            if (input != null) ffmpeg.avformat_close_input(&input);
+        }
+    }
+
+    // Only the hardware source boundary is synthetic. Recording state, queues,
+    // backend attachment, rollback, finalization, and resource disposal are real.
+    private sealed class CaptureServiceFixture : IAsyncDisposable
+    {
+        internal const int Width = 256;
+        internal const int Height = 256;
+        private readonly Assembly _assembly;
+        private readonly object _settings;
+        private readonly object _device;
+        private readonly BoundaryProxy _process;
+        private readonly FrameIngress _ingress;
+        private readonly string _fixtureDirectory;
+        internal object Service { get; }
+        internal object Source { get; }
+        internal string OutputDirectory { get; }
+        internal string RecoveryDirectory => Path.Combine(_fixtureDirectory, "recovery");
+        internal int ProcessCalls => Volatile.Read(ref _process.Calls);
+
+        internal CaptureServiceFixture(Assembly assembly, string directory, bool sourceIsP010)
+        {
+            _assembly = assembly;
+            _fixtureDirectory = directory;
+            Assert.Equal(RecoveryDirectory, Environment.GetEnvironmentVariable("SUSSUDIO_RECOVERY_DIRECTORY"));
+            var process = DispatchProxy.Create(TypeOf("Sussudio.Services.Runtime.IProcessSupervisor"), typeof(BoundaryProxy));
+            _process = (BoundaryProxy)process;
+            var telemetry = DispatchProxy.Create(TypeOf("Sussudio.Services.Contracts.ISourceSignalTelemetryProvider"), typeof(BoundaryProxy));
+            ((BoundaryProxy)telemetry).Response = TypeOf("Sussudio.Models.SourceSignalTelemetrySnapshot")
+                .GetMethod("CreateUnavailable")!.Invoke(null, new object?[] { "Synthetic recording fixture", null });
+            Service = Activator.CreateInstance(TypeOf("Sussudio.Services.Capture.CaptureService"), PrivateInstance,
+                binder: null, new object?[] { process, telemetry, null }, culture: null)!;
+            Source = Activator.CreateInstance(TypeOf("Sussudio.Services.Capture.UnifiedVideoCapture"), nonPublic: true)!;
+            SetField(Source, "_width", Width);
+            SetField(Source, "_height", Height);
+            SetField(Source, "_fps", 30d);
+            SetField(Source, "_isP010", sourceIsP010);
+            SetField(Source, "_nativeInputFormat", sourceIsP010 ? "P010" : "NV12");
+            SetField(Source, "_negotiatedFormat", sourceIsP010 ? "P010 256x256@30" : "NV12 256x256@30");
+            SetField(Source, "_capture", Activator.CreateInstance(TypeOf("Sussudio.Services.Capture.MfSourceReaderVideoCapture"), nonPublic: true)!);
+            var video = GetField(Service, "_videoPipeline")!;
+            video.GetType().GetMethod("InstallCapture")!.Invoke(video, new[] { Source });
+            _ingress = Source.GetType().GetMethod("OnFrameArrived", PrivateInstance)!.CreateDelegate<FrameIngress>(Source);
+            _device = Activator.CreateInstance(TypeOf("Sussudio.Models.CaptureDevice"))!;
+            Set(_device, "Id", "synthetic-recording-source");
+            Set(_device, "Name", "Synthetic recording source");
+            _settings = Activator.CreateInstance(TypeOf("Sussudio.Models.CaptureSettings"))!;
+            Set(_settings, "Width", (uint)Width);
+            Set(_settings, "Height", (uint)Height);
+            Set(_settings, "FrameRate", 30d);
+            Set(_settings, "RequestedPixelFormat", "P010");
+            Set(_settings, "Format", Enum.Parse(TypeOf("Sussudio.Models.RecordingFormat"), "HevcMp4"));
+            Set(_settings, "Quality", Enum.Parse(TypeOf("Sussudio.Models.VideoQuality"), "Custom"));
+            Set(_settings, "CustomBitrateMbps", 2d);
+            Set(_settings, "HdrEnabled", true);
+            Set(_settings, "AudioEnabled", false);
+            Set(_settings, "MicrophoneEnabled", false);
+            OutputDirectory = Directory.CreateDirectory(Path.Combine(_fixtureDirectory, "output")).FullName;
+            Set(_settings, "OutputPath", OutputDirectory);
+        }
+
+        internal Type TypeOf(string name) => _assembly.GetType(name, throwOnError: true)!;
+        internal Task InitializeAsync() => TransitionAsync("InitializeAsync", _device, _settings, CancellationToken.None);
+        internal Task StartAsync() => TransitionAsync("StartRecordingAsync", _settings, CancellationToken.None);
+        internal Task StopAsync() => TransitionAsync("StopRecordingAsync", CancellationToken.None);
+        internal Task CleanupAsync() => TransitionAsync("CleanupAsync", CancellationToken.None);
+        internal object RuntimeSnapshot() => Service.GetType().GetMethod("GetRuntimeSnapshot")!.Invoke(Service, null)!;
+        internal object HealthSnapshot() => Service.GetType().GetMethod("GetHealthSnapshot")!.Invoke(Service, null)!;
+        internal void DeliverFrame(byte[] frame) => _ingress(frame, Width, Height, Environment.TickCount64);
+
+        private Task TransitionAsync(string name, params object[] arguments)
+            => (Task)Service.GetType().GetMethod(name, arguments.Select(argument => argument.GetType()).ToArray())!
+                .Invoke(Service, arguments)!;
+
+        public async ValueTask DisposeAsync()
+        {
+            // Native owners remain in this child for their entire lifetime. The parent
+            // bounds a stalled disposal by terminating the child before deleting files.
+            await ((IAsyncDisposable)Service).DisposeAsync();
+            Assert.Equal(0, ProcessCalls);
+        }
+
+        private delegate void FrameIngress(ReadOnlySpan<byte> frame, int width, int height, long arrivalTick);
+    }
+
+    public class BoundaryProxy : DispatchProxy
+    {
+        public object? Response;
+        public int Calls;
+        protected override object Invoke(MethodInfo? targetMethod, object?[]? args)
+        {
+            Interlocked.Increment(ref Calls);
+            var response = Response ?? throw new InvalidOperationException("Synthetic recording fixture must never launch a process.");
+            return typeof(Task).GetMethod(nameof(Task.FromResult))!.MakeGenericMethod(response.GetType()).Invoke(null, new[] { response })!;
         }
     }
 

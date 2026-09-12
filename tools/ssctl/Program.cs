@@ -64,7 +64,7 @@ internal static class Program
                 throw new UsageException("Missing command.");
             }
 
-            var transport = new PipeTransport(options.PipeName, options.ResponseTimeoutMs);
+            var transport = new PipeTransport(options.PipeName, options.ResponseTimeoutMs, options.AuthToken);
             return await CommandHandlers.ExecuteAsync(
                 transport,
                 options.Arguments,
@@ -113,6 +113,7 @@ internal static class Program
         public bool ShowHelp { get; private set; }
         public string PipeName { get; private set; } = AutomationPipeProtocol.DefaultPipeName;
         public int? ResponseTimeoutMs { get; private set; }
+        public string? AuthToken { get; private set; }
         public IReadOnlyList<string> Arguments { get; private set; } = Array.Empty<string>();
 
         public static CliOptions Parse(string[] args)
@@ -141,6 +142,10 @@ internal static class Program
                         continue;
                     case "--timeout":
                         options.ResponseTimeoutMs = ParsePositiveInt(NextValue(args, ref i, arg), arg);
+                        continue;
+                    case "--token":
+                    case "-t":
+                        options.AuthToken = NextValue(args, ref i, arg);
                         continue;
                     default:
                         remaining.AddRange(args[i..]);
@@ -207,7 +212,7 @@ internal static class SsctlHelpWriter
     {
         writer.WriteLine("ssctl");
         writer.WriteLine("Usage:");
-        writer.WriteLine("  ssctl [--json] [--pipe NAME] [--timeout MS] <command>");
+        writer.WriteLine("  ssctl [--json] [--pipe NAME] [--timeout MS] [--token TOKEN] <command>");
         writer.WriteLine();
     }
 
@@ -327,6 +332,7 @@ internal static class SsctlHelpWriter
         writer.WriteLine("  --json            Print raw JSON responses where supported");
         writer.WriteLine("  --pipe NAME       Named pipe (default: SussudioAutomation)");
         writer.WriteLine("  --timeout MS      Response timeout override for pipe calls");
+        writer.WriteLine("  --token, -t TOKEN Auth token override (default: SUSSUDIO_AUTOMATION_TOKEN)");
         writer.WriteLine("  --verbose         On error, print full stack trace + InnerException chain to stderr");
         writer.WriteLine("  --help            Show this help");
     }

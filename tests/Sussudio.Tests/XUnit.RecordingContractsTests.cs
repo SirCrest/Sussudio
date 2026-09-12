@@ -418,6 +418,26 @@ public sealed class CoreRuntimeRecordingContractsTests
         => (string)GetPropertyValue(instance, name)!;
 }
 
+public sealed class RecordingLifecycleBehaviorTests
+{
+    public RecordingLifecycleBehaviorTests()
+    {
+        global::Program.EnsureTargetAssemblyLoadedForXUnit();
+    }
+
+    [HevcP010Fact]
+    [Trait("Hardware", "NVENC")]
+    public Task CaptureServiceRecordsAndFinalizesP010()
+    {
+        HevcP010Capability.RequireAvailable();
+        return LibAvRecordingDrainBehaviorTests.VerifyCaptureServiceP010LifecycleAsync();
+    }
+
+    [Fact]
+    public Task CaptureServiceRejectsP010NegotiationMismatchAndRollsBack()
+        => LibAvRecordingDrainBehaviorTests.VerifyCaptureServiceP010MismatchRollbackAsync();
+}
+
 public sealed class RecordingModelContractsTests
 {
     public RecordingModelContractsTests()
@@ -429,9 +449,13 @@ public sealed class RecordingModelContractsTests
     public Task LibAvRecordingDrainLoopInterleavesAudioWithBoundedVideoBatches()
         => global::Program.LibAvRecordingSink_NormalDrainLoopInterleavesAudioWithBoundedVideoBatches();
 
-    [Fact]
+    [HevcP010Fact]
+    [Trait("Hardware", "NVENC")]
     public Task LibAvRecordingP010EncodeRoundTrip()
-        => global::Program.LibAvRecordingSink_P010EncodeRoundTrip();
+    {
+        HevcP010Capability.RequireAvailable();
+        return global::Program.LibAvRecordingSink_P010EncodeRoundTrip();
+    }
 
     [Fact]
     public Task LibAvRecordingEncodingLoopAndPacketDrainsLiveWithSinkRoot()
@@ -775,12 +799,6 @@ public class RecordingArtifactManagerTests
         => value is ICollection collection
             ? collection.Count
             : throw new InvalidOperationException("Expected collection value.");
-
-    private static void AssertContains(string actual, string expectedSubstring)
-        => Assert.Contains(expectedSubstring, actual, StringComparison.Ordinal);
-
-    private static void AssertEqual<T>(T expected, T actual, string _)
-        => Assert.Equal(expected, actual);
 }
 
 // Representative xUnit slice moved out of the shared Program helper namespace.
