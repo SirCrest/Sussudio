@@ -208,7 +208,7 @@ public sealed class FlashbackSinkHardeningTests
         SetProperty(context, "MicrophoneEnabled", false);
 
         var startTask = (Task)sinkType.GetMethod("StartAsync")!.Invoke(
-            sink, new object?[] { context, CancellationToken.None, TimeSpan.Zero })!;
+            sink, new object?[] { context, TimeSpan.Zero, CancellationToken.None })!;
         startTask.GetAwaiter().GetResult();
 
         return (sink, sinkType);

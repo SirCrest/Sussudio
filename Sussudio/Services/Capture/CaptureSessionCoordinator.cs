@@ -376,9 +376,9 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
         TimeSpan? outPoint,
         string outputPath,
         IProgress<ExportProgress>? progress,
-        CancellationToken cancellationToken,
         TimeSpan? inPointFilePts = null,
-        TimeSpan? outPointFilePts = null)
+        TimeSpan? outPointFilePts = null,
+        CancellationToken cancellationToken = default)
     {
         ThrowIfDisposed();
         return _captureService.ExportFlashbackRangeAsync(
@@ -386,9 +386,9 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
             outPoint,
             outputPath,
             progress,
-            cancellationToken,
-            inPointFilePts,
-            outPointFilePts);
+            inPointFilePts: inPointFilePts,
+            outPointFilePts: outPointFilePts,
+            cancellationToken: cancellationToken);
     }
 
     internal Task<FinalizeResult> ExportFlashbackLastNSecondsAsync(

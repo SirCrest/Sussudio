@@ -14,7 +14,7 @@ internal static class DiagnosticSessionFlashbackCycleScenarios
         DiagnosticSessionBackgroundTasks backgroundTasks,
         List<string> actions,
         List<string> warnings,
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendAsync,
+        DiagnosticSessionCommandChannel commandChannel,
         CancellationToken cancellationToken)
     {
         if (scenarioPlan.Kind == DiagnosticSessionScenarioKind.FlashbackRestartCycle)
@@ -24,10 +24,10 @@ internal static class DiagnosticSessionFlashbackCycleScenarios
                 "flashback-restart-cycle-task",
                 RunFlashbackRestartCycleAsync(
                     outputDirectory,
-                    actions,
-                    warnings,
-                    sendAsync,
-                    cancellationToken));
+                    actions: actions,
+                    warnings: warnings,
+                    sendCommandAsync: commandChannel.SendAsync,
+                    cancellationToken: cancellationToken));
             actions.Add("flashback restart cycle started");
         }
 
@@ -38,10 +38,10 @@ internal static class DiagnosticSessionFlashbackCycleScenarios
                 "flashback-encoder-cycle-task",
                 RunFlashbackEncoderCycleAsync(
                     outputDirectory,
-                    actions,
-                    warnings,
-                    sendAsync,
-                    cancellationToken));
+                    actions: actions,
+                    warnings: warnings,
+                    sendCommandAsync: commandChannel.SendAsync,
+                    cancellationToken: cancellationToken));
             actions.Add("flashback encoder cycle started");
         }
     }
@@ -332,7 +332,7 @@ internal static class DiagnosticSessionFlashbackLifecycleScenarios
         DiagnosticSessionBackgroundTasks backgroundTasks,
         List<string> actions,
         List<string> warnings,
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
+        DiagnosticSessionCommandChannel commandChannel,
         CancellationToken cancellationToken)
     {
         if (scenarioPlan.Kind != DiagnosticSessionScenarioKind.FlashbackLifecycle)
@@ -344,10 +344,10 @@ internal static class DiagnosticSessionFlashbackLifecycleScenarios
             2,
             "flashback-lifecycle-task",
             RunFlashbackLifecycleAsync(
-                actions,
-                warnings,
-                sendCommandAsync,
-                cancellationToken));
+                actions: actions,
+                warnings: warnings,
+                sendCommandAsync: commandChannel.SendAsync,
+                cancellationToken: cancellationToken));
         actions.Add("flashback lifecycle started");
     }
 
@@ -470,7 +470,7 @@ internal static class DiagnosticSessionFlashbackPreviewCycleScenarios
         DiagnosticSessionBackgroundTasks backgroundTasks,
         List<string> actions,
         List<string> warnings,
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendAsync,
+        DiagnosticSessionCommandChannel commandChannel,
         CancellationToken cancellationToken)
     {
         if (scenarioPlan.Kind == DiagnosticSessionScenarioKind.FlashbackPreviewCycle)
@@ -480,10 +480,10 @@ internal static class DiagnosticSessionFlashbackPreviewCycleScenarios
                 "flashback-preview-cycle-task",
                 RunFlashbackPreviewCycleAsync(
                     outputDirectory,
-                    actions,
-                    warnings,
-                    sendAsync,
-                    cancellationToken));
+                    actions: actions,
+                    warnings: warnings,
+                    sendCommandAsync: commandChannel.SendAsync,
+                    cancellationToken: cancellationToken));
             actions.Add("flashback preview cycle started");
         }
 
@@ -494,10 +494,10 @@ internal static class DiagnosticSessionFlashbackPreviewCycleScenarios
                 "flashback-playback-preview-cycle-task",
                 RunFlashbackPlaybackPreviewCycleAsync(
                     outputDirectory,
-                    actions,
-                    warnings,
-                    sendAsync,
-                    cancellationToken));
+                    actions: actions,
+                    warnings: warnings,
+                    sendCommandAsync: commandChannel.SendAsync,
+                    cancellationToken: cancellationToken));
             actions.Add("flashback playback preview cycle started");
         }
 
@@ -507,10 +507,10 @@ internal static class DiagnosticSessionFlashbackPreviewCycleScenarios
                 15,
                 "flashback-recording-preview-cycle-task",
                 RunFlashbackRecordingPreviewCycleAsync(
-                    actions,
-                    warnings,
-                    sendAsync,
-                    cancellationToken));
+                    actions: actions,
+                    warnings: warnings,
+                    sendCommandAsync: commandChannel.SendAsync,
+                    cancellationToken: cancellationToken));
             actions.Add("flashback recording preview cycle started");
         }
     }

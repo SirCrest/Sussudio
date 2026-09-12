@@ -1883,7 +1883,7 @@ static partial class Program
         AssertContains(backendCycleFlashbackBuffer, "DetachProducers(");
         AssertContains(backendCycleFlashbackBuffer, "\"FLASHBACK_CYCLE_DETACH_WARN\"");
         var cycleNewSinkStart = backendCycleFlashbackBuffer;
-        AssertContains(cycleNewSinkStart, "committedCycleToken,");
+        AssertContains(cycleNewSinkStart, "cancellationToken: committedCycleToken)");
         AssertContains(cycleNewSinkStart, "AttachProducers(");
         AssertContains(cycleNewSinkStart, "new FlashbackProducerAttachRequest(");
         AssertContains(cycleNewSinkStart, "\"buffer_cycle\"");
@@ -3143,7 +3143,7 @@ static partial class Program
         AssertContains(initializationSource, "public async Task InitializeAsync(");
         AssertContains(initializationSource, "var d3dManager = new SharedD3DDeviceManager();");
         AssertContains(initializationSource, "CreateExternalMjpegPipelineIfNeeded(");
-        AssertContains(initializationSource, "InstallMjpegPreviewJitterBuffer(capture.Fps > 0 ? capture.Fps : fps);");
+        AssertContains(initializationSource, "InstallMjpegPreviewJitterBuffer(capture.Fps > 0 ? capture.Fps : options.Fps);");
         AssertContains(initializationSource, "capture.FatalErrorOccurred += OnCaptureFatalError;");
         AssertEqual(
             false,

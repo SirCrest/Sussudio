@@ -46,18 +46,12 @@ public sealed partial class AutomationDiagnosticsHub
                 return null;
             }
 
-            return new DiagnosticEvaluation(
+            return DiagnosticEvaluation.Create(
                 "Warning",
                 "flashback_storage",
                 "Flashback temp storage is under pressure.",
                 lanes.TempCache,
-                lanes.Source,
-                lanes.Decode,
-                lanes.Preview,
-                lanes.Render,
-                lanes.Present,
-                lanes.Recording,
-                lanes.Audio);
+                lanes);
         }
 
         private static DiagnosticEvaluation? TryBuildFlashbackExportDiagnosticEvaluation(
@@ -72,32 +66,20 @@ public sealed partial class AutomationDiagnosticsHub
             var exportLastProgressAgeMs = Math.Max(0, health.FlashbackExportLastProgressAgeMs);
             if (exportLastProgressAgeMs >= FlashbackExportStallThresholdMs)
             {
-                return new DiagnosticEvaluation(
+                return DiagnosticEvaluation.Create(
                     "Warning",
                     "flashback_export",
                     "Flashback export progress is stalled.",
                     $"{lanes.Export} progressAgeMs={exportLastProgressAgeMs}",
-                    lanes.Source,
-                    lanes.Decode,
-                    lanes.Preview,
-                    lanes.Render,
-                    lanes.Present,
-                    lanes.Recording,
-                    lanes.Audio);
+                    lanes);
             }
 
-            return new DiagnosticEvaluation(
+            return DiagnosticEvaluation.Create(
                 "Busy",
                 "flashback_export",
                 "Flashback export is running.",
                 lanes.Export,
-                lanes.Source,
-                lanes.Decode,
-                lanes.Preview,
-                lanes.Render,
-                lanes.Present,
-                lanes.Recording,
-                lanes.Audio);
+                lanes);
         }
 
         private static DiagnosticEvaluation? TryBuildFlashbackRecordingDiagnosticEvaluation(
@@ -126,18 +108,12 @@ public sealed partial class AutomationDiagnosticsHub
                 return null;
             }
 
-            return new DiagnosticEvaluation(
+            return DiagnosticEvaluation.Create(
                 "Critical",
                 "flashback_recording",
                 "Flashback encoder has failed.",
                 lanes.FlashbackRecording,
-                lanes.Source,
-                lanes.Decode,
-                lanes.Preview,
-                lanes.Render,
-                lanes.Present,
-                lanes.Recording,
-                lanes.Audio);
+                lanes);
         }
 
         private static FlashbackRecordingDiagnosticConditions BuildFlashbackRecordingDiagnosticConditions(
@@ -202,18 +178,12 @@ public sealed partial class AutomationDiagnosticsHub
                 return null;
             }
 
-            return new DiagnosticEvaluation(
+            return DiagnosticEvaluation.Create(
                 "Warning",
                 "flashback_export",
                 "Flashback export rotation skipped live-edge frames.",
                 lanes.FlashbackRecording,
-                lanes.Source,
-                lanes.Decode,
-                lanes.Preview,
-                lanes.Render,
-                lanes.Present,
-                lanes.Recording,
-                lanes.Audio);
+                lanes);
         }
 
         private static DiagnosticEvaluation? TryBuildFlashbackBackendSettingsDiagnosticEvaluation(
@@ -225,18 +195,12 @@ public sealed partial class AutomationDiagnosticsHub
                 return null;
             }
 
-            return new DiagnosticEvaluation(
+            return DiagnosticEvaluation.Create(
                 "Warning",
                 "flashback_recording",
                 "Flashback backend settings differ from requested settings.",
                 lanes.FlashbackRecording,
-                lanes.Source,
-                lanes.Decode,
-                lanes.Preview,
-                lanes.Render,
-                lanes.Present,
-                lanes.Recording,
-                lanes.Audio);
+                lanes);
         }
 
         private static DiagnosticEvaluation? TryBuildFlashbackRecordingDegradationDiagnosticEvaluation(
@@ -248,18 +212,12 @@ public sealed partial class AutomationDiagnosticsHub
                 return null;
             }
 
-            return new DiagnosticEvaluation(
+            return DiagnosticEvaluation.Create(
                 "Warning",
                 "flashback_recording",
                 "Flashback recording path is dropping or backing up.",
                 lanes.FlashbackRecording,
-                lanes.Source,
-                lanes.Decode,
-                lanes.Preview,
-                lanes.Render,
-                lanes.Present,
-                lanes.Recording,
-                lanes.Audio);
+                lanes);
         }
 
         private static DiagnosticEvaluation? TryBuildFlashbackPlaybackDiagnosticEvaluation(
@@ -285,66 +243,42 @@ public sealed partial class AutomationDiagnosticsHub
 
             if (playbackCommandQueueAgeMs >= FlashbackPlaybackCommandStallThresholdMs)
             {
-                return new DiagnosticEvaluation(
+                return DiagnosticEvaluation.Create(
                     "Warning",
                     "flashback_playback",
                     "Flashback playback command queue is stalled.",
                     lanes.PlaybackCommand,
-                    lanes.Source,
-                    lanes.Decode,
-                    lanes.Preview,
-                    lanes.Render,
-                    lanes.Present,
-                    lanes.Recording,
-                    lanes.Audio);
+                    lanes);
             }
 
             if (playbackCommandFailedRecently)
             {
-                return new DiagnosticEvaluation(
+                return DiagnosticEvaluation.Create(
                     "Warning",
                     "flashback_playback",
                     "Flashback playback command failed recently.",
                     lanes.PlaybackCommand,
-                    lanes.Source,
-                    lanes.Decode,
-                    lanes.Preview,
-                    lanes.Render,
-                    lanes.Present,
-                    lanes.Recording,
-                    lanes.Audio);
+                    lanes);
             }
 
             if (playbackSlow)
             {
-                return new DiagnosticEvaluation(
+                return DiagnosticEvaluation.Create(
                     "Warning",
                     "flashback_playback",
                     "Flashback playback is below target rate.",
                     lanes.PlaybackPerf,
-                    lanes.Source,
-                    lanes.Decode,
-                    lanes.Preview,
-                    lanes.Render,
-                    lanes.Present,
-                    lanes.Recording,
-                    lanes.Audio);
+                    lanes);
             }
 
             if (playbackFrametimeDegraded)
             {
-                return new DiagnosticEvaluation(
+                return DiagnosticEvaluation.Create(
                     "Warning",
                     "flashback_playback",
                     "Flashback playback frametime is below target.",
                     lanes.PlaybackPerf,
-                    lanes.Source,
-                    lanes.Decode,
-                    lanes.Preview,
-                    lanes.Render,
-                    lanes.Present,
-                    lanes.Recording,
-                    lanes.Audio);
+                    lanes);
             }
 
             if (health.FlashbackPlaybackSubmitFailures <= 0)
@@ -352,18 +286,12 @@ public sealed partial class AutomationDiagnosticsHub
                 return null;
             }
 
-            return new DiagnosticEvaluation(
+            return DiagnosticEvaluation.Create(
                 "Warning",
                 "flashback_playback",
                 "Flashback playback frame submission failed.",
                 lanes.PlaybackPerf,
-                lanes.Source,
-                lanes.Decode,
-                lanes.Preview,
-                lanes.Render,
-                lanes.Present,
-                lanes.Recording,
-                lanes.Audio);
+                lanes);
         }
 
         private readonly record struct FlashbackRecordingDiagnosticConditions(

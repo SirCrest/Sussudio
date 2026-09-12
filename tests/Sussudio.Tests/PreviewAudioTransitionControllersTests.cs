@@ -214,7 +214,7 @@ public sealed class PreviewAudioTransitionControllersTests
         using var h = new ControllerHarness(0.8, pause.DelayAsync);
         using var cancellation = new CancellationTokenSource();
         var operation = h.Controller.PrimeForAudioTransition("start");
-        var ramp = h.Controller.RampUpForAudioTransitionAsync(operation, "start", cancellation.Token);
+        var ramp = h.Controller.RampUpForAudioTransitionAsync(operation, "start", cancellationToken: cancellation.Token);
         await pause.Entered.Task;
         cancellation.Cancel();
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => ramp);

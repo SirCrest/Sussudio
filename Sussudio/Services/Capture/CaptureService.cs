@@ -1053,8 +1053,8 @@ internal sealed class PreviewAudioGraphResources
     }
 
     public async Task StartPlaybackAsync(
-        CancellationToken cancellationToken,
-        FlashbackPlaybackController? flashbackPlaybackController)
+        FlashbackPlaybackController? flashbackPlaybackController,
+        CancellationToken cancellationToken = default)
     {
         var capture = ProgramCapture;
         if (capture == null)

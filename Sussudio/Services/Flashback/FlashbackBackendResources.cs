@@ -549,8 +549,8 @@ internal sealed class FlashbackBackendResources
             var ptsOffset = request.PurgeSegments ? TimeSpan.Zero : bufferManager.LatestPts;
             await newSink.StartAsync(
                 request.CreateSessionContext(),
-                committedCycleToken,
-                ptsBaseOffset: ptsOffset).ConfigureAwait(false);
+                ptsBaseOffset: ptsOffset,
+                cancellationToken: committedCycleToken).ConfigureAwait(false);
 
             newSink.FrameEncoded += request.FrameEncodedHandler;
             Sink = newSink;
@@ -904,7 +904,7 @@ internal sealed class FlashbackBackendResources
         {
             await flashbackSink.StartAsync(
                 request.CreateSessionContext(),
-                request.CancellationToken).ConfigureAwait(false);
+                cancellationToken: request.CancellationToken).ConfigureAwait(false);
             flashbackSink.FrameEncoded += request.FrameEncodedHandler;
 
             playbackController = new FlashbackPlaybackController(bufferManager)

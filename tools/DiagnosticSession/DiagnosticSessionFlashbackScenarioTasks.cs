@@ -356,7 +356,7 @@ internal static class DiagnosticSessionFlashbackSegmentPlaybackScenarios
         DiagnosticSessionBackgroundTasks backgroundTasks,
         List<string> actions,
         List<string> warnings,
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
+        DiagnosticSessionCommandChannel commandChannel,
         CancellationToken cancellationToken)
     {
         if (scenarioPlan.Kind != DiagnosticSessionScenarioKind.FlashbackSegmentPlayback)
@@ -368,10 +368,10 @@ internal static class DiagnosticSessionFlashbackSegmentPlaybackScenarios
             7,
             "flashback-segment-playback-task",
             RunFlashbackSegmentPlaybackAsync(
-                actions,
-                warnings,
-                sendCommandAsync,
-                cancellationToken));
+                actions: actions,
+                warnings: warnings,
+                sendCommandAsync: commandChannel.SendAsync,
+                cancellationToken: cancellationToken));
         actions.Add("flashback segment playback started");
     }
 

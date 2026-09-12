@@ -2485,7 +2485,7 @@ static partial class Program
         var audioDeviceSelectionPolicyText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "ViewModelSelectionPolicies.cs"));
         AssertEqual(false, File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceSelection.cs")), "old device selection partial folded into capture selection owner");
         AssertContains(mainViewModelText, "public Task RefreshDevicesAsync(CancellationToken cancellationToken = default)");
-        AssertContains(mainViewModelText, "=> _deviceRefreshController.RefreshDevicesAsync(cancellationToken);");
+        AssertContains(mainViewModelText, "=> _deviceRefreshController.RefreshDevicesAsync(cancellationToken: cancellationToken);");
         AssertEqual(
             false,
             File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceManagement.cs")),
@@ -2497,7 +2497,7 @@ static partial class Program
         AssertDoesNotContain(deviceRefreshControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(deviceRefreshControllerText, "_viewModel.");
         AssertContains(deviceRefreshControllerText, "public async Task RefreshDevicesAsync(");
-        AssertContains(deviceRefreshControllerText, "CancellationToken cancellationToken = default,");
+        AssertContains(deviceRefreshControllerText, "CancellationToken cancellationToken = default)");
         AssertContains(deviceRefreshControllerText, "bool throwOnScanFailure = false");
         AssertContains(deviceRefreshControllerText, "if (throwOnScanFailure)");
         AssertContains(deviceRefreshControllerText, "_context.EnumerateCaptureDeviceDiscoveryAsync()");

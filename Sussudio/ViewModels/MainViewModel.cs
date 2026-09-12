@@ -521,10 +521,10 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     }
 
     public Task RefreshDevicesAsync(CancellationToken cancellationToken = default)
-        => _deviceRefreshController.RefreshDevicesAsync(cancellationToken);
+        => _deviceRefreshController.RefreshDevicesAsync(cancellationToken: cancellationToken);
 
     internal Task RefreshDevicesForStartupAsync(CancellationToken cancellationToken = default)
-        => _deviceRefreshController.RefreshDevicesAsync(cancellationToken, throwOnScanFailure: true);
+        => _deviceRefreshController.RefreshDevicesAsync(throwOnScanFailure: true, cancellationToken: cancellationToken);
 
     internal void SetPreviewFrameSink(IPreviewFrameSink? sink)
     {
@@ -1534,7 +1534,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     }
 
     public Task RefreshDevicesForAutomationAsync(CancellationToken cancellationToken = default)
-        => InvokeOnUiThreadAsync(() => _deviceRefreshController.RefreshDevicesAsync(cancellationToken, throwOnScanFailure: true), cancellationToken);
+        => InvokeOnUiThreadAsync(() => _deviceRefreshController.RefreshDevicesAsync(throwOnScanFailure: true, cancellationToken: cancellationToken), cancellationToken);
 
     public Task SelectDeviceAsync(string? deviceId, string? deviceName, CancellationToken cancellationToken = default)
     {

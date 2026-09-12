@@ -454,12 +454,13 @@ public partial class CaptureService
             AttachUnifiedVideoCapture(rollback.OwnedUnifiedVideoCapture);
             await rollback.OwnedUnifiedVideoCapture.InitializeAsync(
                 _currentDevice!.Id,
-                width: (int)effectiveWidth,
-                height: (int)effectiveHeight,
-                fps: effectiveFrameRate,
-                requireP010: requireP010,
-                requestedPixelFormat: settings.RequestedPixelFormat,
-                useMjpegHighFrameRateMode: useMjpegHighFrameRateMode,
+                new VideoCaptureNegotiationOptions(
+                    Width: (int)effectiveWidth,
+                    Height: (int)effectiveHeight,
+                    Fps: effectiveFrameRate,
+                    RequireP010: requireP010,
+                    RequestedPixelFormat: settings.RequestedPixelFormat,
+                    UseMjpegHighFrameRateMode: useMjpegHighFrameRateMode),
                 mjpegDecoderCount: settings.MjpegDecoderCount).ConfigureAwait(false);
             rollback.OwnedUnifiedVideoCapture.SetPreviewSink(_isVideoPreviewActive ? _videoPipeline.PreviewFrameSink : null);
             TryApplySharedPreviewDevice(rollback.OwnedUnifiedVideoCapture, _isVideoPreviewActive ? _videoPipeline.PreviewFrameSink : null);
@@ -550,8 +551,8 @@ public partial class CaptureService
             if (_isAudioPreviewActive)
             {
                 await _previewAudioGraph.StartPlaybackAsync(
-                    transitionToken,
-                    _flashbackBackend.PlaybackController).ConfigureAwait(false);
+                    _flashbackBackend.PlaybackController,
+                    cancellationToken: transitionToken).ConfigureAwait(false);
             }
         }
 

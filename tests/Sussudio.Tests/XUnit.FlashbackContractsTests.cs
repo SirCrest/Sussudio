@@ -4852,7 +4852,7 @@ static partial class Program
             .Replace("\r\n", "\n") + "\n" +
             ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
 
-        AssertContains(startupText, "public Task StartAsync(FlashbackSessionContext context, CancellationToken cancellationToken = default, TimeSpan ptsBaseOffset = default)");
+        AssertContains(startupText, "public Task StartAsync(FlashbackSessionContext context, TimeSpan ptsBaseOffset = default, CancellationToken cancellationToken = default)");
         AssertContains(startupText, "ValidateSessionContext(context);");
         AssertContains(startupText, "var tsPath = _bufferManager.AcquireSegmentPath(out var startupGeneratedSegment);");
         AssertContains(startupText, "InitializeStartupQueues(sessionContext);");

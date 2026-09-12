@@ -119,38 +119,35 @@ internal static class DiagnosticSessionFlashbackExportScenarios
         DiagnosticSessionBackgroundTasks backgroundTasks,
         List<string> actions,
         List<string> warnings,
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendAsync,
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendRawWithConnectRetryAsync,
+        DiagnosticSessionCommandChannel commandChannel,
         CancellationToken cancellationToken)
     {
         RegisterFlashbackExportPlaybackTask(
             scenarioPlan,
             outputDirectory,
             backgroundTasks,
-            actions,
-            warnings,
-            sendAsync,
-            cancellationToken);
+            actions: actions,
+            warnings: warnings,
+            commandChannel: commandChannel,
+            cancellationToken: cancellationToken);
 
         RegisterFlashbackRangeExportTasks(
             scenarioPlan,
             outputDirectory,
             backgroundTasks,
-            actions,
-            warnings,
-            sendAsync,
-            sendRawWithConnectRetryAsync,
-            cancellationToken);
+            actions: actions,
+            warnings: warnings,
+            commandChannel: commandChannel,
+            cancellationToken: cancellationToken);
 
         RegisterFlashbackExportCoordinationTasks(
             scenarioPlan,
             outputDirectory,
             backgroundTasks,
-            actions,
-            warnings,
-            sendAsync,
-            sendRawWithConnectRetryAsync,
-            cancellationToken);
+            actions: actions,
+            warnings: warnings,
+            commandChannel: commandChannel,
+            cancellationToken: cancellationToken);
     }
 
     private static void RegisterFlashbackExportPlaybackTask(
@@ -159,7 +156,7 @@ internal static class DiagnosticSessionFlashbackExportScenarios
         DiagnosticSessionBackgroundTasks backgroundTasks,
         List<string> actions,
         List<string> warnings,
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendAsync,
+        DiagnosticSessionCommandChannel commandChannel,
         CancellationToken cancellationToken)
     {
         if (scenarioPlan.Kind != DiagnosticSessionScenarioKind.FlashbackExportPlayback)
@@ -172,10 +169,10 @@ internal static class DiagnosticSessionFlashbackExportScenarios
             "flashback-export-playback-task",
             RunFlashbackExportPlaybackAsync(
                 outputDirectory,
-                actions,
-                warnings,
-                sendAsync,
-                cancellationToken));
+                actions: actions,
+                warnings: warnings,
+                sendCommandAsync: commandChannel.SendAsync,
+                cancellationToken: cancellationToken));
         actions.Add("flashback export playback started");
     }
 
@@ -185,8 +182,7 @@ internal static class DiagnosticSessionFlashbackExportScenarios
         DiagnosticSessionBackgroundTasks backgroundTasks,
         List<string> actions,
         List<string> warnings,
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendAsync,
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendRawWithConnectRetryAsync,
+        DiagnosticSessionCommandChannel commandChannel,
         CancellationToken cancellationToken)
     {
         if (scenarioPlan.Kind == DiagnosticSessionScenarioKind.FlashbackRangeExport)
@@ -196,10 +192,10 @@ internal static class DiagnosticSessionFlashbackExportScenarios
                 "flashback-range-export-task",
                 RunFlashbackRangeExportAsync(
                     outputDirectory,
-                    actions,
-                    warnings,
-                    sendAsync,
-                    cancellationToken));
+                    actions: actions,
+                    warnings: warnings,
+                    sendCommandAsync: commandChannel.SendAsync,
+                    cancellationToken: cancellationToken));
             actions.Add("flashback range export started");
         }
 
@@ -210,10 +206,10 @@ internal static class DiagnosticSessionFlashbackExportScenarios
                 "flashback-range-export-audio-switch-task",
                 RunFlashbackRangeExportAsync(
                     outputDirectory,
-                    actions,
-                    warnings,
-                    sendRawWithConnectRetryAsync,
-                    cancellationToken,
+                    actions: actions,
+                    warnings: warnings,
+                    sendCommandAsync: commandChannel.SendRawWithConnectRetryAsync,
+                    cancellationToken: cancellationToken,
                     scenarioLabel: "flashback range export audio switch",
                     exportFileName: "flashback-range-export-audio-switch.mp4",
                     outPointMs: 15_000,
@@ -228,8 +224,7 @@ internal static class DiagnosticSessionFlashbackExportScenarios
         DiagnosticSessionBackgroundTasks backgroundTasks,
         List<string> actions,
         List<string> warnings,
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendAsync,
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendRawWithConnectRetryAsync,
+        DiagnosticSessionCommandChannel commandChannel,
         CancellationToken cancellationToken)
     {
         if (scenarioPlan.Kind == DiagnosticSessionScenarioKind.FlashbackExportConcurrent)
@@ -239,10 +234,10 @@ internal static class DiagnosticSessionFlashbackExportScenarios
                 "flashback-export-concurrent-task",
                 RunFlashbackExportConcurrentAsync(
                     outputDirectory,
-                    actions,
-                    warnings,
-                    sendRawWithConnectRetryAsync,
-                    cancellationToken));
+                    actions: actions,
+                    warnings: warnings,
+                    sendCommandAsync: commandChannel.SendRawWithConnectRetryAsync,
+                    cancellationToken: cancellationToken));
             actions.Add("flashback concurrent export started");
         }
 
@@ -253,10 +248,10 @@ internal static class DiagnosticSessionFlashbackExportScenarios
                 "flashback-disable-during-export-task",
                 RunFlashbackDisableDuringExportAsync(
                     outputDirectory,
-                    actions,
-                    warnings,
-                    sendRawWithConnectRetryAsync,
-                    cancellationToken));
+                    actions: actions,
+                    warnings: warnings,
+                    sendCommandAsync: commandChannel.SendRawWithConnectRetryAsync,
+                    cancellationToken: cancellationToken));
             actions.Add("flashback disable during export started");
         }
 
@@ -267,10 +262,10 @@ internal static class DiagnosticSessionFlashbackExportScenarios
                 "flashback-rotated-export-task",
                 RunFlashbackRotatedExportAsync(
                     outputDirectory,
-                    actions,
-                    warnings,
-                    sendAsync,
-                    cancellationToken));
+                    actions: actions,
+                    warnings: warnings,
+                    sendCommandAsync: commandChannel.SendAsync,
+                    cancellationToken: cancellationToken));
             actions.Add("flashback rotated export started");
         }
     }

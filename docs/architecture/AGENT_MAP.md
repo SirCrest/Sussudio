@@ -322,7 +322,8 @@ Automation diagnostics ownership:
   cadence/source-signal lane formatting, recording/audio lane formatting,
   preview scheduler/renderer/present/display/visual-cadence lane formatting,
   Flashback recording/export/playback lane formatting, lane DTOs used by
-  diagnostic verdicts, shared alert-detail formatting, and health classifiers
+  diagnostic verdicts, the `DiagnosticEvaluation.Create` mapping of the seven
+  output lanes shared by realtime and Flashback verdicts, shared alert-detail formatting, and health classifiers
   used by alerts and diagnostic evaluation.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs`
   owns HDR truth classification from capture pipeline, source-HDR, and
@@ -650,7 +651,8 @@ Important entry points:
   Sampling follows retained capture ownership independently of native polling demand.
 - `UnifiedVideoCapture.cs` owns public control/configuration surface, capture
   fields, counters, recording/Flashback attachment state, source-reader/D3D/MJPEG
-  initialization, committed runtime state reset, read-loop start/stop,
+  initialization through `VideoCaptureNegotiationOptions` (including ownership
+  of DXGI and external MJPEG decoding options), committed runtime state reset, read-loop start/stop,
   preview-reinit disposal, CPU MJPEG pipeline construction, stop/retention
   semantics, preview jitter buffer setup/disposal, capture/MJPEG fatal-error
   callbacks, source-reader frame arrival routing, MJPEG decoded-frame emission
@@ -2834,6 +2836,12 @@ Primary owners:
   registration delegation, deferred Flashback recording-settings task
   registration, direct Flashback playback start command, optional PresentMon
   launch, correlation snapshot capture, and `presentmon.csv` output selection.
+  Startup and scenario registration pass the existing `DiagnosticSessionCommandChannel`
+  as one dependency. Scenario owners select senders at the leaf invocation:
+  scrub stress, range export with audio switching, concurrent export, and
+  disable-during-export use raw sends; other startup routes use serialized sends.
+  Deferred recording settings retains the `allowFailure` overload; cleanup
+  helpers retain senders bound to independent cleanup tokens.
   Startup records acknowledged mutation ownership before cancellable readiness waits.
   The runner reconciles lost responses and restores confirmed owned changes using
   an independent bounded cleanup token, reporting uncertainty as a failure warning.

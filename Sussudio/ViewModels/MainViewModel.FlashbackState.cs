@@ -791,9 +791,9 @@ public partial class MainViewModel
                 outPoint,
                 exportPath,
                 progress,
-                ct,
-                playback.InPointFilePts,
-                playback.OutPointFilePts));
+                inPointFilePts: playback.InPointFilePts,
+                outPointFilePts: playback.OutPointFilePts,
+                cancellationToken: ct));
         switch (outcome)
         {
             case ExportFlashbackOutcome.Stale:
@@ -953,9 +953,9 @@ public partial class MainViewModel
                     playback.OutPoint,
                     outputPath,
                     progress,
-                    exportCts.Token,
-                    playback.InPointFilePts,
-                    playback.OutPointFilePts);
+                    inPointFilePts: playback.InPointFilePts,
+                    outPointFilePts: playback.OutPointFilePts,
+                    cancellationToken: exportCts.Token);
             }
 
             return await _sessionCoordinator.ExportFlashbackLastNSecondsAsync(

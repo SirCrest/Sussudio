@@ -279,14 +279,15 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
     public FrameLedgerSummary GetFrameLedgerSummary(int maxEvents = 64)
         => _frameLedger.GetSummary(maxEvents);
 
+    /// <summary>Initializes the shared preview and recording source session.</summary>
+    /// <remarks>
+    /// Source-reader activation and negotiation run synchronously; see
+    /// <see cref="MfSourceReaderVideoCapture.InitializeAsync"/> for the calling-thread and cancellation contract.
+    /// This session selects the DXGI device manager and external MJPEG decode settings in <paramref name="options"/>.
+    /// </remarks>
     public async Task InitializeAsync(
         string deviceSymbolicLink,
-        int width,
-        int height,
-        double fps,
-        bool requireP010,
-        string? requestedPixelFormat = null,
-        bool useMjpegHighFrameRateMode = false,
+        VideoCaptureNegotiationOptions options,
         int mjpegDecoderCount = 4)
     {
         ThrowIfDisposed();
@@ -302,10 +303,10 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
         var d3dManager = new SharedD3DDeviceManager();
         var dxgiDeviceManagerPtr = d3dManager.DxgiDeviceManagerPtr;
         var useMjpegHighFrameRateDecode = IsMjpegHighFrameRateDecode(
-            useMjpegHighFrameRateMode,
-            requireP010,
-            requestedPixelFormat);
-        var preferGpuNativeMjpegDecode = ShouldPreferGpuNativeMjpegDecode(useMjpegHighFrameRateDecode, fps);
+            options.UseMjpegHighFrameRateMode,
+            options.RequireP010,
+            options.RequestedPixelFormat);
+        var preferGpuNativeMjpegDecode = ShouldPreferGpuNativeMjpegDecode(useMjpegHighFrameRateDecode, options.Fps);
         var useExternalMjpegDecode = useMjpegHighFrameRateDecode && !preferGpuNativeMjpegDecode;
         ParallelMjpegDecodePipeline? mjpegPipeline = null;
         var capture = new MfSourceReaderVideoCapture();
@@ -313,15 +314,11 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
         Task InitializeSourceReaderAsync(bool useExternalDecode)
             => capture.InitializeAsync(
                 deviceSymbolicLink,
-                new VideoCaptureNegotiationOptions(
-                    Width: width,
-                    Height: height,
-                    Fps: fps,
-                    RequireP010: requireP010,
-                    RequestedPixelFormat: requestedPixelFormat,
-                    UseMjpegHighFrameRateMode: useMjpegHighFrameRateMode,
-                    DxgiDeviceManager: useExternalDecode ? IntPtr.Zero : dxgiDeviceManagerPtr,
-                    UseExternalMjpegDecode: useExternalDecode));
+                options with
+                {
+                    DxgiDeviceManager = useExternalDecode ? IntPtr.Zero : dxgiDeviceManagerPtr,
+                    UseExternalMjpegDecode = useExternalDecode
+                });
 
         try
         {
@@ -337,9 +334,9 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             mjpegPipeline = CreateExternalMjpegPipelineIfNeeded(
                 useExternalMjpegDecode,
                 mjpegDecoderCount,
-                width,
-                height,
-                fps);
+                options.Width,
+                options.Height,
+                options.Fps);
         }
         catch
         {
@@ -350,7 +347,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
 
         if (mjpegPipeline != null)
         {
-            InstallMjpegPreviewJitterBuffer(capture.Fps > 0 ? capture.Fps : fps);
+            InstallMjpegPreviewJitterBuffer(capture.Fps > 0 ? capture.Fps : options.Fps);
         }
 
         if (!capture.IsD3DOutputEnabled)

@@ -317,8 +317,8 @@ internal sealed class MainViewModelDeviceRefreshController
     }
 
     public async Task RefreshDevicesAsync(
-        CancellationToken cancellationToken = default,
-        bool throwOnScanFailure = false)
+        bool throwOnScanFailure = false,
+        CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         var requestGeneration = Interlocked.Increment(ref _refreshRequestGeneration);

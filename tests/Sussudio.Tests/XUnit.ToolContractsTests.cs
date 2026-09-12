@@ -6442,7 +6442,7 @@ static partial class Program
 
         AssertContains(presentMonStartupText, "private static async Task StartPresentMonAsync(");
         AssertContains(presentMonStartupText, "if (!options.IncludePresentMon)");
-        AssertContains(presentMonStartupText, "var correlationSnapshotResponse = await sendAsync(\"GetSnapshot\", null, null)");
+        AssertContains(presentMonStartupText, "var correlationSnapshotResponse = await commandChannel.SendAsync(\"GetSnapshot\", null, null)");
         AssertContains(presentMonStartupText, "TryGetSnapshot(correlationSnapshotResponse, out var correlationSnapshot)");
         AssertContains(presentMonStartupText, "backgroundTasks.SetPresentMon(PresentMonProbe.RunAsync(PresentMonProbe.CreateOptions(");
         AssertContains(presentMonStartupText, "processName: \"Sussudio\"");
@@ -8223,7 +8223,7 @@ static partial class Program
         AssertContains(stressText, "3,\n                \"flashback-scrub-stress-task\",");
         AssertContains(stressText, "RunFlashbackStressAsync(");
         AssertContains(stressText, "RunFlashbackScrubStressAsync(");
-        AssertContains(stressText, "sendRawWithConnectRetryAsync");
+        AssertContains(stressText, "sendCommandAsync: commandChannel.SendRawWithConnectRetryAsync");
         AssertContains(stressText, "actions.Add(\"flashback stress started\")");
         AssertContains(stressText, "actions.Add(\"flashback scrub stress started\")");
         AssertContains(startupText, "DiagnosticSessionFlashbackStressScenario.RegisterSelectedFlashbackStressScenarioTasks(");

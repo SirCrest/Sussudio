@@ -23,8 +23,7 @@ internal static class DiagnosticSessionFlashbackStressScenario
         DiagnosticSessionBackgroundTasks backgroundTasks,
         List<string> actions,
         List<string> warnings,
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendAsync,
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendRawWithConnectRetryAsync,
+        DiagnosticSessionCommandChannel commandChannel,
         CancellationToken cancellationToken)
     {
         if (scenarioPlan.Kind == DiagnosticSessionScenarioKind.FlashbackStress)
@@ -34,10 +33,10 @@ internal static class DiagnosticSessionFlashbackStressScenario
                 "flashback-stress-task",
                 RunFlashbackStressAsync(
                     outputDirectory,
-                    actions,
-                    warnings,
-                    sendAsync,
-                    cancellationToken));
+                    actions: actions,
+                    warnings: warnings,
+                    sendCommandAsync: commandChannel.SendAsync,
+                    cancellationToken: cancellationToken));
             actions.Add("flashback stress started");
         }
 
@@ -47,10 +46,10 @@ internal static class DiagnosticSessionFlashbackStressScenario
                 3,
                 "flashback-scrub-stress-task",
                 RunFlashbackScrubStressAsync(
-                    actions,
-                    warnings,
-                    sendRawWithConnectRetryAsync,
-                    cancellationToken));
+                    actions: actions,
+                    warnings: warnings,
+                    sendCommandAsync: commandChannel.SendRawWithConnectRetryAsync,
+                    cancellationToken: cancellationToken));
             actions.Add("flashback scrub stress started");
         }
     }

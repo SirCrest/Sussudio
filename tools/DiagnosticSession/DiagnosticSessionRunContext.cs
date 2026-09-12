@@ -488,6 +488,11 @@ internal sealed class DiagnosticSessionCommandChannel : IDisposable
     private bool _resourcesDisposed;
     private int _failureCount;
 
+    /// <summary>Adapts a sender that does not accept cancellation to the session channel.</summary>
+    /// <remarks>
+    /// Cancellation stops waiting for a command; the sender's request can continue until it completes.
+    /// Use the constructor with a cancellation-aware sender for transport cancellation. That sender must honor the token.
+    /// </remarks>
     internal DiagnosticSessionCommandChannel(
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
         CancellationToken defaultCancellationToken,
@@ -742,6 +747,11 @@ internal sealed class DiagnosticSessionCommandChannel : IDisposable
 
 internal static class DiagnosticSessionPipeRetryPolicy
 {
+    /// <summary>Retries connections through a sender that does not accept cancellation.</summary>
+    /// <remarks>
+    /// Cancellation stops waiting for a command; the sender's request can continue until it completes.
+    /// Use the overload with a cancellation-aware sender for transport cancellation. That sender must honor the token.
+    /// </remarks>
     internal static Task<JsonElement?> SendCommandWithConnectRetryAsync(
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
         string command,

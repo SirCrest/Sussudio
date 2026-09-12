@@ -3888,7 +3888,7 @@ static partial class Program
             "private void OnWasapiAudioLevelUpdated");
         AssertContains(updateAudioInput, "await newCapture.InitializeAsync(resolvedId, transitionToken)");
         AssertContains(updateAudioInput, "await _previewAudioGraph.StartPlaybackAsync(");
-        AssertContains(updateAudioInput, "transitionToken,");
+        AssertContains(updateAudioInput, "cancellationToken: transitionToken)");
         AssertOccursBefore(
             updateAudioInput,
             "await newCapture.InitializeAsync(resolvedId, transitionToken)",
@@ -4150,7 +4150,7 @@ static partial class Program
         AssertContains(backendCycleBuffer, "await oldSink.StopAsync(committedCycleToken)");
         AssertContains(backendCycleBuffer, "await newSink.StartAsync(");
         AssertContains(backendCycleBuffer, "request.CreateSessionContext(),");
-        AssertContains(backendCycleBuffer, "committedCycleToken,");
+        AssertContains(backendCycleBuffer, "cancellationToken: committedCycleToken)");
         AssertContains(backendCycleBuffer, "FLASHBACK_BUFFER_CYCLE_CANCEL_DEFERRED");
         AssertOccursBefore(
             backendCycleBuffer,
@@ -7603,7 +7603,7 @@ static partial class Program
             "public Task SetCustomAudioInputEnabledAsync");
 
         AssertContains(deviceSelectionAutomationText, "public Task RefreshDevicesForAutomationAsync");
-        AssertContains(deviceSelectionAutomationText, "=> InvokeOnUiThreadAsync(() => _deviceRefreshController.RefreshDevicesAsync(cancellationToken, throwOnScanFailure: true), cancellationToken);");
+        AssertContains(deviceSelectionAutomationText, "=> InvokeOnUiThreadAsync(() => _deviceRefreshController.RefreshDevicesAsync(throwOnScanFailure: true, cancellationToken: cancellationToken), cancellationToken);");
         AssertContains(deviceSelectionAutomationText, "public Task SelectDeviceAsync");
         AssertContains(deviceSelectionAutomationText, "private CaptureDevice? ResolveDevice");
         AssertContains(deviceSelectionAutomationText, "public Task SelectAudioInputDeviceAsync");
@@ -7614,7 +7614,7 @@ static partial class Program
         AssertContains(deviceSelectionAutomationText, ".Take(2)");
         AssertContains(deviceSelectionAutomationText, "return partialMatches.Length == 1 ? partialMatches[0] : null;");
         AssertContains(rootViewModelText, "public Task RefreshDevicesAsync(CancellationToken cancellationToken = default)");
-        AssertContains(rootViewModelText, "=> _deviceRefreshController.RefreshDevicesAsync(cancellationToken);");
+        AssertContains(rootViewModelText, "=> _deviceRefreshController.RefreshDevicesAsync(cancellationToken: cancellationToken);");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.DeviceManagement.cs")),
@@ -9262,7 +9262,7 @@ static partial class Program
         AssertContains(diagnostics.SourceFamilyText, "if (!previewOnePercentLowDegraded)");
         AssertContains(diagnostics.SourceFamilyText, "var visualCadenceHealthy =\n            IsVisualCadenceHealthy(");
         AssertContains(diagnostics.SourceFamilyText, "Present/display 1% low is below target, but sampled visual cadence confirms source-rate output.");
-        AssertContains(diagnostics.SourceFamilyText, "if (visualCadenceHealthy)\n        {\n            return new DiagnosticEvaluation(\n                \"Healthy\",");
+        AssertContains(diagnostics.SourceFamilyText, "if (visualCadenceHealthy)\n        {\n            return DiagnosticEvaluation.Create(\n                \"Healthy\",");
         AssertContains(diagnostics.SourceFamilyText, "private static bool IsMjpegDuplicateCadenceDetected(CaptureHealthSnapshot health)");
         AssertContains(diagnostics.SourceFamilyText, "health.MjpegPacketHashDuplicateFramePercent < 20.0");
         AssertContains(diagnostics.SourceFamilyText, "health.MjpegPacketHashUniqueObservedFps <= health.ExpectedFrameRate * 0.75");

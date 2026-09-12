@@ -3760,7 +3760,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(splitEncodeRefresh, "SPLIT_ENCODE_PROBE_INCONCLUSIVE");
         AssertDoesNotContain(splitEncodeRefresh, "_context.SetSelectedSplitEncodeMode(");
 
-        AssertContains(rootViewModelText, "=> _deviceRefreshController.RefreshDevicesAsync(cancellationToken);");
+        AssertContains(rootViewModelText, "=> _deviceRefreshController.RefreshDevicesAsync(cancellationToken: cancellationToken);");
         AssertContains(controllerGraphText, "var deviceRefreshController = CreateDeviceRefreshController(viewModel, previewLifecycleController);");
         AssertContains(controllerGraphText, "viewModel._deviceService.EnumerateCaptureDeviceDiscoveryAsync(waitForFormatProbes: false)");
 
@@ -5746,10 +5746,10 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(owner, "private const int RampUpSteps = 30;");
         AssertContains(owner, "private const int RampUpDelayMs = 30;");
         AssertContains(monitor, "PrimePreviewVolumeForAudioTransition(reason)");
-        AssertContains(monitor, "await RampPreviewVolumeUpForAudioTransitionAsync(volumeOperation, reason, cancellationToken, traceSession: false);");
+        AssertContains(monitor, "await RampPreviewVolumeUpForAudioTransitionAsync(volumeOperation, reason, traceSession: false, cancellationToken: cancellationToken);");
         AssertOccursBefore(monitor, "PrimePreviewVolumeForAudioTransition(reason)", "await _sessionCoordinator.UpdateAudioMonitoringAsync(true, cancellationToken);");
-        AssertOccursBefore(monitor, "await _sessionCoordinator.UpdateAudioMonitoringAsync(true, cancellationToken);", "await RampPreviewVolumeUpForAudioTransitionAsync(volumeOperation, reason, cancellationToken, traceSession: false);");
-        AssertOccursBefore(monitor, "await RampPreviewVolumeDownForAudioTransitionAsync(volumeOperation, reason, cancellationToken, traceSession: false);", "await _sessionCoordinator.UpdateAudioMonitoringAsync(false, cancellationToken);");
+        AssertOccursBefore(monitor, "await _sessionCoordinator.UpdateAudioMonitoringAsync(true, cancellationToken);", "await RampPreviewVolumeUpForAudioTransitionAsync(volumeOperation, reason, traceSession: false, cancellationToken: cancellationToken);");
+        AssertOccursBefore(monitor, "await RampPreviewVolumeDownForAudioTransitionAsync(volumeOperation, reason, traceSession: false, cancellationToken: cancellationToken);", "await _sessionCoordinator.UpdateAudioMonitoringAsync(false, cancellationToken);");
         AssertContains(monitor, "await _sessionCoordinator.StopAudioPreviewWithTeardownAsync(cancellationToken);");
         AssertContains(monitor, "RestorePreviewVolumeAfterUnavailableAudio(volumeOperation, reason);");
         AssertContains(input, "var shouldRampMonitoring = IsPreviewing && _captureService.IsAudioPreviewActive;");
@@ -6460,7 +6460,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
             "public Task InitializeAsync()");
 
         AssertContains(rootText, "public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDisposable, IAutomationViewModel");
-        AssertContains(rootText, "=> _deviceRefreshController.RefreshDevicesAsync(cancellationToken);");
+        AssertContains(rootText, "=> _deviceRefreshController.RefreshDevicesAsync(cancellationToken: cancellationToken);");
         AssertContains(rootText, "internal MainViewModel(MainViewModelDependencies dependencies)");
         AssertContains(rootText, "private readonly DeviceService _deviceService;");
         AssertEqual(
@@ -7948,7 +7948,7 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(startupText, "await ViewModel.InitializeAsync();");
         AssertDoesNotContain(startupText, "await ViewModel.RefreshDevicesAsync();");
         AssertContains(rootText, "internal Task RefreshDevicesForStartupAsync(CancellationToken cancellationToken = default)");
-        AssertContains(rootText, "=> _deviceRefreshController.RefreshDevicesAsync(cancellationToken, throwOnScanFailure: true);");
+        AssertContains(rootText, "=> _deviceRefreshController.RefreshDevicesAsync(throwOnScanFailure: true, cancellationToken: cancellationToken);");
         AssertContains(deviceRefreshControllerText, "bool throwOnScanFailure = false");
         AssertContains(refreshDevices, "if (throwOnScanFailure)");
         AssertDoesNotContain(startupText, "_automationHostLifecycleController.Start();");

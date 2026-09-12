@@ -252,12 +252,13 @@ public partial class CaptureService
             Logger.LogFatalBreadcrumb($"PREVIEW_START phase=init_uvc {(int)settings.Width}x{(int)settings.Height}@{settings.FrameRate:0.###} p010={requireP010} pxfmt={settings.RequestedPixelFormat} mjpeg_hfr={useMjpegHighFrameRateMode}");
             await unifiedVideoCapture.InitializeAsync(
                 _currentDevice!.Id,
-                width: (int)settings.Width,
-                height: (int)settings.Height,
-                fps: settings.FrameRate,
-                requireP010: requireP010,
-                requestedPixelFormat: settings.RequestedPixelFormat,
-                useMjpegHighFrameRateMode: useMjpegHighFrameRateMode,
+                new VideoCaptureNegotiationOptions(
+                    Width: (int)settings.Width,
+                    Height: (int)settings.Height,
+                    Fps: settings.FrameRate,
+                    RequireP010: requireP010,
+                    RequestedPixelFormat: settings.RequestedPixelFormat,
+                    UseMjpegHighFrameRateMode: useMjpegHighFrameRateMode),
                 mjpegDecoderCount: settings.MjpegDecoderCount).ConfigureAwait(false);
             Logger.LogFatalBreadcrumb($"PREVIEW_START phase=init_done");
             unifiedVideoCapture.SetPreviewSink(_videoPipeline.PreviewFrameSink);
@@ -626,8 +627,8 @@ public partial class CaptureService
             {
                 AttachFlashbackAudioIfSupported(_previewAudioGraph.ProgramCapture, "audio_preview_start");
                 await _previewAudioGraph.StartPlaybackAsync(
-                    transitionToken,
-                    _flashbackBackend.PlaybackController).ConfigureAwait(false);
+                    _flashbackBackend.PlaybackController,
+                    cancellationToken: transitionToken).ConfigureAwait(false);
             }
             catch
             {
@@ -714,8 +715,8 @@ public partial class CaptureService
                 try
                 {
                     await _previewAudioGraph.StartPlaybackAsync(
-                        transitionToken,
-                        _flashbackBackend.PlaybackController).ConfigureAwait(false);
+                        _flashbackBackend.PlaybackController,
+                        cancellationToken: transitionToken).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException) when (transitionToken.IsCancellationRequested)
                 {
@@ -1160,8 +1161,8 @@ public partial class CaptureService
                     try
                     {
                         await _previewAudioGraph.StartPlaybackAsync(
-                            transitionToken,
-                            _flashbackBackend.PlaybackController).ConfigureAwait(false);
+                            _flashbackBackend.PlaybackController,
+                            cancellationToken: transitionToken).ConfigureAwait(false);
                     }
                     catch (Exception ex) when (ex is not OperationCanceledException)
                     {

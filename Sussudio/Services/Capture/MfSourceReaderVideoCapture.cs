@@ -124,6 +124,13 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
     }
     public long LastFrameDeliveredTickMs => Interlocked.Read(ref _lastFrameDeliveredTickMs);
 
+    /// <summary>Initializes the source reader and negotiates the capture mode.</summary>
+    /// <remarks>
+    /// Media Foundation device activation, device-busy retries, and format negotiation run synchronously
+    /// on the calling thread. This method does not support cancellation and cannot interrupt an in-flight
+    /// native operation. The Task return preserves the existing lifecycle contract; successful initialization
+    /// returns <see cref="Task.CompletedTask"/>.
+    /// </remarks>
     public Task InitializeAsync(string deviceSymbolicLink, VideoCaptureNegotiationOptions options)
     {
         if (string.IsNullOrWhiteSpace(deviceSymbolicLink))

@@ -498,7 +498,7 @@ internal sealed class PreviewAudioVolumeTransitionController : IDisposable
         var operation = BeginTransition("preview_stop");
         try
         {
-            await RampDownForAudioTransitionAsync(operation, "preview_stop", cancellationToken);
+            await RampDownForAudioTransitionAsync(operation, "preview_stop", cancellationToken: cancellationToken);
             return operation;
         }
         catch
@@ -511,23 +511,23 @@ internal sealed class PreviewAudioVolumeTransitionController : IDisposable
     public Task RampDownForAudioTransitionAsync(
         PreviewAudioVolumeOperation operation,
         string reason,
-        CancellationToken cancellationToken = default,
-        bool traceSession = true)
-        => RunRampAsync(operation, reason, muteOutput: true, cancellationToken, traceSession);
+        bool traceSession = true,
+        CancellationToken cancellationToken = default)
+        => RunRampAsync(operation, reason, muteOutput: true, traceSession: traceSession, cancellationToken: cancellationToken);
 
     public Task RampUpForAudioTransitionAsync(
         PreviewAudioVolumeOperation operation,
         string reason,
-        CancellationToken cancellationToken = default,
-        bool traceSession = true)
-        => RunRampAsync(operation, reason, muteOutput: false, cancellationToken, traceSession);
+        bool traceSession = true,
+        CancellationToken cancellationToken = default)
+        => RunRampAsync(operation, reason, muteOutput: false, traceSession: traceSession, cancellationToken: cancellationToken);
 
     private async Task RunRampAsync(
         PreviewAudioVolumeOperation operation,
         string reason,
         bool muteOutput,
-        CancellationToken cancellationToken,
-        bool traceSession)
+        bool traceSession,
+        CancellationToken cancellationToken)
     {
         var candidate = BeginWriter(operation, muteOutput, cancellationToken);
         if (candidate is not { } writer) return;

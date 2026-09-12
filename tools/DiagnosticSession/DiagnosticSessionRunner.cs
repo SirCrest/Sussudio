@@ -14,6 +14,11 @@ public static class DiagnosticSessionRunner
     // Scenario names and broad requirements live in DiagnosticSessionScenarioCatalog.
     // RunAsync reads like a phase plan: scenario execution, cleanup,
     // verification, post-run snapshots, then summary.
+    /// <summary>Runs a diagnostic session with a sender that does not accept cancellation.</summary>
+    /// <remarks>
+    /// Cancellation stops waiting for a command; the sender's request can continue until it completes.
+    /// Use the overload with a cancellation-aware sender for transport cancellation. That sender must honor the token.
+    /// </remarks>
     public static Task<DiagnosticSessionResult> RunAsync(
         DiagnosticSessionOptions options,
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
@@ -282,13 +287,11 @@ internal static class DiagnosticSessionScenarioPhaseRunner
                         context.DurationSeconds,
                         context.OutputDirectory,
                         backgroundTasks,
-                        context.Actions,
-                        context.Warnings,
-                        context.CommandChannel.SendAsync,
-                        context.CommandChannel.SendRawWithConnectRetryAsync,
-                        context.CommandChannel.SendAsync,
-                        scenarioPhase,
-                        context.ScenarioCancellationToken)
+                        actions: context.Actions,
+                        warnings: context.Warnings,
+                        commandChannel: context.CommandChannel,
+                        phaseState: scenarioPhase,
+                        cancellationToken: context.ScenarioCancellationToken)
                     .ConfigureAwait(false);
 
                 await RunSamplingAndCompleteAsync(context, backgroundTasks, scenarioPhase).ConfigureAwait(false);

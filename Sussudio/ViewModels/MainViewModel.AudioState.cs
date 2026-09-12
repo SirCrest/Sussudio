@@ -436,7 +436,7 @@ public partial class MainViewModel
 
                 if (_captureService.IsAudioPreviewActive)
                 {
-                    await RampPreviewVolumeUpForAudioTransitionAsync(volumeOperation, reason, cancellationToken, traceSession: false);
+                    await RampPreviewVolumeUpForAudioTransitionAsync(volumeOperation, reason, traceSession: false, cancellationToken: cancellationToken);
                 }
                 else
                 {
@@ -451,7 +451,7 @@ public partial class MainViewModel
                 return;
             }
 
-            await RampPreviewVolumeDownForAudioTransitionAsync(volumeOperation, reason, cancellationToken, traceSession: false);
+            await RampPreviewVolumeDownForAudioTransitionAsync(volumeOperation, reason, traceSession: false, cancellationToken: cancellationToken);
             if (teardownCapture)
             {
                 await _sessionCoordinator.StopAudioPreviewWithTeardownAsync(cancellationToken);
@@ -655,10 +655,10 @@ public partial class MainViewModel
     private Task RampPreviewVolumeDownForAudioTransitionAsync(
         PreviewAudioVolumeOperation operation,
         string reason,
-        CancellationToken cancellationToken = default,
-        bool traceSession = true)
+        bool traceSession = true,
+        CancellationToken cancellationToken = default)
         => _previewAudioVolumeTransitionController.RampDownForAudioTransitionAsync(
-            operation, reason, cancellationToken, traceSession);
+            operation, reason, traceSession: traceSession, cancellationToken: cancellationToken);
 
     private PreviewAudioVolumeOperation PrimePreviewVolumeForAudioTransition(string reason)
         => _previewAudioVolumeTransitionController.PrimeForAudioTransition(reason);
@@ -666,10 +666,10 @@ public partial class MainViewModel
     private Task RampPreviewVolumeUpForAudioTransitionAsync(
         PreviewAudioVolumeOperation operation,
         string reason,
-        CancellationToken cancellationToken = default,
-        bool traceSession = true)
+        bool traceSession = true,
+        CancellationToken cancellationToken = default)
         => _previewAudioVolumeTransitionController.RampUpForAudioTransitionAsync(
-            operation, reason, cancellationToken, traceSession);
+            operation, reason, traceSession: traceSession, cancellationToken: cancellationToken);
 
     private void RestorePreviewVolumeAfterUnavailableAudio(PreviewAudioVolumeOperation operation, string reason)
         => _previewAudioVolumeTransitionController.RestoreAfterUnavailableAudio(operation, reason);

@@ -171,7 +171,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         };
     }
 
-    public Task StartAsync(FlashbackSessionContext context, CancellationToken cancellationToken = default, TimeSpan ptsBaseOffset = default)
+    public Task StartAsync(FlashbackSessionContext context, TimeSpan ptsBaseOffset = default, CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         ArgumentNullException.ThrowIfNull(context);
@@ -651,7 +651,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     Task IRecordingSink.StartAsync(RecordingContext context, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(context);
-        return StartAsync(CreateSessionContext(context), cancellationToken);
+        return StartAsync(CreateSessionContext(context), cancellationToken: cancellationToken);
     }
 
     public void BeginRecording(string outputPath)

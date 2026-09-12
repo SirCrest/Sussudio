@@ -986,7 +986,7 @@ public sealed class DeviceDiscoveryTests
 
         public Task RefreshAsync(CancellationToken cancellationToken = default, bool throwOnScanFailure = false)
             => (Task)_controller.GetType().GetMethod("RefreshDevicesAsync")!.Invoke(
-                _controller, [cancellationToken, throwOnScanFailure])!;
+                _controller, [throwOnScanFailure, cancellationToken])!;
 
         public void AssertOriginalState()
         {

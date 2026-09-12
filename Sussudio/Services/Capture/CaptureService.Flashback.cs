@@ -2027,15 +2027,15 @@ public partial class CaptureService
     internal async Task<FinalizeResult> ExportFlashbackRangeAsync(
         TimeSpan? inPoint, TimeSpan? outPoint, string outputPath,
         IProgress<ExportProgress>? progress,
-        CancellationToken ct,
         TimeSpan? inPointFilePts = null,
-        TimeSpan? outPointFilePts = null)
+        TimeSpan? outPointFilePts = null,
+        CancellationToken cancellationToken = default)
     {
         var snapshotResult = await SnapshotFlashbackExportBackendAsync(
                 outputPath,
                 operationName: "range",
                 sessionReleaseOperation: "flashback_export_snapshot_session",
-                ct)
+                cancellationToken)
             .ConfigureAwait(false);
         if (snapshotResult.Failure != null)
         {
@@ -2048,7 +2048,7 @@ public partial class CaptureService
                 TimeSpan.MaxValue,
                 outputPath,
                 progress,
-                ct,
+                cancellationToken,
                 snapshotSink: snapshot.Sink,
                 snapshotBufferManager: snapshot.BufferManager,
                 snapshotExporter: snapshot.Exporter,

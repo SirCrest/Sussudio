@@ -18,7 +18,27 @@ internal readonly record struct DiagnosticEvaluation(
     string RenderLane,
     string PresentLane,
     string RecordingLane,
-    string AudioLane);
+    string AudioLane)
+{
+    internal static DiagnosticEvaluation Create(
+        string healthStatus,
+        string likelyStage,
+        string summary,
+        string evidence,
+        AutomationDiagnosticsHub.DiagnosticEvaluationLanes lanes)
+        => new(
+            healthStatus,
+            likelyStage,
+            summary,
+            evidence,
+            lanes.Source,
+            lanes.Decode,
+            lanes.Preview,
+            lanes.Render,
+            lanes.Present,
+            lanes.Recording,
+            lanes.Audio);
+}
 
 public sealed partial class AutomationDiagnosticsHub
 {
@@ -70,13 +90,6 @@ public sealed partial class AutomationDiagnosticsHub
             playbackCommandQueueAgeMs,
             playbackCommandFailureAgeMs,
             playbackCommandFailure);
-        var sourceLane = lanes.Source;
-        var decodeLane = lanes.Decode;
-        var previewLane = lanes.Preview;
-        var renderLane = lanes.Render;
-        var presentLane = lanes.Present;
-        var recordingLane = lanes.Recording;
-        var audioLane = lanes.Audio;
         var flashbackDiagnostic = FlashbackDiagnosticEvaluator.TryBuildFlashbackDiagnosticEvaluation(
             health,
             isRecording,
@@ -108,18 +121,12 @@ public sealed partial class AutomationDiagnosticsHub
         var summary = performance.PerfectionMet
             ? "No degraded frame lane detected."
             : performance.Summary;
-        return new DiagnosticEvaluation(
+        return DiagnosticEvaluation.Create(
             performance.PerfectionMet ? "Healthy" : "Warning",
             performance.PerfectionMet ? "none" : "mixed",
             summary,
             performance.PerfectionMet ? "All monitored frame lanes are within current thresholds." : performance.Summary,
-            sourceLane,
-            decodeLane,
-            previewLane,
-            renderLane,
-            presentLane,
-            recordingLane,
-            audioLane);
+            lanes);
     }
 
     private static DiagnosticEvaluationLanes BuildDiagnosticEvaluationLanes(
@@ -619,18 +626,12 @@ public sealed partial class AutomationDiagnosticsHub
     {
         if (!isPreviewing && !isRecording)
         {
-            return new DiagnosticEvaluation(
+            return DiagnosticEvaluation.Create(
                 "Idle",
                 "diagnostic_unavailable",
                 "Preview and recording are idle.",
                 "Start preview or recording to collect live frame-lane diagnostics.",
-                lanes.Source,
-                lanes.Decode,
-                lanes.Preview,
-                lanes.Render,
-                lanes.Present,
-                lanes.Recording,
-                lanes.Audio);
+                lanes);
         }
 
         if (health.CaptureCadenceSampleCount >= 30)
@@ -638,18 +639,12 @@ public sealed partial class AutomationDiagnosticsHub
             return null;
         }
 
-        return new DiagnosticEvaluation(
+        return DiagnosticEvaluation.Create(
             "WarmingUp",
             "diagnostic_unavailable",
             "Waiting for enough capture cadence samples.",
             lanes.Source,
-            lanes.Source,
-            lanes.Decode,
-            lanes.Preview,
-            lanes.Render,
-            lanes.Present,
-            lanes.Recording,
-            lanes.Audio);
+            lanes);
     }
 
     private static DiagnosticEvaluation? TryBuildRealtimeRecordingDiagnosticEvaluation(
@@ -670,18 +665,12 @@ public sealed partial class AutomationDiagnosticsHub
 
         if (recordingIntegrityFailed)
         {
-            return new DiagnosticEvaluation(
+            return DiagnosticEvaluation.Create(
                 "Critical",
                 "recording",
                 "Recording integrity is the likely failure point.",
                 lanes.Recording,
-                lanes.Source,
-                lanes.Decode,
-                lanes.Preview,
-                lanes.Render,
-                lanes.Present,
-                lanes.Recording,
-                lanes.Audio);
+                lanes);
         }
 
         if (string.Equals(captureRuntime.RecordingIntegrityAudioStatus, "Clean", StringComparison.OrdinalIgnoreCase) ||
@@ -691,18 +680,12 @@ public sealed partial class AutomationDiagnosticsHub
             return null;
         }
 
-        return new DiagnosticEvaluation(
+        return DiagnosticEvaluation.Create(
             "Warning",
             "audio",
             "Audio integrity is degraded.",
             lanes.Audio,
-            lanes.Source,
-            lanes.Decode,
-            lanes.Preview,
-            lanes.Render,
-            lanes.Present,
-            lanes.Recording,
-            lanes.Audio);
+            lanes);
     }
 
     private static DiagnosticEvaluation? TryBuildRealtimeSourceDiagnosticEvaluation(
@@ -721,18 +704,12 @@ public sealed partial class AutomationDiagnosticsHub
             health.CaptureCadenceSevereGapCount > 0 ||
             health.CaptureCadenceEstimatedDropPercent > 0.1)
         {
-            return new DiagnosticEvaluation(
+            return DiagnosticEvaluation.Create(
                 "Warning",
                 "source_capture",
                 "Source/capture cadence is the likely stutter stage.",
                 lanes.Source,
-                lanes.Source,
-                lanes.Decode,
-                lanes.Preview,
-                lanes.Render,
-                lanes.Present,
-                lanes.Recording,
-                lanes.Audio);
+                lanes);
         }
 
         if (!captureOnePercentLowDegraded)
@@ -746,32 +723,20 @@ public sealed partial class AutomationDiagnosticsHub
             health.CaptureCadenceSevereGapCount <= 0 &&
             health.CaptureCadenceEstimatedDropPercent <= 0)
         {
-            return new DiagnosticEvaluation(
+            return DiagnosticEvaluation.Create(
                 "Healthy",
                 "none",
                 "Source/capture 1% low is below target, but sampled visual cadence confirms source-rate output.",
                 $"{lanes.Source} | {lanes.Visual}",
-                lanes.Source,
-                lanes.Decode,
-                lanes.Preview,
-                lanes.Render,
-                lanes.Present,
-                lanes.Recording,
-                lanes.Audio);
+                lanes);
         }
 
-        return new DiagnosticEvaluation(
+        return DiagnosticEvaluation.Create(
             "Warning",
             "source_capture",
             "Source/capture 1% low is below target.",
             lanes.Source,
-            lanes.Source,
-            lanes.Decode,
-            lanes.Preview,
-            lanes.Render,
-            lanes.Present,
-            lanes.Recording,
-            lanes.Audio);
+            lanes);
     }
 
     private static DiagnosticEvaluation? TryBuildRealtimeMjpegDiagnosticEvaluation(
@@ -783,18 +748,12 @@ public sealed partial class AutomationDiagnosticsHub
 
         if (mjpegDuplicateCadenceDetected)
         {
-            return new DiagnosticEvaluation(
+            return DiagnosticEvaluation.Create(
                 "Warning",
                 "source_signal",
                 "Captured HFR MJPEG cadence contains repeated source frames.",
                 $"{lanes.MjpegDuplicate} | {lanes.Visual} | {lanes.SourceSignal}",
-                lanes.Source,
-                lanes.Decode,
-                lanes.Preview,
-                lanes.Render,
-                lanes.Present,
-                lanes.Recording,
-                lanes.Audio);
+                lanes);
         }
 
         if (recentMjpeg.DecodeFailures <= 0 &&
@@ -805,18 +764,12 @@ public sealed partial class AutomationDiagnosticsHub
             return null;
         }
 
-        return new DiagnosticEvaluation(
+        return DiagnosticEvaluation.Create(
             "Warning",
             "mjpeg_decode",
             "MJPEG decode/reorder is dropping or failing frames.",
             lanes.Decode,
-            lanes.Source,
-            lanes.Decode,
-            lanes.Preview,
-            lanes.Render,
-            lanes.Present,
-            lanes.Recording,
-            lanes.Audio);
+            lanes);
     }
 
     private static DiagnosticEvaluation? TryBuildRealtimePreviewDiagnosticEvaluation(
@@ -851,18 +804,12 @@ public sealed partial class AutomationDiagnosticsHub
             return null;
         }
 
-        return new DiagnosticEvaluation(
+        return DiagnosticEvaluation.Create(
             "Warning",
             "renderer",
             "Renderer pacing is the likely preview bottleneck.",
             lanes.Render,
-            lanes.Source,
-            lanes.Decode,
-            lanes.Preview,
-            lanes.Render,
-            lanes.Present,
-            lanes.Recording,
-            lanes.Audio);
+            lanes);
     }
 
     private static DiagnosticEvaluation? TryBuildRealtimePreviewSchedulerDiagnosticEvaluation(
@@ -883,20 +830,14 @@ public sealed partial class AutomationDiagnosticsHub
             return null;
         }
 
-        return new DiagnosticEvaluation(
+        return DiagnosticEvaluation.Create(
             "Warning",
             "preview_scheduler",
             previewSubmitFailed
                 ? "Preview scheduler failed to submit frames."
                 : "Preview scheduler is skipping stale or missing frames.",
             lanes.Preview,
-            lanes.Source,
-            lanes.Decode,
-            lanes.Preview,
-            lanes.Render,
-            lanes.Present,
-            lanes.Recording,
-            lanes.Audio);
+            lanes);
     }
 
     private static DiagnosticEvaluation? TryBuildRealtimePreviewPresentDiagnosticEvaluation(
@@ -913,18 +854,12 @@ public sealed partial class AutomationDiagnosticsHub
         if (presentCadenceOverBudget ||
             unsyncedPresentCallSlow)
         {
-            return new DiagnosticEvaluation(
+            return DiagnosticEvaluation.Create(
                 "Warning",
                 "present_display",
                 "Present/display cadence is the likely preview bottleneck.",
                 lanes.Present,
-                lanes.Source,
-                lanes.Decode,
-                lanes.Preview,
-                lanes.Render,
-                lanes.Present,
-                lanes.Recording,
-                lanes.Audio);
+                lanes);
         }
 
         var previewOnePercentLowDegraded =
@@ -939,32 +874,20 @@ public sealed partial class AutomationDiagnosticsHub
 
         if (visualCadenceHealthy)
         {
-            return new DiagnosticEvaluation(
+            return DiagnosticEvaluation.Create(
                 "Healthy",
                 "none",
                 "Present/display 1% low is below target, but sampled visual cadence confirms source-rate output.",
                 $"{lanes.Present} | {lanes.Visual}",
-                lanes.Source,
-                lanes.Decode,
-                lanes.Preview,
-                lanes.Render,
-                lanes.Present,
-                lanes.Recording,
-                lanes.Audio);
+                lanes);
         }
 
-        return new DiagnosticEvaluation(
+        return DiagnosticEvaluation.Create(
             "Warning",
             "present_display",
             "Present/display 1% low is below target.",
             lanes.Present,
-            lanes.Source,
-            lanes.Decode,
-            lanes.Preview,
-            lanes.Render,
-            lanes.Present,
-            lanes.Recording,
-            lanes.Audio);
+            lanes);
     }
 
     internal readonly record struct DiagnosticEvaluationLanes(
