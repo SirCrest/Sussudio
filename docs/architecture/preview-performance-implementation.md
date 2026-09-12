@@ -76,8 +76,9 @@ The five implementation checkpoints are complete:
 1. **Preview readiness and ownership.** The render thread now performs resize and
    display-readiness work before choosing a queued frame, with stop/reset/session
    checks before rendering. Existing pacing defaults remain: Present interval 1,
-   maximum frame latency 1, two swap-chain buffers, queue capacity 4, and waitable
-   pacing disabled. When enabled, its existing 8 ms timeout policy remains. DXGI
+   maximum frame latency 1, two swap-chain buffers, queue capacity 4. Waitable
+   pacing is **enabled** by default (`SUSSUDIO_PREVIEW_WAITABLE_SWAPCHAIN`
+   defaults to 1) with an 8 ms timeout policy; set it to 0 to disable. DXGI
    wait handles now have explicit `SafeWaitHandle` ownership across resize and
    swap-chain replacement.
 2. **Shared stats collection.** `StatsUiSampler` collects labels every 250 ms and

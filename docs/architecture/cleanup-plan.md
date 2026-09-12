@@ -1,4 +1,4 @@
-﻿# Architecture Cleanup Plan
+# Architecture Cleanup Plan
 
 Navigation reviewed: 2026-09-05. Pending proposals retain their original scope and require live-source verification.
 
@@ -27,9 +27,9 @@ before selecting a slice. Record current ownership only there.
 
 [Completed Slices](#completed-slices) below preserves the previous cleanup history.
 Its ownership descriptions describe those checkpoints and may have been superseded.
-For dated validation evidence, use the
-[slice evidence log](Sussudio-Defragmentation-Baseline.md); for measured counts,
-use the [generated baseline](Sussudio-Defragmentation-Baseline.generated.md).
+For measured counts, use the
+[generated baseline](Sussudio-Defragmentation-Baseline.generated.md). Dated slice
+validation evidence lives in git history, not in a document.
 
 ## Next Slices
 

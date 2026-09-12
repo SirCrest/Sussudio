@@ -7,10 +7,10 @@ and fast checks. It is intentionally mechanical so future agents can find the
 right file without guessing from old chat transcripts. This is the authoritative
 current ownership map; update it when ownership changes.
 
-Use [the cleanup plan](cleanup-plan.md#next-slices) for pending work and
-[the slice evidence log](Sussudio-Defragmentation-Baseline.md) for historical
-validation. [The generated baseline](Sussudio-Defragmentation-Baseline.generated.md)
-records measured counts at its stated checkpoint.
+Use [the cleanup plan](cleanup-plan.md#next-slices) for pending work.
+[The generated baseline](Sussudio-Defragmentation-Baseline.generated.md)
+records measured counts at its stated checkpoint. Dated slice validation
+evidence lives in git history, not in a document.
 
 ## Architecture Ownership Entry Points
 
