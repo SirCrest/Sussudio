@@ -16,6 +16,10 @@ namespace Sussudio.Tests
 {
     public sealed class MjpegPipelineContractsTests
     {
+
+        [Fact]
+        public Task FrameFingerprintCadenceTrackerCurrentDuplicateRunLowersUniqueFps()
+            => global::Program.FrameFingerprintCadenceTracker_CurrentDuplicateRunLowersUniqueFps();
         private const string GpuNativeMjpegDecodeEnvironmentVariable = "SUSSUDIO_MJPEG_GPU_NATIVE_DECODE";
         private static readonly object GpuNativeMjpegPreferenceEnvironmentLock = new();
 
@@ -616,6 +620,63 @@ namespace Sussudio.Tests
 
 static partial class Program
 {
+
+    internal static Task FrameFingerprintCadenceTracker_CurrentDuplicateRunLowersUniqueFps()
+    {
+        var trackerSource = ReadRepoFile("Sussudio/Services/Capture/Mjpeg/FrameFingerprintCadenceTracker.cs").Replace("\r\n", "\n");
+        var tracker = CreateInstance("Sussudio.Services.Capture.Mjpeg.FrameFingerprintCadenceTracker");
+        var trackerType = tracker.GetType();
+        var recordFrame = trackerType.GetMethod("RecordFrame", BindingFlags.Public | BindingFlags.Instance)
+            ?? throw new InvalidOperationException("FrameFingerprintCadenceTracker.RecordFrame not found.");
+        var getMetrics = trackerType.GetMethod("GetMetrics", BindingFlags.Public | BindingFlags.Instance)
+            ?? throw new InvalidOperationException("FrameFingerprintCadenceTracker.GetMetrics not found.");
+
+        var intervalTicks = Math.Max(1, Stopwatch.Frequency / 120);
+        var tick = Stopwatch.Frequency;
+        for (ulong hash = 1; hash <= 120; hash++)
+        {
+            recordFrame.Invoke(tracker, new object?[] { hash, tick });
+            tick += intervalTicks;
+        }
+
+        var repeatedHash = 120UL;
+        for (var i = 0; i < 90; i++)
+        {
+            recordFrame.Invoke(tracker, new object?[] { repeatedHash, tick });
+            tick += intervalTicks;
+        }
+
+        var metrics = getMetrics.Invoke(tracker, new object?[] { 180 })
+            ?? throw new InvalidOperationException("FrameFingerprintCadenceTracker.GetMetrics returned null.");
+
+        AssertEqual("DuplicateRun", GetStringProperty(metrics, "Pattern"), "packet hash pattern during trailing duplicate run");
+        AssertEqual(true, GetBoolProperty(metrics, "LastFrameDuplicate"), "packet hash last-frame duplicate state");
+
+        var duplicatePercent = GetDoubleProperty(metrics, "DuplicateFramePercent");
+        if (duplicatePercent < 40)
+        {
+            throw new InvalidOperationException($"Duplicate percent did not reflect recent duplicate run: {duplicatePercent:0.00}%.");
+        }
+
+        var uniqueFps = GetDoubleProperty(metrics, "UniqueObservedFps");
+        if (uniqueFps >= 80)
+        {
+            throw new InvalidOperationException($"Unique FPS stayed stale during duplicate run: {uniqueFps:0.00} fps.");
+        }
+
+        AssertContains(trackerSource, "internal sealed class FrameFingerprintCadenceTracker");
+        AssertDoesNotContain(trackerSource, "partial class FrameFingerprintCadenceTracker");
+        AssertContains(trackerSource, "public void RecordFrame(ulong hash, long timestampTick = 0)");
+        AssertContains(trackerSource, "public static ulong ComputeHash(ReadOnlySpan<byte> data)");
+        AssertContains(trackerSource, "private static ulong HashBytes(ulong initialHash, ReadOnlySpan<byte> data)");
+        AssertContains(trackerSource, "public readonly record struct Metrics(");
+        AssertContains(trackerSource, "public static Metrics Empty { get; }");
+        AssertContains(trackerSource, "public Metrics GetMetrics(int maxRecentSamples = 180)");
+        AssertContains(trackerSource, "private static double[] BuildRecentUniqueIntervals(");
+        AssertContains(trackerSource, "private static string ResolvePattern(");
+
+        return Task.CompletedTask;
+    }
     private static object CreatePooledVideoFrame(
         Type frameType,
         object pixelFormat,

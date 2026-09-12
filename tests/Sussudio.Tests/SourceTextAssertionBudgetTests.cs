@@ -105,7 +105,8 @@ static partial class Program
                 description =
                     "Ceiling on source-text assertions per test file. " +
                     "An assertion on repository source text cannot fail when behavior breaks; " +
-                    "lower a ceiling when a slice removes some, and never raise one.",
+                    "lower a ceiling when a slice removes some. The only reason to raise one is " +
+                    "restoring coverage that a previous slice deleted by mistake.",
                 totalCeiling = counts.Values.Sum(),
                 fileCeilings = counts
             };
