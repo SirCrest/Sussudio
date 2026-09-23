@@ -56,6 +56,18 @@ Notes for future agents:
 
 ## Slice Evidence
 
+Date: 2026-09-23
+Area: Media Foundation interop and device enumerator consolidation
+Problem: `MfDeviceEnumerator.cs` duplicated Media Foundation GUIDs and constants and carried a second subtype-name mapper. MF callers also used the Audio-layer COM release helper, coupling Capture to an unrelated domain. The enumerator's `DeviceDiscovery` subfolder no longer reflected its cohesive owner boundary.
+Files consolidated: `Sussudio/Services/Capture/DeviceDiscovery/MfDeviceEnumerator.cs` moved to `Sussudio/Services/Capture/MfDeviceEnumerator.cs`; duplicated subtype-name mapping now delegates to `MfInteropHelpers.SubtypeGuidToName`.
+Files added: `Sussudio/Services/Interop/ComObjectReleaser.cs` owns shared COM release behavior; `MfGuids` gained the FriendlyName, YUY2, UYVY, and RGB24 GUIDs.
+Net production .cs delta: +1 core app `.cs` file for the cross-domain COM releaser; net test `.cs` delta: 0.
+Partial clusters reduced: n/a; moved one cohesive enumerator and consolidated shared interop helpers without changing partial types.
+Build/tests/runtime checks: app build `dotnet build Sussudio\Sussudio.csproj --no-restore -p:Platform=x64 -p:StageLatestBuild=true` passed with 0 warnings/errors; focused architecture/interop tests passed (26); full solution build failed after retries because another process held `tools\McpServer\bin\Debug\net8.0\Sussudio.Automation.Contracts.dll` (the app and other tools built); full suite: 2701 passed, 54 environment/tooling failures (48 stale MCP binaries, 4 MCP token-environment assertions, 2 startup timeouts); offline assembly-load smoke passed; `git diff --check` passed.
+CLI/MCP/pipe checks, if applicable: no command IDs, protocol payloads, DTOs, or MCP source changed. `Get-Process` showed ten running `McpServer` processes; process command-line inspection was denied, and none were stopped. No live capture or hardware behavior was changed or exercised.
+Behavior preserved: WASAPI release wrappers retain their signatures, suppression messages, and reference-nulling behavior. MF enumeration and source-reader releases now use the Capture-local wrapper; raw `Marshal.ReleaseComObject` calls and private P/Invoke declarations remain unchanged. The shared subtype mapper preserves P010/NV12/YUY2/UYVY/MJPG/RGB24 labels, printable FourCC fallback, and braced GUID fallback.
+Notes for future agents: keep common COM release mechanics in `Sussudio/Services/Interop/ComObjectReleaser.cs` with domain-local forwarding helpers, shared MF constants/GUIDs and subtype naming in `MfInterop.cs`, and MF device enumeration in `MfDeviceEnumerator.cs`. Current counts: core app 117 `.cs` files / 93,191 nonblank LoC; tests 106 `.cs` files / 82,774 nonblank LoC.
+
 Date: 2026-06-01
 Area: diagnostic-session Flashback cycle scenario locality
 Problem: `tools/DiagnosticSession/DiagnosticSessionFlashbackPreviewCycleScenarios.cs` was the smallest remaining Flashback diagnostic scenario-family owner, but it used the same wait/export helpers and startup delegation pattern as `DiagnosticSessionFlashbackCycleScenarios.cs`. Reviewing Flashback cycle diagnostics still required opening one file for restart/encoder/lifecycle cycles and a second sibling for preview stop/restart cycles, even though both are state-mutating Flashback cycle scenarios selected by the same catalog/startup flow.
@@ -727,7 +739,7 @@ Partial clusters reduced: none; shared MF interop owner count 2 -> 1; generated 
 Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~ServiceNamespace|FullyQualifiedName~CaptureDiscovery"` passed (2 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`.
 CLI/MCP/pipe checks, if applicable: not applicable; no public automation command names, command IDs, wire payloads, DTO property names, XAML bindings, tool protocols, capture/preview/recording/Flashback/HDR behavior, or hot-path runtime code changed.
 Behavior preserved: `MfInteropHelpers` remains in the same namespace with the same public static methods/constants and reflection-visible type name; MFStartup/MFShutdown ref-counting, hresult throwing, typed `IMFAttributes` reads, allocated-string cleanup, symbolic-link matching, flattened `IMFSample` vtable placeholder order, MF buffer/DXGI contracts, source-reader nested `MfInterop` P/Invokes, constants, HRESULTs, and GUIDs now live together in `Sussudio/Services/Capture/MfInterop.cs`.
-Notes for future agents: keep shared Media Foundation ABI declarations and helper primitives in `Sussudio/Services/Capture/MfInterop.cs` while source-reader behavior remains in `MfSourceReaderVideoCapture.cs`, `MfSourceReaderVideoCapture.Negotiation.cs`, and `MfSourceReaderVideoCapture.FrameDelivery.cs`, and device enumeration behavior remains in `DeviceDiscovery/MfDeviceEnumerator.cs`. Split the interop file only for a distinct ABI family or generated interop surface, not because the helper block is small.
+Notes for future agents: keep shared Media Foundation ABI declarations and helper primitives in `Sussudio/Services/Capture/MfInterop.cs` while source-reader behavior remains in `MfSourceReaderVideoCapture.cs`, `MfSourceReaderVideoCapture.Negotiation.cs`, and `MfSourceReaderVideoCapture.FrameDelivery.cs`, and device enumeration behavior remains in `MfDeviceEnumerator.cs`. Split the interop file only for a distinct ABI family or generated interop surface, not because the helper block is small.
 Current file/LoC checkpoint: core app `.cs`: 144 / 89,736 nonblank LoC; tests `.cs`: 100 / 56,109 nonblank LoC.
 
 Date: 2026-05-31
@@ -3657,7 +3669,7 @@ Partial clusters reduced: `DeviceService` partial family removed
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; `git diff --check`
 CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
 Behavior preserved: capture/audio enumeration orchestration, format-cache warm/load/delete/save behavior, background probe event delivery, inline format probing, HDR detection, pixel-format normalization, frame-rate normalization, discovery summary text, priority scoring, audio association, and native XU interface resolution remain unchanged
-Notes for future agents: keep device enumeration, discovery cache, and format probing together in `DeviceService.cs`; keep lower-level MF enumeration/source opening in `DeviceDiscovery/MfDeviceEnumerator.cs`.
+Notes for future agents: keep device enumeration, discovery cache, and format probing together in `DeviceService.cs`; keep lower-level MF enumeration/source opening in `MfDeviceEnumerator.cs`.
 
 Date: 2026-05-25
 Area: PresentMon result formatting locality

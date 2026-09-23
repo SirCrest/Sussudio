@@ -6,7 +6,6 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using Sussudio.Services.Audio;
 using Sussudio.Services.Runtime;
 
 namespace Sussudio.Services.Capture;
@@ -248,8 +247,8 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                     $"stage=CreateSourceReader hr=0x{createSourceReaderHr:X8} " +
                     "fallback=cpu_only");
 
-                WasapiComInterop.ReleaseComObject(ref sourceReader);
-                WasapiComInterop.ReleaseComObject(ref readerAttributes);
+                MfInteropHelpers.ReleaseComObject(ref sourceReader);
+                MfInteropHelpers.ReleaseComObject(ref readerAttributes);
 
                 MfInteropHelpers.ThrowIfFailed(
                     MfInterop.MFCreateAttributes(out readerAttributes, 1),
@@ -349,10 +348,10 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         }
         finally
         {
-            WasapiComInterop.ReleaseComObject(ref selectedMediaType);
-            WasapiComInterop.ReleaseComObject(ref readerAttributes);
-            WasapiComInterop.ReleaseComObject(ref sourceReader);
-            WasapiComInterop.ReleaseComObject(ref mediaSource);
+            MfInteropHelpers.ReleaseComObject(ref selectedMediaType);
+            MfInteropHelpers.ReleaseComObject(ref readerAttributes);
+            MfInteropHelpers.ReleaseComObject(ref sourceReader);
+            MfInteropHelpers.ReleaseComObject(ref mediaSource);
 
             if (startupHeld)
             {
@@ -398,7 +397,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         }
         finally
         {
-            WasapiComInterop.ReleaseComObject(ref actualMediaType);
+            MfInteropHelpers.ReleaseComObject(ref actualMediaType);
         }
     }
 
@@ -598,7 +597,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         }
         finally
         {
-            WasapiComInterop.ReleaseComObject(ref attrs);
+            MfInteropHelpers.ReleaseComObject(ref attrs);
         }
     }
 
@@ -694,7 +693,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                         }
                     }
 
-                    WasapiComInterop.ReleaseComObject(ref activate);
+                    MfInteropHelpers.ReleaseComObject(ref activate);
                 }
             }
 
@@ -713,7 +712,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                 Marshal.FreeCoTaskMem(activateArrayPtr);
             }
 
-            WasapiComInterop.ReleaseComObject(ref attrs);
+            MfInteropHelpers.ReleaseComObject(ref attrs);
         }
     }
 
@@ -818,7 +817,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
 
                 if (delta < bestFpsDelta)
                 {
-                    WasapiComInterop.ReleaseComObject(ref bestType);
+                    MfInteropHelpers.ReleaseComObject(ref bestType);
                     bestType = nativeType;
                     nativeType = null;
                     bestFpsDelta = delta;
@@ -834,7 +833,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             }
             finally
             {
-                WasapiComInterop.ReleaseComObject(ref nativeType);
+                MfInteropHelpers.ReleaseComObject(ref nativeType);
             }
         }
 
@@ -853,7 +852,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
 
         if (bestFpsDelta > 0.5)
         {
-            WasapiComInterop.ReleaseComObject(ref bestType);
+            MfInteropHelpers.ReleaseComObject(ref bestType);
             throw new InvalidOperationException(
                 $"No {requestedSubtypeName} media type matched requested frame rate {requestedFps:0.###}fps " +
                 $"for {requestedWidth}x{requestedHeight}.");
@@ -925,8 +924,8 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         }
         finally
         {
-            WasapiComInterop.ReleaseComObject(ref nativeType);
-            WasapiComInterop.ReleaseComObject(ref convertedType);
+            MfInteropHelpers.ReleaseComObject(ref nativeType);
+            MfInteropHelpers.ReleaseComObject(ref convertedType);
         }
     }
 
@@ -1190,7 +1189,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             }
             finally
             {
-                WasapiComInterop.ReleaseComObject(ref sample);
+                MfInteropHelpers.ReleaseComObject(ref sample);
             }
         }
     }
@@ -1363,7 +1362,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             _dxgiDeviceManagerPtr = IntPtr.Zero;
         }
 
-        WasapiComInterop.ReleaseComObject(ref sourceReader);
+        MfInteropHelpers.ReleaseComObject(ref sourceReader);
 
         if (mediaSource != null)
         {
@@ -1377,7 +1376,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             }
         }
 
-        WasapiComInterop.ReleaseComObject(ref mediaSource);
+        MfInteropHelpers.ReleaseComObject(ref mediaSource);
     }
 
     private IMFMediaSource OpenMediaSourceWithBusyRetry(string deviceSymbolicLink)
@@ -1497,27 +1496,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
     }
 
     private static string SubtypeGuidToName(Guid subtype)
-    {
-        if (subtype == MfGuids.MFVideoFormat_P010) return "P010";
-        if (subtype == MfGuids.MFVideoFormat_NV12) return "NV12";
-        if (subtype == new Guid(0x32595559, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71)) return "YUY2";
-        if (subtype == new Guid(0x47504A4D, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71)) return "MJPG";
-        if (subtype == new Guid(0x00000014, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71)) return "RGB24";
-        // FourCC-style: first 4 bytes of GUID are the FourCC.
-        var bytes = subtype.ToByteArray();
-        if (bytes[4] == 0 && bytes[5] == 0 && bytes[6] == 0x10 && bytes[7] == 0)
-        {
-            var fourcc = new char[4];
-            for (var i = 0; i < 4; i++)
-            {
-                fourcc[i] = bytes[i] >= 0x20 && bytes[i] <= 0x7E ? (char)bytes[i] : '?';
-            }
-
-            return new string(fourcc);
-        }
-
-        return subtype.ToString("B");
-    }
+        => MfInteropHelpers.SubtypeGuidToName(subtype);
 
     private static readonly Guid ID3D11Texture2DIid = new(
         0x6F15AAF2, 0xD208, 0x4E89, 0x9A, 0xB4, 0x48, 0x95, 0x35, 0xD3, 0x4F, 0x9C);
@@ -1579,7 +1558,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         }
         finally
         {
-            WasapiComInterop.ReleaseComObject(ref buffer);
+            MfInteropHelpers.ReleaseComObject(ref buffer);
         }
     }
 

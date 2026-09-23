@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Text;
+using Sussudio.Services.Interop;
 
 namespace Sussudio.Services.Capture;
 
@@ -15,6 +16,60 @@ internal static class MfInteropHelpers
 
     private static readonly object StartupSync = new();
     private static int _startupRefCount;
+
+    public static string SubtypeGuidToName(Guid subtype)
+    {
+        if (subtype == MfGuids.MFVideoFormat_P010)
+        {
+            return "P010";
+        }
+
+        if (subtype == MfGuids.MFVideoFormat_NV12)
+        {
+            return "NV12";
+        }
+
+        if (subtype == MfGuids.MFVideoFormat_YUY2)
+        {
+            return "YUY2";
+        }
+
+        if (subtype == MfGuids.MFVideoFormat_UYVY)
+        {
+            return "UYVY";
+        }
+
+        if (subtype == MfGuids.MFVideoFormat_MJPG)
+        {
+            return "MJPG";
+        }
+
+        if (subtype == MfGuids.MFVideoFormat_RGB24)
+        {
+            return "RGB24";
+        }
+
+        var bytes = subtype.ToByteArray();
+        if (bytes[4] == 0 && bytes[5] == 0 && bytes[6] == 0x10 && bytes[7] == 0)
+        {
+            Span<char> fourCc = stackalloc char[4];
+            for (var i = 0; i < 4; i++)
+            {
+                var b = bytes[i];
+                fourCc[i] = b >= 0x20 && b <= 0x7E ? (char)b : '?';
+            }
+
+            return new string(fourCc);
+        }
+
+        return subtype.ToString("B");
+    }
+
+    public static void ReleaseComObject<T>(ref T? comObject) where T : class =>
+        ComObjectReleaser.ReleaseComObject(ref comObject, "MfInteropHelpers.ReleaseComObject<T>");
+
+    public static void ReleaseComObjectSafe(object? obj) =>
+        ComObjectReleaser.ReleaseComObjectSafe(obj, "MfInteropHelpers.SafeReleaseComObject");
 
     [DllImport("mfplat.dll", ExactSpelling = true)]
     private static extern int MFStartup(int version, int dwFlags);
@@ -541,6 +596,8 @@ internal static class MfGuids
 {
     internal static Guid MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE = new(
         0xC60AC5FE, 0x252A, 0x478F, 0xA0, 0xEF, 0xBC, 0x8F, 0xA5, 0xF7, 0xCA, 0xD3);
+    internal static Guid MF_DEVSOURCE_ATTRIBUTE_FRIENDLY_NAME = new(
+        0x60D0E559, 0x52F8, 0x4FA2, 0xBB, 0xCE, 0xAC, 0xDB, 0x34, 0xA8, 0xEC, 0x01);
     internal static Guid MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_GUID = new(
         0x8AC3587A, 0x4AE7, 0x42D8, 0x99, 0xE0, 0x0A, 0x60, 0x13, 0xEE, 0xF9, 0x0F);
     internal static Guid MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_SYMBOLIC_LINK = new(
@@ -575,6 +632,12 @@ internal static class MfGuids
         0x30313050, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71);
     internal static Guid MFVideoFormat_NV12 = new(
         0x3231564E, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71);
+    internal static Guid MFVideoFormat_YUY2 = new(
+        0x32595559, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71);
+    internal static Guid MFVideoFormat_UYVY = new(
+        0x59565955, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71);
     internal static Guid MFVideoFormat_MJPG = new(
         0x47504A4D, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71);
+    internal static Guid MFVideoFormat_RGB24 = new(
+        0x00000014, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71);
 }

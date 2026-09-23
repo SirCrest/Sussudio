@@ -1096,12 +1096,12 @@ static partial class Program
     }
 
     // Automation consumes Capture, which integrates Flashback. Audio, Telemetry,
-    // and the other leaf services may consume each other, but not these lifecycle
-    // owners. Check qualified service references in type names and imports,
-    // including alias/static imports and nested service namespaces.
+    // Interop, and the other leaf services may consume each other, but not these
+    // lifecycle owners. Check qualified service references in type names and
+    // imports, including alias/static imports and nested service namespaces.
     private static readonly string[] LeafServiceDomains =
     {
-        "Contracts", "Runtime", "Gpu", "Preview", "Recording", "NativeXu", "Audio", "Telemetry"
+        "Contracts", "Runtime", "Gpu", "Preview", "Recording", "NativeXu", "Audio", "Telemetry", "Interop"
     };
 
     private static readonly string[] OrchestrationServiceDomains =
@@ -1197,7 +1197,7 @@ static partial class Program
 
     internal static Task ServiceDependencies_KeepAudioAndTelemetryConsumed()
     {
-        foreach (var consumer in new[] { "Audio", "Telemetry" })
+        foreach (var consumer in new[] { "Audio", "Telemetry", "Interop" })
         {
             foreach (var dependency in new[] { "Capture", "Flashback", "Automation" })
             {
@@ -1211,7 +1211,8 @@ static partial class Program
         foreach (var (consumer, dependency) in new[]
         {
             ("Audio", "Telemetry"), ("Audio", "Recording"), ("Audio", "Runtime"),
-            ("Audio", "NativeXu"), ("Telemetry", "Contracts"), ("Telemetry", "NativeXu")
+            ("Audio", "NativeXu"), ("Audio", "Interop"), ("Capture", "Interop"),
+            ("Telemetry", "Contracts"), ("Telemetry", "NativeXu")
         })
         {
             AssertServiceSourceDependencyDirection(
@@ -2895,6 +2896,7 @@ static partial class Program
         AssertContains(rootText, "private static string ReadAudioEndpointFriendlyName(");
         AssertContains(rootText, "public static Task<List<MediaFormat>> ProbeVideoFormatsAsync(string symbolicLink)");
         AssertContains(rootText, "private static string SubtypeGuidToName(Guid subtype)");
+        AssertContains(rootText, "=> MfInteropHelpers.SubtypeGuidToName(subtype);");
         AssertContains(rootText, "private static IMFMediaSource CreateMediaSource(string symbolicLink)");
         AssertContains(rootText, "private static IMFMediaSource CreateMediaSourceByEnumeration(");
         AssertContains(rootText, "MfInteropHelpers.MatchesSymbolicLink(targetSymbolicLink, candidateLink)");
@@ -2909,9 +2911,42 @@ static partial class Program
         {
             AssertEqual(
                 false,
-                File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "DeviceDiscovery", removedFile)),
+                File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", removedFile)),
                 $"{removedFile} removed");
         }
+
+        var subtypeName = RequireType("Sussudio.Services.Capture.MfInteropHelpers")
+            .GetMethod("SubtypeGuidToName", BindingFlags.Static | BindingFlags.Public)
+            ?? throw new InvalidOperationException("MfInteropHelpers.SubtypeGuidToName was not found.");
+        var subtypeMappings = new (Guid Subtype, string Name)[]
+        {
+            (new Guid(0x30313050, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71), "P010"),
+            (new Guid(0x3231564E, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71), "NV12"),
+            (new Guid(0x32595559, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71), "YUY2"),
+            (new Guid(0x59565955, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71), "UYVY"),
+            (new Guid(0x47504A4D, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71), "MJPG"),
+            (new Guid(0x00000014, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71), "RGB24")
+        };
+        foreach (var (subtype, expectedName) in subtypeMappings)
+        {
+            AssertEqual(
+                expectedName,
+                (string)subtypeName.Invoke(null, new object?[] { subtype })!,
+                $"MF subtype {expectedName}");
+        }
+
+        var fourCcSubtype = new Guid(
+            0x44434241, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71);
+        AssertEqual(
+            "ABCD",
+            (string)subtypeName.Invoke(null, new object?[] { fourCcSubtype })!,
+            "MF subtype FourCC fallback");
+        var unknownSubtype = new Guid(
+            0x01234567, 0x89AB, 0xCDEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF);
+        AssertEqual(
+            unknownSubtype.ToString("B"),
+            (string)subtypeName.Invoke(null, new object?[] { unknownSubtype })!,
+            "MF subtype GUID fallback");
 
         return Task.CompletedTask;
     }
@@ -2924,6 +2959,7 @@ static partial class Program
         var sourceReaderNegotiationText = sourceReaderRootText;
         var sourceReaderDeviceEnumerationText = sourceReaderNegotiationText;
         var mfInteropText = ReadRepoFile("Sussudio/Services/Capture/MfInterop.cs").Replace("\r\n", "\n");
+        var deviceEnumeratorText = ReadRepoFile("Sussudio/Services/Capture/MfDeviceEnumerator.cs").Replace("\r\n", "\n");
 
         AssertContains(deviceRootText, "var likelyByCapability = LooksLikeHighBandwidthCapture(captureDevice);");
         AssertContains(deviceRootText, "public async Task<DeviceDiscoveryResult> EnumerateCaptureDeviceDiscoveryAsync(");
@@ -2950,6 +2986,12 @@ static partial class Program
         AssertContains(sourceReaderDeviceEnumerationText, "MfInterop.MFEnumDeviceSources(attrs, out activateArrayPtr, out var activateCount)");
         AssertContains(sourceReaderDeviceEnumerationText, "MfInteropHelpers.MatchesSymbolicLink(targetSymbolicLink, link)");
         AssertContains(mfInteropText, "public static bool MatchesSymbolicLink(string? target, string? candidate)");
+        AssertContains(mfInteropText, "public static void ReleaseComObject<T>(ref T? comObject)");
+        AssertContains(mfInteropText, "ComObjectReleaser.ReleaseComObject(ref comObject");
+        AssertContains(mfInteropText, "public static void ReleaseComObjectSafe(object? obj)");
+        AssertContains(mfInteropText, "ComObjectReleaser.ReleaseComObjectSafe(obj");
+        AssertContains(deviceEnumeratorText, "MfInteropHelpers.ReleaseComObject(ref activate)");
+        AssertDoesNotContain(sourceReaderRootText, "WasapiComInterop");
         AssertContains(sourceReaderDeviceEnumerationText, "ReleaseRemainingActivateObjects(activateArrayPtr, activateCount, i + 1);");
         AssertContains(sourceReaderDeviceEnumerationText, "Marshal.ReleaseComObject(activated)");
         AssertContains(sourceReaderDeviceEnumerationText, "Marshal.FreeCoTaskMem(activateArrayPtr);");
@@ -2990,6 +3032,9 @@ static partial class Program
         AssertContains(mfInteropText, "internal static class MfConstants");
         AssertContains(mfInteropText, "internal static class MfHResults");
         AssertContains(mfInteropText, "internal static class MfGuids");
+        AssertContains(mfInteropText, "MF_DEVSOURCE_ATTRIBUTE_FRIENDLY_NAME = new(");
+        AssertContains(mfInteropText, "MFVideoFormat_YUY2 = new(");
+        AssertContains(mfInteropText, "MFVideoFormat_UYVY = new(");
         AssertDoesNotContain(mfInteropText, "public sealed partial class MfSourceReaderVideoCapture");
         AssertContains(mfInteropText, "internal interface IMFSourceReader");
         AssertContains(mfInteropText, "internal interface IMFMediaBuffer");
@@ -3022,7 +3067,7 @@ static partial class Program
     }
 
     private static string ReadMfDeviceEnumeratorFile(string fileName) =>
-        ReadRepoFile($"Sussudio/Services/Capture/DeviceDiscovery/{fileName}");
+        ReadRepoFile($"Sussudio/Services/Capture/{fileName}");
 }
 
 namespace Sussudio.Tests

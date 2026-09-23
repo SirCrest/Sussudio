@@ -59,7 +59,7 @@ mentions the moved files.
 | App surface helpers | `Sussudio/AppSurface.cs` | Display formatters and XAML converters; preserve public binding type names. |
 | App runtime | `Sussudio/AppRuntime.cs` | Repository/log paths and an explicit idempotent Logger.Initialize(logRoot) lifetime; getters and early diagnostics do not start shared-file logging. The admitted App and validated private probe select their own roots before bounded asynchronous logging, rotation, fatal breadcrumbs, and best-effort system diagnostics. |
 | App project build workflow | `Sussudio/Sussudio.csproj`, `Sussudio/Sussudio.Build.targets` | Project identity and dependencies in the project; publish/staging policy and deferred Windows App SDK initialization in imported targets. The SDK initializer body is retained in an obj copy, with its module hook removed so `Program` invokes it only after normal process admission. |
-| Device discovery | `Sussudio/Services/Capture/DeviceService.cs`, `Sussudio/Services/Capture/MfInterop.cs`, `Sussudio/Services/Capture/DeviceDiscovery/MfDeviceEnumerator.cs` | Enumeration, capability/format probing, endpoint association, and shared Media Foundation helpers. |
+| Device discovery | `Sussudio/Services/Capture/DeviceService.cs`, `Sussudio/Services/Capture/MfInterop.cs`, `Sussudio/Services/Capture/MfDeviceEnumerator.cs` | Enumeration, capability/format probing, endpoint association, and shared Media Foundation helpers. |
 | Native XU KS bridge | `Sussudio/Services/NativeXu/KsExtensionUnitNative.cs` | KS interface discovery, topology parsing, native transfers, and transport gates. |
 | Device audio control | `Sussudio/Services/Audio/NativeXuAudioControlService.cs` | Single app-facing mode/gain write boundary and gain conversion through the production AT provider, raw-payload readback, and explicitly named probe-only payload mutation experiments. |
 | Device audio mode validation | `Sussudio/Models/Audio/DeviceAudioModeParser.cs` | Validate and canonicalize HDMI/Analog automation values before mutation. |
@@ -69,6 +69,7 @@ mentions the moved files.
 | Audio capture | `Sussudio/Services/Audio/WasapiAudioCapture.cs` | WASAPI capture lifecycle, conversion/resampling, pooled packets, and sink fan-out. |
 | Audio playback | `Sussudio/Services/Audio/WasapiAudioPlayback.cs` | WASAPI render lifecycle, retained transition failures and bounded acknowledgements, bounded sample buffering, PTS advancement, and volume ramps. |
 | WASAPI interop | `Sussudio/Services/Audio/WasapiComInterop.cs` | Core Audio COM contracts, native formats, endpoint helpers, and device-change notification. |
+| Shared COM release | `Sussudio/Services/Interop/ComObjectReleaser.cs` | Common best-effort COM release behavior used through domain-local Audio and Media Foundation forwarding helpers. |
 | WASAPI worker quarantine | `Sussudio/Services/Audio/WasapiWorkerQuarantine.cs` | Retain native resources for late-exiting workers and block unsafe restart until they exit. |
 | MJPEG preview pacing | `Sussudio/Services/Capture/MjpegPreviewJitterBuffer.cs` | Paced frame emission anchored to capture cadence, optional display-clock alignment, adaptive depth, and lease ownership. |
 | MJPEG decode pipeline | `Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.cs`, `Sussudio/Services/Capture/Mjpeg/FrameFingerprintCadenceTracker.cs` | Bounded compressed input, CPU decode workers, output ordering, and source-packet cadence metrics. |
@@ -473,12 +474,16 @@ Important entry points:
   boundary, and bounds topology retries and reply parsing to 64 KiB.
   `XUnit.KsExtensionUnitNativeTests.cs` executes the probe's linked bridge with
   synthetic IO plus ordinary-file open/fallback/handle-ownership checks.
-- `Sussudio/Services/Capture/DeviceDiscovery/MfDeviceEnumerator.cs` owns shared Media Foundation constants, GUIDs,
-  P/Invoke declarations, native MF video-device enumeration, WASAPI capture
-  endpoint enumeration and friendly-name reads, native video format probing,
-  subtype/FourCC naming, direct symbolic-link MF source activation, and
-  enumeration fallback. Native format-probe errors propagate to DeviceService;
+- `Sussudio/Services/Capture/MfDeviceEnumerator.cs` owns its private MF entry
+  points, device and format enumeration, WASAPI capture endpoint enumeration
+  and friendly-name reads, subtype/FourCC naming, and direct plus fallback MF
+  source activation. Native format-probe errors propagate to DeviceService;
   Media Foundation's no-more-types result remains normal enumeration completion.
+- `Sussudio/Services/Capture/MfInterop.cs` owns shared Media Foundation ABI
+  constants, GUIDs, helper methods, and the Capture-local COM release wrapper.
+- `Sussudio/Services/Interop/ComObjectReleaser.cs` owns shared best-effort COM
+  release and safe-release behavior. Audio and Capture keep their local
+  forwarding helpers so neither domain depends on the other.
 - `CaptureService.cs` owns shared service state, construction, the
   event/property surface, and the public initialization transition with initial
   selected device/settings capture, negotiated-format seeding, observed-pixel

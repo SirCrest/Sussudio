@@ -3492,10 +3492,22 @@ static partial class Program
     {
         var rootSource = ReadRepoFile("Sussudio/Services/Audio/WasapiComInterop.cs")
             .Replace("\r\n", "\n");
+        var releaserSource = ReadRepoFile("Sussudio/Services/Interop/ComObjectReleaser.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(rootSource, "internal static class WasapiComInterop");
         AssertContains(rootSource, "internal static void ThrowIfFailed(int hr, string operation)");
         AssertContains(rootSource, "internal static void ReleaseComObject<T>(ref T? comObject)");
+        AssertContains(rootSource, "ComObjectReleaser.ReleaseComObject(ref comObject, \"WasapiComInterop.ReleaseComObject<T>\")");
+        AssertContains(rootSource, "ComObjectReleaser.ReleaseComObjectSafe(obj, \"WasapiComInterop.SafeReleaseComObject\")");
+        AssertContains(releaserSource, "internal static class ComObjectReleaser");
+        AssertContains(releaserSource, "internal static void ReleaseComObject<T>(ref T? comObject, string failureContext)");
+        AssertContains(releaserSource, "internal static void ReleaseComObjectSafe(object? obj, string failureContext)");
+        AssertContains(releaserSource, "Marshal.IsComObject(comObject)");
+        AssertContains(releaserSource, "Marshal.ReleaseComObject(comObject)");
+        AssertContains(releaserSource, "comObject = null;");
+        AssertComReleaseWrapperClearsReference("Sussudio.Services.Audio.WasapiComInterop");
+        AssertComReleaseWrapperClearsReference("Sussudio.Services.Capture.MfInteropHelpers");
         AssertContains(rootSource, "internal static WasapiAudioFormat ReadAudioFormat(IntPtr formatPtr)");
         AssertContains(rootSource, "private static WasapiSampleType ResolveSampleType(");
         AssertContains(rootSource, "internal static IMMDeviceEnumerator CreateDeviceEnumerator()");
@@ -3543,6 +3555,18 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Audio", "WasapiComInterop.CommonContracts.cs")),
             "shared WASAPI contracts stay with Core Audio contracts instead of a tiny file");
+
+        static void AssertComReleaseWrapperClearsReference(string typeName)
+        {
+            var releaseMethod = RequireType(typeName)
+                .GetMethod("ReleaseComObject", System.Reflection.BindingFlags.Static |
+                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic)
+                ?.MakeGenericMethod(typeof(object))
+                ?? throw new InvalidOperationException($"{typeName}.ReleaseComObject<T> was not found.");
+            var arguments = new object?[] { new object() };
+            releaseMethod.Invoke(null, arguments);
+            AssertEqual(null, arguments[0], $"{typeName} clears released object reference");
+        }
 
         return Task.CompletedTask;
     }

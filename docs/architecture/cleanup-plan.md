@@ -1536,12 +1536,15 @@ project file when this bridge changes. `tests/Sussudio.Tests/XUnit.CoreRuntimeCo
 owns the cohesive KS bridge and probe-link ownership checks beside the Native
 XU provider contract wrappers.
 
-Native device enumeration ownership is grouped under
-`Sussudio/Services/Capture/DeviceDiscovery/`. Keep Media Foundation constants,
-GUIDs, P/Invoke declarations, MF video-device enumeration, WASAPI capture
+Native device enumeration ownership lives in
+`Sussudio/Services/Capture/MfDeviceEnumerator.cs`. Keep shared Media Foundation
+constants, GUIDs, shared P/Invoke declarations, helper methods, and Capture-local
+COM release forwarding in `MfInterop.cs`. Keep the enumerator's private MF
+entry points unchanged; keep MF video-device enumeration, WASAPI capture
 endpoint enumeration and friendly-name reads, native video format probing,
 subtype/FourCC naming, and direct plus enumeration-fallback MF source
-activation in `MfDeviceEnumerator.cs`.
+activation in `MfDeviceEnumerator.cs`. The shared best-effort COM release body
+lives in `Sussudio/Services/Interop/ComObjectReleaser.cs`.
 
 Capture service source telemetry polling, provider reads, fallback snapshot
 construction, merge policy, capture-format runtime telemetry, NTSC frame-rate
