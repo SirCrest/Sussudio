@@ -411,15 +411,12 @@ Automation diagnostics ownership:
   stateful snapshot bookkeeping for audio mute suspicion and recording file
   growth tracking.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs` owns
-  performance-timeline ring reads, append mechanics, final `AutomationSnapshot`
-  to `PerformanceTimelineEntry` assignment, timestamp, observed capture/preview
-  FPS, encoder video queue depth/drop, capture cadence, process, memory, GC,
-  thread-pool, pipeline-latency, Flashback export progress, force-rotate
-  fallback, preview cadence, visual cadence, MJPEG packet/jitter, D3D preview,
-  preview-pacing, Flashback playback timeline projection composition, grouped
-  handoff, playback cadence, decode timing, command queue/coalescing,
-  audio-master fallback, playback stage/failure, backend settings, queue reject,
-  cleanup, and force-rotate timeline projection.
+  performance-timeline ring reads, append mechanics and the direct159field
+  `AutomationSnapshot` to `PerformanceTimelineEntry` initializer, grouped by
+  capture, preview, Flashback playback/export and process resources.
+  `AutomationSnapshotRegressionTests.TimelinePreservesEveryCapturedField`
+  checks independent default/populated timeline fixtures captured before the
+  copy-only projection layers were removed. No providers or devices start.
 ## Capture Runtime
 
 Primary current owner: `Sussudio/Services/Capture/`

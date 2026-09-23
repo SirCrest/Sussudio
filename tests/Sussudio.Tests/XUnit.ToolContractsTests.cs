@@ -3911,52 +3911,9 @@ static partial class Program
                  })
         {
             AssertNotNull(entryType.GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance), $"PerformanceTimelineEntry.{propertyName}");
-            if (propertyName.StartsWith("FlashbackPlayback", StringComparison.Ordinal))
-            {
-                var projectionName = propertyName == "FlashbackPlaybackCommandsSkippedNotReady"
-                    ? "CommandsRejected"
-                    : propertyName["FlashbackPlayback".Length..];
-                AssertContains(diagnosticsHubSource, $"{propertyName} = flashbackPlayback.{projectionName}");
-                AssertContains(diagnosticsHubSource, $"{projectionName}: snapshot.{propertyName}");
-            }
-            else if (propertyName.StartsWith("FlashbackExport", StringComparison.Ordinal))
-            {
-                var projectionName = propertyName["FlashbackExport".Length..];
-                AssertContains(diagnosticsHubSource, $"{propertyName} = flashbackExport.{projectionName}");
-                AssertContains(diagnosticsHubSource, $"{projectionName}: snapshot.{propertyName}");
-            }
-            else if (propertyName is "ProcessCpuPercent" or "ThreadPoolWorkerAvailable")
-            {
-                AssertContains(diagnosticsHubSource, $"{propertyName} = system.{propertyName}");
-                AssertContains(diagnosticsHubSource, $"{propertyName}: snapshot.{propertyName}");
-            }
-            else if (propertyName.StartsWith("PreviewCadence", StringComparison.Ordinal))
-            {
-                var projectionName = propertyName["Preview".Length..];
-                AssertContains(diagnosticsHubSource, $"{propertyName} = preview.{projectionName}");
-                AssertContains(diagnosticsHubSource, $"{projectionName}: snapshot.{propertyName.Replace("Ms", "IntervalMs", StringComparison.Ordinal)}");
-            }
-            else if (propertyName.StartsWith("CaptureCadence", StringComparison.Ordinal))
-            {
-                AssertContains(diagnosticsHubSource, $"{propertyName} = core.{propertyName}");
-                AssertContains(diagnosticsHubSource, $"{propertyName}: snapshot.{propertyName}");
-            }
-            else if (propertyName.StartsWith("PreviewPacing", StringComparison.Ordinal))
-            {
-                var projectionName = propertyName["Preview".Length..];
-                AssertContains(diagnosticsHubSource, $"{propertyName} = preview.{projectionName}");
-                AssertContains(diagnosticsHubSource, $"{projectionName}: snapshot.{propertyName}");
-            }
-            else if (propertyName.StartsWith("VisualCadence", StringComparison.Ordinal) ||
-                     propertyName.StartsWith("MjpegPacketHash", StringComparison.Ordinal))
-            {
-                AssertContains(diagnosticsHubSource, $"{propertyName} = preview.{propertyName}");
-                AssertContains(diagnosticsHubSource, $"{propertyName}: snapshot.{propertyName}");
-            }
-            else
-            {
-                AssertContains(diagnosticsHubSource, $"{propertyName} = snapshot.{propertyName}");
-            }
+            // The timeline builder maps every field straight from the snapshot; the
+            // full 159-field behavior is pinned by TimelinePreservesEveryCapturedField.
+            AssertContains(diagnosticsHubSource, $"{propertyName} = snapshot.{propertyName},");
         }
     }
 

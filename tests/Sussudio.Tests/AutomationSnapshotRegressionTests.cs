@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Text.Json;
 using Xunit;
 
@@ -16,6 +17,26 @@ public sealed class AutomationSnapshotRegressionTests
 
         Assert.Equal(807, expected.RootElement.EnumerateObject().Count());
         AssertJsonEquivalent(expected.RootElement, actual, "$");
+    }
+
+    [Theory]
+    [InlineData("defaults.json")]
+    [InlineData("populated.json")]
+    public void TimelinePreservesEveryCapturedField(string fixtureName)
+    {
+        using var fixture = JsonDocument.Parse(File.ReadAllText(Path.Combine(
+            RuntimeContractSource.GetRepoRoot(), "tests", "Sussudio.Tests", "Fixtures", "PerformanceTimeline", fixtureName)));
+        var assembly = SussudioAssembly.Load();
+        var snapshotType = assembly.GetType("Sussudio.Models.AutomationSnapshot", throwOnError: true)!;
+        var timelineType = assembly.GetType("Sussudio.Models.PerformanceTimelineEntry", throwOnError: true)!;
+        var builder = assembly.GetType("Sussudio.Services.Automation.AutomationDiagnosticsHub", throwOnError: true)!
+            .GetMethod("BuildPerformanceTimelineEntry", BindingFlags.NonPublic | BindingFlags.Static)!;
+        var snapshot = JsonSerializer.Deserialize(fixture.RootElement.GetProperty("snapshot"), snapshotType)!;
+        var actual = JsonSerializer.SerializeToElement(builder.Invoke(null, new[] { snapshot }), timelineType);
+        var expected = fixture.RootElement.GetProperty("timeline");
+
+        Assert.Equal(159, expected.EnumerateObject().Count());
+        AssertJsonEquivalent(expected, actual, "$.timeline");
     }
 
     [Fact]
