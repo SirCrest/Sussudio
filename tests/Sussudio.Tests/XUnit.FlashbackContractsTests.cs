@@ -768,6 +768,34 @@ public sealed class FlashbackExporterContractsTests
         => global::Program.FlashbackOutputTransaction_PostMoveValidationFailurePreservesOutput();
 
     [Fact]
+    public void FlashbackOutputTransactionReportsMissingDirectoryWithoutCollisionRetries()
+    {
+        var temp = Directory.CreateTempSubdirectory("sussudio-reservation-error-");
+        try
+        {
+            var outputPath = Path.Combine(temp.FullName, "missing", "export.mp4");
+            var transactionType = SussudioAssembly.Load().GetType(
+                "Sussudio.Services.Flashback.FlashbackExportOutputTransaction", throwOnError: true)!;
+            var reserve = transactionType.GetMethod("TryReserve", BindingFlags.Static | BindingFlags.NonPublic)!;
+            var arguments = new object?[] { outputPath, null, string.Empty, string.Empty };
+
+            Assert.False((bool)reserve.Invoke(null, arguments)!);
+            Assert.Null(arguments[1]);
+            Assert.Equal("flashback-export-output-write-failed", arguments[3]);
+            var message = Assert.IsType<string>(arguments[2]);
+            var context = $"Flashback export failed: could not create temporary output file before writing '{outputPath}': ";
+            Assert.StartsWith(context, message);
+            Assert.Contains(".mp4.tmp", message[context.Length..]);
+            Assert.DoesNotContain("unique temporary output", message);
+            Assert.Empty(temp.EnumerateFileSystemInfos());
+        }
+        finally
+        {
+            temp.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
     public Task FlashbackOutputTransactionCreatesUniqueTempOutputPaths()
         => global::Program.FlashbackOutputTransaction_CreatesUniqueTempOutputPaths();
 

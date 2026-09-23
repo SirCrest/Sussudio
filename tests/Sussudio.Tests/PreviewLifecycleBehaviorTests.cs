@@ -13,6 +13,42 @@ namespace Sussudio.Tests
     {
         public PreviewLifecycleBehaviorTests() => global::Program.EnsureTargetAssemblyLoadedForXUnit();
 
+        [Theory]
+        [InlineData(false, false, false, "No active preview renderer.")]
+        [InlineData(false, true, false, "Preview frame capture canceled.")]
+        [InlineData(true, true, false, "Preview frame capture canceled.")]
+        [InlineData(true, false, true, "Preview frame capture canceled.")]
+        public async Task FrameCaptureWithoutRendererPreservesCancellationReason(
+            bool previewActive, bool cancelBeforeRequest, bool cancelAfterAdmission, string expectedMessage)
+        {
+            var serviceType = SussudioAssembly.Load().GetType("Sussudio.Services.Capture.CaptureService", throwOnError: true)!;
+            await using var service = (IAsyncDisposable)Activator.CreateInstance(serviceType)!;
+            var activeField = serviceType.GetField("_isVideoPreviewActive", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            activeField.SetValue(service, previewActive);
+            using var cancellation = new CancellationTokenSource();
+            if (cancelBeforeRequest) cancellation.Cancel();
+
+            try
+            {
+                var capture = (Task)serviceType.GetMethod("CapturePreviewFrameAsync")!
+                    .Invoke(service, new object[] { "unused-preview.png", cancellation.Token })!;
+                if (cancelAfterAdmission)
+                {
+                    Assert.False(capture.IsCompleted);
+                    cancellation.Cancel();
+                }
+
+                await capture.WaitAsync(TimeSpan.FromSeconds(5));
+                var result = capture.GetType().GetProperty("Result")!.GetValue(capture)!;
+                Assert.False((bool)result.GetType().GetProperty("Succeeded")!.GetValue(result)!);
+                Assert.Equal(expectedMessage, result.GetType().GetProperty("Message")!.GetValue(result));
+            }
+            finally
+            {
+                activeField.SetValue(service, false);
+            }
+        }
+
         [Fact]
         public Task CoordinatorInitializationFailureFaultsPreviewStartup()
             => global::Program.PreviewLifecycle_CoordinatorFailureFaultsStartup();

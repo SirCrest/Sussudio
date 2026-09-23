@@ -56,10 +56,10 @@ internal static class AtomicMax
 // path keeps that reporting decision at the call site instead of duplicating the loop.
 internal static class AtomicCounter
 {
-    public static bool TryDecrement(ref int target) => TrySubtract(ref target, 1);
+    public static bool TryDecrement(ref int target) => TrySubtractSaturating(ref target, 1);
 
     // Callers supply a positive amount; false means the full amount was unavailable.
-    public static bool TrySubtract(ref int target, int amount)
+    public static bool TrySubtractSaturating(ref int target, int amount)
     {
         while (true)
         {

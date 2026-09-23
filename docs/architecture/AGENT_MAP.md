@@ -1807,7 +1807,7 @@ Primary current owners:
   subclassing, bounded external process supervision contracts and runner, and
   best-effort MMCSS worker registration. `ProcessRunResult` retains independent
   stdout/stderr read exceptions; diagnostic wrappers preserve each original
-  cause. `AtomicCounter.TrySubtract` saturates at zero and reports success only
+  cause. `AtomicCounter.TrySubtractSaturating` saturates at zero and reports success only
   when the entire positive amount was available.
   Renderer telemetry uses RingBufferHelpers.Copy for chronological samples;
   renderer-owned locks and sample limits remain at its call sites.

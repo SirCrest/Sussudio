@@ -127,13 +127,13 @@ internal sealed class FlashbackExportOutputTransaction : IDisposable
                 failureCode = string.Empty;
                 return true;
             }
-            catch (IOException ex)
+            catch (IOException ex) when (IsDestinationExistsError(ex.HResult & 0xFFFF))
             {
                 Logger.Log($"FLASHBACK_EXPORT_TMP_CREATE_RETRY path='{candidate}' attempt={attempt + 1} type={ex.GetType().Name} msg='{ex.Message}'");
             }
             catch (Exception ex)
             {
-                failureMessage = $"Flashback export failed: could not create temporary output file before writing '{outputPath}'.";
+                failureMessage = $"Flashback export failed: could not create temporary output file before writing '{outputPath}': {ex.Message}";
                 Logger.Log($"FLASHBACK_EXPORT_TMP_CREATE_WARN path='{candidate}' type={ex.GetType().Name} msg='{ex.Message}'");
                 return false;
             }

@@ -700,7 +700,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
             return;
         }
 
-        AtomicCounter.TrySubtract(ref _playbackQueueFrames, frames);
+        AtomicCounter.TrySubtractSaturating(ref _playbackQueueFrames, frames);
     }
 
     private void ReturnActiveChunk()

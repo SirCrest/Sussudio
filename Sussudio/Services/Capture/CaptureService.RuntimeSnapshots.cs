@@ -1218,7 +1218,9 @@ public partial class CaptureService
         return new PreviewFrameCaptureResult
         {
             Succeeded = false,
-            Message = "No active preview renderer."
+            Message = cancellationToken.IsCancellationRequested
+                ? "Preview frame capture canceled."
+                : "No active preview renderer."
         };
     }
 
