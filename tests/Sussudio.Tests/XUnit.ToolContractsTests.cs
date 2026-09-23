@@ -1960,7 +1960,7 @@ static partial class Program
         var automationCommandKindType = optional.GetParameters()[0].ParameterType;
         var pendingType = optional.ReturnType;
         var executeBatch = formatterType.GetMethod(
-                "ExecuteBatchAsync",
+                "ExecuteBatchResultAsync",
                 BindingFlags.Static | BindingFlags.NonPublic,
                 binder: null,
                 types:
@@ -1970,10 +1970,11 @@ static partial class Program
                     pendingType.MakeArrayType()
                 ],
                 modifiers: null)
-            ?? throw new InvalidOperationException("ToolCommandFormatter.ExecuteBatchAsync was not found.");
+            ?? throw new InvalidOperationException("ToolCommandFormatter.ExecuteBatchResultAsync was not found.");
         var emptyCommands = Array.CreateInstance(pendingType, 0);
-        var emptyResult = await InvokeFormatterBatchAsync(executeBatch, pipeClient, "nothing to do", emptyCommands).ConfigureAwait(false);
-        AssertEqual("nothing to do", emptyResult, "ToolCommandFormatter empty batch result");
+        var emptyResult = await InvokeBatch(emptyCommands).ConfigureAwait(false);
+        AssertEqual("nothing to do", GetMcpToolResultText(emptyResult), "ToolCommandFormatter empty batch result");
+        AssertEqual(false, GetMcpToolResultIsError(emptyResult), "empty batch is not an error");
 
         var firstPending = optional.Invoke(
             null,
@@ -1993,17 +1994,23 @@ static partial class Program
                 new Dictionary<string, object?> { ["visible"] = false },
                 null
             });
-        var commands = Array.CreateInstance(pendingType, 2);
+        var omittedPending = optional.Invoke(null, new object?[]
+        {
+            Enum.Parse(automationCommandKindType, "SetPreviewVolume"), false,
+            new Dictionary<string, object?> { ["previewVolumePercent"] = 50d }, null
+        });
+        var commands = Array.CreateInstance(pendingType, 3);
         commands.SetValue(firstPending, 0);
-        commands.SetValue(secondPending, 1);
+        commands.SetValue(omittedPending, 1);
+        commands.SetValue(secondPending, 2);
 
-        string result = string.Empty;
+        object? result = null;
         var requests = await CapturePipeRequestsAsync(
                 pipeName,
                 expectedCount: 2,
                 async () =>
                 {
-                    result = await InvokeFormatterBatchAsync(executeBatch, pipeClient, "nothing to do", commands).ConfigureAwait(false);
+                    result = await InvokeBatch(commands).ConfigureAwait(false);
                 },
                 i => i == 0
                     ? "{\"Success\":true,\"Message\":\"stats updated\",\"ErrorCode\":\"ignored-success-code\"}"
@@ -2014,16 +2021,17 @@ static partial class Program
         AssertCommandRequest(requests[1], "SetSettingsVisible", ("visible", false));
         AssertEqual(
             "[OK] SetStatsVisible: stats updated" + Environment.NewLine + "[ERROR] SetSettingsVisible: settings blocked" + Environment.NewLine + "ErrorCode: settings-blocked",
-            result,
+            GetMcpToolResultText(result),
             "ToolCommandFormatter ordered joined batch result");
+        AssertEqual(true, GetMcpToolResultIsError(result), "partially applied failed batch is an error");
 
-        string failFastResult = string.Empty;
+        object? failFastResult = null;
         var failFastRequests = await CapturePipeRequestsAsync(
                 pipeName,
                 expectedCount: 1,
                 async () =>
                 {
-                    failFastResult = await InvokeFormatterBatchAsync(executeBatch, pipeClient, "nothing to do", commands).ConfigureAwait(false);
+                    failFastResult = await InvokeBatch(commands).ConfigureAwait(false);
                 },
                 _ => "{\"Success\":false,\"Message\":\"stats blocked\"}")
             .ConfigureAwait(false);
@@ -2031,8 +2039,16 @@ static partial class Program
         AssertCommandRequest(failFastRequests[0], "SetStatsVisible", ("visible", true));
         AssertEqual(
             "[ERROR] SetStatsVisible: stats blocked",
-            failFastResult,
+            GetMcpToolResultText(failFastResult),
             "ToolCommandFormatter stops batch after first failed mutation");
+        AssertEqual(true, GetMcpToolResultIsError(failFastResult), "first failed mutation makes the batch an error");
+
+        async Task<object> InvokeBatch(Array pendingCommands)
+        {
+            var task = (Task)executeBatch.Invoke(null, new object?[] { pipeClient, "nothing to do", pendingCommands })!;
+            await task.ConfigureAwait(false);
+            return task.GetType().GetProperty("Result")!.GetValue(task)!;
+        }
     }
 
     internal static async Task McpToolResults_PreserveFailureCodeExactlyOnce(bool batch, bool codeAlreadyInMessage)
@@ -11664,14 +11680,6 @@ public sealed class AutomationToolContractsProtocolXunitTests
             expectedRetryAfterMs);
     }
 
-    private static string ReadDiagnosticSessionRunnerSource()
-        => string.Join(
-            "\n",
-            Directory.GetFiles(Path.Combine(FindRepoRoot(), "tools", "DiagnosticSession"), "DiagnosticSessionRunner*.cs")
-                .Concat(Directory.GetFiles(Path.Combine(FindRepoRoot(), "tools", "DiagnosticSession"), "DiagnosticSessionRun*.cs"))
-                .OrderBy(path => path, StringComparer.Ordinal)
-                .Select(path => File.ReadAllText(path).Replace("\r\n", "\n", StringComparison.Ordinal)));
-
     private static Type RequireSharedToolType(string typeName)
     {
         var assembly = ToolFormatterTestAssembly.Load(global::Program.SsctlAssemblyRelativePath);
@@ -11721,23 +11729,6 @@ public sealed class AutomationToolContractsProtocolXunitTests
         Assert.Equal(expectedStatus, (string?)args[2]);
         var actualRetryAfterMs = args[3] is null ? (int?)null : Convert.ToInt32(args[3]);
         Assert.Equal(expectedRetryAfterMs, actualRetryAfterMs);
-    }
-
-    private static string FindRepoRoot()
-    {
-        var directory = new DirectoryInfo(Environment.CurrentDirectory);
-        while (directory != null)
-        {
-            var gitPath = Path.Combine(directory.FullName, ".git");
-            if (Directory.Exists(gitPath) || File.Exists(gitPath))
-            {
-                return directory.FullName;
-            }
-
-            directory = directory.Parent;
-        }
-
-        return Environment.CurrentDirectory;
     }
 }
 }

@@ -1951,17 +1951,6 @@ static partial class Program
         return Convert.ToBoolean(GetPropertyValue(result, "IsError"), CultureInfo.InvariantCulture);
     }
 
-    private static async Task<string> InvokeFormatterBatchAsync(
-        MethodInfo executeBatch,
-        object pipeClient,
-        string emptyMessage,
-        Array commands)
-    {
-        var task = executeBatch.Invoke(null, new object?[] { pipeClient, emptyMessage, commands }) as Task<string>
-            ?? throw new InvalidOperationException("ToolCommandFormatter.ExecuteBatchAsync did not return Task<string>.");
-        return await task.ConfigureAwait(false);
-    }
-
     private static void AssertNoToolSchemaExposesPipeClient(JsonElement tools)
     {
         var checkedCount = 0;

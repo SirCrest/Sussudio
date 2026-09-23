@@ -29,11 +29,9 @@ namespace Sussudio.Tests
         public Task PipeRequestPreservesUtf8AndNewline()
             => global::Program.McpCancellation_PipeRequestPreservesUtf8AndNewline();
 
-        [Theory]
-        [InlineData("ExecuteBatchAsync")]
-        [InlineData("ExecuteBatchResultAsync")]
-        public Task CancelingBatchClosesFirstRequestAndDoesNotSendSecond(string methodName)
-            => global::Program.McpCancellation_CancelingBatchStopsBeforeSecondCommand(methodName);
+        [Fact]
+        public Task CancelingBatchClosesFirstRequestAndDoesNotSendSecond()
+            => global::Program.McpCancellation_CancelingBatchStopsBeforeSecondCommand();
 
         [Fact]
         public Task HostHidesCancellationTokenAndCancelsActivePipeRequest()
@@ -152,7 +150,7 @@ static partial class Program
         await AssertMcpCancellationPipeDisconnectedAsync(reader, deadline.Token).ConfigureAwait(false);
     }
 
-    internal static async Task McpCancellation_CancelingBatchStopsBeforeSecondCommand(string methodName)
+    internal static async Task McpCancellation_CancelingBatchStopsBeforeSecondCommand()
     {
         var pipeName = NewMcpToolPipeName("cancel-batch");
         var pipeClient = CreateMcpPipeClient(pipeName);
@@ -173,7 +171,7 @@ static partial class Program
             new Dictionary<string, object?> { ["visible"] = false }, null
         }), 1);
         var execute = formatter.GetMethods(BindingFlags.Static | BindingFlags.NonPublic)
-            .Single(method => method.Name == methodName && method.GetParameters().Length == 4 &&
+            .Single(method => method.Name == "ExecuteBatchResultAsync" && method.GetParameters().Length == 4 &&
                 method.GetParameters()[2].ParameterType == typeof(CancellationToken));
 
         using var firstServer = CreateMcpCancellationTestPipe(pipeName);

@@ -2885,9 +2885,12 @@ Primary owners:
   point delegates to `tools/Common/AutomationSnapshotFormatter.cs` with the
   CLI presentation choice and Flashback enabled. It does not duplicate the
   shared snapshot sections.
-- `tools/McpServer/Tools/ToolCommandFormatter.cs` owns shared command text and
-  MCP result construction, including required-object validation and structured
-  payload/error outcomes for raw app state and capture options.
+- `tools/McpServer/Tools/ToolCommandFormatter.cs` owns command execution and
+  text inside `CallToolResult`, including ordered optional batches that stop
+  at the first failure and preserve earlier applied changes. Batch-tool
+  descriptions state their application order and partial-failure behavior.
+  It also owns required-object validation and structured payload/error
+  outcomes for raw app state and capture options.
   `McpToolResultFactory` owns response-message fallback and failure-code
   formatting for both single and batch results. Tool contract tests compare
   advertised action tokens with the app enums and preserve codes exactly once.

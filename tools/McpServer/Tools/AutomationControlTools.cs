@@ -15,7 +15,7 @@ namespace McpServer.Tools;
 // bitrate, and decoder count.
 public static class CaptureSettingsTools
 {
-    [McpServerTool, Description("Configure capture settings: resolution, frame rate, video format override, recording format, quality, custom bitrate, preset, split encode mode, and MJPEG decoder count. Only provided parameters are changed.")]
+    [McpServerTool, Description("Apply provided capture settings in this order: resolution, frame rate, video format override, recording format, quality, custom bitrate, preset, split encode mode, MJPEG decoder count. Stops at the first failure; earlier changes remain applied.")]
     public static async Task<CallToolResult> configure_capture(
         PipeClient pipeClient,
         [Description("Recording resolution, for example 3840x2160")] string? resolution = null,
@@ -49,7 +49,7 @@ public static class CaptureSettingsTools
 // MCP tools for refreshing and selecting capture/audio/microphone devices.
 public static class DeviceTools
 {
-    [McpServerTool, Description("Select capture device, audio input device, microphone device, refresh device list, or toggle custom audio input")]
+    [McpServerTool, Description("Apply requested device changes in this order: refresh the list, select capture device, select audio input, select microphone, toggle custom audio input. Stops at the first failure; earlier changes remain applied.")]
     public static async Task<CallToolResult> configure_device(
         PipeClient pipeClient,
         [Description("Capture device id to select")] string? deviceId = null,
@@ -116,7 +116,7 @@ public static class CaptureOptionsTools
 // MCP tools for pipeline/debug knobs that affect capture and preview behavior.
 public static class PipelineSettingsTools
 {
-    [McpServerTool, Description("Configure pipeline settings: HDR, audio capture, audio preview, microphone recording/volume, true HDR preview, and output path. Only provided parameters are changed.")]
+    [McpServerTool, Description("Apply provided pipeline settings in this order: HDR, true HDR preview, audio capture, audio preview, microphone recording, microphone volume, output path. Stops at the first failure; earlier changes remain applied.")]
     public static async Task<CallToolResult> configure_pipeline(
         PipeClient pipeClient,
         [Description("Enable or disable HDR")] bool? hdrEnabled = null,
@@ -250,7 +250,7 @@ public static class WindowTools
 // MCP tools for UI-only settings like stats visibility and window layout.
 public static class UiSettingsTools
 {
-    [McpServerTool, Description("Configure UI-facing settings that matter to automation: show-all compatibility, preview monitoring volume, and stats panel visibility. Only provided parameters are changed.")]
+    [McpServerTool, Description("Apply provided UI settings in this order: show-all compatibility acknowledgement (no-op), preview monitoring volume, stats panel visibility. Stops at the first failure; earlier changes remain applied.")]
     public static async Task<CallToolResult> configure_ui(
         PipeClient pipeClient,
         [Description("Compatibility setting. Show-all capture options are always enabled; provided values are acknowledged as a no-op.")] bool? showAllCaptureOptions = null,
@@ -448,7 +448,7 @@ public static class FlashbackTools
             .ConfigureAwait(false);
     }
 
-    [McpServerTool, Description("Configure Flashback settings: rolling-buffer duration and GPU decode. Only provided parameters are changed. Use flashback_apply to restart manually when needed.")]
+    [McpServerTool, Description("Apply provided Flashback settings in this order: rolling-buffer duration, then GPU decode. Stops at the first failure; earlier changes remain applied. Use flashback_apply to restart manually when needed.")]
     public static async Task<CallToolResult> flashback_settings(
         PipeClient pipeClient,
         [Description("Rolling-buffer duration in minutes. Allowed values: 1, 2, 5, 10, 15, 30.")] int? bufferMinutes = null,
