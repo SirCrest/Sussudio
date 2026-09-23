@@ -742,7 +742,7 @@ public sealed partial class AutomationDiagnosticsHub
             FlashbackVideoQueueDepth = health.FlashbackVideoQueueDepth,
             FlashbackAudioQueueDepth = health.FlashbackAudioQueueDepth,
             FlashbackAudioQueueCapacity = health.FlashbackAudioQueueCapacity,
-            FlashbackPlaybackState = health.FlashbackPlaybackState,
+            FlashbackPlaybackState = health.FlashbackPlaybackState?.ToString() ?? "N/A",
             FlashbackPlaybackPositionMs = health.FlashbackPlaybackPositionMs,
             FlashbackDecoderHwAccel = health.FlashbackDecoderHwAccel,
             FlashbackPlaybackFrameCount = health.FlashbackPlaybackFrameCount,

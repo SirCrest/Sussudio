@@ -227,15 +227,16 @@ public sealed partial class AutomationDiagnosticsHub
             long playbackCommandQueueAgeMs,
             bool playbackCommandFailedRecently)
         {
+            var playbackActive = health.FlashbackPlaybackState == FlashbackPlaybackState.Playing;
             var playbackSlow =
-                string.Equals(health.FlashbackPlaybackState, "Playing", StringComparison.OrdinalIgnoreCase) &&
+                playbackActive &&
                 playbackTargetFps > 0 &&
                 health.FlashbackPlaybackFrameCount >= FlashbackPlaybackMinFramesForPerfAlert &&
                 health.FlashbackPlaybackObservedFps > 0 &&
                 health.FlashbackPlaybackObservedFps < playbackTargetFps * FlashbackPlaybackSlowFpsRatio;
             var playbackFrametimeDegraded =
                 IsFlashbackPlaybackFrametimeDegraded(
-                    health.FlashbackPlaybackState,
+                    playbackActive,
                     playbackTargetFps,
                     health.FlashbackPlaybackFrameCount,
                     health.FlashbackPlaybackCadenceSampleCount,

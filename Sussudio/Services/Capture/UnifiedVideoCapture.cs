@@ -213,7 +213,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
     public MfSourceReaderVideoCapture.SourceCadenceMetrics GetSourceCadenceMetrics()
     {
         var capture = _capture;
-        return capture?.GetSourceCadenceMetrics() ?? default;
+        return capture?.GetSourceCadenceMetrics() ?? MfSourceReaderVideoCapture.SourceCadenceMetrics.Empty;
     }
 
     public MjpegPipelineTimingMetrics GetMjpegPipelineTimingMetrics()
@@ -257,7 +257,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
 
     public MjpegPreviewJitterBuffer.Metrics GetMjpegPreviewJitterMetrics()
     {
-        return Volatile.Read(ref _mjpegPreviewJitterBuffer)?.GetMetrics() ?? default;
+        return Volatile.Read(ref _mjpegPreviewJitterBuffer)?.GetMetrics() ?? MjpegPreviewJitterBuffer.Metrics.Empty;
     }
 
     public VisualCadenceTracker.Metrics GetPreviewVisualCadenceMetrics()

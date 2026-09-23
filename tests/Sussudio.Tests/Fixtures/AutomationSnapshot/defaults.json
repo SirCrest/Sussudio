@@ -705,7 +705,7 @@
   "FlashbackVideoQueueDepth": 0,
   "FlashbackAudioQueueDepth": 0,
   "FlashbackAudioQueueCapacity": 0,
-  "FlashbackPlaybackState": null,
+  "FlashbackPlaybackState": "N/A",
   "FlashbackPlaybackPositionMs": 0,
   "FlashbackDecoderHwAccel": null,
   "FlashbackPlaybackFrameCount": 0,

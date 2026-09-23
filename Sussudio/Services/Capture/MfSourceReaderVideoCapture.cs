@@ -1265,7 +1265,13 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         double JitterStdDevMs,
         long SevereGapCount,
         long EstimatedDroppedFrames,
-        double EstimatedDropPercent);
+        double EstimatedDropPercent)
+    {
+        public static readonly SourceCadenceMetrics Empty = new()
+        {
+            RecentIntervalsMs = Array.Empty<double>()
+        };
+    }
 
     public void SetExpectedFrameRate(double fps)
     {

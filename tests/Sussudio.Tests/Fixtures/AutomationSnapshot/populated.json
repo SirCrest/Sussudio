@@ -925,7 +925,7 @@
   "FlashbackVideoQueueDepth": 642,
   "FlashbackAudioQueueDepth": 488,
   "FlashbackAudioQueueCapacity": 487,
-  "FlashbackPlaybackState": "health.FlashbackPlaybackState",
+  "FlashbackPlaybackState": "Paused",
   "FlashbackPlaybackPositionMs": 607,
   "FlashbackDecoderHwAccel": "health.FlashbackDecoderHwAccel",
   "FlashbackPlaybackFrameCount": 568,

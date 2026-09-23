@@ -1981,6 +1981,7 @@ static partial class Program
         var probeProgramText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.cs"));
         var coreAudioEndpointProbeText = File.ReadAllText(Path.Combine(repoRoot, "tools", "CoreAudioEndpointProbe", "Program.cs"));
         AssertContains(nativeXuProbeProjectText, "CaptureModels.cs");
+        AssertContains(nativeXuProbeProjectText, @"Include=""..\..\Sussudio\Models\Flashback\FlashbackModels.cs"" Link=""Shared\Models\Flashback\FlashbackModels.cs""");
         AssertDoesNotContain(StripCSharpCommentsAndLiterals(probeProgramText), "class CaptureDevice");
         AssertContains(probeProgramText, "NativeXuInterfacePath");
         AssertContains(probeProgramText, "EnumerateKsInterfaces(ElgatoVendorId");

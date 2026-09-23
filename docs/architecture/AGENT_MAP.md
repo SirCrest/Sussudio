@@ -402,7 +402,11 @@ Automation diagnostics ownership:
   separately verifies null/empty backend precedence, latency truncation and
   reference forwarding. Keep those frozen expected values independent of the
   mapping implementation; ownership tests protect the collector/initializer
-  boundary rather than requiring copy-only projection types.
+  boundary rather than requiring copy-only projection types. The 807-field
+  fixtures retain their synthetic null arrays; health playback alone now projects
+  to `N/A` or the explicitly seeded `Paused` state. Model and automation contract
+  tests cover every typed playback state and absence across reflection JSON,
+  source-generated logging JSON, automation, and human-readable performance lanes.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs` owns
   stateful snapshot bookkeeping for audio mute suspicion and recording file
   growth tracking.
@@ -440,7 +444,12 @@ Important entry points:
   transition legality, steady-state resolution, mutable session state,
   transition generation, frame-ledger DTOs, and the inherited diagnostics/health
   snapshot DTO surface used by runtime, automation, stats, recording, Flashback,
-  cleanup, disposal, and fatal cleanup paths.
+  cleanup, disposal, and fatal cleanup paths. Health retains the existing nullable
+  `FlashbackPlaybackState` enum; its property-scoped JSON converter writes named
+  states or `N/A` and restores the nullable value on read. Automation DTOs and
+  human-readable lanes project that value to text at their boundaries. The enum
+  remains in `FlashbackModels.cs`, also linked into NativeXuAudioProbe alongside
+  the capture models.
 - `DeviceService.cs` owns capture/audio device enumeration orchestration, the
   complete discovery worker boundary, the audio-only worker entry point, the
   combined discovery result with a per-call error outcome used by startup
@@ -579,7 +588,10 @@ Important entry points:
 - `CaptureService.HealthSnapshots.cs` samples health snapshot field groups,
   owns the private field builders, the service-state/scalar handoff, and the
   final `CaptureHealthSnapshot` DTO construction consumed by diagnostics and
-  automation health checks.
+  automation health checks. An absent producer supplies its own empty metrics;
+  playback state remains a nullable enum through the sampler and assembly handoff.
+  Internal performance checks compare that enum with `Playing`; the wire snapshot
+  consumer retains its case-insensitive state-name comparison.
 - `CaptureService.HealthSnapshots.cs` owns the read-only health snapshot
   sampler, including source-cadence metric projection, MJPEG timing, preview
   jitter, visual cadence, packet hash, per-decoder projection, source
@@ -700,7 +712,12 @@ Important entry points:
   recording sequence-gap accounting,
   the `FrameLedger` ring-buffer helper, source-reader cadence forwarding, MJPEG
   pipeline/jitter/hash metrics, preview visual cadence metrics, and frame-ledger
-  summary projection over the root capture fan-out state.
+  summary projection over the root capture fan-out state. Missing source-reader
+  and jitter owners use producer-local empty metrics. `SourceCadenceMetrics`
+  in `MfSourceReaderVideoCapture.cs`, `PlaybackCadenceMetrics` in
+  `FlashbackPlaybackController.cs`, and `Metrics` in `MjpegPreviewJitterBuffer.cs`
+  own their empty arrays/reason strings. Live no-sample getters retain configured
+  expected cadence and accumulated slow-frame evidence.
 - `Services/Capture/Mjpeg/FrameFingerprintCadenceTracker.cs` owns source-packet hash cadence ingestion
   beside its CPU MJPEG decoder consumer in the capture MJPEG area:
   duplicate-run counters, fast packet hashing, duplicate-pattern metrics DTO
@@ -1628,7 +1645,10 @@ Primary current owners:
   export/buffer/queue/playback, recording, and source-telemetry ownership
   assertions, structured source telemetry, cached MJPEG timing propagation for
   health and diagnostics snapshots, the synthetic MJPEG timing metric factories
-  used by those scenarios, and shared health snapshot assertion helpers.
+  used by those scenarios, and shared health snapshot assertion helpers. Actual
+  idle CaptureService/UnifiedVideoCapture observations cover empty cadence/jitter
+  references and absent playback through automation projection; no-sample source
+  and playback observations preserve expected cadence and slow-frame counters.
 - `tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs` owns the xUnit
   execution surface and consolidated backing `Program` methods for the
   recording verifier integration seam: fake process-supervisor,

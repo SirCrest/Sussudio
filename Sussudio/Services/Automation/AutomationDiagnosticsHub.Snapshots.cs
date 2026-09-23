@@ -1818,7 +1818,7 @@ public sealed partial class AutomationDiagnosticsHub
             snapshot.FlashbackPlaybackObservedFps < playbackTargetFps * FlashbackPlaybackSlowFpsRatio;
         var playbackFrametimeDegraded =
             IsFlashbackPlaybackFrametimeDegraded(
-                snapshot.FlashbackPlaybackState,
+                playbackActive,
                 playbackTargetFps,
                 snapshot.FlashbackPlaybackFrameCount,
                 snapshot.FlashbackPlaybackCadenceSampleCount,

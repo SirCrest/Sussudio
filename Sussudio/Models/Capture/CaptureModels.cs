@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 
@@ -1110,7 +1111,8 @@ public sealed class CaptureHealthSnapshot : CaptureDiagnosticsSnapshot
     public string? LastExportMessage { get; init; }
 
     // Flashback playback diagnostics
-    public string FlashbackPlaybackState { get; init; } = "N/A";
+    [JsonConverter(typeof(CaptureHealthPlaybackStateJsonConverter))]
+    public FlashbackPlaybackState? FlashbackPlaybackState { get; init; }
     public long FlashbackPlaybackPositionMs { get; init; }
     public string FlashbackDecoderHwAccel { get; init; } = "N/A";
     public long FlashbackPlaybackFrameCount { get; init; }
@@ -1192,4 +1194,54 @@ public sealed class CaptureHealthSnapshot : CaptureDiagnosticsSnapshot
     public long FlashbackPlaybackLastCommandProcessedUtcUnixMs { get; init; }
     public long FlashbackPlaybackLastCommandFailureUtcUnixMs { get; init; }
     public string FlashbackPlaybackLastCommandFailure { get; init; } = string.Empty;
+}
+
+public sealed class CaptureHealthPlaybackStateJsonConverter : JsonConverter<FlashbackPlaybackState?>
+{
+    public CaptureHealthPlaybackStateJsonConverter()
+    {
+    }
+
+    public override bool HandleNull => true;
+
+    public override FlashbackPlaybackState? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType == JsonTokenType.Null)
+        {
+            return null;
+        }
+
+        if (reader.TokenType != JsonTokenType.String)
+        {
+            throw new JsonException("Flashback playback state must be a name or N/A.");
+        }
+
+        return reader.GetString() switch
+        {
+            "N/A" => null,
+            nameof(FlashbackPlaybackState.Disabled) => FlashbackPlaybackState.Disabled,
+            nameof(FlashbackPlaybackState.Buffering) => FlashbackPlaybackState.Buffering,
+            nameof(FlashbackPlaybackState.Live) => FlashbackPlaybackState.Live,
+            nameof(FlashbackPlaybackState.Scrubbing) => FlashbackPlaybackState.Scrubbing,
+            nameof(FlashbackPlaybackState.Playing) => FlashbackPlaybackState.Playing,
+            nameof(FlashbackPlaybackState.Paused) => FlashbackPlaybackState.Paused,
+            _ => throw new JsonException("Unknown flashback playback state.")
+        };
+    }
+
+    public override void Write(Utf8JsonWriter writer, FlashbackPlaybackState? value, JsonSerializerOptions options)
+    {
+        var name = value switch
+        {
+            null => "N/A",
+            FlashbackPlaybackState.Disabled => nameof(FlashbackPlaybackState.Disabled),
+            FlashbackPlaybackState.Buffering => nameof(FlashbackPlaybackState.Buffering),
+            FlashbackPlaybackState.Live => nameof(FlashbackPlaybackState.Live),
+            FlashbackPlaybackState.Scrubbing => nameof(FlashbackPlaybackState.Scrubbing),
+            FlashbackPlaybackState.Playing => nameof(FlashbackPlaybackState.Playing),
+            FlashbackPlaybackState.Paused => nameof(FlashbackPlaybackState.Paused),
+            _ => throw new JsonException("Unknown flashback playback state.")
+        };
+        writer.WriteStringValue(name);
+    }
 }

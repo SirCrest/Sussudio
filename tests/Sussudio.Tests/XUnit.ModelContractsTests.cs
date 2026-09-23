@@ -1554,7 +1554,7 @@ public sealed class SnapshotModelsTests
             new("FlashbackVideoQueueDepth", typeof(int)),
             new("FlashbackAudioQueueDepth", typeof(int)),
             new("FlashbackAudioQueueCapacity", typeof(int)),
-            NonNullString("FlashbackPlaybackState"),
+            new("FlashbackPlaybackState", typeof(Nullable<>).MakeGenericType(RequireType("Sussudio.Models.FlashbackPlaybackState"))),
             new("FlashbackPlaybackPositionMs", typeof(long)),
             NonNullString("FlashbackDecoderHwAccel"),
             new("FlashbackPlaybackFrameCount", typeof(long)),
@@ -1712,7 +1712,7 @@ public sealed class SnapshotModelsTests
         }
         var health = CreateInstance("Sussudio.Models.CaptureHealthSnapshot");
         AssertNonNullStringValue(health, "RecordingBackend", "None", "CaptureHealthSnapshot inherited RecordingBackend default");
-        AssertNonNullStringValue(health, "FlashbackPlaybackState", "N/A", "CaptureHealthSnapshot.FlashbackPlaybackState default");
+        Assert.Null(GetPropertyValue(health, "FlashbackPlaybackState"));
         AssertNonNullStringValue(health, "FlashbackDecoderHwAccel", "N/A", "CaptureHealthSnapshot.FlashbackDecoderHwAccel default");
         AssertNonNullStringValue(health, "FlashbackPlaybackMaxCommandQueueLatencyCommand", "None", "CaptureHealthSnapshot.FlashbackPlaybackMaxCommandQueueLatencyCommand default");
         AssertNonNullStringValue(health, "FlashbackPlaybackLastCommandQueued", "None", "CaptureHealthSnapshot.FlashbackPlaybackLastCommandQueued default");
@@ -1751,7 +1751,7 @@ public sealed class SnapshotModelsTests
         SetPropertyOrBackingField(health, "RecordingBackend", "FFmpeg");
         SetPropertyOrBackingField(health, "FlashbackOutputBytes", 123456L);
         SetPropertyOrBackingField(health, "FlashbackFilePath", "flashback.ts");
-        SetPropertyOrBackingField(health, "FlashbackPlaybackState", "Paused");
+        SetPropertyOrBackingField(health, "FlashbackPlaybackState", Enum.Parse(RequireType("Sussudio.Models.FlashbackPlaybackState"), "Paused"));
         SetPropertyOrBackingField(health, "FlashbackDecoderHwAccel", "D3D11");
         SetPropertyOrBackingField(health, "FlashbackPlaybackDroppedFrames", 4L);
         SetPropertyOrBackingField(health, "FlashbackPlaybackSegmentSwitches", 2L);
@@ -1842,7 +1842,7 @@ public sealed class SnapshotModelsTests
         Assert.Equal("FFmpeg", GetStringProperty(health, "RecordingBackend"));
         Assert.Equal(123456L, GetLongProperty(health, "FlashbackOutputBytes"));
         Assert.Equal("flashback.ts", GetStringProperty(health, "FlashbackFilePath"));
-        Assert.Equal("Paused", GetStringProperty(health, "FlashbackPlaybackState"));
+        Assert.Equal(Enum.Parse(RequireType("Sussudio.Models.FlashbackPlaybackState"), "Paused"), GetPropertyValue(health, "FlashbackPlaybackState"));
         Assert.Equal("D3D11", GetStringProperty(health, "FlashbackDecoderHwAccel"));
         Assert.Equal(4L, GetLongProperty(health, "FlashbackPlaybackDroppedFrames"));
         Assert.Equal(2L, GetLongProperty(health, "FlashbackPlaybackSegmentSwitches"));
@@ -1930,7 +1930,7 @@ public sealed class SnapshotModelsTests
     private static void AssertCaptureHealthSnapshotJsonRoundTrip(Type healthType, object health)
     {
         var jsonRoundTrip = ReflectionJsonRoundTrip(healthType, health);
-        Assert.Equal("Paused", GetStringProperty(jsonRoundTrip, "FlashbackPlaybackState"));
+        Assert.Equal(Enum.Parse(RequireType("Sussudio.Models.FlashbackPlaybackState"), "Paused"), GetPropertyValue(jsonRoundTrip, "FlashbackPlaybackState"));
         Assert.Equal(6L, GetLongProperty(jsonRoundTrip, "FlashbackPlaybackSubmitFailures"));
         Assert.Equal(666L, GetLongProperty(jsonRoundTrip, "FlashbackPlaybackLastDropUtcUnixMs"));
         Assert.Equal("av_sync_skip", GetStringProperty(jsonRoundTrip, "FlashbackPlaybackLastDropReason"));
@@ -1962,6 +1962,82 @@ public sealed class SnapshotModelsTests
         Assert.Equal("BT.2020", GetStringProperty(GetSingleEnumerableItem(GetPropertyValue(jsonRoundTrip, "SourceTelemetryDetails")!), "DisplayValue"));
     }
 
+    [Theory]
+    [InlineData("Disabled")]
+    [InlineData("Buffering")]
+    [InlineData("Live")]
+    [InlineData("Scrubbing")]
+    [InlineData("Playing")]
+    [InlineData("Paused")]
+    [InlineData(null)]
+    public void CaptureHealthPlaybackStatePreservesTypedAndTextBoundaries(string? stateName)
+    {
+        var healthType = RequireType("Sussudio.Models.CaptureHealthSnapshot");
+        var stateType = RequireType("Sussudio.Models.FlashbackPlaybackState");
+        var health = Activator.CreateInstance(healthType)!;
+        var state = stateName == null ? null : Enum.Parse(stateType, stateName);
+        SetPropertyOrBackingField(health, "FlashbackPlaybackState", state);
+        Assert.Equal(state, GetPropertyValue(health, "FlashbackPlaybackState"));
+        Assert.Equal(stateType, Nullable.GetUnderlyingType(healthType.GetProperty("FlashbackPlaybackState")!.PropertyType));
+
+        var expectedText = stateName ?? "N/A";
+        var json = JsonSerializer.Serialize(health, healthType);
+        using var document = JsonDocument.Parse(json);
+        Assert.Equal(expectedText, document.RootElement.GetProperty("FlashbackPlaybackState").GetString());
+        var restored = JsonSerializer.Deserialize(json, healthType)!;
+        Assert.Equal(state, GetPropertyValue(restored, "FlashbackPlaybackState"));
+
+        var automation = AutomationSnapshotRegressionFixture.BuildResult(healthType.Assembly, populated: false, healthOverride: health);
+        Assert.Equal(807, automation.EnumerateObject().Count());
+        Assert.Equal(expectedText, automation.GetProperty("FlashbackPlaybackState").GetString());
+        var hubType = healthType.Assembly.GetType("Sussudio.Services.Automation.AutomationDiagnosticsHub", throwOnError: true)!;
+        var laneMethod = hubType.GetMethod("BuildFlashbackPlaybackPerformanceLane", BindingFlags.Static | BindingFlags.NonPublic)!;
+        var preview = Activator.CreateInstance(laneMethod.GetParameters()[1].ParameterType)!;
+        var lane = (string)laneMethod.Invoke(null, new[] { health, preview, (object)120d })!;
+        Assert.StartsWith($"playback perf state={expectedText} fps=", lane, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("null")]
+    [InlineData("\"N/A\"")]
+    public void CaptureHealthPlaybackStateReadsAbsentAndLegacyNull(string valueJson)
+    {
+        var healthType = RequireType("Sussudio.Models.CaptureHealthSnapshot");
+        var restored = JsonSerializer.Deserialize($"{{\"FlashbackPlaybackState\":{valueJson}}}", healthType)!;
+        Assert.Null(GetPropertyValue(restored, "FlashbackPlaybackState"));
+        using var document = JsonDocument.Parse(JsonSerializer.Serialize(restored, healthType));
+        Assert.Equal("N/A", document.RootElement.GetProperty("FlashbackPlaybackState").GetString());
+    }
+
+    [Theory]
+    [InlineData("0")]
+    [InlineData("999")]
+    [InlineData("true")]
+    [InlineData("{}")]
+    [InlineData("[]")]
+    [InlineData("\"\"")]
+    [InlineData("\"Unknown\"")]
+    [InlineData("\"playing\"")]
+    [InlineData("\" Playing \"")]
+    [InlineData("\"0\"")]
+    [InlineData("\"999\"")]
+    public void CaptureHealthPlaybackStateRejectsUndefinedJson(string valueJson)
+    {
+        var healthType = RequireType("Sussudio.Models.CaptureHealthSnapshot");
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize($"{{\"FlashbackPlaybackState\":{valueJson}}}", healthType));
+    }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(999)]
+    public void CaptureHealthPlaybackStateRejectsUndefinedEnumWrites(int value)
+    {
+        var healthType = RequireType("Sussudio.Models.CaptureHealthSnapshot");
+        var health = Activator.CreateInstance(healthType)!;
+        SetPropertyOrBackingField(health, "FlashbackPlaybackState", Enum.ToObject(RequireType("Sussudio.Models.FlashbackPlaybackState"), value));
+        Assert.Throws<JsonException>(() => JsonSerializer.Serialize(health, healthType));
+    }
+
     [Fact]
     public void CaptureHealthSnapshot_ExtendsDiagnosticsWithFlashbackSourceAndAvSync()
     {
@@ -1969,6 +2045,19 @@ public sealed class SnapshotModelsTests
         var healthType = RequireType("Sussudio.Models.CaptureHealthSnapshot");
         var detailType = RequireType("Sussudio.Models.SourceTelemetryDetailEntry");
         var healthRootText = ReadRepoFile("Sussudio/Models/Capture/CaptureModels.cs");
+
+        var stateProperty = healthType.GetProperty("FlashbackPlaybackState")!;
+        var converterAttribute = stateProperty.GetCustomAttributes().Single(attribute =>
+            attribute.GetType().FullName == "System.Text.Json.Serialization.JsonConverterAttribute");
+        var converterType = (Type)converterAttribute.GetType().GetProperty("ConverterType")!.GetValue(converterAttribute)!;
+        Assert.Equal(RequireType("Sussudio.Models.CaptureHealthPlaybackStateJsonConverter"), converterType);
+        Assert.True(converterType.IsPublic && converterType.IsSealed);
+        var converterConstructor = converterType.GetConstructor(Type.EmptyTypes);
+        Assert.NotNull(converterConstructor);
+        var converter = converterConstructor.Invoke(Array.Empty<object>());
+        Assert.Equal(true, converterType.GetProperty("HandleNull")!.GetValue(converter));
+        Assert.DoesNotContain(RequireType("Sussudio.Models.FlashbackPlaybackState").GetCustomAttributes(),
+            attribute => attribute.GetType().FullName == "System.Text.Json.Serialization.JsonConverterAttribute");
 
         AssertCaptureHealthSnapshotDefaultsAndInheritance(diagnosticsType, healthType);
         RegisterCaptureDiagnosticsSnapshotProperties(diagnosticsType);
@@ -1978,7 +2067,8 @@ public sealed class SnapshotModelsTests
         Assert.Contains("public IReadOnlyList<SourceTelemetryDetailEntry> SourceTelemetryDetails", healthRootText, StringComparison.Ordinal);
         Assert.Contains("public bool FlashbackBackendSettingsStale { get; init; }", healthRootText, StringComparison.Ordinal);
         Assert.Contains("public int FlashbackAudioQueueCapacity { get; init; }", healthRootText, StringComparison.Ordinal);
-        Assert.Contains("public string FlashbackPlaybackState { get; init; } = \"N/A\";", healthRootText, StringComparison.Ordinal);
+        Assert.Contains("public FlashbackPlaybackState? FlashbackPlaybackState { get; init; }", healthRootText, StringComparison.Ordinal);
+        Assert.Contains("[JsonConverter(typeof(CaptureHealthPlaybackStateJsonConverter))]", healthRootText, StringComparison.Ordinal);
         Assert.Contains("public string FlashbackPlaybackLastCommandFailure { get; init; } = string.Empty;", healthRootText, StringComparison.Ordinal);
         Assert.Contains("public string FlashbackExportStatus { get; init; } = \"NotStarted\";", healthRootText, StringComparison.Ordinal);
         Assert.Contains("public string? FlashbackExportVerificationFormat { get; init; }", healthRootText, StringComparison.Ordinal);

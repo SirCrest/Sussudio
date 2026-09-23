@@ -663,7 +663,13 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
         double OnePercentLowFps,
         double FivePercentLowFps,
         double SampleDurationMs,
-        double[] RecentFrameIntervalsMs);
+        double[] RecentFrameIntervalsMs)
+    {
+        public static readonly PlaybackCadenceMetrics Empty = new()
+        {
+            RecentFrameIntervalsMs = Array.Empty<double>()
+        };
+    }
 
     public readonly record struct PlaybackDecodeMetrics(
         int SampleCount,

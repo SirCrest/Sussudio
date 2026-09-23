@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <Compile Include="..\..\Sussudio\Models\Capture\CaptureModels.cs" Link="Shared\Models\Capture\CaptureModels.cs" />
+    <Compile Include="..\..\Sussudio\Models\Flashback\FlashbackModels.cs" Link="Shared\Models\Flashback\FlashbackModels.cs" />
     <Compile Include="..\..\Sussudio\Services\Audio\NativeXuAudioControlService.cs" Link="Shared\Services\Audio\NativeXuAudioControlService.cs" />
     <Compile Include="..\..\Sussudio\Services\NativeXu\KsExtensionUnitNative.cs" Link="Shared\Services\NativeXu\KsExtensionUnitNative.cs" />
     <Compile Include="..\..\Sussudio\Services\Contracts\ISourceSignalTelemetryProvider.cs" Link="Shared\Services\Contracts\ISourceSignalTelemetryProvider.cs" />

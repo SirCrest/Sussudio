@@ -92,7 +92,7 @@ public partial class CaptureService
         UnifiedVideoCapture? unifiedVideoCapture)
     {
         var sourceCadence = unifiedVideoCapture?.GetSourceCadenceMetrics()
-            ?? default(MfSourceReaderVideoCapture.SourceCadenceMetrics);
+            ?? MfSourceReaderVideoCapture.SourceCadenceMetrics.Empty;
 
         return new CaptureCadenceHealthSnapshotFields(
             sourceCadence.SampleCount,
@@ -122,7 +122,7 @@ public partial class CaptureService
             timingSnapshot.Summary,
             fullTiming,
             unifiedVideoCapture?.GetMjpegPreviewJitterMetrics()
-                ?? default(MjpegPreviewJitterBuffer.Metrics),
+                ?? MjpegPreviewJitterBuffer.Metrics.Empty,
             unifiedVideoCapture?.GetPreviewVisualCadenceMetrics()
                 ?? VisualCadenceTracker.Empty,
             unifiedVideoCapture?.GetPreviewVisualCenterCadenceMetrics()
@@ -447,7 +447,7 @@ private FlashbackBufferHealthSnapshotFields CaptureFlashbackBufferHealthSnapshot
         string GpuQueueLastRejectReason);
 
 private readonly record struct FlashbackPlaybackStateHealthSnapshotFields(
-        string State,
+        FlashbackPlaybackState? State,
         long PositionMs,
         string DecoderHwAccel,
         long FrameCount,
@@ -479,7 +479,7 @@ private readonly record struct FlashbackPlaybackStateHealthSnapshotFields(
         bool ThreadAlive);
 
     private readonly record struct FlashbackPlaybackHealthSnapshotFields(
-        string State,
+        FlashbackPlaybackState? State,
         long PositionMs,
         string DecoderHwAccel,
         long FrameCount,
@@ -657,7 +657,7 @@ private readonly record struct FlashbackPlaybackStateHealthSnapshotFields(
     private static FlashbackPlaybackStateHealthSnapshotFields CaptureFlashbackPlaybackStateHealthSnapshotFields(
         FlashbackPlaybackController? fbPlayback)
         => new(
-            fbPlayback?.State.ToString() ?? "N/A",
+            fbPlayback?.State,
             (long)(fbPlayback?.PlaybackPosition.TotalMilliseconds ?? 0),
             fbPlayback?.DecoderHwAccel ?? "N/A",
             fbPlayback?.PlaybackFrameCount ?? 0,
@@ -703,7 +703,7 @@ private readonly record struct FlashbackPlaybackStateHealthSnapshotFields(
     private static FlashbackPlaybackCadenceHealthSnapshotFields CaptureFlashbackPlaybackCadenceHealthSnapshotFields(
         FlashbackPlaybackController? fbPlayback)
     {
-        var playbackCadence = fbPlayback?.GetPlaybackCadenceMetrics() ?? default;
+        var playbackCadence = fbPlayback?.GetPlaybackCadenceMetrics() ?? FlashbackPlaybackController.PlaybackCadenceMetrics.Empty;
         return new FlashbackPlaybackCadenceHealthSnapshotFields(
             playbackCadence.SampleCount,
             playbackCadence.P95FrameMs,

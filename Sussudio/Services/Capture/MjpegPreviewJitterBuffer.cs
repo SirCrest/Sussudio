@@ -126,7 +126,14 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
         double LastUnderflowOutputAgeMs,
         double LastScheduleLateMs,
         double MaxScheduleLateMs,
-        long ScheduleLateCount);
+        long ScheduleLateCount)
+    {
+        public static readonly Metrics Empty = new()
+        {
+            LastDropReason = string.Empty,
+            LastUnderflowReason = string.Empty
+        };
+    }
 
     private readonly object _sync = new();
     private readonly List<BufferedFrame> _frames = new();

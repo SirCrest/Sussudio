@@ -12,7 +12,7 @@ internal static class AutomationSnapshotRegressionFixture
     private const BindingFlags InstanceMembers = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
     private static readonly DateTimeOffset FixtureTime = new(2026, 9, 12, 0, 0, 0, TimeSpan.Zero);
 
-    internal static JsonElement BuildResult(Assembly assembly, bool populated)
+    internal static JsonElement BuildResult(Assembly assembly, bool populated, object? healthOverride = null)
     {
         var hubType = assembly.GetType("Sussudio.Services.Automation.AutomationDiagnosticsHub", throwOnError: true)!;
         var method = hubType.GetMethod("BuildAutomationSnapshot", InstanceMembers)!;
@@ -60,6 +60,7 @@ internal static class AutomationSnapshotRegressionFixture
             Set(runtime, "FlashbackCodecDowngradeReason", string.Empty);
 
             var health = inputs["health"]!;
+            Set(health, "FlashbackPlaybackState", Enum.Parse(assembly.GetType("Sussudio.Models.FlashbackPlaybackState", throwOnError: true)!, "Paused"));
             Set(health, "FlashbackExportVerificationFormat", "health-export-verification");
             Set(health, "FlashbackCodecDowngradeReason", "health-codec-downgrade");
             Set(health, "AudioDropsQueueSaturated", 11L);
@@ -76,6 +77,9 @@ internal static class AutomationSnapshotRegressionFixture
             inputs["recentD3DMissedRefreshes"] = 41L;
             inputs["recentD3DStatsFailures"] = 43L;
         }
+
+        if (healthOverride != null)
+            inputs["health"] = healthOverride;
 
         var snapshot = method.Invoke(hub, parameters.Select(parameter => inputs[parameter.Name!]).ToArray())!;
         return JsonSerializer.SerializeToElement(snapshot, snapshot.GetType());

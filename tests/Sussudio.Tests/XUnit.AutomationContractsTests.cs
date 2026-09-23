@@ -389,6 +389,89 @@ public sealed class AutomationContractsProtocolXunitTests
 
 public sealed class AutomationDiagnosticsLoopContractsTests
 {
+    [Theory]
+    [InlineData("Disabled")]
+    [InlineData("Buffering")]
+    [InlineData("Live")]
+    [InlineData("Scrubbing")]
+    [InlineData("Playing")]
+    [InlineData("Paused")]
+    [InlineData("N/A")]
+    [InlineData(null)]
+    [InlineData("pLaYiNg")]
+    public void FlashbackPlaybackHealthAndWireEvaluationPreservePerformanceGates(string? wireState)
+    {
+        var assembly = SussudioAssembly.Load();
+        var hubType = assembly.GetType("Sussudio.Services.Automation.AutomationDiagnosticsHub", throwOnError: true)!;
+        var healthType = assembly.GetType("Sussudio.Models.CaptureHealthSnapshot", throwOnError: true)!;
+        var stateType = assembly.GetType("Sussudio.Models.FlashbackPlaybackState", throwOnError: true)!;
+        var snapshotType = assembly.GetType("Sussudio.Models.AutomationSnapshot", throwOnError: true)!;
+        var flashbackEvaluator = hubType.GetNestedType("FlashbackDiagnosticEvaluator", BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("FlashbackDiagnosticEvaluator was not found on AutomationDiagnosticsHub.");
+        var evaluateHealth = flashbackEvaluator.GetMethod("TryBuildFlashbackPlaybackDiagnosticEvaluation", BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("Flashback playback evaluation was not found on its nested owner.");
+        var evaluateWire = hubType.GetMethod("UpdateFlashbackPlaybackPerformanceAlerts", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var lanesType = evaluateHealth.GetParameters()[1].ParameterType;
+        Assert.True(lanesType.IsValueType);
+        var lanes = Activator.CreateInstance(lanesType)!;
+        var typedState = wireState is null or "N/A" ? null : Enum.Parse(stateType, wireState, ignoreCase: true);
+        var playing = string.Equals(wireState, "Playing", StringComparison.OrdinalIgnoreCase);
+
+        foreach (var sample in new (string Name, long Frames, int Samples, double Target, double Observed, double Low, bool Slow, bool Frametime)[]
+        {
+            ("slow frame threshold", 60, 0, 120, 89.999, 0, true, false),
+            ("below slow frame threshold", 59, 0, 120, 89.999, 0, false, false),
+            ("exact slow ratio", 60, 0, 120, 90, 0, false, false),
+            ("zero observed slow rate", 60, 0, 120, 0, 0, false, false),
+            ("zero target slow rate", 60, 0, 0, 1, 0, false, false),
+            ("frametime sample thresholds", 1200, 1200, 120, 120, 117.599, false, true),
+            ("below frametime frame threshold", 1199, 1200, 120, 120, 117.599, false, false),
+            ("below frametime sample threshold", 1200, 1199, 120, 120, 117.599, false, false),
+            ("exact one percent low ratio", 1200, 1200, 120, 120, 120 * 0.98, false, false),
+            ("zero one percent low", 1200, 1200, 120, 120, 0, false, false),
+            ("zero target frametime rate", 1200, 1200, 0, 120, 1, false, false),
+            ("frametime independent of observed rate", 1200, 1200, 120, 0, 117.599, false, true),
+            ("slow diagnostic precedence", 1200, 1200, 120, 89, 100, true, true)
+        })
+        {
+            var health = Activator.CreateInstance(healthType)!;
+            Set(health, "FlashbackPlaybackState", typedState);
+            Set(health, "FlashbackPlaybackTargetFps", sample.Target);
+            Set(health, "FlashbackPlaybackFrameCount", sample.Frames);
+            Set(health, "FlashbackPlaybackCadenceSampleCount", sample.Samples);
+            Set(health, "FlashbackPlaybackObservedFps", sample.Observed);
+            Set(health, "FlashbackPlaybackOnePercentLowFps", sample.Low);
+            var evaluation = evaluateHealth.Invoke(null, new[] { health, lanes, (object)sample.Target, 0L, false });
+            var expectedSummary = !playing ? null : sample.Slow
+                ? "Flashback playback is below target rate."
+                : sample.Frametime ? "Flashback playback frametime is below target." : null;
+            Assert.Equal(expectedSummary, evaluation?.GetType().GetProperty("Summary")!.GetValue(evaluation));
+
+            var wireSnapshot = Activator.CreateInstance(snapshotType)!;
+            Set(wireSnapshot, "FlashbackPlaybackState", wireState);
+            Set(wireSnapshot, "FlashbackPlaybackTargetFps", sample.Target);
+            Set(wireSnapshot, "SelectedFrameRate", sample.Target);
+            Set(wireSnapshot, "FlashbackPlaybackFrameCount", sample.Frames);
+            Set(wireSnapshot, "FlashbackPlaybackCadenceSampleCount", sample.Samples);
+            Set(wireSnapshot, "FlashbackPlaybackObservedFps", sample.Observed);
+            Set(wireSnapshot, "FlashbackPlaybackOnePercentLowFps", sample.Low);
+            var hub = RuntimeHelpers.GetUninitializedObject(hubType);
+            foreach (var fieldName in new[] { "_stateLock", "_recentEvents", "_eventThrottleTicks", "_activeAlerts" })
+            {
+                var field = hubType.GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic)!;
+                field.SetValue(hub, Activator.CreateInstance(field.FieldType));
+            }
+
+            evaluateWire.Invoke(hub, new[] { wireSnapshot });
+            var alerts = (HashSet<string>)hubType.GetField("_activeAlerts", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(hub)!;
+            Assert.True(alerts.Contains("flashback-playback-slow") == (playing && sample.Slow), $"{wireState ?? "null"}: {sample.Name} slow alert");
+            Assert.True(alerts.Contains("flashback-playback-frametime-degraded") == (playing && sample.Frametime), $"{wireState ?? "null"}: {sample.Name} frametime alert");
+        }
+
+        static void Set(object target, string propertyName, object? value)
+            => target.GetType().GetProperty(propertyName)!.SetValue(target, value);
+    }
+
     public AutomationDiagnosticsLoopContractsTests()
     {
         global::Program.EnsureTargetAssemblyLoadedForXUnit();
@@ -3862,7 +3945,8 @@ static partial class Program
             var health = Activator.CreateInstance(healthType)
                 ?? throw new InvalidOperationException("Failed to create isolated CaptureHealthSnapshot.");
             SetPropertyOrBackingField(health, "RecordingBackend", "FFmpeg");
-            SetPropertyOrBackingField(health, "FlashbackPlaybackState", "Paused");
+            var playbackStateType = RequireLoadedType(appAssembly, "Sussudio.Models.FlashbackPlaybackState");
+            SetPropertyOrBackingField(health, "FlashbackPlaybackState", Enum.Parse(playbackStateType, "Paused"));
             SetPropertyOrBackingField(health, "FlashbackPlaybackSegmentSwitches", 2L);
             SetPropertyOrBackingField(health, "FlashbackPlaybackFmp4Reopens", 1L);
             SetPropertyOrBackingField(health, "FlashbackPlaybackDroppedFrames", 6L);
@@ -3919,6 +4003,54 @@ static partial class Program
             var detailJson = AssertSingleJsonArrayItem(healthRoot, "SourceTelemetryDetails");
             AssertJsonString(detailJson, "DisplayValue", "BT.2020", "SourceTelemetryDetailEntry source-gen JSON DisplayValue");
             AssertJsonString(detailJson, "RawValue", "bt2020", "SourceTelemetryDetailEntry source-gen JSON RawValue");
+
+            foreach (var stateName in new string?[] { "Disabled", "Buffering", "Live", "Scrubbing", "Playing", "Paused", null })
+            {
+                var state = stateName == null ? null : Enum.Parse(playbackStateType, stateName);
+                SetPropertyOrBackingField(health, "FlashbackPlaybackState", state);
+                var stateJson = SerializeWithLoggingJsonContext(appAssembly, healthType, health, "CaptureHealthSnapshot");
+                using var stateDocument = JsonDocument.Parse(stateJson);
+                AssertJsonString(stateDocument.RootElement, "FlashbackPlaybackState", stateName ?? "N/A", "typed health source-gen state JSON");
+                var restored = DeserializeWithLoggingJsonContext(appAssembly, healthType, stateJson, "CaptureHealthSnapshot");
+                AssertEqual(state, GetPropertyValue(restored, "FlashbackPlaybackState"), "typed health source-gen state roundtrip");
+            }
+
+            foreach (var valueJson in new[] { "null", "\"N/A\"" })
+            {
+                var restored = DeserializeWithLoggingJsonContext(appAssembly, healthType,
+                    $"{{\"FlashbackPlaybackState\":{valueJson}}}", "CaptureHealthSnapshot");
+                AssertEqual(null, GetPropertyValue(restored, "FlashbackPlaybackState"), "source-gen reads absent or legacy null state");
+                using var restoredDocument = JsonDocument.Parse(SerializeWithLoggingJsonContext(appAssembly, healthType, restored, "CaptureHealthSnapshot"));
+                AssertJsonString(restoredDocument.RootElement, "FlashbackPlaybackState", "N/A", "source-gen rewrites absent state as N/A");
+            }
+
+            foreach (var valueJson in new[] { "0", "999", "true", "{}", "[]", "\"\"", "\"Unknown\"", "\"playing\"", "\" Playing \"", "\"0\"", "\"999\"" })
+            {
+                try
+                {
+                    DeserializeWithLoggingJsonContext(appAssembly, healthType,
+                        $"{{\"FlashbackPlaybackState\":{valueJson}}}", "CaptureHealthSnapshot");
+                    throw new InvalidOperationException($"Source-generated health deserialization accepted invalid state {valueJson}.");
+                }
+                catch (TargetInvocationException exception)
+                {
+                    AssertEqual("System.Text.Json.JsonException", exception.InnerException?.GetType().FullName, "source-gen rejects undefined JSON state");
+                }
+            }
+
+            foreach (var undefined in new[] { -1, 999 })
+            {
+                SetPropertyOrBackingField(health, "FlashbackPlaybackState", Enum.ToObject(playbackStateType, undefined));
+                try
+                {
+                    SerializeWithLoggingJsonContext(appAssembly, healthType, health, "CaptureHealthSnapshot");
+                    throw new InvalidOperationException($"Source-generated health serialization accepted undefined enum {undefined}.");
+                }
+                catch (TargetInvocationException exception)
+                {
+                    AssertEqual("System.Text.Json.JsonException", exception.InnerException?.GetType().FullName, "source-gen rejects undefined enum writes");
+                }
+            }
         }
         finally
         {
@@ -3948,6 +4080,29 @@ static partial class Program
         var serializeMethod = RequireJsonTypeInfoSerializeMethod(serializerType).MakeGenericMethod(payloadType);
         return serializeMethod.Invoke(null, new[] { payload, jsonTypeInfo }) as string
             ?? throw new InvalidOperationException($"{jsonTypeInfoPropertyName} source-generated serialization returned null.");
+    }
+
+    private static object DeserializeWithLoggingJsonContext(
+        Assembly appAssembly,
+        Type payloadType,
+        string json,
+        string jsonTypeInfoPropertyName)
+    {
+        var contextType = RequireLoadedType(appAssembly, "Sussudio.LoggingJsonContext");
+        var defaultContext = contextType.GetProperty("Default", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)!.GetValue(null)!;
+        var jsonTypeInfo = contextType.GetProperty(jsonTypeInfoPropertyName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(defaultContext)!;
+        var serializerType = jsonTypeInfo.GetType().Assembly.GetType("System.Text.Json.JsonSerializer", throwOnError: true)!;
+        var deserialize = serializerType.GetMethods(BindingFlags.Public | BindingFlags.Static).Single(method =>
+        {
+            if (method.Name != "Deserialize" || !method.IsGenericMethodDefinition)
+                return false;
+            var parameters = method.GetParameters();
+            return parameters.Length == 2 && parameters[0].ParameterType == typeof(string) &&
+                parameters[1].ParameterType.IsGenericType &&
+                parameters[1].ParameterType.GetGenericTypeDefinition().FullName == "System.Text.Json.Serialization.Metadata.JsonTypeInfo`1";
+        });
+        return deserialize.MakeGenericMethod(payloadType).Invoke(null, new[] { json, jsonTypeInfo })
+            ?? throw new InvalidOperationException($"{jsonTypeInfoPropertyName} source-generated deserialization returned null.");
     }
 
     private static MethodInfo RequireJsonTypeInfoSerializeMethod(Type serializerType)
@@ -9373,8 +9528,10 @@ static partial class Program
         AssertContains(diagnostics.SourceFamilyText, "snapshot.FlashbackPlaybackObservedFps < playbackTargetFps * FlashbackPlaybackSlowFpsRatio");
         AssertContains(diagnostics.SourceFamilyText, "snapshot.FlashbackPlaybackTargetFps <= selectedCaptureFps * FlashbackPlaybackSlowFpsRatio");
         AssertContains(diagnostics.SourceFamilyText, "snapshot.PreviewCadenceObservedFps <= snapshot.FlashbackPlaybackTargetFps * FlashbackPlaybackSlowFpsRatio");
-        AssertContains(diagnostics.SourceFamilyText, "IsFlashbackPlaybackFrametimeDegraded(\n                snapshot.FlashbackPlaybackState");
-        AssertContains(diagnostics.SourceFamilyText, "snapshot.FlashbackPlaybackState,\n                playbackTargetFps,\n                snapshot.FlashbackPlaybackFrameCount");
+        AssertContains(diagnostics.SourceFamilyText, "IsFlashbackPlaybackFrametimeDegraded(\n                playbackActive");
+        AssertContains(diagnostics.SourceFamilyText, "playbackActive,\n                playbackTargetFps,\n                snapshot.FlashbackPlaybackFrameCount");
+        AssertContains(diagnostics.SourceFamilyText, "health.FlashbackPlaybackState == FlashbackPlaybackState.Playing");
+        AssertContains(diagnostics.SourceFamilyText, "string.Equals(snapshot.FlashbackPlaybackState, \"Playing\", StringComparison.OrdinalIgnoreCase)");
         AssertContains(diagnostics.SourceFamilyText, "IsCaptureOnePercentLowDegraded(\n                snapshot.ExpectedCaptureFrameRate");
         AssertContains(diagnostics.SourceFamilyText, "IsPreviewOnePercentLowDegraded(\n                snapshot.PreviewCadenceExpectedIntervalMs");
         AssertContains(diagnostics.SourceFamilyText, "\"Source/capture 1% low is below target, but sampled visual cadence confirms source-rate output.\"");
@@ -9410,7 +9567,7 @@ static partial class Program
         AssertContains(diagnostics.SourceFamilyText, "var playbackCommandFailure = string.IsNullOrWhiteSpace(health.FlashbackPlaybackLastCommandFailure)");
         AssertContains(diagnostics.SourceFamilyText, "var playbackTargetFps = ResolveFlashbackPlaybackTargetFps(\n            health.FlashbackPlaybackTargetFps,\n            health.ExpectedFrameRate);");
         AssertContains(diagnostics.SourceFamilyText, "lastFailure={playbackCommandFailure} failureAgeMs={playbackCommandFailureAgeMs}");
-        AssertContains(diagnostics.SourceFamilyText, "playback perf state={health.FlashbackPlaybackState}");
+        AssertContains(diagnostics.SourceFamilyText, "playback perf state={health.FlashbackPlaybackState?.ToString() ?? \"N/A\"}");
         AssertContains(diagnostics.SourceFamilyText, "fps={health.FlashbackPlaybackObservedFps:0.##}/{playbackTargetFps:0.##}");
         AssertContains(diagnostics.SourceFamilyText, "target={health.FlashbackPlaybackTargetFps:0.##}");
         AssertContains(diagnostics.SourceFamilyText, "encoder={FormatEncoderFrameRate(health)} source={(health.SourceFrameRateExact ?? 0):0.##} present={previewRuntime.DisplayCadenceObservedFps:0.##}");

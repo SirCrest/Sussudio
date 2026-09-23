@@ -11,6 +11,90 @@ using Xunit;
 public sealed class CaptureServiceHealthSnapshotOwnershipTests
 {
     [Fact]
+    public async Task IdleCaptureOwners_ExposeEmptyMetricsAndTypedAbsentPlayback()
+    {
+        var assembly = Sussudio.Tests.SussudioAssembly.Load();
+        var captureType = assembly.GetType("Sussudio.Services.Capture.CaptureService", throwOnError: true)!;
+        var unifiedType = assembly.GetType("Sussudio.Services.Capture.UnifiedVideoCapture", throwOnError: true)!;
+        await using var capture = (IAsyncDisposable)Activator.CreateInstance(captureType)!;
+        await using var unified = (IAsyncDisposable)Activator.CreateInstance(unifiedType, nonPublic: true)!;
+
+        var sourceCadence = unifiedType.GetMethod("GetSourceCadenceMetrics")!.Invoke(unified, null)!;
+        Assert.Empty(Assert.IsType<double[]>(GetMetricProperty(sourceCadence, "RecentIntervalsMs")));
+        Assert.Equal(0, GetMetricProperty(sourceCadence, "SampleCount"));
+        Assert.Equal(0d, GetMetricProperty(sourceCadence, "ExpectedIntervalMs"));
+        Assert.Equal(0d, GetMetricProperty(sourceCadence, "ObservedFps"));
+        var jitter = unifiedType.GetMethod("GetMjpegPreviewJitterMetrics")!.Invoke(unified, null)!;
+        Assert.Equal(string.Empty, GetMetricProperty(jitter, "LastDropReason"));
+        Assert.Equal(string.Empty, GetMetricProperty(jitter, "LastUnderflowReason"));
+        Assert.Equal(false, GetMetricProperty(jitter, "Enabled"));
+        Assert.Equal(0, GetMetricProperty(jitter, "QueueDepth"));
+        Assert.Equal(0L, GetMetricProperty(jitter, "TotalDropped"));
+
+        var health = captureType.GetMethod("GetHealthSnapshot")!.Invoke(capture, null)!;
+        foreach (var property in new[] { "CaptureCadenceRecentIntervalsMs", "FlashbackPlaybackRecentFrameIntervalsMs" })
+        {
+            Assert.Empty(Assert.IsType<double[]>(GetMetricProperty(health, property)));
+        }
+        Assert.Equal(string.Empty, GetMetricProperty(health, "MjpegPreviewJitterLastDropReason"));
+        Assert.Equal(string.Empty, GetMetricProperty(health, "MjpegPreviewJitterLastUnderflowReason"));
+        Assert.Null(GetMetricProperty(health, "FlashbackPlaybackState"));
+        Assert.Equal(0, GetMetricProperty(health, "CaptureCadenceSampleCount"));
+        Assert.Equal(0d, GetMetricProperty(health, "CaptureCadenceExpectedIntervalMs"));
+        Assert.Equal(0, GetMetricProperty(health, "FlashbackPlaybackCadenceSampleCount"));
+        Assert.Equal(0L, GetMetricProperty(health, "FlashbackPlaybackSlowFrames"));
+        Assert.Equal(0L, GetMetricProperty(health, "FlashbackPlaybackFrameCount"));
+        Assert.Equal(0L, GetMetricProperty(health, "MjpegPreviewJitterTotalDropped"));
+
+        var snapshot = Sussudio.Tests.AutomationSnapshotRegressionFixture.BuildResult(
+            assembly, populated: false, healthOverride: health);
+        foreach (var property in new[] { "CaptureCadenceRecentIntervalsMs", "FlashbackPlaybackRecentFrameIntervalsMs" })
+        {
+            Assert.Equal(System.Text.Json.JsonValueKind.Array, snapshot.GetProperty(property).ValueKind);
+            Assert.Equal(0, snapshot.GetProperty(property).GetArrayLength());
+        }
+        Assert.Equal("N/A", snapshot.GetProperty("FlashbackPlaybackState").GetString());
+        Assert.Equal(string.Empty, snapshot.GetProperty("MjpegPreviewJitterLastDropReason").GetString());
+        Assert.Equal(string.Empty, snapshot.GetProperty("MjpegPreviewJitterLastUnderflowReason").GetString());
+    }
+
+    [Fact]
+    public async Task SourceReaderWithoutSamples_RetainsConfiguredExpectedCadence()
+    {
+        var type = Sussudio.Tests.SussudioAssembly.Load().GetType(
+            "Sussudio.Services.Capture.MfSourceReaderVideoCapture", throwOnError: true)!;
+        await using var capture = (IAsyncDisposable)Activator.CreateInstance(type)!;
+        type.GetMethod("SetExpectedFrameRate")!.Invoke(capture, new object[] { 120d });
+        var cadence = type.GetMethod("GetSourceCadenceMetrics")!.Invoke(capture, null)!;
+
+        Assert.Equal(1000d / 120, GetMetricProperty(cadence, "ExpectedIntervalMs"));
+        Assert.Equal(0, GetMetricProperty(cadence, "SampleCount"));
+        Assert.Equal(0d, GetMetricProperty(cadence, "ObservedFps"));
+        Assert.Empty(Assert.IsType<double[]>(GetMetricProperty(cadence, "RecentIntervalsMs")));
+    }
+
+    [Fact]
+    public void PlaybackWithoutSamples_RetainsAccumulatedSlowFrames()
+    {
+        var assembly = Sussudio.Tests.SussudioAssembly.Load();
+        var bufferType = assembly.GetType("Sussudio.Services.Flashback.FlashbackBufferManager", throwOnError: true)!;
+        var playbackType = assembly.GetType("Sussudio.Services.Flashback.FlashbackPlaybackController", throwOnError: true)!;
+        using var buffer = (IDisposable)Activator.CreateInstance(bufferType, new object?[] { null })!;
+        using var playback = (IDisposable)Activator.CreateInstance(playbackType, buffer)!;
+        playbackType.GetField("_playbackSlowFrameCount", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .SetValue(playback, 7L);
+        var cadence = playbackType.GetMethod("GetPlaybackCadenceMetrics")!.Invoke(playback, null)!;
+
+        Assert.Equal(7L, GetMetricProperty(cadence, "SlowFrameCount"));
+        Assert.Equal(0, GetMetricProperty(cadence, "SampleCount"));
+        Assert.Equal(0d, GetMetricProperty(cadence, "OnePercentLowFps"));
+        Assert.Empty(Assert.IsType<double[]>(GetMetricProperty(cadence, "RecentFrameIntervalsMs")));
+    }
+
+    private static object? GetMetricProperty(object value, string name)
+        => value.GetType().GetProperty(name, BindingFlags.Public | BindingFlags.Instance)!.GetValue(value);
+
+    [Fact]
     public void CaptureService_HealthSnapshotAssemblyFields_LiveWithHealthSampler()
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
@@ -64,7 +148,6 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
         Assert.Contains("private static CaptureCadenceHealthSnapshotFields BuildCaptureCadenceHealthSnapshotFields(", healthSnapshotText, StringComparison.Ordinal);
         Assert.Contains("private readonly record struct CaptureCadenceHealthSnapshotFields(", healthSnapshotText, StringComparison.Ordinal);
         Assert.Contains("unifiedVideoCapture?.GetSourceCadenceMetrics()", healthSnapshotText, StringComparison.Ordinal);
-        Assert.Contains("default(MfSourceReaderVideoCapture.SourceCadenceMetrics)", healthSnapshotText, StringComparison.Ordinal);
         Assert.False(File.Exists(Path.Combine(
             FindRepoRoot(),
             "Sussudio",
@@ -260,12 +343,11 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
         Assert.Contains("private readonly record struct FlashbackPlaybackHealthSnapshotFields", healthSnapshotText, StringComparison.Ordinal);
         Assert.Contains("private static FlashbackPlaybackStateHealthSnapshotFields CaptureFlashbackPlaybackStateHealthSnapshotFields(", healthSnapshotText, StringComparison.Ordinal);
         Assert.Contains("private readonly record struct FlashbackPlaybackStateHealthSnapshotFields(", healthSnapshotText, StringComparison.Ordinal);
-        Assert.Contains("fbPlayback?.State.ToString() ?? \"N/A\"", healthSnapshotText, StringComparison.Ordinal);
+        Assert.Contains("fbPlayback?.State,", healthSnapshotText, StringComparison.Ordinal);
         Assert.Contains("fbPlayback?.PlaybackFrameCount ?? 0", healthSnapshotText, StringComparison.Ordinal);
         Assert.Contains("fbPlayback?.PlaybackThreadAlive ?? false", healthSnapshotText, StringComparison.Ordinal);
         Assert.Contains("private static FlashbackPlaybackCadenceHealthSnapshotFields CaptureFlashbackPlaybackCadenceHealthSnapshotFields(", healthSnapshotText, StringComparison.Ordinal);
         Assert.Contains("private readonly record struct FlashbackPlaybackCadenceHealthSnapshotFields(", healthSnapshotText, StringComparison.Ordinal);
-        Assert.Contains("fbPlayback?.GetPlaybackCadenceMetrics() ?? default", healthSnapshotText, StringComparison.Ordinal);
         Assert.Contains("private static FlashbackPlaybackDecodeHealthSnapshotFields CaptureFlashbackPlaybackDecodeHealthSnapshotFields(", healthSnapshotText, StringComparison.Ordinal);
         Assert.Contains("private readonly record struct FlashbackPlaybackDecodeHealthSnapshotFields(", healthSnapshotText, StringComparison.Ordinal);
         Assert.Contains("fbPlayback?.GetPlaybackDecodeMetrics() ?? default", healthSnapshotText, StringComparison.Ordinal);
