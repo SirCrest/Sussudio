@@ -1306,10 +1306,10 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
             _videoCodecCtx = null;
         }
 
-        if (_audio.ResampleBuffer != null)
+        if (_audio.InputAccumulatorBuffer != null)
         {
-            ffmpeg.av_free(_audio.ResampleBuffer);
-            _audio.ResampleBuffer = null;
+            ffmpeg.av_free(_audio.InputAccumulatorBuffer);
+            _audio.InputAccumulatorBuffer = null;
         }
 
         if (_audio.SampleQueueBuffer != null)
@@ -1318,10 +1318,10 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
             _audio.SampleQueueBuffer = null;
         }
 
-        if (_mic.ResampleBuffer != null)
+        if (_mic.InputAccumulatorBuffer != null)
         {
-            ffmpeg.av_free(_mic.ResampleBuffer);
-            _mic.ResampleBuffer = null;
+            ffmpeg.av_free(_mic.InputAccumulatorBuffer);
+            _mic.InputAccumulatorBuffer = null;
         }
 
         if (_mic.SampleQueueBuffer != null)

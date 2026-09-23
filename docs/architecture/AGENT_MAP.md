@@ -776,8 +776,10 @@ Entry points:
   properties, public sample entry points, payload alignment checks,
   accumulator handoff, audio sample queueing, drift-corrected encode chunks,
   planar sample copies, prepared-frame drains, A/V sync diagnostics, stream
-  packet writes, pending-sample flush, accumulator ingress, and audio/microphone
-  AAC stream initialization.
+  packet writes, pending-sample flush, and input-accumulator ingress.
+  One AAC initializer configures either existing `AudioStreamState` by reference
+  with its own rate, channels, and bitrate, publishing native allocations into
+  that owner as they occur so root cleanup can unwind partial initialization.
 - `LibAvEncoder.cs` owns encoder core state plus the encoder option and
   rotation-result DTOs consumed by the rest of the encoder family.
 - `LibAvEncoder.cs` owns bitstream-filter selection, NVENC preset/split-encode
@@ -1026,10 +1028,12 @@ Entry points:
 - `tests/Sussudio.Tests/FlashbackRotationBehaviorTests.cs` exercises bundled
   libav/libx264 output, retry recovery/escalation, scheduled and forced terminal
   rotation, lease cleanup, retained artifacts, and failed recording results.
-  Dual-audio cases cover partial AAC buffers during output-open failure and
-  demuxing video plus both audio tracks after normal finalization. Native fault
-  injection covers output-open failure; other native failure points share the
-  source cleanup path but are not individually injected.
+  Dual-audio cases cover independent AAC rates/channels/bitrates, partial input
+  buffers during output-open failure, and demuxed track metadata after normal
+  finalization. The mono case feeds the native encoder before the sink owner
+  starts because public sink admission remains stereo. An unsupported microphone
+  rate exercises cleanup after audio initialization. Native allocation failures
+  are not individually injected.
 - `FlashbackExporter.cs` owns the native export session: disposal/cancellation,
   export locking, FFmpeg input/output context setup, stream-template/layout
   validation, public request routing, packet pumping/rebasing, progress/pacing,

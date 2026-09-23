@@ -4721,11 +4721,7 @@ static partial class Program
         AssertContains(audioText, "private void InitializeAudioIfNeeded(LibAvEncoderOptions options)");
         AssertContains(audioText, "private void InitializeMicrophoneIfNeeded(LibAvEncoderOptions options)");
         AssertContains(audioText, "ffmpeg.avcodec_find_encoder(AVCodecID.AV_CODEC_ID_AAC)");
-        AssertContains(audioText, "private void ConfigureAudioCodecContext(AVCodecContext* codecContext, LibAvEncoderOptions options, AVCodec* codec)");
-        AssertContains(audioText, "private void InitializeAudioResampler(LibAvEncoderOptions options)");
-        AssertContains(audioText, "private void AllocateAudioFrame()");
-        AssertContains(audioText, "private void AllocateAudioAccumulator(LibAvEncoderOptions options)");
-        AssertContains(audioText, "private void AllocateAudioSampleQueue(LibAvEncoderOptions options)");
+        AssertContains(audioText, "private void InitializeAudioStream(");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.AudioSetup.cs")),
@@ -4810,9 +4806,7 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.OptionsValidation.cs")),
             "LibAvEncoder option validation folded into encoder initialization");
-        AssertDoesNotContain(rootText, "private void ConfigureAudioCodecContext(AVCodecContext* codecContext, LibAvEncoderOptions options, AVCodec* codec)");
-        AssertDoesNotContain(rootText, "private void InitializeAudioResampler(LibAvEncoderOptions options)");
-        AssertDoesNotContain(rootText, "private void AllocateAudioFrame()");
+        AssertDoesNotContain(rootText, "private void InitializeAudioStream(");
         AssertDoesNotContain(rootText, "private bool AttachHdrFrameSideDataIfNeeded(LibAvEncoderOptions options)");
         AssertDoesNotContain(rootText, "private bool AttachHdrFrameSideDataToHwFrame(LibAvEncoderOptions options)");
         AssertDoesNotContain(initializationText, "private static IntPtr CreateSingleTexture2D(IntPtr d3d11Device, int width, int height, bool isP010, uint bindFlags)");
