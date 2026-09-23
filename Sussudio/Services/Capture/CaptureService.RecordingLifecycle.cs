@@ -460,7 +460,9 @@ public partial class CaptureService
                     Fps: effectiveFrameRate,
                     RequireP010: requireP010,
                     RequestedPixelFormat: settings.RequestedPixelFormat,
-                    UseMjpegHighFrameRateMode: useMjpegHighFrameRateMode),
+                    Mode: useMjpegHighFrameRateMode
+                        ? SourceNegotiationMode.HighFrameRateMjpegRequested
+                        : SourceNegotiationMode.Standard),
                 mjpegDecoderCount: settings.MjpegDecoderCount).ConfigureAwait(false);
             rollback.OwnedUnifiedVideoCapture.SetPreviewSink(_isVideoPreviewActive ? _videoPipeline.PreviewFrameSink : null);
             TryApplySharedPreviewDevice(rollback.OwnedUnifiedVideoCapture, _isVideoPreviewActive ? _videoPipeline.PreviewFrameSink : null);

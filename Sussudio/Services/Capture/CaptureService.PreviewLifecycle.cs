@@ -258,7 +258,9 @@ public partial class CaptureService
                     Fps: settings.FrameRate,
                     RequireP010: requireP010,
                     RequestedPixelFormat: settings.RequestedPixelFormat,
-                    UseMjpegHighFrameRateMode: useMjpegHighFrameRateMode),
+                    Mode: useMjpegHighFrameRateMode
+                        ? SourceNegotiationMode.HighFrameRateMjpegRequested
+                        : SourceNegotiationMode.Standard),
                 mjpegDecoderCount: settings.MjpegDecoderCount).ConfigureAwait(false);
             Logger.LogFatalBreadcrumb($"PREVIEW_START phase=init_done");
             unifiedVideoCapture.SetPreviewSink(_videoPipeline.PreviewFrameSink);

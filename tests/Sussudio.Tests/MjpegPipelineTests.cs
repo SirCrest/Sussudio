@@ -65,7 +65,7 @@ namespace Sussudio.Tests
         {
             WithGpuNativeMjpegDecodeEnvironment(
                 value: null,
-                () => Assert.Equal(preferNative, ShouldPreferGpuNativeMjpegDecode(isMjpegHighFrameRateDecode: true, fps)));
+                () => Assert.Equal(preferNative, ShouldPreferGpuNativeMjpegDecode(fps)));
         }
 
         [Fact]
@@ -73,7 +73,7 @@ namespace Sussudio.Tests
         {
             WithGpuNativeMjpegDecodeEnvironment(
                 value: "1",
-                () => Assert.True(ShouldPreferGpuNativeMjpegDecode(isMjpegHighFrameRateDecode: true, fps: 120)));
+                () => Assert.True(ShouldPreferGpuNativeMjpegDecode(fps: 120)));
         }
 
         [Fact]
@@ -81,7 +81,7 @@ namespace Sussudio.Tests
         {
             WithGpuNativeMjpegDecodeEnvironment(
                 value: "0",
-                () => Assert.False(ShouldPreferGpuNativeMjpegDecode(isMjpegHighFrameRateDecode: true, fps: 60)));
+                () => Assert.False(ShouldPreferGpuNativeMjpegDecode(fps: 60)));
         }
 
         [Fact]
@@ -91,13 +91,9 @@ namespace Sussudio.Tests
                 value: null,
                 () =>
                 {
-                    var isMjpegHighFrameRateDecode = IsMjpegHighFrameRateDecode(
-                        useMjpegHighFrameRateMode: false,
-                        requireP010: false,
-                        requestedPixelFormat: "MJPG");
-
-                    Assert.False(isMjpegHighFrameRateDecode);
-                    Assert.False(ShouldPreferGpuNativeMjpegDecode(isMjpegHighFrameRateDecode));
+                    Assert.Equal(
+                        "Standard",
+                        ResolveSourceNegotiationMode("Standard", requireP010: false, "MJPG", fps: 120));
                 });
         }
 
@@ -108,13 +104,9 @@ namespace Sussudio.Tests
                 value: null,
                 () =>
                 {
-                    var isMjpegHighFrameRateDecode = IsMjpegHighFrameRateDecode(
-                        useMjpegHighFrameRateMode: true,
-                        requireP010: false,
-                        requestedPixelFormat: "NV12");
-
-                    Assert.False(isMjpegHighFrameRateDecode);
-                    Assert.False(ShouldPreferGpuNativeMjpegDecode(isMjpegHighFrameRateDecode));
+                    Assert.Equal(
+                        "Standard",
+                        ResolveSourceNegotiationMode("HighFrameRateMjpegRequested", requireP010: false, "NV12", fps: 120));
                 });
         }
 
@@ -125,14 +117,22 @@ namespace Sussudio.Tests
                 value: null,
                 () =>
                 {
-                    var isMjpegHighFrameRateDecode = IsMjpegHighFrameRateDecode(
-                        useMjpegHighFrameRateMode: true,
-                        requireP010: true,
-                        requestedPixelFormat: "MJPG");
-
-                    Assert.False(isMjpegHighFrameRateDecode);
-                    Assert.False(ShouldPreferGpuNativeMjpegDecode(isMjpegHighFrameRateDecode));
+                    Assert.Equal(
+                        "Standard",
+                        ResolveSourceNegotiationMode("HighFrameRateMjpegRequested", requireP010: true, "MJPG", fps: 120));
                 });
+        }
+
+        [Theory]
+        [InlineData(120, "RawMjpgPassthrough")]
+        [InlineData(60, "ConvertedMjpegNv12")]
+        public void HighFrameRateMjpegRequest_ResolvesOnceToReaderMode(double fps, string expectedMode)
+        {
+            WithGpuNativeMjpegDecodeEnvironment(
+                value: null,
+                () => Assert.Equal(
+                    expectedMode,
+                    ResolveSourceNegotiationMode("HighFrameRateMjpegRequested", requireP010: false, "MJPG", fps)));
         }
 
         [Fact]
@@ -177,33 +177,34 @@ namespace Sussudio.Tests
         [InlineData("P010", true)]
         public async Task UncompressedInitialization_DoesNotInstallJpegDecode(string format, bool requireP010)
         {
-            var isMjpeg = IsMjpegHighFrameRateDecode(
-                useMjpegHighFrameRateMode: true, requireP010, requestedPixelFormat: format);
-            var attempts = new List<bool>();
-            var usesExternalDecode = await InvokeMjpegInitializationAsync(
-                preferGpuNative: false,
-                external => { attempts.Add(external); return Task.CompletedTask; },
-                _ => throw new InvalidOperationException("Uncompressed capture must not retry JPEG decode."),
-                isMjpegHighFrameRateDecode: isMjpeg);
+            var requestedMode = ResolveSourceNegotiationMode(
+                "HighFrameRateMjpegRequested",
+                requireP010,
+                format,
+                fps: 120);
+            var attempts = new List<string>();
+            var selectedMode = await InvokeMjpegInitializationAsync(
+                requestedMode,
+                mode => { attempts.Add(mode); return Task.CompletedTask; },
+                _ => throw new InvalidOperationException("Uncompressed capture must not retry JPEG decode."));
 
-            Assert.False(usesExternalDecode);
-            Assert.Equal(new[] { false }, attempts);
+            Assert.Equal("Standard", selectedMode);
+            Assert.Equal(new[] { "Standard" }, attempts);
         }
 
         [Fact]
         public async Task UncompressedInitialization_DoesNotRetryFailureAsJpeg()
         {
             var failure = new InvalidOperationException("uncompressed source unavailable");
-            var attempts = new List<bool>();
+            var attempts = new List<string>();
             var error = await Assert.ThrowsAsync<InvalidOperationException>(
                 () => InvokeMjpegInitializationAsync(
-                    preferGpuNative: true,
-                    external => { attempts.Add(external); return Task.FromException(failure); },
-                    _ => throw new InvalidOperationException("Unexpected JPEG fallback."),
-                    isMjpegHighFrameRateDecode: false));
+                    "Standard",
+                    mode => { attempts.Add(mode); return Task.FromException(failure); },
+                    _ => throw new InvalidOperationException("Unexpected JPEG fallback.")));
 
             Assert.Same(failure, error);
-            Assert.Equal(new[] { false }, attempts);
+            Assert.Equal(new[] { "Standard" }, attempts);
         }
 
         [Fact]
@@ -211,21 +212,21 @@ namespace Sussudio.Tests
         {
             var nativeFailure = new InvalidOperationException("native unavailable");
             var softwareFailure = new InvalidOperationException("software unavailable");
-            var attempts = new List<bool>();
+            var attempts = new List<string>();
             Exception? reportedNativeFailure = null;
 
             var error = await Assert.ThrowsAsync<InvalidOperationException>(
                 () => InvokeMjpegInitializationAsync(
-                    preferGpuNative: true,
-                    useExternalDecode =>
+                    "ConvertedMjpegNv12",
+                    mode =>
                     {
-                        attempts.Add(useExternalDecode);
-                        return Task.FromException(useExternalDecode ? softwareFailure : nativeFailure);
+                        attempts.Add(mode);
+                        return Task.FromException(mode == "RawMjpgPassthrough" ? softwareFailure : nativeFailure);
                     },
                     failure => reportedNativeFailure = failure));
 
             Assert.Same(softwareFailure, error);
-            Assert.Equal(new[] { false, true }, attempts);
+            Assert.Equal(new[] { "ConvertedMjpegNv12", "RawMjpgPassthrough" }, attempts);
             Assert.Same(nativeFailure, reportedNativeFailure);
         }
 
@@ -541,28 +542,31 @@ namespace Sussudio.Tests
             field!.SetValue(instance, value);
         }
 
-        private static bool IsMjpegHighFrameRateDecode(
-            bool useMjpegHighFrameRateMode,
+        private static string ResolveSourceNegotiationMode(
+            string requestedModeName,
             bool requireP010,
-            string? requestedPixelFormat)
-            => InvokeUnifiedVideoCapturePolicy(
-                "IsMjpegHighFrameRateDecode",
-                useMjpegHighFrameRateMode,
+            string? requestedPixelFormat,
+            double fps)
+        {
+            var modeType = RequireType("Sussudio.Services.Capture.SourceNegotiationMode");
+            var requestedMode = Enum.Parse(modeType, requestedModeName);
+            return InvokeUnifiedVideoCapturePolicy(
+                "ResolveSourceNegotiationMode",
+                requestedMode,
                 requireP010,
-                requestedPixelFormat);
+                requestedPixelFormat,
+                fps)!.ToString()!;
+        }
 
-        private static bool ShouldPreferGpuNativeMjpegDecode(bool isMjpegHighFrameRateDecode, double fps = 120)
-            => InvokeUnifiedVideoCapturePolicy(
-                "ShouldPreferGpuNativeMjpegDecode",
-                isMjpegHighFrameRateDecode,
-                fps);
+        private static bool ShouldPreferGpuNativeMjpegDecode(double fps = 120)
+            => (bool)InvokeUnifiedVideoCapturePolicy("ShouldPreferGpuNativeMjpegDecode", fps)!;
 
-        private static bool InvokeUnifiedVideoCapturePolicy(string methodName, params object?[] arguments)
+        private static object? InvokeUnifiedVideoCapturePolicy(string methodName, params object?[] arguments)
         {
             var captureType = RequireType("Sussudio.Services.Capture.UnifiedVideoCapture");
             var method = captureType.GetMethod(methodName, BindingFlags.Static | BindingFlags.NonPublic)
                 ?? throw new InvalidOperationException($"UnifiedVideoCapture.{methodName} was not found.");
-            return (bool)method.Invoke(null, arguments)!;
+            return method.Invoke(null, arguments);
         }
 
         private static async Task<MjpegInitializationProbe> RunMjpegInitializationAsync(
@@ -572,24 +576,27 @@ namespace Sussudio.Tests
             var attempts = new List<bool>();
             Exception? reportedNativeFailure = null;
 
-            var usesExternalDecode = await InvokeMjpegInitializationAsync(
-                preferGpuNative,
-                useExternalDecode =>
+            var selectedMode = await InvokeMjpegInitializationAsync(
+                preferGpuNative ? "ConvertedMjpegNv12" : "RawMjpgPassthrough",
+                modeName =>
                 {
+                    var useExternalDecode = modeName == "RawMjpgPassthrough";
                     attempts.Add(useExternalDecode);
                     var failure = failureFactory(useExternalDecode, attempts.Count);
                     return failure == null ? Task.CompletedTask : Task.FromException(failure);
                 },
                 failure => reportedNativeFailure = failure);
 
-            return new MjpegInitializationProbe(usesExternalDecode, attempts, reportedNativeFailure);
+            return new MjpegInitializationProbe(
+                selectedMode == "RawMjpgPassthrough",
+                attempts,
+                reportedNativeFailure);
         }
 
-        private static async Task<bool> InvokeMjpegInitializationAsync(
-            bool preferGpuNative,
-            Func<bool, Task> initializeAsync,
-            Action<Exception> reportNativeFailure,
-            bool isMjpegHighFrameRateDecode = true)
+        private static async Task<string> InvokeMjpegInitializationAsync(
+            string initialModeName,
+            Func<string, Task> initializeAsync,
+            Action<Exception> reportNativeFailure)
         {
             var captureType = RequireType("Sussudio.Services.Capture.UnifiedVideoCapture");
             var method = captureType.GetMethod(
@@ -597,13 +604,34 @@ namespace Sussudio.Tests
                 BindingFlags.Static | BindingFlags.NonPublic)
                 ?? throw new InvalidOperationException(
                     "UnifiedVideoCapture.InitializeMjpegSourceReaderWithFallbackAsync was not found.");
+            var modeType = RequireType("Sussudio.Services.Capture.SourceNegotiationMode");
+            var initialMode = Enum.Parse(modeType, initialModeName);
+            var initializeModeAsync = CreateSourceNegotiationModeCallback(modeType, initializeAsync);
             var task = method.Invoke(
                     null,
-                    new object[] { isMjpegHighFrameRateDecode, preferGpuNative, initializeAsync, reportNativeFailure }) as Task<bool>
+                    new[] { initialMode, initializeModeAsync, reportNativeFailure }) as Task
                 ?? throw new InvalidOperationException(
-                    "InitializeMjpegSourceReaderWithFallbackAsync did not return Task<bool>.");
-            return await task.ConfigureAwait(false);
+                    "InitializeMjpegSourceReaderWithFallbackAsync did not return a task.");
+            await task.ConfigureAwait(false);
+            return task.GetType().GetProperty("Result")?.GetValue(task)?.ToString()
+                ?? throw new InvalidOperationException("InitializeMjpegSourceReaderWithFallbackAsync returned no source mode.");
         }
+
+        private static Delegate CreateSourceNegotiationModeCallback(
+            Type modeType,
+            Func<string, Task> initializeAsync)
+        {
+            var factory = typeof(MjpegPipelineContractsTests).GetMethod(
+                nameof(CreateSourceNegotiationModeCallbackGeneric),
+                BindingFlags.Static | BindingFlags.NonPublic)!
+                .MakeGenericMethod(modeType);
+            return (Delegate)factory.Invoke(null, new object[] { initializeAsync })!;
+        }
+
+        private static Func<TMode, Task> CreateSourceNegotiationModeCallbackGeneric<TMode>(
+            Func<string, Task> initializeAsync)
+            where TMode : struct, Enum
+            => mode => initializeAsync(mode.ToString());
 
         private static void WithGpuNativeMjpegDecodeEnvironment(string? value, Action assertion)
         {

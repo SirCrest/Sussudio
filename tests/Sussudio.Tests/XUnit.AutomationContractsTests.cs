@@ -8866,6 +8866,11 @@ static partial class Program
         AssertContains(sourceReaderText, "public Task InitializeAsync(string deviceSymbolicLink, VideoCaptureNegotiationOptions options)");
         AssertContains(sourceReaderText, "MF_SOURCE_READER_INIT ");
         AssertContains(sourceReaderText, "SelectConvertedMediaType(");
+        AssertContains(sourceReaderText, "out SourceReaderNegotiatedMode selectedMode");
+        AssertDoesNotContain(sourceReaderText, "out Guid selectedSubtype");
+        AssertContains(sourceReaderText, "private IMFMediaSource OpenMediaSourceWithBusyRetry(string deviceSymbolicLink)");
+        AssertDoesNotContain(sourceReaderText, "deviceOpenLastEx");
+        AssertDoesNotContain(sourceReaderText, "if ((hr == MfHResults.MF_E_SHUTDOWN || hr == MfHResults.MF_E_INVALIDREQUEST)");
         AssertContains(sourceReaderText, "ApplyCurrentMediaTypeAndReconcileActualOutput(");
         AssertContains(sourceReaderText, "CommitInitializedRuntimeState(");
         AssertContains(sourceReaderText, "private readonly record struct SourceReaderNegotiatedMode(");

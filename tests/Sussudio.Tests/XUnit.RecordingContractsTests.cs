@@ -3128,6 +3128,22 @@ static partial class Program
         AssertContains(fanoutSource, "private void EnqueueFlashbackFrame(ReadOnlySpan<byte> frameData, int width, int height, bool isP010, long sourceSequence)");
         AssertContains(fanoutSource, "private void EnqueueFlashbackFrame(PooledVideoFrame frame)");
         AssertContains(fanoutSource, "private void EnqueueFlashbackGpuFrame(IntPtr texture, int subresource, long sourceSequence)");
+        AssertContains(fanoutSource, "private void RecordFlashbackOutcome(");
+        AssertContains(fanoutSource, "RecordFlashbackRecordingAccounting(sink, accepted, sourceSequence, reason);");
+        AssertContains(fanoutSource, "RecordFlashbackEnqueue(sourceSequence, accepted, reason);");
+        AssertDoesNotContain(fanoutSource, "RecordFlashbackRecordingAccounting(sink, accepted, sourceSequence, accepted ? null : \"queue_rejected\")");
+        var flashbackEnqueueMethods = ExtractSourceBlock(
+            fanoutSource,
+            "private void EnqueueFlashbackFrame(ReadOnlySpan<byte> frameData, int width, int height, bool isP010, long sourceSequence)",
+            "private void RecordFlashbackRecordingAccounting(");
+        AssertDoesNotContain(flashbackEnqueueMethods, "RecordFlashbackRecordingAccounting(");
+        AssertDoesNotContain(flashbackEnqueueMethods, "RecordFlashbackEnqueue(");
+        var pooledFlashbackEnqueue = ExtractSourceBlock(
+            flashbackEnqueueMethods,
+            "private void EnqueueFlashbackFrame(PooledVideoFrame frame)",
+            "private void EnqueueFlashbackGpuFrame(");
+        AssertOccursBefore(pooledFlashbackEnqueue, "if (frame.Length < expectedSize)", "frame.TryAddLease(out var lease)");
+        AssertContains(pooledFlashbackEnqueue, "RecordFlashbackOutcome(");
         AssertContains(fanoutSource, "private void TrackFlashbackRecordingAcceptedSequence(long sourceSequence)");
         AssertEqual(
             false,
@@ -3237,8 +3253,12 @@ static partial class Program
         AssertContains(lifecycleSource, "private async ValueTask DisposeCoreAsync(bool disposeSharedD3DDeviceManager)");
         AssertContains(lifecycleSource, "private void ThrowIfDisposed()");
         AssertContains(lifecycleSource, "private void OnCaptureFatalError(object? sender, Exception ex)");
-        AssertContains(mjpegStartupSource, "private static bool IsMjpegHighFrameRateDecode(");
+        AssertContains(mjpegStartupSource, "private static SourceNegotiationMode ResolveSourceNegotiationMode(");
         AssertContains(mjpegStartupSource, "private static bool ShouldPreferGpuNativeMjpegDecode(");
+        AssertContains(mjpegStartupSource, "private static async Task<SourceNegotiationMode> InitializeMjpegSourceReaderWithFallbackAsync(");
+        AssertContains(mjpegStartupSource, "fallback={(capture.IsHighFrameRateMjpegMode && negotiationMode == SourceNegotiationMode.RawMjpgPassthrough)");
+        AssertDoesNotContain(mjpegStartupSource, "IsMjpegHighFrameRateDecode(");
+        AssertDoesNotContain(mjpegStartupSource, "useExternalMjpegDecode");
         AssertContains(mjpegStartupSource, "private ParallelMjpegDecodePipeline? CreateExternalMjpegPipelineIfNeeded(");
         AssertContains(mjpegStartupSource, "private void InstallMjpegPreviewJitterBuffer(double fps)");
         AssertContains(mjpegLifecycleSource, "private void StopAndDisposeMjpegPipeline(ParallelMjpegDecodePipeline mjpegPipelineToStop)");

@@ -283,7 +283,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
     /// <remarks>
     /// Source-reader activation and negotiation run synchronously; see
     /// <see cref="MfSourceReaderVideoCapture.InitializeAsync"/> for the calling-thread and cancellation contract.
-    /// This session selects the DXGI device manager and external MJPEG decode settings in <paramref name="options"/>.
+    /// This session resolves the source-reader negotiation mode and selects its D3D device manager.
     /// </remarks>
     public async Task InitializeAsync(
         string deviceSymbolicLink,
@@ -302,29 +302,29 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
 
         var d3dManager = new SharedD3DDeviceManager();
         var dxgiDeviceManagerPtr = d3dManager.DxgiDeviceManagerPtr;
-        var useMjpegHighFrameRateDecode = IsMjpegHighFrameRateDecode(
-            options.UseMjpegHighFrameRateMode,
+        var negotiationMode = ResolveSourceNegotiationMode(
+            options.Mode,
             options.RequireP010,
-            options.RequestedPixelFormat);
-        var preferGpuNativeMjpegDecode = ShouldPreferGpuNativeMjpegDecode(useMjpegHighFrameRateDecode, options.Fps);
-        var useExternalMjpegDecode = useMjpegHighFrameRateDecode && !preferGpuNativeMjpegDecode;
+            options.RequestedPixelFormat,
+            options.Fps);
         ParallelMjpegDecodePipeline? mjpegPipeline = null;
         var capture = new MfSourceReaderVideoCapture();
 
-        Task InitializeSourceReaderAsync(bool useExternalDecode)
+        Task InitializeSourceReaderAsync(SourceNegotiationMode sourceNegotiationMode)
             => capture.InitializeAsync(
                 deviceSymbolicLink,
                 options with
                 {
-                    DxgiDeviceManager = useExternalDecode ? IntPtr.Zero : dxgiDeviceManagerPtr,
-                    UseExternalMjpegDecode = useExternalDecode
+                    DxgiDeviceManager = sourceNegotiationMode == SourceNegotiationMode.RawMjpgPassthrough
+                        ? IntPtr.Zero
+                        : dxgiDeviceManagerPtr,
+                    Mode = sourceNegotiationMode
                 });
 
         try
         {
-            useExternalMjpegDecode = await InitializeMjpegSourceReaderWithFallbackAsync(
-                    useMjpegHighFrameRateDecode,
-                    preferGpuNativeMjpegDecode,
+            negotiationMode = await InitializeMjpegSourceReaderWithFallbackAsync(
+                    negotiationMode,
                     InitializeSourceReaderAsync,
                     ex => Logger.Log(
                         "MJPEG_GPU_NATIVE_UNAVAILABLE " +
@@ -332,7 +332,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
                 .ConfigureAwait(false);
 
             mjpegPipeline = CreateExternalMjpegPipelineIfNeeded(
-                useExternalMjpegDecode,
+                negotiationMode,
                 mjpegDecoderCount,
                 options.Width,
                 options.Height,
@@ -389,14 +389,14 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             _frameLedger.Reset();
         }
 
-        var mjpegDecodePath = !useMjpegHighFrameRateDecode
+        var mjpegDecodePath = !capture.IsHighFrameRateMjpegMode
             ? "not_applicable"
             : capture.IsGpuNativeMjpegDecodeActive ? "gpu_native" : "software";
         Logger.Log(
             $"MJPEG_DECODE_PATH path={mjpegDecodePath} " +
             $"hfr={capture.IsHighFrameRateMjpegMode.ToString().ToLowerInvariant()} " +
             $"software_decoders={(mjpegPipeline?.DecoderCount ?? 0)} " +
-            $"fallback={(useMjpegHighFrameRateDecode && useExternalMjpegDecode).ToString().ToLowerInvariant()}");
+            $"fallback={(capture.IsHighFrameRateMjpegMode && negotiationMode == SourceNegotiationMode.RawMjpgPassthrough).ToString().ToLowerInvariant()}");
 
         capture.FatalErrorOccurred += OnCaptureFatalError;
     }
@@ -583,54 +583,83 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             $"UNIFIED_VIDEO_FATAL_CAPTURE_ERROR type={ex.GetType().Name} msg={ex.Message}");
     }
 
-    private static bool IsMjpegHighFrameRateDecode(
-        bool useMjpegHighFrameRateMode,
+    private static SourceNegotiationMode ResolveSourceNegotiationMode(
+        SourceNegotiationMode requestedMode,
         bool requireP010,
-        string? requestedPixelFormat)
+        string? requestedPixelFormat,
+        double fps)
     {
-        return useMjpegHighFrameRateMode &&
-            !requireP010 &&
-            string.Equals(requestedPixelFormat, "MJPG", StringComparison.OrdinalIgnoreCase);
+        if (requestedMode is not (SourceNegotiationMode.Standard or
+            SourceNegotiationMode.HighFrameRateMjpegRequested or
+            SourceNegotiationMode.ConvertedMjpegNv12 or
+            SourceNegotiationMode.RawMjpgPassthrough))
+        {
+            throw new ArgumentOutOfRangeException(nameof(requestedMode), requestedMode, "Source negotiation mode is not supported.");
+        }
+
+        if (requestedMode == SourceNegotiationMode.Standard)
+        {
+            return SourceNegotiationMode.Standard;
+        }
+
+        if (requireP010 || !string.Equals(requestedPixelFormat, "MJPG", StringComparison.OrdinalIgnoreCase))
+        {
+            return SourceNegotiationMode.Standard;
+        }
+
+        return requestedMode switch
+        {
+            SourceNegotiationMode.HighFrameRateMjpegRequested => ShouldPreferGpuNativeMjpegDecode(fps)
+                ? SourceNegotiationMode.ConvertedMjpegNv12
+                : SourceNegotiationMode.RawMjpgPassthrough,
+            SourceNegotiationMode.ConvertedMjpegNv12 => SourceNegotiationMode.ConvertedMjpegNv12,
+            SourceNegotiationMode.RawMjpgPassthrough => SourceNegotiationMode.RawMjpgPassthrough,
+            _ => throw new ArgumentOutOfRangeException(nameof(requestedMode), requestedMode, "Source negotiation mode is not supported.")
+        };
     }
 
-    private static bool ShouldPreferGpuNativeMjpegDecode(bool isMjpegHighFrameRateDecode, double fps)
-        => isMjpegHighFrameRateDecode &&
-           // D3D-backed output does not guarantee that MF's MJPEG conversion can
-           // sustain 120 fps. Parallel decode keeps source reads independent of
-           // that conversion; retain the native path at 60 fps and an A/B override.
-           EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_MJPEG_GPU_NATIVE_DECODE", fps > 60 ? 0 : 1, 0, 1) != 0;
+    // D3D-backed output does not guarantee that MF's MJPEG conversion can
+    // sustain 120 fps. Parallel decode keeps source reads independent of
+    // that conversion; retain the native path at 60 fps and an A/B override.
+    private static bool ShouldPreferGpuNativeMjpegDecode(double fps)
+        => EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_MJPEG_GPU_NATIVE_DECODE", fps > 60 ? 0 : 1, 0, 1) != 0;
 
-    private static async Task<bool> InitializeMjpegSourceReaderWithFallbackAsync(
-        bool isMjpegHighFrameRateDecode,
-        bool preferGpuNative,
-        Func<bool, Task> initializeAsync,
+    private static async Task<SourceNegotiationMode> InitializeMjpegSourceReaderWithFallbackAsync(
+        SourceNegotiationMode negotiationMode,
+        Func<SourceNegotiationMode, Task> initializeAsync,
         Action<Exception> reportNativeFailure)
     {
-        var useExternalDecode = isMjpegHighFrameRateDecode && !preferGpuNative;
+        if (negotiationMode != SourceNegotiationMode.ConvertedMjpegNv12)
+        {
+            await initializeAsync(negotiationMode).ConfigureAwait(false);
+            return negotiationMode;
+        }
+
         try
         {
-            await initializeAsync(useExternalDecode).ConfigureAwait(false);
+            await initializeAsync(negotiationMode).ConfigureAwait(false);
         }
-        catch (Exception ex) when (isMjpegHighFrameRateDecode && preferGpuNative)
+        catch (Exception ex)
         {
             // Some drivers expose MJPG without a usable D3D11 Media Foundation
             // transform. Retry only the existing raw-MJPG software path.
             reportNativeFailure(ex);
-            useExternalDecode = true;
-            await initializeAsync(useExternalDecode).ConfigureAwait(false);
+            var fallbackMode = SourceNegotiationMode.RawMjpgPassthrough;
+            await initializeAsync(fallbackMode).ConfigureAwait(false);
+            return fallbackMode;
         }
 
-        return useExternalDecode;
+        return negotiationMode;
     }
 
     private ParallelMjpegDecodePipeline? CreateExternalMjpegPipelineIfNeeded(
-        bool useExternalMjpegDecode,
+        SourceNegotiationMode negotiationMode,
         int mjpegDecoderCount,
         int width,
         int height,
         double fps)
     {
-        if (!useExternalMjpegDecode)
+        if (negotiationMode != SourceNegotiationMode.RawMjpgPassthrough)
         {
             return null;
         }
@@ -1419,6 +1448,17 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             reason: reason);
     }
 
+    private void RecordFlashbackOutcome(
+        FlashbackEncoderSink sink,
+        long sourceSequence,
+        bool accepted,
+        string? rejectReason = null)
+    {
+        var reason = accepted ? null : rejectReason ?? "queue_rejected";
+        RecordFlashbackRecordingAccounting(sink, accepted, sourceSequence, reason);
+        RecordFlashbackEnqueue(sourceSequence, accepted, reason);
+    }
+
     private void EnqueueFlashbackFrame(ReadOnlySpan<byte> frameData, int width, int height, bool isP010, long sourceSequence)
     {
         var sink = Volatile.Read(ref _flashbackSink);
@@ -1432,19 +1472,16 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             var expectedSize = PooledVideoFrame.GetFrameSizeBytes(width, height, isP010);
             if (frameData.Length < expectedSize)
             {
-                RecordFlashbackRecordingAccounting(sink, accepted: false, sourceSequence, "frame_size_mismatch");
-                RecordFlashbackEnqueue(sourceSequence, accepted: false, reason: "frame_size_mismatch");
+                RecordFlashbackOutcome(sink, sourceSequence, accepted: false, rejectReason: "frame_size_mismatch");
                 return;
             }
 
             var accepted = sink.TryEnqueueRawVideoFrame(frameData, expectedSize);
-            RecordFlashbackRecordingAccounting(sink, accepted, sourceSequence, accepted ? null : "queue_rejected");
-            RecordFlashbackEnqueue(sourceSequence, accepted, accepted ? null : "queue_rejected");
+            RecordFlashbackOutcome(sink, sourceSequence, accepted);
         }
         catch (Exception ex)
         {
-            RecordFlashbackRecordingAccounting(sink, accepted: false, sourceSequence, "exception");
-            RecordFlashbackEnqueue(sourceSequence, accepted: false, reason: "exception");
+            RecordFlashbackOutcome(sink, sourceSequence, accepted: false, rejectReason: "exception");
             Logger.Log($"UNIFIED_VIDEO_FLASHBACK_FRAME_FAIL type={ex.GetType().Name} msg={ex.Message}");
         }
     }
@@ -1459,6 +1496,18 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
 
         try
         {
+            var isP010 = frame.PixelFormat == PooledVideoPixelFormat.P010;
+            var expectedSize = PooledVideoFrame.GetFrameSizeBytes(frame.Width, frame.Height, isP010);
+            if (frame.Length < expectedSize)
+            {
+                RecordFlashbackOutcome(
+                    sink,
+                    frame.SequenceNumber,
+                    accepted: false,
+                    rejectReason: "frame_size_mismatch");
+                return;
+            }
+
             if (sink is IRawVideoFrameLeaseTryEncoder leaseEncoder &&
                 frame.TryAddLease(out var lease))
             {
@@ -1466,8 +1515,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
                 {
                     var accepted = leaseEncoder.TryEnqueueRawVideoFrame(lease);
                     lease = null;
-                    RecordFlashbackRecordingAccounting(sink, accepted, frame.SequenceNumber, accepted ? null : "queue_rejected");
-                    RecordFlashbackEnqueue(frame.SequenceNumber, accepted, accepted ? null : "queue_rejected");
+                    RecordFlashbackOutcome(sink, frame.SequenceNumber, accepted);
                 }
                 finally
                 {
@@ -1477,25 +1525,12 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
                 return;
             }
 
-            var expectedSize = PooledVideoFrame.GetFrameSizeBytes(
-                frame.Width,
-                frame.Height,
-                frame.PixelFormat == PooledVideoPixelFormat.P010);
-            if (frame.Length < expectedSize)
-            {
-                RecordFlashbackRecordingAccounting(sink, accepted: false, frame.SequenceNumber, "frame_size_mismatch");
-                RecordFlashbackEnqueue(frame.SequenceNumber, accepted: false, reason: "frame_size_mismatch");
-                return;
-            }
-
             var rawAccepted = sink.TryEnqueueRawVideoFrame(frame.Memory.Span, expectedSize);
-            RecordFlashbackRecordingAccounting(sink, rawAccepted, frame.SequenceNumber, rawAccepted ? null : "queue_rejected");
-            RecordFlashbackEnqueue(frame.SequenceNumber, rawAccepted, rawAccepted ? null : "queue_rejected");
+            RecordFlashbackOutcome(sink, frame.SequenceNumber, rawAccepted);
         }
         catch (Exception ex)
         {
-            RecordFlashbackRecordingAccounting(sink, accepted: false, frame.SequenceNumber, "exception");
-            RecordFlashbackEnqueue(frame.SequenceNumber, accepted: false, reason: "exception");
+            RecordFlashbackOutcome(sink, frame.SequenceNumber, accepted: false, rejectReason: "exception");
             Logger.Log($"UNIFIED_VIDEO_FLASHBACK_FRAME_FAIL type={ex.GetType().Name} msg={ex.Message}");
         }
     }
@@ -1511,13 +1546,11 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
         try
         {
             var accepted = sink.TryEnqueueGpuVideoFrame(texture, subresource);
-            RecordFlashbackRecordingAccounting(sink, accepted, sourceSequence, accepted ? null : "queue_rejected");
-            RecordFlashbackEnqueue(sourceSequence, accepted, accepted ? null : "queue_rejected");
+            RecordFlashbackOutcome(sink, sourceSequence, accepted);
         }
         catch (Exception ex)
         {
-            RecordFlashbackRecordingAccounting(sink, accepted: false, sourceSequence, "exception");
-            RecordFlashbackEnqueue(sourceSequence, accepted: false, reason: "exception");
+            RecordFlashbackOutcome(sink, sourceSequence, accepted: false, rejectReason: "exception");
             Logger.Log($"UNIFIED_VIDEO_FLASHBACK_GPU_FAIL type={ex.GetType().Name} msg={ex.Message}");
         }
     }

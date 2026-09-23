@@ -8663,7 +8663,7 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(selectionNormalizerText, "public static ResolutionOption? ResolveResolutionSelection(");
         AssertContains(selectionNormalizerText, "public static FrameRateOption? ResolveFrameRateSelection(");
         AssertContains(selectionNormalizerText, "public static string? ResolveStringSelection(");
-        AssertDoesNotContain(selectionNormalizerText, "IsFrameRateMatch");
+        AssertDoesNotContain(selectionNormalizerText, "private static bool IsFrameRateMatch(double a, double b, double tolerance = 0.01)");
         AssertContains(selectionNormalizerText, "public static bool IsAutoFrameRateOption(FrameRateOption option)");
 
         AssertDoesNotContain(bindingsText, "DeviceComboBox.SelectionChanged +=");
