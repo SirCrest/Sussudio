@@ -16,7 +16,7 @@ namespace Sussudio.Services.Recording;
 // Strict post-recording verifier. It compares ffprobe evidence against the
 // negotiated runtime snapshot, so Auto/native modes verify against what the
 // capture device actually delivered rather than only what the user requested.
-public sealed class RecordingVerifier : IRecordingVerifier
+public sealed class RecordingVerifier
 {
     private static readonly Lazy<string> CachedFfprobePath = new(FindFfprobePath);
     private readonly IProcessSupervisor _processSupervisor;

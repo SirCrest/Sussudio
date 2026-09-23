@@ -19,7 +19,7 @@ public sealed partial class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
 {
     private readonly IAutomationSnapshotQueryPort _snapshotQueryPort;
     private readonly Func<CancellationToken, Task<PreviewRuntimeSnapshot>> _previewSnapshotProvider;
-    private readonly IRecordingVerifier _recordingVerifier;
+    private readonly RecordingVerifier _recordingVerifier;
     private readonly object _stateLock = new();
     private readonly List<DiagnosticsEvent> _recentEvents = new();
     private readonly Dictionary<string, long> _eventThrottleTicks = new(StringComparer.Ordinal);
@@ -89,7 +89,7 @@ public sealed partial class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
     public AutomationDiagnosticsHub(
         IAutomationSnapshotQueryPort snapshotQueryPort,
         Func<CancellationToken, Task<PreviewRuntimeSnapshot>> previewSnapshotProvider,
-        IRecordingVerifier recordingVerifier)
+        RecordingVerifier recordingVerifier)
     {
         _snapshotQueryPort = snapshotQueryPort ?? throw new ArgumentNullException(nameof(snapshotQueryPort));
         _previewSnapshotProvider = previewSnapshotProvider ?? throw new ArgumentNullException(nameof(previewSnapshotProvider));

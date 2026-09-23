@@ -19,7 +19,7 @@ namespace Sussudio.Services.Flashback;
 /// as normal recording, writes rolling MPEG-TS segments, and exposes a recording
 /// compatible sink contract when the user saves a retroactive clip.
 /// </summary>
-internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncoder, IRawVideoFrameTryEncoder, IRawVideoFrameLeaseTryEncoder, IGpuVideoFrameEncoder, IGpuVideoFrameTryEncoder
+internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameTryEncoder, IRawVideoFrameLeaseTryEncoder, IGpuVideoFrameTryEncoder
 {
     private const int DefaultVideoQueueCapacity = 180;
     private const int HighResolutionCpuVideoQueueCapacity = 128;
@@ -1144,9 +1144,6 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         }
     }
 
-    public void EnqueueRawVideoFrame(ReadOnlySpan<byte> data, int expectedSize)
-        => TryEnqueueRawVideoFrame(data, expectedSize);
-
     public bool TryEnqueueRawVideoFrame(ReadOnlySpan<byte> data, int expectedSize)
     {
         var queue = _videoQueue;
@@ -1252,9 +1249,6 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
         return false;
     }
-
-    public void EnqueueGpuVideoFrame(IntPtr d3d11Texture2D, int subresourceIndex)
-        => TryEnqueueGpuVideoFrame(d3d11Texture2D, subresourceIndex);
 
     public bool TryEnqueueGpuVideoFrame(IntPtr d3d11Texture2D, int subresourceIndex)
     {

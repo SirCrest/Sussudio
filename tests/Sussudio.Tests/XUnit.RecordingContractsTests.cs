@@ -255,12 +255,9 @@ public sealed class CoreRuntimeRecordingContractsTests
     }
 
     [Fact]
-    public void RecordingVerifierImplementsVerificationInterface()
+    public void RecordingVerifierIsTheConcreteDiagnosticsHubDependency()
     {
         var verifierType = RequireType("Sussudio.Services.Recording.RecordingVerifier");
-        var interfaceType = RequireType("Sussudio.Services.Contracts.IRecordingVerifier");
-
-        Assert.True(interfaceType.IsAssignableFrom(verifierType));
 
         var verifyAsync = verifierType.GetMethod("VerifyAsync", BindingFlags.Public | BindingFlags.Instance);
         Assert.NotNull(verifyAsync);
@@ -271,6 +268,25 @@ public sealed class CoreRuntimeRecordingContractsTests
         var resultType = RequireType("Sussudio.Models.RecordingVerificationResult");
         Assert.True(verifyAsync.ReturnType.IsGenericType);
         Assert.Equal(resultType, verifyAsync.ReturnType.GetGenericArguments()[0]);
+
+        var diagnosticsHubType = RequireType("Sussudio.Services.Automation.AutomationDiagnosticsHub");
+        var diagnosticsHubConstructors = diagnosticsHubType.GetConstructors(BindingFlags.Public | BindingFlags.Instance);
+        var diagnosticsHubConstructor = Array.Find(
+            diagnosticsHubConstructors,
+            constructor => Array.Exists(
+                constructor.GetParameters(),
+                parameter => parameter.Name == "recordingVerifier"));
+        Assert.NotNull(diagnosticsHubConstructor);
+
+        var verifierParameter = Array.Find(
+            diagnosticsHubConstructor!.GetParameters(),
+            parameter => parameter.Name == "recordingVerifier");
+        Assert.NotNull(verifierParameter);
+        Assert.Equal(verifierType, verifierParameter!.ParameterType);
+
+        var verifierField = diagnosticsHubType.GetField("_recordingVerifier", BindingFlags.NonPublic | BindingFlags.Instance);
+        Assert.NotNull(verifierField);
+        Assert.Equal(verifierType, verifierField!.FieldType);
     }
 
     [Fact]
@@ -2450,7 +2466,8 @@ static partial class Program
         var rootText = ReadRepoFile("Sussudio/Services/Recording/Verification/RecordingVerifier.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(rootText, "public sealed class RecordingVerifier : IRecordingVerifier");
+        AssertContains(rootText, "public sealed class RecordingVerifier\n{");
+        AssertDoesNotContain(rootText, "IRecordingVerifier");
         AssertContains(rootText, "private async Task<CadenceProbeResult> AnalyzeCadenceMetricsAsync(");
         AssertContains(rootText, "private static CadenceMetrics ComputeCadenceMetrics(");
         AssertContains(rootText, "private static double? TryGetFrameTimestampSeconds(JsonElement frame)");
