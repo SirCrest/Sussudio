@@ -2357,9 +2357,13 @@ Primary current owners:
   preview reinitialize coordination, and preview request events; `MainViewModel.cs` owns capture-selection
   state, option collections, HDR capture/runtime presentation state, and
   source signal/source-telemetry presentation state. Its synchronous
-  `ApplyCaptureSelectionWithoutReinitialize` operation owns suppression around
-  controller-requested selection mutations and restores the caller's prior
-  state through nesting and exceptions; controllers cannot set that guard directly.
+  `ApplyCaptureModeOptions` operation owns the option-rebuild guard around
+  controller-requested option and selection mutations. `ApplyResolvedFrameRateSelection`
+  separately owns automatic frame-rate selection, and
+  `ApplyCaptureSelectionWithoutReinitialize` owns format-reinitialize suppression.
+  Each operation restores the caller's prior guard through nesting and exceptions;
+  controllers cannot set these guards directly. Dependent option rebuilds and
+  explicit preview renegotiation remain outside the corresponding mutation phase.
   `MainViewModel.AudioState.cs` owns audio,
   microphone, device-native audio/XU UI state, live meter callback state,
   custom audio-input retargeting, preview-monitoring ramp handoff, and

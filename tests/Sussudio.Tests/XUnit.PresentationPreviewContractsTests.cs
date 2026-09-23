@@ -8873,7 +8873,13 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(modeSelectionText, "_hasUserOverriddenFrameRateForCurrentMode = false;");
         AssertContains(modeSelectionText, "IsAutoFrameRateSelected = true;");
         AssertContains(modeSelectionText, "private void ApplyResolvedFrameRateSelection(FrameRateOption? selected, double fallbackRate)");
-        AssertContains(modeSelectionText, "_isApplyingAutomaticFrameRateSelection = true;\n        try\n        {\n            SelectedFrameRate = selected?.Value ?? fallbackRate;\n        }\n        finally\n        {\n            _isApplyingAutomaticFrameRateSelection = false;\n        }");
+        AssertContains(modeSelectionText, "private void ApplyCaptureModeOptions(Action apply)");
+        AssertContains(modeSelectionText, "ApplyCaptureModeOptions = viewModel.ApplyCaptureModeOptions,");
+        AssertContains(captureModeOptionsControllerText, "public required Action<Action> ApplyCaptureModeOptions { get; init; }");
+        AssertDoesNotContain(captureModeOptionsControllerText, "SetIsRebuildingModeOptions");
+        AssertDoesNotContain(captureModeOptionsControllerText, "SetIsApplyingAutomaticResolutionSelection");
+        AssertDoesNotContain(captureModeOptionsControllerText, "SetIsApplyingAutomaticFrameRateSelection");
+        AssertDoesNotContain(modeSelectionText, "_isApplyingAutomaticResolutionSelection");
         AssertContains(modeSelectionText, "SelectedFriendlyFrameRate = selected?.FriendlyValue ?? Math.Round(SelectedFrameRate);");
         AssertContains(modeSelectionText, "SelectedExactFrameRate = selected?.Value ?? SelectedFrameRate;");
         AssertContains(modeSelectionText, "SelectedExactFrameRateArg = selected?.Rational;");

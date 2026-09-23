@@ -604,7 +604,6 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         new(StringComparer.OrdinalIgnoreCase);
     private bool _isRebuildingModeOptions;
     private bool _isApplyingAutomaticFrameRateSelection;
-    private bool _isApplyingAutomaticResolutionSelection;
     private bool _isAutoFrameRateSelected = true;
     private bool _hasUserOverriddenFrameRateForCurrentMode;
     private bool _hasUserOverriddenResolutionForCurrentMode;
@@ -625,6 +624,20 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private bool _suppressFormatChangeReinitialize;
     private bool _suppressHdrToggleReinitialize;
     private bool _isRevertingHdrToggle;
+
+    private void ApplyCaptureModeOptions(Action apply)
+    {
+        var previousRebuilding = _isRebuildingModeOptions;
+        _isRebuildingModeOptions = true;
+        try
+        {
+            apply();
+        }
+        finally
+        {
+            _isRebuildingModeOptions = previousRebuilding;
+        }
+    }
 
     private void ApplyCaptureSelectionWithoutReinitialize(Action apply)
     {
@@ -730,7 +743,6 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         var previousRevertingHdrToggle = _isRevertingHdrToggle;
         var previousChangingDevice = _isChangingDevice;
         var previousRebuildingModeOptions = _isRebuildingModeOptions;
-        var previousApplyingAutomaticResolutionSelection = _isApplyingAutomaticResolutionSelection;
         var previousApplyingAutomaticFrameRateSelection = _isApplyingAutomaticFrameRateSelection;
         using var recordingSettingsSuppression = _recordingSettingsController.SuppressPropertyReactions();
         _suppressFormatChangeReinitialize = true;
@@ -738,7 +750,6 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         _isRevertingHdrToggle = true;
         _isChangingDevice = true;
         _isRebuildingModeOptions = true;
-        _isApplyingAutomaticResolutionSelection = true;
         _isApplyingAutomaticFrameRateSelection = true;
         try
         {
@@ -806,7 +817,6 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         finally
         {
             _isApplyingAutomaticFrameRateSelection = previousApplyingAutomaticFrameRateSelection;
-            _isApplyingAutomaticResolutionSelection = previousApplyingAutomaticResolutionSelection;
             _isRebuildingModeOptions = previousRebuildingModeOptions;
             _isChangingDevice = previousChangingDevice;
             _isRevertingHdrToggle = previousRevertingHdrToggle;
@@ -1036,18 +1046,14 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             _lastKnownResolutionKey = resolvedResolutionKey;
         }
 
-        if (!_isRebuildingModeOptions && !_isApplyingAutomaticResolutionSelection)
-        {
-            _hasUserOverriddenResolutionForCurrentMode = !IsAutoResolutionValue(value);
-            _pendingSdrAutoSelectionForDeviceChange = false;
-            _pendingSdrAutoFriendlyFrameRateBucket = null;
-        }
-
         if (_isRebuildingModeOptions)
         {
             return;
         }
 
+        _hasUserOverriddenResolutionForCurrentMode = !IsAutoResolutionValue(value);
+        _pendingSdrAutoSelectionForDeviceChange = false;
+        _pendingSdrAutoFriendlyFrameRateBucket = null;
         _forceSourceAutoRetarget = false;
         ResetFrameRateSelectionState();
         RebuildFrameRateOptions();
@@ -2191,6 +2197,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
     private void ApplyResolvedFrameRateSelection(FrameRateOption? selected, double fallbackRate)
     {
+        var previousAutomaticSelection = _isApplyingAutomaticFrameRateSelection;
         _isApplyingAutomaticFrameRateSelection = true;
         try
         {
@@ -2198,7 +2205,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         }
         finally
         {
-            _isApplyingAutomaticFrameRateSelection = false;
+            _isApplyingAutomaticFrameRateSelection = previousAutomaticSelection;
         }
 
         SelectedFriendlyFrameRate = selected?.FriendlyValue ?? Math.Round(SelectedFrameRate);
@@ -2831,9 +2838,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                     SetForceSourceAutoRetarget = value => viewModel._forceSourceAutoRetarget = value,
                     GetLastKnownResolutionKey = () => viewModel._lastKnownResolutionKey,
                     SetLastKnownResolutionKey = value => viewModel._lastKnownResolutionKey = value,
-                    SetIsRebuildingModeOptions = value => viewModel._isRebuildingModeOptions = value,
-                    SetIsApplyingAutomaticResolutionSelection = value => viewModel._isApplyingAutomaticResolutionSelection = value,
-                    SetIsApplyingAutomaticFrameRateSelection = value => viewModel._isApplyingAutomaticFrameRateSelection = value,
+                    ApplyCaptureModeOptions = viewModel.ApplyCaptureModeOptions,
                     ApplyCaptureSelectionWithoutReinitialize = viewModel.ApplyCaptureSelectionWithoutReinitialize,
                     SetDetectedSourceFrameRate = value => viewModel.DetectedSourceFrameRate = value,
                     SetDetectedSourceFrameRateArg = value => viewModel.DetectedSourceFrameRateArg = value,
@@ -2882,8 +2887,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                             GetSelectedFormat = () => viewModel.SelectedFormat,
                             AvailableResolutionsContains = value => viewModel.AvailableResolutions.Any(
                                 option => string.Equals(option.Value, value, StringComparison.OrdinalIgnoreCase)),
-                            SetIsRebuildingModeOptions = value => viewModel._isRebuildingModeOptions = value,
-                            SetIsApplyingAutomaticResolutionSelection = value => viewModel._isApplyingAutomaticResolutionSelection = value,
+                            ApplyCaptureModeOptions = viewModel.ApplyCaptureModeOptions,
                             ApplyCaptureSelectionWithoutReinitialize = viewModel.ApplyCaptureSelectionWithoutReinitialize,
                             RebuildFrameRateOptions = viewModel.RebuildFrameRateOptions,
                             ReinitializeDeviceAsync = viewModel.ReinitializeDeviceAsync,

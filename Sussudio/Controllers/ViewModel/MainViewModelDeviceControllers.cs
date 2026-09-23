@@ -599,8 +599,7 @@ internal sealed class MainViewModelDeviceFormatProbeRetargetApplierContext
     public required Action<double> SetSelectedFrameRate { get; init; }
     public required Func<MediaFormat?> GetSelectedFormat { get; init; }
     public required Func<string, bool> AvailableResolutionsContains { get; init; }
-    public required Action<bool> SetIsRebuildingModeOptions { get; init; }
-    public required Action<bool> SetIsApplyingAutomaticResolutionSelection { get; init; }
+    public required Action<Action> ApplyCaptureModeOptions { get; init; }
     public required Action<Action> ApplyCaptureSelectionWithoutReinitialize { get; init; }
     public required Action RebuildFrameRateOptions { get; init; }
     public required Func<string, Task> ReinitializeDeviceAsync { get; init; }
@@ -664,17 +663,10 @@ internal sealed class MainViewModelDeviceFormatProbeRetargetApplier
                 $"Format probe detected MJPG-only mode at {_context.GetSelectedResolution()}@{_context.GetSelectedFrameRate():0.###}; " +
                 $"retargeting SDR to NV12-capable mode {retargetDecision.TargetResolution}@{retargetDecision.TargetFrameRate:0.###}.");
 
-            _context.SetIsRebuildingModeOptions(true);
-            _context.SetIsApplyingAutomaticResolutionSelection(true);
-            try
+            _context.ApplyCaptureModeOptions(() =>
             {
                 _context.SetSelectedResolution(retargetDecision.TargetResolution);
-            }
-            finally
-            {
-                _context.SetIsApplyingAutomaticResolutionSelection(false);
-                _context.SetIsRebuildingModeOptions(false);
-            }
+            });
 
             _context.ApplyCaptureSelectionWithoutReinitialize(_context.RebuildFrameRateOptions);
 
@@ -719,20 +711,13 @@ internal sealed class MainViewModelDeviceFormatProbeRetargetApplier
 
         if (retargetDecision.Kind == DeviceFormatProbeRetargetDecisionKind.RestoreActiveSelection)
         {
-            _context.SetIsRebuildingModeOptions(true);
-            _context.SetIsApplyingAutomaticResolutionSelection(true);
-            try
+            _context.ApplyCaptureModeOptions(() =>
             {
                 _context.SetSelectedResolution(previousResolution);
                 _context.SetSelectedFrameRate(previousFrameRate);
                 _context.UpdateSelectedFormat();
                 _context.UpdateTargetSummary();
-            }
-            finally
-            {
-                _context.SetIsApplyingAutomaticResolutionSelection(false);
-                _context.SetIsRebuildingModeOptions(false);
-            }
+            });
         }
 
         return false;
@@ -808,9 +793,7 @@ internal sealed class MainViewModelCaptureModeOptionRebuildControllerContext
     public required Action<bool> SetForceSourceAutoRetarget { get; init; }
     public required Func<string?> GetLastKnownResolutionKey { get; init; }
     public required Action<string?> SetLastKnownResolutionKey { get; init; }
-    public required Action<bool> SetIsRebuildingModeOptions { get; init; }
-    public required Action<bool> SetIsApplyingAutomaticResolutionSelection { get; init; }
-    public required Action<bool> SetIsApplyingAutomaticFrameRateSelection { get; init; }
+    public required Action<Action> ApplyCaptureModeOptions { get; init; }
     public required Action<Action> ApplyCaptureSelectionWithoutReinitialize { get; init; }
     public required Action<double?> SetDetectedSourceFrameRate { get; init; }
     public required Action<string?> SetDetectedSourceFrameRateArg { get; init; }
@@ -994,8 +977,7 @@ internal sealed class MainViewModelCaptureModeOptionRebuildController
         _context.SetDetectedSourceFrameRateArg(sourceRate.Arg);
         _context.SetSourceFrameRateOrigin(sourceRate.Origin);
 
-        _context.SetIsRebuildingModeOptions(true);
-        try
+        _context.ApplyCaptureModeOptions(() =>
         {
             _context.AvailableFrameRates.Clear();
             foreach (var option in availableOptions)
@@ -1034,12 +1016,7 @@ internal sealed class MainViewModelCaptureModeOptionRebuildController
                 _context.SetPendingSdrAutoSelectionForDeviceChange(false);
                 _context.SetPendingSdrAutoFriendlyFrameRateBucket(null);
             }
-        }
-        finally
-        {
-            _context.SetIsApplyingAutomaticFrameRateSelection(false);
-            _context.SetIsRebuildingModeOptions(false);
-        }
+        });
 
         RebuildVideoFormatOptions();
         UpdateSelectedFormat();
@@ -1076,9 +1053,7 @@ internal sealed class MainViewModelCaptureModeOptionRebuildController
                     ?? _context.AvailableResolutions.FirstOrDefault();
                 if (retainedSelection != null)
                 {
-                    _context.SetIsRebuildingModeOptions(true);
-                    _context.SetIsApplyingAutomaticResolutionSelection(true);
-                    try
+                    _context.ApplyCaptureModeOptions(() =>
                     {
                         var previousSelectedResolution = _context.GetSelectedResolution();
                         _context.SetSelectedResolution(retainedSelection.Value);
@@ -1091,12 +1066,7 @@ internal sealed class MainViewModelCaptureModeOptionRebuildController
                         {
                             _context.SetLastKnownResolutionKey(retainedResolutionKey);
                         }
-                    }
-                    finally
-                    {
-                        _context.SetIsApplyingAutomaticResolutionSelection(false);
-                        _context.SetIsRebuildingModeOptions(false);
-                    }
+                    });
                 }
 
                 RebuildDependentOptions();
@@ -1104,22 +1074,14 @@ internal sealed class MainViewModelCaptureModeOptionRebuildController
                 return;
             }
 
-            _context.SetIsRebuildingModeOptions(true);
-            try
+            _context.ApplyCaptureModeOptions(() =>
             {
                 _context.AvailableResolutions.Clear();
-                _context.SetIsApplyingAutomaticResolutionSelection(true);
                 _context.SetSelectedResolution(null);
-                _context.SetIsApplyingAutomaticResolutionSelection(false);
                 ClearAutoResolutionState();
                 _context.SetHdrResolutionSupportHint(string.Empty);
                 _context.SetDisabledResolutionReason(string.Empty);
-            }
-            finally
-            {
-                _context.SetIsApplyingAutomaticResolutionSelection(false);
-                _context.SetIsRebuildingModeOptions(false);
-            }
+            });
 
             RebuildDependentOptions();
             _context.UpdateTargetSummary();
@@ -1153,8 +1115,7 @@ internal sealed class MainViewModelCaptureModeOptionRebuildController
             ? options
             : new[] { autoOption }.Concat(options).ToList();
 
-        _context.SetIsRebuildingModeOptions(true);
-        try
+        _context.ApplyCaptureModeOptions(() =>
         {
             UpdateAutoResolutionState(autoSelection);
             _context.AvailableResolutions.Clear();
@@ -1163,7 +1124,6 @@ internal sealed class MainViewModelCaptureModeOptionRebuildController
                 _context.AvailableResolutions.Add(option);
             }
 
-            _context.SetIsApplyingAutomaticResolutionSelection(true);
             if (selectedDropdownOption != null)
             {
                 var previousSelectedResolution = _context.GetSelectedResolution();
@@ -1174,7 +1134,6 @@ internal sealed class MainViewModelCaptureModeOptionRebuildController
                 }
             }
 
-            _context.SetIsApplyingAutomaticResolutionSelection(false);
             if (selected != null)
             {
                 _context.SetLastKnownResolutionKey(selected.Value);
@@ -1197,12 +1156,7 @@ internal sealed class MainViewModelCaptureModeOptionRebuildController
             _context.SetDisabledResolutionReason(selected is { IsEnabled: false }
                 ? selected.DisableReason
                 : string.Empty);
-        }
-        finally
-        {
-            _context.SetIsApplyingAutomaticResolutionSelection(false);
-            _context.SetIsRebuildingModeOptions(false);
-        }
+        });
 
         RebuildDependentOptions();
     }

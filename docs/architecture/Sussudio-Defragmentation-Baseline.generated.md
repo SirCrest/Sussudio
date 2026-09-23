@@ -1,6 +1,6 @@
 # Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-09-23T04:07:05Z
+Generated UTC: 2026-09-23T04:09:36Z
 Root: C:\Users\crest\source\repos\Sussudio
 
 ## Summary
@@ -8,11 +8,11 @@ Root: C:\Users\crest\source\repos\Sussudio
 | Metric | Value |
 | --- | ---: |
 | Production .cs files | 149 |
-| Test .cs files | 105 |
+| Test .cs files | 106 |
 | Core app .cs files (Sussudio/) | 115 |
-| Core app nonblank LoC (Sussudio/) | 94291 |
-| Sussudio.Tests .cs files | 104 |
-| Sussudio.Tests nonblank LoC | 81534 |
+| Core app nonblank LoC (Sussudio/) | 94249 |
+| Sussudio.Tests .cs files | 105 |
+| Sussudio.Tests nonblank LoC | 81941 |
 | Production .cs files under 60 lines | 3 (2.0%) |
 | Production .cs files under 80 lines | 7 (4.7%) |
 
@@ -25,7 +25,7 @@ Root: C:\Users\crest\source\repos\Sussudio
 | D3D11PreviewRenderer | 3 | 5321 | Sussudio/Services/Preview/D3D11PreviewRenderer.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs |
 | FlashbackPlaybackController | 3 | 4692 | Sussudio/Services/Flashback/FlashbackPlaybackController.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs |
 | LibAvEncoder | 3 | 3055 | Sussudio/Services/Recording/LibAvEncoder.Audio.cs, Sussudio/Services/Recording/LibAvEncoder.cs, Sussudio/Services/Recording/LibAvEncoder.VideoFrames.cs |
-| MainViewModel | 3 | 5234 | Sussudio/ViewModels/MainViewModel.AudioState.cs, Sussudio/ViewModels/MainViewModel.cs, Sussudio/ViewModels/MainViewModel.FlashbackState.cs |
+| MainViewModel | 3 | 5238 | Sussudio/ViewModels/MainViewModel.AudioState.cs, Sussudio/ViewModels/MainViewModel.cs, Sussudio/ViewModels/MainViewModel.FlashbackState.cs |
 | LoggingJsonContext | 1 | 686 | Sussudio/AppRuntime.cs |
 | SettingsJsonContext | 1 | 123 | Sussudio/Services/Runtime/SettingsService.cs |
 | App | 1 | 235 | Sussudio/App.xaml.cs |
@@ -37,7 +37,7 @@ Root: C:\Users\crest\source\repos\Sussudio
 
 | Lines | Path |
 | ---: | --- |
-| 3117 | Sussudio/ViewModels/MainViewModel.cs |
+| 3121 | Sussudio/ViewModels/MainViewModel.cs |
 | 2974 | Sussudio/Services/Flashback/FlashbackExporter.cs |
 | 2876 | Sussudio/Services/Flashback/FlashbackEncoderSink.cs |
 | 2620 | Sussudio/Services/Preview/D3D11PreviewRenderer.cs |
@@ -53,8 +53,8 @@ Root: C:\Users\crest\source\repos\Sussudio
 | 1933 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs |
 | 1813 | Sussudio/Services/Flashback/FlashbackBufferManager.cs |
 | 1784 | Sussudio/Services/Capture/UnifiedVideoCapture.cs |
-| 1775 | Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs |
 | 1744 | Sussudio/Services/Automation/AutomationCommandDispatcher.cs |
+| 1729 | Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs |
 | 1640 | Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.cs |
 | 1600 | Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs |
 | 1563 | Sussudio/ViewModels/ViewModelSelectionPolicies.cs |
