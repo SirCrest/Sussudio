@@ -293,6 +293,16 @@ public enum PreviewStartupStrategy
     D3D11VideoProcessor
 }
 
+public enum PreviewStartupState
+{
+    Idle,
+    StartingSession,
+    RendererAttaching,
+    WaitingForFirstVisual,
+    Rendering,
+    Failed
+}
+
 [Flags]
 public enum PreviewStartupSignalFlags
 {
@@ -810,7 +820,7 @@ public sealed class PreviewRuntimeSnapshot
     public bool StallSuspected { get; init; }
 
     // Startup diagnostics
-    public string StartupState { get; init; } = "Idle";
+    public PreviewStartupState? StartupState { get; init; } = PreviewStartupState.Idle;
     public string? StartupAttemptId { get; init; }
     public double? StartupElapsedMs { get; init; }
     public int StartupTimeoutMs { get; init; }

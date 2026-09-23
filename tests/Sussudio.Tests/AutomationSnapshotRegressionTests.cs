@@ -118,6 +118,13 @@ public sealed class AutomationSnapshotRegressionTests
                 Assert.True(expected.GetDecimal() == actual.GetDecimal(), $"{path}: expected {expected}, got {actual}");
                 break;
             case JsonValueKind.String:
+                if (path == "$.PreviewStartupState" && expected.GetString() == "previewRuntime.StartupState")
+                {
+                    // The frozen fixture used a source-path sentinel because this input used to be
+                    // a string. The typed runtime state now projects its legal enum wire name.
+                    Assert.Equal("RendererAttaching", actual.GetString());
+                    break;
+                }
                 Assert.True(expected.GetString() == actual.GetString(), $"{path}: expected {expected}, got {actual}");
                 break;
         }

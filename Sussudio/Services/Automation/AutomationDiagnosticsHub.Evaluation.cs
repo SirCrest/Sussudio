@@ -330,52 +330,40 @@ public sealed partial class AutomationDiagnosticsHub
     }
 
     private PerformanceEvaluation EvaluatePerformance(
-        bool isPreviewing,
-        bool isRecording,
+        ViewModelRuntimeSnapshot viewModel,
+        CaptureHealthSnapshot health,
+        PreviewRuntimeSnapshot previewRuntime,
         bool recordingFileGrowing,
-        bool previewGpuActive,
-        bool previewBlankSuspected,
-        bool previewStalled,
-        int previewCadenceSampleCount,
-        double previewCadenceSlowFramePercent,
-        int captureCadenceSampleCount,
-        double captureCadenceExpectedIntervalMs,
-        double captureCadenceP95IntervalMs,
-        double captureCadenceExpectedFrameRate,
-        double captureCadenceOnePercentLowFps,
-        double previewCadenceExpectedIntervalMs,
-        double previewCadenceOnePercentLowFps,
         bool visualCadenceHealthy,
-        double captureCadenceDropPercent,
         RecordingVerificationResult? lastVerification)
     {
         var reasons = new List<string>();
         var penalty = 0.0;
 
-        if (previewBlankSuspected || previewStalled)
+        if (previewRuntime.BlankSuspected || previewRuntime.StallSuspected)
         {
             penalty += 40;
             reasons.Add("preview health degraded (blank/stalled)");
         }
 
-        if (isRecording && !recordingFileGrowing)
+        if (viewModel.IsRecording && !recordingFileGrowing)
         {
             penalty += 25;
             reasons.Add("recording file growth stalled");
         }
 
-        if (captureCadenceSampleCount >= CapturePerfectionMinSamples)
+        if (health.CaptureCadenceSampleCount >= CapturePerfectionMinSamples)
         {
-            if (captureCadenceDropPercent > _perfectionCaptureDropPercentThreshold)
+            if (health.CaptureCadenceEstimatedDropPercent > _perfectionCaptureDropPercentThreshold)
             {
-                var over = captureCadenceDropPercent - _perfectionCaptureDropPercentThreshold;
+                var over = health.CaptureCadenceEstimatedDropPercent - _perfectionCaptureDropPercentThreshold;
                 penalty += Math.Min(35, over * 6.0);
-                reasons.Add($"capture drop {captureCadenceDropPercent:0.###}%");
+                reasons.Add($"capture drop {health.CaptureCadenceEstimatedDropPercent:0.###}%");
             }
 
-            if (captureCadenceExpectedIntervalMs > 0 && captureCadenceP95IntervalMs > 0)
+            if (health.CaptureCadenceExpectedIntervalMs > 0 && health.CaptureCadenceP95IntervalMs > 0)
             {
-                var p95Ratio = captureCadenceP95IntervalMs / captureCadenceExpectedIntervalMs;
+                var p95Ratio = health.CaptureCadenceP95IntervalMs / health.CaptureCadenceExpectedIntervalMs;
                 if (p95Ratio > _perfectionCaptureP95MultiplierThreshold)
                 {
                     penalty += Math.Min(25, (p95Ratio - _perfectionCaptureP95MultiplierThreshold) * 45.0);
@@ -384,43 +372,44 @@ public sealed partial class AutomationDiagnosticsHub
             }
 
             if (IsCaptureOnePercentLowDegraded(
-                    captureCadenceExpectedFrameRate,
-                    captureCadenceSampleCount,
-                    captureCadenceOnePercentLowFps))
+                    health.ExpectedFrameRate,
+                    health.CaptureCadenceSampleCount,
+                    health.CaptureCadenceOnePercentLowFps))
             {
-                var target = captureCadenceExpectedFrameRate * CaptureOnePercentLowWarningRatio;
-                var deficit = Math.Max(0.0, target - captureCadenceOnePercentLowFps);
+                var target = health.ExpectedFrameRate * CaptureOnePercentLowWarningRatio;
+                var deficit = Math.Max(0.0, target - health.CaptureCadenceOnePercentLowFps);
                 penalty += Math.Min(25, deficit * 1.5);
-                reasons.Add($"capture 1% low {captureCadenceOnePercentLowFps:0.##}fps");
+                reasons.Add($"capture 1% low {health.CaptureCadenceOnePercentLowFps:0.##}fps");
             }
         }
-        else if (isRecording)
+        else if (viewModel.IsRecording)
         {
             penalty += 5;
             reasons.Add("capture cadence samples insufficient");
         }
 
-        if (isPreviewing && !previewGpuActive && previewCadenceSampleCount >= PreviewPerfectionMinSamples)
+        if (viewModel.IsPreviewing && !previewRuntime.GpuActive &&
+            previewRuntime.DisplayCadenceSampleCount >= PreviewPerfectionMinSamples)
         {
-            if (previewCadenceSlowFramePercent > _perfectionPreviewSlowPercentThreshold)
+            if (previewRuntime.DisplayCadenceSlowFramePercent > _perfectionPreviewSlowPercentThreshold)
             {
-                var over = previewCadenceSlowFramePercent - _perfectionPreviewSlowPercentThreshold;
+                var over = previewRuntime.DisplayCadenceSlowFramePercent - _perfectionPreviewSlowPercentThreshold;
                 penalty += Math.Min(20, over * 2.0);
-                reasons.Add($"preview slow frames {previewCadenceSlowFramePercent:0.###}%");
+                reasons.Add($"preview slow frames {previewRuntime.DisplayCadenceSlowFramePercent:0.###}%");
             }
         }
 
-        if (isPreviewing &&
+        if (viewModel.IsPreviewing &&
             !visualCadenceHealthy &&
             IsPreviewOnePercentLowDegraded(
-                previewCadenceExpectedIntervalMs,
-                previewCadenceSampleCount,
-                previewCadenceOnePercentLowFps))
+                previewRuntime.DisplayCadenceExpectedIntervalMs,
+                previewRuntime.DisplayCadenceSampleCount,
+                previewRuntime.DisplayCadenceOnePercentLowFps))
         {
-            var target = 1000.0 / previewCadenceExpectedIntervalMs * PreviewOnePercentLowWarningRatio;
-            var deficit = Math.Max(0.0, target - previewCadenceOnePercentLowFps);
+            var target = 1000.0 / previewRuntime.DisplayCadenceExpectedIntervalMs * PreviewOnePercentLowWarningRatio;
+            var deficit = Math.Max(0.0, target - previewRuntime.DisplayCadenceOnePercentLowFps);
             penalty += Math.Min(20, deficit * 1.25);
-            reasons.Add($"preview 1% low {previewCadenceOnePercentLowFps:0.##}fps");
+            reasons.Add($"preview 1% low {previewRuntime.DisplayCadenceOnePercentLowFps:0.##}fps");
         }
 
         if (lastVerification is { CadenceSampleCount: >= VerificationPerfectionMinSamples } verification &&

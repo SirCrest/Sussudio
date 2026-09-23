@@ -2206,6 +2206,10 @@ Primary current owners:
   `Sussudio/MainWindow.xaml.cs` is the XAML/MainWindow
   adapter that supplies renderer-stop-before-teardown and UI callback endpoints
   for reinit completion.
+- `Sussudio/Models/Automation/AutomationModels.cs` owns the shared
+  `PreviewStartupState` vocabulary used by the startup controller and in-process
+  preview runtime snapshot. `AutomationSnapshot` retains the existing string
+  wire representation at the projection boundary.
 - `Sussudio/Controllers/Preview/Startup/PreviewStartupControllers.cs` owns preview
   startup attempt/state bookkeeping, timestamps, cached failure/missing-signal
   details, state/log transitions, first-visual confirmation sequencing,

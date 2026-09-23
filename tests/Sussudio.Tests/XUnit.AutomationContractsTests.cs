@@ -478,7 +478,7 @@ public sealed class AutomationDiagnosticsLoopContractsTests
                 field.SetValue(hub, Activator.CreateInstance(field.FieldType));
             }
 
-            evaluateWire.Invoke(hub, new[] { wireSnapshot });
+            evaluateWire.Invoke(hub, new object?[] { wireSnapshot, playing });
             var alerts = (HashSet<string>)hubType.GetField("_activeAlerts", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(hub)!;
             Assert.True(alerts.Contains("flashback-playback-slow") == (playing && sample.Slow), $"{wireState ?? "null"}: {sample.Name} slow alert");
             Assert.True(alerts.Contains("flashback-playback-frametime-degraded") == (playing && sample.Frametime), $"{wireState ?? "null"}: {sample.Name} frametime alert");
@@ -8618,6 +8618,9 @@ static partial class Program
         AssertContains(diagnostics.EvaluationText, "private static string FormatPreviewSlowFrameAlertDetail");
         AssertContains(diagnostics.EvaluationText, "private static bool IsCaptureOnePercentLowDegraded(");
         AssertContains(diagnostics.EvaluationText, "private PerformanceEvaluation EvaluatePerformance(");
+        AssertContains(
+            diagnostics.EvaluationText,
+            "private PerformanceEvaluation EvaluatePerformance(\n        ViewModelRuntimeSnapshot viewModel,\n        CaptureHealthSnapshot health,\n        PreviewRuntimeSnapshot previewRuntime,");
         AssertContains(diagnostics.EvaluationText, "private static DiagnosticEvaluation BuildDiagnosticEvaluation(");
         AssertContains(diagnostics.EvaluationText, "var lanes = BuildDiagnosticEvaluationLanes(");
         AssertContains(diagnostics.EvaluationText, "var flashbackDiagnostic = FlashbackDiagnosticEvaluator.TryBuildFlashbackDiagnosticEvaluation(");
@@ -8743,7 +8746,7 @@ static partial class Program
 
     private static void AssertDiagnosticsAlertEventOwnership(AutomationDiagnosticsHubSourceFamily diagnostics)
     {
-        AssertContains(diagnostics.SnapshotsText, "private void UpdateAlerts(AutomationSnapshot snapshot, FlashbackRecordingRecentCounters flashbackRecordingRecent)");
+        AssertContains(diagnostics.SnapshotsText, "private void UpdateAlerts(\n        AutomationSnapshot snapshot,\n        FlashbackRecordingRecentCounters flashbackRecordingRecent,\n        bool playbackActive,\n        PreviewStartupState? previewStartupState)");
         AssertContains(diagnostics.SnapshotsText, "private void ObserveFlashbackExportCompletion(AutomationSnapshot snapshot)");
         AssertContains(diagnostics.SnapshotsText, "private void AddEventThrottled(");
         AssertContains(diagnostics.SnapshotsText, "private void SetAlertState(");
@@ -8778,7 +8781,8 @@ static partial class Program
         AssertContains(diagnostics.SnapshotsText, "RecordingFailureCodes.NotGrowing");
         AssertContains(diagnostics.SnapshotsText, "var nowUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();");
         AssertContains(diagnostics.SnapshotsText, "UpdateFlashbackRecordingAlerts(snapshot, flashbackRecordingRecent);");
-        AssertContains(diagnostics.SnapshotsText, "UpdateFlashbackPlaybackAlerts(snapshot, nowUnixMs);");
+        AssertContains(diagnostics.SnapshotsText, "var playbackActive = health.FlashbackPlaybackState == FlashbackPlaybackState.Playing;");
+        AssertContains(diagnostics.SnapshotsText, "UpdateFlashbackPlaybackAlerts(snapshot, nowUnixMs, playbackActive);");
         AssertContains(diagnostics.SnapshotsText, "private void UpdateFlashbackRecordingAlerts(");
         AssertContains(diagnostics.SnapshotsText, "UpdateFlashbackExportAlerts(");
         AssertContains(diagnostics.SnapshotsText, "UpdateFlashbackStorageAlerts(snapshot);");
@@ -8795,7 +8799,7 @@ static partial class Program
         AssertContains(diagnostics.SnapshotsText, "private void UpdateFlashbackRecordingDegradationAlert(");
         AssertContains(diagnostics.SnapshotsText, "private void UpdateFlashbackPlaybackAlerts(");
         AssertContains(diagnostics.SnapshotsText, "UpdateFlashbackPlaybackCommandAlerts(snapshot, nowUnixMs);");
-        AssertContains(diagnostics.SnapshotsText, "UpdateFlashbackPlaybackPerformanceAlerts(snapshot);");
+        AssertContains(diagnostics.SnapshotsText, "UpdateFlashbackPlaybackPerformanceAlerts(snapshot, playbackActive);");
         AssertContains(diagnostics.SnapshotsText, "\"flashback-playback-audio-master-fallback\"");
         AssertContains(diagnostics.SnapshotsText, "private void UpdateFlashbackPlaybackPerformanceAlerts(");
         AssertContains(diagnostics.SnapshotsText, "UpdateFlashbackPlaybackCadenceAlerts(");
@@ -8813,7 +8817,11 @@ static partial class Program
             false,
             System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.FlashbackRecordingAlerts.cs")),
             "Flashback recording alert rules folded into the main alerts owner");
-        AssertDoesNotContain(diagnostics.HubText, "private void UpdateAlerts(AutomationSnapshot snapshot, FlashbackRecordingRecentCounters flashbackRecordingRecent)");
+        AssertContains(diagnostics.SnapshotsText, "previewStartupState == PreviewStartupState.WaitingForFirstVisual");
+        AssertContains(diagnostics.SnapshotsText, "previewStartupState == PreviewStartupState.Failed");
+        AssertDoesNotContain(diagnostics.SnapshotsText, "string.Equals(snapshot.FlashbackPlaybackState, \"Playing\", StringComparison.OrdinalIgnoreCase)");
+        AssertDoesNotContain(diagnostics.SnapshotsText, "string.Equals(snapshot.PreviewStartupState");
+        AssertDoesNotContain(diagnostics.HubText, "private void UpdateAlerts(");
     }
 
     private static void AssertDiagnosticsRefreshSourceReaderOwnership()
@@ -9519,8 +9527,8 @@ static partial class Program
         AssertContains(counters, "private D3DRendererRecentCounters UpdateD3DRendererRecentCounters(");
         AssertContains(counters, "private MjpegRecentCounters UpdateMjpegRecentCounters(");
         AssertContains(diagnostics.SourceFamilyText, "var recentFlashbackRecording = UpdateFlashbackRecordingRecentCounters(health, nowTick);");
-        AssertContains(diagnostics.SourceFamilyText, "UpdateAlerts(snapshot, recentFlashbackRecording);");
-        AssertContains(diagnostics.SourceFamilyText, "private void UpdateAlerts(AutomationSnapshot snapshot, FlashbackRecordingRecentCounters flashbackRecordingRecent)");
+        AssertContains(diagnostics.SourceFamilyText, "UpdateAlerts(snapshot, recentFlashbackRecording, playbackActive, previewRuntime.StartupState);");
+        AssertContains(diagnostics.SourceFamilyText, "private void UpdateAlerts(\n        AutomationSnapshot snapshot,\n        FlashbackRecordingRecentCounters flashbackRecordingRecent,\n        bool playbackActive,\n        PreviewStartupState? previewStartupState)");
         AssertContains(diagnostics.SourceFamilyText, "var flashbackRecordingQueueBacklog =");
         AssertContains(diagnostics.SourceFamilyText, "var flashbackAudioQueueBacklog =");
         AssertContains(diagnostics.SourceFamilyText, "IsFlashbackRecordingQueueBackedUp(");
@@ -9617,17 +9625,17 @@ static partial class Program
         AssertContains(diagnostics.SourceFamilyText, "IsFlashbackPlaybackFrametimeDegraded(\n                playbackActive");
         AssertContains(diagnostics.SourceFamilyText, "playbackActive,\n                playbackTargetFps,\n                snapshot.FlashbackPlaybackFrameCount");
         AssertContains(diagnostics.SourceFamilyText, "health.FlashbackPlaybackState == FlashbackPlaybackState.Playing");
-        AssertContains(diagnostics.SourceFamilyText, "string.Equals(snapshot.FlashbackPlaybackState, \"Playing\", StringComparison.OrdinalIgnoreCase)");
+        AssertContains(diagnostics.SourceFamilyText, "var playbackActive = health.FlashbackPlaybackState == FlashbackPlaybackState.Playing;");
+        AssertDoesNotContain(diagnostics.SourceFamilyText, "string.Equals(snapshot.FlashbackPlaybackState, \"Playing\", StringComparison.OrdinalIgnoreCase)");
+        AssertContains(diagnostics.SourceFamilyText, "EvaluatePerformance(\n            viewModelSnapshot,\n            health,\n            previewRuntime,\n            recordingFileGrowing,\n            visualCadenceHealthy,\n            lastVerification);");
         AssertContains(diagnostics.SourceFamilyText, "IsCaptureOnePercentLowDegraded(\n                snapshot.ExpectedCaptureFrameRate");
         AssertContains(diagnostics.SourceFamilyText, "IsPreviewOnePercentLowDegraded(\n                snapshot.PreviewCadenceExpectedIntervalMs");
         AssertContains(diagnostics.SourceFamilyText, "\"Source/capture 1% low is below target, but sampled visual cadence confirms source-rate output.\"");
         AssertContains(diagnostics.SourceFamilyText, "$\"{lanes.Source} | {lanes.Visual}\"");
-        AssertContains(diagnostics.SourceFamilyText, "captureCadenceExpectedFrameRate: health.ExpectedFrameRate");
-        AssertContains(diagnostics.SourceFamilyText, "captureCadenceOnePercentLowFps: health.CaptureCadenceOnePercentLowFps");
-        AssertContains(diagnostics.SourceFamilyText, "previewCadenceExpectedIntervalMs: previewRuntime.DisplayCadenceExpectedIntervalMs");
-        AssertContains(diagnostics.SourceFamilyText, "previewCadenceOnePercentLowFps: previewRuntime.DisplayCadenceOnePercentLowFps");
-        AssertContains(diagnostics.SourceFamilyText, "reasons.Add($\"capture 1% low {captureCadenceOnePercentLowFps:0.##}fps\")");
-        AssertContains(diagnostics.SourceFamilyText, "reasons.Add($\"preview 1% low {previewCadenceOnePercentLowFps:0.##}fps\")");
+        AssertContains(diagnostics.EvaluationText, "health.CaptureCadenceOnePercentLowFps");
+        AssertContains(diagnostics.EvaluationText, "previewRuntime.DisplayCadenceOnePercentLowFps");
+        AssertContains(diagnostics.EvaluationText, "reasons.Add($\"capture 1% low {health.CaptureCadenceOnePercentLowFps:0.##}fps\")");
+        AssertContains(diagnostics.EvaluationText, "reasons.Add($\"preview 1% low {previewRuntime.DisplayCadenceOnePercentLowFps:0.##}fps\")");
         AssertContains(diagnostics.SourceFamilyText, "snapshot.FlashbackPlaybackOnePercentLowFps");
         AssertContains(diagnostics.SourceFamilyText, "frameCount >= FlashbackPlaybackOnePercentLowMinimumFrames");
         AssertContains(diagnostics.SourceFamilyText, "cadenceSampleCount >= FlashbackPlaybackOnePercentLowMinimumFrames");

@@ -75,6 +75,8 @@ internal static class AutomationSnapshotRegressionFixture
             Set(health, "LastExportSuccess", false);
 
             var preview = inputs["previewRuntime"]!;
+            Set(preview, "StartupState", Enum.Parse(
+                assembly.GetType("Sussudio.Models.PreviewStartupState", throwOnError: true)!, "RendererAttaching"));
             Set(preview, "EstimatedPipelineLatencyMs", 12.75);
             Set(preview, "D3DFrameStatsMissedRefreshCount", 59L);
             Set(preview, "D3DFrameStatsFailureCount", 61L);

@@ -3364,7 +3364,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
                 ignoredRecorder.IsPreviewing = guard != "not-previewing";
                 if (guard == "not-waiting")
                 {
-                    InvokePreviewStartup(ignored, "SetStartupState", ParseEnum("Sussudio.Controllers.PreviewStartupState", "RendererAttaching"), null);
+                    InvokePreviewStartup(ignored, "SetStartupState", ParseEnum("Sussudio.Models.PreviewStartupState", "RendererAttaching"), null);
                 }
 
                 var previousState = GetPropertyValue(ignored, "State");
@@ -3484,7 +3484,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         InvokePreviewStartup(controller, "ConfigureSignals",
             ParseEnum("Sussudio.Models.PreviewStartupStrategy", "D3D11VideoProcessor"),
             ParseEnum("Sussudio.Models.PreviewStartupSignalFlags", "FirstCaptureFrame, FirstVisual"));
-        InvokePreviewStartup(controller, "SetStartupState", ParseEnum("Sussudio.Controllers.PreviewStartupState", "WaitingForFirstVisual"), null);
+        InvokePreviewStartup(controller, "SetStartupState", ParseEnum("Sussudio.Models.PreviewStartupState", "WaitingForFirstVisual"), null);
     }
 
     private sealed class PreviewStartupSessionTestRecorder
@@ -3820,6 +3820,8 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         var previewRuntimeSnapshotText = previewRendererText;
         var previewRuntimeSnapshotSamplingControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotControllers.cs")
             .Replace("\r\n", "\n");
+        var previewRuntimeSnapshotModelText = ReadRepoFile("Sussudio/Models/Automation/AutomationModels.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(mainWindowText, "InitializePreviewStartupSessionController();");
         AssertContains(mainWindowText, "InitializePreviewReinitTransitionController();");
@@ -3844,7 +3846,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(previewStartupText, "BeginPreviewStartupAttempt = _previewStartupSessionController.BeginStartupAttempt");
         AssertContains(previewStartupText, "=> _previewStartupSessionController.ConfirmFirstVisual(source);");
         AssertContains(previewStartupText, "=> _previewStartupSessionController.ResetStartupTracking(keepRecoveryCount, preserveReinitAnimation);");
-        AssertContains(previewStartupSessionControllerText, "internal enum PreviewStartupState");
+        AssertDoesNotContain(previewStartupSessionControllerText, "enum PreviewStartupState");
         AssertContains(previewStartupSessionControllerText, "internal sealed class PreviewStartupSessionControllerContext");
         AssertContains(previewStartupSessionControllerText, "internal sealed class PreviewStartupSessionController");
         AssertContains(previewStartupSessionControllerText, "public PreviewStartupState State { get; private set; } = PreviewStartupState.Idle;");
@@ -3871,7 +3873,9 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(previewStartupSessionControllerText, "public void MarkRendererAttached(DateTimeOffset attachedUtc)");
         AssertContains(previewStartupSessionControllerText, "public bool MarkFirstVisualConfirmed(DateTimeOffset firstVisualUtc)");
         AssertContains(previewRuntimeSnapshotText, "StartupSessionController = _previewStartupSessionController,");
-        AssertContains(previewRuntimeSnapshotSamplingControllerText, "startupSession.State.ToString(),");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "startupSession.State,");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "PreviewStartupState StartupState,");
+        AssertContains(previewRuntimeSnapshotModelText, "public PreviewStartupState? StartupState { get; init; } = PreviewStartupState.Idle;");
         AssertContains(previewRuntimeSnapshotSamplingControllerText, "StartupState = signature.StartupState,");
         AssertContains(previewReinitText, "private PreviewReinitTransitionController _previewReinitTransitionController = null!;");
         AssertContains(previewReinitText, "private bool IsPreviewReinitAnimating");
@@ -3937,7 +3941,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
             scheduled.Add(operation);
             return Task.CompletedTask;
         });
-        object State(string name) => ParseEnum("Sussudio.Controllers.PreviewStartupState", name);
+        object State(string name) => ParseEnum("Sussudio.Models.PreviewStartupState", name);
         object Signals(string name) => ParseEnum("Sussudio.Models.PreviewStartupSignalFlags", name);
         object SignalSnapshot() => GetPropertyValue(controller, "SignalSnapshot")!;
         bool SignalWindowActive(bool previewing) => (bool)InvokePreviewStartup(controller, "IsSignalWindowActive", previewing)!;
@@ -4815,9 +4819,10 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(previewRuntimeSnapshotHealthPolicyText, "input.FramesArrived > 30");
         AssertContains(previewRuntimeSnapshotHealthPolicyText, "input.CurrentTick - input.LastPresentedTick > 3000");
         AssertContains(previewRuntimeSnapshotModelText, "public sealed class PreviewRuntimeSnapshot");
+        AssertContains(previewRuntimeSnapshotModelText, "public enum PreviewStartupState");
         AssertContains(previewRuntimeSnapshotModelText, "public DateTimeOffset TimestampUtc { get; init; } = DateTimeOffset.UtcNow;");
         AssertContains(previewRuntimeSnapshotModelText, "public bool RendererAttached { get; init; }");
-        AssertContains(previewRuntimeSnapshotModelText, "public string StartupState { get; init; } = \"Idle\";");
+        AssertContains(previewRuntimeSnapshotModelText, "public PreviewStartupState? StartupState { get; init; } = PreviewStartupState.Idle;");
         AssertContains(previewRuntimeSnapshotModelText, "public PreviewStartupSignalFlags StartupRequiredSignals { get; init; }");
         AssertContains(previewRuntimeSnapshotModelText, "public double[] DisplayCadenceRecentIntervalsMs { get; init; } = Array.Empty<double>();");
         AssertContains(previewRuntimeSnapshotModelText, "public string RendererMode { get; init; } = \"None\";");
@@ -4887,6 +4892,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         var requiredSignals = ParseEnum("Sussudio.Models.PreviewStartupSignalFlags", "FirstVisual");
         var receivedSignals = ParseEnum("Sussudio.Models.PreviewStartupSignalFlags", "MediaOpened");
         var startupStrategy = ParseEnum("Sussudio.Models.PreviewStartupStrategy", "D3D11VideoProcessor");
+        var startupState = ParseEnum("Sussudio.Models.PreviewStartupState", "WaitingForFirstVisual");
 
         var context = Activator.CreateInstance(contextType)
                       ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotSamplingControllerContext.");
@@ -4911,7 +4917,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
                 1L,
                 12345L,
                 16.67d,
-                "WaitingForFirstVisual",
+                startupState,
                 true,
                 "attempt-epoch",
                 requestedUtc,
@@ -5420,7 +5426,9 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
             var requiredSignals = ParseEnum("Sussudio.Models.PreviewStartupSignalFlags", hasAttempt ? "FirstVisual" : "MediaOpened");
             var receivedSignals = ParseEnum("Sussudio.Models.PreviewStartupSignalFlags", hasAttempt ? "MediaOpened" : "None");
             var startupStrategy = ParseEnum("Sussudio.Models.PreviewStartupStrategy", hasAttempt ? "D3D11VideoProcessor" : "CpuSoftwareBitmap");
-            var state = hasAttempt ? "WaitingForFirstVisual" : "Idle";
+            var state = ParseEnum(
+                "Sussudio.Models.PreviewStartupState",
+                hasAttempt ? "WaitingForFirstVisual" : "Idle");
             var attemptId = hasAttempt ? "attempt-42" : null;
             var missingSignals = hasAttempt ? "FirstVisual" : null;
             var failureReason = hasAttempt ? "visual-timeout" : null;
@@ -5451,7 +5459,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
             var snapshot = build.Invoke(null, new object?[] { input, d3dProjection, health, DateTimeOffset.UnixEpoch })
                            ?? throw new InvalidOperationException("PreviewRuntimeSnapshotMapper.Build returned null.");
 
-            AssertEqual(state, GetStringProperty(snapshot, "StartupState"), "snapshot startup state");
+            AssertEqual(state, GetPropertyValue(snapshot, "StartupState"), "snapshot startup state");
             AssertEqual(attemptId, GetPropertyValue(snapshot, "StartupAttemptId"), "snapshot startup attempt id");
             AssertEqual(elapsedMs, GetPropertyValue(snapshot, "StartupElapsedMs"), "snapshot startup elapsed");
             AssertEqual(timeoutMs, GetIntProperty(snapshot, "StartupTimeoutMs"), "snapshot startup timeout");
@@ -5534,7 +5542,8 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         SetPropertyOrBackingField(input, "FramesDropped", 2L);
         SetPropertyOrBackingField(input, "LastPresentedTick", Environment.TickCount64 - 4000);
         SetPropertyOrBackingField(input, "PreviewMinPresentationIntervalMs", 8.33d);
-        SetPropertyOrBackingField(input, "StartupState", "WaitingForFirstVisual");
+        var startupState = ParseEnum("Sussudio.Models.PreviewStartupState", "WaitingForFirstVisual");
+        SetPropertyOrBackingField(input, "StartupState", startupState);
         SetPropertyOrBackingField(input, "IsStartupWaitingForFirstVisual", true);
         SetPropertyOrBackingField(input, "StartupAttemptId", "attempt-1");
         SetPropertyOrBackingField(input, "StartupRequestedUtc", DateTimeOffset.UtcNow.AddMilliseconds(-2000));
@@ -5560,7 +5569,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertEqual(false, GetBoolProperty(snapshot, "GpuElementVisible"), "snapshot GpuElementVisible");
         AssertEqual(true, GetBoolProperty(snapshot, "CpuElementVisible"), "snapshot CpuElementVisible");
         AssertEqual("CpuSoftwareBitmap", GetStringProperty(snapshot, "RendererMode"), "CPU renderer mode");
-        AssertEqual("WaitingForFirstVisual", GetStringProperty(snapshot, "StartupState"), "startup state passthrough");
+        AssertEqual(startupState, GetPropertyValue(snapshot, "StartupState"), "startup state passthrough");
         AssertEqual("attempt-1", GetStringProperty(snapshot, "StartupAttemptId"), "startup attempt passthrough");
         AssertEqual("FirstVisual", GetStringProperty(snapshot, "StartupMissingSignals"), "missing signals passthrough");
         AssertEqual(requiredSignals, GetPropertyValue(snapshot, "StartupRequiredSignals"), "required startup signals");

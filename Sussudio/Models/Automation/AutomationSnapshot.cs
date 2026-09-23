@@ -465,7 +465,7 @@ public sealed class AutomationSnapshot
     public bool PreviewGpuElementVisible { get; init; }
     public bool PreviewCpuElementVisible { get; init; }
     public bool PreviewRendererAttached { get; init; }
-    public string PreviewStartupState { get; init; } = "Idle";
+    public string? PreviewStartupState { get; init; } = "Idle";
     public string? PreviewAttemptId { get; init; }
     public double? PreviewStartupElapsedMs { get; init; }
     public int PreviewStartupTimeoutMs { get; init; }

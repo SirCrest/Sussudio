@@ -337,7 +337,7 @@ public sealed partial class AutomationDiagnosticsHub
             PreviewGpuElementVisible = previewRuntime.GpuElementVisible,
             PreviewCpuElementVisible = previewRuntime.CpuElementVisible,
             PreviewRendererAttached = previewRuntime.RendererAttached,
-            PreviewStartupState = previewStartup.State,
+            PreviewStartupState = previewStartup.State?.ToString(),
             PreviewAttemptId = previewStartup.AttemptId,
             PreviewStartupElapsedMs = previewStartup.ElapsedMs,
             PreviewStartupTimeoutMs = previewStartup.TimeoutMs,
@@ -1525,7 +1525,7 @@ public sealed partial class AutomationDiagnosticsHub
 
     private readonly record struct PreviewRuntimeStartupProjection
     {
-        public string State { get; init; }
+        public PreviewStartupState? State { get; init; }
         public string? AttemptId { get; init; }
         public double? ElapsedMs { get; init; }
         public int TimeoutMs { get; init; }

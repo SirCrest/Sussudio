@@ -59,7 +59,7 @@ internal sealed class PreviewRuntimeSnapshotSamplingController
             rendererHost.FramesDropped,
             rendererHost.LastPresentedTick,
             rendererHost.PreviewMinPresentationIntervalMs,
-            startupSession.State.ToString(),
+            startupSession.State,
             startupSession.IsWaitingForFirstVisual,
             startupSession.AttemptId,
             startupSession.RequestedUtc,
@@ -135,7 +135,7 @@ internal readonly record struct PreviewRuntimeSnapshotSignature(
     long FramesDropped,
     long LastPresentedTick,
     double PreviewMinPresentationIntervalMs,
-    string StartupState,
+    PreviewStartupState StartupState,
     bool IsStartupWaitingForFirstVisual,
     string? StartupAttemptId,
     DateTimeOffset? StartupRequestedUtc,
@@ -166,7 +166,7 @@ internal sealed class PreviewRuntimeSnapshotInput
     public long FramesDropped { get; init; }
     public long LastPresentedTick { get; init; }
     public double PreviewMinPresentationIntervalMs { get; init; }
-    public string StartupState { get; init; } = "Idle";
+    public PreviewStartupState StartupState { get; init; } = PreviewStartupState.Idle;
     public bool IsStartupWaitingForFirstVisual { get; init; }
     public string? StartupAttemptId { get; init; }
     public DateTimeOffset? StartupRequestedUtc { get; init; }

@@ -8,16 +8,6 @@ using Sussudio.Services.Runtime;
 
 namespace Sussudio.Controllers;
 
-internal enum PreviewStartupState
-{
-    Idle,
-    StartingSession,
-    RendererAttaching,
-    WaitingForFirstVisual,
-    Rendering,
-    Failed
-}
-
 internal sealed class PreviewStartupSessionControllerContext
 {
     public required Func<bool> IsPreviewing { get; init; }
