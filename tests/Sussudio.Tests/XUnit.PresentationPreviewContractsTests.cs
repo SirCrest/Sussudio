@@ -6916,7 +6916,7 @@ internal static Task MainViewModelCaptureDeviceControllers_UseDependencyComposit
         AssertContains(captureModeOptionRebuildControllerText, "public void RebuildFrameRateOptions()");
         AssertContains(captureModeOptionRebuildControllerText, "public void RebuildVideoFormatOptions()");
         AssertContains(captureModeOptionRebuildControllerText, "public void UpdateSelectedFormat()");
-        AssertContains(captureModeOptionRebuildControllerText, "public void RebuildResolutionOptions()");
+        AssertContains(captureModeOptionRebuildControllerText, "public void RebuildResolutionOptions(bool forceSourceAutoRetarget)");
         AssertContains(captureModeOptionRebuildControllerText, "=> RebuildFrameRateOptions();");
         AssertEqual(
             false,
@@ -6974,7 +6974,8 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(sourceTelemetryControllerText, "public required Func<SourceSignalTelemetrySnapshot> GetLatestSourceTelemetry { get; init; }");
         AssertContains(sourceTelemetryControllerText, "public required Func<SourceSignalTelemetrySnapshot, DateTimeOffset, string> BuildSourceTelemetrySummary { get; init; }");
         AssertContains(sourceTelemetryControllerText, "public required Func<string?, bool> IsAutoResolutionValue { get; init; }");
-        AssertContains(sourceTelemetryControllerText, "public required Action RebuildResolutionOptions { get; init; }");
+        AssertContains(sourceTelemetryControllerText, "public required Action<bool> RebuildResolutionOptions { get; init; }");
+        AssertContains(sourceTelemetryControllerText, "_context.RebuildResolutionOptions(forceSourceAutoRetarget);");
         AssertContains(controllerGraphText, "SetLatestSourceTelemetry = snapshot => viewModel._latestSourceTelemetry = snapshot,");
         AssertContains(controllerGraphText, "BuildSourceTelemetrySummary = SourceTelemetryPresentationBuilder.BuildSourceSummary,");
         AssertContains(controllerGraphText, "IsAutoResolutionValue = MainViewModel.IsAutoResolutionValue,");
@@ -8002,7 +8003,7 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(controllerRootText, "!string.Equals(resolution.Value, _context.ViewModel.SelectedResolution, StringComparison.OrdinalIgnoreCase)");
         AssertContains(controllerRootText, "if (CaptureComboBoxSelectionNormalizer.IsAutoFrameRateOption(frameRate))");
         AssertContains(controllerRootText, "if (!_context.ViewModel.IsAutoFrameRateSelected)");
-        AssertContains(controllerRootText, "else if (!CaptureComboBoxSelectionNormalizer.IsFrameRateMatch(frameRate.Value, _context.ViewModel.SelectedFrameRate))");
+        AssertContains(controllerRootText, "else if (!FrameRateTimingPolicy.IsFrameRateMatch(frameRate.Value, _context.ViewModel.SelectedFrameRate))");
         AssertContains(controllerRootText, "public void AttachRecordingOptionBindings()");
         AssertContains(controllerRootText, "AttachStringSelection(_context.FormatComboBox, value => _context.ViewModel.SelectedRecordingFormat = value);");
         AssertContains(controllerRootText, "AttachStringSelection(_context.QualityComboBox, value => _context.ViewModel.SelectedQuality = value);");
@@ -8662,12 +8663,13 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(selectionNormalizerText, "public static ResolutionOption? ResolveResolutionSelection(");
         AssertContains(selectionNormalizerText, "public static FrameRateOption? ResolveFrameRateSelection(");
         AssertContains(selectionNormalizerText, "public static string? ResolveStringSelection(");
-        AssertContains(selectionNormalizerText, "public static bool IsFrameRateMatch(double a, double b, double tolerance = 0.01)");
+        AssertDoesNotContain(selectionNormalizerText, "IsFrameRateMatch");
         AssertContains(selectionNormalizerText, "public static bool IsAutoFrameRateOption(FrameRateOption option)");
 
         AssertDoesNotContain(bindingsText, "DeviceComboBox.SelectionChanged +=");
         AssertDoesNotContain(bindingControllerText, "private static void EnsureStringComboBoxSelection(");
         AssertDoesNotContain(bindingControllerText, "private static bool IsFrameRateMatch(double a, double b, double tolerance = 0.01)");
+        AssertContains(bindingControllerText, "FrameRateTimingPolicy.IsFrameRateMatch");
         AssertDoesNotContain(bindingControllerText, "private static bool IsAutoFrameRateOption(FrameRateOption option)");
         AssertDoesNotContain(bindingControllerText, "items.FirstOrDefault(item => string.Equals(item, vmValue, StringComparison.OrdinalIgnoreCase))");
         AssertDoesNotContain(bindingControllerText, "AvailableResolutions.FirstOrDefault(option =>");
@@ -8783,10 +8785,10 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         var resolutionOptionRebuildControllerText = captureModeOptionsControllerText;
         var modeSelectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
 
-        AssertContains(captureModeTransactionsText, "private void RebuildResolutionOptions()");
-        AssertContains(captureModeTransactionsText, "=> _captureModeOptionRebuildController.RebuildResolutionOptions();");
-        AssertContains(resolutionOptionRebuildControllerText, "public void RebuildResolutionOptions()");
-        AssertContains(captureModeOptionsControllerText, "public void RebuildResolutionOptions()");
+        AssertContains(captureModeTransactionsText, "private void RebuildResolutionOptions(bool forceSourceAutoRetarget = false)");
+        AssertContains(captureModeTransactionsText, "=> _captureModeOptionRebuildController.RebuildResolutionOptions(forceSourceAutoRetarget);");
+        AssertContains(resolutionOptionRebuildControllerText, "public void RebuildResolutionOptions(bool forceSourceAutoRetarget)");
+        AssertContains(captureModeOptionsControllerText, "public void RebuildResolutionOptions(bool forceSourceAutoRetarget)");
         AssertContains(resolutionOptionsText, "private bool TryResolveResolutionKey(");
         AssertContains(resolutionOptionsText, "private static bool IsAutoResolutionValue(");
         AssertContains(frameRateOptionsText, "ApplyResolvedFrameRateSelection(selection.Selected, SelectedFrameRate > 0 ? SelectedFrameRate : 60);");
@@ -8812,7 +8814,7 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(modeSelectionText, "private void ResetModeSelectionState()");
         AssertContains(modeSelectionText, "ResetFrameRateSelectionState();");
         AssertContains(modeSelectionText, "_captureModeSelection.HasUserOverriddenResolutionForCurrentMode = false;");
-        AssertContains(modeSelectionText, "_captureModeSelection.ForceSourceAutoRetarget = false;");
+        AssertDoesNotContain(modeSelectionText, "_captureModeSelection.ForceSourceAutoRetarget");
         AssertContains(modeSelectionText, "_captureModeSelection.LastSourceModeKey = null;");
         AssertContains(modeSelectionText, "_captureModeSelection.ClearPendingSdrAutoSelection();");
         AssertEqual(
@@ -9818,11 +9820,11 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         var autoCaptureSelectionPolicyText = ReadRepoFile("Sussudio/ViewModels/ViewModelSelectionPolicies.cs").Replace("\r\n", "\n");
         var helperText = autoCaptureSelectionPolicyText;
 
-        AssertContains(captureModeTransactionsText, "private void RebuildResolutionOptions()");
-        AssertContains(captureModeTransactionsText, "=> _captureModeOptionRebuildController.RebuildResolutionOptions();");
+        AssertContains(captureModeTransactionsText, "private void RebuildResolutionOptions(bool forceSourceAutoRetarget = false)");
+        AssertContains(captureModeTransactionsText, "=> _captureModeOptionRebuildController.RebuildResolutionOptions(forceSourceAutoRetarget);");
         AssertContains(resolutionOptionRebuildControllerText, "namespace Sussudio.Controllers;");
         AssertContains(resolutionOptionRebuildControllerText, "internal sealed class MainViewModelCaptureModeOptionRebuildController");
-        AssertContains(resolutionOptionRebuildControllerText, "public void RebuildResolutionOptions()");
+        AssertContains(resolutionOptionRebuildControllerText, "public void RebuildResolutionOptions(bool forceSourceAutoRetarget)");
         AssertContains(resolutionOptionRebuildControllerText, "private AutoCaptureSelection? ResolveAutoCaptureSelection(");
         AssertContains(resolutionOptionRebuildControllerText, "AutoCaptureSelectionPolicy.Select(new AutoCaptureSelectionRequest(");
         AssertContains(resolutionOptionRebuildControllerText, "CaptureModeOptionsBuilder.BuildResolutionOptions(");
@@ -9831,7 +9833,7 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertDoesNotContain(captureModeOptionsControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(resolutionOptionRebuildControllerText, "_viewModel.");
         AssertContains(resolutionOptionRebuildControllerText, "=> RebuildFrameRateOptions();");
-        AssertContains(captureModeOptionsControllerText, "public void RebuildResolutionOptions()");
+        AssertContains(captureModeOptionsControllerText, "public void RebuildResolutionOptions(bool forceSourceAutoRetarget)");
         AssertContains(resolutionOptionRebuildControllerText, "var allowSourceAutoSelect =\n            string.Equals(previousSelection, _context.AutoResolutionValue, StringComparison.OrdinalIgnoreCase) ||");
         AssertDoesNotContain(captureModeOptionsControllerText, "_viewModel.AvailableResolutions.Clear();");
         AssertContains(resolutionOptionRebuildControllerText, "private ResolutionOption CreateAutoResolutionOption()");
@@ -10230,6 +10232,7 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         var rootText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
         var compositionText = rootText;
         var timingPolicyText = ReadRepoFile("Sussudio/ViewModels/ViewModelSelectionPolicies.cs").Replace("\r\n", "\n");
+        var timingPolicyMatchText = ReadRepoFile("Sussudio/ViewModels/FrameRateTimingPolicy.Match.cs").Replace("\r\n", "\n");
 
         AssertContains(captureModeTransactionsText, "private void UpdateSelectedFormat()");
         AssertContains(captureModeTransactionsText, "private void RebuildVideoFormatOptions()");
@@ -10274,11 +10277,14 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "ViewModel", "MainViewModelFrameRateTimingResolver.cs")),
             "frame-rate timing resolver lives with capture mode option rebuild owner");
         AssertContains(timingPolicyText, "internal enum FrameRateTimingFamily");
+        AssertContains(timingPolicyText, "internal static partial class FrameRateTimingPolicy");
         AssertContains(timingPolicyText, "internal readonly record struct FrameRateTimingVariant(int FriendlyBucket, FrameRateTimingFamily Family);");
         AssertContains(timingPolicyText, "internal static IReadOnlyList<FrameRateTimingVariant> BuildTimingVariants(IEnumerable<MediaFormat> formats)");
         AssertContains(timingPolicyText, "internal static MediaFormat SelectPreferredFrameRateFormat(");
         AssertContains(timingPolicyText, "internal static bool TryInferFrameRateTimingFamily(");
         AssertContains(timingPolicyText, "internal static bool TryParseFrameRateRational(");
+        AssertContains(timingPolicyMatchText, "internal static partial class FrameRateTimingPolicy");
+        AssertContains(timingPolicyMatchText, "internal static bool IsFrameRateMatch(double a, double b, double tolerance = 0.01)");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "FrameRateTimingPolicy.cs")),

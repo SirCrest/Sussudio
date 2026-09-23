@@ -2579,6 +2579,8 @@ Primary current owners:
   timing family and variant models, rational parsing, friendly/exact frame-rate
   matching, timing-family ranking, and preferred-format ranking helpers used by
   frame-rate, resolution, capture-settings, and automation projections.
+  `Sussudio/ViewModels/FrameRateTimingPolicy.Match.cs` holds the exact frame-rate
+  comparator used by capture bindings and is linked into their isolated tests.
   `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs`
   owns the stateful resolver that resolves timing variants and source/preferred
   timing from resolution capabilities, runtime snapshots, selected formats,

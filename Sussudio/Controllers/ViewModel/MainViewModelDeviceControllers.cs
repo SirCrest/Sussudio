@@ -1009,10 +1009,9 @@ internal sealed class MainViewModelCaptureModeOptionRebuildController
         RebuildVideoFormatOptions();
         UpdateSelectedFormat();
         _context.UpdateTargetSummary();
-        _context.ModeSelection.ForceSourceAutoRetarget = false;
     }
 
-    public void RebuildResolutionOptions()
+    public void RebuildResolutionOptions(bool forceSourceAutoRetarget)
     {
         var previousSelection = _context.GetSelectedResolution();
         var previousRate = _context.GetSelectedFrameRate();
@@ -1078,7 +1077,7 @@ internal sealed class MainViewModelCaptureModeOptionRebuildController
 
         var allowSourceAutoSelect =
             string.Equals(previousSelection, _context.AutoResolutionValue, StringComparison.OrdinalIgnoreCase) ||
-            (_context.IsHdrEnabled() && (_context.ModeSelection.ForceSourceAutoRetarget || !_context.ModeSelection.HasUserOverriddenResolutionForCurrentMode));
+            (_context.IsHdrEnabled() && (forceSourceAutoRetarget || !_context.ModeSelection.HasUserOverriddenResolutionForCurrentMode));
         var selection = CaptureResolutionSelectionPolicy.Select(new CaptureResolutionSelectionRequest(
             options,
             _context.GetResolutionToFormats(),
@@ -1567,7 +1566,7 @@ internal sealed class MainViewModelSourceTelemetryControllerContext
     public required Func<bool> IsAutoFrameRateSelected { get; init; }
     public required Func<int> AvailableResolutionCount { get; init; }
     public required Action<bool> SetPendingModeOptionsRefresh { get; init; }
-    public required Action RebuildResolutionOptions { get; init; }
+    public required Action<bool> RebuildResolutionOptions { get; init; }
     public required Action UpdateTargetSummary { get; init; }
 }
 
@@ -1663,6 +1662,7 @@ internal sealed class MainViewModelSourceTelemetryController
         _context.SetSourceTelemetrySummaryText(_context.BuildSourceTelemetrySummary(snapshot, DateTimeOffset.UtcNow));
 
         var modeKey = snapshot.GetModeKey();
+        var forceSourceAutoRetarget = false;
         if (!string.IsNullOrWhiteSpace(modeKey) &&
             !string.Equals(modeKey, _context.ModeSelection.LastSourceModeKey, StringComparison.Ordinal))
         {
@@ -1675,7 +1675,7 @@ internal sealed class MainViewModelSourceTelemetryController
                     _context.IsAutoFrameRateSelected() ||
                     !_context.ModeSelection.HasUserOverriddenFrameRateForCurrentMode;
                 _context.ModeSelection.LastSourceModeKey = modeKey;
-                _context.ModeSelection.ForceSourceAutoRetarget = shouldAutoRetargetResolution || shouldAutoRetargetFrameRate;
+                forceSourceAutoRetarget = shouldAutoRetargetResolution || shouldAutoRetargetFrameRate;
                 if (shouldAutoRetargetResolution)
                 {
                     _context.ModeSelection.HasUserOverriddenResolutionForCurrentMode = false;
@@ -1689,17 +1689,17 @@ internal sealed class MainViewModelSourceTelemetryController
         }
 
         var shouldRebuildModeOptions = allowAutoRetarget &&
-                                       (_context.ModeSelection.ForceSourceAutoRetarget ||
+                                       (forceSourceAutoRetarget ||
                                         (snapshot.HasSignalData && _context.AvailableResolutionCount() == 0));
         if (shouldRebuildModeOptions)
         {
             if (_context.IsRecording())
             {
-                _context.SetPendingModeOptionsRefresh(true);
+                _context.SetPendingModeOptionsRefresh(forceSourceAutoRetarget);
             }
             else
             {
-                _context.RebuildResolutionOptions();
+                _context.RebuildResolutionOptions(forceSourceAutoRetarget);
             }
         }
         else

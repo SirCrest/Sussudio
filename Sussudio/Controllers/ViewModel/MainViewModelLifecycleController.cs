@@ -22,7 +22,6 @@ internal sealed class CaptureModeSelectionState
 {
     public bool HasUserOverriddenResolutionForCurrentMode { get; set; }
     public bool HasUserOverriddenFrameRateForCurrentMode { get; set; }
-    public bool ForceSourceAutoRetarget { get; set; }
     public string? LastSourceModeKey { get; set; }
     public string? LastKnownResolutionKey { get; set; }
     public bool PendingSdrAutoSelectionForDeviceChange { get; set; }
@@ -40,7 +39,6 @@ internal sealed class CaptureModeSelectionState
             HasUserOverriddenFrameRateForCurrentMode,
             PendingSdrAutoSelectionForDeviceChange,
             PendingSdrAutoFriendlyFrameRateBucket,
-            ForceSourceAutoRetarget,
             LastKnownResolutionKey,
             LastSourceModeKey);
 
@@ -50,7 +48,6 @@ internal sealed class CaptureModeSelectionState
         HasUserOverriddenFrameRateForCurrentMode = values.HasUserOverriddenFrameRateForCurrentMode;
         PendingSdrAutoSelectionForDeviceChange = values.PendingSdrAutoSelectionForDeviceChange;
         PendingSdrAutoFriendlyFrameRateBucket = values.PendingSdrAutoFriendlyFrameRateBucket;
-        ForceSourceAutoRetarget = values.ForceSourceAutoRetarget;
         LastKnownResolutionKey = values.LastKnownResolutionKey;
         LastSourceModeKey = values.LastSourceModeKey;
     }
@@ -63,7 +60,6 @@ internal readonly record struct CaptureModeSelectionValues(
     bool HasUserOverriddenFrameRateForCurrentMode,
     bool PendingSdrAutoSelectionForDeviceChange,
     int? PendingSdrAutoFriendlyFrameRateBucket,
-    bool ForceSourceAutoRetarget,
     string? LastKnownResolutionKey,
     string? LastSourceModeKey);
 
@@ -108,7 +104,7 @@ internal readonly record struct MainViewModelCaptureSelectionSnapshot(
     string SourceTelemetrySummaryText,
     string SourceTargetSummaryText,
     CaptureModeSelectionValues ModeSelection,
-    bool PendingModeOptionsRefresh)
+    bool? PendingModeOptionsRefreshForceRetarget)
 {
     public bool MatchesSelectionState(MainViewModelCaptureSelectionSnapshot other)
         => ReferenceEquals(SelectedDevice, other.SelectedDevice) &&
@@ -131,7 +127,7 @@ internal readonly record struct MainViewModelCaptureSelectionSnapshot(
            string.Equals(HdrResolutionSupportHint, other.HdrResolutionSupportHint, StringComparison.Ordinal) &&
            string.Equals(SelectedRecordingFormat, other.SelectedRecordingFormat, StringComparison.Ordinal) &&
            ModeSelection == other.ModeSelection &&
-           PendingModeOptionsRefresh == other.PendingModeOptionsRefresh;
+           PendingModeOptionsRefreshForceRetarget == other.PendingModeOptionsRefreshForceRetarget;
 
     private static bool AreNullableEqual(double? left, double? right)
         => left.HasValue == right.HasValue && (!left.HasValue || AreEqual(left.Value, right!.Value));

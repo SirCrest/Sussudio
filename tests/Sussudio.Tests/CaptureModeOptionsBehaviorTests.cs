@@ -19,13 +19,11 @@ public sealed class CaptureModeOptionsBehaviorTests
     {
         var owner = new SelectionFixture();
         owner.SetSelection("HasUserOverriddenFrameRateForCurrentMode", true);
-        owner.SetSelection("ForceSourceAutoRetarget", true);
         owner.ApplyModeOptions(() => owner.ApplyModeOptions(() => owner.Set("SelectedResolution", "1920x1080")));
 
         Assert.Equal("1920x1080", owner.Get<string>("SelectedResolution"));
         Assert.False(owner.SelectionFlag("HasUserOverriddenResolutionForCurrentMode"));
         Assert.True(owner.SelectionFlag("HasUserOverriddenFrameRateForCurrentMode"));
-        Assert.True(owner.SelectionFlag("ForceSourceAutoRetarget"));
         Assert.True(owner.SelectionFlag("PendingSdrAutoSelectionForDeviceChange"));
         Assert.Equal(60, owner.Selection("PendingSdrAutoFriendlyFrameRateBucket"));
 
@@ -33,7 +31,6 @@ public sealed class CaptureModeOptionsBehaviorTests
 
         Assert.True(owner.SelectionFlag("HasUserOverriddenResolutionForCurrentMode"));
         Assert.False(owner.SelectionFlag("HasUserOverriddenFrameRateForCurrentMode"));
-        Assert.False(owner.SelectionFlag("ForceSourceAutoRetarget"));
         Assert.False(owner.SelectionFlag("PendingSdrAutoSelectionForDeviceChange"));
         Assert.Null(owner.Selection("PendingSdrAutoFriendlyFrameRateBucket"));
         Assert.False(owner.Rebuilding);
@@ -291,7 +288,7 @@ public sealed class CaptureModeOptionsBehaviorTests
         public void ApplyFrameRate(object? option, double fallback)
             => Call(ViewModel.GetType().GetMethod("ApplyResolvedFrameRateSelection", Instance)!, ViewModel, option, fallback);
         public void RebuildResolutions()
-            => Call(_optionController.GetType().GetMethod("RebuildResolutionOptions")!, _optionController);
+            => Call(_optionController.GetType().GetMethod("RebuildResolutionOptions")!, _optionController, false);
 
         public object AddFormat(uint width, uint height, double rate, string pixelFormat)
         {

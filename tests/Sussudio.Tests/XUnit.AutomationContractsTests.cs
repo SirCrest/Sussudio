@@ -6781,8 +6781,11 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "BitrateSampleWindow.cs")),
             "BitrateSampleWindow folded into MainViewModel.cs");
-        AssertContains(recordingRuntimeText, "_pendingModeOptionsRefresh = false;");
-        AssertContains(recordingRuntimeText, "RebuildResolutionOptions();");
+        AssertContains(recordingRuntimeText, "if (_pendingModeOptionsRefreshForceRetarget is bool forceSourceAutoRetarget)");
+        AssertContains(recordingRuntimeText, "_pendingModeOptionsRefreshForceRetarget = null;");
+        AssertContains(recordingRuntimeText, "RebuildResolutionOptions(forceSourceAutoRetarget);");
+        AssertContains(recordingRuntimeText, "private void SetPendingModeOptionsRefresh(bool forceSourceAutoRetarget)");
+        AssertContains(recordingRuntimeText, "_pendingModeOptionsRefreshForceRetarget == true || forceSourceAutoRetarget");
         AssertContains(runtimeLifecycleControllerText, "_context.UpdateRecordingStats();");
         AssertDoesNotContain(runtimeLifecycleControllerText, "private void UpdateRecordingStats()");
         AssertDoesNotContain(runtimeLifecycleControllerText, "private static double? ComputeAverageBitrate(");

@@ -101,11 +101,6 @@ internal static class DeviceModeSupportPolicy
                 return friendlyFps <= 30;
             }
 
-            if (format.Width <= 2560 && format.Height <= 1440)
-            {
-                return friendlyFps <= 60;
-            }
-
             return friendlyFps <= 60;
         }
 
@@ -1422,7 +1417,7 @@ internal static class FrameRateSourceFilterPolicy
 /// <summary>
 /// Pure frame-rate timing, rational parsing, and preferred-format ranking policy.
 /// </summary>
-internal static class FrameRateTimingPolicy
+internal static partial class FrameRateTimingPolicy
 {
     internal static IReadOnlyList<FrameRateTimingVariant> BuildTimingVariants(IEnumerable<MediaFormat> formats)
         => formats
@@ -1532,9 +1527,6 @@ internal static class FrameRateTimingPolicy
 
         return false;
     }
-
-    internal static bool IsFrameRateMatch(double a, double b, double tolerance = 0.01)
-        => Math.Abs(a - b) < tolerance;
 
     internal static bool IsFriendlyFrameRateMatch(double optionFriendlyRate, double requestedRate)
         => Math.Round(optionFriendlyRate) == Math.Round(requestedRate);

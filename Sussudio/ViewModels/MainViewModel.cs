@@ -614,7 +614,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private string? _pendingSavedDeviceId;
     private string? _pendingSavedVideoFormat;
     private SourceSignalTelemetrySnapshot _latestSourceTelemetry = SourceSignalTelemetrySnapshot.CreateUnavailable("telemetry-not-started");
-    private bool _pendingModeOptionsRefresh;
+    private bool? _pendingModeOptionsRefreshForceRetarget;
     private bool _suppressFormatChangeReinitialize;
     private bool _suppressHdrToggleReinitialize;
     private bool _isRevertingHdrToggle;
@@ -653,8 +653,11 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     /// Capture-mode transactions that coordinate option rebuilds, HDR/SDR changes,
     /// and active-preview reinitialization without duplicate property-change cascades.
     /// </summary>
-    private void RebuildResolutionOptions()
-        => _captureModeOptionRebuildController.RebuildResolutionOptions();
+    private void RebuildResolutionOptions(bool forceSourceAutoRetarget = false)
+        => _captureModeOptionRebuildController.RebuildResolutionOptions(forceSourceAutoRetarget);
+
+    private void SetPendingModeOptionsRefresh(bool forceSourceAutoRetarget)
+        => _pendingModeOptionsRefreshForceRetarget = _pendingModeOptionsRefreshForceRetarget == true || forceSourceAutoRetarget;
 
     private void RebuildFrameRateOptions()
         => _captureModeOptionRebuildController.RebuildFrameRateOptions();
@@ -709,7 +712,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             SourceTelemetrySummaryText,
             SourceTargetSummaryText,
             _captureModeSelection.Capture(),
-            _pendingModeOptionsRefresh);
+            _pendingModeOptionsRefreshForceRetarget);
 
     private bool RestoreCaptureSelectionSnapshotIfUnchanged(
         MainViewModelCaptureSelectionSnapshot snapshot,
@@ -792,7 +795,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             SourceTelemetrySummaryText = snapshot.SourceTelemetrySummaryText;
             SourceTargetSummaryText = snapshot.SourceTargetSummaryText;
             _captureModeSelection.Restore(snapshot.ModeSelection);
-            _pendingModeOptionsRefresh = snapshot.PendingModeOptionsRefresh;
+            _pendingModeOptionsRefreshForceRetarget = snapshot.PendingModeOptionsRefreshForceRetarget;
             UpdateTargetSummary();
             SaveSettings();
         }
@@ -890,7 +893,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
             if (IsRecording)
             {
-                _pendingModeOptionsRefresh = true;
+                SetPendingModeOptionsRefresh(forceSourceAutoRetarget: false);
             }
             else
             {
@@ -1035,7 +1038,6 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
         _captureModeSelection.HasUserOverriddenResolutionForCurrentMode = !IsAutoResolutionValue(value);
         _captureModeSelection.ClearPendingSdrAutoSelection();
-        _captureModeSelection.ForceSourceAutoRetarget = false;
         ResetFrameRateSelectionState();
         RebuildFrameRateOptions();
         UpdateTargetSummary();
@@ -2203,7 +2205,6 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     {
         ResetFrameRateSelectionState();
         _captureModeSelection.HasUserOverriddenResolutionForCurrentMode = false;
-        _captureModeSelection.ForceSourceAutoRetarget = false;
         _captureModeSelection.LastSourceModeKey = null;
         _captureModeSelection.ClearPendingSdrAutoSelection();
     }
@@ -2263,10 +2264,10 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             RecordingBitrateInfo = "--";
             _recordingBitrateSamples.Clear();
 
-            if (_pendingModeOptionsRefresh)
+            if (_pendingModeOptionsRefreshForceRetarget is bool forceSourceAutoRetarget)
             {
-                _pendingModeOptionsRefresh = false;
-                RebuildResolutionOptions();
+                _pendingModeOptionsRefreshForceRetarget = null;
+                RebuildResolutionOptions(forceSourceAutoRetarget);
             }
         }
     }
@@ -2563,7 +2564,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                     IsAutoResolutionValue = MainViewModel.IsAutoResolutionValue,
                     IsAutoFrameRateSelected = () => viewModel.IsAutoFrameRateSelected,
                     AvailableResolutionCount = () => viewModel.AvailableResolutions.Count,
-                    SetPendingModeOptionsRefresh = value => viewModel._pendingModeOptionsRefresh = value,
+                    SetPendingModeOptionsRefresh = viewModel.SetPendingModeOptionsRefresh,
                     RebuildResolutionOptions = viewModel.RebuildResolutionOptions,
                     UpdateTargetSummary = viewModel.UpdateTargetSummary,
                 });

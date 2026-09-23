@@ -293,7 +293,7 @@ internal sealed class CaptureOptionBindingController
                         _context.ViewModel.SelectedFrameRate = frameRate.Value;
                     }
                 }
-                else if (!CaptureComboBoxSelectionNormalizer.IsFrameRateMatch(frameRate.Value, _context.ViewModel.SelectedFrameRate))
+                else if (!FrameRateTimingPolicy.IsFrameRateMatch(frameRate.Value, _context.ViewModel.SelectedFrameRate))
                 {
                     _context.ViewModel.SelectedFrameRate = frameRate.Value;
                 }
@@ -810,13 +810,13 @@ internal sealed class CaptureSelectionBindingController
             return;
         }
 
-        if (!CaptureComboBoxSelectionNormalizer.IsFrameRateMatch(matchingRate.Value, _context.ViewModel.SelectedFrameRate))
+        if (!FrameRateTimingPolicy.IsFrameRateMatch(matchingRate.Value, _context.ViewModel.SelectedFrameRate))
         {
             _context.ViewModel.SelectedFrameRate = matchingRate.Value;
         }
 
         if (_context.FrameRateComboBox.SelectedItem is not FrameRateOption currentFps ||
-            !CaptureComboBoxSelectionNormalizer.IsFrameRateMatch(currentFps.Value, matchingRate.Value))
+            !FrameRateTimingPolicy.IsFrameRateMatch(currentFps.Value, matchingRate.Value))
         {
             _context.FrameRateComboBox.SelectedItem = matchingRate;
         }
@@ -1100,7 +1100,7 @@ internal static class CaptureComboBoxSelectionNormalizer
             }
         }
 
-        return options.FirstOrDefault(option => IsFrameRateMatch(option.Value, selectedFrameRate))
+        return options.FirstOrDefault(option => FrameRateTimingPolicy.IsFrameRateMatch(option.Value, selectedFrameRate))
             ?? options.FirstOrDefault(option => option.IsEnabled)
             ?? options.FirstOrDefault();
     }
@@ -1118,9 +1118,6 @@ internal static class CaptureComboBoxSelectionNormalizer
             ?? items.FirstOrDefault();
         return string.IsNullOrWhiteSpace(match) ? null : match;
     }
-
-    public static bool IsFrameRateMatch(double a, double b, double tolerance = 0.01)
-        => Math.Abs(a - b) < tolerance;
 
     public static bool IsAutoFrameRateOption(FrameRateOption option)
         => option.Value <= 0 || option.FriendlyValue <= 0;
