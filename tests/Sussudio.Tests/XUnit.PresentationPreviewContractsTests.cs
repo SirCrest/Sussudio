@@ -3415,14 +3415,9 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         recorder.IsPreviewing = true;
         var stopFailure = new InvalidOperationException("test teardown failure");
         recorder.StopFailure = stopFailure;
-        try
-        {
-            await pending[2].Operation().ConfigureAwait(false);
-            throw new InvalidOperationException("Throwing teardown unexpectedly completed.");
-        }
-        catch (InvalidOperationException error) when (ReferenceEquals(error, stopFailure))
-        {
-        }
+        var thrownStopFailure = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => pending[2].Operation()).ConfigureAwait(false);
+        Assert.Same(stopFailure, thrownStopFailure);
 
         AssertEqual(1, recorder.StatusTexts.Count, "throwing teardown does not publish completion status");
         InvokePreviewStartup(controller, "ScheduleFailureStop", "after-throw");

@@ -282,24 +282,7 @@ static partial class Program
             cancellation.Cancel();
             if (childId is null && File.Exists(readyPath) && int.TryParse(File.ReadAllText(readyPath), out var recordedId))
                 childId = recordedId;
-            if (childId is { } ownedId)
-            {
-                try
-                {
-                    using var child = Process.GetProcessById(ownedId);
-                    if (!child.HasExited)
-                    {
-                        child.Kill(entireProcessTree: true);
-                        await child.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(3)).ConfigureAwait(false);
-                    }
-                }
-                catch (ArgumentException) { }
-            }
-            if (run is not null)
-            {
-                try { await run.WaitAsync(TimeSpan.FromSeconds(5)).ConfigureAwait(false); }
-                catch (OperationCanceledException) { }
-            }
+            if (run is not null) await StopPresentMonTestRunAsync(run, childId).ConfigureAwait(false);
             if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
         }
     }

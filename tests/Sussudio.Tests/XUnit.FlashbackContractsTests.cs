@@ -5726,14 +5726,9 @@ static partial class Program
 
         decoder.Dispose();
 
-        try
-        {
-            initialize.Invoke(decoder, new object[] { IntPtr.Zero, IntPtr.Zero });
-            throw new InvalidOperationException("Expected disposed decoder initialization to be rejected.");
-        }
-        catch (TargetInvocationException ex) when (ex.InnerException is ObjectDisposedException)
-        {
-        }
+        var invocation = Assert.Throws<TargetInvocationException>(
+            () => initialize.Invoke(decoder, new object[] { IntPtr.Zero, IntPtr.Zero }));
+        Assert.IsType<ObjectDisposedException>(invocation.InnerException);
 
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
             .Replace("\r\n", "\n");

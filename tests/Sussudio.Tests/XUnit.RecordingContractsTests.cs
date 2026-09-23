@@ -6299,14 +6299,9 @@ static partial class Program
             var initialize = managerType.GetMethod("Initialize")
                 ?? throw new InvalidOperationException("FlashbackBufferManager.Initialize not found.");
 
-            try
-            {
-                initialize.Invoke(manager, new object[] { "..\\outside-session" });
-                throw new InvalidOperationException("Expected unsafe session id to be rejected.");
-            }
-            catch (TargetInvocationException ex) when (ex.InnerException is ArgumentException)
-            {
-            }
+            var invocation = Assert.Throws<TargetInvocationException>(
+                () => initialize.Invoke(manager, new object[] { "..\\outside-session" }));
+            Assert.IsType<ArgumentException>(invocation.InnerException);
 
             AssertEqual(false, Directory.Exists(Path.Combine(Directory.GetParent(tempDir)!.FullName, "outside-session")), "Unsafe session id must not create outside directory");
         }
@@ -6348,14 +6343,9 @@ static partial class Program
             var mp4Path = (string)generatePath.Invoke(manager, null)!;
             AssertEqual(true, mp4Path.EndsWith(".mp4", StringComparison.Ordinal), "MP4 extension normalized");
 
-            try
-            {
-                setExtension.Invoke(manager, new object[] { "..\\escape.ts" });
-                throw new InvalidOperationException("Expected unsafe segment extension to be rejected.");
-            }
-            catch (TargetInvocationException ex) when (ex.InnerException is ArgumentException)
-            {
-            }
+            var invocation = Assert.Throws<TargetInvocationException>(
+                () => setExtension.Invoke(manager, new object[] { "..\\escape.ts" }));
+            Assert.IsType<ArgumentException>(invocation.InnerException);
         }
         finally
         {
