@@ -4512,13 +4512,13 @@ static partial class Program
         AssertContains(flashbackBackendResourcesText, "Clear();");
         AssertContains(flashbackBackendResourcesText, "public async Task StartPreviewBackendAsync(");
         AssertContains(flashbackBackendResourcesText, "var bufferManager = new FlashbackBufferManager(");
-        AssertContains(flashbackBackendResourcesText, "flashbackSink.SetFatalErrorCallback(request.FatalErrorCallback);");
-        AssertContains(flashbackBackendResourcesText, "flashbackSink.FrameEncoded += request.FrameEncodedHandler;");
+        AssertContains(flashbackBackendResourcesText, "flashbackSink.SetFatalErrorCallback(_onFatalError);");
+        AssertContains(flashbackBackendResourcesText, "flashbackSink.FrameEncoded += _onFrameEncodedHandler;");
         AssertContains(flashbackBackendResourcesText, "Install(");
         AssertContains(flashbackBackendResourcesText, "AttachProducers(");
         AssertContains(flashbackBackendResourcesText, "playbackController.Initialize(");
         AssertContains(flashbackBackendResourcesText, "private async Task RollBackPreviewBackendStartAsync(");
-        AssertContains(flashbackBackendResourcesText, "flashbackSink.FrameEncoded -= request.FrameEncodedHandler;");
+        AssertContains(flashbackBackendResourcesText, "flashbackSink.FrameEncoded -= _onFrameEncodedHandler;");
         AssertContains(flashbackBackendResourcesText, "ScheduleDeferredArtifactCleanup(");
         AssertDoesNotContain(captureServiceText, "var bufferManager = new FlashbackBufferManager(");
         AssertDoesNotContain(captureServiceText, "FlashbackPlaybackController? playbackController = null;");
@@ -5134,6 +5134,9 @@ static partial class Program
         AssertContains(coordinatorText, "public bool PropagateCancellationToOperation { get; init; }");
         AssertContains(coordinatorText, "bool propagateCancellationToOperation = false");
         AssertContains(coordinatorText, "propagateCancellationToOperation: true");
+        AssertContains(coordinatorText, "A caller cancellation token cancels the returned task immediately and prevents queued work");
+        AssertContains(coordinatorText, "when that enqueue explicitly opts into propagation");
+        AssertContains(coordinatorText, "coordinator disposal uses its separate");
 
         return Task.CompletedTask;
     }
@@ -9543,7 +9546,7 @@ static partial class Program
         AssertContains(diagnostics.SourceFamilyText, "string.Equals(reason, \"force_rotate_queue_guard\"");
         AssertContains(diagnostics.SourceFamilyText, "flashback recording active={health.FlashbackActive}");
         AssertContains(diagnostics.SourceFamilyText, "fatalCleanup={health.FatalCleanupInProgress} flashbackCleanup={health.FlashbackCleanupInProgress}");
-        AssertContains(diagnostics.SourceFamilyText, "var recordingIntegrityIncomplete =");
+        AssertContains(diagnostics.SourceFamilyText, "var recordingIntegrityFailed =");
         AssertContains(diagnostics.SourceFamilyText, "captureRuntime.RecordingIntegrityStatus is RecordingIntegrityStatus.Incomplete or RecordingIntegrityStatus.Failed");
         AssertContains(diagnostics.SourceFamilyText, "idleRecordingIntegrityFailed");
         AssertContains(diagnostics.SourceFamilyText, "var flashbackRecordingDegraded =");

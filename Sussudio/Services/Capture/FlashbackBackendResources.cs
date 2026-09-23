@@ -30,9 +30,6 @@ internal readonly record struct FlashbackBufferCycleRequest(
     CaptureSettings Settings,
     CaptureSettings SettingsSnapshot,
     Func<FlashbackSessionContext> CreateSessionContext,
-    Action<Exception> FatalErrorCallback,
-    EventHandler<long> FrameEncodedHandler,
-    Action ClearLastFailure,
     bool PurgeSegments,
     CancellationToken CancellationToken);
 
@@ -60,7 +57,6 @@ internal readonly record struct FlashbackPreviewBackendDisposalRequest(
     UnifiedVideoCapture? VideoCapture,
     WasapiAudioCapture? AudioCapture,
     WasapiAudioCapture? MicrophoneCapture,
-    EventHandler<long> FrameEncodedHandler,
     bool PurgeSegments,
     bool DetachMicrophoneWriter,
     CancellationToken CancellationToken);
@@ -80,8 +76,6 @@ internal readonly record struct FlashbackPreviewBackendStartRequest(
     CaptureSettings Settings,
     CaptureSettings SettingsSnapshot,
     Func<FlashbackSessionContext> CreateSessionContext,
-    Action<Exception> FatalErrorCallback,
-    EventHandler<long> FrameEncodedHandler,
     CancellationToken CancellationToken);
 
 /// <summary>
@@ -93,15 +87,24 @@ internal sealed class FlashbackBackendResources
 {
     // CaptureService owns and disposes this shared gate.
     private readonly SemaphoreSlim _exportOperationLock;
+    private readonly Action<Exception> _onFatalError;
+    private readonly EventHandler<long> _onFrameEncodedHandler;
     private FlashbackPlaybackController? _playbackController;
     private FlashbackPlaybackController? _preWarmedPlaybackController;
     private Action<FlashbackPlaybackState, FlashbackPlaybackState, string>? _playbackStateChangedHandler;
     private long _playbackControllerGeneration;
 
-    public FlashbackBackendResources(SemaphoreSlim exportOperationLock)
+    public FlashbackBackendResources(
+        SemaphoreSlim exportOperationLock,
+        Action<Exception> onFatalError,
+        EventHandler<long> onFrameEncoded)
     {
         ArgumentNullException.ThrowIfNull(exportOperationLock);
+        ArgumentNullException.ThrowIfNull(onFatalError);
+        ArgumentNullException.ThrowIfNull(onFrameEncoded);
         _exportOperationLock = exportOperationLock;
+        _onFatalError = onFatalError;
+        _onFrameEncodedHandler = onFrameEncoded;
     }
 
     public FlashbackBufferManager? BufferManager { get; private set; }
@@ -262,9 +265,6 @@ internal sealed class FlashbackBackendResources
         Action<FlashbackBufferManager?, string> resumeEvictionBestEffort,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(exportRecordingAsync);
-        ArgumentNullException.ThrowIfNull(resumeEvictionBestEffort);
-
         var flashbackSink = Sink
             ?? throw new InvalidOperationException("Flashback recording backend is not active.");
         var bufferManager = BufferManager;
@@ -386,13 +386,6 @@ internal sealed class FlashbackBackendResources
     public async Task<FlashbackBufferCycleOutcome> CycleSinkOnlyAsync(
         FlashbackBufferCycleRequest request)
     {
-        ArgumentNullException.ThrowIfNull(request.VideoCapture);
-        ArgumentNullException.ThrowIfNull(request.Settings);
-        ArgumentNullException.ThrowIfNull(request.CreateSessionContext);
-        ArgumentNullException.ThrowIfNull(request.FatalErrorCallback);
-        ArgumentNullException.ThrowIfNull(request.FrameEncodedHandler);
-        ArgumentNullException.ThrowIfNull(request.ClearLastFailure);
-
         var bufferManager = BufferManager
             ?? throw new InvalidOperationException("Flashback buffer manager is not active.");
         var oldSink = Sink
@@ -506,7 +499,7 @@ internal sealed class FlashbackBackendResources
                 request.MicrophoneCapture,
                 "FLASHBACK_CYCLE_DETACH_WARN",
                 DetachMicrophoneWriter: true));
-        oldSink.FrameEncoded -= request.FrameEncodedHandler;
+        oldSink.FrameEncoded -= _onFrameEncodedHandler;
     }
 
     private static async Task StopAndDisposeOldSinkForBufferCycleAsync(
@@ -544,7 +537,7 @@ internal sealed class FlashbackBackendResources
         CancellationToken committedCycleToken)
     {
         var newSink = new FlashbackEncoderSink(bufferManager);
-        newSink.SetFatalErrorCallback(request.FatalErrorCallback);
+        newSink.SetFatalErrorCallback(_onFatalError);
         try
         {
             // When preserving DVR history (no purge), continue PTS from where
@@ -555,10 +548,9 @@ internal sealed class FlashbackBackendResources
                 ptsBaseOffset: ptsOffset,
                 cancellationToken: committedCycleToken).ConfigureAwait(false);
 
-            newSink.FrameEncoded += request.FrameEncodedHandler;
+            newSink.FrameEncoded += _onFrameEncodedHandler;
             Sink = newSink;
             SettingsSnapshot = request.SettingsSnapshot;
-            request.ClearLastFailure();
             AttachProducers(
                 new FlashbackProducerAttachRequest(
                     request.VideoCapture,
@@ -598,11 +590,11 @@ internal sealed class FlashbackBackendResources
         }
     }
 
-    private static async Task CleanupFailedReplacementSinkForBufferCycleAsync(
+    private async Task CleanupFailedReplacementSinkForBufferCycleAsync(
         FlashbackEncoderSink newSink,
         FlashbackBufferCycleRequest request)
     {
-        try { newSink.FrameEncoded -= request.FrameEncodedHandler; }
+        try { newSink.FrameEncoded -= _onFrameEncodedHandler; }
         catch (Exception detachEx) { Logger.Log($"FLASHBACK_CYCLE_NEW_SINK_EVENT_DETACH_WARN type={detachEx.GetType().Name} msg={detachEx.Message}"); }
         try { request.VideoCapture.SetFlashbackSink(null); }
         catch (Exception detachEx) { Logger.Log($"FLASHBACK_CYCLE_NEW_SINK_DETACH_WARN type={detachEx.GetType().Name} msg={detachEx.Message}"); }
@@ -618,8 +610,6 @@ internal sealed class FlashbackBackendResources
     public async Task DisposePreviewBackendUnderExportLockAsync(
         FlashbackPreviewBackendDisposalRequest request)
     {
-        ArgumentNullException.ThrowIfNull(request.FrameEncodedHandler);
-
         var flashbackSink = Sink;
         var flashbackBufferManager = BufferManager;
         var flashbackExporter = Exporter;
@@ -653,7 +643,7 @@ internal sealed class FlashbackBackendResources
         Task sinkCompletionTask = Task.CompletedTask;
         if (flashbackSink != null)
         {
-            flashbackSink.FrameEncoded -= request.FrameEncodedHandler;
+            flashbackSink.FrameEncoded -= _onFrameEncodedHandler;
             try
             {
                 // Once feeds are detached, finish the bounded sink drain even if the
@@ -730,8 +720,6 @@ internal sealed class FlashbackBackendResources
         FlashbackBackendArtifactCleanupRequest request,
         int attempt = 0)
     {
-        ArgumentNullException.ThrowIfNull(sinkCompletionTask);
-
         _ = Task.Run(async () =>
         {
             try
@@ -861,12 +849,6 @@ internal sealed class FlashbackBackendResources
     public async Task StartPreviewBackendAsync(
         FlashbackPreviewBackendStartRequest request)
     {
-        ArgumentNullException.ThrowIfNull(request.VideoCapture);
-        ArgumentNullException.ThrowIfNull(request.Settings);
-        ArgumentNullException.ThrowIfNull(request.CreateSessionContext);
-        ArgumentNullException.ThrowIfNull(request.FatalErrorCallback);
-        ArgumentNullException.ThrowIfNull(request.FrameEncodedHandler);
-
         var bufferMinutes = request.Settings.FlashbackBufferMinutes > 0
             ? request.Settings.FlashbackBufferMinutes
             : 5;
@@ -885,7 +867,7 @@ internal sealed class FlashbackBackendResources
         });
         bufferManager.Initialize(Guid.NewGuid().ToString("N"));
         var flashbackSink = new FlashbackEncoderSink(bufferManager);
-        flashbackSink.SetFatalErrorCallback(request.FatalErrorCallback);
+        flashbackSink.SetFatalErrorCallback(_onFatalError);
         var flashbackExporter = new FlashbackExporter();
         FlashbackPlaybackController? playbackController = null;
 
@@ -894,7 +876,7 @@ internal sealed class FlashbackBackendResources
             await flashbackSink.StartAsync(
                 request.CreateSessionContext(),
                 cancellationToken: request.CancellationToken).ConfigureAwait(false);
-            flashbackSink.FrameEncoded += request.FrameEncodedHandler;
+            flashbackSink.FrameEncoded += _onFrameEncodedHandler;
 
             playbackController = new FlashbackPlaybackController(bufferManager)
             {
@@ -946,7 +928,7 @@ internal sealed class FlashbackBackendResources
         FlashbackExporter flashbackExporter,
         FlashbackPlaybackController? playbackController)
     {
-        flashbackSink.FrameEncoded -= request.FrameEncodedHandler;
+        flashbackSink.FrameEncoded -= _onFrameEncodedHandler;
         DetachProducers(
             new FlashbackProducerDetachRequest(
                 request.VideoCapture,

@@ -226,7 +226,10 @@ public sealed class FlashbackBackendCleanupTests
             File.WriteAllText(SegmentPath, "retained segment");
             _exporter = Activator.CreateInstance(TypeOf("Sussudio.Services.Flashback.FlashbackExporter"))!;
             _backend = Activator.CreateInstance(
-                TypeOf("Sussudio.Services.Capture.FlashbackBackendResources"), ExportOperationLock)!;
+                TypeOf("Sussudio.Services.Capture.FlashbackBackendResources"),
+                ExportOperationLock,
+                new Action<Exception>(_ => { }),
+                new EventHandler<long>((_, _) => { }))!;
             Invoke(_backend, "Install", _buffer, null, _exporter, null, null);
         }
 
@@ -246,7 +249,6 @@ public sealed class FlashbackBackendCleanupTests
                 new object?[]
                 {
                     null, null, null,
-                    new EventHandler<long>((_, _) => { }),
                     purgeSegments, true, cancellationToken
                 })!;
             _cleanupScheduled = purgeSegments && cancellationToken.IsCancellationRequested;

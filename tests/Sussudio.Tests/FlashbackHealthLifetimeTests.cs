@@ -177,7 +177,11 @@ public sealed class FlashbackHealthLifetimeTests
 
         public BackendFixture()
         {
-            Backend = Activator.CreateInstance(TypeOf("Sussudio.Services.Capture.FlashbackBackendResources"), _exportOperationLock)!;
+            Backend = Activator.CreateInstance(
+                TypeOf("Sussudio.Services.Capture.FlashbackBackendResources"),
+                _exportOperationLock,
+                new Action<Exception>(_ => { }),
+                new EventHandler<long>((_, _) => { }))!;
             _bufferManager = Activator.CreateInstance(TypeOf("Sussudio.Services.Flashback.FlashbackBufferManager"), new object?[] { null })!;
             var stateChanged = Backend.GetType().GetEvent("PlaybackStateChanged")!;
             var change = Expression.Parameter(stateChanged.EventHandlerType!.GetMethod("Invoke")!.GetParameters()[0].ParameterType, "change");

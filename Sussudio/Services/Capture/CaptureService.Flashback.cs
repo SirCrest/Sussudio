@@ -296,8 +296,6 @@ public partial class CaptureService
                         settings,
                         CloneCaptureSettings(settings),
                         () => CreateFlashbackSessionContext(unifiedVideoCapture, settings),
-                        OnFlashbackBackendFatalError,
-                        OnFlashbackFrameEncoded,
                         cancellationToken))
                 .ConfigureAwait(false);
 
@@ -351,7 +349,6 @@ public partial class CaptureService
             _videoPipeline.Capture,
             _previewAudioGraph.ProgramCapture,
             _previewAudioGraph.MicrophoneCapture,
-            OnFlashbackFrameEncoded,
             purgeSegments,
             detachMicrophoneWriter,
             cancellationToken);
@@ -595,12 +592,14 @@ public partial class CaptureService
                         currentSettings,
                         CloneCaptureSettings(currentSettings),
                         () => CreateFlashbackSessionContext(unifiedVideoCapture, currentSettings),
-                        OnFlashbackBackendFatalError,
-                        OnFlashbackFrameEncoded,
-                        ClearLastFlashbackFailure,
                         effectivePurgeSegments,
                         cancellationToken))
                 .ConfigureAwait(false);
+
+            if (cycleOutcome == FlashbackBufferCycleOutcome.SinkOnly)
+            {
+                ClearLastFlashbackFailure();
+            }
 
             if (cycleOutcome == FlashbackBufferCycleOutcome.DeferredFullRebuild)
             {

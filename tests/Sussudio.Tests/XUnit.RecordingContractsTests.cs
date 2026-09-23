@@ -1457,8 +1457,9 @@ static partial class Program
         AssertFlashbackBufferRecoveryPolicy(flashbackSource, flashbackBufferSource, flashbackCleanupSource);
         AssertContains(captureServiceSource, "libAvSink.OnEncodingFailed = OnRecordingBackendFatalError");
         AssertContains(captureServiceSource, "OnFlashbackBackendFatalError,");
-        AssertContains(flashbackBackendSource, "flashbackSink.SetFatalErrorCallback(request.FatalErrorCallback)");
-        AssertContains(flashbackBackendSource, "newSink.SetFatalErrorCallback(request.FatalErrorCallback)");
+        AssertContains(flashbackBackendSource, "flashbackSink.SetFatalErrorCallback(_onFatalError)");
+        AssertContains(flashbackBackendSource, "newSink.SetFatalErrorCallback(_onFatalError)");
+        AssertContains(flashbackBackendSource, "oldSink.FrameEncoded -= _onFrameEncodedHandler;");
         AssertContains(captureServiceSource, "if (sink == null && controller is { IsDisposed: false, IsInitialized: true })");
         AssertContains(captureServiceSource, "controller.PrepareForPreviewDetach();");
         AssertOccursBefore(captureServiceSource, "controller.PrepareForPreviewDetach();", "_videoPipeline.SetPreviewFrameSink(sink);");
@@ -1493,7 +1494,7 @@ static partial class Program
         AssertContains(flashbackBackendSource, "FLASHBACK_RECOVERY_PRESERVE");
         AssertContains(flashbackBackendSource, "ClearRecoveryPreserve();");
         AssertContains(flashbackBackendSource, "FLASHBACK_PREVIEW_ROLLBACK_PURGE_WARN");
-        AssertContains(flashbackBackendSource, "flashbackSink.FrameEncoded -= request.FrameEncodedHandler;");
+        AssertContains(flashbackBackendSource, "flashbackSink.FrameEncoded -= _onFrameEncodedHandler;");
         AssertContains(flashbackBackendSource, "FLASHBACK_PREVIEW_ROLLBACK_PLAYBACK_WARN");
         AssertContains(captureServiceSource, "_flashbackBackend.ResolveSegmentPurge");
         AssertContains(flashbackBackendSource, "FLASHBACK_SEGMENT_PURGE_BLOCKED");
@@ -1974,7 +1975,7 @@ static partial class Program
         AssertContains(cycleNewSinkStart, "new FlashbackProducerAttachRequest(");
         AssertContains(cycleNewSinkStart, "\"buffer_cycle\"");
         AssertContains(cycleNewSinkStart, "FLASHBACK_BUFFER_CYCLE_CANCEL_DEFERRED");
-        AssertContains(cycleNewSinkStart, "newSink.FrameEncoded -= request.FrameEncodedHandler;");
+        AssertContains(cycleNewSinkStart, "newSink.FrameEncoded -= _onFrameEncodedHandler;");
         AssertContains(cycleNewSinkStart, "request.VideoCapture.SetFlashbackSink(null);");
         AssertContains(cycleNewSinkStart, "request.AudioCapture?.DetachFlashbackSink();");
         AssertContains(cycleNewSinkStart, "request.MicrophoneCapture?.SetAudioWriter(null);");
@@ -3554,8 +3555,8 @@ static partial class Program
         AssertContains(backendSource, "internal readonly record struct FlashbackPreviewBackendStartRequest(");
         AssertContains(backendSource, "public async Task StartPreviewBackendAsync(");
         AssertContains(backendSource, "var bufferManager = new FlashbackBufferManager(");
-        AssertContains(backendSource, "flashbackSink.SetFatalErrorCallback(request.FatalErrorCallback);");
-        AssertContains(backendSource, "flashbackSink.FrameEncoded += request.FrameEncodedHandler;");
+        AssertContains(backendSource, "flashbackSink.SetFatalErrorCallback(_onFatalError);");
+        AssertContains(backendSource, "flashbackSink.FrameEncoded += _onFrameEncodedHandler;");
         AssertContains(backendSource, "Install(");
         AssertContains(backendSource, "AttachProducers(");
         AssertContains(backendSource, "playbackController.Initialize(");
@@ -3564,7 +3565,11 @@ static partial class Program
         AssertContains(backendSource, "internal readonly record struct FlashbackBackendArtifactCleanupRequest(");
         AssertContains(backendSource, "private void ScheduleDeferredArtifactCleanup(");
         AssertContains(backendSource, "private async Task<bool> CleanupArtifactsAfterExportAsync(");
-        AssertContains(backendSource, "public FlashbackBackendResources(SemaphoreSlim exportOperationLock)");
+        AssertContains(backendSource, "public FlashbackBackendResources(");
+        AssertContains(backendSource, "Action<Exception> onFatalError,");
+        AssertContains(backendSource, "EventHandler<long> onFrameEncoded)");
+        AssertContains(backendSource, "private readonly Action<Exception> _onFatalError;");
+        AssertContains(backendSource, "private readonly EventHandler<long> _onFrameEncodedHandler;");
         AssertContains(backendSource, "private static bool CleanupArtifactsUnderExportLock(");
         AssertDoesNotContain(backendSource, "ExportOperationLockAlreadyHeld");
         AssertContains(backendSource, "public async Task<FinalizeResult> FinalizeRecordingAsync(");
@@ -3586,14 +3591,19 @@ static partial class Program
         AssertContains(backendSource, "private void DetachProducers(FlashbackProducerDetachRequest request)");
         AssertContains(backendSource, "internal readonly record struct FlashbackBufferCycleRequest(");
         AssertContains(backendSource, "public async Task<FlashbackBufferCycleOutcome> CycleSinkOnlyAsync(");
-        AssertContains(backendSource, "newSink.SetFatalErrorCallback(request.FatalErrorCallback);");
-        AssertContains(backendSource, "newSink.FrameEncoded += request.FrameEncodedHandler;");
+        AssertContains(backendSource, "newSink.SetFatalErrorCallback(_onFatalError);");
+        AssertContains(backendSource, "newSink.FrameEncoded += _onFrameEncodedHandler;");
         AssertContains(backendSource, "SettingsSnapshot = request.SettingsSnapshot;");
         AssertContains(backendSource, "private void ClearSinkAndSettings()");
         AssertContains(backendSource, "private void Clear()");
 
         AssertContains(captureSource, "private readonly FlashbackBackendResources _flashbackBackend;");
-        AssertContains(captureSource, "_flashbackBackend = new FlashbackBackendResources(_flashbackExportOperationLock);");
+        AssertContains(captureSource, "_flashbackBackend = new FlashbackBackendResources(");
+        AssertContains(captureSource, "OnFlashbackBackendFatalError,");
+        AssertContains(captureSource, "OnFlashbackFrameEncoded);");
+        AssertContains(
+            captureSource,
+            "if (cycleOutcome == FlashbackBufferCycleOutcome.SinkOnly)\n            {\n                ClearLastFlashbackFailure();\n            }");
         AssertDoesNotContain(captureSource, "_flashbackBufferManager");
         AssertDoesNotContain(captureSource, "_flashbackSink");
         AssertDoesNotContain(captureSource, "_flashbackExporter");
@@ -3617,6 +3627,19 @@ static partial class Program
         AssertContains(backendSource, "Clear();");
         AssertDoesNotContain(captureSource, "var bufferManager = new FlashbackBufferManager(");
         AssertDoesNotContain(captureSource, "FlashbackPlaybackController? playbackController = null;");
+
+        var flashbackCleanup = ExtractSourceBlock(
+            captureSource,
+            "private void BeginFlashbackBackendCleanup(Exception ex)",
+            "private static bool IsGpuDeviceLost(Exception ex)");
+        AssertContains(flashbackCleanup, "finally\n                    {\n                        try\n                        {\n                            StatusChanged?.Invoke(this, $\"Flashback error: {ex.Message}\");");
+        AssertContains(flashbackCleanup, "catch (Exception statusEx)");
+        AssertContains(flashbackCleanup, "catch (Exception restartEx)");
+        AssertOccursBefore(
+            flashbackCleanup,
+            "StatusChanged?.Invoke(this, $\"Flashback error: {ex.Message}\");",
+            "TryScheduleFlashbackAutoRestart(ex, generationAtFault);");
+        AssertContains(flashbackCleanup, "FLASHBACK_AUTO_RESTART_SCHEDULE_WARN cause={ex.GetType().Name}");
 
         return Task.CompletedTask;
     }
@@ -3830,7 +3853,7 @@ static partial class Program
         AssertContains(backendResourcesText, "private FlashbackBufferCyclePlaybackState DisposePlaybackForBufferCycle(");
         AssertContains(backendResourcesText, "private static async Task StopAndDisposeOldSinkForBufferCycleAsync(");
         AssertContains(backendResourcesText, "private async Task<bool> TryStartReplacementSinkForBufferCycleAsync(");
-        AssertContains(backendResourcesText, "private static async Task CleanupFailedReplacementSinkForBufferCycleAsync(");
+        AssertContains(backendResourcesText, "private async Task CleanupFailedReplacementSinkForBufferCycleAsync(");
         AssertContains(backendResourcesText, "public async Task<FlashbackBufferCycleOutcome> CycleSinkOnlyAsync(");
         AssertContains(backendResourcesText, "public async Task StartPreviewBackendAsync(");
         AssertContains(backendResourcesText, "private async Task RollBackPreviewBackendStartAsync(");
