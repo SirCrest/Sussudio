@@ -60,8 +60,8 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameTryEncode
     private int _height;
     private bool _audioEnabled;
     private bool _microphoneEnabled;
-    private bool _started;
-    private bool _disposed;
+    private volatile bool _started;
+    private volatile bool _disposed;
     private int _disposeFinalized;
     private int _deferredDisposeScheduled;
     private int _finalizationWaitTimedOut;
@@ -164,7 +164,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameTryEncode
 
         try
         {
-            LibAvEncoder.InitializeFFmpeg(requireNativeRuntime: true);
+            FfmpegRuntimeInit.EnsureInitialized(requireNativeRuntime: true);
 
             _microphoneEnabled = context.MicrophoneEnabled;
             var options = CreateOptions(context);
@@ -638,11 +638,17 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameTryEncode
             if (remainingMs <= 0)
             {
                 var noProgressMs = now - Interlocked.Read(ref _lastFinalizationProgressTick);
-                if (progressDeadline <= absoluteDeadline && now >= progressDeadline)
+                if (progressDeadline < absoluteDeadline && now >= progressDeadline)
                 {
                     Logger.Log(
                         $"LIBAV_SINK_FINALIZE_NO_PROGRESS_TIMEOUT stage={Volatile.Read(ref _finalizationStage)} no_progress_ms={noProgressMs}");
                     ReportFinalizationProgress(noProgressWarning: true);
+                }
+                else if (now >= absoluteDeadline)
+                {
+                    Logger.Log(
+                        $"LIBAV_SINK_FINALIZE_ABSOLUTE_TIMEOUT timeout_ms={timeoutMs} stage={Volatile.Read(ref _finalizationStage)} no_progress_ms={noProgressMs}");
+                    ReportFinalizationProgress(noProgressWarning: false);
                 }
                 return false;
             }

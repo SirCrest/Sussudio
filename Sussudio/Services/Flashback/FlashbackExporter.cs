@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using FFmpeg.AutoGen;
 using Sussudio.Models;
 using Sussudio.Services.Recording;
+using Sussudio.Services.Runtime;
 
 namespace Sussudio.Services.Flashback;
 
@@ -806,7 +807,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                     return FlashbackExportFailureCodes.Create(outputPath, message, FlashbackExportFailureCodes.InvalidOutputPath);
                 }
 
-                LibAvEncoder.InitializeFFmpeg(requireNativeRuntime: true);
+                FfmpegRuntimeInit.EnsureInitialized(requireNativeRuntime: true);
 
                 Logger.Log($"FLASHBACK_EXPORT_START input='{inputPath}' in_ms={(long)inPoint.TotalMilliseconds} out_ms={(long)(outPoint == TimeSpan.MaxValue ? -1 : outPoint.TotalMilliseconds)} output='{outputPath}'");
                 ReportProgress(progress, new ExportProgress(0, 1, 0), "single_start");
@@ -1750,7 +1751,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                     return FlashbackExportFailureCodes.Create(outputPath, message, FlashbackExportFailureCodes.InvalidOutputPath);
                 }
 
-                LibAvEncoder.InitializeFFmpeg(requireNativeRuntime: true);
+                FfmpegRuntimeInit.EnsureInitialized(requireNativeRuntime: true);
 
                 Logger.Log($"FLASHBACK_EXPORT_SEGMENTS_START segments={segments.Count} in_ms={(long)inPoint.TotalMilliseconds} out_ms={(long)(outPoint == TimeSpan.MaxValue ? -1 : outPoint.TotalMilliseconds)} output='{outputPath}'");
                 ReportProgress(progress, new ExportProgress(0, segments.Count, 0), "segments_start");

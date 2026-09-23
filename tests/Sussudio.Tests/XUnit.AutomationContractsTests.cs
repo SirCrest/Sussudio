@@ -3049,7 +3049,7 @@ static partial class Program
 
         AssertContains(appRootSource, "Logger.Initialize(logRoot);");
         AssertOccursBefore(appRootSource, "Logger.Initialize(logRoot);", "InitializeComponent();");
-        AssertContains(appRootSource, "LibAvEncoder.InitializeFFmpeg(requireNativeRuntime: true);");
+        AssertContains(appRootSource, "FfmpegRuntimeInit.EnsureInitialized(requireNativeRuntime: true);");
         AssertContains(appRootSource, "UnhandledException += App_UnhandledException;");
         AssertContains(appRootSource, "AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;");
         AssertContains(appRootSource, "private static bool IsRecoverableUnhandled(Exception ex)");

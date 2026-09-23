@@ -151,11 +151,6 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
         }
     }
 
-
-    /// <summary>Forwards to <see cref="FfmpegRuntimeInit.EnsureInitialized"/>.</summary>
-    public static void InitializeFFmpeg(bool requireNativeRuntime)
-        => FfmpegRuntimeInit.EnsureInitialized(requireNativeRuntime);
-
     private static void ValidateOptions(LibAvEncoderOptions options)
     {
         ValidateRequiredVideoOptions(options);

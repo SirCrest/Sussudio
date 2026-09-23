@@ -242,7 +242,7 @@ public sealed class FlashbackSinkHardeningTests
     [Fact]
     public void EncodingLoop_FailsFast_WhenDiskCriticallyLow()
     {
-        var method = global::Program.ExtractDeclaredMemberCode(Source(), "private TimeSpan OnVideoFrameEncoded");
+        var method = global::Program.ExtractDeclaredMemberCode(Source(), "private TimeSpan AdvanceEncodedVideoFrameAndGetPts");
         Assert.Contains("IsDiskCriticallyLow", method);
     }
 

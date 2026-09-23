@@ -194,7 +194,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameTryEn
 
         try
         {
-            LibAvEncoder.InitializeFFmpeg(requireNativeRuntime: true);
+            FfmpegRuntimeInit.EnsureInitialized(requireNativeRuntime: true);
             var sessionFrameRate = ResolveSessionFrameRate(context.FrameRate);
             var sessionContext = context with { FrameRate = sessionFrameRate };
 
@@ -2106,7 +2106,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameTryEn
                     : packet.Buffer!.AsSpan(0, packet.Length);
                 _encoder.SendVideoFrame(frameData, w, h);
                 Interlocked.Increment(ref _videoFramesSubmittedToEncoder);
-                var pts = OnVideoFrameEncoded();
+                var pts = AdvanceEncodedVideoFrameAndGetPts();
                 RetireVideoPacket(gpu: false, pts.Ticks);
             }
             finally
@@ -2132,7 +2132,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameTryEn
             {
                 _encoder.SendGpuVideoFrame(packet.Texture, packet.Subresource);
                 Interlocked.Increment(ref _videoFramesSubmittedToEncoder);
-                var pts = OnVideoFrameEncoded();
+                var pts = AdvanceEncodedVideoFrameAndGetPts();
                 RetireVideoPacket(gpu: true, pts.Ticks);
             }
             finally
@@ -2212,7 +2212,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameTryEn
             .ObserveVideoRetirement(gpu: false, videoPacketsRetired, ptsTicks);
     }
 
-    private TimeSpan OnVideoFrameEncoded()
+    private TimeSpan AdvanceEncodedVideoFrameAndGetPts()
     {
         if (_disposed)
         {

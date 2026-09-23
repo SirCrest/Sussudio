@@ -4956,11 +4956,11 @@ static partial class Program
         AssertContains(packetDrainText, "private bool DrainVideoPackets(ChannelReader<VideoFramePacket> reader, int maxPackets = int.MaxValue)");
         AssertContains(packetDrainText, "private bool DrainGpuPackets(ChannelReader<GpuFramePacket> reader, int maxPackets = int.MaxValue)");
         AssertContains(packetDrainText, "PooledVideoFrame.GetFrameSizeBytes");
-        AssertContains(packetDrainText, "var pts = OnVideoFrameEncoded();");
+        AssertContains(packetDrainText, "var pts = AdvanceEncodedVideoFrameAndGetPts();");
         AssertContains(packetDrainText, "private bool DrainAudioPackets(ChannelReader<AudioSamplePacket> reader, int maxPackets = int.MaxValue)");
         AssertContains(packetDrainText, "private bool DrainMicrophonePackets(ChannelReader<AudioSamplePacket> reader, int maxPackets = int.MaxValue)");
 
-        AssertContains(encodingProgressText, "private TimeSpan OnVideoFrameEncoded()");
+        AssertContains(encodingProgressText, "private TimeSpan AdvanceEncodedVideoFrameAndGetPts()");
         AssertContains(encodingProgressText, "private TimeSpan ResolveEncoderPts()");
         AssertContains(encodingProgressText, "_bufferManager.UpdateLatestPts(pts);");
         AssertContains(encodingProgressText, "FrameEncoded?.Invoke(this, encoded);");

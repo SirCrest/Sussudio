@@ -1368,7 +1368,7 @@ static partial class Program
         AssertContains(rootText, "public long DroppedVideoFrames =>");
         AssertContains(rootText, "public bool TryGetEncoderAvSyncDrift(out double driftMs, out long correctionSamples)");
         AssertContains(rootText, "public Task StartAsync(RecordingContext context, CancellationToken cancellationToken = default)");
-        AssertContains(rootText, "LibAvEncoder.InitializeFFmpeg(requireNativeRuntime: true);");
+        AssertContains(rootText, "FfmpegRuntimeInit.EnsureInitialized(requireNativeRuntime: true);");
         AssertContains(rootText, "InitializeVideoSessionQueues();");
         AssertContains(rootText, "ResetVideoSessionState(context);");
         AssertContains(rootText, "_encodingTask = Task.Factory.StartNew(");
@@ -1398,6 +1398,12 @@ static partial class Program
         AssertContains(stopText, "private const int FinalizationNoProgressTimeoutMs = 30_000;");
         AssertContains(stopText, "private const int FinalizationAbsoluteTimeoutMs = 120_000;");
         AssertContains(stopText, "WaitForFinalizationOwnerAsync(");
+        AssertContains(stopText, "if (progressDeadline < absoluteDeadline && now >= progressDeadline)");
+        AssertContains(stopText, "else if (now >= absoluteDeadline)");
+        AssertContains(stopText, "LIBAV_SINK_FINALIZE_ABSOLUTE_TIMEOUT timeout_ms={timeoutMs}");
+        AssertContains(stopText, "LIBAV_SINK_FINALIZE_NO_PROGRESS_TIMEOUT stage=");
+        AssertContains(stopText, "ReportFinalizationProgress(noProgressWarning: false);");
+        AssertContains(stopText, "ReportFinalizationProgress(noProgressWarning: true);");
         AssertContains(stopText, "LIBAV_SINK_FINALIZE_TIMEOUT");
         AssertContains(stopText, "RecordingFinalizationRecoveryArtifacts.PreserveUnresolved(");
         AssertContains(stopText, "cleanupPending: true");
@@ -1730,7 +1736,7 @@ static partial class Program
         AssertContains(flashbackSource, "_onFatalError?.Invoke");
         AssertDoesNotContain(flashbackSource, "catch { /* Callback must not mask the original error */ }");
         AssertContains(flashbackSource, "Logger.Log($\"FLASHBACK_SINK_FATAL_CALLBACK_FAIL type={callbackEx.GetType().Name} msg={callbackEx.Message}\");");
-        AssertContains(flashbackSource, "private TimeSpan OnVideoFrameEncoded()\n    {\n        if (_disposed)\n        {\n            return TimeSpan.Zero;\n        }");
+        AssertContains(flashbackSource, "private TimeSpan AdvanceEncodedVideoFrameAndGetPts()\n    {\n        if (_disposed)\n        {\n            return TimeSpan.Zero;\n        }");
         AssertContains(flashbackSource, "if (!_disposed && Volatile.Read(ref _recordingActive) == 1)");
         AssertContains(flashbackSource, "public bool EncodingFailed");
         AssertContains(flashbackSource, "public string? EncodingFailureMessage");
@@ -4824,7 +4830,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var initializationText = rootText;
 
-        AssertContains(initializationText, "public static void InitializeFFmpeg(bool requireNativeRuntime)");
+        AssertDoesNotContain(initializationText, "InitializeFFmpeg");
         AssertContains(initializationText, "public void Initialize(LibAvEncoderOptions options)");
         AssertContains(initializationText, "ThrowIfError(ffmpeg.avcodec_open2(_videoCodecCtx, codec, null), \"avcodec_open2\");");
         AssertContains(initializationText, "ApplyMuxerOptions(options.ContainerFormat, options.FragmentedMp4, &muxerOptions, \"open\");");

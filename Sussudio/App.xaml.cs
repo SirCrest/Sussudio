@@ -4,7 +4,7 @@ using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
-using Sussudio.Services.Recording;
+using Sussudio.Services.Runtime;
 
 namespace Sussudio
 {
@@ -36,7 +36,7 @@ namespace Sussudio
             Logger.LogSystemInfo();
             try
             {
-                LibAvEncoder.InitializeFFmpeg(requireNativeRuntime: true);
+                FfmpegRuntimeInit.EnsureInitialized(requireNativeRuntime: true);
             }
             catch (Exception ex)
             {

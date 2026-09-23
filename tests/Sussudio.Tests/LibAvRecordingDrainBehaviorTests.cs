@@ -18,7 +18,8 @@ internal static class LibAvRecordingDrainBehaviorTests
         var assembly = SussudioAssembly.Load();
         Type TypeOf(string name) => assembly.GetType(name, throwOnError: true)!;
         var encoderType = TypeOf("Sussudio.Services.Recording.LibAvEncoder");
-        encoderType.GetMethod("InitializeFFmpeg")!.Invoke(null, new object[] { true });
+        TypeOf("Sussudio.Services.Runtime.FfmpegRuntimeInit").GetMethod("EnsureInitialized")!
+            .Invoke(null, new object[] { true });
         var sinkType = TypeOf("Sussudio.Services.Recording.LibAvRecordingSink");
         var sink = Activator.CreateInstance(sinkType)!;
         var directory = Directory.CreateTempSubdirectory("sussudio-drain-");
@@ -168,7 +169,8 @@ internal static class LibAvRecordingDrainBehaviorTests
         var assembly = SussudioAssembly.Load();
         Type TypeOf(string name) => assembly.GetType(name, throwOnError: true)!;
         var encoderType = TypeOf("Sussudio.Services.Recording.LibAvEncoder");
-        encoderType.GetMethod("InitializeFFmpeg")!.Invoke(null, new object[] { true });
+        TypeOf("Sussudio.Services.Runtime.FfmpegRuntimeInit").GetMethod("EnsureInitialized")!
+            .Invoke(null, new object[] { true });
         var sinkType = TypeOf("Sussudio.Services.Recording.LibAvRecordingSink");
         var sink = Activator.CreateInstance(sinkType)!;
         var directory = Directory.CreateTempSubdirectory("sussudio-drain-p010-");

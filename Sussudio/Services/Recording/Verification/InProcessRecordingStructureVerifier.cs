@@ -5,6 +5,7 @@ using System.Linq;
 using FFmpeg.AutoGen;
 using Sussudio.Models;
 using Sussudio.Services.Contracts;
+using Sussudio.Services.Runtime;
 
 namespace Sussudio.Services.Recording;
 
@@ -103,7 +104,7 @@ internal sealed unsafe class InProcessRecordingStructureVerifier
         AVPacket* packet = null;
         try
         {
-            LibAvEncoder.InitializeFFmpeg(requireNativeRuntime: true);
+            FfmpegRuntimeInit.EnsureInitialized(requireNativeRuntime: true);
             var openResult = ffmpeg.avformat_open_input(&formatContext, outputPath, null, null);
             if (openResult < 0 || formatContext == null)
             {

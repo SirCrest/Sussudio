@@ -156,7 +156,7 @@ public sealed class BundledRuntime
         }
         // Do not skip an unavailable runtime or let a malformed-media case pass
         // before libav has actually initialized. This also checks the binding ABI.
-        Type("Sussudio.Services.Recording.LibAvEncoder").GetMethod("InitializeFFmpeg")!
+        Type("Sussudio.Services.Runtime.FfmpegRuntimeInit").GetMethod("EnsureInitialized")!
             .Invoke(null, new object[] { true });
 
         _fixtureHashes = new Lazy<IReadOnlyDictionary<string, string>>(() =>

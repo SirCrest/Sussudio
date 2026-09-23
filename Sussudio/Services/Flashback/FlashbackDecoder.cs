@@ -10,6 +10,7 @@ using System.Threading;
 using FFmpeg.AutoGen;
 using Sussudio.Services.Gpu;
 using Sussudio.Services.Recording;
+using Sussudio.Services.Runtime;
 
 namespace Sussudio.Services.Flashback;
 
@@ -1402,7 +1403,7 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
             return;
         }
 
-        LibAvEncoder.InitializeFFmpeg(requireNativeRuntime: true);
+        FfmpegRuntimeInit.EnsureInitialized(requireNativeRuntime: true);
 
         _d3dDevicePtr = d3dDevicePtr;
         _d3dContextPtr = d3dContextPtr;
