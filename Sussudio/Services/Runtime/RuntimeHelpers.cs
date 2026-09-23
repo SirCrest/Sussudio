@@ -331,6 +331,82 @@ internal static class PercentileHelpers
     }
 }
 
+// Summary statistics over a window of frame intervals (ms), shared by the capture
+// source-cadence and renderer present-cadence metrics. The target interval falls
+// back to the observed average when no expected rate is known; an interval of at
+// least SlowIntervalFactor x target counts as slow (a severe gap on the source side).
+internal readonly record struct IntervalCadenceStatistics(
+    int SampleCount,
+    double ObservedFps,
+    double TargetIntervalMs,
+    double AverageIntervalMs,
+    double P95IntervalMs,
+    double P99IntervalMs,
+    double MaxIntervalMs,
+    double OnePercentLowFps,
+    double FivePercentLowFps,
+    double SampleDurationMs,
+    double JitterStdDevMs,
+    long SlowIntervalCount)
+{
+    public const double SlowIntervalFactor = 1.6;
+
+    public static IntervalCadenceStatistics Compute(double[] samples, double expectedIntervalMs)
+    {
+        var sampleCount = samples.Length;
+        if (sampleCount == 0)
+        {
+            throw new ArgumentException("At least one interval sample is required.", nameof(samples));
+        }
+
+        var sum = 0.0;
+        var max = 0.0;
+        for (var i = 0; i < sampleCount; i++)
+        {
+            sum += samples[i];
+            if (samples[i] > max)
+            {
+                max = samples[i];
+            }
+        }
+
+        var average = sum / sampleCount;
+        var targetIntervalMs = expectedIntervalMs > 0 ? expectedIntervalMs : average;
+        var slowThresholdMs = targetIntervalMs * SlowIntervalFactor;
+
+        long slowIntervalCount = 0;
+        var varianceSum = 0.0;
+        for (var i = 0; i < sampleCount; i++)
+        {
+            var delta = samples[i] - average;
+            varianceSum += delta * delta;
+            if (samples[i] >= slowThresholdMs)
+            {
+                slowIntervalCount++;
+            }
+        }
+
+        var sorted = (double[])samples.Clone();
+        Array.Sort(sorted);
+        var p95IntervalMs = PercentileHelpers.FromSorted(sorted, 0.95);
+        var p99IntervalMs = PercentileHelpers.FromSorted(sorted, 0.99);
+
+        return new IntervalCadenceStatistics(
+            SampleCount: sampleCount,
+            ObservedFps: average > double.Epsilon ? 1000.0 / average : 0,
+            TargetIntervalMs: targetIntervalMs,
+            AverageIntervalMs: average,
+            P95IntervalMs: p95IntervalMs,
+            P99IntervalMs: p99IntervalMs,
+            MaxIntervalMs: max,
+            OnePercentLowFps: p99IntervalMs > double.Epsilon ? 1000.0 / p99IntervalMs : 0,
+            FivePercentLowFps: p95IntervalMs > double.Epsilon ? 1000.0 / p95IntervalMs : 0,
+            SampleDurationMs: sum,
+            JitterStdDevMs: Math.Sqrt(varianceSum / sampleCount),
+            SlowIntervalCount: slowIntervalCount);
+    }
+}
+
 // Common "how old is this telemetry sample" computation. Several diagnostics
 // surfaces (snapshot builders, view-model age refresh, automation hub) need the
 // same clamped, floor-rounded seconds-since-timestamp value, plus a short-circuit

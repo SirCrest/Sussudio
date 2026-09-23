@@ -693,6 +693,7 @@ public class RuntimeHelpersTests
     private const string EnvironmentHelpersType = "Sussudio.Services.Runtime.EnvironmentHelpers";
     private const string RingBufferHelpersType = "Sussudio.Services.Runtime.RingBufferHelpers";
     private const string PercentileHelpersType = "Sussudio.Services.Runtime.PercentileHelpers";
+    private const string IntervalCadenceStatisticsType = "Sussudio.Services.Runtime.IntervalCadenceStatistics";
 
     [Fact]
     public void AtomicMax_Int_UpdatesWhenCandidateIsGreater()
@@ -906,6 +907,56 @@ public class RuntimeHelpersTests
             method.Invoke(null, new object[] { 10, 0.0 }));
         Assert.IsType<ArgumentOutOfRangeException>(invalidPercentile.InnerException);
     }
+
+    [Fact]
+    public void IntervalCadenceStatistics_SummarizesWindowAgainstExpectedInterval()
+    {
+        // One 20 ms hitch in a 10 ms cadence: average 12, deviations -2,-2,-2,+8,-2 (stddev 4),
+        // and only the hitch crosses the 1.6x slow threshold (16 ms).
+        var samples = new[] { 10.0, 10.0, 10.0, 20.0, 10.0 };
+        var stats = InvokeIntervalCadenceStatistics(samples, 10.0);
+
+        // Callers hand the same array back as RecentIntervalsMs, so percentiles must sort a copy.
+        Assert.Equal(new[] { 10.0, 10.0, 10.0, 20.0, 10.0 }, samples);
+
+        Assert.Equal(5, GetStat<int>(stats, "SampleCount"));
+        Assert.Equal(10.0, GetStat<double>(stats, "TargetIntervalMs"), 6);
+        Assert.Equal(12.0, GetStat<double>(stats, "AverageIntervalMs"), 6);
+        Assert.Equal(1000.0 / 12.0, GetStat<double>(stats, "ObservedFps"), 6);
+        Assert.Equal(20.0, GetStat<double>(stats, "MaxIntervalMs"), 6);
+        Assert.Equal(20.0, GetStat<double>(stats, "P99IntervalMs"), 6);
+        Assert.Equal(50.0, GetStat<double>(stats, "OnePercentLowFps"), 6);
+        Assert.Equal(60.0, GetStat<double>(stats, "SampleDurationMs"), 6);
+        Assert.Equal(4.0, GetStat<double>(stats, "JitterStdDevMs"), 6);
+        Assert.Equal(1L, GetStat<long>(stats, "SlowIntervalCount"));
+    }
+
+    [Fact]
+    public void IntervalCadenceStatistics_FallsBackToObservedAverageWithoutExpectedRate()
+    {
+        var stats = InvokeIntervalCadenceStatistics(new[] { 8.0, 12.0 }, 0);
+
+        Assert.Equal(10.0, GetStat<double>(stats, "TargetIntervalMs"), 6);
+        Assert.Equal(0L, GetStat<long>(stats, "SlowIntervalCount"));
+    }
+
+    [Fact]
+    public void IntervalCadenceStatistics_RejectsEmptyWindow()
+    {
+        var invocation = Assert.Throws<TargetInvocationException>(() =>
+            InvokeIntervalCadenceStatistics(Array.Empty<double>(), 10.0));
+        Assert.IsType<ArgumentException>(invocation.InnerException);
+    }
+
+    private static object InvokeIntervalCadenceStatistics(double[] samples, double expectedIntervalMs)
+    {
+        var type = SussudioAssembly.Load().GetType(IntervalCadenceStatisticsType, throwOnError: true)!;
+        var compute = type.GetMethod("Compute", BindingFlags.Public | BindingFlags.Static, new[] { typeof(double[]), typeof(double) })!;
+        return compute.Invoke(null, new object[] { samples, expectedIntervalMs })!;
+    }
+
+    private static T GetStat<T>(object stats, string propertyName)
+        => (T)stats.GetType().GetProperty(propertyName)!.GetValue(stats)!;
 
     private static MethodInfo ResolveStatic(string typeName, string methodName, Type[] signature)
     {

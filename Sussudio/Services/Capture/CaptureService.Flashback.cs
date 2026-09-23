@@ -841,17 +841,8 @@ public partial class CaptureService
             ? (settings.UseCustomAudioInput ? settings.AudioDeviceId : (_audioDeviceId ?? _currentDevice?.AudioDeviceId))
             : null;
 
-        if (settings.AudioEnabled &&
-            _previewAudioGraph.ProgramCapture is { } staleProgramCapture &&
-            (!staleProgramCapture.IsReadyForRecording ||
-             !string.Equals(staleProgramCapture.AudioDeviceId, audioDeviceId, StringComparison.OrdinalIgnoreCase)))
+        if (await ReplaceStaleProgramCaptureAsync(settings, audioDeviceId).ConfigureAwait(false))
         {
-            _previewAudioGraph.ProgramCapture = null;
-            _previewAudioGraph.DetachCapture(
-                staleProgramCapture,
-                OnWasapiAudioLevelUpdated,
-                _flashbackBackend.PlaybackController);
-            await staleProgramCapture.DisposeAsync().ConfigureAwait(false);
             Logger.Log($"FLASHBACK_AUDIO_CAPTURE_REPLACED reason='{reason}' terminal_worker=true");
         }
 

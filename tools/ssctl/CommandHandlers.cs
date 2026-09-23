@@ -1126,3 +1126,12 @@ internal sealed class PipeTransport
             authToken: _authToken,
             cancellationToken: cancellationToken);
 }
+
+// Invalid command-line usage; Program reports it with the usage text instead of a stack trace.
+internal sealed class UsageException : Exception
+{
+    public UsageException(string message)
+        : base(message)
+    {
+    }
+}

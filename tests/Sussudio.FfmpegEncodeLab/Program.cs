@@ -342,21 +342,21 @@ internal static class FfmpegEncodeLab
         return args[index];
     }
 
-    private static int ParsePositiveInt(string value, string optionName)
+    private static int ParsePositiveInt(string value, string option)
     {
         if (!int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed) || parsed <= 0)
         {
-            throw new ArgumentException($"Invalid value for {optionName}: '{value}'");
+            throw new ArgumentException($"Invalid value for {option}: '{value}'");
         }
 
         return parsed;
     }
 
-    private static double ParsePositiveDouble(string value, string optionName)
+    private static double ParsePositiveDouble(string value, string option)
     {
         if (!double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed) || parsed <= 0)
         {
-            throw new ArgumentException($"Invalid value for {optionName}: '{value}'");
+            throw new ArgumentException($"Invalid value for {option}: '{value}'");
         }
 
         return parsed;

@@ -2579,8 +2579,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(source, "private long EstimateVisibleTick(long presentReturnTick)");
         AssertContains(renderSource, "var estimatedVisibleTick = EstimateVisibleTick(presentEnd);");
         AssertContains(renderSource, "TrackPipelineLatency(frame.ArrivalTick, estimatedVisibleTick);");
-        AssertContains(source, "var sorted = (double[])samples.Clone();");
-        AssertContains(source, "Array.Sort(sorted);");
+        AssertContains(source, "IntervalCadenceStatistics.Compute(samples, expectedIntervalMs)");
         AssertContains(source, "var frameCounter = Interlocked.Increment(ref _dxgiFrameStatisticsFrameCounter);");
         AssertContains(source, "frameCounter % _dxgiFrameStatisticsSampleIntervalFrames != 0");
         AssertContains(source, "_dxgiFrameStatisticsLastSampleFrameCounter = frameCounter;");

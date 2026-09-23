@@ -548,7 +548,8 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
         }
     }
 
-    private static (int SampleCount, double AverageMs, double P95Ms, double MaxMs) ComputeTimingMetrics(double[] samples)
+    // Shared with MjpegPreviewJitterBuffer so both stages report identically computed timing windows.
+    internal static (int SampleCount, double AverageMs, double P95Ms, double MaxMs) ComputeTimingMetrics(double[] samples)
     {
         var sampleCount = samples.Length;
         if (sampleCount == 0)

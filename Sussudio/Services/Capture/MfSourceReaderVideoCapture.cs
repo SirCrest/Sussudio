@@ -1329,74 +1329,35 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                     EstimatedDropPercent: 0);
             }
 
-            samples = new double[_sourceIntervalCount];
-            for (var i = 0; i < _sourceIntervalCount; i++)
-            {
-                var ringIndex = (_sourceIntervalIndex - _sourceIntervalCount + i + _sourceIntervalWindowMs.Length)
-                    % _sourceIntervalWindowMs.Length;
-                samples[i] = _sourceIntervalWindowMs[ringIndex];
-            }
+            samples = RingBufferHelpers.Copy(_sourceIntervalWindowMs, _sourceIntervalCount, _sourceIntervalIndex);
         }
 
-        var sampleCount = samples.Length;
-        var sum = 0.0;
-        var max = 0.0;
-        for (var i = 0; i < sampleCount; i++)
-        {
-            sum += samples[i];
-            if (samples[i] > max)
-            {
-                max = samples[i];
-            }
-        }
-
-        var average = sum / sampleCount;
-        var observedFps = average > double.Epsilon ? 1000.0 / average : 0;
-        var targetIntervalMs = expectedIntervalMs > 0 ? expectedIntervalMs : average;
-        var severeGapThresholdMs = targetIntervalMs * 1.6;
-
-        long severeGapCount = 0;
+        var stats = IntervalCadenceStatistics.Compute(samples, expectedIntervalMs);
         long estimatedDroppedFrames = 0;
-        var varianceSum = 0.0;
-        for (var i = 0; i < sampleCount; i++)
+        if (stats.TargetIntervalMs > double.Epsilon)
         {
-            var interval = samples[i];
-            var delta = interval - average;
-            varianceSum += delta * delta;
-            if (interval >= severeGapThresholdMs)
+            for (var i = 0; i < samples.Length; i++)
             {
-                severeGapCount++;
-            }
-
-            if (targetIntervalMs > double.Epsilon)
-            {
-                estimatedDroppedFrames += Math.Max(0, (int)Math.Round(interval / targetIntervalMs) - 1);
+                estimatedDroppedFrames += Math.Max(0, (int)Math.Round(samples[i] / stats.TargetIntervalMs) - 1);
             }
         }
 
-        var jitterStdDevMs = Math.Sqrt(varianceSum / sampleCount);
-        var sorted = (double[])samples.Clone();
-        Array.Sort(sorted);
-        var p95IntervalMs = PercentileHelpers.FromSorted(sorted, 0.95);
-        var p99IntervalMs = PercentileHelpers.FromSorted(sorted, 0.99);
-        var onePercentLowFps = p99IntervalMs > double.Epsilon ? 1000.0 / p99IntervalMs : 0;
-        var fivePercentLowFps = p95IntervalMs > double.Epsilon ? 1000.0 / p95IntervalMs : 0;
-        var estimatedDropPercent = estimatedDroppedFrames * 100.0 / Math.Max(1, sampleCount + estimatedDroppedFrames);
+        var estimatedDropPercent = estimatedDroppedFrames * 100.0 / Math.Max(1, stats.SampleCount + estimatedDroppedFrames);
 
         return new SourceCadenceMetrics(
-            SampleCount: sampleCount,
-            ObservedFps: observedFps,
-            ExpectedIntervalMs: targetIntervalMs,
-            AverageIntervalMs: average,
-            P95IntervalMs: p95IntervalMs,
-            P99IntervalMs: p99IntervalMs,
-            MaxIntervalMs: max,
-            OnePercentLowFps: onePercentLowFps,
-            FivePercentLowFps: fivePercentLowFps,
-            SampleDurationMs: sum,
+            SampleCount: stats.SampleCount,
+            ObservedFps: stats.ObservedFps,
+            ExpectedIntervalMs: stats.TargetIntervalMs,
+            AverageIntervalMs: stats.AverageIntervalMs,
+            P95IntervalMs: stats.P95IntervalMs,
+            P99IntervalMs: stats.P99IntervalMs,
+            MaxIntervalMs: stats.MaxIntervalMs,
+            OnePercentLowFps: stats.OnePercentLowFps,
+            FivePercentLowFps: stats.FivePercentLowFps,
+            SampleDurationMs: stats.SampleDurationMs,
             RecentIntervalsMs: samples,
-            JitterStdDevMs: jitterStdDevMs,
-            SevereGapCount: severeGapCount,
+            JitterStdDevMs: stats.JitterStdDevMs,
+            SevereGapCount: stats.SlowIntervalCount,
             EstimatedDroppedFrames: estimatedDroppedFrames,
             EstimatedDropPercent: estimatedDropPercent);
     }

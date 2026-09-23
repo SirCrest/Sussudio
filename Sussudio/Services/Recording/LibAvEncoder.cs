@@ -1219,19 +1219,7 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
             _hwFrame = null;
         }
 
-        if (_hwFramesCtx != null)
-        {
-            var hwFramesCtx = _hwFramesCtx;
-            ffmpeg.av_buffer_unref(&hwFramesCtx);
-            _hwFramesCtx = null;
-        }
-
-        if (_hwDeviceCtx != null)
-        {
-            var hwDeviceCtx = _hwDeviceCtx;
-            ffmpeg.av_buffer_unref(&hwDeviceCtx);
-            _hwDeviceCtx = null;
-        }
+        ReleaseRetainedHardwareContexts();
 
         _useHardwareFrames = false;
         _useCudaHardwareFrames = false;
@@ -1361,6 +1349,23 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
         _flushSent = false;
 
         return finalMicSamplesReceived;
+    }
+
+    private void ReleaseRetainedHardwareContexts()
+    {
+        if (_hwFramesCtx != null)
+        {
+            var hwFramesCtx = _hwFramesCtx;
+            ffmpeg.av_buffer_unref(&hwFramesCtx);
+            _hwFramesCtx = null;
+        }
+
+        if (_hwDeviceCtx != null)
+        {
+            var hwDeviceCtx = _hwDeviceCtx;
+            ffmpeg.av_buffer_unref(&hwDeviceCtx);
+            _hwDeviceCtx = null;
+        }
     }
 }
 

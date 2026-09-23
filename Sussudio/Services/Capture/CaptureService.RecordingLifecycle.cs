@@ -483,6 +483,27 @@ public partial class CaptureService
         return unifiedVideoCapture;
     }
 
+    // A program capture that is no longer recording-ready, or is bound to a different
+    // device, cannot feed a new sink. Detach and dispose it so the caller creates a fresh one.
+    private async Task<bool> ReplaceStaleProgramCaptureAsync(CaptureSettings settings, string? audioDeviceId)
+    {
+        if (!settings.AudioEnabled ||
+            _previewAudioGraph.ProgramCapture is not { } staleProgramCapture ||
+            (staleProgramCapture.IsReadyForRecording &&
+             string.Equals(staleProgramCapture.AudioDeviceId, audioDeviceId, StringComparison.OrdinalIgnoreCase)))
+        {
+            return false;
+        }
+
+        _previewAudioGraph.ProgramCapture = null;
+        _previewAudioGraph.DetachCapture(
+            staleProgramCapture,
+            OnWasapiAudioLevelUpdated,
+            _flashbackBackend.PlaybackController);
+        await staleProgramCapture.DisposeAsync().ConfigureAwait(false);
+        return true;
+    }
+
     private async Task StartLibAvRecordingAudioInputsAsync(
         CaptureSettings settings,
         CancellationToken transitionToken,
@@ -491,17 +512,8 @@ public partial class CaptureService
         IRecordingSink recordingSink,
         string? audioDeviceId)
     {
-        if (settings.AudioEnabled &&
-            _previewAudioGraph.ProgramCapture is { } staleProgramCapture &&
-            (!staleProgramCapture.IsReadyForRecording ||
-             !string.Equals(staleProgramCapture.AudioDeviceId, audioDeviceId, StringComparison.OrdinalIgnoreCase)))
+        if (await ReplaceStaleProgramCaptureAsync(settings, audioDeviceId).ConfigureAwait(false))
         {
-            _previewAudioGraph.ProgramCapture = null;
-            _previewAudioGraph.DetachCapture(
-                staleProgramCapture,
-                OnWasapiAudioLevelUpdated,
-                _flashbackBackend.PlaybackController);
-            await staleProgramCapture.DisposeAsync().ConfigureAwait(false);
             Logger.Log("RECORDING_AUDIO_CAPTURE_REPLACED reason=terminal_preview_worker");
         }
 

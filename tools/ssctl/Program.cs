@@ -337,11 +337,3 @@ internal static class SsctlHelpWriter
         writer.WriteLine("  --help            Show this help");
     }
 }
-
-internal sealed class UsageException : Exception
-{
-    public UsageException(string message)
-        : base(message)
-    {
-    }
-}
