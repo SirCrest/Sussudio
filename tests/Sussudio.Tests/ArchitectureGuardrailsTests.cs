@@ -390,7 +390,9 @@ static partial class Program
 
     private static bool IsAllowedSingleFilePartial(string typeName, string relativePath)
         => relativePath.EndsWith(".xaml.cs", StringComparison.OrdinalIgnoreCase) ||
-           typeName.EndsWith("JsonContext", StringComparison.Ordinal);
+           typeName.EndsWith("JsonContext", StringComparison.Ordinal) ||
+           (typeName == "NativeXuAudioControlService" &&
+            relativePath == "Sussudio/Services/Audio/NativeXuAudioControlService.cs");
 
     internal static Task ArchitectureDocs_ReadRepoFileLiteralPathsResolve()
     {
@@ -2281,13 +2283,15 @@ static partial class Program
         AssertContains(deviceAudioModeText, "private async Task<bool> ApplyDeviceAudioModeAsync");
         AssertContains(deviceAudioModeText, "CaptureDevice? targetDevice = null");
         AssertContains(deviceAudioStateText, "private async Task<bool> ApplyAnalogAudioGainAsync");
-        AssertContains(deviceAudioStateText, "NativeXuAtCommandProvider.SetAnalogGainAsync(device, gainByte, persistFlash: false, cancellationToken)");
+        AssertContains(deviceAudioStateText, "_deviceAudioControlService.SetAudioModeAsync(device, mode, cancellationToken)");
+        AssertContains(deviceAudioStateText, "_deviceAudioControlService.SetAnalogGainPercentAsync(device, gainPercent, persistFlash: false, cancellationToken)");
         AssertContains(deviceAudioRequestControllerText, "namespace Sussudio.Controllers;");
         AssertContains(deviceAudioRequestControllerText, "internal sealed class MainViewModelDeviceAudioRequestController");
         AssertDoesNotContain(deviceAudioRequestControllerText, "partial class MainViewModelDeviceAudioRequestController");
         AssertContains(deviceAudioRequestControllerText, "internal sealed class MainViewModelDeviceAudioRequestControllerContext");
         AssertContains(deviceAudioRequestControllerText, "public void ScheduleAnalogGainFlashPersist(CaptureDevice device, byte gainByte)");
-        AssertContains(deviceAudioRequestControllerText, "NativeXuAtCommandProvider.SetAnalogGainAsync(device, gainByte, persistFlash: true, token)");
+        AssertContains(deviceAudioRequestControllerText, "_context.PersistAnalogAudioGainAsync(device, gainByte, token)");
+        AssertContains(deviceAudioRequestControllerText, "_context.SetStatusText(\"Analog gain applied but could not be saved to the device; it may revert after power cycle.\")");
         AssertContains(deviceAudioStateText, "private async Task<bool> ApplyDeviceAudioModeAsync");
         AssertContains(deviceAudioStateText, "private bool IsCurrentSelectedDevice(CaptureDevice device)");
         AssertContains(deviceAudioModeText, "IsCurrentSelectedDevice(device)");
@@ -2612,7 +2616,7 @@ static partial class Program
         AssertDoesNotContain(deviceAudioRequestControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(deviceAudioRequestControllerText, "_viewModel.");
         AssertContains(deviceAudioRequestControllerText, "public void HandleAnalogAudioGainPercentChanged(double value)");
-        AssertContains(deviceAudioRequestControllerText, "NativeXuAtCommandProvider.SetAnalogGainAsync(device, gainByte, persistFlash: true, token)");
+        AssertContains(deviceAudioRequestControllerText, "_context.PersistAnalogAudioGainAsync(device, gainByte, token)");
         AssertDoesNotContain(mainViewModelText, "private void CancelPendingAudioControlWork()");
         AssertDoesNotContain(mainViewModelText, "_deviceAudioModeCts");
         AssertDoesNotContain(mainViewModelDisposalText, "_gainFlashDebounceCts");
@@ -2800,7 +2804,14 @@ static partial class Program
         AssertContains(nativeXuAudioServiceText, "NativeXuDeviceSupport.EnumerateSelectedInterfacePath(selectedInterfacePath)");
         AssertContains(nativeXuAudioServiceText, "NativeXuDeviceSupport.TryAcquireTransportGateAsync(cancellationToken)");
         AssertContains(nativeXuAudioServiceText, "TryXuGetDirect(");
-        AssertContains(nativeXuAudioServiceText, "TryXuSetViaOutput(");
+        AssertDoesNotContain(nativeXuAudioServiceText, "TryXuSetViaOutput(");
+        var nativeXuAudioProbeExperimentsText = File.ReadAllText(Path.Combine(
+            repoRoot,
+            "tools",
+            "NativeXuAudioProbe",
+            "NativeXuAudioControlService.Experiments.cs"));
+        AssertContains(nativeXuAudioProbeExperimentsText, "TryXuSetViaOutput(");
+        AssertContains(nativeXuAudioProbeExperimentsText, "UpdatePayloadAsync(");
 
         AssertEqual(
             false,

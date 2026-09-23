@@ -8,7 +8,7 @@ public sealed class NativeXuAudioControlTests
     [Fact]
     public void CompleteReadbackMatchesAllControlBytes()
     {
-        var expected = CloneProfile("AnalogReference");
+        var expected = CloneProbeProfile("AnalogReference");
         var result = Compare(expected, expected.ToArray());
 
         Assert.True(result.Matches);
@@ -20,7 +20,7 @@ public sealed class NativeXuAudioControlTests
     [Fact]
     public void EveryControlByteMustMatch()
     {
-        var expected = CloneProfile("AnalogReference");
+        var expected = CloneProbeProfile("AnalogReference");
         var indexes = ControlIndexes();
         foreach (var index in indexes)
         {
@@ -42,7 +42,7 @@ public sealed class NativeXuAudioControlTests
     [InlineData(149)]
     public void TruncatedReadbackCannotVerifyAvailableMatchingBytes(int length)
     {
-        var expected = CloneProfile("AnalogReference");
+        var expected = CloneProbeProfile("AnalogReference");
         var actual = expected.Take(length).ToArray();
 
         AssertIncomplete(Compare(expected, actual), length);
@@ -54,7 +54,7 @@ public sealed class NativeXuAudioControlTests
     [InlineData(149)]
     public void TruncatedExpectedPayloadCannotVerifyCompleteReadback(int length)
     {
-        var actual = CloneProfile("AnalogReference");
+        var actual = CloneProbeProfile("AnalogReference");
         var expected = actual.Take(length).ToArray();
 
         AssertIncomplete(Compare(expected, actual), length);
@@ -66,7 +66,7 @@ public sealed class NativeXuAudioControlTests
     [InlineData(149)]
     public void EqualIncompletePayloadsCannotVerifyControlState(int length)
     {
-        var expected = CloneProfile("AnalogReference").Take(length).ToArray();
+        var expected = CloneProbeProfile("AnalogReference").Take(length).ToArray();
 
         AssertIncomplete(Compare(expected, expected.ToArray()), length);
     }
@@ -74,7 +74,7 @@ public sealed class NativeXuAudioControlTests
     [Fact]
     public void ReadbackMayOmitSuffixAfterAllControlBytes()
     {
-        var expected = CloneProfile("AnalogReference").Concat(new byte[] { 0xA5, 0x5A }).ToArray();
+        var expected = CloneProbeProfile("AnalogReference").Concat(new byte[] { 0xA5, 0x5A }).ToArray();
         var actual = expected.Take(150).ToArray();
         Assert.All(ControlIndexes(), index => Assert.InRange(index, 0, actual.Length - 1));
 
@@ -89,10 +89,10 @@ public sealed class NativeXuAudioControlTests
     [Fact]
     public void DynamicAndOtherNoncontrolDifferencesDoNotInvalidateReadback()
     {
-        var expected = CloneProfile("AnalogReference").Concat(new byte[] { 0xA5, 0x5A }).ToArray();
+        var expected = CloneProbeProfile("AnalogReference").Concat(new byte[] { 0xA5, 0x5A }).ToArray();
         var actual = expected.ToArray();
         var controls = ControlIndexes().ToHashSet();
-        var dynamicIndexes = CloneIndexes("DynamicByteIndexes");
+        var dynamicIndexes = CloneProbeIndexes("DynamicByteIndexes");
         Assert.NotEmpty(dynamicIndexes);
         Assert.All(dynamicIndexes, index => Assert.DoesNotContain(index, controls));
         for (var index = 0; index < actual.Length; index++)
@@ -114,8 +114,8 @@ public sealed class NativeXuAudioControlTests
     [Fact]
     public void ComparingReadbackDoesNotMutateEitherPayload()
     {
-        var expected = CloneProfile("AnalogReference");
-        var actual = CloneProfile("HdmiReference");
+        var expected = CloneProbeProfile("AnalogReference");
+        var actual = CloneProbeProfile("HdmiReference");
         var expectedBefore = expected.ToArray();
         var actualBefore = actual.ToArray();
 
@@ -154,13 +154,30 @@ public sealed class NativeXuAudioControlTests
     }
 
     [Theory]
+    [InlineData("Analog", true, true)]
+    [InlineData("analog", true, true)]
+    [InlineData("HDMI", true, false)]
+    [InlineData(null, false, false)]
+    [InlineData("", false, false)]
+    [InlineData("not-an-audio-mode", false, false)]
+    public void ModeSetterAcceptsOnlySupportedAudioModes(string? mode, bool expectedAccepted, bool expectedAnalog)
+    {
+        object?[] args = { mode, false };
+        var accepted = (bool)ServiceType.GetMethod("TryGetTargetAudioMode", BindingFlags.NonPublic | BindingFlags.Static)!
+            .Invoke(null, args)!;
+
+        Assert.Equal(expectedAccepted, accepted);
+        Assert.Equal(expectedAnalog, args[1]);
+    }
+
+    [Theory]
     [InlineData(null)]
     [InlineData("")]
     [InlineData("not-an-audio-mode")]
-    public void InvalidModeDoesNotSelectAReference(string? mode)
+    public void ProbeExperimentRejectsUnsupportedInputModes(string? mode)
     {
         object?[] args = { mode, null };
-        var accepted = (bool)ServiceType.GetMethod("TryGetTargetInputReference", BindingFlags.NonPublic | BindingFlags.Static)!
+        var accepted = (bool)ProbeServiceType.GetMethod("TryGetTargetInputReference", BindingFlags.NonPublic | BindingFlags.Static)!
             .Invoke(null, args)!;
 
         Assert.False(accepted);
@@ -180,7 +197,7 @@ public sealed class NativeXuAudioControlTests
     private static (bool Matches, int Checked, int Mismatched, int Missing) Compare(byte[] expected, byte[] actual)
     {
         object?[] args = { expected, actual, 0, 0, 0 };
-        var matches = (bool)ServiceType.GetMethod("ControlBytesMatch", BindingFlags.NonPublic | BindingFlags.Static)!
+        var matches = (bool)ProbeServiceType.GetMethod("ControlBytesMatch", BindingFlags.NonPublic | BindingFlags.Static)!
             .Invoke(null, args)!;
         return (matches, (int)args[2]!, (int)args[3]!, (int)args[4]!);
     }
@@ -191,9 +208,28 @@ public sealed class NativeXuAudioControlTests
     private static int[] CloneIndexes(string name)
         => ((int[])ServiceType.GetField(name, BindingFlags.NonPublic | BindingFlags.Static)!.GetValue(null)!).ToArray();
 
+    private static byte[] CloneProbeProfile(string name)
+        => ((byte[])ProbeServiceType.GetField(name, BindingFlags.NonPublic | BindingFlags.Static)!.GetValue(null)!).ToArray();
+
+    private static int[] CloneProbeIndexes(string name)
+        => ((int[])ProbeServiceType.GetField(name, BindingFlags.NonPublic | BindingFlags.Static)!.GetValue(null)!).ToArray();
+
     private static int[] ControlIndexes()
-        => CloneIndexes("InputByteIndexes").Concat(CloneIndexes("GainByteIndexes")).ToArray();
+        => CloneProbeIndexes("InputByteIndexes").Concat(CloneProbeIndexes("GainByteIndexes")).ToArray();
 
     private static Type ServiceType
         => SussudioAssembly.Load().GetType("Sussudio.Services.Audio.NativeXuAudioControlService", throwOnError: true)!;
+
+    private static Type ProbeServiceType => ProbeAssembly.GetType("Sussudio.Services.Audio.NativeXuAudioControlService", throwOnError: true)!;
+
+    private static Assembly ProbeAssembly
+    {
+        get
+        {
+            const string relativePath = "tools/NativeXuAudioProbe/bin/Debug/net8.0-windows10.0.19041.0/win-x64/NativeXuAudioProbe.dll";
+            var fullPath = Path.Combine(RuntimeContractSource.GetRepoRoot(), relativePath.Replace('/', Path.DirectorySeparatorChar));
+            global::Program.RequireFreshToolAssembly(relativePath, fullPath);
+            return Assembly.LoadFrom(fullPath);
+        }
+    }
 }

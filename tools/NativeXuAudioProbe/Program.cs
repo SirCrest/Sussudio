@@ -784,14 +784,14 @@ static class NativeXuProbeServiceProbe
         {
             if (!string.IsNullOrWhiteSpace(targetMode))
             {
-                var applied = await service.SetAudioModeAsync(device, targetMode, CancellationToken.None).ConfigureAwait(false);
+                var applied = await service.ExperimentSetAudioModeAsync(device, targetMode, CancellationToken.None).ConfigureAwait(false);
                 serviceSucceeded &= applied;
                 Console.WriteLine($"Set mode '{targetMode}': {(applied ? "ok" : "failed")}");
             }
 
             if (targetGain.HasValue)
             {
-                var applied = await service.SetAnalogGainPercentAsync(device, targetGain.Value, CancellationToken.None).ConfigureAwait(false);
+                var applied = await service.ExperimentSetAnalogGainPercentAsync(device, targetGain.Value, CancellationToken.None).ConfigureAwait(false);
                 serviceSucceeded &= applied;
                 Console.WriteLine($"Set gain '{targetGain.Value:0}': {(applied ? "ok" : "failed")}");
             }
@@ -800,14 +800,14 @@ static class NativeXuProbeServiceProbe
         {
             if (restoreGain)
             {
-                var restored = await service.SetAnalogGainPercentAsync(device, initial.AnalogGainPercent!.Value, CancellationToken.None).ConfigureAwait(false);
+                var restored = await service.ExperimentSetAnalogGainPercentAsync(device, initial.AnalogGainPercent!.Value, CancellationToken.None).ConfigureAwait(false);
                 serviceSucceeded &= restored;
                 Console.WriteLine($"Restore gain '{initial.AnalogGainPercent.Value:0}': {(restored ? "ok" : "failed")}");
             }
 
             if (restoreMode)
             {
-                var restored = await service.SetAudioModeAsync(device, initial.Mode!, CancellationToken.None).ConfigureAwait(false);
+                var restored = await service.ExperimentSetAudioModeAsync(device, initial.Mode!, CancellationToken.None).ConfigureAwait(false);
                 serviceSucceeded &= restored;
                 Console.WriteLine($"Restore mode '{initial.Mode}': {(restored ? "ok" : "failed")}");
             }
@@ -835,25 +835,25 @@ static class NativeXuProbeServiceProbe
         var succeeded = true;
         try
         {
-            var setModeResult = await service.SetAudioModeAsync(device, "Analog", CancellationToken.None).ConfigureAwait(false);
+            var setModeResult = await service.ExperimentSetAudioModeAsync(device, "Analog", CancellationToken.None).ConfigureAwait(false);
             succeeded &= setModeResult;
-            Console.WriteLine($"SetAudioModeAsync('Analog') => {setModeResult}");
+            Console.WriteLine($"ExperimentSetAudioModeAsync('Analog') => {setModeResult}");
 
             await PrintServiceStateAsync(service, device, "After mode");
 
-            var setGainResult = await service.SetAnalogGainPercentAsync(device, 50d, CancellationToken.None).ConfigureAwait(false);
+            var setGainResult = await service.ExperimentSetAnalogGainPercentAsync(device, 50d, CancellationToken.None).ConfigureAwait(false);
             succeeded &= setGainResult;
-            Console.WriteLine($"SetAnalogGainPercentAsync(50) => {setGainResult}");
+            Console.WriteLine($"ExperimentSetAnalogGainPercentAsync(50) => {setGainResult}");
 
             await PrintServiceStateAsync(service, device, "After gain");
         }
         finally
         {
-            var restoredGain = await service.SetAnalogGainPercentAsync(device, initial.AnalogGainPercent.Value, CancellationToken.None).ConfigureAwait(false);
+            var restoredGain = await service.ExperimentSetAnalogGainPercentAsync(device, initial.AnalogGainPercent.Value, CancellationToken.None).ConfigureAwait(false);
             succeeded &= restoredGain;
             Console.WriteLine($"Restore service gain '{initial.AnalogGainPercent.Value:0}' => {restoredGain}");
 
-            var restoredMode = await service.SetAudioModeAsync(device, initial.Mode, CancellationToken.None).ConfigureAwait(false);
+            var restoredMode = await service.ExperimentSetAudioModeAsync(device, initial.Mode, CancellationToken.None).ConfigureAwait(false);
             succeeded &= restoredMode;
             Console.WriteLine($"Restore service mode '{initial.Mode}' => {restoredMode}");
         }

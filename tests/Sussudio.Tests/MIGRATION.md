@@ -29,8 +29,12 @@ implementations and shared fixtures out of the oversized `Program` helper namesp
   without opening an audio endpoint.
 - `XUnit.AppEmergencyFinalizationTests.cs` executes the actual App emergency-stop
   helper with synthetic tasks, covering recovery marking without WinUI activation.
-- `XUnit.NativeXuAudioControlTests.cs` executes native audio payload comparison
-  and decoding without opening a device, including incomplete readback rejection.
+- `XUnit.NativeXuAudioControlTests.cs` executes native audio mode decoding and
+  supported mode selection without opening a device.
+- `XUnit.DeviceAudioRequestControllerTests.cs` executes the live device-audio
+  request controller with fake UI and device boundaries, covering debounce,
+  supersession, cancellation, one settings save per user request, and failed
+  flash-persist status reporting.
 - `XUnit.UiDispatchTests.cs` executes the complete linked production dispatch
   source with minimal queue/view-model/logger substitutes in
   `UiDispatchTestBoundaries.cs`. It proves managed cancellation and completion

@@ -27,7 +27,9 @@ internal sealed class MainViewModelDeviceAudioRequestControllerContext
     public required Func<CaptureDevice?, bool, CancellationToken, Task> RefreshDeviceAudioControlsAsync { get; init; }
     public required Func<string, CaptureDevice?, CancellationToken, Task<bool>> ApplyDeviceAudioModeAsync { get; init; }
     public required Func<string, CaptureDevice?, CancellationToken, Task<bool>> ApplyAnalogAudioGainAsync { get; init; }
+    public required Func<CaptureDevice, byte, CancellationToken, Task<bool>> PersistAnalogAudioGainAsync { get; init; }
     public required Func<CaptureDevice, bool> IsCurrentSelectedDevice { get; init; }
+    public required Action<string> SetStatusText { get; init; }
 }
 
 /// <summary>
@@ -40,6 +42,7 @@ internal sealed class MainViewModelDeviceAudioRequestController
     private CancellationTokenSource? _gainXuDebounceCts;
     private CancellationTokenSource? _deviceAudioModeCts;
     private CancellationTokenSource? _deviceAudioRefreshCts;
+    private long _gainFlashGeneration;
 
     public MainViewModelDeviceAudioRequestController(MainViewModelDeviceAudioRequestControllerContext context)
     {
@@ -227,10 +230,11 @@ internal sealed class MainViewModelDeviceAudioRequestController
     public void ScheduleAnalogGainFlashPersist(CaptureDevice device, byte gainByte)
     {
         var oldCts = _gainFlashDebounceCts;
-        oldCts?.Cancel();
         var cts = new CancellationTokenSource();
         var token = cts.Token;
+        var generation = Interlocked.Increment(ref _gainFlashGeneration);
         _gainFlashDebounceCts = cts;
+        oldCts?.Cancel();
         _ = Task.Run(async () =>
         {
             try
@@ -238,7 +242,12 @@ internal sealed class MainViewModelDeviceAudioRequestController
                 await Task.Delay(300, token).ConfigureAwait(false);
                 if (!token.IsCancellationRequested && _context.IsCurrentSelectedDevice(device))
                 {
-                    await NativeXuAtCommandProvider.SetAnalogGainAsync(device, gainByte, persistFlash: true, token).ConfigureAwait(false);
+                    var persisted = await _context.PersistAnalogAudioGainAsync(device, gainByte, token).ConfigureAwait(false);
+                    if (!persisted)
+                    {
+                        Logger.Log($"NATIVEXU_ANALOG_GAIN_FLASH_PERSIST_FAILED device='{device.Name}' gain=0x{gainByte:X2}");
+                        QueueAnalogGainFlashPersistFailure(device, generation, token);
+                    }
                 }
             }
             catch (OperationCanceledException)
@@ -259,6 +268,7 @@ internal sealed class MainViewModelDeviceAudioRequestController
 
     public void CancelPendingAudioControlWork()
     {
+        Interlocked.Increment(ref _gainFlashGeneration);
         var flashCts = _gainFlashDebounceCts;
         _gainFlashDebounceCts = null;
         flashCts?.Cancel();
@@ -274,6 +284,36 @@ internal sealed class MainViewModelDeviceAudioRequestController
         var refreshCts = _deviceAudioRefreshCts;
         _deviceAudioRefreshCts = null;
         refreshCts?.Cancel();
+    }
+
+    private void QueueAnalogGainFlashPersistFailure(
+        CaptureDevice device,
+        long generation,
+        CancellationToken cancellationToken)
+    {
+        if (cancellationToken.IsCancellationRequested ||
+            generation != Interlocked.Read(ref _gainFlashGeneration) ||
+            !_context.IsCurrentSelectedDevice(device))
+        {
+            return;
+        }
+
+        var enqueued = _context.EnqueueUiOperation(() =>
+        {
+            if (!cancellationToken.IsCancellationRequested &&
+                generation == Interlocked.Read(ref _gainFlashGeneration) &&
+                !_context.IsDisposing() &&
+                _context.IsCurrentSelectedDevice(device))
+            {
+                _context.SetStatusText("Analog gain applied but could not be saved to the device; it may revert after power cycle.");
+            }
+
+            return Task.CompletedTask;
+        }, "analog gain flash persist failed", true);
+        if (!enqueued)
+        {
+            Logger.Log("NATIVEXU_ANALOG_GAIN_FLASH_PERSIST_STATUS_ENQUEUE_FAILED");
+        }
     }
 }
 

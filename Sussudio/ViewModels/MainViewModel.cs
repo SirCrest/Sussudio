@@ -2472,7 +2472,10 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                         viewModel.ApplyDeviceAudioModeAsync(reason, targetDevice: targetDevice, cancellationToken: cancellationToken),
                     ApplyAnalogAudioGainAsync = (reason, targetDevice, cancellationToken) =>
                         viewModel.ApplyAnalogAudioGainAsync(reason, targetDevice: targetDevice, cancellationToken: cancellationToken),
+                    PersistAnalogAudioGainAsync = (device, gainByte, cancellationToken) =>
+                        viewModel._deviceAudioControlService.SetAnalogGainAsync(device, gainByte, persistFlash: true, cancellationToken),
                     IsCurrentSelectedDevice = viewModel.IsCurrentSelectedDevice,
+                    SetStatusText = value => viewModel.StatusText = value,
                 });
         }
 

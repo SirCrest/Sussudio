@@ -5600,7 +5600,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
 
     internal static Task MainViewModelAudioControls_MapsAnalogGainCurveAndClamps()
     {
-        var mapperType = RequireType("Sussudio.ViewModels.DeviceAudioGainMapper");
+        var mapperType = RequireType("Sussudio.Services.Audio.DeviceAudioGainMapper");
         var mapPercent = mapperType.GetMethod("PercentToGainByte", BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("DeviceAudioGainMapper.PercentToGainByte was not found.");
         var mapByte = mapperType.GetMethod("GainByteToPercent", BindingFlags.Static | BindingFlags.NonPublic)
@@ -5610,16 +5610,18 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         var deviceAudioModeText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(deviceAudioModeText, "DeviceAudioGainMapper.PercentToGainByte(AnalogAudioGainPercent)");
+        AssertContains(deviceAudioModeText, "_deviceAudioControlService.SetAudioModeAsync(device, mode, cancellationToken)");
         AssertContains(deviceAudioStateText, "DeviceAudioGainMapper.PercentToGainByte(gainPercent)");
         AssertContains(deviceAudioStateText, "private async Task<bool> ApplyAnalogAudioGainAsync");
         AssertDoesNotContain(deviceAudioStateText, "private static byte MapPercentToGainByte");
         AssertDoesNotContain(deviceAudioStateText, "private static double MapGainByteToPercent");
-        AssertContains(deviceAudioStateText, "internal static class DeviceAudioGainMapper");
-        AssertContains(deviceAudioStateText, "private const double GainCurveK = 4.0;");
-        AssertContains(deviceAudioStateText, "internal static byte PercentToGainByte");
-        AssertContains(deviceAudioStateText, "internal static double GainByteToPercent");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "DeviceAudioGainMapper.cs")), "DeviceAudioGainMapper folded into MainViewModel.AudioState.cs");
+        var deviceAudioControlServiceText = ReadRepoFile("Sussudio/Services/Audio/NativeXuAudioControlService.cs")
+            .Replace("\r\n", "\n");
+        AssertContains(deviceAudioControlServiceText, "internal static class DeviceAudioGainMapper");
+        AssertContains(deviceAudioControlServiceText, "private const double GainCurveK = 4.0;");
+        AssertContains(deviceAudioControlServiceText, "internal static byte PercentToGainByte");
+        AssertContains(deviceAudioControlServiceText, "internal static double GainByteToPercent");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "DeviceAudioGainMapper.cs")), "DeviceAudioGainMapper remains co-located with the device audio service");
         AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AnalogAudioGain.cs")), "analog gain XU writes folded into MainViewModel.AudioState.cs");
         AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.DeviceAudioMode.cs")), "device audio mode folded into MainViewModel.AudioState.cs");
 
@@ -5988,29 +5990,28 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(applyDeviceAudioMode, "if (device == null || !IsDeviceAudioControlSupported)");
         AssertContains(applyDeviceAudioMode, "if (!IsCurrentSelectedDevice(device))");
         AssertContains(applyDeviceAudioMode, "var mode = NormalizeDeviceAudioMode(explicitMode ?? SelectedDeviceAudioMode);");
-        AssertContains(applyDeviceAudioMode, "var gainByte = DeviceAudioGainMapper.PercentToGainByte(AnalogAudioGainPercent);");
-        AssertContains(applyDeviceAudioMode, "NativeXuAtCommandProvider.SwitchAudioInputAsync(device, isAnalog, gainByte, cancellationToken)");
+        AssertContains(applyDeviceAudioMode, "_deviceAudioControlService.SetAudioModeAsync(device, mode, cancellationToken)");
         AssertContains(applyDeviceAudioMode, "var failureState = await _deviceAudioControlService.ReadStateAsync(device, cancellationToken).ConfigureAwait(false);");
         AssertContains(applyDeviceAudioMode, "StatusText =");
         AssertContains(applyDeviceAudioMode, "if (reapplyAnalogGain && string.Equals(mode, DeviceAudioMode.Analog, StringComparison.OrdinalIgnoreCase))");
         AssertContains(applyDeviceAudioMode, "ApplyAnalogAudioGainAsync(");
         AssertContains(applyDeviceAudioMode, "WithAudioControlRefreshSuppressed(() => SelectedDeviceAudioMode = mode);");
         AssertContains(applyDeviceAudioMode, "if (persistSettings)");
-        AssertOccursBefore(applyDeviceAudioMode, "if (device == null || !IsDeviceAudioControlSupported)", "NativeXuAtCommandProvider.SwitchAudioInputAsync");
-        AssertOccursBefore(applyDeviceAudioMode, "if (!IsCurrentSelectedDevice(device))", "NativeXuAtCommandProvider.SwitchAudioInputAsync");
-        AssertOccursBefore(applyDeviceAudioMode, "NativeXuAtCommandProvider.SwitchAudioInputAsync", "var failureState = await _deviceAudioControlService.ReadStateAsync");
+        AssertOccursBefore(applyDeviceAudioMode, "if (device == null || !IsDeviceAudioControlSupported)", "_deviceAudioControlService.SetAudioModeAsync");
+        AssertOccursBefore(applyDeviceAudioMode, "if (!IsCurrentSelectedDevice(device))", "_deviceAudioControlService.SetAudioModeAsync");
+        AssertOccursBefore(applyDeviceAudioMode, "_deviceAudioControlService.SetAudioModeAsync", "var failureState = await _deviceAudioControlService.ReadStateAsync");
         AssertOccursBefore(applyDeviceAudioMode, "var failureState = await _deviceAudioControlService.ReadStateAsync", "StatusText =");
         AssertOccursBefore(applyDeviceAudioMode, "WithAudioControlRefreshSuppressed(() => SelectedDeviceAudioMode = mode);", "if (persistSettings)");
 
         AssertContains(applyAnalogAudioGain, "var gainPercent = Math.Clamp(explicitPercent ?? AnalogAudioGainPercent, 0.0, 100.0);");
         AssertContains(applyAnalogAudioGain, "var gainByte = DeviceAudioGainMapper.PercentToGainByte(gainPercent);");
-        AssertContains(applyAnalogAudioGain, "NativeXuAtCommandProvider.SetAnalogGainAsync(device, gainByte, persistFlash: false, cancellationToken)");
+        AssertContains(applyAnalogAudioGain, "_deviceAudioControlService.SetAnalogGainPercentAsync(device, gainPercent, persistFlash: false, cancellationToken)");
         AssertContains(applyAnalogAudioGain, "StatusText =");
         AssertContains(applyAnalogAudioGain, "WithAudioControlRefreshSuppressed(() => AnalogAudioGainPercent = gainPercent);");
         AssertContains(applyAnalogAudioGain, "SaveSettings();");
-        AssertOccursBefore(applyAnalogAudioGain, "if (device == null || !IsDeviceAudioControlSupported)", "NativeXuAtCommandProvider.SetAnalogGainAsync");
-        AssertOccursBefore(applyAnalogAudioGain, "if (!IsCurrentSelectedDevice(device))", "NativeXuAtCommandProvider.SetAnalogGainAsync");
-        AssertOccursBefore(applyAnalogAudioGain, "NativeXuAtCommandProvider.SetAnalogGainAsync(device, gainByte, persistFlash: false, cancellationToken)", "WithAudioControlRefreshSuppressed(() => AnalogAudioGainPercent = gainPercent);");
+        AssertOccursBefore(applyAnalogAudioGain, "if (device == null || !IsDeviceAudioControlSupported)", "_deviceAudioControlService.SetAnalogGainPercentAsync");
+        AssertOccursBefore(applyAnalogAudioGain, "if (!IsCurrentSelectedDevice(device))", "_deviceAudioControlService.SetAnalogGainPercentAsync");
+        AssertOccursBefore(applyAnalogAudioGain, "_deviceAudioControlService.SetAnalogGainPercentAsync(device, gainPercent, persistFlash: false, cancellationToken)", "WithAudioControlRefreshSuppressed(() => AnalogAudioGainPercent = gainPercent);");
         AssertOccursBefore(applyAnalogAudioGain, "if (persistSettings)", "SaveSettings();");
 
         AssertContains(isCurrentSelectedDevice, "string.Equals(selected.Id, device.Id, StringComparison.OrdinalIgnoreCase)");
@@ -6052,6 +6053,8 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(deviceAudioStateCode, "partial void OnAnalogAudioGainPercentChanged(double value)");
         AssertContains(deviceAudioStateCode, "=> _deviceAudioRequestController.ScheduleAnalogGainFlashPersist(device, gainByte);");
         AssertContains(deviceAudioRequestControllerCode, "internal sealed class MainViewModelDeviceAudioRequestControllerContext");
+        AssertContains(deviceAudioRequestControllerCode, "public required Func<CaptureDevice, byte, CancellationToken, Task<bool>> PersistAnalogAudioGainAsync { get; init; }");
+        AssertContains(deviceAudioRequestControllerCode, "public required Action<string> SetStatusText { get; init; }");
         AssertContains(deviceAudioRequestControllerCode, "private readonly MainViewModelDeviceAudioRequestControllerContext _context;");
         AssertDoesNotContain(deviceAudioRequestControllerCode, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(deviceAudioRequestControllerCode, "_viewModel.");
@@ -6082,11 +6085,19 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(flashPersist, "oldCts?.Cancel();");
         AssertContains(flashPersist, "_gainFlashDebounceCts = cts;");
         AssertContains(flashPersist, "await Task.Delay(300, token).ConfigureAwait(false);");
-        AssertContains(flashPersist, "NativeXuAtCommandProvider.SetAnalogGainAsync(device, gainByte, persistFlash: true, token)");
+        AssertContains(flashPersist, "_context.PersistAnalogAudioGainAsync(device, gainByte, token)");
+        AssertContains(flashPersist, "QueueAnalogGainFlashPersistFailure(device, generation, token);");
+        AssertContains(flashPersist, "NATIVEXU_ANALOG_GAIN_FLASH_PERSIST_FAILED");
         AssertContains(flashPersist, "if (ReferenceEquals(_gainFlashDebounceCts, cts))");
         AssertContains(flashPersist, "cts.Dispose();");
-        AssertOccursBefore(flashPersist, "await Task.Delay(300, token).ConfigureAwait(false);", "NativeXuAtCommandProvider.SetAnalogGainAsync(device, gainByte, persistFlash: true, token)");
+        AssertOccursBefore(flashPersist, "await Task.Delay(300, token).ConfigureAwait(false);", "_context.PersistAnalogAudioGainAsync(device, gainByte, token)");
         AssertOccursBefore(flashPersist, "if (ReferenceEquals(_gainFlashDebounceCts, cts))", "cts.Dispose();");
+        var flashFailureNotification = ExtractMemberCode(controllerBody, "QueueAnalogGainFlashPersistFailure");
+        AssertContains(flashFailureNotification, "generation != Interlocked.Read(ref _gainFlashGeneration)");
+        AssertContains(flashFailureNotification, "_context.SetStatusText(\"Analog gain applied but could not be saved to the device; it may revert after power cycle.\");");
+        AssertContains(flashFailureNotification, "_context.IsCurrentSelectedDevice(device)");
+        AssertContains(flashFailureNotification, "if (!enqueued)");
+        AssertContains(flashFailureNotification, "NATIVEXU_ANALOG_GAIN_FLASH_PERSIST_STATUS_ENQUEUE_FAILED");
 
         AssertContains(cancelWork, "var flashCts = _gainFlashDebounceCts;");
         AssertContains(cancelWork, "_gainFlashDebounceCts = null;");
@@ -6109,12 +6120,19 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         var rootText = ReadRepoFile("Sussudio/Services/Audio/NativeXuAudioControlService.cs")
             .Replace("\r\n", "\n");
         var probeProjectText = ReadRepoFile("tools/NativeXuAudioProbe/NativeXuAudioProbe.csproj");
+        var probeExperimentsText = ReadRepoFile("tools/NativeXuAudioProbe/NativeXuAudioControlService.Experiments.cs")
+            .Replace("\r\n", "\n");
 
-        AssertContains(rootText, "internal sealed class NativeXuAudioControlService");
-        AssertDoesNotContain(rootText, "partial class NativeXuAudioControlService");
+        AssertContains(rootText, "internal sealed partial class NativeXuAudioControlService");
         AssertContains(rootText, "public async Task<DeviceAudioControlState> ReadStateAsync(");
         AssertContains(rootText, "public async Task<bool> SetAudioModeAsync(");
-        AssertContains(rootText, "public async Task<bool> SetAnalogGainPercentAsync(");
+        AssertContains(rootText, "public Task<bool> SetAnalogGainPercentAsync(");
+        AssertContains(rootText, "public Task<bool> SetAnalogGainAsync(");
+        AssertContains(rootText, "NativeXuAtCommandProvider.SwitchAudioInputAsync(");
+        AssertContains(rootText, "gainByte: 0xFF,");
+        AssertContains(rootText, "NativeXuAtCommandProvider.SetAnalogGainAsync(device, gainByte, persistFlash, cancellationToken)");
+        AssertContains(rootText, "private static bool TryGetTargetAudioMode(string? mode, out bool analog)");
+        AssertContains(rootText, "internal static class DeviceAudioGainMapper");
         AssertContains(rootText, "internal sealed record DeviceAudioControlState(");
         var deviceSupportText = ReadRepoFile("Sussudio/Services/NativeXu/KsExtensionUnitNative.cs")
             .Replace("\r\n", "\n");
@@ -6123,30 +6141,41 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(rootText, "private static readonly int[] DynamicByteIndexes");
         AssertContains(rootText, "private static readonly byte[] HdmiReference = ParseHex(");
         AssertContains(rootText, "private static readonly byte[] AnalogReference = ParseHex(");
-        AssertContains(rootText, "private static bool TryGetTargetInputReference(string? mode, out byte[] reference)");
         AssertContains(rootText, "private static AudioDecodeDecision DecodeInput(byte[] payload)");
         AssertContains(rootText, "private static AnalogGainDecision DecodeGain(byte[] payload)");
         AssertContains(rootText, "private static byte[] ParseHex(string hex)");
-        AssertContains(rootText, "private async Task<bool> UpdatePayloadAsync(");
-        AssertMemberContains(rootText, "UpdatePayloadAsync", "ControlBytesMatch(");
         AssertContains(rootText, "private async Task<RawPayloadSnapshot?> ReadPreferredPayloadAsync(");
         AssertContains(rootText, "NativeXuDeviceSupport.TryGetSupported4kXIds(device, out var vendorId, out var productId)");
         AssertContains(rootText, "NATIVEXU_AUDIO_PAYLOAD_READ missing-selected-interface");
         AssertContains(rootText, "private static IEnumerable<RawControlCandidate> EnumerateCandidates(");
         AssertContains(rootText, "private static bool TryReadRawPayload(");
-        AssertContains(rootText, "private static bool TryWriteRawPayload(");
         AssertContains(rootText, "private static byte[] NormalizePayload(byte[] rawPayload)");
-        AssertContains(rootText, "private static byte[] RehydrateRawPayload(byte[] rawPayload, byte[] normalizedPayload)");
         AssertContains(rootText, "private static async Task<bool> TryAcquireTransportGateAsync(CancellationToken cancellationToken)");
         AssertContains(rootText, "NativeXuDeviceSupport.EnumerateSelectedInterfacePath(selectedInterfacePath)");
         AssertContains(rootText, "NativeXuDeviceSupport.TryAcquireTransportGateAsync(cancellationToken)");
         AssertContains(rootText, "private readonly record struct GainProfile");
         AssertContains(rootText, "private readonly record struct RawControlCandidate");
         AssertContains(rootText, "private readonly record struct RawPayloadSnapshot");
+        foreach (var appExcludedExperiment in new[]
+        {
+            "ExperimentSetAudioModeAsync",
+            "ExperimentSetAnalogGainPercentAsync",
+            "UpdatePayloadAsync",
+            "ControlBytesMatch",
+            "TryWriteRawPayload",
+            "RehydrateRawPayload",
+            "TryGetTargetInputReference"
+        })
+        {
+            AssertDoesNotContain(rootText, appExcludedExperiment);
+            AssertContains(probeExperimentsText, appExcludedExperiment);
+        }
+
         AssertDoesNotContain(rootText, "new KsExtensionUnitNative.KsInterfacePath(selectedInterfacePath, Guid.Empty)");
         AssertContains(deviceSupportText, "public static IReadOnlyList<KsExtensionUnitNative.KsInterfacePath> EnumerateSelectedInterfacePath(");
         AssertContains(deviceSupportText, "public static async Task<bool> TryAcquireTransportGateAsync(CancellationToken cancellationToken = default)");
         AssertContains(probeProjectText, "NativeXuAudioControlService.cs");
+        AssertDoesNotContain(probeProjectText, "NativeXuAudioControlService.Experiments.cs");
         AssertDoesNotContain(probeProjectText, "NativeXuAudioControlService.Profiles.cs");
         AssertDoesNotContain(probeProjectText, "NativeXuAudioControlService.Transport.cs");
         AssertDoesNotContain(probeProjectText, "NativeXuAudioControlService.RawTransport.cs");
