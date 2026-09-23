@@ -5,7 +5,6 @@ using System.Runtime.ExceptionServices;
 using System.Threading.Channels;
 using FFmpeg.AutoGen;
 using Xunit;
-using BundledRuntime = Sussudio.Tests.InProcessRecordingStructureVerifierTests.BundledRuntime;
 
 namespace Sussudio.Tests;
 
