@@ -97,7 +97,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private CaptureSettings? _currentSettings;
     private SourceSignalTelemetrySnapshot _latestSourceTelemetry = SourceSignalTelemetrySnapshot.CreateUnavailable("telemetry-not-started");
     private readonly CaptureRecordingBackendResources _recordingBackend = new();
-    private readonly FlashbackBackendResources _flashbackBackend = new();
+    private readonly FlashbackBackendResources _flashbackBackend;
 
     // Flashback uses a preview-owned continuous encoder when the user is not
     // recording, but can also become the recording backend. These flags track
@@ -386,6 +386,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         ISourceSignalTelemetryProvider? sourceSignalTelemetryProvider = null,
         Func<CancellationToken, Task>? rebuildRecordingSettingsBackendAsync = null)
     {
+        _flashbackBackend = new FlashbackBackendResources(_flashbackExportOperationLock);
         _processSupervisor = processSupervisor;
         _sourceTelemetryProvider = sourceSignalTelemetryProvider ?? CreateDefaultTelemetryProvider();
         _rebuildRecordingSettingsBackendAsync = rebuildRecordingSettingsBackendAsync ?? RebuildFlashbackPreviewBackendForSettingsChangeAsync;

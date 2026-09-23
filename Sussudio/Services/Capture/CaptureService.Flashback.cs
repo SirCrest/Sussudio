@@ -298,7 +298,6 @@ public partial class CaptureService
                         () => CreateFlashbackSessionContext(unifiedVideoCapture, settings),
                         OnFlashbackBackendFatalError,
                         OnFlashbackFrameEncoded,
-                        ScheduleDeferredFlashbackBackendCleanup,
                         cancellationToken))
                 .ConfigureAwait(false);
 
@@ -315,23 +314,6 @@ public partial class CaptureService
         }
     }
 
-    private void ScheduleDeferredFlashbackBackendCleanup(
-        Task sinkCompletionTask,
-        FlashbackBackendArtifactCleanupRequest request)
-        => _flashbackBackend.ScheduleDeferredArtifactCleanup(
-            sinkCompletionTask,
-            request,
-            WaitForFlashbackBackendCleanupExportLockAsync,
-            ReleaseFlashbackBackendCleanupExportLock);
-
-    private Task<bool> WaitForFlashbackBackendCleanupExportLockAsync()
-        => _flashbackExportOperationLock.WaitAsync(
-            TimeSpan.FromSeconds(30),
-            CancellationToken.None);
-
-    private void ReleaseFlashbackBackendCleanupExportLock(string mode)
-        => ReleaseSemaphoreBestEffort(_flashbackExportOperationLock, $"flashback_backend_cleanup_{mode}");
-
     private async Task DisposeFlashbackPreviewBackendAsync(
         CancellationToken cancellationToken,
         bool purgeSegments = true,
@@ -347,11 +329,10 @@ public partial class CaptureService
             var effectivePurgeSegments = _flashbackBackend.ResolveSegmentPurge(
                 purgeSegments,
                 "preview_backend_dispose");
-            await _flashbackBackend.DisposePreviewBackendAsync(
+            await _flashbackBackend.DisposePreviewBackendUnderExportLockAsync(
                     CreateFlashbackPreviewBackendDisposalRequest(
                         effectivePurgeSegments,
                         detachMicrophoneWriter,
-                        exportOperationLockAlreadyHeld: true,
                         cancellationToken))
                 .ConfigureAwait(false);
         }
@@ -365,18 +346,14 @@ public partial class CaptureService
     private FlashbackPreviewBackendDisposalRequest CreateFlashbackPreviewBackendDisposalRequest(
         bool purgeSegments,
         bool detachMicrophoneWriter,
-        bool exportOperationLockAlreadyHeld,
         CancellationToken cancellationToken)
         => new FlashbackPreviewBackendDisposalRequest(
             _videoPipeline.Capture,
             _previewAudioGraph.ProgramCapture,
             _previewAudioGraph.MicrophoneCapture,
             OnFlashbackFrameEncoded,
-            WaitForFlashbackBackendCleanupExportLockAsync,
-            ReleaseFlashbackBackendCleanupExportLock,
             purgeSegments,
             detachMicrophoneWriter,
-            exportOperationLockAlreadyHeld,
             cancellationToken);
 
 
@@ -569,11 +546,10 @@ public partial class CaptureService
 
             if (purgeSegments && !effectivePurgeSegments)
             {
-                await _flashbackBackend.DisposePreviewBackendAsync(
+                await _flashbackBackend.DisposePreviewBackendUnderExportLockAsync(
                         CreateFlashbackPreviewBackendDisposalRequest(
                             purgeSegments: false,
                             detachMicrophoneWriter: true,
-                            exportOperationLockAlreadyHeld: true,
                             cancellationToken))
                     .ConfigureAwait(false);
                 if (_flashbackEnabled && unifiedVideoCapture != null && currentSettings != null)
@@ -590,11 +566,10 @@ public partial class CaptureService
 
             if (!_flashbackEnabled || unifiedVideoCapture == null || currentSettings == null || _flashbackBackend.BufferManager == null || _flashbackBackend.Sink == null)
             {
-                await _flashbackBackend.DisposePreviewBackendAsync(
+                await _flashbackBackend.DisposePreviewBackendUnderExportLockAsync(
                         CreateFlashbackPreviewBackendDisposalRequest(
                             effectivePurgeSegments,
                             detachMicrophoneWriter: true,
-                            exportOperationLockAlreadyHeld: true,
                             cancellationToken))
                     .ConfigureAwait(false);
                 if (_flashbackEnabled && unifiedVideoCapture != null && currentSettings != null)
@@ -623,7 +598,6 @@ public partial class CaptureService
                         OnFlashbackBackendFatalError,
                         OnFlashbackFrameEncoded,
                         ClearLastFlashbackFailure,
-                        ScheduleDeferredFlashbackBackendCleanup,
                         effectivePurgeSegments,
                         cancellationToken))
                 .ConfigureAwait(false);
@@ -638,11 +612,10 @@ public partial class CaptureService
 
             if (cycleOutcome == FlashbackBufferCycleOutcome.PurgeFallbackRebuild)
             {
-                await _flashbackBackend.DisposePreviewBackendAsync(
+                await _flashbackBackend.DisposePreviewBackendUnderExportLockAsync(
                         CreateFlashbackPreviewBackendDisposalRequest(
                             effectivePurgeSegments,
                             detachMicrophoneWriter: true,
-                            exportOperationLockAlreadyHeld: true,
                             committedCycleToken))
                     .ConfigureAwait(false);
                 await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, currentSettings, committedCycleToken).ConfigureAwait(false);
@@ -653,11 +626,10 @@ public partial class CaptureService
 
             if (cycleOutcome == FlashbackBufferCycleOutcome.FallbackFullRebuild)
             {
-                await _flashbackBackend.DisposePreviewBackendAsync(
+                await _flashbackBackend.DisposePreviewBackendUnderExportLockAsync(
                         CreateFlashbackPreviewBackendDisposalRequest(
                             effectivePurgeSegments,
                             detachMicrophoneWriter: true,
-                            exportOperationLockAlreadyHeld: true,
                             committedCycleToken))
                     .ConfigureAwait(false);
                 await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, currentSettings, committedCycleToken).ConfigureAwait(false);

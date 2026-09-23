@@ -8,6 +8,17 @@ namespace Sussudio.Tests;
 public sealed class FlashbackHealthLifetimeTests
 {
     [Fact]
+    public async Task CaptureServiceBackendBorrowsTheServiceExportOperationLock()
+    {
+        await using var service = (IAsyncDisposable)Activator.CreateInstance(
+            TypeOf("Sussudio.Services.Capture.CaptureService"))!;
+        var exportOperationLock = Assert.IsType<SemaphoreSlim>(ReadField(service, "_flashbackExportOperationLock"));
+        var backend = ReadField(service, "_flashbackBackend");
+        Assert.NotNull(backend);
+        Assert.Same(exportOperationLock, ReadField(backend, "_exportOperationLock"));
+    }
+
+    [Fact]
     public void BackendReplacementForwardsNewController_AndRejectsRetiredCallbacks()
     {
         using var fixture = new BackendFixture();
@@ -161,11 +172,12 @@ public sealed class FlashbackHealthLifetimeTests
     private sealed class BackendFixture : IDisposable
     {
         private readonly object _bufferManager;
+        private readonly SemaphoreSlim _exportOperationLock = new(1, 1);
         private readonly List<object> _controllers = [];
 
         public BackendFixture()
         {
-            Backend = Activator.CreateInstance(TypeOf("Sussudio.Services.Capture.FlashbackBackendResources"))!;
+            Backend = Activator.CreateInstance(TypeOf("Sussudio.Services.Capture.FlashbackBackendResources"), _exportOperationLock)!;
             _bufferManager = Activator.CreateInstance(TypeOf("Sussudio.Services.Flashback.FlashbackBufferManager"), new object?[] { null })!;
             var stateChanged = Backend.GetType().GetEvent("PlaybackStateChanged")!;
             var change = Expression.Parameter(stateChanged.EventHandlerType!.GetMethod("Invoke")!.GetParameters()[0].ParameterType, "change");
@@ -194,6 +206,7 @@ public sealed class FlashbackHealthLifetimeTests
                 ((IDisposable)controller).Dispose();
             }
             ((IDisposable)_bufferManager).Dispose();
+            _exportOperationLock.Dispose();
         }
     }
 }

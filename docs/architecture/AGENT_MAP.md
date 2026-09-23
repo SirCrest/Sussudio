@@ -536,9 +536,9 @@ Important entry points:
   selection application through `ApplyRecordingSettingsAsync`, encoder-setting cycles,
   rollback after failed Flashback buffer cycles, preview backend startup/disposal
   transition coordination, AV1 encoder support probing, video/audio readiness
-  waiting, resource-owner request construction, deferred cleanup handoff,
-  artifact-cleanup export-lock delegation, teardown lock ordering, purge-policy
-  resolution, service callback binding, cancellation-token choice, and preview backend disposal request construction.
+  waiting, resource-owner request construction, teardown lock ordering,
+  purge-policy resolution, service callback binding, cancellation-token choice,
+  and preview backend disposal request construction.
 - `CaptureService.Flashback.cs` owns Flashback recording backend ownership checks,
   WASAPI and microphone input restoration for Flashback preview/recording
   backends, audio attachment, frame-encoded fan-out, recording topology
@@ -548,9 +548,15 @@ Important entry points:
   feed wiring, teardown mechanics, and backend artifact cleanup. This is the
   Capture-owned integration with Flashback resources and concrete producers. Resource
   replacement is private to this owner, including lazy exporter creation through
-  `GetOrCreateExporter`; startup and cycling share the artifact-cleanup request contract.
+  `GetOrCreateExporter`; startup and cycling schedule artifact cleanup within this owner.
+  `CaptureService` owns the shared export semaphore and lends it to the backend once at
+  construction. Immediate teardown requires the caller's backend lease and export gate;
+  deferred cleanup awaits the detached sink and then acquires that same export gate.
   Cancellation before a completed backend's purge transfers its resources to deferred
   nonpurging cleanup before reporting cancellation, preserving the segment files.
+  An undrained sink keeps the original purge policy in its deferred handoff.
+  `FlashbackBackendCleanupTests.cs` exercises cleanup with real semaphore ownership,
+  detached-sink completion, cancellation, recovery retention, and failed acquisition.
   Playback
   replacement also owns state-event subscription transfer, generation stamps
   for rejecting retired notifications, and the per-instance prewarm latch.
@@ -862,11 +868,10 @@ Entry points:
   full-rebuild fallback outcomes, playback disposal, old-sink stop/dispose,
   replacement sink startup/playback restore, failed replacement cleanup,
   preview-backend teardown, sink stop/dispose, backend clear, and artifact
-  cleanup request/retry/dispose/purge mechanics. The backend resource owner
-  receives export-lock wait/release delegates from `CaptureService` rather than
-  owning service semaphores directly during preview backend startup, cycling,
-  and teardown. `CaptureService`
-  remains the transition/readiness coordinator and reads/writes the backend
+  cleanup request/retry/dispose/purge mechanics. The backend borrows the single
+  service-owned export semaphore for deferred artifact cleanup; immediate teardown
+  requires the caller-held backend lease and export gate. `CaptureService` keeps
+  semaphore disposal and transition/readiness coordination and reads/writes the backend
   aggregate directly, without private resource shim properties.
 - Playback health notifications follow the backend resource lifetime, through
   stable `CaptureService.Flashback.cs` and `CaptureSessionCoordinator` events.

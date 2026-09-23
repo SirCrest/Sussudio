@@ -2096,11 +2096,11 @@ static partial class Program
             captureServiceSource,
             "private async Task DisposeFlashbackPreviewBackendAsync",
             "private FlashbackPreviewBackendDisposalRequest CreateFlashbackPreviewBackendDisposalRequest");
-        AssertContains(disposeFlashbackPreviewBackend, "_flashbackBackend.DisposePreviewBackendAsync(");
+        AssertContains(disposeFlashbackPreviewBackend, "_flashbackBackend.DisposePreviewBackendUnderExportLockAsync(");
         var disposeFlashbackPreviewBackendResources = ExtractSourceBlock(
             flashbackBackendSource,
-            "public async Task DisposePreviewBackendAsync",
-            "public void ScheduleDeferredArtifactCleanup");
+            "public async Task DisposePreviewBackendUnderExportLockAsync",
+            "private void ScheduleDeferredArtifactCleanup");
         AssertOccursBefore(disposeFlashbackPreviewBackendResources, "TakePlaybackController()", "flashbackPlaybackController.GoLive();");
         AssertContains(disposeFlashbackPreviewBackendResources, "DetachProducers(");
         AssertContains(disposeFlashbackPreviewBackendResources, "\"FLASHBACK_PREVIEW_DETACH_WARN\"");
@@ -2108,20 +2108,15 @@ static partial class Program
         AssertOccursBefore(disposeFlashbackPreviewBackendResources, "DetachProducers(", "await flashbackSink.StopAsync(CancellationToken.None).ConfigureAwait(false);");
         AssertOccursBefore(disposeFlashbackPreviewBackendResources, "Clear();", "request.CancellationToken.ThrowIfCancellationRequested();");
         AssertOccursBefore(disposeFlashbackPreviewBackendResources, "ScheduleDeferredArtifactCleanup(", "request.CancellationToken.ThrowIfCancellationRequested();");
-        AssertContains(disposeFlashbackPreviewBackendResources, "var cleanupCompleted = await CleanupArtifactsAfterExportAsync(");
+        AssertContains(disposeFlashbackPreviewBackendResources, "var cleanupCompleted = CleanupArtifactsUnderExportLock(");
         AssertContains(disposeFlashbackPreviewBackendResources, "ScheduleDeferredArtifactCleanup(\n                Task.Delay(TimeSpan.FromSeconds(1)),");
-        var deferredFlashbackBackendCleanup = ExtractSourceBlock(
-            captureServiceSource,
-            "private void ScheduleDeferredFlashbackBackendCleanup",
-            "private Task<bool> WaitForFlashbackBackendCleanupExportLockAsync");
-        AssertContains(deferredFlashbackBackendCleanup, "FlashbackBackendArtifactCleanupRequest request)");
-        AssertContains(deferredFlashbackBackendCleanup, "_flashbackBackend.ScheduleDeferredArtifactCleanup(");
-        AssertContains(deferredFlashbackBackendCleanup, "WaitForFlashbackBackendCleanupExportLockAsync");
-        AssertContains(deferredFlashbackBackendCleanup, "ReleaseFlashbackBackendCleanupExportLock");
+        AssertDoesNotContain(captureServiceSource, "ScheduleDeferredFlashbackBackendCleanup");
+        AssertDoesNotContain(captureServiceSource, "WaitForFlashbackBackendCleanupExportLockAsync");
+        AssertDoesNotContain(captureServiceSource, "ReleaseFlashbackBackendCleanupExportLock");
 
         var deferredFlashbackBackendResourcesCleanup = ExtractSourceBlock(
             flashbackBackendSource,
-            "public void ScheduleDeferredArtifactCleanup",
+            "private void ScheduleDeferredArtifactCleanup",
             "private async Task<bool> CleanupArtifactsAfterExportAsync");
         AssertContains(deferredFlashbackBackendResourcesCleanup, "FlashbackBackendArtifactCleanupRequest request,");
         AssertContains(deferredFlashbackBackendResourcesCleanup, "CleanupArtifactsAfterExportAsync(");
@@ -2136,12 +2131,12 @@ static partial class Program
             "private async Task<bool> CleanupArtifactsAfterExportAsync",
             "public async Task StartPreviewBackendAsync");
         AssertContains(flashbackBackendArtifactCleanup, "FlashbackBackendArtifactCleanupRequest request,");
-        AssertContains(captureServiceSource, "WaitAsync(\n            TimeSpan.FromSeconds(30),\n            CancellationToken.None)");
-        AssertContains(flashbackBackendArtifactCleanup, "acquireExportOperationLockAsync()");
+        AssertContains(flashbackBackendArtifactCleanup, "_exportOperationLock.WaitAsync(\n                TimeSpan.FromSeconds(30),\n                CancellationToken.None)");
+        AssertContains(flashbackBackendArtifactCleanup, "_exportOperationLock.WaitAsync(");
         AssertOccursBefore(flashbackBackendArtifactCleanup, "request.FlashbackExporter.Dispose();", "request.BufferManager.PurgeAllSegments();");
         AssertOccursBefore(flashbackBackendArtifactCleanup, "request.FlashbackExporter.Dispose();", "request.BufferManager.Dispose();");
-        AssertOccursBefore(flashbackBackendArtifactCleanup, "acquireExportOperationLockAsync()", "request.FlashbackExporter.Dispose();");
-        AssertOccursBefore(flashbackBackendArtifactCleanup, "acquireExportOperationLockAsync()", "request.BufferManager.PurgeAllSegments();");
+        AssertOccursBefore(flashbackBackendArtifactCleanup, "_exportOperationLock.WaitAsync(", "request.FlashbackExporter.Dispose();");
+        AssertOccursBefore(flashbackBackendArtifactCleanup, "_exportOperationLock.WaitAsync(", "request.BufferManager.PurgeAllSegments();");
     }
 
     /// <summary>
@@ -3482,12 +3477,13 @@ static partial class Program
         AssertContains(backendSource, "AttachProducers(");
         AssertContains(backendSource, "playbackController.Initialize(");
         AssertContains(backendSource, "private async Task RollBackPreviewBackendStartAsync(");
-        AssertContains(backendSource, "request.ScheduleDeferredCleanup(");
+        AssertDoesNotContain(backendSource, "ScheduleDeferredCleanup");
         AssertContains(backendSource, "internal readonly record struct FlashbackBackendArtifactCleanupRequest(");
-        AssertContains(backendSource, "public void ScheduleDeferredArtifactCleanup(");
+        AssertContains(backendSource, "private void ScheduleDeferredArtifactCleanup(");
         AssertContains(backendSource, "private async Task<bool> CleanupArtifactsAfterExportAsync(");
-        AssertContains(backendSource, "Func<Task<bool>> acquireExportOperationLockAsync,");
-        AssertContains(backendSource, "Action<string> releaseExportOperationLock,");
+        AssertContains(backendSource, "public FlashbackBackendResources(SemaphoreSlim exportOperationLock)");
+        AssertContains(backendSource, "private static bool CleanupArtifactsUnderExportLock(");
+        AssertDoesNotContain(backendSource, "ExportOperationLockAlreadyHeld");
         AssertContains(backendSource, "public async Task<FinalizeResult> FinalizeRecordingAsync(");
         AssertContains(backendSource, "private static FinalizeResult PreserveEndArtifactsOnFailure(");
         AssertContains(backendSource, "private FlashbackPlaybackController? TakePlaybackController()");
@@ -3513,7 +3509,8 @@ static partial class Program
         AssertContains(backendSource, "private void ClearSinkAndSettings()");
         AssertContains(backendSource, "private void Clear()");
 
-        AssertContains(captureSource, "private readonly FlashbackBackendResources _flashbackBackend = new();");
+        AssertContains(captureSource, "private readonly FlashbackBackendResources _flashbackBackend;");
+        AssertContains(captureSource, "_flashbackBackend = new FlashbackBackendResources(_flashbackExportOperationLock);");
         AssertDoesNotContain(captureSource, "_flashbackBufferManager");
         AssertDoesNotContain(captureSource, "_flashbackSink");
         AssertDoesNotContain(captureSource, "_flashbackExporter");
@@ -3533,7 +3530,7 @@ static partial class Program
         AssertContains(backendSource, "ClearRecoveryPreserve();");
         AssertContains(captureSource, "_flashbackBackend.FinalizeRecordingAsync(");
         AssertContains(backendSource, "ClearSinkAndSettings();");
-        AssertContains(captureSource, "_flashbackBackend.DisposePreviewBackendAsync(");
+        AssertContains(captureSource, "_flashbackBackend.DisposePreviewBackendUnderExportLockAsync(");
         AssertContains(backendSource, "Clear();");
         AssertDoesNotContain(captureSource, "var bufferManager = new FlashbackBufferManager(");
         AssertDoesNotContain(captureSource, "FlashbackPlaybackController? playbackController = null;");
@@ -3701,7 +3698,7 @@ static partial class Program
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackPreviewBackendDisposal.cs")),
             "old Flashback preview backend disposal partial removed");
         AssertContains(backendResourcesText, "internal readonly record struct FlashbackPreviewBackendDisposalRequest(");
-        AssertContains(backendResourcesText, "public async Task DisposePreviewBackendAsync(");
+        AssertContains(backendResourcesText, "public async Task DisposePreviewBackendUnderExportLockAsync(");
         AssertContains(settingsText, "private async Task CycleFlashbackBufferAsync(");
         AssertContains(settingsText, "_flashbackBackend.CycleSinkOnlyAsync(");
         AssertContains(settingsText, "public Task UpdateFlashbackSettingsAsync(");

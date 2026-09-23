@@ -208,7 +208,8 @@ static partial class Program
         AssertContains(previewBackendEntry, "AV1 encoder support probing");
         AssertContains(previewBackendEntry, "video/audio readiness");
         AssertContains(previewBackendEntry, "resource-owner request construction");
-        AssertContains(previewBackendEntry, "deferred cleanup handoff");
+        AssertContains(previewBackendEntry, "`CaptureService` owns the shared export semaphore");
+        AssertContains(previewBackendEntry, "deferred cleanup awaits the detached sink");
         AssertContains(previewBackendEntry, "preview backend disposal request construction");
         AssertContains(previewBackendEntry, "`Sussudio/Services/Capture/FlashbackBackendResources.cs` owns startup construction");
         AssertContains(previewBackendEntry, "Capture-owned integration");
