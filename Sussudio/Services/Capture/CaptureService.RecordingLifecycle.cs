@@ -838,13 +838,12 @@ public partial class CaptureService
     internal void MarkRecordingFinalizationUnresolved(string statusMessage)
     {
         var recordingOutcome = CaptureRecordingOutcomeSnapshot();
-        if (recordingOutcome.FinalizeUtc.HasValue &&
-            !string.Equals(recordingOutcome.FinalizeStatus, "Recording", StringComparison.Ordinal) &&
-            !string.Equals(recordingOutcome.FinalizeStatus, "None", StringComparison.Ordinal))
+        if (recordingOutcome.FinalizeOutcome != RecordingFinalizeOutcome.None)
         {
             Logger.Log(
                 "RECORDING_FINALIZE_UNRESOLVED_SKIPPED " +
-                $"reason=existing_finalization_status status='{recordingOutcome.FinalizeStatus}'");
+                $"reason=existing_finalization_status outcome='{recordingOutcome.FinalizeOutcome}' " +
+                $"status='{recordingOutcome.FinalizeStatus}'");
             return;
         }
 
@@ -960,27 +959,18 @@ public partial class CaptureService
         result = idlePreviewDisposal.Result;
         cancellationException = idlePreviewDisposal.CancellationException;
 
-        result = FoldRecordingAudioFaultIntoFinalizeResult(
-            result,
-            cancellationException,
-            recordingContext?.Settings);
-        result = FoldRequestedProgramAudioIntegrityIntoFinalizeResult(
-            result,
-            libAvFinalAudioCounters);
-        if (libAvSink != null)
-        {
-            result = FoldRequestedMicrophoneIntegrityIntoFinalizeResult(
-                result,
-                recordingContext?.MicrophoneEnabled == true,
+        RecordingMicrophoneIntegrityEvidence? libAvMicrophoneIntegrity = libAvSink == null
+            ? null
+            : CaptureRecordingMicrophoneIntegrityEvidence(
                 libAvSink.MicrophoneSamplesReceived,
-                libAvSink.MicrophoneDropsQueueSaturated + libAvSink.MicrophoneDropsBacklogEviction,
-                Math.Max(
-                    0,
-                    _recordingMicrophoneDiscontinuitiesFinal -
-                    _recordingMicrophoneDiscontinuitiesBaseline));
-        }
-        result = FoldRecordedRuntimeFailureIntoFinalizeResult(result);
-        result = VerifyFinalizedOutputBeforeSaved(result, recordingContext);
+                SumNonNegative(libAvSink.MicrophoneDropsQueueSaturated, libAvSink.MicrophoneDropsBacklogEviction),
+                _recordingMicrophoneDiscontinuitiesFinal);
+        result = ApplyRecordingFinalizePolicies(
+            result,
+            recordingContext,
+            cancellationException,
+            libAvFinalAudioCounters,
+            libAvMicrophoneIntegrity);
         result = EnsureRecordingFailureRecovery(result, recordingContext);
 
         PublishLibAvRecordingIntegrity(
@@ -1003,6 +993,27 @@ public partial class CaptureService
         }
 
         return result;
+    }
+
+    private FinalizeResult ApplyRecordingFinalizePolicies(
+        FinalizeResult result,
+        RecordingContext? recordingContext,
+        OperationCanceledException? cancellationException,
+        RecordingAudioIntegrityCounterSnapshot audioCounters,
+        RecordingMicrophoneIntegrityEvidence? microphoneIntegrity,
+        TimeSpan? expectedRecordingDuration = null)
+    {
+        result = FoldRecordingAudioFaultIntoFinalizeResult(
+            result,
+            cancellationException,
+            recordingContext?.Settings);
+        result = FoldRequestedProgramAudioIntegrityIntoFinalizeResult(result, audioCounters);
+        result = FoldRequestedMicrophoneIntegrityIntoFinalizeResult(
+            result,
+            recordingContext?.MicrophoneEnabled == true,
+            microphoneIntegrity);
+        result = FoldRecordedRuntimeFailureIntoFinalizeResult(result);
+        return VerifyFinalizedOutputBeforeSaved(result, recordingContext, expectedRecordingDuration);
     }
 
     private static FinalizeResult EnsureRecordingFailureRecovery(
@@ -1136,21 +1147,29 @@ public partial class CaptureService
         return result.AsFailure(statusMessage, RecordingFailureCodes.AudioCaptureFailed);
     }
 
-    private FinalizeResult FoldRequestedMicrophoneIntegrityIntoFinalizeResult(
-        FinalizeResult result,
-        bool microphoneRequested,
+    private RecordingMicrophoneIntegrityEvidence CaptureRecordingMicrophoneIntegrityEvidence(
         long microphoneSamplesReceived,
         long microphoneDrops,
         long microphoneDiscontinuities)
+        => new(
+            Math.Max(0, microphoneSamplesReceived - _recordingMicrophoneSamplesBaseline),
+            Math.Max(0, microphoneDrops - _recordingMicrophoneDropsBaseline),
+            Math.Max(0, microphoneDiscontinuities - _recordingMicrophoneDiscontinuitiesBaseline));
+
+    private FinalizeResult FoldRequestedMicrophoneIntegrityIntoFinalizeResult(
+        FinalizeResult result,
+        bool microphoneRequested,
+        RecordingMicrophoneIntegrityEvidence? microphoneIntegrity)
     {
-        if (!result.Succeeded || !microphoneRequested)
+        if (!result.Succeeded || !microphoneRequested || microphoneIntegrity is not { } evidence)
         {
             return result;
         }
 
-        var recordedSamples = Math.Max(0, microphoneSamplesReceived - _recordingMicrophoneSamplesBaseline);
-        var droppedPackets = Math.Max(0, microphoneDrops - _recordingMicrophoneDropsBaseline);
-        if (recordedSamples > 0 && droppedPackets == 0 && microphoneDiscontinuities == 0)
+        var recordedSamples = evidence.RecordedSamples;
+        var droppedPackets = evidence.DroppedPackets;
+        var discontinuities = evidence.Discontinuities;
+        if (recordedSamples > 0 && droppedPackets == 0 && discontinuities == 0)
         {
             return result;
         }
@@ -1159,10 +1178,10 @@ public partial class CaptureService
             ? "Recording failed because the requested microphone produced no samples during the recording interval."
             : droppedPackets > 0
                 ? $"Recording failed because the requested microphone dropped {droppedPackets} packet(s)."
-                : $"Recording failed because the requested microphone reported {microphoneDiscontinuities} data discontinuity event(s).";
+                : $"Recording failed because the requested microphone reported {discontinuities} data discontinuity event(s).";
         Logger.Log(
             $"RECORDING_MICROPHONE_INTEGRITY_FAIL samples={recordedSamples} " +
-            $"drops={droppedPackets} discontinuities={microphoneDiscontinuities}");
+            $"drops={droppedPackets} discontinuities={discontinuities}");
         return result.AsFailure(reason, RecordingFailureCodes.MicrophoneIntegrityFailed);
     }
 
@@ -1347,9 +1366,14 @@ public partial class CaptureService
     }
 
     private readonly record struct RecordingIntegritySummaryEvaluation(
-        string Status,
-        string AudioStatus,
+        RecordingIntegrityStatus Status,
+        RecordingIntegrityAudioStatus AudioStatus,
         string Reason);
+
+    private readonly record struct RecordingMicrophoneIntegrityEvidence(
+        long RecordedSamples,
+        long DroppedPackets,
+        long Discontinuities);
 
     private RecordingIntegritySummary ResolveRecordingIntegritySummary(
         UnifiedVideoCapture? unifiedVideoCapture,
@@ -1401,7 +1425,7 @@ public partial class CaptureService
 
         return new RecordingIntegritySummary
         {
-            Status = "Active",
+            Status = RecordingIntegrityStatus.Active,
             Backend = ResolveRecordingBackendName(),
             Reason = "Recording active; recording boundary is still attaching."
         };
@@ -1608,7 +1632,7 @@ public partial class CaptureService
         return new RecordingIntegritySummary
         {
             Status = evaluation.Status,
-            Complete = !recordingActive && string.Equals(evaluation.Status, "Complete", StringComparison.Ordinal),
+            Complete = !recordingActive && evaluation.Status == RecordingIntegrityStatus.Complete,
             Backend = backend,
             CompletedUtc = completedUtc,
             SourceFrames = videoFields.SourceFrames,
@@ -1760,10 +1784,10 @@ public partial class CaptureService
         var status = reasons.Count > 0
             ? (videoFields.EncodingFailed ||
                (!recordingActive && !finalizeSucceeded) ||
-               string.Equals(audioStatus, "Failed", StringComparison.Ordinal)
-                ? "Failed"
-                : "Incomplete")
-            : recordingActive ? "Active" : "Complete";
+               audioStatus == RecordingIntegrityAudioStatus.Failed
+                ? RecordingIntegrityStatus.Failed
+                : RecordingIntegrityStatus.Incomplete)
+            : recordingActive ? RecordingIntegrityStatus.Active : RecordingIntegrityStatus.Complete;
         var reason = reasons.Count > 0
             ? string.Join("; ", reasons)
             : recordingActive
@@ -1773,13 +1797,13 @@ public partial class CaptureService
         return new RecordingIntegritySummaryEvaluation(status, audioStatus, reason);
     }
 
-    private static string EvaluateRecordingIntegrityAudioStatus(
+    private static RecordingIntegrityAudioStatus EvaluateRecordingIntegrityAudioStatus(
         RecordingIntegritySummaryAudioFields audioFields,
         List<string> reasons)
     {
         if (!audioFields.AudioEnabled)
         {
-            return "Disabled";
+            return RecordingIntegrityAudioStatus.Disabled;
         }
 
         var audioFailed = false;
@@ -1849,7 +1873,11 @@ public partial class CaptureService
             reasons.Add($"encoder_av_sync_drift_ms={FormatRecordingIntegrityDouble(encoderDriftMs)}");
         }
 
-        return audioFailed ? "Failed" : audioIncomplete ? "Incomplete" : "Clean";
+        return audioFailed
+            ? RecordingIntegrityAudioStatus.Failed
+            : audioIncomplete
+                ? RecordingIntegrityAudioStatus.Incomplete
+                : RecordingIntegrityAudioStatus.Clean;
     }
 
     private static string FormatRecordingIntegrityDouble(double value)

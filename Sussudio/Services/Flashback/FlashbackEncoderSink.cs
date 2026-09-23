@@ -761,7 +761,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
             return new FinalizeResult
             {
-                Succeeded = true,
+                Outcome = RecordingFinalizeOutcome.Saved,
                 OutputPath = _recordingOutputPath ?? string.Empty,
                 StatusMessage = "Flashback recording ready for export",
                 PreservedArtifacts = _tsFilePath != null ? new[] { _tsFilePath } : Array.Empty<string>()

@@ -277,7 +277,8 @@ public sealed class FlashbackExportStateTests
         internal object Result(bool succeeded, string message, string failureCode = "", string? outputPath = null)
         {
             var result = Activator.CreateInstance(TypeOf("Sussudio.Services.Contracts.FinalizeResult"))!;
-            result.GetType().GetProperty("Succeeded")!.SetValue(result, succeeded);
+            var outcome = result.GetType().GetProperty("Outcome")!;
+            outcome.SetValue(result, Enum.Parse(outcome.PropertyType, succeeded ? "Saved" : "Failed"));
             result.GetType().GetProperty("StatusMessage")!.SetValue(result, message);
             result.GetType().GetProperty("FailureCode")!.SetValue(result, failureCode);
             result.GetType().GetProperty("OutputPath")!.SetValue(result, outputPath ?? PathFor("export.mp4"));

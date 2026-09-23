@@ -2429,7 +2429,7 @@ static partial class Program
         AssertContains(rootText, "RecordingBoundaryRejectedFrames = normalizedBoundaryRejectedFrames");
         AssertContains(rootText, "queue_rejections=");
         AssertContains(rootText, "private static RecordingIntegritySummaryEvaluation EvaluateRecordingIntegritySummary(");
-        AssertContains(rootText, "private static string EvaluateRecordingIntegrityAudioStatus(");
+        AssertContains(rootText, "private static RecordingIntegrityAudioStatus EvaluateRecordingIntegrityAudioStatus(");
         AssertContains(rootText, "RecordingIntegrityAvSyncDriftWarningMs");
         AssertContains(rootText, "audio_boundary_drops=");
         AssertContains(rootText, "private static string FormatRecordingIntegrityDouble(");
@@ -2644,7 +2644,13 @@ static partial class Program
         })
         {
             var snapshotType = RequireType(typeName);
-            AssertProperty(snapshotType, "RecordingIntegrityStatus", typeof(string));
+            var runtimeStatusType = typeName == "Sussudio.Models.CaptureRuntimeSnapshot"
+                ? RequireType("Sussudio.Models.RecordingIntegrityStatus")
+                : typeof(string);
+            var runtimeAudioStatusType = typeName == "Sussudio.Models.CaptureRuntimeSnapshot"
+                ? RequireType("Sussudio.Models.RecordingIntegrityAudioStatus")
+                : typeof(string);
+            AssertProperty(snapshotType, "RecordingIntegrityStatus", runtimeStatusType);
             AssertProperty(snapshotType, "RecordingIntegrityComplete", typeof(bool));
             AssertProperty(snapshotType, "RecordingIntegrityBackend", typeof(string));
             AssertProperty(snapshotType, "RecordingIntegrityCompletedUtc", typeof(DateTimeOffset?));
@@ -2662,7 +2668,7 @@ static partial class Program
             AssertProperty(snapshotType, "RecordingIntegrityBackpressureWaitMs", typeof(long));
             AssertProperty(snapshotType, "RecordingIntegrityBackpressureEvents", typeof(long));
             AssertProperty(snapshotType, "RecordingIntegrityBackpressureMaxWaitMs", typeof(long));
-            AssertProperty(snapshotType, "RecordingIntegrityAudioStatus", typeof(string));
+            AssertProperty(snapshotType, "RecordingIntegrityAudioStatus", runtimeAudioStatusType);
             AssertProperty(snapshotType, "RecordingIntegrityAudioEnabled", typeof(bool));
             AssertProperty(snapshotType, "RecordingIntegrityAudioCaptureActive", typeof(bool));
             AssertProperty(snapshotType, "RecordingIntegrityAudioFramesArrived", typeof(long));
@@ -2779,7 +2785,7 @@ static partial class Program
         AssertContains(captureRuntimeModelText, "public string TelemetryAlignmentStatus { get; init; } = \"Unknown\";");
         AssertContains(captureRuntimeModelText, "public IReadOnlyList<SourceTelemetryDetailEntry> SourceTelemetryDetails { get; init; } = Array.Empty<SourceTelemetryDetailEntry>();");
         AssertContains(captureRuntimeModelText, "public double? AvSyncCaptureDriftMs { get; init; }");
-        AssertContains(captureRuntimeModelText, "public string RecordingIntegrityStatus { get; init; } = \"NotStarted\";");
+        AssertContains(captureRuntimeModelText, "public RecordingIntegrityStatus RecordingIntegrityStatus { get; init; } = RecordingIntegrityStatus.NotStarted;");
         AssertContains(captureRuntimeModelText, "public string? FlashbackCodecDowngradeReason { get; init; }");
         AssertDoesNotContain(captureRuntimeModelText, "partial class CaptureRuntimeSnapshot");
 

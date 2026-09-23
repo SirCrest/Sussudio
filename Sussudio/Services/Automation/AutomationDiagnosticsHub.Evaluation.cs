@@ -653,15 +653,15 @@ public sealed partial class AutomationDiagnosticsHub
         bool isRecording,
         DiagnosticEvaluationLanes lanes)
     {
-        var recordingIntegrityIncomplete =
-            string.Equals(captureRuntime.RecordingIntegrityStatus, "Incomplete", StringComparison.OrdinalIgnoreCase);
+        var idleRecordingIntegrityFailed = !isRecording &&
+            (captureRuntime.RecordingIntegrityStatus is RecordingIntegrityStatus.Incomplete or RecordingIntegrityStatus.Failed);
         // Recovery history remains visible in the banner and snapshot. It does
         // not describe the health of a new idle capture session.
         var recoveredRecordingFailure = !isRecording &&
             string.Equals(health.RecordingEncodingFailureType, "RecoveredFinalizationFailure", StringComparison.Ordinal);
         var recordingIntegrityFailed =
             (health.RecordingEncodingFailed && !recoveredRecordingFailure) ||
-            (recordingIntegrityIncomplete && !isRecording);
+            idleRecordingIntegrityFailed;
 
         if (recordingIntegrityFailed)
         {
@@ -673,9 +673,8 @@ public sealed partial class AutomationDiagnosticsHub
                 lanes);
         }
 
-        if (string.Equals(captureRuntime.RecordingIntegrityAudioStatus, "Clean", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(captureRuntime.RecordingIntegrityAudioStatus, "Disabled", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(captureRuntime.RecordingIntegrityAudioStatus, "NotStarted", StringComparison.OrdinalIgnoreCase))
+        if (captureRuntime.RecordingIntegrityAudioStatus is
+            RecordingIntegrityAudioStatus.Clean or RecordingIntegrityAudioStatus.Disabled)
         {
             return null;
         }

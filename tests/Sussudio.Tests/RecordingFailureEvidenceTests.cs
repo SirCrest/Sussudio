@@ -19,14 +19,18 @@ public sealed class RecordingFailureEvidenceTests
         var service = CreatePolicyOwner();
         SetField(service, "_recordingMicrophoneSamplesBaseline", 100L);
         SetField(service, "_recordingMicrophoneDropsBaseline", 5L);
+        var evidence = Invoke(service, "CaptureRecordingMicrophoneIntegrityEvidence", samples, drops, discontinuities);
+        Assert.Equal(Math.Max(0, samples - 100), Read<long>(evidence, "RecordedSamples"));
+        Assert.Equal(Math.Max(0, drops - 5), Read<long>(evidence, "DroppedPackets"));
+        Assert.Equal(Math.Max(0, discontinuities), Read<long>(evidence, "Discontinuities"));
         var saved = VerifiedResult();
         var result = Invoke(service, "FoldRequestedMicrophoneIntegrityIntoFinalizeResult",
-            saved, requested, samples, drops, discontinuities);
+            saved, requested, evidence);
 
         AssertFold(saved, result, succeeds, "recording-microphone-integrity-failed");
         var failed = Invoke(saved, "AsFailure", "Earlier failure", "earlier-failure");
         Assert.Same(failed, Invoke(service, "FoldRequestedMicrophoneIntegrityIntoFinalizeResult",
-            failed, requested, samples, drops, discontinuities));
+            failed, requested, evidence));
     }
 
     [Theory]

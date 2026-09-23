@@ -16,7 +16,7 @@ public sealed class FlashbackFailureIdentityTests
         var result = Activator.CreateInstance(RequireType("Sussudio.Services.Contracts.FinalizeResult"))!;
         Set(result, "FailureCode", code);
         Set(result, "StatusMessage", message);
-        Set(result, "Succeeded", succeeded);
+        SetOutcome(result, succeeded ? "Saved" : "Failed");
         Assert.Equal(expected, Classify(result));
     }
 
@@ -122,6 +122,12 @@ public sealed class FlashbackFailureIdentityTests
 
     private static void Set(object value, string property, object propertyValue)
         => value.GetType().GetProperty(property)!.SetValue(value, propertyValue);
+
+    private static void SetOutcome(object value, string outcome)
+    {
+        var property = value.GetType().GetProperty("Outcome")!;
+        property.SetValue(value, Enum.Parse(property.PropertyType, outcome));
+    }
 
     private sealed class ExportFixture : IDisposable
     {

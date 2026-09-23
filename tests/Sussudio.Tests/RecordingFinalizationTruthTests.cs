@@ -51,6 +51,21 @@ public sealed class RecordingFinalizationTruthTests
                 typeof(bool), typeof(string), typeof(bool), typeof(long)
             },
             modifiers: null)!;
+        var succeededProperty = resultType.GetProperty("Succeeded", BindingFlags.Public | BindingFlags.Instance)!;
+        var outcomeProperty = resultType.GetProperty("Outcome", BindingFlags.Public | BindingFlags.Instance)!;
+        Assert.False(succeededProperty.CanWrite);
+
+        var directlyConstructed = Activator.CreateInstance(resultType)!;
+        Assert.False(Read<bool>(directlyConstructed, "Succeeded"));
+        outcomeProperty.SetValue(directlyConstructed, Enum.Parse(outcomeProperty.PropertyType, "Saved"));
+        Assert.True(Read<bool>(directlyConstructed, "Succeeded"));
+        outcomeProperty.SetValue(directlyConstructed, Enum.Parse(outcomeProperty.PropertyType, "Failed"));
+        Assert.False(Read<bool>(directlyConstructed, "Succeeded"));
+        outcomeProperty.SetValue(directlyConstructed, Enum.Parse(outcomeProperty.PropertyType, "None"));
+        Assert.False(Read<bool>(directlyConstructed, "Succeeded"));
+
+        var flashbackSink = RuntimeContractSource.ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs");
+        Assert.Contains("Outcome = RecordingFinalizeOutcome.Saved", flashbackSink, StringComparison.Ordinal);
 
         var saved = success.Invoke(null, new object?[] { "saved.mp4", "Recording saved", true, 17L })!;
         Assert.True(Read<bool>(saved, "Succeeded"));

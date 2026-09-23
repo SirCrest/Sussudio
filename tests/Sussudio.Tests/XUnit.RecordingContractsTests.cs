@@ -3902,7 +3902,7 @@ static partial class Program
         AssertContains(libAvBackendFinalizationText, "DetachLibAvRecordingAudioBeforeSinkStopAsync(");
         AssertContains(libAvBackendFinalizationText, "StopAndDisposeLibAvSinkForFinalizeAsync(");
         AssertContains(libAvBackendFinalizationText, "DisposeIdleLibAvPreviewResourcesAfterRecordingAsync(");
-        AssertContains(libAvBackendFinalizationText, "FoldRecordingAudioFaultIntoFinalizeResult(");
+        AssertContains(libAvBackendFinalizationText, "ApplyRecordingFinalizePolicies(");
         AssertContains(libAvBackendFinalizationText, "PublishLibAvRecordingIntegrity(");
         AssertContains(libAvBackendFinalizationText, "CompleteLibAvRecordingFinalizeStateAsync(");
         AssertContains(libAvBackendFinalizationText, "var sinkResult = libAvSink != null");
@@ -3971,8 +3971,7 @@ static partial class Program
         AssertContains(captureServiceText, "StopUnifiedVideoRecordingForLibAvFinalizeAsync(");
         AssertContains(captureServiceText, "StopAndDisposeLibAvSinkForFinalizeAsync(");
         AssertContains(captureServiceText, "DisposeIdleLibAvPreviewResourcesAfterRecordingAsync(");
-        AssertContains(captureServiceText, "result = FoldRecordingAudioFaultIntoFinalizeResult(");
-        AssertContains(captureServiceText, "recordingContext?.Settings);");
+        AssertContains(captureServiceText, "result = ApplyRecordingFinalizePolicies(");
         AssertContains(captureServiceText, "PublishLibAvRecordingIntegrity(");
         // Fix #12: sink dispatch became a ternary so the emergency flag can route to libAvSink.StopAsync(emergency, ct).
         AssertContains(captureServiceText, "var sinkResult = libAvSink != null");
@@ -4261,13 +4260,14 @@ static partial class Program
         AssertContains(lifecycleText, "_lastFinalizeUtc = DateTimeOffset.UtcNow;");
         AssertContains(lifecycleText, "_lastPreservedArtifacts = result.PreservedArtifacts;");
         AssertContains(lifecycleText, "internal void MarkRecordingFinalizationUnresolved(string statusMessage)");
+        AssertContains(lifecycleText, "recordingOutcome.FinalizeOutcome != RecordingFinalizeOutcome.None");
         AssertContains(lifecycleText, "reason=existing_finalization_status");
         AssertContains(lifecycleText, "RecordingFinalizationRecoveryArtifacts.PreserveUnresolvedWithArtifacts(");
         AssertContains(lifecycleText, "var unresolvedResult = EnsureRecordingFailureRecovery(");
         AssertContains(lifecycleText, "private FinalizeResult FoldRequestedProgramAudioIntegrityIntoFinalizeResult(");
         AssertContains(lifecycleText, "RecordingFailureCodes.ProgramAudioIntegrityFailed");
-        AssertContains(libAvFinalizeText, "FoldRequestedProgramAudioIntegrityIntoFinalizeResult(");
-        AssertContains(flashbackFinalizeText, "FoldRequestedProgramAudioIntegrityIntoFinalizeResult(");
+        AssertContains(libAvFinalizeText, "ApplyRecordingFinalizePolicies(");
+        AssertContains(flashbackFinalizeText, "ApplyRecordingFinalizePolicies(");
         AssertContains(lifecycleText, "_recordingLifecyclePhase = RecordingLifecyclePhase.Finalizing;");
         AssertContains(lifecycleText, "_lastFinalizeOutcome = result.Outcome;");
 

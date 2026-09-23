@@ -44,16 +44,33 @@ public sealed class EncoderSupport
 
 // End-of-recording counter comparison used to explain whether the capture,
 // encoder, and audio paths stayed continuous.
+public enum RecordingIntegrityStatus
+{
+    NotStarted,
+    Active,
+    Complete,
+    Incomplete,
+    Failed
+}
+
+public enum RecordingIntegrityAudioStatus
+{
+    Disabled,
+    Incomplete,
+    Failed,
+    Clean
+}
+
 public sealed record RecordingIntegritySummary
 {
     public static RecordingIntegritySummary NotStarted { get; } = new()
     {
-        Status = "NotStarted",
+        Status = RecordingIntegrityStatus.NotStarted,
         Backend = "None",
         Reason = "No recording has completed."
     };
 
-    public string Status { get; init; } = "NotStarted";
+    public RecordingIntegrityStatus Status { get; init; } = RecordingIntegrityStatus.NotStarted;
     public bool Complete { get; init; }
     public string Backend { get; init; } = "None";
     public DateTimeOffset? CompletedUtc { get; init; }
@@ -71,7 +88,7 @@ public sealed record RecordingIntegritySummary
     public long BackpressureWaitMs { get; init; }
     public long BackpressureEvents { get; init; }
     public long BackpressureMaxWaitMs { get; init; }
-    public string AudioStatus { get; init; } = "Disabled";
+    public RecordingIntegrityAudioStatus AudioStatus { get; init; } = RecordingIntegrityAudioStatus.Disabled;
     public bool AudioEnabled { get; init; }
     public bool AudioCaptureActive { get; init; }
     public long AudioFramesArrived { get; init; }

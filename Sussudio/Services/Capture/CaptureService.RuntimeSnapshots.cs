@@ -151,7 +151,7 @@ public partial class CaptureService
 
     private sealed class RuntimeRecordingIntegritySnapshotFields
     {
-        public string Status { get; init; } = "NotStarted";
+        public RecordingIntegrityStatus Status { get; init; } = RecordingIntegrityStatus.NotStarted;
         public bool Complete { get; init; }
         public string Backend { get; init; } = "None";
         public DateTimeOffset? CompletedUtc { get; init; }
@@ -169,7 +169,7 @@ public partial class CaptureService
         public long BackpressureWaitMs { get; init; }
         public long BackpressureEvents { get; init; }
         public long BackpressureMaxWaitMs { get; init; }
-        public string AudioStatus { get; init; } = "Disabled";
+        public RecordingIntegrityAudioStatus AudioStatus { get; init; } = RecordingIntegrityAudioStatus.Disabled;
         public bool AudioEnabled { get; init; }
         public bool AudioCaptureActive { get; init; }
         public long AudioFramesArrived { get; init; }

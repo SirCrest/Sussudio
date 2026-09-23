@@ -241,7 +241,7 @@ namespace Sussudio.Services.Contracts
     {
         private static readonly IReadOnlyList<string> EmptyArtifacts = Array.Empty<string>();
 
-        public bool Succeeded { get; init; }
+        public bool Succeeded => Outcome == RecordingFinalizeOutcome.Saved;
         public RecordingFinalizeOutcome Outcome { get; init; }
         public string OutputPath { get; init; } = string.Empty;
         public string StatusMessage { get; init; } = "Stopped";
@@ -260,7 +260,6 @@ namespace Sussudio.Services.Contracts
         {
             return new FinalizeResult
             {
-                Succeeded = Succeeded,
                 Outcome = Outcome,
                 OutputPath = OutputPath,
                 StatusMessage = StatusMessage,
@@ -283,8 +282,7 @@ namespace Sussudio.Services.Contracts
 
         // Re-derives this result as a failure with replacement preserved artifacts and
         // recovery path, preserving every other field including track evidence. Routed
-        // through Failure() so Outcome is normalized to Failed even for results that
-        // were constructed directly (e.g. by FlashbackEncoderSink) without an Outcome.
+        // through Failure() so Outcome becomes Failed.
         public FinalizeResult AsFailureWithArtifacts(IEnumerable<string>? preservedArtifacts, string? recoveryPath)
             => Failure(OutputPath, StatusMessage, preservedArtifacts, FailureCode, CleanupPending, recoveryPath, VerificationCompleted, FinalizationElapsedMs)
                 .WithTrackEvidence(RequestedTracks, ObservedTracks);
@@ -309,7 +307,6 @@ namespace Sussudio.Services.Contracts
         {
             return new FinalizeResult
             {
-                Succeeded = true,
                 Outcome = RecordingFinalizeOutcome.Saved,
                 OutputPath = outputPath,
                 StatusMessage = statusMessage,
@@ -347,7 +344,6 @@ namespace Sussudio.Services.Contracts
 
             return new FinalizeResult
             {
-                Succeeded = false,
                 Outcome = RecordingFinalizeOutcome.Failed,
                 OutputPath = outputPath,
                 StatusMessage = statusMessage,

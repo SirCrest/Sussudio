@@ -28,6 +28,7 @@ public sealed class AutomationAppSurfaceContractsTests
     [InlineData(true, "RecoveredFinalizationFailure", "Incomplete", false, true)]
     [InlineData(true, "RecoveredFinalizationFailure", "NotStarted", true, true)]
     [InlineData(false, "", "Incomplete", false, true)]
+    [InlineData(false, "", "Failed", false, true)]
     public void RestoredRecordingHistoryDoesNotMarkANewCaptureAsFailed(
         bool encodingFailed, string failureType, string integrityStatus, bool isRecording, bool expectedFailure)
     {
@@ -37,8 +38,12 @@ public sealed class AutomationAppSurfaceContractsTests
         var runtime = Activator.CreateInstance(parameters[0].ParameterType)!;
         var health = Activator.CreateInstance(parameters[1].ParameterType)!;
         var lanes = Activator.CreateInstance(parameters[3].ParameterType)!;
-        runtime.GetType().GetProperty("RecordingIntegrityStatus")!.SetValue(runtime, integrityStatus);
-        runtime.GetType().GetProperty("RecordingIntegrityAudioStatus")!.SetValue(runtime, "NotStarted");
+        var recordingIntegrityStatus = runtime.GetType().GetProperty("RecordingIntegrityStatus")!;
+        recordingIntegrityStatus.SetValue(runtime, Enum.Parse(recordingIntegrityStatus.PropertyType, integrityStatus));
+        var recordingIntegrityAudioStatus = runtime.GetType().GetProperty("RecordingIntegrityAudioStatus")!;
+        recordingIntegrityAudioStatus.SetValue(
+            runtime,
+            Enum.Parse(recordingIntegrityAudioStatus.PropertyType, "Disabled"));
         health.GetType().GetProperty("RecordingEncodingFailed")!.SetValue(health, encodingFailed);
         health.GetType().GetProperty("RecordingEncodingFailureType")!.SetValue(health, failureType);
         var result = evaluate.Invoke(null, new[] { runtime, health, (object)isRecording, lanes });
@@ -8904,7 +8909,8 @@ static partial class Program
     private static void AssertDiagnosticsRefreshSnapshotProjectionOwnership(AutomationDiagnosticsHubSourceFamily diagnostics)
     {
         AssertContains(diagnostics.SnapshotInitializerText, "RecordingVideoQueueLatencyP95Ms = health.RecordingVideoQueueLatencyP95Ms,");
-        AssertContains(diagnostics.SnapshotInitializerText, "RecordingIntegrityStatus = captureRuntime.RecordingIntegrityStatus,");
+        AssertContains(diagnostics.SnapshotInitializerText, "RecordingIntegrityStatus = captureRuntime.RecordingIntegrityStatus.ToString(),");
+        AssertContains(diagnostics.SnapshotInitializerText, "RecordingIntegrityAudioStatus = captureRuntime.RecordingIntegrityAudioStatus.ToString(),");
         AssertContains(diagnostics.SnapshotInitializerText, "MemoryWorkingSetMb = processResources.MemoryWorkingSetMb,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionText, "AutomationSnapshotProjectionSet");
         AssertDoesNotContain(diagnostics.SnapshotProjectionText, "BuildAutomationSnapshotFromProjections");
@@ -9535,8 +9541,8 @@ static partial class Program
         AssertContains(diagnostics.SourceFamilyText, "flashback recording active={health.FlashbackActive}");
         AssertContains(diagnostics.SourceFamilyText, "fatalCleanup={health.FatalCleanupInProgress} flashbackCleanup={health.FlashbackCleanupInProgress}");
         AssertContains(diagnostics.SourceFamilyText, "var recordingIntegrityIncomplete =");
-        AssertContains(diagnostics.SourceFamilyText, "string.Equals(captureRuntime.RecordingIntegrityStatus, \"Incomplete\", StringComparison.OrdinalIgnoreCase)");
-        AssertContains(diagnostics.SourceFamilyText, "(recordingIntegrityIncomplete && !isRecording)");
+        AssertContains(diagnostics.SourceFamilyText, "captureRuntime.RecordingIntegrityStatus is RecordingIntegrityStatus.Incomplete or RecordingIntegrityStatus.Failed");
+        AssertContains(diagnostics.SourceFamilyText, "idleRecordingIntegrityFailed");
         AssertContains(diagnostics.SourceFamilyText, "var flashbackRecordingDegraded =");
         AssertContains(diagnostics.SourceFamilyText, "recentFlashbackRecording.EncoderDroppedFrames > 0");
         AssertContains(diagnostics.SourceFamilyText, "recentFlashbackRecording.BackpressureEvents > 0");
@@ -9792,7 +9798,7 @@ static partial class Program
         AssertOccursBefore(flashbackBackendText, "captureBoundarySnapshot?.Invoke(flashbackSink);", "var exportResult = await exportRecordingAsync(");
         AssertContains(captureServiceText, "counters: recordingBoundary.Counters ?? CaptureFlashbackRecordingIntegrityCountersSinceBaseline");
         AssertContains(captureServiceText, "var flashbackFinalAudioCounters = recordingBoundary.AudioCounters ??");
-        AssertContains(captureServiceText, "FoldRequestedProgramAudioIntegrityIntoFinalizeResult(\n            fbResult,\n            flashbackFinalAudioCounters);");
+        AssertContains(captureServiceText, "fbResult = ApplyRecordingFinalizePolicies(");
         AssertContains(captureServiceText, "evictionPaused = true;");
         AssertContains(captureServiceText, "if (exportId != 0)");
         AssertContains(captureServiceText, "if (evictionPaused)");

@@ -58,6 +58,10 @@ internal static class AutomationSnapshotRegressionFixture
             Set(runtime, "MuxSucceeded", false);
             Set(runtime, "FlashbackExportVerificationFormat", null);
             Set(runtime, "FlashbackCodecDowngradeReason", string.Empty);
+            Set(runtime, "RecordingIntegrityStatus", Enum.Parse(
+                assembly.GetType("Sussudio.Models.RecordingIntegrityStatus", throwOnError: true)!, "Complete"));
+            Set(runtime, "RecordingIntegrityAudioStatus", Enum.Parse(
+                assembly.GetType("Sussudio.Models.RecordingIntegrityAudioStatus", throwOnError: true)!, "Clean"));
 
             var health = inputs["health"]!;
             Set(health, "FlashbackPlaybackState", Enum.Parse(assembly.GetType("Sussudio.Models.FlashbackPlaybackState", throwOnError: true)!, "Paused"));

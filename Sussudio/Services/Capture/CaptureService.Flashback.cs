@@ -1127,9 +1127,7 @@ public partial class CaptureService
         public long RecordingQueueRejectedFrames { get; set; }
         public RecordingIntegrityCounterSnapshot? Counters { get; set; }
         public RecordingAudioIntegrityCounterSnapshot? AudioCounters { get; set; }
-        public long MicrophoneSamplesReceived { get; set; }
-        public long MicrophoneDrops { get; set; }
-        public long MicrophoneDiscontinuities { get; set; }
+        public RecordingMicrophoneIntegrityEvidence MicrophoneIntegrity { get; set; }
     }
 
     private void CaptureFlashbackRecordingBoundarySnapshot(
@@ -1165,15 +1163,13 @@ public partial class CaptureService
         recordingBoundary.Counters = CaptureFlashbackRecordingIntegrityCountersSinceBaseline(flashbackSink, flashbackVideoCapture);
         recordingBoundary.AudioCounters = GetRecordingAudioCountersSinceBaseline(
             CaptureRecordingAudioCounters(_previewAudioGraph.ProgramCapture, flashbackSink, _recordingBackend.SettingsSnapshot));
-        recordingBoundary.MicrophoneSamplesReceived = flashbackSink.MicrophoneSamplesReceived;
-        recordingBoundary.MicrophoneDrops =
-            flashbackSink.MicrophoneDropsQueueSaturated +
-            flashbackSink.MicrophoneDropsBacklogEviction;
-        recordingBoundary.MicrophoneDiscontinuities = Math.Max(
-            0,
-            (_previewAudioGraph.MicrophoneCapture?.AudioDataDiscontinuityCount ??
-             _recordingMicrophoneDiscontinuitiesBaseline) -
-            _recordingMicrophoneDiscontinuitiesBaseline);
+        recordingBoundary.MicrophoneIntegrity = CaptureRecordingMicrophoneIntegrityEvidence(
+            flashbackSink.MicrophoneSamplesReceived,
+            SumNonNegative(
+                flashbackSink.MicrophoneDropsQueueSaturated,
+                flashbackSink.MicrophoneDropsBacklogEviction),
+            _previewAudioGraph.MicrophoneCapture?.AudioDataDiscontinuityCount ??
+                _recordingMicrophoneDiscontinuitiesBaseline);
         recordingBoundary.Captured = true;
     }
 
@@ -1244,29 +1240,18 @@ public partial class CaptureService
             }
         }
 
-        fbResult = FoldRecordingAudioFaultIntoFinalizeResult(
-            fbResult,
-            flashbackCancellationException,
-            fbRecordingContext?.Settings);
         var flashbackFinalAudioCounters = recordingBoundary.AudioCounters ??
             GetRecordingAudioCountersSinceBaseline(
                 CaptureRecordingAudioCounters(
                     _previewAudioGraph.ProgramCapture,
                     flashbackSink,
                     _recordingBackend.SettingsSnapshot));
-        fbResult = FoldRequestedProgramAudioIntegrityIntoFinalizeResult(
-            fbResult,
-            flashbackFinalAudioCounters);
-        fbResult = FoldRequestedMicrophoneIntegrityIntoFinalizeResult(
-            fbResult,
-            fbRecordingContext?.MicrophoneEnabled == true,
-            recordingBoundary.MicrophoneSamplesReceived,
-            recordingBoundary.MicrophoneDrops,
-            recordingBoundary.MicrophoneDiscontinuities);
-        fbResult = FoldRecordedRuntimeFailureIntoFinalizeResult(fbResult);
-        fbResult = VerifyFinalizedOutputBeforeSaved(
+        fbResult = ApplyRecordingFinalizePolicies(
             fbResult,
             fbRecordingContext,
+            flashbackCancellationException,
+            flashbackFinalAudioCounters,
+            recordingBoundary.MicrophoneIntegrity,
             expectedRecordingDuration);
         if (!fbResult.Succeeded)
         {
@@ -1293,7 +1278,7 @@ public partial class CaptureService
         _lastRecordingIntegrity = cleanupPending
             ? new RecordingIntegritySummary
             {
-                Status = "Failed",
+                Status = RecordingIntegrityStatus.Failed,
                 Complete = false,
                 Backend = "Flashback",
                 CompletedUtc = DateTimeOffset.UtcNow,

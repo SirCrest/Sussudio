@@ -95,7 +95,7 @@ public sealed class FlashbackFailureTests
     public void SuccessfulResultDoesNotExposeStaleFailureCode()
     {
         var result = CreateFailure("flashback-export-cancelled", "Export complete.");
-        Set(result, "Succeeded", true);
+        SetOutcome(result, "Saved");
 
         Assert.Equal(string.Empty, GetKind(result));
         Assert.False(IsCancelled(result));
@@ -198,6 +198,12 @@ public sealed class FlashbackFailureTests
 
     private static object CreateFailure(string code, string message)
         => InvokeStatic(FailureType, "Create", "output.mp4", message, code, null);
+
+    private static void SetOutcome(object value, string outcome)
+    {
+        var property = value.GetType().GetProperty("Outcome")!;
+        property.SetValue(value, Enum.Parse(property.PropertyType, outcome));
+    }
 
     private static string GetKind(object result) => (string)InvokeStatic(FailureType, "Classify", result);
     private static bool IsCancelled(object result) => (bool)InvokeStatic(FailureType, "IsCancelled", result);
