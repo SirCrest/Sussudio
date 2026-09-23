@@ -530,7 +530,7 @@ internal sealed unsafe partial class LibAvEncoder
         {
             Logger.Log(
                 $"LIBAV_AV_SYNC_DRIFT_WARNING videoFrame={videoFrame} driftMs={driftMs:F1} " +
-                $"audioSamples={audioSamples} Ã¢â‚¬â€ drift exceeds 500ms, investigate audio delivery");
+                $"audioSamples={audioSamples} — drift exceeds 500ms, investigate audio delivery");
         }
     }
 

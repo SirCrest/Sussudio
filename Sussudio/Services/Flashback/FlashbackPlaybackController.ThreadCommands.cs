@@ -459,7 +459,7 @@ internal sealed partial class FlashbackPlaybackController
         EnsureFileOpen(worker.Decoder, ref worker.FileOpen, pendingPlayTarget);
         if (!IsDecoderFileReady(worker.Decoder, worker.FileOpen))
         {
-            Logger.Log("FLASHBACK_PLAYBACK_PLAY_NO_FILE Ã¢â‚¬â€ restoring live");
+            Logger.Log("FLASHBACK_PLAYBACK_PLAY_NO_FILE — restoring live");
             ClearPrebufferedFrames(worker.PrebufferedFrames, "play_no_file");
             SetNoFileFailure(CommandKind.Play, PlaybackPosition);
             worker.IsPlaying = false;
@@ -717,7 +717,7 @@ internal sealed partial class FlashbackPlaybackController
         cts.Token.ThrowIfCancellationRequested();
         if (!IsDecoderFileReady(worker.Decoder, worker.FileOpen))
         {
-            Logger.Log("FLASHBACK_PLAYBACK_SCRUB_NO_FILE Ã¢â‚¬â€ restoring live");
+            Logger.Log("FLASHBACK_PLAYBACK_SCRUB_NO_FILE — restoring live");
             worker.IsScrubbing = false;
             worker.PendingExactResumeTarget = null;
             SetNoFileFailure(CommandKind.BeginScrub, cmd.Position);

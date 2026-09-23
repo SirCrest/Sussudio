@@ -199,7 +199,7 @@ public partial class CaptureService
                 $"FLASHBACK_FAST_PATH_FORMAT_MISMATCH " +
                 $"existing_p010={sinkIsP010} requested_p010={unifiedVideoCapture.IsP010}");
             throw new InvalidOperationException(
-                $"Flashback fast path: pixel-format mismatch Ã¢â‚¬â€ sink was built for " +
+                $"Flashback fast path: pixel-format mismatch — sink was built for " +
                 $"{(sinkIsP010 ? "P010" : "NV12")} but UVC session negotiated " +
                 $"{(unifiedVideoCapture.IsP010 ? "P010" : "NV12")}. " +
                 "Rebuild the flashback backend with the correct format.");
