@@ -1053,97 +1053,67 @@ public partial class CaptureService
             if (!string.IsNullOrEmpty(resolvedId))
             {
                 var newCapture = new WasapiAudioCapture();
+                var captureCommitted = false;
                 try
                 {
-                    await newCapture.InitializeAsync(resolvedId, transitionToken).ConfigureAwait(false);
-                    newCapture.AudioLevelUpdated += OnWasapiAudioLevelUpdated;
-                    _previewAudioGraph.AttachCaptureFailure(newCapture, "program", OnWasapiCaptureFailed);
-                }
-                catch
-                {
-                    _audioDeviceId = previousDeviceId;
-                    _audioDeviceName = previousDeviceName;
                     try
                     {
-                        newCapture.AudioLevelUpdated -= OnWasapiAudioLevelUpdated;
-                        _previewAudioGraph.DetachCaptureFailure(newCapture);
-                        await newCapture.DisposeAsync().ConfigureAwait(false);
+                        await newCapture.InitializeAsync(resolvedId, transitionToken).ConfigureAwait(false);
+                        newCapture.AudioLevelUpdated += OnWasapiAudioLevelUpdated;
+                        _previewAudioGraph.AttachCaptureFailure(newCapture, "program", OnWasapiCaptureFailed);
+                    }
+                    catch
+                    {
+                        _audioDeviceId = previousDeviceId;
+                        _audioDeviceName = previousDeviceName;
+                        throw;
+                    }
+
+                    if (switchGen != Volatile.Read(ref _audioSwitchGeneration))
+                    {
+                        Logger.Log($"AUDIO_INPUT_SWITCH_ABORT reason=generation_mismatch gen={switchGen}");
+                        return;
+                    }
+
+                    _previewAudioGraph.DetachCapture(
+                        oldCapture,
+                        OnWasapiAudioLevelUpdated,
+                        _flashbackBackend.PlaybackController);
+
+                    _previewAudioGraph.ProgramCapture = null;
+                    try
+                    {
+                        await oldCapture.DisposeAsync().ConfigureAwait(false);
                     }
                     catch (Exception ex)
                     {
-                        Logger.Log($"AUDIO_INPUT_SWITCH_NEW_DISPOSE_WARN type={ex.GetType().Name} msg={ex.Message}");
+                        Logger.Log($"AUDIO_INPUT_SWITCH_OLD_DISPOSE_FAIL type={ex.GetType().Name} msg={ex.Message}");
+                        throw;
                     }
 
-                    throw;
-                }
-
-                if (switchGen != Volatile.Read(ref _audioSwitchGeneration))
-                {
-                    Logger.Log($"AUDIO_INPUT_SWITCH_ABORT reason=generation_mismatch gen={switchGen}");
-                    try
-                    {
-                        newCapture.AudioLevelUpdated -= OnWasapiAudioLevelUpdated;
-                        _previewAudioGraph.DetachCaptureFailure(newCapture);
-                        await newCapture.DisposeAsync().ConfigureAwait(false);
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.Log($"AUDIO_INPUT_SWITCH_NEW_DISPOSE_WARN type={ex.GetType().Name} msg={ex.Message}");
-                    }
-
-                    return;
-                }
-
-                _previewAudioGraph.DetachCapture(
-                    oldCapture,
-                    OnWasapiAudioLevelUpdated,
-                    _flashbackBackend.PlaybackController);
-
-                _previewAudioGraph.ProgramCapture = null;
-                try
-                {
-                    await oldCapture.DisposeAsync().ConfigureAwait(false);
-                }
-                catch (Exception ex)
-                {
-                    Logger.Log($"AUDIO_INPUT_SWITCH_OLD_DISPOSE_FAIL type={ex.GetType().Name} msg={ex.Message}");
-                    try
-                    {
-                        newCapture.AudioLevelUpdated -= OnWasapiAudioLevelUpdated;
-                        _previewAudioGraph.DetachCaptureFailure(newCapture);
-                        await newCapture.DisposeAsync().ConfigureAwait(false);
-                    }
-                    catch (Exception disposeEx)
-                    {
-                        Logger.Log($"AUDIO_INPUT_SWITCH_NEW_DISPOSE_WARN type={disposeEx.GetType().Name} msg={disposeEx.Message}");
-                    }
-
-                    throw;
-                }
-
-                try
-                {
                     // Starting after old-worker cleanup prevents two producers from feeding one sink.
                     // Start() rejects a quarantined predecessor that missed its stop deadline.
                     newCapture.Start();
+                    _previewAudioGraph.ProgramCapture = newCapture;
+                    captureCommitted = true;
                 }
-                catch
+                finally
                 {
-                    try
+                    if (!captureCommitted)
                     {
-                        newCapture.AudioLevelUpdated -= OnWasapiAudioLevelUpdated;
-                        _previewAudioGraph.DetachCaptureFailure(newCapture);
-                        await newCapture.DisposeAsync().ConfigureAwait(false);
+                        try
+                        {
+                            newCapture.AudioLevelUpdated -= OnWasapiAudioLevelUpdated;
+                            _previewAudioGraph.DetachCaptureFailure(newCapture);
+                            await newCapture.DisposeAsync().ConfigureAwait(false);
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.Log($"AUDIO_INPUT_SWITCH_NEW_DISPOSE_WARN type={ex.GetType().Name} msg={ex.Message}");
+                        }
                     }
-                    catch (Exception disposeEx)
-                    {
-                        Logger.Log($"AUDIO_INPUT_SWITCH_NEW_DISPOSE_WARN type={disposeEx.GetType().Name} msg={disposeEx.Message}");
-                    }
-
-                    throw;
                 }
 
-                _previewAudioGraph.ProgramCapture = newCapture;
                 _audioDeviceId = audioDeviceId;
                 _audioDeviceName = audioDeviceName;
                 _previewAudioGraph.ResetCaptureFault();

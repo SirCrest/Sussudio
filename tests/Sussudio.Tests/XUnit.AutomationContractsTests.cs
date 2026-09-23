@@ -4364,6 +4364,24 @@ static partial class Program
             "_previewAudioGraph.DetachCapture(");
         AssertContains(updateAudioInput, "_audioDeviceId = previousDeviceId;");
         AssertContains(updateAudioInput, "_audioDeviceName = previousDeviceName;");
+        AssertOccursBefore(updateAudioInput, "newCapture.Start();", "_previewAudioGraph.ProgramCapture = newCapture;");
+        AssertOccursBefore(updateAudioInput, "_previewAudioGraph.ProgramCapture = newCapture;", "captureCommitted = true;");
+        AssertContains(updateAudioInput, "finally\n                {\n                    if (!captureCommitted)");
+        AssertOccursBefore(updateAudioInput, "captureCommitted = true;", "AttachFlashbackAudioIfSupported(newCapture");
+        var candidateCleanup = ExtractTextBetween(updateAudioInput,
+            "if (!captureCommitted)", "_audioDeviceId = audioDeviceId;");
+        foreach (var operation in new[]
+        {
+            "newCapture.AudioLevelUpdated -= OnWasapiAudioLevelUpdated;",
+            "_previewAudioGraph.DetachCaptureFailure(newCapture);",
+            "await newCapture.DisposeAsync().ConfigureAwait(false);"
+        })
+        {
+            AssertContains(candidateCleanup, operation);
+            AssertEqual(1, updateAudioInput.Split(operation, StringSplitOptions.None).Length - 1,
+                "uncommitted audio capture has one cleanup owner: " + operation);
+        }
+
         AssertContains(updateAudioInput, "activeSink != null && !ReferenceEquals(activeSink, _flashbackBackend.Sink)");
         AssertOccursBefore(
             updateAudioInput,
