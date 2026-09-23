@@ -9,7 +9,7 @@ Keep helpers beside the program or workflow they serve.
 
 ## Buildable programs
 
-These seven C# projects are included in [Sussudio.slnx](../Sussudio.slnx).
+These nine C# projects are included in [Sussudio.slnx](../Sussudio.slnx).
 
 | Project | Purpose |
 | --- | --- |
@@ -20,6 +20,8 @@ These seven C# projects are included in [Sussudio.slnx](../Sussudio.slnx).
 | [EgavdsAudioProbe](EgavdsAudioProbe/EgavdsAudioProbe.csproj) | Audio routing and gain experiments through Elgato Studio's EGAVDeviceSupport DLL. |
 | [KsAudioNodeProbe](KsAudioNodeProbe/KsAudioNodeProbe.csproj) | Kernel Streaming audio node and control probes. |
 | [NativeXuAudioProbe](NativeXuAudioProbe/NativeXuAudioProbe.csproj) | Native extension-unit and AT command audio probes. |
+| [Sussudio.HdrLab](HdrLab/Sussudio.HdrLab/Sussudio.HdrLab.csproj) | WinRT P010 capture lab for testing HDR-capable video sources. |
+| [Sussudio.FfmpegEncodeLab](HdrLab/Sussudio.FfmpegEncodeLab/Sussudio.FfmpegEncodeLab.csproj) | FFmpeg encode and validation harness for HDR lab captures. |
 
 [RtkIoShim](RtkIoShim/rtk_io_shim.cpp) is a separate C++ DLL build. Its
 [build.bat](RtkIoShim/build.bat) requires an x64 Visual Studio Developer Command

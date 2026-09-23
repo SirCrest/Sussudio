@@ -1,6 +1,6 @@
 # Sussudio Agent Map
 
-Last reviewed: 2026-09-07.
+Last reviewed: 2026-09-23.
 
 This file maps the current repo shape to named owners, entry points, invariants,
 and fast checks. It is intentionally mechanical so future agents can find the
@@ -86,7 +86,7 @@ mentions the moved files.
 | Flashback | `FlashbackDecoder.cs`, `FlashbackPlaybackController.cs`, `FlashbackPlaybackCommandMailbox.cs`, `FlashbackPlaybackController.PlaybackFrames.cs`, `FlashbackPlaybackController.ThreadCommands.cs`, `FlashbackEncoderSink.cs`, `FlashbackBufferManager.cs`, `FlashbackStartupCacheCleanup.cs`, `FlashbackExporter.cs`, `FlashbackExportOutputTransaction.cs`, `FlashbackExportPlanner.cs` | Buffer retention, encoding, playback, and transactional export. See [Flashback](#flashback) for per-owner lifetimes and invariants. |
 | Flashback playback command handlers | `FlashbackPlaybackController.ThreadCommands.cs` | Playback-thread dispatch, seek/scrub transitions, frame stepping, and terminal live restore. |
 | Preview rendering | `D3D11PreviewRenderer.cs`, `D3D11PreviewRenderer.RenderPasses.cs`, `D3D11PreviewRenderer.Resources.cs`, `PreviewOutputSizePolicy.cs`, `PreviewScreenshotCapture.cs` | Render-thread scheduling with waitable presentation, render passes, GPU resource lifetime, and screenshots. See [UI and presentation](#ui-shell-and-presentation). |
-| UI shell | `MainWindow.*.cs` XAML adapters plus `Sussudio/Controllers/*Controller.cs` shell controllers | XAML adapters delegate feature behavior to named controllers. See [UI and presentation](#ui-shell-and-presentation). |
+| UI shell | `Sussudio/MainWindow.xaml.cs` composition root and XAML adapter; feature behavior lives in controllers under `Sussudio/Controllers/` | The single code-behind file wires XAML to feature controllers. See [UI and presentation](#ui-shell-and-presentation). |
 | Presentation | `MainViewModel.*.cs` facade/feature partial family, `Sussudio/ViewModels/MainViewModel.cs`, plus focused `Sussudio/ViewModels` policy/presentation helpers | View-model facade, feature state, and presentation policies. See [UI and presentation](#ui-shell-and-presentation). |
 
 ### Flashback export output transaction
@@ -197,6 +197,9 @@ Entry points:
   existing automation `FailureKind` values. Export validation and native I/O
   assign the cause at the failure site. CaptureService and the dispatcher read
   `FinalizeResult.FailureCode`; messages and filenames do not determine causes.
+- `Sussudio/Services/Automation/AutomationErrorCodes.cs` owns stable error
+  strings returned over the named automation pipe. Change codes only alongside
+  their producers and consumers because the values are part of the wire contract.
 - `AutomationCommandCatalog.cs` owns numeric command IDs, strict ID ordering
   rules, command lookup, canonical name resolution, default metadata helpers,
   path-policy types/validation, manifest DTO projection, stable manifest JSON
@@ -1072,13 +1075,12 @@ the window where they translate arguments or compose UI behavior.
 
 Primary current owners:
 
-- `Sussudio/MainWindow.*.cs` for shell, renderer, fullscreen, screenshots,
+- `Sussudio/MainWindow.xaml.cs` for shell, renderer, fullscreen, screenshots,
   animations, and window lifecycle.
 - `Sussudio/Controllers/FullScreen/FullScreenController.cs` owns fullscreen public
   toggle/state, enter/exit orchestration, rect animation and size waits,
   chrome/material state, overlay pointer/auto-hide behavior, and full-screen key
   routing behind the shared full-screen context.
-  behavior plus full-screen key routing and timeline eligibility.
   `Sussudio/MainWindow.xaml.cs` wires the controller context,
   button/menu/double-tap and automation command adapters, key routing, pointer,
   and auto-hide adapters. Flashback command execution lives in
@@ -1837,8 +1839,9 @@ Primary current owners:
   source-generated JSON context, and LocalAppData settings persistence:
   serialized load/save, temporary-file replacement, and failure reporting.
 - `Sussudio/Services/Runtime/RuntimeHelpers.cs` owns runtime helper types
-  shared across multiple services: AtomicMax, TelemetryAgeHelper,
-  EnvironmentHelpers, RingBufferHelpers, PercentileHelpers, shared minimum-window-size Win32
+  shared across multiple services: AtomicMax, AtomicCounter, QueueAdmission,
+  TelemetryAgeHelper, EnvironmentHelpers, RingBufferHelpers, EncodingTaskHelpers,
+  PercentileHelpers, IntervalCadenceStatistics (record struct), shared minimum-window-size Win32
   subclassing, bounded external process supervision contracts and runner, and
   best-effort MMCSS worker registration. `ProcessRunResult` retains independent
   stdout/stderr read exceptions; diagnostic wrappers preserve each original
@@ -1929,9 +1932,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns the xUnit execution
   surface for the former legacy NVML snapshot, CaptureSessionSnapshot
   default-state, and RTK I2C unsafe-native-path tool-contract checks.
-- `tests/Sussudio.FfmpegEncodeLab/Program.cs` owns the shared HDR lab source
-  for `tests/Sussudio.FfmpegEncodeLab/Sussudio.FfmpegEncodeLab.csproj` and
-  `tests/Sussudio.HdrLab/Sussudio.HdrLab.csproj`: P010 capture-lab
+- `tools/HdrLab/Sussudio.FfmpegEncodeLab/Program.cs` owns the shared HDR lab
+  source for `tools/HdrLab/Sussudio.FfmpegEncodeLab/Sussudio.FfmpegEncodeLab.csproj`
+  and `tools/HdrLab/Sussudio.HdrLab/Sussudio.HdrLab.csproj`: P010 capture-lab
   orchestration, encode-lab CLI parsing, tool-path resolution, child-process
   log capture, FFmpeg argument construction, validation routing, and AV1
   encoder selection policy.
@@ -2731,7 +2734,7 @@ Refactor direction:
   (window/shell, Flashback, presentation, preview, recording, launch/status,
   preview actions, audio, capture, output) so adding a controller does not turn
   the composition root back into an undifferentiated list.
-- Keep `MainWindow.*` partials thin as XAML adapters over named controllers.
+- Keep `Sussudio/MainWindow.xaml.cs` adapter methods thin over named controllers.
   Preview startup, preview runtime snapshot dispatch/sampling, MainWindow UI
   dispatching, stats projection, and Flashback playback/export presentation
   already have named owners. The thin Flashback XAML-facing adapter methods
