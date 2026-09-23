@@ -203,7 +203,7 @@ public sealed class FlashbackSinkHardeningTests
         }
     }
 
-    private static void SetProperty(object instance, string name, object value)
+    private static void SetProperty(object instance, string name, object? value)
         => instance.GetType().GetProperty(name)!.SetValue(instance, value);
 
     private static long GetLongProperty(object instance, string name)

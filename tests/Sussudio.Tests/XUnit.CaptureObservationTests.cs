@@ -337,16 +337,16 @@ internal sealed class CaptureObservationTestSession : IAsyncDisposable
 
     public static object Create(string typeName)
         => Activator.CreateInstance(Sussudio.Tests.SussudioAssembly.Load().GetType(typeName, true)!, nonPublic: true)!;
-    public static object Invoke(object target, string method, params object?[] arguments)
-        => target.GetType().GetMethod(method, InstanceFlags)!.Invoke(target, arguments)!;
-    public static object? GetField(object target, string name)
-        => target.GetType().GetField(name, InstanceFlags)!.GetValue(target);
-    public static void SetField(object target, string name, object? value)
-        => target.GetType().GetField(name, InstanceFlags)!.SetValue(target, value);
-    public static object? GetProperty(object target, string name)
-        => target.GetType().GetProperty(name, InstanceFlags)!.GetValue(target);
-    public static void SetProperty(object target, string name, object? value)
-        => target.GetType().GetProperty(name, InstanceFlags)!.SetValue(target, value);
+    public static object Invoke(object instance, string method, params object?[] arguments)
+        => instance.GetType().GetMethod(method, InstanceFlags)!.Invoke(instance, arguments)!;
+    public static object? GetField(object instance, string name)
+        => instance.GetType().GetField(name, InstanceFlags)!.GetValue(instance);
+    public static void SetField(object instance, string name, object? value)
+        => instance.GetType().GetField(name, InstanceFlags)!.SetValue(instance, value);
+    public static object? GetProperty(object instance, string name)
+        => instance.GetType().GetProperty(name, InstanceFlags)!.GetValue(instance);
+    public static void SetProperty(object instance, string name, object? value)
+        => instance.GetType().GetProperty(name, InstanceFlags)!.SetValue(instance, value);
 
     public static void EmitMjpegFrame(object source)
     {

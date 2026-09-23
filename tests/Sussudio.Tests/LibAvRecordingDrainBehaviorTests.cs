@@ -553,7 +553,7 @@ internal static class LibAvRecordingDrainBehaviorTests
 
     private const BindingFlags PrivateInstance = BindingFlags.Instance | BindingFlags.NonPublic;
     private static object? GetField(object instance, string name) => instance.GetType().GetField(name, PrivateInstance)!.GetValue(instance);
-    private static void SetField(object instance, string name, object value) => instance.GetType().GetField(name, PrivateInstance)!.SetValue(instance, value);
+    private static void SetField(object instance, string name, object? value) => instance.GetType().GetField(name, PrivateInstance)!.SetValue(instance, value);
     private static void Set(object instance, string name, object value) => instance.GetType().GetProperty(name)!.SetValue(instance, value);
     private static T Read<T>(object instance, string name) => (T)instance.GetType().GetProperty(name)!.GetValue(instance)!;
 }

@@ -182,5 +182,5 @@ public sealed class RecordingFailureEvidenceTests
         => instance.GetType().GetMethod(name, PrivateInstance | BindingFlags.Public)!.Invoke(instance, arguments)!;
     private static T Read<T>(object instance, string name) => (T)instance.GetType().GetProperty(name)!.GetValue(instance)!;
     private static void Set(object instance, string name, object value) => instance.GetType().GetProperty(name)!.SetValue(instance, value);
-    private static void SetField(object instance, string name, object value) => instance.GetType().GetField(name, PrivateInstance)!.SetValue(instance, value);
+    private static void SetField(object instance, string name, object? value) => instance.GetType().GetField(name, PrivateInstance)!.SetValue(instance, value);
 }

@@ -185,14 +185,14 @@ public sealed class FlashbackPlaybackWorkerBehaviorTests
 
     private const BindingFlags Members = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
     private static Type TypeOf(string name) => SussudioAssembly.Load().GetType(name, throwOnError: true)!;
-    private static T Read<T>(object value, string property) => (T)value.GetType().GetProperty(property, Members)!.GetValue(value)!;
-    private static object? Field(object value, string field) => value.GetType().GetField(field, Members)!.GetValue(value);
-    private static void SetField(object value, string field, object? data) => value.GetType().GetField(field, Members)!.SetValue(value, data);
-    private static void Set(object value, string property, object? data) => value.GetType().GetProperty(property, Members)!.SetValue(value, data);
+    private static T Read<T>(object instance, string name) => (T)instance.GetType().GetProperty(name, Members)!.GetValue(instance)!;
+    private static object? Field(object instance, string name) => instance.GetType().GetField(name, Members)!.GetValue(instance);
+    private static void SetField(object instance, string name, object? value) => instance.GetType().GetField(name, Members)!.SetValue(instance, value);
+    private static void Set(object instance, string name, object? value) => instance.GetType().GetProperty(name, Members)!.SetValue(instance, value);
 
-    private static object? Invoke(object value, string method, params object?[] arguments)
+    private static object? Invoke(object instance, string name, params object?[] arguments)
     {
-        try { return value.GetType().GetMethod(method, Members)!.Invoke(value, arguments); }
+        try { return instance.GetType().GetMethod(name, Members)!.Invoke(instance, arguments); }
         catch (TargetInvocationException error) when (error.InnerException != null)
         {
             ExceptionDispatchInfo.Capture(error.InnerException).Throw();
