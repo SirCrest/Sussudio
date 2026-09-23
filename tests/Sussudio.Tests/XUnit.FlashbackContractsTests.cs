@@ -3434,7 +3434,8 @@ static partial class Program
         var decoderSource = ReadFlashbackDecoderSource();
         AssertContains(decoderSource, "internal const int MaxRetainedHardwareFrames = 12;");
         AssertContains(decoderSource, "decoderCtx->extra_hw_frames = MaxRetainedHardwareFrames + 4;");
-        AssertContains(sourceText, "ClearPrebufferedFrames(worker.PrebufferedFrames, $\"command_{cmd.Kind}\");");
+        // Worker and native prebuffer behavior tests cover no-op and same-file
+        // resume retention, while seek/source/terminal transitions release frames.
         AssertContains(sourceText, "ClearPrebufferedFrames(worker.PrebufferedFrames, \"playback_stopped\");");
         AssertContains(sourceText, "private void PrimePlaybackAudioBuffer(");
         AssertContains(sourceText, "ChannelReader<PlaybackCommand> commandChannel,");
@@ -3680,7 +3681,7 @@ static partial class Program
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_PATH_COMPARE_WARN");
         AssertContains(sourceText, "&& IsSamePlaybackPath(path, _bufferManager.ActiveFilePath)");
         AssertContains(sourceText, "if (fileOpen && decoder.IsOpen && IsSamePlaybackPath(filePath, _currentOpenFilePath))\n            return;");
-        AssertContains(sourceText, "if (State == FlashbackPlaybackState.Paused &&\n            IsSamePlaybackPath(prevFile, _currentOpenFilePath) &&\n            !requireExactResumeSeek)");
+        AssertContains(sourceText, "var resumeWithoutSeek = State == FlashbackPlaybackState.Paused &&\n            IsSamePlaybackPath(prevFile, _currentOpenFilePath) &&\n            !requireExactResumeSeek;");
         AssertContains(sourceText, "MarkDecoderPlaybackFileClosed(ref fileOpen);\n            return false;");
         AssertContains(sourceText, "private bool TrySeekWithActiveFmp4Reopen(");
         AssertContains(sourceText, "if (SeekToWithCapTelemetry(decoder, seekTarget, reason, cancellationToken))\n        {\n            return true;\n        }");

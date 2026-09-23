@@ -245,6 +245,204 @@ public sealed class FlashbackPrebufferBehaviorTests : IClassFixture<BundledRunti
         Assert.False(session.HasPendingDecoderFrame);
     }
 
+    [Theory]
+    [InlineData("Play")]
+    [InlineData("UpdateScrub")]
+    [InlineData("EndScrub")]
+    public void IgnoredCommandsRetainNativeFrameFieldsAndBufferReferences(string commandKind)
+    {
+        using var session = new PrebufferSession(_runtime);
+        var native = session.RetainNativeFrame();
+        session.SetWorkerState("Playing", session.ResumeTarget - TimeSpan.FromMilliseconds(20));
+        SetField(session.Worker, "PendingExactResumeTarget", TimeSpan.FromMilliseconds(800));
+
+        Assert.True(session.ExecuteCommand(commandKind));
+
+        Assert.Equal(1, session.HeldFrameCount);
+        Assert.Equal(2, native.ReferenceCount);
+        AssertSameFrameFields(native.Frame, session.PeekRetainedFrame());
+        Assert.Same(session.Decoder, GetField(session.Worker, "Decoder"));
+        Assert.True(Read<bool>(session.Decoder, "IsOpen"));
+        Assert.Equal(TimeSpan.FromMilliseconds(800), GetField(session.Worker, "PendingExactResumeTarget"));
+        var retained = session.ReadPlaybackFrame();
+        AssertSameFrameFields(native.Frame, retained);
+        Assert.Equal(0, session.HeldFrameCount);
+        Assert.Equal(2, native.ReferenceCount);
+        session.ReleaseReadFrame(retained);
+        Assert.Equal(1, native.ReferenceCount);
+        Assert.Equal(session.ResumeTarget + TimeSpan.FromMilliseconds(20),
+            Read<TimeSpan>(session.ReadPlaybackFrame(), "Pts"));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SameFilePauseResumeKeepsTheNextPictureAndConsumesItOnce(bool nativeReference)
+    {
+        using var session = new PrebufferSession(_runtime);
+        var native = nativeReference ? session.RetainNativeFrame() : null;
+        var expected = native?.Frame ?? session.RetainInitialCpuFrame();
+        var pausedPosition = session.ResumeTarget - TimeSpan.FromMilliseconds(20);
+        session.SetWorkerState("Playing", pausedPosition);
+
+        Assert.True(session.ExecuteCommand("Pause"));
+        Assert.Equal("Paused", Read<object>(session.Controller, "State").ToString());
+        Assert.Equal(pausedPosition, Read<TimeSpan>(session.Controller, "PlaybackPosition"));
+        AssertSameFrameFields(expected, session.PeekRetainedFrame());
+        // The live render loop flushes audio when acknowledging a pause. This
+        // fixture has no endpoint, so model that flush without retaining audio.
+        session.FlushAudio();
+        Assert.Equal(0, session.Commands.PendingCount);
+
+        Assert.True(session.ExecuteCommand("Play"));
+
+        Assert.Equal("Playing", Read<object>(session.Controller, "State").ToString());
+        Assert.Equal(pausedPosition, Read<TimeSpan>(session.Controller, "PlaybackPosition"));
+        Assert.Same(session.Decoder, GetField(session.Worker, "Decoder"));
+        Assert.True(Read<bool>(session.Decoder, "IsOpen"));
+        Assert.True((bool)GetField(session.Worker, "FileOpen")!);
+        Assert.Null(GetField(session.Worker, "PendingExactResumeTarget"));
+        Assert.Equal(1, session.HeldFrameCount);
+        AssertSameFrameFields(expected, session.PeekRetainedFrame());
+        if (native != null) Assert.Equal(2, native.ReferenceCount);
+        var retained = session.ReadPlaybackFrame();
+        AssertSameFrameFields(expected, retained);
+        Assert.Equal(0, session.HeldFrameCount);
+        session.ReleaseReadFrame(retained);
+        if (native != null) Assert.Equal(1, native.ReferenceCount);
+        Assert.Equal(session.ResumeTarget + TimeSpan.FromMilliseconds(20),
+            Read<TimeSpan>(session.ReadPlaybackFrame(), "Pts"));
+    }
+
+    [Fact]
+    public void AacAudioResumesFromDecoderCallbacksAfterTheRetainedPauseResumePicture()
+    {
+        using var session = new PrebufferSession(_runtime, "h264-program.mp4");
+        var expected = session.RetainInitialCpuFrame();
+        var pausedPosition = session.ResumeTarget - TimeSpan.FromMilliseconds(20);
+        session.SetWorkerState("Playing", pausedPosition);
+        Assert.True(session.ExecuteCommand("Pause"));
+        session.FlushAudio();
+        Assert.Equal(0, session.AudioQueueDepth);
+        Assert.Equal(0, session.Commands.PendingCount);
+
+        Assert.True(session.ExecuteCommand("Play"));
+
+        Assert.Equal(1, session.HeldFrameCount);
+        AssertSameFrameFields(expected, session.ReadPlaybackFrame());
+        Assert.Equal(0, session.HeldFrameCount);
+        var acceptedBeforeDecode = session.LastAcceptedAudioPts;
+        for (var decoded = 0; decoded < 50 && session.AudioQueueDepth == 0; decoded++)
+        {
+            var next = session.ReadPlaybackFrame();
+            Assert.True(Read<TimeSpan>(next, "Pts") > session.ResumeTarget);
+        }
+        Assert.True(session.AudioQueueDepth > 0);
+        Assert.True(session.BufferedAudioMs > 0);
+        Assert.True(session.LastAcceptedAudioPts > acceptedBeforeDecode);
+        Assert.True(session.LastAcceptedAudioPts >= pausedPosition.Ticks);
+    }
+
+    [Fact]
+    public void ExactResumeReleasesRetainedNativeFramesAndSeeksToTheRequestedPicture()
+    {
+        using var session = new PrebufferSession(_runtime);
+        var native = session.RetainNativeFrame();
+        var exactTarget = TimeSpan.FromMilliseconds(800);
+        session.SetWorkerState("Paused", session.ResumeTarget - TimeSpan.FromMilliseconds(20));
+        SetField(session.Worker, "PendingExactResumeTarget", exactTarget);
+        session.Commands.OnPeek = _ => session.SendAudio(exactTarget, milliseconds: 200);
+
+        Assert.True(session.ExecuteCommand("Play"));
+
+        Assert.Equal(1, native.ReferenceCount);
+        Assert.Equal(0, session.HeldFrameCount);
+        Assert.Null(GetField(session.Worker, "PendingExactResumeTarget"));
+        Assert.Equal("Playing", Read<object>(session.Controller, "State").ToString());
+        Assert.Equal(exactTarget, Read<TimeSpan>(session.ReadPlaybackFrame(), "Pts"));
+    }
+
+    [Fact]
+    public void SourceReplacementReleasesOldNativeFramesBeforeReadingTheNewSource()
+    {
+        using var session = new PrebufferSession(_runtime);
+        var native = session.RetainNativeFrame();
+        var target = TimeSpan.FromMilliseconds(600);
+        session.SetWorkerState("Paused", target);
+        var replacement = session.ReplaceActiveSource();
+        session.Commands.OnPeek = _ => session.SendAudio(target, milliseconds: 200);
+
+        Assert.True(session.ExecuteCommand("Play"));
+
+        Assert.Equal(1, native.ReferenceCount);
+        Assert.Equal(0, session.HeldFrameCount);
+        Assert.Equal(replacement, GetField(session.Controller, "_currentOpenFilePath"));
+        Assert.True(Read<bool>(session.Decoder, "IsOpen"));
+        Assert.Equal(target, Read<TimeSpan>(session.ReadPlaybackFrame(), "Pts"));
+    }
+
+    [Fact]
+    public void ForwardNudgeSubmitsTheRetainedPictureBeforeDecodingAnotherPicture()
+    {
+        using var session = new PrebufferSession(_runtime);
+        var retained = session.RetainInitialCpuFrame();
+        var expectedPixels = CopyFrameBytes(retained);
+        var preview = session.CapturePreview();
+        session.SetWorkerState("Paused", session.ResumeTarget - TimeSpan.FromMilliseconds(20));
+
+        Assert.True(session.ExecuteCommand("Nudge", delta: TimeSpan.FromMilliseconds(20)));
+
+        var first = Assert.Single(preview.Submissions);
+        Assert.Equal(Read<IntPtr>(retained, "Data"), first.Data);
+        Assert.Equal(session.ResumeTarget, first.Pts);
+        Assert.Equal(expectedPixels, first.Pixels);
+        Assert.Equal(0, session.HeldFrameCount);
+        Assert.Equal(session.ResumeTarget, Read<TimeSpan>(session.Controller, "PlaybackPosition"));
+
+        Assert.True(session.ExecuteCommand("Nudge", delta: TimeSpan.FromMilliseconds(20)));
+
+        Assert.Equal(2, preview.Submissions.Count);
+        Assert.Equal(session.ResumeTarget + TimeSpan.FromMilliseconds(20), preview.Submissions[1].Pts);
+        Assert.Equal(preview.Submissions[1].Pts, Read<TimeSpan>(session.Controller, "PlaybackPosition"));
+        Assert.Equal(string.Empty, Read<string>(session.Controller, "LastSubmitFailure"));
+    }
+
+    [Theory]
+    [InlineData("GoLive", true)]
+    [InlineData("Stop", false)]
+    public void TerminalCommandsReleaseNativeQueueReferencesAndDisposeTheRealDecoder(string commandKind, bool keepRunning)
+    {
+        using var session = new PrebufferSession(_runtime);
+        var native = session.RetainNativeFrame();
+        session.SetWorkerState("Playing", session.ResumeTarget);
+
+        Assert.Equal(keepRunning, session.ExecuteCommand(commandKind));
+
+        Assert.Equal(0, session.HeldFrameCount);
+        Assert.Equal(1, native.ReferenceCount);
+        Assert.Null(GetField(session.Worker, "Decoder"));
+        Assert.False((bool)GetField(session.Worker, "FileOpen")!);
+        Assert.True((bool)GetField(session.Decoder, "_disposed")!);
+        Assert.Equal("Live", Read<object>(session.Controller, "State").ToString());
+        session.ClearFrames();
+        Assert.Equal(1, native.ReferenceCount);
+    }
+
+    private static void AssertSameFrameFields(object expected, object actual)
+    {
+        Assert.Equal(Read<TimeSpan>(expected, "Pts"), Read<TimeSpan>(actual, "Pts"));
+        Assert.Equal(Read<IntPtr>(expected, "Data"), Read<IntPtr>(actual, "Data"));
+        Assert.Equal(Read<IntPtr>(expected, "HeldFrame"), Read<IntPtr>(actual, "HeldFrame"));
+        Assert.Equal(Read<bool>(expected, "IsD3D11Texture"), Read<bool>(actual, "IsD3D11Texture"));
+    }
+
+    private static byte[] CopyFrameBytes(object frame)
+    {
+        var pixels = new byte[Read<int>(frame, "DataLength")];
+        System.Runtime.InteropServices.Marshal.Copy(Read<IntPtr>(frame, "Data"), pixels, 0, pixels.Length);
+        return pixels;
+    }
+
     private sealed class PrebufferSession : IDisposable
     {
         private readonly DirectoryInfo? _directory;
@@ -255,6 +453,9 @@ public sealed class FlashbackPrebufferBehaviorTests : IClassFixture<BundledRunti
         private readonly object _decoder = null!;
         private readonly object _audio = null!;
         private readonly object _frames = null!;
+        private readonly object _worker = null!;
+        private readonly Type _commandType = null!;
+        private string? _replacementPath;
         private readonly bool _inputWritten;
         private readonly List<NativeFrameReference> _nativeFrames = new();
 
@@ -272,14 +473,18 @@ public sealed class FlashbackPrebufferBehaviorTests : IClassFixture<BundledRunti
                 _controller = Activator.CreateInstance(runtime.Type("Sussudio.Services.Flashback.FlashbackPlaybackController"), _manager)!;
                 _decoder = Activator.CreateInstance(runtime.Type("Sussudio.Services.Flashback.FlashbackDecoder"))!;
                 _audio = Activator.CreateInstance(runtime.Type("Sussudio.Services.Audio.WasapiAudioPlayback"))!;
-                _frames = Activator.CreateInstance(typeof(Queue<>).MakeGenericType(
-                    runtime.Type("Sussudio.Services.Flashback.DecodedVideoFrame")))!;
-                var commandType = runtime.Type("Sussudio.Services.Flashback.FlashbackPlaybackCommandMailbox+Command");
-                var stop = Activator.CreateInstance(commandType)!;
+                _worker = Activator.CreateInstance(
+                    _controller.GetType().GetNestedType("PlaybackWorkerState", BindingFlags.NonPublic)!, nonPublic: true)!;
+                SetField(_worker, "Decoder", _decoder);
+                _frames = GetField(_worker, "PrebufferedFrames")!;
+                _commandType = runtime.Type("Sussudio.Services.Flashback.FlashbackPlaybackCommandMailbox+Command");
+                var stop = Activator.CreateInstance(_commandType)!;
                 Set(stop, "Kind", Enum.Parse(runtime.Type("Sussudio.Services.Flashback.FlashbackPlaybackCommandMailbox+CommandKind"), "Stop"));
-                Commands = (ICommandBoundary)Activator.CreateInstance(typeof(CommandBoundary<>).MakeGenericType(commandType), stop)!;
+                Commands = (ICommandBoundary)Activator.CreateInstance(typeof(CommandBoundary<>).MakeGenericType(_commandType), stop)!;
                 File.WriteAllBytes(_path, input);
                 _inputWritten = true;
+                SetField(_manager, "_activeSegmentPath", _path);
+                SetField(_manager, "_latestPtsTicks", TimeSpan.FromSeconds(2).Ticks);
                 Set(_controller, "GpuDecodeEnabled", false);
                 // Exercise the real managed audio queue without a WASAPI endpoint
                 // or render thread, as in WasapiNegotiatedFormatAndWorkerLifetimeTests.
@@ -288,6 +493,7 @@ public sealed class FlashbackPrebufferBehaviorTests : IClassFixture<BundledRunti
                 SetField(_controller, "_currentOpenFilePath", _path);
                 Invoke(_decoder, "Initialize", IntPtr.Zero, IntPtr.Zero);
                 Invoke(_decoder, "OpenFile", _path);
+                SetField(_worker, "FileOpen", true);
                 Assert.True((bool)Invoke(_decoder, "SeekTo", ResumeTarget, CancellationToken.None)!);
                 InitialFrame = GetField(_decoder, "_pendingVideoFrame")!;
                 Assert.True(HasPendingDecoderFrame);
@@ -305,6 +511,9 @@ public sealed class FlashbackPrebufferBehaviorTests : IClassFixture<BundledRunti
             }
         }
 
+        public object Controller => _controller;
+        public object Worker => _worker;
+        public object Decoder => _decoder;
         public TimeSpan ResumeTarget { get; } = TimeSpan.FromMilliseconds(400);
         public object InitialFrame { get; } = null!;
         public ICommandBoundary Commands { get; } = null!;
@@ -326,6 +535,72 @@ public sealed class FlashbackPrebufferBehaviorTests : IClassFixture<BundledRunti
             object?[] arguments = { _decoder, _frames, null, CancellationToken.None };
             Assert.True((bool)Invoke(_controller, "TryReadNextPlaybackFrame", arguments)!);
             return arguments[2]!;
+        }
+
+        public object RetainInitialCpuFrame()
+        {
+            Commands.OnPeek = count =>
+            {
+                if (count == 2) Commands.EnqueueStop();
+            };
+            try { Prime(); }
+            finally { Commands.OnPeek = null; }
+            Assert.True(Commands.ReadStop());
+            Assert.Equal(1, HeldFrameCount);
+            return PeekRetainedFrame();
+        }
+
+        public NativeFrameReference RetainNativeFrame()
+        {
+            AssertSameFrameFields(InitialFrame, ReadPlaybackFrame());
+            var native = CreateHardwareMarkedFrame();
+            // Model an independently retained read-ahead picture with a real
+            // AVBuffer reference; no D3D11 texture or renderer is involved.
+            Invoke(_frames, "Enqueue", native.Frame);
+            return native;
+        }
+
+        public object PeekRetainedFrame() => Invoke(_frames, "Peek")!;
+
+        public void ReleaseReadFrame(object frame)
+            => _decoder.GetType().GetMethod("ReleaseHeldFrame", BindingFlags.Static | BindingFlags.NonPublic)!
+                .Invoke(null, new[] { frame });
+
+        public void SetWorkerState(string state, TimeSpan position)
+        {
+            SetField(_worker, "IsPlaying", state == "Playing");
+            SetField(_worker, "IsScrubbing", state == "Scrubbing");
+            SetField(_worker, "PendingExactResumeTarget", null);
+            SetField(_controller, "_state", Enum.Parse(Read<object>(_controller, "State").GetType(), state));
+            Set(_controller, "PlaybackPosition", position);
+        }
+
+        public bool ExecuteCommand(string kind, TimeSpan? delta = null)
+        {
+            using var cancellation = new CancellationTokenSource();
+            var command = Activator.CreateInstance(_commandType)!;
+            Set(command, "Kind", Enum.Parse(Read<object>(command, "Kind").GetType(), kind));
+            Set(command, "Position", TimeSpan.FromMilliseconds(800));
+            Set(command, "Delta", delta ?? TimeSpan.Zero);
+            return (bool)Invoke(_controller, "ExecutePlaybackCommand", _worker, command, Commands.Reader, cancellation)!;
+        }
+
+        public string ReplaceActiveSource()
+        {
+            var replacementPath = Path.Combine(_directory!.FullName, "replacement.mp4");
+            File.Copy(_path, replacementPath);
+            _replacementPath = replacementPath;
+            SetField(_manager, "_activeSegmentPath", replacementPath);
+            return replacementPath;
+        }
+
+        public PreviewBoundary CapturePreview()
+        {
+            var proxy = DispatchProxy.Create(
+                _controller.GetType().Assembly.GetType("Sussudio.Services.Contracts.IPreviewFrameSink", throwOnError: true)!,
+                typeof(PreviewBoundary));
+            SetField(_controller, "_previewSink", proxy);
+            return (PreviewBoundary)proxy;
         }
 
         public void ReadToTemporaryEof()
@@ -378,10 +653,21 @@ public sealed class FlashbackPrebufferBehaviorTests : IClassFixture<BundledRunti
             {
                 if (_controller != null && _frames != null) ClearFrames();
             });
+            Attempt(() =>
+            {
+                if (_controller != null) Invoke(_controller, "ReleasePreviousHeldFrame");
+            });
             Attempt(() => (_decoder as IDisposable)?.Dispose());
             Attempt(() => (_audio as IDisposable)?.Dispose());
             Attempt(() => (_controller as IDisposable)?.Dispose());
-            Attempt(() => (_manager as IDisposable)?.Dispose());
+            Attempt(() =>
+            {
+                if (_manager == null) return;
+                // The manager borrows these fixture files for path resolution;
+                // retain them until the hash and exclusive-open checks below.
+                SetField(_manager, "_activeSegmentPath", null);
+                ((IDisposable)_manager).Dispose();
+            });
             foreach (var native in _nativeFrames) Attempt(native.Dispose);
             Attempt(() =>
             {
@@ -389,6 +675,14 @@ public sealed class FlashbackPrebufferBehaviorTests : IClassFixture<BundledRunti
                 {
                     Assert.Equal(_originalHash, SHA256.HashData(File.ReadAllBytes(_path)));
                     using var exclusive = File.Open(_path, FileMode.Open, FileAccess.Read, FileShare.None);
+                }
+            });
+            Attempt(() =>
+            {
+                if (_replacementPath != null)
+                {
+                    Assert.Equal(_originalHash, SHA256.HashData(File.ReadAllBytes(_replacementPath)));
+                    using var exclusive = File.Open(_replacementPath, FileMode.Open, FileAccess.Read, FileShare.None);
                 }
             });
             Attempt(() => _directory?.Delete(recursive: true));
@@ -438,6 +732,24 @@ public sealed class FlashbackPrebufferBehaviorTests : IClassFixture<BundledRunti
             PeekCount++;
             OnPeek?.Invoke(PeekCount);
             return _channel.Reader.TryPeek(out item);
+        }
+    }
+
+    // Capture the real software frame submission boundary, without a renderer.
+    public class PreviewBoundary : DispatchProxy
+    {
+        public List<(IntPtr Data, TimeSpan Pts, byte[] Pixels)> Submissions { get; } = new();
+
+        protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
+        {
+            if (targetMethod?.Name != "SubmitRawFrame" || args == null)
+                throw new NotSupportedException(targetMethod?.Name);
+            var data = (IntPtr)args[0]!;
+            var pixels = new byte[(int)args[1]!];
+            System.Runtime.InteropServices.Marshal.Copy(data, pixels, 0, pixels.Length);
+            var pts = TimeSpan.FromTicks(Read<long>(args[5]!, "SourcePtsTicks"));
+            Submissions.Add((data, pts, pixels));
+            return null;
         }
     }
 
@@ -494,7 +806,7 @@ public sealed class FlashbackPrebufferBehaviorTests : IClassFixture<BundledRunti
     private static T Read<T>(object instance, string name) => (T)instance.GetType().GetProperty(name, InstanceFlags)!.GetValue(instance)!;
     private static void Set(object instance, string name, object value) => instance.GetType().GetProperty(name, InstanceFlags)!.SetValue(instance, value);
     private static object? GetField(object instance, string name) => instance.GetType().GetField(name, InstanceFlags)!.GetValue(instance);
-    private static void SetField(object instance, string name, object value) => instance.GetType().GetField(name, InstanceFlags)!.SetValue(instance, value);
+    private static void SetField(object instance, string name, object? value) => instance.GetType().GetField(name, InstanceFlags)!.SetValue(instance, value);
 
     private static object? Invoke(object instance, string name, params object?[] arguments)
     {

@@ -993,8 +993,15 @@ Entry points:
   decode-error snap, near-live snap, and playback failure recovery back to live
   state.
 - `FlashbackPlaybackController.PlaybackFrames.cs` owns playback-frame dequeue/decode selection, bounded GPU read-ahead with retained hardware frames and early segment continuation, prebuffer cleanup, A/V drift frame-skip catch-up policy, held playback frame backing state, release-for-live reset policy, best-effort decoded frame release warnings, continuous playback frame progression, decoded-frame submission flow, live-recovery policy invocation, cadence pacing, and A/V drift diagnostics.
-  The playback thread releases the read-ahead queue when continuous playback
-  stops, as well as on commands and thread exit.
+  The playback thread releases the read-ahead queue on invalidating seek,
+  source-change, and terminal transitions, and when continuous playback stops.
+  Ignored commands and same-file resume without an exact seek retain queued
+  pictures; forward nudge consumes the next retained picture before decoding.
+  A same-file resume keeps retained video instead of re-priming; audio refills
+  as decoding resumes after those pictures drain. Existing audio pause/flush
+  and seek/start priming policies remain unchanged. Worker state and native
+  frame-reference behavior are exercised by
+  `FlashbackPlaybackWorkerBehaviorTests.cs` and `FlashbackPrebufferBehaviorTests.cs`.
 - `FlashbackPlaybackController.cs` owns the marker command API, in/out marker state, file-PTS projection, marker normalization, invalid-range clearing, recovery restore, out-point pause checks, scrub/seek clamp policy, saturating timestamp math, active fMP4 segment detection, and playback path comparison.
 - `FlashbackPlaybackController.cs` owns component lifecycle, dispose,
   preview-detach deferred reattach lifecycle, playback cadence/decode metric

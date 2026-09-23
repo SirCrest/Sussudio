@@ -325,6 +325,7 @@ internal sealed partial class FlashbackPlaybackController
         PlaybackWorkerState worker,
         string operation)
     {
+        ClearPrebufferedFrames(worker.PrebufferedFrames, operation);
         CleanupDecoder(ref worker.Decoder, ref worker.FileOpen);
         Interlocked.Exchange(ref _lastAudioPtsTicks, 0);
         Interlocked.Exchange(ref _lastVideoPtsTicks, 0);
@@ -358,7 +359,6 @@ internal sealed partial class FlashbackPlaybackController
         var commandStarted = Stopwatch.GetTimestamp();
         Volatile.Write(ref _activeCommandKind, (int)cmd.Kind);
         Volatile.Write(ref _activeCommandStartedTimestamp, commandStarted);
-        ClearPrebufferedFrames(worker.PrebufferedFrames, $"command_{cmd.Kind}");
         try
         {
             switch (cmd.Kind)
@@ -460,6 +460,7 @@ internal sealed partial class FlashbackPlaybackController
         if (!IsDecoderFileReady(worker.Decoder, worker.FileOpen))
         {
             Logger.Log("FLASHBACK_PLAYBACK_PLAY_NO_FILE Ã¢â‚¬â€ restoring live");
+            ClearPrebufferedFrames(worker.PrebufferedFrames, "play_no_file");
             SetNoFileFailure(CommandKind.Play, PlaybackPosition);
             worker.IsPlaying = false;
             worker.PendingExactResumeTarget = null;
@@ -468,14 +469,16 @@ internal sealed partial class FlashbackPlaybackController
         }
         var requireExactResumeSeek = worker.PendingExactResumeTarget.HasValue;
         var seekTarget = pendingPlayTarget;
-        if (State == FlashbackPlaybackState.Paused &&
+        var resumeWithoutSeek = State == FlashbackPlaybackState.Paused &&
             IsSamePlaybackPath(prevFile, _currentOpenFilePath) &&
-            !requireExactResumeSeek)
+            !requireExactResumeSeek;
+        if (resumeWithoutSeek)
         {
             Logger.Log($"FLASHBACK_PLAYBACK_RESUME_NO_SEEK pos_ms={(long)PlaybackPosition.TotalMilliseconds}");
         }
         else
         {
+            ClearPrebufferedFrames(worker.PrebufferedFrames, "play_seek");
             worker.Decoder.AudioChunkCallback = null;
             if (requireExactResumeSeek)
             {
@@ -499,7 +502,12 @@ internal sealed partial class FlashbackPlaybackController
         worker.FrameDuration = ResolveFrameDuration(worker.Decoder);
         RestoreAudioCallback(worker.Decoder, seekTarget.Ticks);
         SafeFlushPlayback("play");
-        PrimePlaybackAudioBuffer(worker.Decoder, worker.PrebufferedFrames, commandChannel, ref worker.FileOpen, seekTarget, "play", cts.Token);
+        // Retained pictures precede the decoder's current position. Consume them
+        // before priming can decode ahead, invalidate borrowed data, or rewind.
+        if (!resumeWithoutSeek || worker.PrebufferedFrames.Count == 0)
+        {
+            PrimePlaybackAudioBuffer(worker.Decoder, worker.PrebufferedFrames, commandChannel, ref worker.FileOpen, seekTarget, "play", cts.Token);
+        }
         SafeResumePlaybackRendering("play");
         worker.PacingStopwatch.Restart();
 
@@ -538,6 +546,7 @@ internal sealed partial class FlashbackPlaybackController
                 Logger.Log($"FLASHBACK_PLAYBACK_PAUSE_FROM_LIVE_DEFER_DISPLAY pos_ms={(long)pausePos.TotalMilliseconds}");
                 return;
             }
+            ClearPrebufferedFrames(worker.PrebufferedFrames, "pause_from_live");
             worker.Decoder ??= CreateDecoder();
             EnsureFileOpen(worker.Decoder, ref worker.FileOpen, SaturatingAdd(pausePos, worker.FrozenValidStart));
             cts.Token.ThrowIfCancellationRequested();
@@ -592,6 +601,7 @@ internal sealed partial class FlashbackPlaybackController
             cmd = newerSeek;
         }
 
+        ClearPrebufferedFrames(worker.PrebufferedFrames, "seek");
         _wasPlayingBeforeScrub = worker.IsPlaying || State == FlashbackPlaybackState.Live;
         worker.IsPlaying = false;
         worker.IsScrubbing = false;
@@ -675,6 +685,7 @@ internal sealed partial class FlashbackPlaybackController
         ref PlaybackCommand cmd,
         CancellationTokenSource cts)
     {
+        ClearPrebufferedFrames(worker.PrebufferedFrames, "begin_scrub");
         worker.PendingExactResumeTarget = null;
         // Only capture the resume-state on first entry into Scrubbing.
         // A second BeginScrub arriving while we're already scrubbing
@@ -728,13 +739,14 @@ internal sealed partial class FlashbackPlaybackController
         ChannelReader<PlaybackCommand> commandChannel,
         CancellationTokenSource cts)
     {
-        worker.PendingExactResumeTarget = null;
         cmd = _commandMailbox.ResolveLatestPositionAndReleaseCoalescingSlot(cmd);
         if (!worker.IsScrubbing)
         {
             MarkCommandNoOp(CommandKind.UpdateScrub, "not_scrubbing", cmd.Position);
             return;
         }
+        ClearPrebufferedFrames(worker.PrebufferedFrames, "update_scrub");
+        worker.PendingExactResumeTarget = null;
         // Drain stale UpdateScrub commands only. Leave control commands queued
         // so their latency/accounting stays tied to the original command.
         while (commandChannel.TryPeek(out var newer) &&
@@ -788,6 +800,7 @@ internal sealed partial class FlashbackPlaybackController
             MarkCommandNoOp(CommandKind.EndScrub, "not_scrubbing", cmd.Position);
             return;
         }
+        ClearPrebufferedFrames(worker.PrebufferedFrames, "end_scrub");
         var requestedEndScrubPosition = ClampPosition(cmd.Position, worker.FrozenValidStart);
         var endScrubTarget = ClampPlaybackTargetToMinimumLiveLead(
             SaturatingAdd(requestedEndScrubPosition, worker.FrozenValidStart),
@@ -848,10 +861,12 @@ internal sealed partial class FlashbackPlaybackController
         var nudgedPos = SaturatingAdd(PlaybackPosition, cmd.Delta);
         nudgedPos = ClampPosition(nudgedPos, worker.FrozenValidStart);
         worker.Decoder ??= CreateDecoder();
+        var previousFile = _currentOpenFilePath;
         EnsureFileOpen(worker.Decoder, ref worker.FileOpen, SaturatingAdd(nudgedPos, worker.FrozenValidStart));
         cts.Token.ThrowIfCancellationRequested();
         if (!IsDecoderFileReady(worker.Decoder, worker.FileOpen))
         {
+            ClearPrebufferedFrames(worker.PrebufferedFrames, "nudge_no_file");
             SetNoFileFailure(CommandKind.Nudge, nudgedPos);
             PlaybackPosition = nudgedPos;
             worker.IsPlaying = false;
@@ -861,9 +876,13 @@ internal sealed partial class FlashbackPlaybackController
             return;
         }
 
+        if (!IsSamePlaybackPath(previousFile, _currentOpenFilePath))
+        {
+            ClearPrebufferedFrames(worker.PrebufferedFrames, "nudge_source_changed");
+        }
         if (cmd.Delta.Ticks > 0)
         {
-            var got = TryDecodeNextVideoFrameWithMetrics(worker.Decoder, out var nudgeFrame, cts.Token);
+            var got = TryReadNextPlaybackFrame(worker.Decoder, worker.PrebufferedFrames, out var nudgeFrame, cts.Token);
             if (got)
             {
                 if (!TrySubmitAndHoldFrame(nudgeFrame, "nudge"))
@@ -876,6 +895,7 @@ internal sealed partial class FlashbackPlaybackController
                 return;
             }
         }
+        ClearPrebufferedFrames(worker.PrebufferedFrames, "nudge_seek");
         if (!SeekAndDisplayKeyframe(worker.Decoder, ref worker.FileOpen, nudgedPos, worker.FrozenValidStart, CommandKind.Nudge, cts.Token))
         {
             worker.IsPlaying = false;

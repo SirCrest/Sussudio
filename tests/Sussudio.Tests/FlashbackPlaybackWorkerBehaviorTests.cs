@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
 using Xunit;
@@ -37,6 +38,7 @@ public sealed class FlashbackPlaybackWorkerBehaviorTests
         Assert.Same(session.Decoder, Field(session.Worker, "Decoder"));
         Assert.False(Read<bool>(session.Decoder, "IsOpen"));
         Assert.False((bool)Field(session.Decoder, "_disposed")!);
+        session.AssertFramesCleared();
         session.AssertCommandCompleted();
     }
 
@@ -64,6 +66,7 @@ public sealed class FlashbackPlaybackWorkerBehaviorTests
         Assert.Null(Field(session.Worker, "Decoder"));
         Assert.True((bool)Field(session.Decoder, "_disposed")!);
         Assert.Equal("Live", Read<object>(session.Controller, "State").ToString());
+        session.AssertFramesCleared();
     }
 
     [Theory]
@@ -84,6 +87,99 @@ public sealed class FlashbackPlaybackWorkerBehaviorTests
         Assert.False((bool)Field(session.Worker, "IsScrubbing")!);
         Assert.Null(Field(session.Worker, "PendingExactResumeTarget"));
         Assert.Equal("Live", Read<object>(session.Controller, "State").ToString());
+        session.AssertFramesCleared();
+        session.AssertCommandCompleted();
+    }
+
+    [Theory]
+    [InlineData("Play")]
+    [InlineData("Pause")]
+    [InlineData("UpdateScrub")]
+    [InlineData("EndScrub")]
+    public void IgnoredCommandsPreserveRetainedFramesAndWorkerState(string commandKind)
+    {
+        using var session = new WorkerSession(commandKind);
+        using var cancellation = new CancellationTokenSource();
+        var playing = commandKind == "Play";
+        session.PrepareRetainedState(playing);
+        var frame = session.PeekFrame();
+        var pacingTicks = session.PacingStopwatch.ElapsedTicks;
+
+        Assert.True(session.Execute(commandKind, cancellation));
+
+        session.AssertRetainedState(frame, pacingTicks, playing);
+        session.AssertCommandCompleted();
+    }
+
+    [Fact]
+    public void IgnoredScrubUpdateReleasesItsMailboxSlotForTheNextUpdate()
+    {
+        using var session = new WorkerSession("UpdateScrub");
+        using var cancellation = new CancellationTokenSource();
+        session.PrepareRetainedState(playing: false);
+        var frame = session.PeekFrame();
+        var pacingTicks = session.PacingStopwatch.ElapsedTicks;
+        Assert.Equal("Enqueued", session.EnqueueIntent("UpdateScrub", TimeSpan.FromSeconds(2)));
+        Assert.Equal("Coalesced", session.EnqueueIntent("UpdateScrub", TimeSpan.FromSeconds(3)));
+
+        Assert.True(session.ExecuteNext(cancellation));
+        session.AssertRetainedState(frame, pacingTicks, playing: false);
+        Assert.Equal(0, Read<int>(session.Mailbox, "PendingCommands"));
+        Assert.Equal("Enqueued", session.EnqueueIntent("UpdateScrub", TimeSpan.FromSeconds(4)));
+        Assert.True(session.ExecuteNext(cancellation));
+
+        session.AssertRetainedState(frame, pacingTicks, playing: false);
+        Assert.Equal(2L, Read<long>(session.Mailbox, "CommandsEnqueued"));
+        Assert.Equal(2L, Read<long>(session.Mailbox, "CommandsProcessed"));
+        Assert.Equal(1L, Read<long>(session.Mailbox, "ScrubUpdatesCoalesced"));
+        Assert.Equal(0, Read<int>(session.Mailbox, "PendingCommands"));
+        session.AssertCommandCompleted();
+    }
+
+    [Fact]
+    public void SeekSupersededByPlayPreservesTheLatestExactResumeIntent()
+    {
+        using var session = new WorkerSession("Seek");
+        using var cancellation = new CancellationTokenSource();
+        session.SetBufferedDuration(TimeSpan.FromSeconds(10));
+        SetField(session.Worker, "IsPlaying", true);
+        Assert.Equal("Enqueued", session.EnqueueIntent("Seek", TimeSpan.FromSeconds(2)));
+        Assert.Equal("Coalesced", session.EnqueueIntent("Seek", TimeSpan.FromSeconds(3)));
+        Assert.True(session.EnqueueControl("Play"));
+
+        Assert.True(session.ExecuteNext(cancellation));
+
+        Assert.Equal(TimeSpan.FromSeconds(3), Read<TimeSpan>(session.Controller, "PlaybackPosition"));
+        Assert.Equal(TimeSpan.FromSeconds(3), Field(session.Worker, "PendingExactResumeTarget"));
+        Assert.Equal("Paused", Read<object>(session.Controller, "State").ToString());
+        Assert.False((bool)Field(session.Worker, "IsPlaying")!);
+        Assert.False((bool)Field(session.Worker, "IsScrubbing")!);
+        Assert.Same(session.Decoder, Field(session.Worker, "Decoder"));
+        Assert.False((bool)Field(session.Decoder, "_disposed")!);
+        Assert.Equal(1, Read<int>(session.Mailbox, "PendingCommands"));
+        session.AssertFramesCleared();
+        session.AssertCommandCompleted();
+    }
+
+    [Fact]
+    public void ActiveScrubSupersededByControlKeepsTheLatestPosition()
+    {
+        using var session = new WorkerSession("UpdateScrub");
+        using var cancellation = new CancellationTokenSource();
+        session.SetBufferedDuration(TimeSpan.FromSeconds(10));
+        Assert.Equal("Enqueued", session.EnqueueIntent("UpdateScrub", TimeSpan.FromSeconds(2)));
+        Assert.Equal("Coalesced", session.EnqueueIntent("UpdateScrub", TimeSpan.FromSeconds(3)));
+        Assert.True(session.EnqueueControl("EndScrub"));
+
+        Assert.True(session.ExecuteNext(cancellation));
+
+        Assert.Equal(TimeSpan.FromSeconds(3), Read<TimeSpan>(session.Controller, "PlaybackPosition"));
+        Assert.Null(Field(session.Worker, "PendingExactResumeTarget"));
+        Assert.Equal("Scrubbing", Read<object>(session.Controller, "State").ToString());
+        Assert.True((bool)Field(session.Worker, "IsScrubbing")!);
+        Assert.Same(session.Decoder, Field(session.Worker, "Decoder"));
+        Assert.Equal(1, Read<int>(session.Mailbox, "PendingCommands"));
+        session.AssertFramesCleared();
         session.AssertCommandCompleted();
     }
 
@@ -108,6 +204,7 @@ public sealed class FlashbackPlaybackWorkerBehaviorTests
     {
         private readonly object _buffer;
         private readonly object _reader;
+        private readonly object _generation;
 
         public WorkerSession(string commandKind)
         {
@@ -129,8 +226,9 @@ public sealed class FlashbackPlaybackWorkerBehaviorTests
             Set(Controller, "PlaybackPosition", TimeSpan.FromMilliseconds(1250));
             SetField(Controller, "_lastAudioPtsTicks", TimeSpan.FromSeconds(2).Ticks);
             SetField(Controller, "_lastVideoPtsTicks", TimeSpan.FromSeconds(3).Ticks);
-            var mailbox = Field(Controller, "_commandMailbox")!;
-            _reader = Read<object>(Read<object>(mailbox, "CurrentGeneration"), "Reader");
+            Mailbox = Field(Controller, "_commandMailbox")!;
+            _generation = Read<object>(Mailbox, "CurrentGeneration");
+            _reader = Read<object>(_generation, "Reader");
             // An empty frame carries no native handle; actual held-frame release
             // remains covered by FlashbackPrebufferBehaviorTests.
             Invoke(Field(Worker, "PrebufferedFrames")!, "Enqueue",
@@ -140,19 +238,81 @@ public sealed class FlashbackPlaybackWorkerBehaviorTests
         public object Controller { get; }
         public object Worker { get; }
         public object Decoder { get; }
+        public object Mailbox { get; }
+        public Stopwatch PacingStopwatch => (Stopwatch)Field(Worker, "PacingStopwatch")!;
 
-        public bool Execute(string kind, CancellationTokenSource cancellation)
+        private static object CreateCommand(string kind)
         {
             var command = Activator.CreateInstance(TypeOf("Sussudio.Services.Flashback.FlashbackPlaybackCommandMailbox+Command"))!;
             Set(command, "Kind", Enum.Parse(TypeOf("Sussudio.Services.Flashback.FlashbackPlaybackCommandMailbox+CommandKind"), kind));
             Set(command, "Position", TimeSpan.FromMilliseconds(2500));
             Set(command, "Delta", TimeSpan.FromMilliseconds(40));
-            return (bool)Invoke(Controller, "ExecutePlaybackCommand", Worker, command, _reader, cancellation)!;
+            return command;
+        }
+
+        public bool Execute(string kind, CancellationTokenSource cancellation)
+            => (bool)Invoke(Controller, "ExecutePlaybackCommand", Worker, CreateCommand(kind), _reader, cancellation)!;
+
+        public bool ExecuteNext(CancellationTokenSource cancellation)
+        {
+            object?[] arguments = { _generation, null };
+            Assert.True((bool)Invoke(Mailbox, "TryReadForPlayback", arguments)!);
+            return (bool)Invoke(Controller, "ExecutePlaybackCommand", Worker, arguments[1], _reader, cancellation)!;
+        }
+
+        public string EnqueueIntent(string kind, TimeSpan position)
+            => Invoke(Mailbox, kind == "Seek" ? "TryEnqueueSeek" : "TryEnqueueScrubUpdate", position)!.ToString()!;
+
+        public bool EnqueueControl(string kind) => (bool)Invoke(Mailbox, "TryEnqueue", CreateCommand(kind))!;
+        public void SetBufferedDuration(TimeSpan duration) => Invoke(_buffer, "UpdateLatestPts", duration);
+        public object PeekFrame() => Invoke(Field(Worker, "PrebufferedFrames")!, "Peek")!;
+        public void AssertFramesCleared() => Assert.Empty((ICollection)Field(Worker, "PrebufferedFrames")!);
+
+        public void PrepareRetainedState(bool playing)
+        {
+            SetField(Worker, "IsPlaying", playing);
+            SetField(Worker, "IsScrubbing", false);
+            SetField(Worker, "FrozenValidStart", TimeSpan.FromSeconds(2));
+            SetField(Worker, "FrameDuration", TimeSpan.FromMilliseconds(40));
+            SetField(Controller, "_state", Enum.Parse(TypeOf("Sussudio.Models.FlashbackPlaybackState"), playing ? "Playing" : "Paused"));
+            var frame = Invoke(Field(Worker, "PrebufferedFrames")!, "Dequeue")!;
+            Set(frame, "Pts", TimeSpan.FromMilliseconds(3200));
+            Set(frame, "Width", 64);
+            Set(frame, "Height", 32);
+            Set(frame, "DataLength", 3072);
+            Invoke(Field(Worker, "PrebufferedFrames")!, "Enqueue", frame);
+            PacingStopwatch.Start();
+            SpinWait.SpinUntil(() => PacingStopwatch.ElapsedTicks > 0);
+            PacingStopwatch.Stop();
+        }
+
+        public void AssertRetainedState(object expectedFrame, long pacingTicks, bool playing)
+        {
+            Assert.Single(((IEnumerable)Field(Worker, "PrebufferedFrames")!).Cast<object>());
+            var frame = PeekFrame();
+            foreach (var property in new[] { "Pts", "Data", "HeldFrame", "Width", "Height", "DataLength" })
+            {
+                Assert.Equal(Read<object>(expectedFrame, property), Read<object>(frame, property));
+            }
+            Assert.Equal(TimeSpan.FromSeconds(7), Field(Worker, "PendingExactResumeTarget"));
+            Assert.Equal(TimeSpan.FromSeconds(2), Field(Worker, "FrozenValidStart"));
+            Assert.Equal(TimeSpan.FromMilliseconds(40), Field(Worker, "FrameDuration"));
+            Assert.Equal(TimeSpan.FromMilliseconds(1250), Read<TimeSpan>(Controller, "PlaybackPosition"));
+            Assert.Equal(playing, Field(Worker, "IsPlaying"));
+            Assert.False((bool)Field(Worker, "IsScrubbing")!);
+            Assert.False((bool)Field(Worker, "FileOpen")!);
+            Assert.Equal(playing ? "Playing" : "Paused", Read<object>(Controller, "State").ToString());
+            Assert.Same(Decoder, Field(Worker, "Decoder"));
+            Assert.False((bool)Field(Decoder, "_disposed")!);
+            Assert.False(Read<bool>(Decoder, "IsOpen"));
+            Assert.Equal(pacingTicks, PacingStopwatch.ElapsedTicks);
+            Assert.False(PacingStopwatch.IsRunning);
+            Assert.Equal(TimeSpan.FromSeconds(2).Ticks, Field(Controller, "_lastAudioPtsTicks"));
+            Assert.Equal(TimeSpan.FromSeconds(3).Ticks, Field(Controller, "_lastVideoPtsTicks"));
         }
 
         public void AssertCommandCompleted()
         {
-            Assert.Empty((ICollection)Field(Worker, "PrebufferedFrames")!);
             Assert.Equal(-1, Field(Controller, "_activeCommandKind"));
             Assert.Equal(0L, Field(Controller, "_activeCommandStartedTimestamp"));
             Assert.False(Read<bool>(Controller, "PlaybackThreadAlive"));
@@ -160,7 +320,11 @@ public sealed class FlashbackPlaybackWorkerBehaviorTests
 
         public void Dispose()
         {
-            try { ((IDisposable)Controller).Dispose(); }
+            try
+            {
+                Invoke(Controller, "ClearPrebufferedFrames", Field(Worker, "PrebufferedFrames"), "behavior_test_cleanup");
+                ((IDisposable)Controller).Dispose();
+            }
             finally
             {
                 try { ((IDisposable)Decoder).Dispose(); }
