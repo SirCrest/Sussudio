@@ -73,14 +73,12 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         RegisterCloseLifecycle(appWindow);
         InitializeShellControllers();
 
-        // Subscribe to ViewModel changes
         ViewModel.PropertyChanged += ViewModel_PropertyChanged;
         ViewModel.PreviewStartRequested += ViewModel_PreviewStartRequested;
         ViewModel.PreviewStopRequested += ViewModel_PreviewStopRequested;
         ViewModel.PreviewReinitRequested += ViewModel_PreviewReinitRequested;
         ViewModel.PreviewRendererStopRequested += ViewModel_PreviewRendererStopRequested;
 
-        // Wire up UI controls to ViewModel
         SetupBindings();
         SetupButtonHoverAnimations();
         SetupControlBarShadow();
@@ -470,9 +468,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
     private void UpdateFlashbackStateUI()
         => _flashbackPlaybackUiCoordinator.UpdateState();
-
-    private void UpdateFlashbackBufferFill()
-        => _flashbackPlaybackUiCoordinator.UpdateBufferFill();
 
     private void UpdateFlashbackPositionUI()
         => _flashbackPlaybackUiCoordinator.UpdatePosition();
@@ -1205,11 +1200,9 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         ApplyInitialFlashbackSettings();
         FlashbackKeepAliveHintText.Visibility = Visibility.Collapsed;
 
-        // Bind all collections to ComboBoxes
         AttachCaptureSelectionBindings();
         InitializeCaptureOptionCollections();
 
-        // Set initial values
         UpdateOutputPathDisplay();
         ApplyInitialStatusStripPresentation();
         UpdateLiveSignalInfoVisibility();
@@ -1802,24 +1795,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             ViewModel.IsRecording,
             ViewModel.IsFlashbackEnabled);
 
-    private void UpdateStatusTextPresentation()
-        => _statusStripPresentationController.UpdateStatusText(ViewModel.StatusText);
-
-    private void UpdateRecordingTimePresentation()
-        => _statusStripPresentationController.UpdateRecordingTime(ViewModel.RecordingTime);
-
-    private void UpdateDiskSpacePresentation()
-        => _statusStripPresentationController.UpdateDiskSpace(ViewModel.DiskSpaceInfo);
-
-    private void UpdateRecordingSizePresentation()
-        => _statusStripPresentationController.UpdateRecordingSize(ViewModel.RecordingSizeInfo);
-
-    private void UpdateRecordingBitratePresentation()
-        => _statusStripPresentationController.UpdateRecordingBitrate(ViewModel.RecordingBitrateInfo);
-
-    private void UpdateDiskWarningPresentation()
-        => _statusStripPresentationController.UpdateDiskWarning(ViewModel.IsDiskWarningActive);
-
     private void ApplyWindowTitle()
         => Title = _windowTitleController.BuildTitle(ViewModel.IsRecording, ViewModel.RecordingTime);
 
@@ -1900,18 +1875,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         => InvokeOnUiThreadAsync(
             () => _fullScreenController.SetEnabledAsync(enabled),
             cancellationToken);
-
-    private void EnterFullScreen()
-        => _fullScreenController.Enter();
-
-    private void ExitFullScreen()
-        => _fullScreenController.Exit();
-
-    private Task EnterFullScreenAsync()
-        => _fullScreenController.EnterAsync();
-
-    private Task ExitFullScreenAsync()
-        => _fullScreenController.ExitAsync();
 
     private void OnContentKeyDown(object sender, KeyRoutedEventArgs e)
         => _fullScreenController.OnKeyDown(e);

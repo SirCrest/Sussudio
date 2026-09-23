@@ -396,27 +396,27 @@ internal sealed class StatusStripPresentationController
         }
     }
 
-    public void UpdateStatusText(string statusText)
+    private void UpdateStatusText(string statusText)
     {
         _context.StatusTextBlock.Text = statusText;
     }
 
-    public void UpdateRecordingTime(string recordingTime)
+    private void UpdateRecordingTime(string recordingTime)
     {
         _context.RecordingTimeTextBlock.Text = recordingTime;
     }
 
-    public void UpdateDiskSpace(string diskSpaceInfo)
+    private void UpdateDiskSpace(string diskSpaceInfo)
     {
         _context.DiskSpaceTextBlock.Text = diskSpaceInfo;
     }
 
-    public void UpdateRecordingSize(string recordingSizeInfo)
+    private void UpdateRecordingSize(string recordingSizeInfo)
     {
         _context.RecordingSizeTextBlock.Text = recordingSizeInfo;
     }
 
-    public void UpdateRecordingBitrate(string recordingBitrateInfo)
+    private void UpdateRecordingBitrate(string recordingBitrateInfo)
     {
         _context.RecordingBitrateTextBlock.Text = recordingBitrateInfo;
     }
@@ -429,7 +429,7 @@ internal sealed class StatusStripPresentationController
         }
     }
 
-    public void UpdateDiskWarning(bool isDiskWarningActive)
+    private void UpdateDiskWarning(bool isDiskWarningActive)
     {
         _context.DiskWarningInfoBar.IsOpen = isDiskWarningActive;
     }

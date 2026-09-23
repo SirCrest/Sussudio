@@ -29,7 +29,6 @@ namespace Sussudio
             Logger.Initialize(logRoot);
             InitializeComponent();
 
-            // Add global exception handlers
             UnhandledException += App_UnhandledException;
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
 

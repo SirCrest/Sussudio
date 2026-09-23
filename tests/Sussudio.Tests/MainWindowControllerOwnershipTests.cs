@@ -1556,13 +1556,7 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
         AssertContains(adapterText, "RecordingBitrateTextBlock = RecordingBitrateTextBlock,");
         AssertContains(adapterText, "private void ApplyInitialStatusStripPresentation()");
         AssertContains(adapterText, "private StatusStripPresentationSnapshot BuildStatusStripPresentationSnapshot()");
-        AssertContains(adapterText, "private void UpdateStatusTextPresentation()");
-        AssertContains(adapterText, "private void UpdateRecordingTimePresentation()");
-        AssertContains(adapterText, "private void UpdateDiskSpacePresentation()");
-        AssertContains(adapterText, "private void UpdateRecordingSizePresentation()");
-        AssertContains(adapterText, "private void UpdateRecordingBitratePresentation()");
         AssertDoesNotContain(adapterText, "private void UpdateFlashbackBitratePresentation()");
-        AssertContains(adapterText, "private void UpdateDiskWarningPresentation()");
         AssertContains(adapterText, "private bool TryHandleStatusStripPropertyChanged(string? propertyName)");
         AssertContains(adapterText, "_statusStripPresentationController.TryHandlePropertyChanged(");
         AssertContains(adapterText, "BuildStatusStripPresentationSnapshot(),");
@@ -1581,6 +1575,12 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
             "status strip presentation lives with shell chrome ownership");
         AssertContains(controllerText, "public void ApplyInitial(StatusStripPresentationSnapshot snapshot)");
         AssertContains(controllerText, "public bool TryHandlePropertyChanged(");
+        AssertContains(controllerText, "private void UpdateStatusText(string statusText)");
+        AssertContains(controllerText, "private void UpdateRecordingTime(string recordingTime)");
+        AssertContains(controllerText, "private void UpdateDiskSpace(string diskSpaceInfo)");
+        AssertContains(controllerText, "private void UpdateRecordingSize(string recordingSizeInfo)");
+        AssertContains(controllerText, "private void UpdateRecordingBitrate(string recordingBitrateInfo)");
+        AssertContains(controllerText, "private void UpdateDiskWarning(bool isDiskWarningActive)");
         AssertContains(controllerText, "case nameof(MainViewModel.StatusText):");
         AssertContains(controllerText, "case nameof(MainViewModel.RecordingTime):");
         AssertContains(controllerText, "case nameof(MainViewModel.DiskSpaceInfo):");
@@ -1612,17 +1612,11 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
         AssertDoesNotContain(propertyChangedText, "RecordingBitrateTextBlock.Text = ViewModel.RecordingBitrateInfo;");
         AssertDoesNotContain(propertyChangedText, "DiskWarningInfoBar.IsOpen = ViewModel.IsDiskWarningActive;");
         AssertDoesNotContain(propertyChangedText, "case nameof(MainViewModel.StatusText):");
-        AssertDoesNotContain(propertyChangedText, "UpdateStatusTextPresentation();");
         AssertDoesNotContain(propertyChangedText, "case nameof(MainViewModel.RecordingTime):");
-        AssertDoesNotContain(propertyChangedText, "UpdateRecordingTimePresentation();");
         AssertDoesNotContain(propertyChangedText, "case nameof(MainViewModel.DiskSpaceInfo):");
-        AssertDoesNotContain(propertyChangedText, "UpdateDiskSpacePresentation();");
         AssertDoesNotContain(propertyChangedText, "case nameof(MainViewModel.RecordingSizeInfo):");
-        AssertDoesNotContain(propertyChangedText, "UpdateRecordingSizePresentation();");
         AssertDoesNotContain(propertyChangedText, "case nameof(MainViewModel.RecordingBitrateInfo):");
-        AssertDoesNotContain(propertyChangedText, "UpdateRecordingBitratePresentation();");
         AssertDoesNotContain(propertyChangedText, "case nameof(MainViewModel.IsDiskWarningActive):");
-        AssertDoesNotContain(propertyChangedText, "UpdateDiskWarningPresentation();");
         AssertDoesNotContain(adapterText, "case nameof(MainViewModel.StatusText):");
         AssertDoesNotContain(adapterText, "case nameof(MainViewModel.RecordingTime):");
         AssertDoesNotContain(adapterText, "case nameof(MainViewModel.DiskSpaceInfo):");
@@ -2033,8 +2027,7 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
 
         AssertContains(fullScreenSource, "public Task SetFullScreenEnabledAsync(bool enabled, CancellationToken cancellationToken = default)\n        => InvokeOnUiThreadAsync(\n            () => _fullScreenController.SetEnabledAsync(enabled),");
         AssertContains(fullScreenSource, "private void OnContentKeyDown(object sender, KeyRoutedEventArgs e)\n        => _fullScreenController.OnKeyDown(e);");
-        AssertContains(fullScreenSource, "private Task EnterFullScreenAsync()\n        => _fullScreenController.EnterAsync();");
-        AssertContains(fullScreenSource, "private Task ExitFullScreenAsync()\n        => _fullScreenController.ExitAsync();");
+        AssertContains(fullScreenSource, "private void ToggleFullScreen()\n        => _fullScreenController.Toggle();");
         AssertContains(fullScreenControllerRootSource, "internal sealed class FullScreenController");
         AssertContains(fullScreenControllerRootSource, "public async Task EnterAsync()");
         AssertContains(fullScreenControllerRootSource, "public async Task ExitAsync()");

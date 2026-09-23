@@ -57,6 +57,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-09-23
+Area: MainWindow forwarding and redundant comment cleanup
+Problem: `MainWindow.xaml.cs` kept 11 zero-caller controller forwarders whose live routes were already owned by `StatusStripPresentationController` or `FullScreenController`; six status update methods also exposed controller-internal operations publicly. Nine section comments only restated the wiring or initialization immediately below them.
+Files consolidated: none; removed the 11 dead forwarders and made six status update methods private.
+Files added: none
+Net production .cs delta: 0; net core app .cs delta: 0; net test .cs delta: 0; nonblank LoC delta: core app -31, tests -7.
+Partial clusters reduced: n/a; this slice narrowed an existing controller API and deleted dead adapters without moving ownership.
+Build/tests/runtime checks: app build `dotnet build Sussudio\Sussudio.csproj --no-restore -p:Platform=x64 -p:StageLatestBuild=true` passed with 0 warnings/errors; focused status-strip/full-screen ownership tests passed (2); full test suite: 2701 passed, 54 failed due stale/locked MCP outputs and existing MCP token/startup environment failures; offline assembly-load smoke passed; `git diff --check` passed with LF-to-CRLF working-copy notices. Full solution build was blocked when a live `McpServer` process held `tools\McpServer\bin\Debug\net8.0\Sussudio.Automation.Contracts.dll`; no server was stopped.
+CLI/MCP/pipe checks, if applicable: no automation, MCP, CLI, pipe protocol, XAML, or `AutomationId` source changed. No live capture or hardware behavior was changed or exercised.
+Behavior preserved: status updates still flow through `TryHandleStatusStripPropertyChanged` into the presentation controller; the full-screen UI handlers still route through `ToggleFullScreen` into `FullScreenController`. Removed only the unused MainWindow wrappers and comments that repeated adjacent code.
+Notes for future agents: keep the six `StatusStripPresentationController.Update*` operations private to that owner; keep XAML event routing on the live `ToggleFullScreen` handler. Current counts: core app 117 `.cs` files / 93,160 nonblank LoC; tests 106 `.cs` files / 82,767 nonblank LoC.
+
+Date: 2026-09-23
 Area: Media Foundation interop and device enumerator consolidation
 Problem: `MfDeviceEnumerator.cs` duplicated Media Foundation GUIDs and constants and carried a second subtype-name mapper. MF callers also used the Audio-layer COM release helper, coupling Capture to an unrelated domain. The enumerator's `DeviceDiscovery` subfolder no longer reflected its cohesive owner boundary.
 Files consolidated: `Sussudio/Services/Capture/DeviceDiscovery/MfDeviceEnumerator.cs` moved to `Sussudio/Services/Capture/MfDeviceEnumerator.cs`; duplicated subtype-name mapping now delegates to `MfInteropHelpers.SubtypeGuidToName`.
