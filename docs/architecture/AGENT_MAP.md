@@ -1134,7 +1134,8 @@ Primary current owners:
   renderer host composition.
   `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotControllers.cs`
   owns the UI-dispatch sampling wrapper, UI-thread-only preview runtime field
-  sampling, startup missing-signal refresh, sampled-input assembly, read-only
+  sampling, startup missing-signal refresh from the single startup session owner,
+  sampled-input assembly, read-only
   preview runtime snapshot construction orchestration, and the UI-thread
   sampled preview snapshot input contract shared by the snapshot controller and
   D3D projection builder; final preview runtime snapshot DTO flattening from
@@ -1530,7 +1531,8 @@ Primary current owners:
   reveal ordering, timeout, failure-stop, formatter assertions, preview startup
   session/reinit adapter source-shape ownership, MainViewModel preview
   lifecycle/reinitialize controller placement, preview startup session
-  controller attempt-state and orchestration behavior, preview reinit transition
+  controller attempt-state, signal, timeout and failure-stop orchestration behavior,
+  preview reinit transition
   controller presentation and animation-state behavior, plus pending Flashback
   encoder settings cycle waits during preview reinitialization.
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs` owns
@@ -2206,17 +2208,20 @@ Primary current owners:
   details, state/log transitions, first-visual confirmation sequencing,
   signal-window predicates, snapshot missing-signal refresh gates, reset
   orchestration, watchdog/telemetry timers, timeout configuration, timeout
-  recovery, failure-stop scheduling, readiness-signal state handoff,
+  recovery, failure-stop scheduling, readiness-signal coordination,
   required/received state, missing-signal calculation and updates,
   playback-progress diagnostics, startup signal log strings, GPU position
   counter state, first-visual confirmation decisions, signal-list formatting,
   timeout diagnostic payload formatting, playback-advance threshold checks, and
-  readiness result snapshots.
-  `Sussudio/MainWindow.xaml.cs` wires UI/runtime
-  callbacks into the session, watchdog, and signal controllers, stable state
-  projections, startup state, renderer-attached, first-visual, begin-attempt,
-  reset adapters, raw timeout diagnostic snapshots, live preview signal state,
-  renderer visibility details, logging, and confirmation callbacks.
+  readiness result snapshots. `PreviewStartupSessionController` is the single
+  attempt owner; the readiness evaluator and signal formatter remain local
+  helpers without UI dependencies. The runtime sampler reads this owner's
+  signal snapshot and timeout directly.
+  `Sussudio/MainWindow.xaml.cs` supplies external UI/runtime callbacks to the
+  session owner and keeps renderer-attached, first-visual, reset, signal-configuration,
+  and watchdog adapters for its lifecycle and renderer collaborators. Construction
+  stores callbacks without invoking collaborators initialized later. Timeout
+  diagnostics receive external visibility values; startup state stays in the owner.
   `PreviewStartupControllers.cs` also owns preview startup timeout reason,
   timeout status, and failure-stop status text.
   `Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs` owns preview-
@@ -2235,7 +2240,7 @@ Primary current owners:
   preview reveal after first visual: rendered-frame threshold, fade-in timer,
   renderer replacement fallback, and preview-audio fade start ordering.
   `Sussudio/MainWindow.xaml.cs` wires the XAML-facing adapter. Keep
-  timeout/watchdog recovery in `PreviewStartupWatchdogController`.
+  timeout/watchdog recovery in `PreviewStartupSessionController`.
 - `Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs` owns preview-
   startup loading overlay presentation while the app waits for visual
   confirmation: ProgressRing activation, fade-in/fade-out routing, and the
@@ -2267,8 +2272,9 @@ Primary current owners:
   `Sussudio/Controllers/Shell/ShellChromeController.cs` owns the shell
   property-change route order across `StatsOverlayCompositionController` and
   `SettingsShelfController`; stats visibility behavior still lives in the stats
-  composition controller, while settings visibility behavior lives with shell
-  chrome in `ShellChromeController`.
+  composition controller. `ShellPropertyChangedController` calls the settings
+  shelf's `TryHandlePropertyChanged` directly; settings visibility behavior stays
+  in `SettingsShelfController` within `ShellChromeController.cs`.
 - `Sussudio/MainWindow.xaml.cs` is the XAML-facing live signal
   adapter. `ShellChromeController.cs` owns live source-signal property-change
   routing and pill presentation.

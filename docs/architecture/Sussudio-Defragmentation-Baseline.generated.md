@@ -1,6 +1,6 @@
 # Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-09-23T04:21:10Z
+Generated UTC: 2026-09-23T04:23:57Z
 Root: C:\Users\crest\source\repos\Sussudio
 
 ## Summary
@@ -10,9 +10,9 @@ Root: C:\Users\crest\source\repos\Sussudio
 | Production .cs files | 149 |
 | Test .cs files | 106 |
 | Core app .cs files (Sussudio/) | 115 |
-| Core app nonblank LoC (Sussudio/) | 93637 |
+| Core app nonblank LoC (Sussudio/) | 93510 |
 | Sussudio.Tests .cs files | 105 |
-| Sussudio.Tests nonblank LoC | 82059 |
+| Sussudio.Tests nonblank LoC | 81996 |
 | Production .cs files under 60 lines | 3 (2.0%) |
 | Production .cs files under 80 lines | 7 (4.7%) |
 
@@ -31,7 +31,7 @@ Root: C:\Users\crest\source\repos\Sussudio
 | App | 1 | 235 | Sussudio/App.xaml.cs |
 | DeviceFormatCacheJsonContext | 1 | 766 | Sussudio/Services/Capture/DeviceService.cs |
 | StatsWindow | 1 | 328 | Sussudio/StatsWindow.xaml.cs |
-| MainWindow | 1 | 2541 | Sussudio/MainWindow.xaml.cs |
+| MainWindow | 1 | 2439 | Sussudio/MainWindow.xaml.cs |
 
 ## Largest production files
 
@@ -42,8 +42,8 @@ Root: C:\Users\crest\source\repos\Sussudio
 | 2876 | Sussudio/Services/Flashback/FlashbackEncoderSink.cs |
 | 2620 | Sussudio/Services/Preview/D3D11PreviewRenderer.cs |
 | 2546 | Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs |
-| 2541 | Sussudio/MainWindow.xaml.cs |
 | 2482 | Sussudio/Services/Flashback/FlashbackPlaybackController.cs |
+| 2439 | Sussudio/MainWindow.xaml.cs |
 | 2317 | Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs |
 | 2149 | Sussudio/Services/Flashback/FlashbackDecoder.cs |
 | 2118 | Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs |

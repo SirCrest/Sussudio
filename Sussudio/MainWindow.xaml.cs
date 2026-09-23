@@ -162,8 +162,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         InitializePreviewSurfacePresentationController();
         InitializePreviewStartupSessionController();
         InitializePreviewLifecycleEventController();
-        InitializePreviewStartupSignalCoordinator();
-        InitializePreviewStartupWatchdogController();
         InitializePreviewRuntimeSnapshotSamplingController();
         InitializePreviewStartupOverlayController();
         InitializePreviewFadeInController();
@@ -1548,11 +1546,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private void SettingsToggleButton_Click(object sender, RoutedEventArgs e)
         => _settingsShelfController.Toggle();
 
-    // Retained despite having no call site: SettingsShelfLifecycle_LivesInController pins this
-    // exact forwarder body as the evidence that shelf visibility is owned by the controller.
-    private void ApplySettingsVisibility(bool visible)
-        => _settingsShelfController.ApplyVisibility(visible);
-
     private void InitializeShellElevationController()
     {
         _shellElevationController = new ShellElevationController(new ShellElevationControllerContext
@@ -1947,11 +1940,9 @@ private PreviewAudioFadeController _previewAudioFadeController = null!;
     private PreviewSurfacePresentationController _previewSurfacePresentationController = null!;
     private PreviewSurfaceShadowController _previewSurfaceShadowController = null!;
     private PreviewStartupSessionController _previewStartupSessionController = null!;
-    private PreviewStartupSignalCoordinator _previewStartupSignalCoordinator = null!;
     private PreviewStartupOverlayController _previewStartupOverlayController = null!;
     private PreviewTransitionAnimationController _previewTransitionAnimationController = null!;
     private PreviewReinitTransitionController _previewReinitTransitionController = null!;
-    private PreviewStartupWatchdogController _previewStartupWatchdogController = null!;
 
     private void InitializePreviewButtonPresentationController()
     {
@@ -1996,15 +1987,15 @@ private PreviewAudioFadeController _previewAudioFadeController = null!;
             PrimePreviewAudioFadeIn = () => _previewAudioFadeController.PrimeFadeIn(),
             IsPreviewReinitAnimating = () => IsPreviewReinitAnimating,
             PreparePreviewStartupPresentation = () => _previewTransitionAnimationController.PrepareStartupPresentation(),
-            StopPreviewStartupWatchdog = () => _previewStartupWatchdogController.Stop(),
-            StartPreviewStartupWatchdog = () => _previewStartupWatchdogController.Start(),
+            StopPreviewStartupWatchdog = () => _previewStartupSessionController.StopWatchdog(),
+            StartPreviewStartupWatchdog = () => _previewStartupSessionController.StartWatchdog(),
             StopPreviewStartupOverlay = () => _previewStartupOverlayController.Stop(IsPreviewReinitAnimating),
             SetPreviewStartupState = _previewStartupSessionController.SetStartupState,
             GetPreviewStartupAttemptLabel = () => _previewStartupSessionController.AttemptLabel,
             StartPreviewRendererAsync = _previewRendererHostController.StartAsync,
             IsPreviewFirstVisualConfirmed = () => _previewStartupSessionController.FirstVisualConfirmed,
             RevealPreviewUnavailablePlaceholder = () => _previewTransitionAnimationController.RevealUnavailablePlaceholder(),
-            SchedulePreviewStartupFailureStop = reason => _previewStartupWatchdogController.ScheduleFailureStop(reason),
+            SchedulePreviewStartupFailureStop = reason => _previewStartupSessionController.ScheduleFailureStop(reason),
             ShowStopPreviewButtonPresentation = () => _previewButtonPresentationController.ShowStopPreview(),
             ShowStartPreviewButtonPresentation = () => _previewButtonPresentationController.ShowStartPreview(),
             ApplyHdrToggleEnabledState = ApplyHdrToggleEnabledState,
@@ -2067,11 +2058,9 @@ private PreviewAudioFadeController _previewAudioFadeController = null!;
             ViewModel = ViewModel,
             RendererHostController = _previewRendererHostController,
             StartupSessionController = _previewStartupSessionController,
-            StartupSignalCoordinator = _previewStartupSignalCoordinator,
             IsGpuElementVisible = () => PreviewSwapChainPanel.Visibility == Visibility.Visible,
             IsCpuElementVisible = () => PreviewImage.Visibility == Visibility.Visible,
             IsPlaceholderVisible = () => NoDevicePlaceholder.Visibility == Visibility.Visible,
-            GetStartupVisualTimeoutMs = () => PreviewStartupVisualTimeoutMs
         });
     }
 
@@ -2302,10 +2291,6 @@ private PreviewAudioFadeController _previewAudioFadeController = null!;
             IsPreviewing = () => ViewModel.IsPreviewing,
             IsPreviewStopRequestedByUser = () => IsPreviewStopRequestedByUser,
             GetSelectedDeviceName = () => ViewModel.SelectedDevice?.Name,
-            ResetSignalState = ResetPreviewSignalState,
-            ResetFailureStopSchedule = ResetPreviewStartupFailureStopSchedule,
-            MarkFirstVisualSignalConfirmed = MarkPreviewStartupFirstVisualConfirmed,
-            StopWatchdog = StopPreviewStartupWatchdog,
             StopOverlay = StopPreviewStartupOverlay,
             StopFadeInTimer = StopPreviewFadeInTimer,
             ScheduleFadeIn = SchedulePreviewFadeIn,
@@ -2315,32 +2300,21 @@ private PreviewAudioFadeController _previewAudioFadeController = null!;
                 _previewReinitTransitionController.ClearForStartupReset(preserveReinitAnimation, callerName),
             Log = message => Logger.Log(message),
             CreateAttemptId = () => Guid.NewGuid().ToString("N"),
-            GetUtcNow = () => DateTimeOffset.UtcNow
+            GetUtcNow = () => DateTimeOffset.UtcNow,
+            DispatcherQueue = _dispatcherQueue,
+            IsWindowClosing = () => _isWindowClosing,
+            GetTimeoutDiagnosticSnapshot = GetPreviewStartupTimeoutDiagnosticSnapshot,
+            GetPlaybackSnapshotState = GetPreviewStartupPlaybackSnapshotState,
+            SetStatusText = value => ViewModel.StatusText = value,
+            StopPreviewForFailureAsync = _ => ViewModel.StopPreviewAsync(userInitiated: true, teardownPipeline: true),
+            RunUiEventHandlerAsync = RunUiEventHandlerAsync
         });
-
-    private PreviewStartupState CurrentPreviewStartupState
-        => _previewStartupSessionController.State;
 
     private string PreviewStartupAttemptLabel
         => _previewStartupSessionController.AttemptLabel;
 
     private string? PreviewStartupAttemptId
         => _previewStartupSessionController.AttemptId;
-
-    private DateTimeOffset? PreviewStartupRequestedUtc
-        => _previewStartupSessionController.RequestedUtc;
-
-    private string? PreviewStartupMissingSignals
-    {
-        get => _previewStartupSessionController.MissingSignals;
-        set => _previewStartupSessionController.SetMissingSignals(value);
-    }
-
-    private int PreviewStartupRecoveryAttemptCount
-        => _previewStartupSessionController.RecoveryAttemptCount;
-
-    private string? PreviewStartupLastFailureReason
-        => _previewStartupSessionController.LastFailureReason;
 
     private bool IsPreviewFirstVisualConfirmed
         => _previewStartupSessionController.FirstVisualConfirmed;
@@ -2357,55 +2331,11 @@ private PreviewAudioFadeController _previewAudioFadeController = null!;
     private void ResetPreviewStartupTracking(bool keepRecoveryCount = false, bool preserveReinitAnimation = false)
         => _previewStartupSessionController.ResetStartupTracking(keepRecoveryCount, preserveReinitAnimation);
 
-    private void InitializePreviewStartupSignalCoordinator()
-        => _previewStartupSignalCoordinator = new PreviewStartupSignalCoordinator(new PreviewStartupSignalCoordinatorContext
-        {
-            IsSignalWindowActive = IsPreviewStartupSignalWindowActive,
-            IsFirstVisualConfirmed = () => IsPreviewFirstVisualConfirmed,
-            GetAttemptLabel = () => PreviewStartupAttemptLabel,
-            SetMissingSignals = value => PreviewStartupMissingSignals = value,
-            Log = message => Logger.Log(message),
-            ConfirmFirstVisual = ConfirmPreviewFirstVisual,
-            GetPlaybackSnapshotState = GetPreviewStartupPlaybackSnapshotState
-        });
-
-    private PreviewStartupReadinessSignalSnapshot PreviewStartupSignalSnapshot
-        => _previewStartupSignalCoordinator.Snapshot;
-
-    private bool _previewGpuSignalMediaOpened => PreviewStartupSignalSnapshot.GpuSignalMediaOpened;
-    private bool _previewGpuSignalFirstFrame => PreviewStartupSignalSnapshot.GpuSignalFirstFrame;
-    private bool _previewGpuSignalPlaybackAdvancing => PreviewStartupSignalSnapshot.GpuSignalPlaybackAdvancing;
-    private PreviewStartupSignalFlags _previewStartupRequiredSignals => PreviewStartupSignalSnapshot.RequiredSignals;
-    private PreviewStartupSignalFlags _previewStartupReceivedSignals => PreviewStartupSignalSnapshot.ReceivedSignals;
-    private PreviewStartupStrategy _previewStartupStrategy => PreviewStartupSignalSnapshot.Strategy;
-    private long PreviewStartupGpuPositionEventCount => _previewStartupSignalCoordinator.PositionEventCount;
-
-    private bool IsPreviewStartupSignalWindowActive()
-        => _previewStartupSessionController.IsSignalWindowActive(ViewModel.IsPreviewing);
-
     private void ResetPreviewSignalState()
-        => _previewStartupSignalCoordinator.Reset();
+        => _previewStartupSessionController.ResetSignalState();
 
     private void ConfigurePreviewStartupSignals(PreviewStartupStrategy strategy, PreviewStartupSignalFlags requiredSignals)
-        => _previewStartupSignalCoordinator.Configure(strategy, requiredSignals);
-
-    private string BuildPreviewStartupMissingSignals()
-        => _previewStartupSignalCoordinator.BuildMissingSignals();
-
-    private void MarkPreviewStartupFirstVisualConfirmed()
-        => _previewStartupSignalCoordinator.MarkFirstVisualConfirmed();
-
-    private void MarkGpuStartupSignal(PreviewStartupSignalFlags signal, string signalName)
-        => _previewStartupSignalCoordinator.MarkGpuStartupSignal(signal, signalName);
-
-    private void MarkGpuStartupSignalFirstFrame()
-        => _previewStartupSignalCoordinator.MarkGpuStartupSignalFirstFrame();
-
-    private void MarkGpuStartupSignalPlaybackAdvancing(TimeSpan position)
-        => _previewStartupSignalCoordinator.MarkGpuStartupSignalPlaybackAdvancing(position);
-
-    private void LogPreviewStartupPlaybackSnapshot(string reason)
-        => _previewStartupSignalCoordinator.LogPlaybackSnapshot(reason);
+        => _previewStartupSessionController.ConfigureSignals(strategy, requiredSignals);
 
     private PreviewStartupPlaybackSnapshotState GetPreviewStartupPlaybackSnapshotState()
     {
@@ -2416,49 +2346,17 @@ private PreviewAudioFadeController _previewAudioFadeController = null!;
             PreviewSwapChainPanel.Visibility.ToString());
     }
 
-    private int PreviewStartupVisualTimeoutMs => _previewStartupWatchdogController.VisualTimeoutMs;
-
-    private void InitializePreviewStartupWatchdogController()
-        => _previewStartupWatchdogController = new PreviewStartupWatchdogController(new PreviewStartupWatchdogControllerContext
-        {
-            DispatcherQueue = _dispatcherQueue,
-            IsWaitingForFirstVisual = () => _previewStartupSessionController.IsWaitingForFirstVisual,
-            IsSignalWindowActive = IsPreviewStartupSignalWindowActive,
-            IsWindowClosing = () => _isWindowClosing,
-            IsPreviewStopRequestedByUser = () => IsPreviewStopRequestedByUser,
-            IsPreviewing = () => ViewModel.IsPreviewing,
-            GetElapsedMilliseconds = () => _previewStartupSessionController.GetElapsedMilliseconds(DateTimeOffset.UtcNow),
-            GetAttemptLabel = () => PreviewStartupAttemptLabel,
-            BuildMissingSignals = BuildPreviewStartupMissingSignals,
-            GetMissingSignals = () => PreviewStartupMissingSignals,
-            SetMissingSignals = value => PreviewStartupMissingSignals = value,
-            MarkStartupFailed = reason => SetPreviewStartupState(PreviewStartupState.Failed, reason),
-            GetTimeoutDiagnosticSnapshot = GetPreviewStartupTimeoutDiagnosticSnapshot,
-            LogPlaybackSnapshot = LogPreviewStartupPlaybackSnapshot,
-            StopStartupOverlay = StopPreviewStartupOverlay,
-            SetStatusText = value => ViewModel.StatusText = value,
-            StopPreviewForFailureAsync = _ => ViewModel.StopPreviewAsync(userInitiated: true, teardownPipeline: true),
-            RunUiEventHandlerAsync = RunUiEventHandlerAsync
-        });
-
     private void StopPreviewStartupWatchdog()
-        => _previewStartupWatchdogController.Stop();
+        => _previewStartupSessionController.StopWatchdog();
 
     private void SchedulePreviewStartupFailureStop(string reason)
-        => _previewStartupWatchdogController.ScheduleFailureStop(reason);
+        => _previewStartupSessionController.ScheduleFailureStop(reason);
 
-    private void ResetPreviewStartupFailureStopSchedule()
-        => _previewStartupWatchdogController.ResetFailureStopSchedule();
-
-    private PreviewStartupTimeoutDiagnosticSnapshot GetPreviewStartupTimeoutDiagnosticSnapshot()
-        => new(
+    private (string PlaceholderVisibility, string GpuVisibility, string CpuVisibility) GetPreviewStartupTimeoutDiagnosticSnapshot()
+        => (
             NoDevicePlaceholder.Visibility.ToString(),
             PreviewSwapChainPanel.Visibility.ToString(),
-            PreviewImage.Visibility.ToString(),
-            _previewStartupStrategy,
-            _previewStartupRequiredSignals,
-            _previewStartupReceivedSignals,
-            PreviewStartupMissingSignals);
+            PreviewImage.Visibility.ToString());
 }
 
 internal sealed class MainWindowPropertyChangedRouterContext

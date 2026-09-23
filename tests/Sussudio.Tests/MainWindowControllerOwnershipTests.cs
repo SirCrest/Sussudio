@@ -1370,7 +1370,11 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
         AssertContains(settingsShelfText, "private SettingsShelfController _settingsShelfController = null!;");
         AssertContains(settingsShelfText, "private void InitializeSettingsShelfController()");
         AssertContains(settingsShelfText, "=> _settingsShelfController.Toggle();");
-        AssertContains(settingsShelfText, "=> _settingsShelfController.ApplyVisibility(visible);");
+        var shellWiring = ExtractMemberCode(settingsShelfText, "InitializeShellPropertyChangedController");
+        AssertContains(shellWiring, "SettingsShelf = _settingsShelfController,");
+        AssertContains(shellWiring, "IsSettingsVisible = () => ViewModel.IsSettingsVisible,");
+        AssertContains(settingsShelfText, "=> _shellPropertyChangedController.TryHandlePropertyChanged(propertyName);");
+        AssertContains(controllerText, "_context.SettingsShelf.TryHandlePropertyChanged(propertyName, _context.IsSettingsVisible())");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Composition.cs")),
