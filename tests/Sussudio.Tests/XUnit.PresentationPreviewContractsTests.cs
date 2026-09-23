@@ -8793,7 +8793,7 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(frameRateRebuildControllerText, "_context.ApplyResolvedFrameRateSelection(selection.Selected, fallbackRate);");
         AssertDoesNotContain(frameRateRebuildControllerText, "_viewModel.");
         AssertContains(modeSelectionText, "private void ResetFrameRateSelectionState()");
-        AssertContains(modeSelectionText, "_hasUserOverriddenFrameRateForCurrentMode = false;");
+        AssertContains(modeSelectionText, "_captureModeSelection.HasUserOverriddenFrameRateForCurrentMode = false;");
         AssertContains(modeSelectionText, "IsAutoFrameRateSelected = true;");
         AssertContains(modeSelectionText, "private void ApplyResolvedFrameRateSelection(FrameRateOption? selected, double fallbackRate)");
         AssertContains(modeSelectionText, "private void ApplyCaptureModeOptions(Action apply)");
@@ -8811,11 +8811,10 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(modeSelectionText, "DisabledFrameRateReason = selected is { IsEnabled: false }\n            ? selected.DisableReason\n            : string.Empty;");
         AssertContains(modeSelectionText, "private void ResetModeSelectionState()");
         AssertContains(modeSelectionText, "ResetFrameRateSelectionState();");
-        AssertContains(modeSelectionText, "_hasUserOverriddenResolutionForCurrentMode = false;");
-        AssertContains(modeSelectionText, "_forceSourceAutoRetarget = false;");
-        AssertContains(modeSelectionText, "_lastSourceModeKey = null;");
-        AssertContains(modeSelectionText, "_pendingSdrAutoSelectionForDeviceChange = false;");
-        AssertContains(modeSelectionText, "_pendingSdrAutoFriendlyFrameRateBucket = null;");
+        AssertContains(modeSelectionText, "_captureModeSelection.HasUserOverriddenResolutionForCurrentMode = false;");
+        AssertContains(modeSelectionText, "_captureModeSelection.ForceSourceAutoRetarget = false;");
+        AssertContains(modeSelectionText, "_captureModeSelection.LastSourceModeKey = null;");
+        AssertContains(modeSelectionText, "_captureModeSelection.ClearPendingSdrAutoSelection();");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.ModeSelectionState.cs")),
@@ -10194,7 +10193,7 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(frameRateRebuildControllerText, "_context.AvailableFrameRates.Add(option);");
         AssertContains(frameRateRebuildControllerText, "_context.SetIsAutoFrameRateSelected(selection.SelectAutoOption);");
         AssertContains(frameRateRebuildControllerText, "_context.ApplyResolvedFrameRateSelection(selection.Selected, fallbackRate);");
-        AssertContains(frameRateRebuildControllerText, "_context.SetPendingSdrAutoSelectionForDeviceChange(false);");
+        AssertContains(frameRateRebuildControllerText, "_context.ModeSelection.ClearPendingSdrAutoSelection();");
         AssertDoesNotContain(frameRateOptionsText, "OrderBy(option => Math.Abs(option.Value - sourceRate.Rate.Value))");
         AssertDoesNotContain(captureModeTransactionsText, "OrderBy(option => Math.Abs(option.Value - sourceRate.Rate.Value))");
         AssertContains(autoSelectionPolicyText, "internal static class FrameRateAutoSelectionPolicy");

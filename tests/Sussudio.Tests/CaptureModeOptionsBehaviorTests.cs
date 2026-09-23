@@ -18,24 +18,24 @@ public sealed class CaptureModeOptionsBehaviorTests
     public void AutomaticResolutionPreservesIntentUntilAUserChangesResolution()
     {
         var owner = new SelectionFixture();
-        owner.SetField("_hasUserOverriddenFrameRateForCurrentMode", true);
-        owner.SetField("_forceSourceAutoRetarget", true);
+        owner.SetSelection("HasUserOverriddenFrameRateForCurrentMode", true);
+        owner.SetSelection("ForceSourceAutoRetarget", true);
         owner.ApplyModeOptions(() => owner.ApplyModeOptions(() => owner.Set("SelectedResolution", "1920x1080")));
 
         Assert.Equal("1920x1080", owner.Get<string>("SelectedResolution"));
-        Assert.False(owner.Flag("_hasUserOverriddenResolutionForCurrentMode"));
-        Assert.True(owner.Flag("_hasUserOverriddenFrameRateForCurrentMode"));
-        Assert.True(owner.Flag("_forceSourceAutoRetarget"));
-        Assert.True(owner.Flag("_pendingSdrAutoSelectionForDeviceChange"));
-        Assert.Equal(60, owner.Field("_pendingSdrAutoFriendlyFrameRateBucket"));
+        Assert.False(owner.SelectionFlag("HasUserOverriddenResolutionForCurrentMode"));
+        Assert.True(owner.SelectionFlag("HasUserOverriddenFrameRateForCurrentMode"));
+        Assert.True(owner.SelectionFlag("ForceSourceAutoRetarget"));
+        Assert.True(owner.SelectionFlag("PendingSdrAutoSelectionForDeviceChange"));
+        Assert.Equal(60, owner.Selection("PendingSdrAutoFriendlyFrameRateBucket"));
 
         owner.Set("SelectedResolution", "3840x2160");
 
-        Assert.True(owner.Flag("_hasUserOverriddenResolutionForCurrentMode"));
-        Assert.False(owner.Flag("_hasUserOverriddenFrameRateForCurrentMode"));
-        Assert.False(owner.Flag("_forceSourceAutoRetarget"));
-        Assert.False(owner.Flag("_pendingSdrAutoSelectionForDeviceChange"));
-        Assert.Null(owner.Field("_pendingSdrAutoFriendlyFrameRateBucket"));
+        Assert.True(owner.SelectionFlag("HasUserOverriddenResolutionForCurrentMode"));
+        Assert.False(owner.SelectionFlag("HasUserOverriddenFrameRateForCurrentMode"));
+        Assert.False(owner.SelectionFlag("ForceSourceAutoRetarget"));
+        Assert.False(owner.SelectionFlag("PendingSdrAutoSelectionForDeviceChange"));
+        Assert.Null(owner.Selection("PendingSdrAutoFriendlyFrameRateBucket"));
         Assert.False(owner.Rebuilding);
     }
 
@@ -51,9 +51,9 @@ public sealed class CaptureModeOptionsBehaviorTests
         owner.ApplyFrameRate(option, 60);
 
         Assert.Equal(alreadyAutomatic, owner.AutomaticFrameRate);
-        Assert.False(owner.Flag("_hasUserOverriddenFrameRateForCurrentMode"));
+        Assert.False(owner.SelectionFlag("HasUserOverriddenFrameRateForCurrentMode"));
         Assert.True(owner.Get<bool>("IsAutoFrameRateSelected"));
-        Assert.True(owner.Flag("_pendingSdrAutoSelectionForDeviceChange"));
+        Assert.True(owner.SelectionFlag("PendingSdrAutoSelectionForDeviceChange"));
         Assert.Equal(60000d / 1001d, owner.Get<double>("SelectedFrameRate"));
         Assert.Equal(60d, owner.Get<double?>("SelectedFriendlyFrameRate"));
         Assert.Equal(60000d / 1001d, owner.Get<double?>("SelectedExactFrameRate"));
@@ -61,10 +61,10 @@ public sealed class CaptureModeOptionsBehaviorTests
 
         owner.SetField("_isApplyingAutomaticFrameRateSelection", false);
         owner.Set("SelectedFrameRate", 120d);
-        Assert.True(owner.Flag("_hasUserOverriddenFrameRateForCurrentMode"));
+        Assert.True(owner.SelectionFlag("HasUserOverriddenFrameRateForCurrentMode"));
         Assert.False(owner.Get<bool>("IsAutoFrameRateSelected"));
-        Assert.False(owner.Flag("_pendingSdrAutoSelectionForDeviceChange"));
-        Assert.Null(owner.Field("_pendingSdrAutoFriendlyFrameRateBucket"));
+        Assert.False(owner.SelectionFlag("PendingSdrAutoSelectionForDeviceChange"));
+        Assert.Null(owner.Selection("PendingSdrAutoFriendlyFrameRateBucket"));
     }
 
     [Theory]
@@ -109,7 +109,7 @@ public sealed class CaptureModeOptionsBehaviorTests
 
         Assert.True(outerNotificationObserved);
         Assert.Equal(alreadyAutomatic, owner.AutomaticFrameRate);
-        Assert.False(owner.Flag("_hasUserOverriddenFrameRateForCurrentMode"));
+        Assert.False(owner.SelectionFlag("HasUserOverriddenFrameRateForCurrentMode"));
         Assert.True(owner.Get<bool>("IsAutoFrameRateSelected"));
     }
 
@@ -150,7 +150,7 @@ public sealed class CaptureModeOptionsBehaviorTests
         Assert.True(events.IndexOf("rate-source") < events.IndexOf("rates"));
         Assert.False(owner.Rebuilding);
         Assert.True(owner.AutomaticFrameRate);
-        Assert.False(owner.Flag("_hasUserOverriddenResolutionForCurrentMode"));
+        Assert.False(owner.SelectionFlag("HasUserOverriddenResolutionForCurrentMode"));
     }
 
     [Theory]
@@ -225,8 +225,8 @@ public sealed class CaptureModeOptionsBehaviorTests
         Assert.Equal(new[] { "resolution", "rates", "format probe sdr retarget" }, events);
         Assert.Equal("1920x1080", owner.Get<string>("SelectedResolution"));
         Assert.Equal(60d, owner.Get<double>("SelectedFrameRate"));
-        Assert.False(owner.Flag("_hasUserOverriddenResolutionForCurrentMode"));
-        Assert.False(owner.Flag("_hasUserOverriddenFrameRateForCurrentMode"));
+        Assert.False(owner.SelectionFlag("HasUserOverriddenResolutionForCurrentMode"));
+        Assert.False(owner.SelectionFlag("HasUserOverriddenFrameRateForCurrentMode"));
     }
 
     private sealed class SelectionFixture
@@ -247,6 +247,7 @@ public sealed class CaptureModeOptionsBehaviorTests
             var formatsField = InstanceField(ViewModel, "_resolutionToFormats");
             _formatsByResolution = (IDictionary)Activator.CreateInstance(formatsField.FieldType)!;
             formatsField.SetValue(ViewModel, _formatsByResolution);
+            SetField("_captureModeSelection", Create("Sussudio.Controllers.CaptureModeSelectionState"));
             var telemetry = Require("Sussudio.Models.SourceSignalTelemetrySnapshot").GetMethod("CreateUnavailable")!
                 .Invoke(null, new object?[] { "selection-test", null })!;
             SetField("_latestSourceTelemetry", telemetry);
@@ -268,9 +269,9 @@ public sealed class CaptureModeOptionsBehaviorTests
             ApplyModeOptions(() => Set("SelectedResolution", "1280x720"));
             ApplyFrameRate(null, 60);
             SetField("_isAutoFrameRateSelected", true);
-            SetField("_hasUserOverriddenFrameRateForCurrentMode", false);
-            SetField("_pendingSdrAutoSelectionForDeviceChange", true);
-            SetField("_pendingSdrAutoFriendlyFrameRateBucket", 60);
+            SetSelection("HasUserOverriddenFrameRateForCurrentMode", false);
+            SetSelection("PendingSdrAutoSelectionForDeviceChange", true);
+            SetSelection("PendingSdrAutoFriendlyFrameRateBucket", 60);
         }
 
         public object ViewModel { get; }
@@ -283,6 +284,10 @@ public sealed class CaptureModeOptionsBehaviorTests
         public object? Field(string name) => InstanceField(ViewModel, name).GetValue(ViewModel);
         public bool Flag(string name) => (bool)Field(name)!;
         public void SetField(string name, object? value) => InstanceField(ViewModel, name).SetValue(ViewModel, value);
+        public object ModeSelection => Field("_captureModeSelection")!;
+        public object? Selection(string name) => Property(ModeSelection, name).GetValue(ModeSelection);
+        public bool SelectionFlag(string name) => (bool)Selection(name)!;
+        public void SetSelection(string name, object? value) => Property(ModeSelection, name).SetValue(ModeSelection, value);
         public void ApplyFrameRate(object? option, double fallback)
             => Call(ViewModel.GetType().GetMethod("ApplyResolvedFrameRateSelection", Instance)!, ViewModel, option, fallback);
         public void RebuildResolutions()

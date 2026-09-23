@@ -8243,8 +8243,7 @@ static partial class Program
         AssertContains(captureModeTransactionsText, "IsTrueHdrPreviewEnabled = enabled;");
         AssertContains(captureModeTransactionsText, "partial void OnIsHdrEnabledChanged(bool value)");
         AssertContains(captureModeTransactionsText, "if (_isRevertingHdrToggle)");
-        AssertContains(captureModeTransactionsText, "_pendingSdrAutoSelectionForDeviceChange = false;");
-        AssertContains(captureModeTransactionsText, "_pendingSdrAutoFriendlyFrameRateBucket = null;");
+        AssertContains(captureModeTransactionsText, "_captureModeSelection.ClearPendingSdrAutoSelection();");
         AssertContains(captureModeTransactionsText, "IsHdrEnabled = !value;");
         AssertContains(captureModeTransactionsText, "StatusText = HdrToggleBlockedWhileRecordingMessage;");
         AssertContains(captureModeTransactionsText, "ResetModeSelectionState();");
