@@ -1449,13 +1449,8 @@ public sealed partial class AutomationDiagnosticsHub
         {
             Backend = captureRuntime.RecordingBackend,
             AudioPathMode = captureRuntime.AudioPathMode,
-            MuxResult = ResolveMuxResult(captureRuntime.MuxSucceeded)
+            MuxResult = "NotAttempted"
         };
-
-    private static string ResolveMuxResult(bool? muxSucceeded)
-        => muxSucceeded.HasValue
-            ? (muxSucceeded.Value ? "Succeeded" : "Failed")
-            : "NotAttempted";
 
     private readonly record struct RecordingBackendProjection
     {

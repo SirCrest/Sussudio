@@ -436,7 +436,6 @@ public sealed class RecordingFinalizationTruthTests
             ("FlashbackFinalizationTimeout", "recording-flashback-finalization-timeout"),
             ("FlashbackEncodeDrainTimeout", "recording-flashback-encode-drain-timeout"),
             ("NotGrowing", "recording-not-growing"),
-            ("MuxFailed", "recording-mux-failed"),
             ("FinalOutputInvalid", "recording-final-output-invalid"),
             ("UnifiedStopFailed", "recording-unified-stop-failed"),
             ("StopFailed", "recording-stop-failed"),

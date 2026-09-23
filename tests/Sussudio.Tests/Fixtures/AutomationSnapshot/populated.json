@@ -321,7 +321,7 @@
   "RecordingBitrateInfo": "viewModelSnapshot.RecordingBitrateInfo",
   "RecordingBackend": "captureRuntime.RecordingBackend",
   "AudioPathMode": "captureRuntime.AudioPathMode",
-  "MuxResult": "Failed",
+  "MuxResult": "NotAttempted",
   "RecordingIntegrityStatus": "Complete",
   "RecordingIntegrityComplete": true,
   "RecordingIntegrityBackend": "captureRuntime.RecordingIntegrityBackend",

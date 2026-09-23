@@ -28,7 +28,6 @@ internal static class RecordingFailureCodes
     internal const string HdrValidationFailed = "recording-hdr-validation-failed";
     internal const string LibavFinalizationFailed = "recording-libav-finalization-failed";
     internal const string MicrophoneIntegrityFailed = "recording-microphone-integrity-failed";
-    internal const string MuxFailed = "recording-mux-failed";
     internal const string NotGrowing = "recording-not-growing";
     internal const string OutputEmpty = "recording-output-empty";
     internal const string OutputMissing = "recording-output-missing";
@@ -87,7 +86,6 @@ internal static class RecordingFailureCodes
         HdrValidationFailed,
         LibavFinalizationFailed,
         MicrophoneIntegrityFailed,
-        MuxFailed,
         NotGrowing,
         OutputEmpty,
         OutputMissing,

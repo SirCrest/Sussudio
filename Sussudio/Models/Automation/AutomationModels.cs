@@ -748,8 +748,6 @@ public sealed class CaptureRuntimeSnapshot
     // Recording diagnostics
     public string RecordingBackend { get; init; } = "None";
     public string AudioPathMode { get; init; } = "None";
-    public bool MuxAttempted { get; init; }
-    public bool? MuxSucceeded { get; init; }
     public RecordingIntegrityStatus RecordingIntegrityStatus { get; init; } = RecordingIntegrityStatus.NotStarted;
     public bool RecordingIntegrityComplete { get; init; }
     public string RecordingIntegrityBackend { get; init; } = "None";

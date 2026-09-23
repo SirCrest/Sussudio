@@ -11,6 +11,7 @@ internal static class AutomationSnapshotRegressionFixture
 {
     private const BindingFlags InstanceMembers = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
     private static readonly DateTimeOffset FixtureTime = new(2026, 9, 12, 0, 0, 0, TimeSpan.Zero);
+    private static readonly string[] RetiredCaptureRuntimeFixtureFields = { "MuxAttempted", "MuxSucceeded" };
 
     internal static JsonElement BuildResult(Assembly assembly, bool populated, object? healthOverride = null)
     {
@@ -55,7 +56,6 @@ internal static class AutomationSnapshotRegressionFixture
             Set(runtime, "NegotiatedWidth", null);
             Set(runtime, "NegotiatedFrameRate", null);
             Set(runtime, "NegotiatedFrameRateArg", null);
-            Set(runtime, "MuxSucceeded", false);
             Set(runtime, "FlashbackExportVerificationFormat", null);
             Set(runtime, "FlashbackCodecDowngradeReason", string.Empty);
             Set(runtime, "RecordingIntegrityStatus", Enum.Parse(
@@ -123,12 +123,28 @@ internal static class AutomationSnapshotRegressionFixture
         var instance = Empty(type)!;
         var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
             .OrderBy(property => property.Name, StringComparer.Ordinal).ToArray();
+        var retiredFields = type.FullName == "Sussudio.Models.CaptureRuntimeSnapshot"
+            ? RetiredCaptureRuntimeFixtureFields
+            : Array.Empty<string>();
+        var retiredFieldIndex = 0;
         foreach (var property in properties)
         {
+            while (retiredFieldIndex < retiredFields.Length &&
+                   StringComparer.Ordinal.Compare(retiredFields[retiredFieldIndex], property.Name) < 0)
+            {
+                sequence++;
+                retiredFieldIndex++;
+            }
+
+            if (retiredFieldIndex < retiredFields.Length && retiredFields[retiredFieldIndex] == property.Name)
+                retiredFieldIndex++;
+
             if (property.SetMethod == null)
                 throw new InvalidOperationException($"Fixture input {path}.{property.Name} requires an explicit value factory.");
             property.SetValue(instance, Populate(property.PropertyType, path + "." + property.Name, ref sequence));
         }
+
+        sequence += retiredFields.Length - retiredFieldIndex;
         return instance;
     }
 

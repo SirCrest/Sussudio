@@ -68,7 +68,7 @@ public sealed class AutomationSnapshotRegressionTests
         Assert.Equal(43L, snapshot.GetProperty("PreviewD3DFrameStatsRecentFailureCount").GetInt64());
         Assert.Equal(59L, snapshot.GetProperty("PreviewD3DFrameStatsMissedRefreshCount").GetInt64());
         Assert.Equal(61L, snapshot.GetProperty("PreviewD3DFrameStatsFailureCount").GetInt64());
-        Assert.Equal("Failed", snapshot.GetProperty("MuxResult").GetString());
+        Assert.Equal("NotAttempted", snapshot.GetProperty("MuxResult").GetString());
         Assert.Equal("health-export-verification", snapshot.GetProperty("FlashbackExportVerificationFormat").GetString());
         Assert.Equal(string.Empty, snapshot.GetProperty("FlashbackCodecDowngradeReason").GetString());
         Assert.False(snapshot.GetProperty("LastExportSuccess").GetBoolean());

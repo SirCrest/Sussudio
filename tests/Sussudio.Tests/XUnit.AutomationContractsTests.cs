@@ -4702,15 +4702,11 @@ static partial class Program
         // Flashback must honor user codec/preset settings directly. The legacy snapshot
         // field remains for compatibility, but the old silent AV1->HEVC path must stay gone.
         AssertDoesNotContain(createFlashbackSessionContext, "FLASHBACK_CODEC_DOWNGRADE");
-        AssertContains(captureServiceText, "private static string? ResolveFlashbackCodecDowngradeReason(");
-        AssertContains(captureServiceText, "=> null;");
         AssertDoesNotContain(captureServiceText, "AV1->HEVC: software MJPEG pipeline at");
         AssertDoesNotContain(captureServiceText, "NVENC preset '");
-        // Snapshot field remains populated from the compatibility resolver so
-        // downstream consumers share the same no-downgrade contract.
         var snapshotsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
             .Replace("\r\n", "\n");
-        AssertContains(snapshotsText, "FlashbackCodecDowngradeReason = ResolveFlashbackCodecDowngradeReason(requestedSettings, unifiedVideoCapture),");
+        AssertDoesNotContain(snapshotsText, "ResolveFlashbackCodecDowngradeReason");
         var contractsText = ReadAutomationSnapshotFamilyText();
         AssertContains(contractsText, "public string? FlashbackExportVerificationFormat { get; init; }");
         AssertContains(contractsText, "public string? FlashbackCodecDowngradeReason { get; init; }");

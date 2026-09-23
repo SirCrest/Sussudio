@@ -283,8 +283,7 @@ public partial class CaptureService
             RecordingFinalizationProgressStage = recordingOutcome.ProgressStage,
             LastRecordingFinalizationProgressUtc = recordingOutcome.LastProgressUtc,
             FlashbackExportOutputPath = _flashbackExport.OutputPath,
-            FlashbackExportVerificationFormat = ResolveFlashbackExportVerificationFormat(requestedSettings, unifiedVideoCapture),
-            FlashbackCodecDowngradeReason = ResolveFlashbackCodecDowngradeReason(requestedSettings, unifiedVideoCapture),
+            FlashbackExportVerificationFormat = ResolveFlashbackExportVerificationFormat(requestedSettings),
             RuntimeAvSyncDriftMs = runtimeAvSyncDriftMs,
             RuntimeAvSyncDriftRateMsPerSec = runtimeAvSyncDriftRate,
             RuntimeAvSyncEncoderDriftMs = runtimeAvSyncEncoderDriftMs,
@@ -1028,8 +1027,6 @@ public partial class CaptureService
                 // Retained wire label; recording backends mux audio in process.
                 // It is no longer a selectable recording mode.
                 AudioPathMode = requestedSettings is null ? "None" : "PostMuxDefault",
-                MuxAttempted = false,
-                MuxSucceeded = null,
                 RecordingIntegrityStatus = recordingIntegrity.Status,
                 RecordingIntegrityComplete = recordingIntegrity.Complete,
                 RecordingIntegrityBackend = recordingIntegrity.Backend,

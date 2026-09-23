@@ -66,8 +66,7 @@ public partial class CaptureService
                 ? "MfSourceReader"
                 : null,
             ReaderSourceSubtype = _actualPixelFormat,
-            FlashbackExportVerificationFormat = ResolveFlashbackExportVerificationFormat(currentSettings, unifiedVideoCapture),
-            FlashbackCodecDowngradeReason = ResolveFlashbackCodecDowngradeReason(currentSettings, unifiedVideoCapture),
+            FlashbackExportVerificationFormat = ResolveFlashbackExportVerificationFormat(currentSettings),
             LastFrameArrivalMs = ComputeTickAge(unifiedVideoCapture?.LastVideoFrameArrivedTick ?? 0),
             VideoFramesArrived = unifiedVideoCapture?.VideoFramesArrived ?? 0,
             LastVideoEnqueueAgeMs = ComputeTickAge(recordingHealth.LastVideoEnqueueTick),

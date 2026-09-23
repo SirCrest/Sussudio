@@ -4238,7 +4238,6 @@ static partial class Program
         AssertContains(ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs"), "private static (int? Numerator, int? Denominator, double EffectiveFrameRate) ResolveCaptureDeliveryFrameRateParts(");
         AssertContains(ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs"), "private static readonly (int Numerator, int Denominator)[] CommonCaptureFrameRateParts");
         AssertContains(flashbackRecordingText, "private static string? ResolveFlashbackExportVerificationFormat(");
-        AssertContains(flashbackRecordingText, "private static string? ResolveFlashbackCodecDowngradeReason(");
         AssertEqual(
             false,
             System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackRecording.SessionContext.cs")),

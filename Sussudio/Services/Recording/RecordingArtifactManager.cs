@@ -232,7 +232,6 @@ internal static class RecordingFinalizationRecoveryArtifacts
             "reason=Recording was interrupted before finalization.",
             "final_output=" + outputPath,
             "video_output=" + (videoOutputPath ?? string.Empty),
-            "audio_temp=",
         };
         foreach (var directory in artifactDirectories)
         {
@@ -360,7 +359,6 @@ internal static class RecordingFinalizationRecoveryArtifacts
             "reason_b64=" + Convert.ToBase64String(Encoding.UTF8.GetBytes(reason)),
             "final_output=" + (context?.FinalOutputPath ?? outputPath),
             "video_output=" + (context?.VideoOutputPath ?? string.Empty),
-            "audio_temp=",
         };
         foreach (var artifactPath in preservedArtifacts)
         {
