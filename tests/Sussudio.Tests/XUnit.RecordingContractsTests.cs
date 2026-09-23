@@ -113,6 +113,95 @@ public sealed class RecordingPipelineContractsTests
         => global::Program.CaptureService_RecordingFinalizationLivesInFocusedPartials();
 }
 
+public sealed class LibAvRecordingResetTests
+{
+    private const BindingFlags InstanceFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+
+    [Fact]
+    public async Task SessionResetClearsSeededVideoMetricsAndPreservesUnrelatedAudioState()
+    {
+        var assembly = SussudioAssembly.Load();
+        var sinkType = assembly.GetType("Sussudio.Services.Recording.LibAvRecordingSink", throwOnError: true)!;
+        await using var sink = (IAsyncDisposable)Activator.CreateInstance(sinkType)!;
+        var fields = new[]
+        {
+            "_droppedVideoFrames", "_encodedVideoFrames", "_videoFramesEnqueued",
+            "_videoFramesSubmittedToEncoder", "_videoDropsQueueSaturated", "_videoDropsBacklogEviction",
+            "_gpuFramesEnqueued", "_gpuFramesDropped", "_cudaFramesEnqueued", "_cudaFramesDropped",
+            "_videoQueueMaxDepth", "_gpuQueueMaxDepth", "_cudaQueueMaxDepth",
+            "_videoQueueDepth", "_gpuQueueDepth", "_cudaQueueDepth",
+            "_lastVideoEnqueueTick", "_lastVideoWriteTick"
+        };
+        foreach (var name in fields)
+        {
+            var field = Field(sink, name);
+            field.SetValue(sink, Convert.ChangeType(17, field.FieldType));
+            Assert.Equal(17L, Convert.ToInt64(field.GetValue(sink)));
+        }
+        Field(sink, "_audioDropsQueueSaturated").SetValue(sink, 91L);
+
+        var tracker = Field(sink, "_videoLatencyTracker").GetValue(sink)!;
+        var queuedTicks = (ICollection)Field(tracker, "_enqueueTicks").GetValue(tracker)!;
+        var tick = Environment.TickCount64;
+        lock (Field(sink, "_videoQueueSync").GetValue(sink)!)
+        {
+            Invoke(tracker, "TrackEnqueueUnderLock", tick - 50);
+        }
+        Invoke(tracker, "RecordPacketDequeued", tick - 30, (long?)10);
+        Invoke(tracker, "RecordPacketDequeued", tick - 20, (long?)14);
+        Invoke(tracker, "RecordBackpressure", 100L, 109L);
+        Assert.Equal(1, queuedTicks.Count);
+        Assert.Equal(3L, Property(sink, "VideoSequenceGaps"));
+        Assert.Equal(1L, Property(sink, "VideoBackpressureEvents"));
+        Assert.Equal(2, ((ValueTuple<int, double, double, double, double>)Property(sink, "VideoQueueLatencyMetrics")).Item1);
+
+        var contextType = assembly.GetType("Sussudio.Services.Contracts.RecordingContext", throwOnError: true)!;
+        var context = Activator.CreateInstance(contextType)!;
+        contextType.GetProperty("EffectiveWidth")!.SetValue(context, 640u);
+        contextType.GetProperty("EffectiveHeight")!.SetValue(context, 360u);
+        for (var attempt = 0; attempt < 2; attempt++)
+        {
+            Invoke(sink, "ResetVideoSessionState", context);
+
+            Assert.Equal(640, Field(sink, "_width").GetValue(sink));
+            Assert.Equal(360, Field(sink, "_height").GetValue(sink));
+            foreach (var name in fields)
+            {
+                Assert.Equal(0L, Convert.ToInt64(Field(sink, name).GetValue(sink)));
+            }
+            foreach (var name in new[]
+            {
+                "DroppedVideoFrames", "EncodedVideoFrames", "VideoFramesEnqueuedCount", "VideoFramesSubmittedToEncoder",
+                "VideoQueueCount", "VideoQueueMaxDepth", "GpuQueueCount", "GpuQueueMaxDepth", "CudaQueueCount", "CudaQueueMaxDepth",
+                "GpuFramesEnqueued", "GpuFramesDropped", "CudaFramesEnqueued", "CudaFramesDropped",
+                "LastVideoEnqueueTick", "LastVideoWriteTick", "LastVideoQueueLatencyMs", "VideoSequenceGaps",
+                "VideoBackpressureWaitMs", "VideoBackpressureEvents", "LastVideoBackpressureWaitMs", "MaxVideoBackpressureWaitMs"
+            })
+            {
+                Assert.Equal(0L, Convert.ToInt64(Property(sink, name)));
+            }
+            Assert.Equal((0, 0d, 0d, 0d, 0d), Property(sink, "VideoQueueLatencyMetrics"));
+            Assert.Equal(0, queuedTicks.Count);
+            Assert.Equal(-1L, Property(tracker, "LastSequenceNumber"));
+            Assert.Equal(91L, Property(sink, "AudioDropsQueueSaturated"));
+        }
+
+        Invoke(tracker, "RecordPacketDequeued", Environment.TickCount64, (long?)100);
+        Assert.Equal(0L, Property(sink, "VideoSequenceGaps"));
+        Assert.Equal(100L, Property(tracker, "LastSequenceNumber"));
+    }
+
+    private static FieldInfo Field(object target, string name)
+        => target.GetType().GetField(name, InstanceFlags)
+            ?? throw new InvalidOperationException($"{target.GetType().Name}.{name} was not found.");
+
+    private static object Property(object target, string name)
+        => target.GetType().GetProperty(name, InstanceFlags)!.GetValue(target)!;
+
+    private static void Invoke(object target, string name, params object?[] arguments)
+        => target.GetType().GetMethod(name, InstanceFlags)!.Invoke(target, arguments);
+}
+
 public sealed class CoreRuntimeRecordingContractsTests
 {
     public CoreRuntimeRecordingContractsTests()
@@ -1278,15 +1367,9 @@ static partial class Program
         AssertContains(rootText, "LIBAV_SINK_CUDA_QUEUE_INIT capacity=");
         AssertContains(rootText, "LIBAV_SINK_GPU_QUEUE_INIT capacity=");
         AssertContains(rootText, "private void ResetVideoSessionState(RecordingContext context)");
-        AssertContains(rootText, "_width = checked((int)context.EffectiveWidth);");
-        AssertContains(rootText, "_height = checked((int)context.EffectiveHeight);");
         AssertContains(rootText, "private void ResetVideoSessionMetrics()");
-        AssertContains(rootText, "Interlocked.Exchange(ref _videoFramesEnqueued, 0);");
-        AssertContains(rootText, "Interlocked.Exchange(ref _gpuFramesEnqueued, 0);");
-        AssertContains(rootText, "Interlocked.Exchange(ref _cudaFramesEnqueued, 0);");
-        AssertContains(rootText, "Interlocked.Exchange(ref _lastVideoEnqueueTick, 0);");
         AssertContains(rootText, "ResetVideoDiagnostics();");
-        AssertContains(rootText, "private void ResetVideoDiagnostics() => _videoLatencyTracker.ResetAll();");
+        AssertContains(rootText, "private void ResetVideoDiagnostics()");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvRecordingSink.Diagnostics.cs")),

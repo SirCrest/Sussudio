@@ -133,13 +133,24 @@ public sealed class AutomationAppSurfaceContractsTests
         => global::Program.NamedPipeAutomationServer_RequestTimeoutsUseBoundedDispatchCancellation();
 
     [Theory]
-    [InlineData("canceled", false)]
-    [InlineData("CaNcElEd", false)]
-    [InlineData(null, false)]
-    [InlineData("execution-failed", false)]
-    [InlineData(null, true)]
-    public Task AutomationPipeServerTimeoutWaitsForDispatchAndPreservesOutcome(string? responseError, bool dispatchFaults)
-        => global::Program.NamedPipeAutomationServer_TimeoutWaitsForDispatchAndPreservesOutcome(responseError, dispatchFaults);
+    [InlineData("canceled", false, false)]
+    [InlineData("CaNcElEd", false, false)]
+    [InlineData(null, false, false)]
+    [InlineData("execution-failed", false, false)]
+    [InlineData(null, true, false)]
+    [InlineData("canceled", false, true)]
+    [InlineData("CaNcElEd", false, true)]
+    [InlineData(null, false, true)]
+    [InlineData("execution-failed", false, true)]
+    [InlineData(null, true, true)]
+    public Task AutomationPipeServerTimeoutWaitsForDispatchAndPreservesOutcome(
+        string? responseError, bool dispatchFaults, bool cancelAfterAdmission)
+        => global::Program.NamedPipeAutomationServer_TimeoutWaitsForDispatchAndPreservesOutcome(
+            responseError, dispatchFaults, cancelAfterAdmission);
+
+    [Fact]
+    public Task AutomationPipeServerShutdownPreservesServerCancellationIdentity()
+        => global::Program.NamedPipeAutomationServer_ShutdownPreservesServerCancellationIdentity();
 
     [Fact]
     public Task AutomationPipeServerRequestLimitHandlesCrLfBoundary()
@@ -3400,13 +3411,8 @@ static partial class Program
         AssertContains(pipeServerText, "private sealed class ConnectionSession");
         AssertContains(pipeServerText, "var session = new ConnectionSession(this, server, cancellationToken);");
         AssertContains(pipeServerText, "var requestCancellation = CancellationTokenSource.CreateLinkedTokenSource(requestTimeout.Token, _serverCancellation);");
-        AssertContains(pipeServerText, "if (await WaitForDispatchCompletionAsync(dispatchTask, requestCancellation.Token).ConfigureAwait(false))");
-        AssertContains(pipeServerText, "using var registration = cancellationToken.Register(");
-        AssertContains(pipeServerText, "requestCancellation.Cancel();");
         AssertDoesNotContain(pipeServerText, "WaitForDispatchCompletionAsync(dispatchTask, CancellationToken.None)");
-        AssertContains(pipeServerText, "var responseAfterCancellation = await dispatchTask.ConfigureAwait(false);");
         AssertContains(pipeServerText, "Automation command exceeded request timeout; waiting for dispatch to stop");
-        AssertContains(pipeServerText, "responseAfterCancellation = _owner.CreateRequestTimeoutResponse();");
         AssertDoesNotContain(pipeServerText, "DispatchContinues");
         AssertDoesNotContain(pipeServerText, "ObserveTimedOutDispatch");
         AssertContains(pipeServerText, "Request timed out after {_owner._requestTimeoutMs} ms.");
@@ -3423,19 +3429,24 @@ static partial class Program
 
     internal static async Task NamedPipeAutomationServer_TimeoutWaitsForDispatchAndPreservesOutcome(
         string? responseError,
-        bool dispatchFaults)
+        bool dispatchFaults,
+        bool cancelAfterAdmission)
     {
         var responseType = RequireType("Sussudio.Models.AutomationCommandResponse");
         var completionType = typeof(TaskCompletionSource<>).MakeGenericType(responseType);
         var completion = Activator.CreateInstance(completionType, TaskCreationOptions.RunContinuationsAsynchronously)!;
         var dispatchTask = (Task)completionType.GetProperty("Task")!.GetValue(completion)!;
-        var dispatchCalled = false;
+        var admitted = new TaskCompletionSource<CancellationToken>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var cancellationObserved = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        CancellationTokenRegistration registration = default;
         var dispatcher = CreateConfiguredProxy(RequireType("Sussudio.Services.Contracts.IAutomationCommandDispatcher"),
             (method, arguments) =>
             {
                 Assert.Equal("ExecuteAsync", method!.Name);
-                Assert.True(((CancellationToken)arguments![1]!).IsCancellationRequested);
-                dispatchCalled = true;
+                var token = (CancellationToken)arguments![1]!;
+                Assert.Equal(!cancelAfterAdmission, token.IsCancellationRequested);
+                registration = token.Register(() => cancellationObserved.TrySetResult(true));
+                admitted.TrySetResult(token);
                 return dispatchTask;
             });
 
@@ -3450,41 +3461,119 @@ static partial class Program
         var execute = sessionType.GetMethod("ExecuteCommandWithTimeoutAsync", BindingFlags.Instance | BindingFlags.NonPublic)!;
         using var timeout = new CancellationTokenSource();
         using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(timeout.Token);
-        timeout.Cancel();
+        if (!cancelAfterAdmission) timeout.Cancel();
 
         var execution = (Task)execute.Invoke(session, new object[]
         {
             CreateAutomationCommandRequest("GetSnapshot", null, "{}"), timeout, cancellation
         })!;
-        Assert.True(dispatchCalled);
-        Assert.False(execution.IsCompleted, "Request timeout must wait for the admitted dispatch to stop.");
-
-        if (dispatchFaults)
+        try
         {
-            var failure = new InvalidOperationException("dispatch failure after cancellation");
-            completionType.GetMethod("SetException", new[] { typeof(Exception) })!
-                .Invoke(completion, new object[] { failure });
-            var actual = await Assert.ThrowsAsync<InvalidOperationException>(
+            var dispatchToken = await admitted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            if (cancelAfterAdmission)
+            {
+                Assert.False(dispatchToken.IsCancellationRequested);
+                Assert.False(execution.IsCompleted);
+                timeout.Cancel();
+            }
+            await cancellationObserved.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.True(dispatchToken.IsCancellationRequested);
+            await Assert.ThrowsAsync<TimeoutException>(() => execution.WaitAsync(TimeSpan.FromMilliseconds(50)));
+
+            if (dispatchFaults)
+            {
+                var failure = new InvalidOperationException("dispatch failure after cancellation");
+                completionType.GetMethod("SetException", new[] { typeof(Exception) })!
+                    .Invoke(completion, new object[] { failure });
+                var actual = await Assert.ThrowsAsync<InvalidOperationException>(
+                    () => execution.WaitAsync(TimeSpan.FromSeconds(5)));
+                Assert.Same(failure, actual);
+                return;
+            }
+
+            var response = Activator.CreateInstance(responseType)!;
+            SetPropertyBackingField(response, "Success", responseError == null);
+            SetPropertyBackingField(response, "ErrorCode", responseError);
+            completionType.GetMethod("SetResult")!.Invoke(completion, new[] { response });
+            await execution.WaitAsync(TimeSpan.FromSeconds(5));
+            var result = execution.GetType().GetProperty("Result")!.GetValue(execution)!;
+            if (string.Equals(responseError, "canceled", StringComparison.OrdinalIgnoreCase))
+            {
+                Assert.NotSame(response, result);
+                AssertAutomationResponse(result, false, "request-timeout", "error", "dispatch canceled after timeout");
+                Assert.Equal("failed", GetAutomationLifecycle(result));
+            }
+            else
+            {
+                Assert.Same(response, result);
+            }
+        }
+        finally
+        {
+            registration.Dispose();
+            completionType.GetMethod("TrySetResult")!.Invoke(completion, new[] { Activator.CreateInstance(responseType)! });
+            try { await dispatchTask.ConfigureAwait(false); } catch { }
+            try { await execution.WaitAsync(TimeSpan.FromSeconds(5)); } catch { }
+        }
+    }
+
+    internal static async Task NamedPipeAutomationServer_ShutdownPreservesServerCancellationIdentity()
+    {
+        var responseType = RequireType("Sussudio.Models.AutomationCommandResponse");
+        var completionType = typeof(TaskCompletionSource<>).MakeGenericType(responseType);
+        var completion = Activator.CreateInstance(completionType, TaskCreationOptions.RunContinuationsAsynchronously)!;
+        var dispatchTask = (Task)completionType.GetProperty("Task")!.GetValue(completion)!;
+        var admitted = new TaskCompletionSource<CancellationToken>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var cancellationObserved = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        CancellationTokenRegistration registration = default;
+        var dispatcher = CreateConfiguredProxy(RequireType("Sussudio.Services.Contracts.IAutomationCommandDispatcher"),
+            (method, arguments) =>
+            {
+                Assert.Equal("ExecuteAsync", method!.Name);
+                var token = (CancellationToken)arguments![1]!;
+                Assert.False(token.IsCancellationRequested);
+                registration = token.Register(() => cancellationObserved.TrySetResult(true));
+                admitted.TrySetResult(token);
+                return dispatchTask;
+            });
+
+        var pipeName = $"unit-pipe-shutdown-{Guid.NewGuid():N}";
+        using var server = CreateNamedPipeAutomationServer(pipeName, false, new byte[] { 1 },
+            _ => CreateTestPipeServerStream(pipeName), () => CreateTestPipeServerStream(pipeName), dispatcher);
+        using var pipe = CreateTestPipeServerStream(pipeName);
+        using var shutdown = new CancellationTokenSource();
+        using var timeout = new CancellationTokenSource();
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(timeout.Token, shutdown.Token);
+        var sessionType = server.GetType().GetNestedType("ConnectionSession", BindingFlags.NonPublic)!;
+        var session = Activator.CreateInstance(sessionType,
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+            binder: null, args: new object[] { server, pipe, shutdown.Token }, culture: null)!;
+        var execute = sessionType.GetMethod("ExecuteCommandWithTimeoutAsync", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var execution = (Task)execute.Invoke(session, new object[]
+        {
+            CreateAutomationCommandRequest("GetSnapshot", null, "{}"), timeout, cancellation
+        })!;
+
+        try
+        {
+            var dispatchToken = await admitted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.False(execution.IsCompleted);
+            shutdown.Cancel();
+            await cancellationObserved.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.True(dispatchToken.IsCancellationRequested);
+
+            var failure = await Assert.ThrowsAnyAsync<OperationCanceledException>(
                 () => execution.WaitAsync(TimeSpan.FromSeconds(5)));
-            Assert.Same(failure, actual);
-            return;
+            Assert.Equal(shutdown.Token, failure.CancellationToken);
+            Assert.False(timeout.IsCancellationRequested);
+            Assert.False(dispatchTask.IsCompleted);
         }
-
-        var response = Activator.CreateInstance(responseType)!;
-        SetPropertyBackingField(response, "Success", responseError == null);
-        SetPropertyBackingField(response, "ErrorCode", responseError);
-        completionType.GetMethod("SetResult")!.Invoke(completion, new[] { response });
-        await execution.WaitAsync(TimeSpan.FromSeconds(5));
-        var result = execution.GetType().GetProperty("Result")!.GetValue(execution)!;
-        if (string.Equals(responseError, "canceled", StringComparison.OrdinalIgnoreCase))
+        finally
         {
-            Assert.NotSame(response, result);
-            AssertAutomationResponse(result, false, "request-timeout", "error", "dispatch canceled after timeout");
-            Assert.Equal("failed", GetAutomationLifecycle(result));
-        }
-        else
-        {
-            Assert.Same(response, result);
+            registration.Dispose();
+            completionType.GetMethod("TrySetResult")!.Invoke(completion, new[] { Activator.CreateInstance(responseType)! });
+            await dispatchTask.ConfigureAwait(false);
+            try { await execution.WaitAsync(TimeSpan.FromSeconds(5)); } catch { }
         }
     }
 

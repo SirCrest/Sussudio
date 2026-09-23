@@ -31,7 +31,14 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
         Assert.Equal(0, GetMetricProperty(jitter, "QueueDepth"));
         Assert.Equal(0L, GetMetricProperty(jitter, "TotalDropped"));
 
+        var beforeSnapshotMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         var health = captureType.GetMethod("GetHealthSnapshot")!.Invoke(capture, null)!;
+        var afterSnapshotMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        Assert.Equal(GetMetricProperty(capture, "SessionState"), GetMetricProperty(health, "SessionState"));
+        Assert.Null(GetMetricProperty(health, "FlashbackExportVerificationFormat"));
+        Assert.Equal(-1L, GetMetricProperty(health, "LastFrameArrivalMs"));
+        Assert.InRange(((DateTimeOffset)GetMetricProperty(health, "TimestampUtc")!).ToUnixTimeMilliseconds(),
+            beforeSnapshotMs, afterSnapshotMs);
         foreach (var property in new[] { "CaptureCadenceRecentIntervalsMs", "FlashbackPlaybackRecentFrameIntervalsMs" })
         {
             Assert.Empty(Assert.IsType<double[]>(GetMetricProperty(health, property)));
@@ -91,6 +98,57 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
         Assert.Empty(Assert.IsType<double[]>(GetMetricProperty(cadence, "RecentFrameIntervalsMs")));
     }
 
+    [Fact]
+    public async Task HealthSnapshotObservesCurrentSessionSettingsAndArrivalAge()
+    {
+        const BindingFlags instanceFlags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+        var assembly = Sussudio.Tests.SussudioAssembly.Load();
+        var captureType = assembly.GetType("Sussudio.Services.Capture.CaptureService", throwOnError: true)!;
+        var unifiedType = assembly.GetType("Sussudio.Services.Capture.UnifiedVideoCapture", throwOnError: true)!;
+        var settingsType = assembly.GetType("Sussudio.Models.CaptureSettings", throwOnError: true)!;
+        await using var capture = (IAsyncDisposable)Activator.CreateInstance(captureType)!;
+        await using var unified = (IAsyncDisposable)Activator.CreateInstance(unifiedType, nonPublic: true)!;
+        var pipeline = captureType.GetField("_videoPipeline", instanceFlags)!.GetValue(capture)!;
+        var ownedCapture = pipeline.GetType().GetProperty("Capture", instanceFlags)!;
+        var settingsField = captureType.GetField("_currentSettings", instanceFlags)!;
+        var settings = Activator.CreateInstance(settingsType)!;
+        var formatProperty = settingsType.GetProperty("Format")!;
+        var priorState = GetMetricProperty(capture, "SessionState");
+        captureType.GetMethod("EnterFaultedState", instanceFlags)!.Invoke(capture, null);
+        var currentState = GetMetricProperty(capture, "SessionState");
+        Assert.NotEqual(priorState, currentState);
+        Assert.Equal("Faulted", currentState!.ToString());
+
+        try
+        {
+            ownedCapture.SetValue(pipeline, unified);
+            settingsField.SetValue(capture, settings);
+            var arrivalTick = Math.Max(1, Environment.TickCount64 - 50);
+            unifiedType.GetField("_lastVideoFrameArrivedTick", instanceFlags)!.SetValue(unified, arrivalTick);
+            foreach (var format in Enum.GetValues(formatProperty.PropertyType))
+            {
+                formatProperty.SetValue(settings, format);
+                var beforeTick = Environment.TickCount64;
+                var beforeSnapshotMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                var health = captureType.GetMethod("GetHealthSnapshot")!.Invoke(capture, null)!;
+                var afterSnapshotMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                var afterTick = Environment.TickCount64;
+
+                Assert.Equal(currentState, GetMetricProperty(health, "SessionState"));
+                Assert.Equal(format.ToString(), GetMetricProperty(health, "FlashbackExportVerificationFormat"));
+                Assert.InRange((long)GetMetricProperty(health, "LastFrameArrivalMs")!,
+                    Math.Max(0, beforeTick - arrivalTick), Math.Max(0, afterTick - arrivalTick));
+                Assert.InRange(((DateTimeOffset)GetMetricProperty(health, "TimestampUtc")!).ToUnixTimeMilliseconds(),
+                    beforeSnapshotMs, afterSnapshotMs);
+            }
+        }
+        finally
+        {
+            ownedCapture.SetValue(pipeline, null);
+            settingsField.SetValue(capture, null);
+        }
+    }
+
     private static object? GetMetricProperty(object value, string name)
         => value.GetType().GetProperty(name, BindingFlags.Public | BindingFlags.Instance)!.GetValue(value);
 
@@ -103,9 +161,6 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
         var healthSnapshotAssemblerText = ExtractMemberCode(healthSnapshotText, "Build");
 
         Assert.Contains("return CaptureHealthSnapshotAssembler.Build(new CaptureHealthSnapshotAssemblyFields", healthSnapshotText, StringComparison.Ordinal);
-        Assert.Contains("SessionState = CurrentSessionState,", healthSnapshotText, StringComparison.Ordinal);
-        Assert.Contains("FlashbackExportVerificationFormat = ResolveFlashbackExportVerificationFormat(currentSettings, unifiedVideoCapture),", healthSnapshotText, StringComparison.Ordinal);
-        Assert.Contains("LastFrameArrivalMs = ComputeTickAge(unifiedVideoCapture?.LastVideoFrameArrivedTick ?? 0),", healthSnapshotText, StringComparison.Ordinal);
         Assert.Contains("private static class CaptureHealthSnapshotAssembler", healthSnapshotText, StringComparison.Ordinal);
         Assert.Contains("public static CaptureHealthSnapshot Build(", healthSnapshotAssemblerText, StringComparison.Ordinal);
         Assert.Contains("private readonly record struct CaptureHealthSnapshotAssemblyFields", healthSnapshotText, StringComparison.Ordinal);
@@ -118,7 +173,6 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
         Assert.DoesNotContain("_isRecording", healthSnapshotAssemblerText, StringComparison.Ordinal);
         Assert.DoesNotContain("_currentSettings", healthSnapshotAssemblerText, StringComparison.Ordinal);
         Assert.DoesNotContain("ComputeTickAge(", healthSnapshotAssemblerText, StringComparison.Ordinal);
-        Assert.Contains("TimestampUtc = DateTimeOffset.FromUnixTimeMilliseconds(snapshotUtcUnixMs),", healthSnapshotAssemblerText, StringComparison.Ordinal);
         Assert.DoesNotContain("return new CaptureHealthSnapshot", getHealthSnapshotText, StringComparison.Ordinal);
         Assert.False(File.Exists(Path.Combine(
             FindRepoRoot(),
