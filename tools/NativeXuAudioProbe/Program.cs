@@ -547,7 +547,7 @@ static class NativeXuProbeAtCommands
         Console.WriteLine($"BEFORE: AT 0x{getOpcode:X2} = {(before != null ? BitConverter.ToString(before) : "(null)")}");
 
         Console.WriteLine($"WRITING: AT 0x{setOpcode:X2} value={value} (bytes: {BitConverter.ToString(BitConverter.GetBytes(value))})");
-        var ok = await NativeXuAtCommandProvider.SendNamedSetCommandPublicAsync(dev, setOpcode, BitConverter.GetBytes(value), $"SET 0x{setOpcode:X2}={value}");
+        var ok = await NativeXuAtCommandProvider.SendNamedSetCommandAsync(dev, setOpcode, BitConverter.GetBytes(value), $"SET 0x{setOpcode:X2}={value}");
         Console.WriteLine($"Result: {ok}");
 
         await Task.Delay(500);
@@ -676,7 +676,7 @@ static class NativeXuProbeI2cSwitch
         var set10 = NativeXuProbeI2cTransport.SendI2cAtSet(dev, new byte[] { 0x00, 0x4A, 0x01, 0x00, 0x10, 0x01 });
         Console.WriteLine($"  5. I2C SET 0x10 = 01: {(set10 ? "OK" : "failed")}");
 
-        var set5B = await NativeXuAtCommandProvider.SendNamedSetCommandPublicAsync(
+        var set5B = await NativeXuAtCommandProvider.SendNamedSetCommandAsync(
             dev, 0x5B, new byte[] { 0x00, 0x05, 0x00, 0x00 }, "AT_0x5B_commit");
         Console.WriteLine($"  6. UVC AT SET 0x5B = 00-05-00-00: {(set5B ? "OK" : "failed")}");
 

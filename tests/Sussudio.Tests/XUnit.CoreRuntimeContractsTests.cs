@@ -1300,7 +1300,7 @@ static partial class Program
         AssertContains(rootText, "KsExtensionUnitNative.TryReadTopologyNodes(");
         AssertContains(rootText, "var attempt = TryReadRolling(handle, node.NodeId, ksInterface.Path, cancellationToken);");
         AssertContains(rootText, "private static NodeReadAttempt CreateUnavailableNodeResult(");
-        AssertContains(rootText, "private static NodeReadAttempt HandleFailedCommand(");
+        AssertContains(rootText, "private static NodeReadAttempt CreateFailedCommandResult(");
         AssertContains(rootText, "private static bool IsUnsupportedNodeFailure(");
         AssertContains(rootText, "private static string DescribeCommandFailure(");
         AssertContains(rootText, "private static string DescribeWin32Detail(");
@@ -1336,6 +1336,11 @@ static partial class Program
         AssertContains(rollingCommandGroupsText, "private void PopulateInitialRollingCache(");
         AssertContains(rollingCommandGroupsText, "private void RefreshRollingGroup(");
         AssertContains(rollingCommandGroupsText, "case 5: // Diagnostics");
+        AssertContains(rollingCommandGroupsText, "private NativeXuSnapshotCommandResults _cache;");
+        AssertContains(rollingCommandGroupsText, "for (var group = 0; group < RollingGroupCount; group++)");
+        AssertContains(rollingCommandGroupsText, "_cache = _cache with");
+        AssertDoesNotContain(rollingCommandGroupsText, "private AtCommandResult _cVic");
+        AssertDoesNotContain(snapshotAssemblyText, "TryReadSnapshot");
         AssertContains(rootText, "private static bool IsUnsupportedNodeFailure(");
         AssertEqual(
             false,
@@ -1346,9 +1351,6 @@ static partial class Program
         AssertContains(snapshotAssemblyText, "private readonly record struct VicTiming(");
         AssertContains(snapshotAssemblyText, "private readonly record struct NativeXuSnapshotCommandResults(");
         AssertContains(snapshotAssemblyText, "AtCommandResult RawTiming");
-        AssertContains(snapshotAssemblyText, "private static NodeReadAttempt TryReadSnapshot(");
-        AssertContains(snapshotAssemblyText, "SendAtCommand(handle, nodeId, \"CableConnect\", CmdCableConnect)");
-        AssertContains(snapshotAssemblyText, "SendAtCommand(handle, nodeId, \"RawTiming\", CmdRawTiming)");
         AssertContains(snapshotAssemblyText, "private static NodeReadAttempt BuildSnapshotFromCommandResults(");
         AssertContains(snapshotAssemblyText, "private static string BuildDiagnosticSummary(");
         AssertContains(snapshotAssemblyText, "private static string AppendExtendedDiagnostics(");
@@ -1404,10 +1406,14 @@ static partial class Program
         var probeProjectText = ReadRepoFile("tools/NativeXuAudioProbe/NativeXuAudioProbe.csproj");
 
         AssertContains(deviceCommandsText, "public static async Task<bool> SendAtSetCommandAsync(");
+        AssertContains(deviceCommandsText, "public static async Task<bool> SendNamedSetCommandAsync(");
         AssertContains(deviceCommandsText, "public static Task<bool> SetInputSourceAsync(");
         AssertContains(deviceCommandsText, "public static async Task<byte[]?> ReadAtCommandAsync(");
+        AssertDoesNotContain(deviceCommandsText, "SendNamedSetCommandPublicAsync");
         AssertContains(deviceCommandsText, "SendAtCommand(handle, node.NodeId, label, cmdCode)");
         AssertContains(deviceCommandsText, "NATIVEXU_GET_EXCEPTION");
+        AssertContains(deviceCommandsText, "NATIVEXU_OPEN_FAILED path='{ksInterface.Path}' detail='{DescribeWin32Detail(ksInterface.Path, openErrorCode)}'");
+        AssertContains(deviceCommandsText, "NATIVEXU_TOPOLOGY_FAILED path='{ksInterface.Path}' error='{topologyError}'");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.DeviceCommandReads.cs")),
