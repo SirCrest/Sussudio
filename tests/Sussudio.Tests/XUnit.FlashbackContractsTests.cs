@@ -1400,7 +1400,13 @@ static partial class Program
         AssertContains(segmentsText, "var clone = ClonePacketOrThrow(packet, \"segment_buffer\");");
         AssertContains(segmentPacketWritingText, "private SegmentPacketWriteResult WriteSegmentPacketsToActiveOutput(");
         AssertContains(segmentPacketWritingText, "WriteSegmentPacketReadLoop(");
+        AssertContains(segmentPacketWritingText, "in segmentExportWindow,");
         AssertContains(segmentPacketReadLoopText, "private void WriteSegmentPacketReadLoop(");
+        AssertContains(segmentPacketReadLoopText, "in SegmentExportWindow window,");
+        AssertContains(segmentPacketReadLoopText, "window.UseSegmentTimeline");
+        AssertContains(segmentPacketReadLoopText, "window.SegmentTimelineStartUs");
+        AssertContains(segmentPacketReadLoopText, "window.SegmentInOffsetUs");
+        AssertContains(segmentPacketReadLoopText, "window.SegmentOutOffsetUs");
         AssertContains(segmentPacketReadLoopText, "var clone = ClonePacketOrThrow(packet, \"segment_buffer\");");
 
         var segmentLoopBlock = ExtractTextBetween(
@@ -1473,7 +1479,7 @@ static partial class Program
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_EXPORT_FAIL reason='{failureMessage}'\");");
         AssertContains(sourceText, "ThrowIfError(ffmpeg.av_write_trailer(_activeOutputContext), \"av_write_trailer\", FlashbackExportFailureCodes.OutputWriteFailed);");
         AssertContains(sourceText, "ThrowIfError(CloseOutputIo(), \"avio_closep\", FlashbackExportFailureCodes.OutputWriteFailed);");
-        AssertContains(sourceText, "return FlashbackExportFailureCodes.Create(outputPath, outputFailure, outputFailureCode);");
+        AssertContains(sourceText, "return FlashbackExportFailureCodes.Create(\n                        outputPath,\n                        outputFailure,\n                        outputFailureCode,\n                        outputPreserved ? new[] { outputPath } : null);");
         AssertContains(sourceText, "ReportProgress(\n                    progress,\n                    new ExportProgress(\n                        segIdx + 1,\n                        segments.Count,");
         AssertContains(sourceText, "ReportProgress(progress, new ExportProgress(segments.Count, segments.Count, 100.0), \"segments_complete\")");
         AssertContains(sourceText, "private static void ReportProgress(IProgress<ExportProgress>? progress, ExportProgress value, string stage)\n    {\n        value = NormalizeExportProgress(value, stage);");
@@ -1782,7 +1788,10 @@ static partial class Program
         AssertContains(transactionText, "internal sealed class FlashbackExportOutputTransaction : IDisposable");
         AssertDoesNotContain(transactionText, "partial class FlashbackExportOutputTransaction");
         AssertContains(transactionText, "internal static bool TryReserve(");
-        AssertContains(transactionText, "internal bool TryPublish(string outputPath, out long outputBytes, out string failureMessage, out string failureCode)");
+        AssertContains(transactionText, "internal bool TryPublish(\n        string outputPath,\n        out long outputBytes,\n        out string failureMessage,\n        out string failureCode,\n        out bool outputPreserved)");
+        AssertContains(transactionText, "outputPreserved = false;");
+        AssertContains(transactionText, "outputPreserved = true;");
+        AssertOccursBefore(transactionText, "outputPreserved = true;", "if (!validateOutput(outputPath, out outputBytes, out failureMessage))");
         AssertContains(transactionText, "private void Abandon()");
         AssertContains(transactionText, "FileMode.CreateNew");
         AssertContains(transactionText, "private readonly record struct TempFileIdentity");
@@ -1905,12 +1914,15 @@ static partial class Program
         AssertContains(exporterText, "private bool TryFinalizeActiveOutputFile(");
         AssertContains(exporterText, "ThrowIfError(ffmpeg.av_write_trailer(_activeOutputContext), \"av_write_trailer\", FlashbackExportFailureCodes.OutputWriteFailed);");
         AssertContains(exporterText, "ThrowIfError(CloseOutputIo(), \"avio_closep\", FlashbackExportFailureCodes.OutputWriteFailed);");
-        AssertContains(exporterText, "outputTransaction.TryPublish(outputPath, out outputBytes, out failureMessage, out failureCode)");
+        AssertContains(exporterText, "outputTransaction.TryPublish(outputPath, out outputBytes, out failureMessage, out failureCode, out outputPreserved)");
         AssertContains(exporterText, "Logger.Log($\"FLASHBACK_EXPORT_FAIL reason='{failureMessage}'\");");
         AssertContains(exporterText, "av_write_trailer(_activeOutputContext)");
         AssertContains(exporterText, "ThrowIfError(CloseOutputIo(), \"avio_closep\", FlashbackExportFailureCodes.OutputWriteFailed);\n\n        if (!outputTransaction.TryPublish");
-        AssertContains(exporterText, "if (!TryFinalizeActiveOutputFile(outputTransaction, outputPath, out var outputBytes, out var outputFailure, out var outputFailureCode))");
-        AssertContains(exporterText, "if (!TryFinalizeActiveOutputFile(outputTransaction, outputPath, out var outputBytes, out var outputFailure, out var outputFailureCode))");
+        AssertContains(exporterText, "if (!TryFinalizeActiveOutputFile(outputTransaction, outputPath, out var outputBytes, out var outputFailure, out var outputFailureCode, out var outputPreserved))");
+        AssertEqual(
+            2,
+            exporterText.Split(new[] { "outputPreserved ? new[] { outputPath } : null" }, StringSplitOptions.None).Length - 1,
+            "Single-file and segment export failures report a moved output as preserved");
         AssertContains(exporterText, "private bool TryWaitForExportLock(string outputPath, CancellationToken ct, [NotNullWhen(false)] out FinalizeResult? cancellationResult)");
         AssertContains(exporterText, "private void ReleaseExportLockBestEffort(string operation)");
         AssertContains(exporterText, "private void DisposeExportLockBestEffort()");
@@ -2585,11 +2597,12 @@ static partial class Program
             transaction = ReserveOutputTransaction(outputPath);
             var tmpPath = GetOutputTransactionTemporaryPath(transaction);
             ReleaseOutputTransactionReservation(transaction);
-            var finalized = PublishOutputTransaction(transaction, outputPath, out _, out var failureMessage, out var failureCode);
+            var finalized = PublishOutputTransaction(transaction, outputPath, out _, out var failureMessage, out var failureCode, out var outputPreserved);
 
             AssertEqual(false, finalized, "Invalid temp output is rejected");
             AssertContains(failureMessage, "temporary output file is empty before replacing");
             AssertEqual("flashback-export-no-media-written", failureCode, "Empty temporary media carries NoMediaWritten");
+            AssertEqual(false, outputPreserved, "Pre-move validation failure has no preserved output");
             AssertEqual(true, File.Exists(outputPath), "Existing export remains present");
             AssertEqual(existingBytes.Length, new FileInfo(outputPath).Length, "Existing export length is preserved");
             AssertEqual(false, File.Exists(tmpPath), "Invalid temp output is deleted");
@@ -2691,9 +2704,10 @@ static partial class Program
             var tempPath = GetOutputTransactionTemporaryPath(transaction);
             WriteTransactionTempWhileReservationIsLive(tempPath, expectedBytes);
 
-            var published = PublishOutputTransaction(transaction, outputPath, out var outputBytes, out var failureMessage, out _);
+            var published = PublishOutputTransaction(transaction, outputPath, out var outputBytes, out var failureMessage, out _, out var outputPreserved);
 
             AssertEqual(true, published, $"Owned temporary output publishes: {failureMessage}");
+            AssertEqual(true, outputPreserved, "Published output is reported as preserved");
             AssertEqual((long)expectedBytes.Length, outputBytes, "Published byte count is reported");
             AssertEqual(
                 true,
@@ -2778,11 +2792,12 @@ static partial class Program
             WriteTransactionTempWhileReservationIsLive(tempPath, new byte[] { 0x6e, 0x65, 0x77 });
             File.WriteAllBytes(outputPath, existingBytes);
 
-            var published = PublishOutputTransaction(transaction, outputPath, out _, out var failureMessage, out var failureCode);
+            var published = PublishOutputTransaction(transaction, outputPath, out _, out var failureMessage, out var failureCode, out var outputPreserved);
 
             AssertEqual(false, published, "A destination created after reservation is not replaced");
             AssertContains(failureMessage, "destination file already exists");
             AssertEqual("flashback-export-invalid-output-path", failureCode, "Destination race carries InvalidOutputPath");
+            AssertEqual(false, outputPreserved, "Move failure has no preserved output");
             AssertEqual(
                 true,
                 existingBytes.AsSpan().SequenceEqual(File.ReadAllBytes(outputPath)),
@@ -2826,13 +2841,14 @@ static partial class Program
             ReleaseOutputTransactionReservation(transaction);
             File.WriteAllBytes(tmpPath, new byte[] { 0x66, 0x69, 0x6e, 0x61, 0x6c });
 
-            var args = new object?[] { outputPath, 0L, string.Empty, string.Empty, validator };
+            var args = new object?[] { outputPath, 0L, string.Empty, string.Empty, validator, false };
             var finalized = (bool)(finalizeCore.Invoke(transaction, args)
                 ?? throw new InvalidOperationException("TryPublishCore returned null."));
 
             AssertEqual(false, finalized, "Final validation failure is rejected");
             AssertContains((string)args[2]!, "forced final validation failure");
             AssertEqual("flashback-export-output-write-failed", (string)args[3]!, "Post-move validation preserves explicit failure identity");
+            AssertEqual(true, (bool)args[5]!, "Post-move validation reports the moved output as preserved");
             AssertEqual(false, File.Exists(tmpPath), "Temporary output was moved before final validation");
             AssertEqual(true, File.Exists(outputPath), "Invalid moved final output is not deleted by path");
             AssertEqual(5L, new FileInfo(outputPath).Length, "Moved output bytes remain for caller/operator inspection");
@@ -2868,9 +2884,10 @@ static partial class Program
             var replacementBytes = new byte[] { 0x6e, 0x6f, 0x74, 0x2d, 0x6f, 0x75, 0x72, 0x73 };
             File.WriteAllBytes(tempPath, replacementBytes);
 
-            var published = PublishOutputTransaction(transaction, outputPath, out _, out var failureMessage, out var failureCode);
+            var published = PublishOutputTransaction(transaction, outputPath, out _, out var failureMessage, out var failureCode, out var outputPreserved);
 
             AssertEqual(false, published, "Replaced temp path is not published");
+            AssertEqual(false, outputPreserved, "Failed move does not report a preserved output");
             AssertContains(failureMessage, "temporary output path was replaced");
             AssertEqual(false, File.Exists(outputPath), "Replacement is not published as final output");
             AssertEqual(5L, new FileInfo(originalPath).Length, "Original reserved temp remains outside the replacement path");
@@ -2968,16 +2985,18 @@ static partial class Program
         string outputPath,
         out long outputBytes,
         out string failureMessage,
-        out string failureCode)
+        out string failureCode,
+        out bool outputPreserved)
     {
         var publish = transaction.GetType().GetMethod("TryPublish", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("FlashbackExportOutputTransaction.TryPublish not found.");
-        var args = new object?[] { outputPath, 0L, string.Empty, string.Empty };
+        var args = new object?[] { outputPath, 0L, string.Empty, string.Empty, false };
         var published = (bool)(publish.Invoke(transaction, args)
             ?? throw new InvalidOperationException("FlashbackExportOutputTransaction.TryPublish returned null."));
         outputBytes = (long)args[1]!;
         failureMessage = (string)args[2]!;
         failureCode = (string)args[3]!;
+        outputPreserved = (bool)args[4]!;
         return published;
     }
 

@@ -139,9 +139,10 @@ public sealed class FlashbackFailureTests
             File.WriteAllBytes(fixture.OutputPath, new byte[] { 7, 8 });
         }
 
-        var publishArguments = new object?[] { fixture.OutputPath, 0L, null, null };
+        var publishArguments = new object?[] { fixture.OutputPath, 0L, null, null, false };
         Assert.False((bool)InvokeInstance(transaction, "TryPublish", publishArguments));
         Assert.Equal(expectedCode, publishArguments[3]);
+        Assert.False((bool)publishArguments[4]!);
         Assert.False(File.Exists(temporaryPath));
         if (destinationAppears)
         {
