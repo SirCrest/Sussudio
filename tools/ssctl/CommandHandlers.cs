@@ -541,21 +541,10 @@ internal static class CommandHandlers
 
     private static async Task<PresentMonProbeCorrelation> TryResolvePreviewPresentCorrelationAsync(CommandContext context)
     {
-        try
-        {
-            var response = await context.SendCommandAsync(Sussudio.Models.AutomationCommandKind.GetSnapshot).ConfigureAwait(false);
-            if (!AutomationSnapshotFormatter.IsSuccess(response) ||
-                !response.TryGetProperty("Snapshot", out var snapshot))
-            {
-                return default;
-            }
-
-            return PresentMonProbe.ReadPreviewCorrelation(snapshot);
-        }
-        catch
-        {
-            return default;
-        }
+        var response = await context.SendCommandAsync(Sussudio.Models.AutomationCommandKind.GetSnapshot).ConfigureAwait(false);
+        return PresentMonProbe.ResolvePreviewCorrelation(
+            response,
+            message => Console.Error.WriteLine($"PresentMon correlation unavailable: {message}"));
     }
 
     private static async Task<int> HandleDiagnosticSessionAsync(CommandContext context)

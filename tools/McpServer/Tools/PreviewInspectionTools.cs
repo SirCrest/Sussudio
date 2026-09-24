@@ -32,7 +32,7 @@ public static class PreviewColorProbeTools
         var builder = new StringBuilder();
         builder.AppendLine("== Preview Color Probe ==");
 
-        var sessionActive = Get(data, "SessionActive");
+        var sessionActive = AutomationSnapshotFormatter.Get(data, "SessionActive");
         builder.AppendLine($"Session Active: {sessionActive}");
 
         if (string.Equals(sessionActive, "false", StringComparison.OrdinalIgnoreCase))
@@ -41,13 +41,13 @@ public static class PreviewColorProbeTools
             return McpToolResultFactory.FromResponse(response, builder.ToString().TrimEnd());
         }
 
-        builder.AppendLine($"Renderer: {Get(data, "RendererMode")}");
-        builder.AppendLine($"Format: {Get(data, "NegotiatedSubtype")} {Get(data, "SourceWidth")}x{Get(data, "SourceHeight")} @ {Get(data, "SourceFrameRate")}fps");
+        builder.AppendLine($"Renderer: {AutomationSnapshotFormatter.Get(data, "RendererMode")}");
+        builder.AppendLine($"Format: {AutomationSnapshotFormatter.Get(data, "NegotiatedSubtype")} {AutomationSnapshotFormatter.Get(data, "SourceWidth")}x{AutomationSnapshotFormatter.Get(data, "SourceHeight")} @ {AutomationSnapshotFormatter.Get(data, "SourceFrameRate")}fps");
         builder.AppendLine();
-        var nominalRangeLabel = Get(data, "NominalRangeLabel");
-        var transferFunctionLabel = Get(data, "TransferFunctionLabel");
-        var videoPrimariesLabel = Get(data, "VideoPrimariesLabel");
-        var yuvMatrixLabel = Get(data, "YuvMatrixLabel");
+        var nominalRangeLabel = AutomationSnapshotFormatter.Get(data, "NominalRangeLabel");
+        var transferFunctionLabel = AutomationSnapshotFormatter.Get(data, "TransferFunctionLabel");
+        var videoPrimariesLabel = AutomationSnapshotFormatter.Get(data, "VideoPrimariesLabel");
+        var yuvMatrixLabel = AutomationSnapshotFormatter.Get(data, "YuvMatrixLabel");
         var hasExtendedMfColor =
             !string.Equals(nominalRangeLabel, "Unknown", StringComparison.OrdinalIgnoreCase) ||
             !string.Equals(transferFunctionLabel, "Unknown", StringComparison.OrdinalIgnoreCase) ||
@@ -56,18 +56,18 @@ public static class PreviewColorProbeTools
         if (hasExtendedMfColor)
         {
             builder.AppendLine("== Color Attributes ==");
-            builder.AppendLine($"Nominal Range: {nominalRangeLabel} (raw={Get(data, "NominalRange")})");
-            builder.AppendLine($"Transfer Function: {transferFunctionLabel} (raw={Get(data, "TransferFunction")})");
-            builder.AppendLine($"Video Primaries: {videoPrimariesLabel} (raw={Get(data, "VideoPrimaries")})");
-            builder.AppendLine($"YUV Matrix: {yuvMatrixLabel} (raw={Get(data, "YuvMatrix")})");
+            builder.AppendLine($"Nominal Range: {nominalRangeLabel} (raw={AutomationSnapshotFormatter.Get(data, "NominalRange")})");
+            builder.AppendLine($"Transfer Function: {transferFunctionLabel} (raw={AutomationSnapshotFormatter.Get(data, "TransferFunction")})");
+            builder.AppendLine($"Video Primaries: {videoPrimariesLabel} (raw={AutomationSnapshotFormatter.Get(data, "VideoPrimaries")})");
+            builder.AppendLine($"YUV Matrix: {yuvMatrixLabel} (raw={AutomationSnapshotFormatter.Get(data, "YuvMatrix")})");
         }
         else
         {
             builder.AppendLine("Extended MF color attributes are unavailable in the active preview path.");
         }
 
-        var d3dInput = Get(data, "D3DInputColorSpace");
-        var d3dOutput = Get(data, "D3DOutputColorSpace");
+        var d3dInput = AutomationSnapshotFormatter.Get(data, "D3DInputColorSpace");
+        var d3dOutput = AutomationSnapshotFormatter.Get(data, "D3DOutputColorSpace");
         if (d3dInput != "N/A" && d3dInput != "None")
         {
             builder.AppendLine();
@@ -77,23 +77,23 @@ public static class PreviewColorProbeTools
         }
 
         // Luma analysis (only present when ColorCorrectedAdapter is active)
-        var lumaSamples = Get(data, "LumaSampleCount");
+        var lumaSamples = AutomationSnapshotFormatter.Get(data, "LumaSampleCount");
         if (lumaSamples != "N/A" && lumaSamples != "0")
         {
             builder.AppendLine();
             builder.AppendLine("== Luma (Y Plane) Analysis ==");
-            builder.AppendLine($"Range: min={Get(data, "LumaMin")} max={Get(data, "LumaMax")} mean={Get(data, "LumaMean")}");
-            builder.AppendLine($"Below 16 (super-black): {Get(data, "LumaBelow16Count")} samples");
-            builder.AppendLine($"Above 235 (super-white): {Get(data, "LumaAbove235Count")} samples");
+            builder.AppendLine($"Range: min={AutomationSnapshotFormatter.Get(data, "LumaMin")} max={AutomationSnapshotFormatter.Get(data, "LumaMax")} mean={AutomationSnapshotFormatter.Get(data, "LumaMean")}");
+            builder.AppendLine($"Below 16 (super-black): {AutomationSnapshotFormatter.Get(data, "LumaBelow16Count")} samples");
+            builder.AppendLine($"Above 235 (super-white): {AutomationSnapshotFormatter.Get(data, "LumaAbove235Count")} samples");
             builder.AppendLine($"Total sampled: {lumaSamples} (every 16th pixel)");
 
             // Interpretation
-            int.TryParse(Get(data, "LumaMin"), out var yMin);
-            int.TryParse(Get(data, "LumaMax"), out var yMax);
-            int.TryParse(Get(data, "LumaAbove235Count"), out var above235);
+            int.TryParse(AutomationSnapshotFormatter.Get(data, "LumaMin"), out var yMin);
+            int.TryParse(AutomationSnapshotFormatter.Get(data, "LumaMax"), out var yMax);
+            int.TryParse(AutomationSnapshotFormatter.Get(data, "LumaAbove235Count"), out var above235);
             int.TryParse(lumaSamples, out var totalSamples);
             var above235Pct = totalSamples > 0 ? (double)above235 / totalSamples * 100 : 0;
-            int.TryParse(Get(data, "LumaBelow16Count"), out var below16);
+            int.TryParse(AutomationSnapshotFormatter.Get(data, "LumaBelow16Count"), out var below16);
             var below16Pct = totalSamples > 0 ? (double)below16 / totalSamples * 100 : 0;
 
             if (yMax > 235 || yMin < 16)
@@ -123,11 +123,6 @@ public static class PreviewColorProbeTools
 
         return McpToolResultFactory.FromResponse(response, builder.ToString().TrimEnd());
     }
-
-    private static string Get(JsonElement el, string prop, string fallback = "N/A")
-    {
-        return AutomationSnapshotFormatter.Get(el, prop, fallback);
-    }
 }
 
 [McpServerToolType]
@@ -152,7 +147,7 @@ public static class VideoSourceProbeTools
         var builder = new StringBuilder();
         builder.AppendLine("== Video Source Probe ==");
 
-        var sessionActive = Get(data, "SessionActive");
+        var sessionActive = AutomationSnapshotFormatter.Get(data, "SessionActive");
         builder.AppendLine($"Session Active: {sessionActive}");
 
         if (string.Equals(sessionActive, "false", StringComparison.OrdinalIgnoreCase))
@@ -161,9 +156,9 @@ public static class VideoSourceProbeTools
             return McpToolResultFactory.FromResponse(response, builder.ToString().TrimEnd());
         }
 
-        builder.AppendLine($"Memory Preference: {Get(data, "MemoryPreference")}");
-        builder.AppendLine($"Current Format: {Get(data, "CurrentSubtype")} {Get(data, "CurrentWidth")}x{Get(data, "CurrentHeight")}@{Get(data, "CurrentFrameRate")}fps");
-        builder.AppendLine($"P010 Available: {Get(data, "P010Available")} | NV12 Available: {Get(data, "Nv12Available")}");
+        builder.AppendLine($"Memory Preference: {AutomationSnapshotFormatter.Get(data, "MemoryPreference")}");
+        builder.AppendLine($"Current Format: {AutomationSnapshotFormatter.Get(data, "CurrentSubtype")} {AutomationSnapshotFormatter.Get(data, "CurrentWidth")}x{AutomationSnapshotFormatter.Get(data, "CurrentHeight")}@{AutomationSnapshotFormatter.Get(data, "CurrentFrameRate")}fps");
+        builder.AppendLine($"P010 Available: {AutomationSnapshotFormatter.Get(data, "P010Available")} | NV12 Available: {AutomationSnapshotFormatter.Get(data, "Nv12Available")}");
 
         if (data.TryGetProperty("SupportedSubtypes", out var subtypes) && subtypes.ValueKind == JsonValueKind.Array)
         {
@@ -179,7 +174,7 @@ public static class VideoSourceProbeTools
             builder.AppendLine($"Supported Subtypes: {(subtypeList.Count > 0 ? string.Join(", ", subtypeList) : "none")}");
         }
 
-        builder.AppendLine($"Total Format Count: {Get(data, "TotalFormatCount")}");
+        builder.AppendLine($"Total Format Count: {AutomationSnapshotFormatter.Get(data, "TotalFormatCount")}");
 
         if (data.TryGetProperty("Formats", out var formats) && formats.ValueKind == JsonValueKind.Array)
         {
@@ -193,17 +188,12 @@ public static class VideoSourceProbeTools
                     break;
                 }
 
-                builder.AppendLine($"  [{index}] {Get(fmt, "Summary")}");
+                builder.AppendLine($"  [{index}] {AutomationSnapshotFormatter.Get(fmt, "Summary")}");
                 index++;
             }
         }
 
         return McpToolResultFactory.FromResponse(response, builder.ToString().TrimEnd());
-    }
-
-    private static string Get(JsonElement el, string prop, string fallback = "N/A")
-    {
-        return AutomationSnapshotFormatter.Get(el, prop, fallback);
     }
 }
 

@@ -1070,6 +1070,10 @@ public sealed class McpPerformanceToolContractsTests
         => global::Program.McpPresentMonTools_RouteSnapshotCorrelation();
 
     [Fact]
+    public Task PresentMonProbeReportsSyntheticSnapshotFailures()
+        => global::Program.PresentMonProbe_ReportsSyntheticSnapshotFailures();
+
+    [Fact]
     public Task PerformanceTimelineToolExposesD3DP99StageTiming()
         => global::Program.McpPerformanceTimelineTool_ExposesD3DP99StageTiming();
 
@@ -1808,6 +1812,16 @@ static partial class Program
         AssertCommandRequest(requests[6], "SetOutputPath", ("outputPath", @"C:\captures"));
         AssertCommandRequest(requests[7], "SetDeviceAudioMode", ("mode", "analog"));
         AssertCommandRequest(requests[8], "SetAnalogAudioGain", ("gain", 42.5d));
+
+        var invalidModeResult = await InvokeMcpToolResultAsync(
+                pipelineTools,
+                "configure_audio_mode",
+                null,
+                null,
+                CancellationToken.None)
+            .ConfigureAwait(false);
+        AssertEqual(true, GetMcpToolResultIsError(invalidModeResult), "configure_audio_mode missing value is an MCP tool error");
+        AssertEqual("Audio mode is required. Expected hdmi or analog.", GetMcpToolResultText(invalidModeResult), "configure_audio_mode missing value message");
     }
 
     internal static async Task McpRecordingTools_RouteRecordingToggle()
@@ -4155,9 +4169,10 @@ static partial class Program
         AssertContains(rootText, "correlation: resolved");
         AssertContains(rootText, "private static async Task<PresentMonProbeCorrelation> TryResolvePreviewPresentCorrelationAsync(");
         AssertContains(rootText, "SendCommandAsync(AutomationCommandKind.GetSnapshot, cancellationToken: cancellationToken)");
-        AssertContains(rootText, "return PresentMonProbe.ReadPreviewCorrelation(snapshot);");
-        AssertContains(rootText, "catch (JsonException ex)");
-        AssertContains(rootText, "catch (IOException ex)");
+        AssertContains(rootText, "return PresentMonProbe.ResolvePreviewCorrelation(");
+        AssertContains(rootText, "PresentMon correlation unavailable: {message}");
+        AssertDoesNotContain(rootText, "catch (JsonException ex)");
+        AssertDoesNotContain(rootText, "catch (IOException ex)");
         AssertDoesNotContain(rootText, "new PresentMonProbeOptions");
         AssertDoesNotContain(rootText, "ExpectedSwapChainAddress =");
         AssertDoesNotContain(rootText, "AppPresentId = appPresentId");
@@ -4176,6 +4191,68 @@ static partial class Program
         AssertContains(probeText, "public readonly record struct PresentMonProbeCorrelation(");
         AssertContains(probeText, "public static PresentMonProbeOptions CreateOptions(");
         AssertContains(probeText, "public static PresentMonProbeCorrelation ReadPreviewCorrelation(JsonElement snapshot)");
+        AssertContains(probeText, "internal static PresentMonProbeCorrelation ResolvePreviewCorrelation(");
+        AssertContains(probeText, "GetSnapshot failed ({errorCode}): {message}");
+    }
+
+    internal static Task PresentMonProbe_ReportsSyntheticSnapshotFailures()
+    {
+        var probeType = RequireMcpType("Sussudio.Tools.PresentMonProbe");
+        var resolvePreviewCorrelation = probeType.GetMethod(
+                "ResolvePreviewCorrelation",
+                BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("PresentMonProbe.ResolvePreviewCorrelation was not found.");
+        var jsonDocumentType = resolvePreviewCorrelation.GetParameters()[0].ParameterType.Assembly.GetType("System.Text.Json.JsonDocument")
+            ?? throw new InvalidOperationException("The MCP System.Text.Json.JsonDocument type was not found.");
+        var parseJson = jsonDocumentType.GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .SingleOrDefault(method =>
+            {
+                var parameters = method.GetParameters();
+                return method.Name == "Parse" &&
+                       parameters.Length >= 1 &&
+                       parameters[0].ParameterType == typeof(string);
+            })
+            ?? throw new InvalidOperationException("The MCP JsonDocument.Parse(string) method was not found.");
+        var parseParameters = parseJson.GetParameters();
+        object ParseDocument(string json)
+        {
+            var arguments = parseParameters.Length == 1
+                ? new object?[] { json }
+                : new object?[] { json, Activator.CreateInstance(parseParameters[1].ParameterType) };
+            return parseJson.Invoke(null, arguments)
+                ?? throw new InvalidOperationException("The MCP JSON document was null.");
+        }
+
+        var successDocument = ParseDocument(PresentMonSnapshotJson("0xABCDEF", 42, 17, 1700000000000));
+        var successResponse = GetPublicProperty(successDocument, "RootElement")
+            ?? throw new InvalidOperationException("The MCP snapshot response root was null.");
+        var successCorrelation = resolvePreviewCorrelation.Invoke(
+                null,
+                new object?[] { successResponse, (Action<string>)(_ => { }) })
+            ?? throw new InvalidOperationException("PresentMon correlation result was null.");
+        ((IDisposable)successDocument).Dispose();
+        AssertEqual("0xABCDEF", GetPublicProperty(successCorrelation, "SwapChainAddress"), "PresentMon response swap-chain address");
+        AssertEqual(42L, GetPublicProperty(successCorrelation, "PresentId"), "PresentMon response present id");
+        AssertEqual(17L, GetPublicProperty(successCorrelation, "SourceSequenceNumber"), "PresentMon response source sequence");
+
+        var warnings = new List<string>();
+        var failureDocument = ParseDocument(
+            "{\"Success\":false,\"ErrorCode\":\"pipe-connect-failed\",\"Message\":\"automation pipe unavailable\"}");
+        var failureResponse = GetPublicProperty(failureDocument, "RootElement")
+            ?? throw new InvalidOperationException("The MCP failure response root was null.");
+        var failedCorrelation = resolvePreviewCorrelation.Invoke(
+                null,
+                new object?[] { failureResponse, (Action<string>)warnings.Add })
+            ?? throw new InvalidOperationException("PresentMon failure correlation result was null.");
+        ((IDisposable)failureDocument).Dispose();
+
+        AssertEqual(null, GetPublicProperty(failedCorrelation, "PresentId"), "failed PresentMon response has no present id");
+        AssertEqual(1, warnings.Count, "failed PresentMon response reports one warning");
+        AssertEqual(
+            "GetSnapshot failed (pipe-connect-failed): automation pipe unavailable",
+            warnings[0],
+            "failed PresentMon response includes error code and message");
+        return Task.CompletedTask;
     }
 
     private static void AssertPresentMonOptionsFallbackAndPrecedence()
@@ -4852,6 +4929,77 @@ static partial class Program
         var pipeClient = CreateMcpPipeClient(pipeName);
         var flashbackTools = RequireMcpType("McpServer.Tools.FlashbackTools");
 
+        var emptyActionResult = await InvokeMcpToolResultAsync(
+                flashbackTools,
+                "flashback_action",
+                null,
+                "",
+                null,
+                CancellationToken.None)
+            .ConfigureAwait(false);
+        AssertEqual(true, GetMcpToolResultIsError(emptyActionResult), "flashback_action missing value is an MCP tool error");
+        AssertEqual(
+            "Flashback action is required. Expected play, pause, go_live, seek, begin_scrub, update_scrub, end_scrub, set_in_point, set_out_point, or clear_in_out_points.",
+            GetMcpToolResultText(emptyActionResult),
+            "flashback_action missing value message");
+
+        var invalidActionResult = await InvokeMcpToolResultAsync(
+                flashbackTools,
+                "flashback_action",
+                null,
+                "invalid-action",
+                null,
+                CancellationToken.None)
+            .ConfigureAwait(false);
+        AssertEqual(true, GetMcpToolResultIsError(invalidActionResult), "flashback_action invalid value is an MCP tool error");
+        AssertEqual(
+            "Flashback action must be one of: play, pause, go_live, seek, begin_scrub, update_scrub, end_scrub, set_in_point, set_out_point, clear_in_out_points.",
+            GetMcpToolResultText(invalidActionResult),
+            "flashback_action invalid value message");
+
+        var missingPositionResult = await InvokeMcpToolResultAsync(
+                flashbackTools,
+                "flashback_action",
+                null,
+                "seek",
+                null,
+                CancellationToken.None)
+            .ConfigureAwait(false);
+        AssertEqual(true, GetMcpToolResultIsError(missingPositionResult), "flashback_action missing position is an MCP tool error");
+        AssertEqual(
+            "Flashback seek, begin_scrub, and update_scrub require positionMs.",
+            GetMcpToolResultText(missingPositionResult),
+            "flashback_action missing position message");
+
+        var invalidPositionResult = await InvokeMcpToolResultAsync(
+                flashbackTools,
+                "flashback_action",
+                null,
+                "seek",
+                double.NaN,
+                CancellationToken.None)
+            .ConfigureAwait(false);
+        AssertEqual(true, GetMcpToolResultIsError(invalidPositionResult), "flashback_action invalid position is an MCP tool error");
+        AssertContains(
+            GetMcpToolResultText(invalidPositionResult),
+            "Flashback positionMs must be finite, non-negative, and within TimeSpan range.");
+
+        var invalidExportSecondsResult = await InvokeMcpToolResultAsync(
+                flashbackTools,
+                "flashback_export",
+                null,
+                0d,
+                null,
+                false,
+                false,
+                CancellationToken.None)
+            .ConfigureAwait(false);
+        AssertEqual(true, GetMcpToolResultIsError(invalidExportSecondsResult), "flashback_export invalid seconds is an MCP tool error");
+        AssertEqual(
+            "Flashback export seconds must be finite, greater than zero, and within TimeSpan range.",
+            GetMcpToolResultText(invalidExportSecondsResult),
+            "flashback_export invalid seconds message");
+
         string result = string.Empty;
         var requests = await CapturePipeRequestsAsync(
                 pipeName,
@@ -4959,6 +5107,8 @@ static partial class Program
         AssertContains(flashbackToolsActionText, "!AutomationFlashbackValidation.ValidActionNames.Contains(normalizedAction)");
         AssertContains(flashbackToolsActionText, "Flashback action must be one of: play, pause, go_live, seek, begin_scrub, update_scrub, end_scrub, set_in_point, set_out_point, clear_in_out_points.");
         AssertContains(flashbackToolsActionText, "AutomationFlashbackValidation.RequiresPositionMs(normalizedAction) && !positionMs.HasValue");
+        AssertContains(flashbackToolsActionText, "return McpToolResultFactory.FromText(");
+        AssertContains(flashbackToolsActionText, "isError: true");
         AssertContains(flashbackToolsActionText, "Flashback seek, begin_scrub, and update_scrub require positionMs.");
         AssertContains(flashbackToolsActionText, "AutomationFlashbackValidation.ValidatePositionMs(positionMs.Value);");
         AssertContains(flashbackValidationText, "public static class AutomationFlashbackValidation");
@@ -4968,6 +5118,7 @@ static partial class Program
         AssertContains(flashbackValidationText, "Flashback positionMs must be finite, non-negative, and within TimeSpan range.");
         AssertContains(flashbackToolsExportText, "public static async Task<CallToolResult> flashback_export");
         AssertContains(flashbackToolsExportText, "if (!double.IsFinite(seconds) || seconds <= 0 || seconds > TimeSpan.MaxValue.TotalSeconds)");
+        AssertContains(flashbackToolsExportText, "return McpToolResultFactory.FromText(");
         AssertContains(flashbackToolsExportText, "Flashback export seconds must be finite, greater than zero, and within TimeSpan range.");
         AssertContains(flashbackToolsExportText, "AutomationSnapshotFormatter.Get(data, \"FailureKind\", string.Empty)");
         AssertContains(flashbackToolsExportText, "FailureKind: {failureKind}");
@@ -5097,6 +5248,12 @@ static partial class Program
         AssertContains(activeText, "Diagnosis: Data uses FULL range (0-255). 10.0% super-white, 5.0% super-black.");
         AssertContains(activeText, "== Raw MF Properties ==");
         AssertContains(activeText, "MF_MT_SUBTYPE = P010");
+
+        var previewInspectionSource = ReadRepoFile("tools/McpServer/Tools/PreviewInspectionTools.cs")
+            .Replace("\r\n", "\n");
+        AssertDoesNotContain(previewInspectionSource, "private static string Get(JsonElement el, string prop, string fallback = \"N/A\")");
+        AssertContains(previewInspectionSource, "AutomationSnapshotFormatter.Get(data, \"SessionActive\")");
+        AssertContains(previewInspectionSource, "AutomationSnapshotFormatter.Get(fmt, \"Summary\")");
     }
 
     internal static async Task McpVideoSourceProbeTool_FormatsProbeResponses()
@@ -5881,6 +6038,8 @@ static partial class Program
         AssertContains(commandHandlersRootSource, "HandleDiagnosticSessionAsync");
         AssertContains(commandHandlersRootSource, "HandlePresentMonAsync");
         AssertContains(commandHandlersRootSource, "TryResolvePreviewPresentCorrelationAsync");
+        AssertContains(commandHandlersRootSource, "PresentMonProbe.ResolvePreviewCorrelation(");
+        AssertContains(commandHandlersRootSource, "PresentMon correlation unavailable: {message}");
         AssertContains(commandHandlersRootSource, "PresentMonProbe.CreateOptions(");
         AssertContains(commandHandlersRootSource, "DiagnosticSessionRunner.RunAsync(");
 

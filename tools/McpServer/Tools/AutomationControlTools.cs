@@ -147,6 +147,11 @@ public static class PipelineSettingsTools
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        if (string.IsNullOrWhiteSpace(mode))
+        {
+            return McpToolResultFactory.FromText("Audio mode is required. Expected hdmi or analog.", isError: true);
+        }
+
         var payload = new Dictionary<string, object?> { [AutomationPayloadKeys.Mode] = mode.ToLowerInvariant() };
         return await ToolCommandFormatter.ExecuteAndFormatResultAsync(pipeClient, AutomationCommandKind.SetDeviceAudioMode, payload, cancellationToken: cancellationToken).ConfigureAwait(false);
     }
@@ -489,22 +494,22 @@ public static class FlashbackTools
         cancellationToken.ThrowIfCancellationRequested();
         if (string.IsNullOrWhiteSpace(action))
         {
-            throw new ArgumentException(
+            return McpToolResultFactory.FromText(
                 "Flashback action is required. Expected play, pause, go_live, seek, begin_scrub, update_scrub, end_scrub, set_in_point, set_out_point, or clear_in_out_points.",
-                nameof(action));
+                isError: true);
         }
 
         var normalizedAction = action.Replace("_", "-").ToLowerInvariant();
         if (!AutomationFlashbackValidation.ValidActionNames.Contains(normalizedAction))
         {
-            throw new ArgumentOutOfRangeException(
-                nameof(action),
-                "Flashback action must be one of: play, pause, go_live, seek, begin_scrub, update_scrub, end_scrub, set_in_point, set_out_point, clear_in_out_points.");
+            return McpToolResultFactory.FromText(
+                "Flashback action must be one of: play, pause, go_live, seek, begin_scrub, update_scrub, end_scrub, set_in_point, set_out_point, clear_in_out_points.",
+                isError: true);
         }
 
         if (AutomationFlashbackValidation.RequiresPositionMs(normalizedAction) && !positionMs.HasValue)
         {
-            throw new ArgumentException("Flashback seek, begin_scrub, and update_scrub require positionMs.", nameof(positionMs));
+            return McpToolResultFactory.FromText("Flashback seek, begin_scrub, and update_scrub require positionMs.", isError: true);
         }
 
         var payload = new Dictionary<string, object?>
@@ -514,7 +519,15 @@ public static class FlashbackTools
 
         if (positionMs.HasValue)
         {
-            AutomationFlashbackValidation.ValidatePositionMs(positionMs.Value);
+            try
+            {
+                AutomationFlashbackValidation.ValidatePositionMs(positionMs.Value);
+            }
+            catch (ArgumentOutOfRangeException ex)
+            {
+                return McpToolResultFactory.FromText(ex.Message, isError: true);
+            }
+
             payload[AutomationPayloadKeys.PositionMs] = positionMs.Value;
         }
 
@@ -539,7 +552,9 @@ public static class FlashbackTools
         cancellationToken.ThrowIfCancellationRequested();
         if (!double.IsFinite(seconds) || seconds <= 0 || seconds > TimeSpan.MaxValue.TotalSeconds)
         {
-            throw new ArgumentOutOfRangeException(nameof(seconds), "Flashback export seconds must be finite, greater than zero, and within TimeSpan range.");
+            return McpToolResultFactory.FromText(
+                "Flashback export seconds must be finite, greater than zero, and within TimeSpan range.",
+                isError: true);
         }
 
         outputPath ??= $"temp/flashback_export_{DateTime.Now:yyyyMMdd_HHmmss}.mp4";

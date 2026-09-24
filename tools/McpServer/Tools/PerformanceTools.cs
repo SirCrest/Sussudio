@@ -1,6 +1,5 @@
 using System.ComponentModel;
 using System.Globalization;
-using System.IO;
 using System.Text;
 using System.Text.Json;
 using Sussudio.Models;
@@ -842,26 +841,9 @@ public static class PresentMonTools
         PipeClient pipeClient,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var response = await pipeClient.SendCommandAsync(AutomationCommandKind.GetSnapshot, cancellationToken: cancellationToken).ConfigureAwait(false);
-            if (!AutomationSnapshotFormatter.IsSuccess(response) ||
-                !response.TryGetProperty("Snapshot", out var snapshot))
-            {
-                return default;
-            }
-
-            return PresentMonProbe.ReadPreviewCorrelation(snapshot);
-        }
-        catch (JsonException ex)
-        {
-            System.Diagnostics.Trace.TraceWarning($"GetExpectedSwapChainAsync: malformed snapshot JSON: {ex.Message}");
-            return default;
-        }
-        catch (IOException ex)
-        {
-            System.Diagnostics.Trace.TraceWarning($"GetExpectedSwapChainAsync: pipe IO failure: {ex.Message}");
-            return default;
-        }
+        var response = await pipeClient.SendCommandAsync(AutomationCommandKind.GetSnapshot, cancellationToken: cancellationToken).ConfigureAwait(false);
+        return PresentMonProbe.ResolvePreviewCorrelation(
+            response,
+            message => System.Diagnostics.Trace.TraceWarning($"PresentMon correlation unavailable: {message}"));
     }
 }
