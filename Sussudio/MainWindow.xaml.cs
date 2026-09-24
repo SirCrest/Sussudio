@@ -852,7 +852,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             DeviceAudioModeToggle = DeviceAudioModeToggle,
             AnalogAudioGainSlider = AnalogAudioGainSlider,
             ResetAudioMeterVisuals = ResetAudioMeterVisuals,
-            ApplyHdrToggleEnabledState = ApplyHdrToggleEnabledState,
+            ApplyHdrToggleEnabledState = () => _captureOptionPresentationController.ApplyHdrToggleEnabledState(),
             RefreshHdrHintText = RefreshHdrHintText,
             UpdateDeviceApplyButtonState = UpdateDeviceApplyButtonState,
             ApplyWindowTitle = ApplyWindowTitle,
@@ -953,7 +953,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             TrueHdrPreviewToggle = TrueHdrPreviewToggle,
             ApplyInitialDecoderCountSelection = () => _captureOptionPresentationController.ApplyInitialDecoderCountSelection(),
             ApplyBitrateVisibility = ApplyBitrateVisibility,
-            ApplyHdrToggleEnabledState = ApplyHdrToggleEnabledState,
+            ApplyHdrToggleEnabledState = () => _captureOptionPresentationController.ApplyHdrToggleEnabledState(),
             ApplyAudioClipVisibility = ApplyAudioClipVisibility,
             RefreshHdrHintText = RefreshHdrHintText,
             UpdateFpsTelemetryTooltip = UpdateFpsTelemetryTooltip,
@@ -1104,9 +1104,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
     private void UpdateFpsTelemetryTooltip()
         => _captureOptionPresentationController.UpdateFpsTelemetryTooltip();
-
-    private void ApplyHdrToggleEnabledState()
-        => _captureOptionPresentationController.ApplyHdrToggleEnabledState();
 
     private void ApplyBitrateVisibility()
         => _captureOptionPresentationController.ApplyBitrateVisibility();
@@ -1862,7 +1859,7 @@ private PreviewAudioFadeController _previewAudioFadeController = null!;
             SchedulePreviewStartupFailureStop = reason => _previewStartupSessionController.ScheduleFailureStop(reason),
             ShowStopPreviewButtonPresentation = () => _previewButtonPresentationController.ShowStopPreview(),
             ShowStartPreviewButtonPresentation = () => _previewButtonPresentationController.ShowStartPreview(),
-            ApplyHdrToggleEnabledState = ApplyHdrToggleEnabledState,
+            ApplyHdrToggleEnabledState = () => _captureOptionPresentationController.ApplyHdrToggleEnabledState(),
             StopPreviewRendererAsync = _previewRendererHostController.StopAsync,
             ResetPreviewStartupTracking = preserveReinitAnimation => _previewStartupSessionController.ResetStartupTracking(
                 keepRecoveryCount: false,

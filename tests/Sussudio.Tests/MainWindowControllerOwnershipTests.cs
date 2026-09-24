@@ -306,7 +306,7 @@ static partial class Program
         AssertContains(adapterText, "SettingsToggleButton,");
         AssertContains(adapterText, "FrameTimeOverlayToggle,");
         AssertContains(adapterText, "=> _controlBarAnimationController.AttachHoverAnimations();");
-        AssertContains(adapterText, "=> _controlBarAnimationController.EntranceButtons;");
+        AssertContains(adapterText, "GetEntranceButtons = () => _controlBarAnimationController.EntranceButtons,");
         AssertContains(mainWindowText, "InitializeControlBarAnimationController();");
         AssertContains(mainWindowText, "SetupButtonHoverAnimations();");
         AssertContains(launchEntranceShellText, "var buttons = _context.GetEntranceButtons();");

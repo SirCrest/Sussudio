@@ -7635,8 +7635,8 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(launchAdapterText, "private void InitializeSplashLoadingPhraseController()");
         AssertContains(launchAdapterText, "SplashLoadingTextA = SplashLoadingTextA,");
         AssertContains(launchAdapterText, "SplashLoadingTransformB = SplashLoadingTransformB,");
-        AssertContains(launchAdapterText, "=> _splashLoadingPhraseController.Start();");
-        AssertContains(launchAdapterText, "=> _splashLoadingPhraseController.Stop();");
+        AssertContains(launchAdapterText, "StartSplashLoadingPhrases = () => _splashLoadingPhraseController.Start(),");
+        AssertContains(launchAdapterText, "StopSplashLoadingPhrases = () => _splashLoadingPhraseController.Stop(),");
         AssertContains(mainWindowText, "InitializeSplashLoadingPhraseController();");
         AssertContains(launchEntranceText, "_context.StartSplashLoadingPhrases();");
         AssertContains(launchEntranceText, "_context.StopSplashLoadingPhrases();");
@@ -8210,8 +8210,8 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(captureOptionText, "=> _captureOptionPresentationController.RefreshHdrHintText();");
         AssertContains(captureOptionText, "private void UpdateFpsTelemetryTooltip()");
         AssertContains(captureOptionText, "=> _captureOptionPresentationController.UpdateFpsTelemetryTooltip();");
-        AssertContains(captureOptionText, "private void ApplyHdrToggleEnabledState()");
-        AssertContains(captureOptionText, "=> _captureOptionPresentationController.ApplyHdrToggleEnabledState();");
+        AssertContains(captureOptionText, "ApplyHdrToggleEnabledState = () => _captureOptionPresentationController.ApplyHdrToggleEnabledState(),");
+        AssertDoesNotContain(captureOptionText, "private void ApplyHdrToggleEnabledState()");
         AssertContains(captureOptionText, "private void ApplyBitrateVisibility()");
         AssertContains(captureOptionText, "=> _captureOptionPresentationController.ApplyBitrateVisibility();");
         AssertContains(captureOptionText, "private void ApplyAudioClipVisibility()");
