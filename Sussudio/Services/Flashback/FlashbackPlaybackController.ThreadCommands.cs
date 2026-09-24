@@ -138,7 +138,7 @@ internal sealed partial class FlashbackPlaybackController
         {
             SetLastCommandFailure(ex.GetType().Name + ":" + ex.Message);
             Logger.Log($"FLASHBACK_PLAYBACK_FATAL type={ex.GetType().Name} error='{ex.Message}'");
-            RestoreLiveForPlaybackThreadExit(worker, "thread_fatal");
+            RestoreLiveForPlaybackThreadExit(worker, "thread_fatal", isInvoluntaryLiveReturn: true);
         }
         finally
         {
@@ -323,7 +323,8 @@ internal sealed partial class FlashbackPlaybackController
 
     private void RestoreLiveForPlaybackThreadExit(
         PlaybackWorkerState worker,
-        string operation)
+        string operation,
+        bool isInvoluntaryLiveReturn = false)
     {
         ClearPrebufferedFrames(worker.PrebufferedFrames, operation);
         CleanupDecoder(ref worker.Decoder, ref worker.FileOpen);
@@ -331,7 +332,7 @@ internal sealed partial class FlashbackPlaybackController
         Interlocked.Exchange(ref _lastVideoPtsTicks, 0);
         RestoreLiveAudio();
         SafeResumePreviewSubmission(operation);
-        SetState(FlashbackPlaybackState.Live, operation);
+        SetState(FlashbackPlaybackState.Live, operation, isInvoluntaryLiveReturn);
     }
 
     private static void DisposePlaybackCtsBestEffort(CancellationTokenSource? cts, string operation)

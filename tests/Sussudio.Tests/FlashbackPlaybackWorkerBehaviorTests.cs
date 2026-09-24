@@ -62,7 +62,7 @@ public sealed class FlashbackPlaybackWorkerBehaviorTests
         Assert.False((bool)Field(session.Decoder, "_disposed")!);
         session.AssertCommandCompleted();
         // PlaybackThreadEntry owns this unwind after the command throws.
-        Invoke(session.Controller, "RestoreLiveForPlaybackThreadExit", session.Worker, "thread_cancelled");
+        Invoke(session.Controller, "RestoreLiveForPlaybackThreadExit", session.Worker, "thread_cancelled", false);
         Assert.Null(Field(session.Worker, "Decoder"));
         Assert.True((bool)Field(session.Decoder, "_disposed")!);
         Assert.Equal("Live", Read<object>(session.Controller, "State").ToString());

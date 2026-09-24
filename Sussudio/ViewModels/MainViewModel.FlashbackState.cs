@@ -22,14 +22,6 @@ public partial class MainViewModel
     private bool _suppressFlashbackSettingsUpdate;
     private static readonly int[] SupportedFlashbackBufferMinutes = { 1, 2, 5, 10, 15, 30 };
 
-    // UI health surfacing (F1-UI/F8-UI). Reasons in this set are voluntary
-    // transitions to Live and must not raise the involuntary snap-to-live
-    // notice: "" (default/no-reason SetState calls), "user" (explicit
-    // play/pause/seek/scrub/nudge user actions), "go_live"/"thread_stop"
-    // (playback thread exiting cleanly via GoLive or a normal stop).
-    private static readonly HashSet<string> FlashbackVoluntaryLiveReasons =
-        new(StringComparer.Ordinal) { "", "user", "go_live", "thread_stop" };
-
     private const string FlashbackSnapToLiveHealthMessage = "Returned to live — playback error.";
     private const string FlashbackDeadBackendHealthMessage = "Flashback is not running — use Restart Flashback.";
     private static readonly TimeSpan FlashbackHealthMessageClearDelay = TimeSpan.FromSeconds(5);
@@ -406,7 +398,7 @@ public partial class MainViewModel
     /// </summary>
     private void OnFlashbackPlaybackStateChanged(FlashbackPlaybackStateChange change)
     {
-        if (change.NewState != FlashbackPlaybackState.Live || FlashbackVoluntaryLiveReasons.Contains(change.Reason))
+        if (change.NewState != FlashbackPlaybackState.Live || !change.IsInvoluntaryLiveReturn)
         {
             return;
         }

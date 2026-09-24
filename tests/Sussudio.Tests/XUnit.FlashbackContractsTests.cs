@@ -3018,7 +3018,7 @@ static partial class Program
         AssertContains(rootText, "public bool IsInitialized => _initialized;");
         AssertContains(rootText, "public bool IsDisposed => _disposedFlag != 0;");
         AssertContains(rootText, "public string DecoderHwAccel => _decoderHwAccel;");
-        AssertContains(rootText, "private void SetState(FlashbackPlaybackState newState, string reason = \"\")");
+        AssertContains(rootText, "private void SetState(FlashbackPlaybackState newState, string reason = \"\", bool isInvoluntaryLiveReturn = false)");
         AssertContains(rootText, "private readonly FlashbackBufferManager _bufferManager;");
 
         return Task.CompletedTask;
@@ -3294,12 +3294,12 @@ static partial class Program
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_PLAYBACK_FILE_OPEN_ERROR path='{filePath}' type={ex.GetType().Name} error='{ex.Message}'\");");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_PLAYBACK_SEEK_ERROR type={ex.GetType().Name} error='{ex.Message}'\");");
         AssertContains(decodeErrorBlock, "RestoreLiveAfterPlaybackDecodeError(decoder, ref fileOpen);");
-        AssertContains(playbackFramesText, "private void RestoreLiveAfterPlaybackDecodeError(FlashbackDecoder decoder, ref bool fileOpen)\n        => RestoreLiveAfterDecoderPlaybackFailure(decoder, ref fileOpen, \"decode_error\", resumeRendering: false);");
-        AssertContains(playbackFramesText, "private void RestoreLiveAfterNearLiveSnap(FlashbackDecoder decoder, ref bool fileOpen)\n        => RestoreLiveAfterDecoderPlaybackFailure(decoder, ref fileOpen, \"near_live\", resumeRendering: false);");
+        AssertContains(playbackFramesText, "private void RestoreLiveAfterPlaybackDecodeError(FlashbackDecoder decoder, ref bool fileOpen)\n        => RestoreLiveAfterDecoderPlaybackFailure(decoder, ref fileOpen, \"decode_error\", resumeRendering: false, isInvoluntaryLiveReturn: true);");
+        AssertContains(playbackFramesText, "private void RestoreLiveAfterNearLiveSnap(FlashbackDecoder decoder, ref bool fileOpen)\n        => RestoreLiveAfterDecoderPlaybackFailure(decoder, ref fileOpen, \"near_live\", resumeRendering: false, isInvoluntaryLiveReturn: false);");
         AssertContains(playbackFramesText, "CloseDecoderFileBestEffort(decoder, operation);\n        fileOpen = false;\n        _currentOpenFilePath = null;\n        _decoderHwAccel = \"N/A\";");
         AssertContains(playbackFramesText, "ReleasePlaybackFrameForLive(operation);\n        RestoreLiveAudio();");
         AssertContains(playbackFramesText, "SafeResumePreviewSubmission(operation);");
-        AssertContains(playbackFramesText, "SetState(FlashbackPlaybackState.Live, operation);");
+        AssertContains(playbackFramesText, "SetState(FlashbackPlaybackState.Live, operation, isInvoluntaryLiveReturn);");
         AssertContains(sourceText, "private static void CloseDecoderFileBestEffort(FlashbackDecoder decoder, string operation)\n    {\n        try\n        {\n            if (decoder.IsOpen) decoder.CloseFile();\n        }\n        catch (Exception ex)\n        {\n            Logger.Log($\"FLASHBACK_PLAYBACK_DECODER_CLOSE_WARN op={operation} type={ex.GetType().Name} msg='{ex.Message}'\");\n        }\n    }");
         var ensureFileOpenBlock = ExtractTextBetween(
             sourceText,
@@ -3788,7 +3788,7 @@ static partial class Program
         AssertContains(sourceText, "return gotFrame;");
         AssertContains(sourceText, "private void RestoreLiveAfterSeekDisplayFailure(FlashbackDecoder decoder, ref bool fileOpen, string operation)");
         AssertContains(sourceText, "CloseDecoderFileBestEffort(decoder, operation);\n        fileOpen = false;\n        _currentOpenFilePath = null;\n        _decoderHwAccel = \"N/A\";\n        ReleasePlaybackFrameForLive(operation);");
-        AssertContains(sourceText, "ReleasePlaybackFrameForLive(operation);\n        RestoreLiveAudio();\n        SafeResumePreviewSubmission(operation);\n        if (resumeRendering)\n        {\n            SafeResumeRendering(operation);\n        }\n\n        SetState(FlashbackPlaybackState.Live, operation);");
+        AssertContains(sourceText, "ReleasePlaybackFrameForLive(operation);\n        RestoreLiveAudio();\n        SafeResumePreviewSubmission(operation);\n        if (resumeRendering)\n        {\n            SafeResumeRendering(operation);\n        }\n\n        SetState(FlashbackPlaybackState.Live, operation, isInvoluntaryLiveReturn);");
         AssertContains(sourceText, "RestoreLiveAfterSeekDisplayFailure(worker.Decoder, ref worker.FileOpen, \"seek_display_failed\");");
         AssertContains(sourceText, "RestoreLiveAfterSeekDisplayFailure(worker.Decoder, ref worker.FileOpen, \"begin_scrub_display_failed\");");
         AssertContains(sourceText, "RestoreLiveAfterSeekDisplayFailure(worker.Decoder, ref worker.FileOpen, \"scrub_update_display_failed\");");
@@ -4156,7 +4156,7 @@ static partial class Program
         AssertContains(playbackFrameOwnershipText, "RestoreLiveAudio();");
         AssertContains(playbackFrameOwnershipText, "SafeResumePreviewSubmission(operation);");
         AssertContains(playbackFrameOwnershipText, "SafeResumeRendering(operation);");
-        AssertContains(playbackFrameOwnershipText, "SetState(FlashbackPlaybackState.Live, operation);");
+        AssertContains(playbackFrameOwnershipText, "SetState(FlashbackPlaybackState.Live, operation, isInvoluntaryLiveReturn);");
         AssertDoesNotContain(rootText, "private DecodedVideoFrame _previousHeldFrame;");
         AssertDoesNotContain(rootText, "private bool _hasPreviousHeldFrame;");
         AssertEqual(
@@ -4278,7 +4278,7 @@ static partial class Program
         AssertDoesNotContain(sourceText, "frame.Width, frame.Height, frame.IsHdr, arrivalTick: 0");
         AssertContains(sourceText, "if (!TrySubmitAndHoldFrame(videoFrame, \"playback\"))\n            {\n                Logger.Log($\"FLASHBACK_PLAYBACK_SUBMIT_STOP pos_ms={(long)PlaybackPosition.TotalMilliseconds}\");\n                RestoreLiveAfterPlaybackSubmitFailure(decoder, ref fileOpen, \"playback_submit_failed\");\n                return false;\n            }");
         AssertContains(sourceText, "private void RestoreLiveAfterPlaybackSubmitFailure(FlashbackDecoder decoder, ref bool fileOpen, string operation)");
-        AssertContains(sourceText, "ReleasePlaybackFrameForLive(operation);\n        RestoreLiveAudio();\n        SafeResumePreviewSubmission(operation);\n        if (resumeRendering)\n        {\n            SafeResumeRendering(operation);\n        }\n\n        SetState(FlashbackPlaybackState.Live, operation);");
+        AssertContains(sourceText, "ReleasePlaybackFrameForLive(operation);\n        RestoreLiveAudio();\n        SafeResumePreviewSubmission(operation);\n        if (resumeRendering)\n        {\n            SafeResumeRendering(operation);\n        }\n\n        SetState(FlashbackPlaybackState.Live, operation, isInvoluntaryLiveReturn);");
         AssertDoesNotContain(sourceText, "ReleasePreviousHeldFrame();\n        try\n        {\n            SubmitFrame(frame);");
         AssertContains(sourceText, "SubmitFrame(previewSink, frame, previewPresentId, countForPresentCadence);\n            HoldSubmittedFrame(frame);");
         AssertDoesNotContain(sourceText, "ReleasePreviousHeldFrame();\n            SubmitFrame(videoFrame);");

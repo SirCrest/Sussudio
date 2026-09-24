@@ -523,9 +523,9 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
         Logger.Log("FLASHBACK_PLAYBACK_DISPOSED");
     }
 
-    public event Action<FlashbackPlaybackState, FlashbackPlaybackState, string>? StateChanged;
+    public event Action<FlashbackPlaybackState, FlashbackPlaybackState, string, bool>? StateChanged;
 
-    private void SetState(FlashbackPlaybackState newState, string reason = "")
+    private void SetState(FlashbackPlaybackState newState, string reason = "", bool isInvoluntaryLiveReturn = false)
     {
         var oldState = _state;
         if (oldState == newState) return;
@@ -533,7 +533,7 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
         Logger.Log($"FLASHBACK_PLAYBACK_STATE {oldState} -> {newState} reason='{reason}'");
         try
         {
-            StateChanged?.Invoke(oldState, newState, reason);
+            StateChanged?.Invoke(oldState, newState, reason, isInvoluntaryLiveReturn);
         }
         catch (Exception ex)
         {

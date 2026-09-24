@@ -51,7 +51,8 @@ internal readonly record struct FlashbackPlaybackStateChange(
     long BackendGeneration,
     FlashbackPlaybackState OldState,
     FlashbackPlaybackState NewState,
-    string Reason);
+    string Reason,
+    bool IsInvoluntaryLiveReturn);
 
 internal readonly record struct FlashbackPreviewBackendDisposalRequest(
     UnifiedVideoCapture? VideoCapture,
@@ -91,7 +92,7 @@ internal sealed class FlashbackBackendResources
     private readonly EventHandler<long> _onFrameEncodedHandler;
     private FlashbackPlaybackController? _playbackController;
     private FlashbackPlaybackController? _preWarmedPlaybackController;
-    private Action<FlashbackPlaybackState, FlashbackPlaybackState, string>? _playbackStateChangedHandler;
+    private Action<FlashbackPlaybackState, FlashbackPlaybackState, string, bool>? _playbackStateChangedHandler;
     private long _playbackControllerGeneration;
 
     public FlashbackBackendResources(
@@ -152,9 +153,9 @@ internal sealed class FlashbackBackendResources
             return;
         }
 
-        _playbackStateChangedHandler = (oldState, newState, reason) =>
+        _playbackStateChangedHandler = (oldState, newState, reason, isInvoluntaryLiveReturn) =>
         {
-            var change = new FlashbackPlaybackStateChange(generation, oldState, newState, reason);
+            var change = new FlashbackPlaybackStateChange(generation, oldState, newState, reason, isInvoluntaryLiveReturn);
             if (IsCurrentPlaybackStateChange(change))
             {
                 PlaybackStateChanged?.Invoke(change);

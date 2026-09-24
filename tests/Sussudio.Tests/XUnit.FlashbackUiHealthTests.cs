@@ -1,7 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
 using Xunit;
 
 namespace Sussudio.Tests;
@@ -38,32 +35,41 @@ public sealed class FlashbackUiHealthTests
     }
 
     [Fact]
-    public void InvoluntaryLiveReasonFilter_ExcludesExactlyTheVoluntarySet()
+    public void PlaybackStateEventCarriesExplicitLiveReturnClassification()
     {
-        var viewModelType = SussudioAssembly.Load().GetType(
-            "Sussudio.ViewModels.MainViewModel", throwOnError: true)!;
-        var reasonsField = viewModelType.GetField(
-            "FlashbackVoluntaryLiveReasons",
-            BindingFlags.Static | BindingFlags.NonPublic);
+        var controller = RuntimeContractSource.ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs");
+        Assert.Contains("Action<FlashbackPlaybackState, FlashbackPlaybackState, string, bool>? StateChanged", controller);
 
-        var reasons = Assert.IsAssignableFrom<ISet<string>>(reasonsField?.GetValue(null));
-        Assert.Equal(
-            new[] { "", "go_live", "thread_stop", "user" },
-            reasons.OrderBy(reason => reason, StringComparer.Ordinal));
+        var backend = RuntimeContractSource.ReadRepoFile("Sussudio/Services/Capture/FlashbackBackendResources.cs");
+        Assert.Contains("bool IsInvoluntaryLiveReturn", backend);
+        Assert.Contains("new FlashbackPlaybackStateChange(generation, oldState, newState, reason, isInvoluntaryLiveReturn)", backend);
     }
 
     [Fact]
-    public void OnFlashbackPlaybackStateChanged_SkipsVoluntaryReasons_AndMarshalsToDispatcher()
+    public void OnFlashbackPlaybackStateChanged_UsesExplicitClassification_AndMarshalsToDispatcher()
     {
         var source = ViewModelSource();
         var method = global::Program.ExtractDeclaredMemberCode(source, "private void OnFlashbackPlaybackStateChanged(");
-        Assert.Contains("FlashbackVoluntaryLiveReasons.Contains(change.Reason)", method);
+        Assert.Contains("!change.IsInvoluntaryLiveReturn", method);
         Assert.Contains("_dispatcherQueue.TryEnqueue(", method);
         Assert.Contains("FlashbackSnapToLiveHealthMessage", method);
         Assert.True(method.IndexOf("IsCurrentFlashbackPlaybackStateChange(change)", StringComparison.Ordinal) >
             method.IndexOf("_dispatcherQueue.TryEnqueue(", StringComparison.Ordinal));
         Assert.Contains("Volatile.Read(ref _disposeState) != 0", method);
         Assert.Contains("FlashbackHealthMessage == FlashbackDeadBackendHealthMessage", method);
+    }
+
+    [Fact]
+    public void PlaybackFailureAndNearLiveSnapSetDifferentClassifications()
+    {
+        var frames = RuntimeContractSource.ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs");
+        Assert.Contains("operation, resumeRendering: true, isInvoluntaryLiveReturn: true);", frames);
+        Assert.Contains("\"decode_error\", resumeRendering: false, isInvoluntaryLiveReturn: true);", frames);
+        Assert.Contains("\"near_live\", resumeRendering: false, isInvoluntaryLiveReturn: false);", frames);
+        Assert.Contains("SetState(FlashbackPlaybackState.Live, operation, isInvoluntaryLiveReturn);", frames);
+
+        var threadCommands = RuntimeContractSource.ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs");
+        Assert.Contains("RestoreLiveForPlaybackThreadExit(worker, \"thread_fatal\", isInvoluntaryLiveReturn: true);", threadCommands);
     }
 
     [Fact]
