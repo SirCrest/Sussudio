@@ -210,16 +210,20 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     {
         _propertyChangedRouter = new MainWindowPropertyChangedRouter(new MainWindowPropertyChangedRouterContext
         {
-            TryHandleCaptureSelection = TryHandleCaptureSelectionPropertyChanged,
+            TryHandleCaptureSelection = propertyName => _captureSelectionBindingController.TryHandlePropertyChanged(propertyName),
             TryHandleStatusStrip = TryHandleStatusStripPropertyChanged,
-            TryHandlePreviewAsync = TryHandlePreviewPropertyChangedAsync,
-            TryHandleRecording = TryHandleRecordingPropertyChanged,
-            TryHandleOutput = TryHandleOutputPropertyChanged,
-            TryHandleCaptureOption = TryHandleCaptureOptionPropertyChanged,
-            TryHandleAudio = TryHandleAudioPropertyChanged,
-            TryHandleShell = TryHandleShellPropertyChanged,
-            TryHandleLiveSignal = TryHandleLiveSignalPropertyChanged,
-            TryHandleFlashback = TryHandleFlashbackPropertyChanged
+            TryHandlePreviewAsync = propertyName => _previewLifecycleEventController.TryHandlePropertyChangedAsync(propertyName),
+            TryHandleRecording = propertyName => _recordingStatePresentationController.TryHandlePropertyChanged(propertyName),
+            TryHandleOutput = propertyName => _outputPathController.TryHandlePropertyChanged(propertyName),
+            TryHandleCaptureOption = propertyName => _captureOptionBindingController.TryHandlePropertyChanged(propertyName),
+            TryHandleAudio = propertyName => _audioControlPresentationController.TryHandlePropertyChanged(propertyName),
+            TryHandleShell = propertyName => _shellPropertyChangedController.TryHandlePropertyChanged(propertyName),
+            TryHandleLiveSignal = propertyName => _liveSignalInfoController.TryHandlePropertyChanged(
+                propertyName,
+                ViewModel.LiveResolution,
+                ViewModel.LiveFrameRate,
+                ViewModel.LivePixelFormat),
+            TryHandleFlashback = propertyName => _flashbackPropertyChangedController.TryHandlePropertyChanged(propertyName)
         });
     }
 
@@ -474,9 +478,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         });
     }
 
-    private bool TryHandleFlashbackPropertyChanged(string propertyName)
-        => _flashbackPropertyChangedController.TryHandlePropertyChanged(propertyName);
-
     private void InitializeFlashbackHealthPresentationController()
     {
         _flashbackHealthPresentationController = new FlashbackHealthPresentationController(
@@ -710,9 +711,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
     private void AttachDeviceAudioGainAndMeterBindings()
         => _audioControlBindingController.AttachDeviceAudioGainAndMeterBindings();
-
-    private bool TryHandleAudioPropertyChanged(string propertyName)
-        => _audioControlPresentationController.TryHandlePropertyChanged(propertyName);
 
     private void InitializeAudioControlPresentationController()
     {
@@ -975,9 +973,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private void AttachCaptureSelectionBindings()
         => _captureSelectionBindingController.AttachCollectionBindings();
 
-    private bool TryHandleCaptureSelectionPropertyChanged(string? propertyName)
-        => _captureSelectionBindingController.TryHandlePropertyChanged(propertyName);
-
     private void AttachDeviceSelectionChangedBinding()
         => _captureSelectionBindingController.AttachDeviceSelectionChangedBinding();
 
@@ -1041,14 +1036,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private void HandleTrueHdrPreviewEnabledChanged()
         => _captureOptionBindingController.HandleTrueHdrPreviewEnabledChanged();
 
-    private bool TryHandleCaptureOptionPropertyChanged(string propertyName)
-        => _captureOptionBindingController.TryHandlePropertyChanged(propertyName);
-
     private Task ToggleRecordingFromButtonAsync()
         => _recordingButtonActionController.ToggleRecordingAsync();
-
-    private bool TryHandleRecordingPropertyChanged(string propertyName)
-        => _recordingStatePresentationController.TryHandlePropertyChanged(propertyName);
 
     private void ApplyInitialRecordingStatePresentation()
         => _recordingStatePresentationController.HandleFfmpegMissingChanged();
@@ -1103,9 +1092,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     {
         _ = RunUiEventHandlerAsync(() => CapturePreviewScreenshotAsync(), nameof(ScreenshotButton_Click));
     }
-
-    private bool TryHandleOutputPropertyChanged(string propertyName)
-        => _outputPathController.TryHandlePropertyChanged(propertyName);
 
     private void UpdateDecoderCountVisibility()
         => _captureOptionPresentationController.UpdateDecoderCountVisibility();
@@ -1497,9 +1483,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         });
     }
 
-    private bool TryHandleShellPropertyChanged(string propertyName)
-        => _shellPropertyChangedController.TryHandlePropertyChanged(propertyName);
-
     private void InitializeStatsOverlayCompositionController()
     {
         _statsOverlayCompositionController = new StatsOverlayCompositionController(new StatsOverlayCompositionControllerContext
@@ -1700,13 +1683,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
     private void StopLiveSignalInfoTimers()
         => _liveSignalInfoController.StopTimers();
-
-    private bool TryHandleLiveSignalPropertyChanged(string propertyName)
-        => _liveSignalInfoController.TryHandlePropertyChanged(
-            propertyName,
-            ViewModel.LiveResolution,
-            ViewModel.LiveFrameRate,
-            ViewModel.LivePixelFormat);
 
     private bool TryHandleStatusStripPropertyChanged(string? propertyName)
         => _statusStripPresentationController.TryHandlePropertyChanged(
@@ -2014,9 +1990,6 @@ private PreviewAudioFadeController _previewAudioFadeController = null!;
 
     private void SetPreviewStopRequestedByUser(bool value)
         => _previewLifecycleEventController.SetStopRequestedByUser(value);
-
-    private Task<bool> TryHandlePreviewPropertyChangedAsync(string propertyName)
-        => _previewLifecycleEventController.TryHandlePropertyChangedAsync(propertyName);
 
     private void ViewModel_PreviewStartRequested(object? sender, EventArgs e)
         => _previewLifecycleEventController.HandlePreviewStartRequested();

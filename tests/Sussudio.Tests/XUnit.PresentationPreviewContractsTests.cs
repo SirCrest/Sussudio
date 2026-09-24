@@ -3533,7 +3533,6 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
         var previewPropertyChangedText = ReadMainWindowPropertyChangedPreviewAdapterSource();
-        var previewPropertyChangedHandler = ExtractMemberCode(previewPropertyChangedText, "TryHandlePreviewPropertyChangedAsync");
         var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs")
             .Replace("\r\n", "\n");
         var previewReinitText = ReadMainWindowPreviewTransitionsAdapterSource();
@@ -3560,8 +3559,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(previewFadeInControllerText, "private DispatcherQueueTimer? _timer;");
         AssertContains(previewFadeInControllerText, "public void Schedule()");
         AssertContains(previewFadeInControllerText, "public void Stop()");
-        AssertContains(propertyChangedText, "TryHandlePreviewAsync = TryHandlePreviewPropertyChangedAsync,");
-        AssertContains(previewPropertyChangedText, "_previewLifecycleEventController.TryHandlePropertyChangedAsync(propertyName);");
+        AssertContains(propertyChangedText, "TryHandlePreviewAsync = propertyName => _previewLifecycleEventController.TryHandlePropertyChangedAsync(propertyName),");
         AssertContains(previewPropertyChangedText, "_previewLifecycleEventController.HandlePreviewStartRequested();");
         AssertContains(previewPropertyChangedText, "_previewLifecycleEventController.HandlePreviewStopRequested();");
         AssertContains(previewPropertyChangedText, "private PreviewLifecycleEventController _previewLifecycleEventController = null!;");
@@ -3573,9 +3571,6 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(previewLifecycleControllerText, "_context.ShowStopPreviewButtonPresentation();");
         AssertContains(previewLifecycleControllerText, "_context.ShowStartPreviewButtonPresentation();");
         AssertContains(previewLifecycleControllerText, "_context.ApplyHdrToggleEnabledState();");
-        AssertDoesNotContain(previewPropertyChangedHandler, "ViewModel_PreviewReinitRequested(");
-        AssertDoesNotContain(previewPropertyChangedHandler, "ViewModel_PreviewRendererStopRequested(");
-        AssertDoesNotContain(previewPropertyChangedHandler, "HandlePreviewReinitializingChanged(");
         AssertDoesNotContain(previewReinitText, "renderer.StopRenderThread();");
 
         return Task.CompletedTask;
@@ -3586,8 +3581,6 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         var previewAudioFadeControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs")
             .Replace("\r\n", "\n");
         var previewReinitText = ReadMainWindowPreviewTransitionsAdapterSource();
-        var previewPropertyChangedText = ReadMainWindowPropertyChangedPreviewAdapterSource();
-        var previewPropertyChangedHandler = ExtractMemberCode(previewPropertyChangedText, "TryHandlePreviewPropertyChangedAsync");
         var previewVolumeTransitionText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs")
             .Replace("\r\n", "\n");
         var audioVolumeTransitionText = ReadRepoFile("Sussudio/Controllers/ViewModel/PreviewAudioTransitionControllers.cs")
@@ -3624,7 +3617,6 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertOccursBefore(stopPreview, "await _context.RampPreviewVolumeDownForStopAsync(cancellationToken)", "_context.RaisePreviewStopRequested();");
         AssertOccursBefore(stopPreview, "await _context.RampPreviewVolumeDownForStopAsync(cancellationToken)", "await _context.SessionCoordinator.StopAudioPreviewAsync(cancellationToken);");
 
-        AssertDoesNotContain(previewPropertyChangedHandler, "ViewModel_PreviewRendererStopRequested(");
         var previewReinitStop = ExtractMemberCode(previewReinitText, "ViewModel_PreviewRendererStopRequested");
         AssertContains(previewReinitStop, "=> _previewRendererHostController.StopRendererForReinitTeardownAsync();");
         AssertDoesNotContain(previewReinitStop, "renderer.StopRenderThread();");
@@ -3719,7 +3711,6 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
             .Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
-        var previewPropertyChangedText = ReadMainWindowPropertyChangedPreviewAdapterSource();
         var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs")
             .Replace("\r\n", "\n");
         var startupText = ReadMainWindowShellChromeAdapterSource();
@@ -3728,8 +3719,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         var xamlText = ReadRepoFile("Sussudio/MainWindow.xaml")
             .Replace("\r\n", "\n");
 
-        AssertContains(propertyChangedText, "TryHandlePreviewAsync = TryHandlePreviewPropertyChangedAsync,");
-        AssertContains(previewPropertyChangedText, "_previewLifecycleEventController.TryHandlePropertyChangedAsync(propertyName);");
+        AssertContains(propertyChangedText, "TryHandlePreviewAsync = propertyName => _previewLifecycleEventController.TryHandlePropertyChangedAsync(propertyName),");
         AssertContains(previewLifecycleControllerText, "await HandlePreviewingChangedAsync();");
 
         var previewStartRequested = ExtractMemberCode(previewLifecycleControllerText, "HandlePreviewStartRequested");
@@ -5741,8 +5731,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         var mainWindowText = ReadMainWindowCompositionSource();
 
         AssertContains(mainViewModelStateText, "IsAudioPreviewActive");
-        AssertContains(propertyChangedText, "TryHandleAudio = TryHandleAudioPropertyChanged,");
-        AssertContains(audioPropertyChangedText, "=> _audioControlPresentationController.TryHandlePropertyChanged(propertyName);");
+        AssertContains(propertyChangedText, "TryHandleAudio = propertyName => _audioControlPresentationController.TryHandlePropertyChanged(propertyName),");
         AssertContains(audioControlPresentationControllerText, "case nameof(MainViewModel.IsAudioPreviewActive):");
         AssertContains(audioControlPresentationControllerText, "HandleAudioPreviewActiveChanged();");
         AssertContains(audioControlPresentationControllerText, "_context.SetAudioMeterMonitoringState(_context.ViewModel.IsAudioPreviewActive);");
@@ -7981,7 +7970,6 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
             "internal sealed class CaptureSelectionBindingController",
             "internal static class CaptureComboBoxSelectionNormalizer");
         var captureOptionBindingsWithoutVideoFormat = captureOptionBindingsText.Replace("VideoFormatComboBox.SelectionChanged +=", string.Empty);
-        var captureOptionPropertyChangedMethod = ExtractMemberCode(captureOptionBindingsText, "TryHandleCaptureOptionPropertyChanged");
 
         AssertContains(captureOptionBindingsText, "private CaptureOptionBindingController _captureOptionBindingController = null!;");
         AssertContains(captureOptionBindingsText, "private void InitializeCaptureOptionBindingController()");
@@ -8009,8 +7997,6 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(captureOptionBindingsText, "=> _captureOptionBindingController.HandleHdrEnabledChanged();");
         AssertContains(captureOptionBindingsText, "private void HandleTrueHdrPreviewEnabledChanged()");
         AssertContains(captureOptionBindingsText, "=> _captureOptionBindingController.HandleTrueHdrPreviewEnabledChanged();");
-        AssertContains(captureOptionBindingsText, "private bool TryHandleCaptureOptionPropertyChanged(string propertyName)");
-        AssertContains(captureOptionPropertyChangedMethod, "=> _captureOptionBindingController.TryHandlePropertyChanged(propertyName);");
         AssertContains(captureOptionBindingsText, "private void AttachRecordingOptionBindings()");
         AssertContains(captureOptionBindingsText, "=> _captureOptionBindingController.AttachRecordingOptionBindings();");
         AssertContains(mainWindowText, "InitializeCaptureOptionBindingController();");
@@ -8139,17 +8125,9 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertDoesNotContain(captureOptionBindingsText, "QualityComboBox.SelectionChanged +=");
         AssertDoesNotContain(captureOptionBindingsText, "PresetComboBox.SelectionChanged +=");
         AssertDoesNotContain(captureOptionBindingsText, "SplitEncodeComboBox.SelectionChanged +=");
-        AssertDoesNotContain(captureOptionPropertyChangedMethod, "HandleCustomBitratePropertyChanged();");
-        AssertDoesNotContain(captureOptionPropertyChangedMethod, "HandleHdrEnabledChanged();");
-        AssertDoesNotContain(captureOptionPropertyChangedMethod, "HandleTrueHdrPreviewEnabledChanged();");
-        AssertDoesNotContain(captureOptionPropertyChangedMethod, "HandleShowAllCaptureOptionsChanged();");
-        AssertDoesNotContain(captureOptionPropertyChangedMethod, "HdrToggle.IsChecked = ViewModel.IsHdrEnabled;");
-        AssertDoesNotContain(captureOptionPropertyChangedMethod, "TrueHdrPreviewToggle.IsChecked = ViewModel.IsTrueHdrPreviewEnabled;");
-        AssertDoesNotContain(captureOptionPropertyChangedMethod, "_previewRendererHostController.SetHdrPassthroughEnabled(ViewModel.IsTrueHdrPreviewEnabled);");
-        AssertDoesNotContain(captureOptionPropertyChangedMethod, "ShowAllCaptureOptionsToggle.IsChecked = ViewModel.ShowAllCaptureOptions;");
         AssertDoesNotContain(propertyChangedText, "CustomBitrateNumberBox.Value");
         AssertDoesNotContain(propertyChangedText, "Math.Abs(CustomBitrateNumberBox.Value - ViewModel.CustomBitrateMbps) > 0.01");
-        AssertContains(propertyChangedText, "TryHandleCaptureOption = TryHandleCaptureOptionPropertyChanged,");
+        AssertContains(propertyChangedText, "TryHandleCaptureOption = propertyName => _captureOptionBindingController.TryHandlePropertyChanged(propertyName),");
         AssertDoesNotContain(bindingsText, "ResolutionComboBox.SelectionChanged +=");
         AssertDoesNotContain(bindingsText, "FrameRateComboBox.SelectionChanged +=");
         AssertDoesNotContain(bindingsText, "FormatComboBox.SelectionChanged +=");
@@ -8219,9 +8197,6 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
 
         var tooltipFormatterText = controllerText[tooltipFormatterStart..];
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var captureOptionBindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var captureOptionPropertyChangedMethod = ExtractMemberCode(captureOptionBindingsText, "TryHandleCaptureOptionPropertyChanged");
-        var outputPathDisplayText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
 
         AssertContains(captureOptionText, "private CaptureOptionPresentationController _captureOptionPresentationController = null!;");
         AssertContains(captureOptionText, "private void InitializeCaptureOptionPresentationController()");
@@ -8283,16 +8258,8 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Capture", "CaptureOptionPresentationController.cs")),
             "capture option presentation policy and controller folded into CaptureBindingControllers.cs");
-        AssertContains(propertyChangedText, "TryHandleOutput = TryHandleOutputPropertyChanged,");
-        AssertContains(propertyChangedText, "TryHandleCaptureOption = TryHandleCaptureOptionPropertyChanged,");
-        AssertContains(outputPathDisplayText, "=> _outputPathController.TryHandlePropertyChanged(propertyName);");
-        AssertContains(captureOptionBindingsText, "private bool TryHandleCaptureOptionPropertyChanged(string propertyName)");
-        AssertContains(captureOptionPropertyChangedMethod, "=> _captureOptionBindingController.TryHandlePropertyChanged(propertyName);");
-        AssertDoesNotContain(captureOptionPropertyChangedMethod, "ApplyAudioClipVisibility();");
-        AssertDoesNotContain(captureOptionPropertyChangedMethod, "ApplyHdrToggleEnabledState();");
-        AssertDoesNotContain(captureOptionPropertyChangedMethod, "RefreshHdrHintText();");
-        AssertDoesNotContain(captureOptionPropertyChangedMethod, "UpdateFpsTelemetryTooltip();");
-        AssertDoesNotContain(captureOptionPropertyChangedMethod, "ApplyBitrateVisibility();");
+        AssertContains(propertyChangedText, "TryHandleOutput = propertyName => _outputPathController.TryHandlePropertyChanged(propertyName),");
+        AssertContains(propertyChangedText, "TryHandleCaptureOption = propertyName => _captureOptionBindingController.TryHandlePropertyChanged(propertyName),");
         AssertDoesNotContain(setupBindingsText, "private void UpdateDecoderCountVisibility()");
         AssertDoesNotContain(setupBindingsText, "private void DecoderCountComboBox_SelectionChanged(");
         AssertDoesNotContain(setupBindingsText, "private void RefreshHdrHintText()");
@@ -8480,14 +8447,12 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(adapterText, "private void HandleAvailableSplitEncodeModesPropertyChanged()");
         AssertContains(adapterText, "=> _captureSelectionBindingController.HandleAvailableSplitEncodeModesPropertyChanged();");
         AssertContains(adapterText, "private void UpdateDeviceApplyButtonState()");
-        AssertContains(adapterText, "private bool TryHandleCaptureSelectionPropertyChanged(string? propertyName)");
-        AssertContains(adapterText, "=> _captureSelectionBindingController.TryHandlePropertyChanged(propertyName);");
         AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.CaptureSelectionBindings.Composition.cs")), "MainWindow capture selection adapter folded into MainWindow.xaml.cs");
 
         AssertContains(mainWindowText, "InitializeCaptureSelectionBindingController();");
         AssertContains(bindingsText, "AttachCaptureSelectionBindings();");
         AssertContains(bindingsText, "AttachDeviceSelectionChangedBinding();");
-        AssertContains(propertyChangedText, "TryHandleCaptureSelection = TryHandleCaptureSelectionPropertyChanged,");
+        AssertContains(propertyChangedText, "TryHandleCaptureSelection = propertyName => _captureSelectionBindingController.TryHandlePropertyChanged(propertyName),");
 
         AssertContains(controllerText, "internal sealed class CaptureSelectionBindingController");
         AssertContains(controllerText, "private readonly CaptureSelectionBindingControllerContext _context;");
@@ -8637,7 +8602,7 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(propertyChangesText, "HandleAvailableSplitEncodeModesPropertyChanged();");
         AssertContains(propertyChangesText, "EnsureSplitEncodeModeSelection();");
 
-        AssertContains(adapterText, "=> _captureSelectionBindingController.TryHandlePropertyChanged(propertyName);");
+        AssertContains(propertyChangedText, "TryHandleCaptureSelection = propertyName => _captureSelectionBindingController.TryHandlePropertyChanged(propertyName),");
         AssertDoesNotContain(propertyChangedRouteText, "HandleSelectedDevicePropertyChanged();");
         AssertDoesNotContain(propertyChangedRouteText, "HandleAvailableResolutionsPropertyChanged();");
         AssertDoesNotContain(propertyChangedRouteText, "HandleAvailableFrameRatesPropertyChanged();");
