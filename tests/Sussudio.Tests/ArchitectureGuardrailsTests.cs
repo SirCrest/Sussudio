@@ -1270,14 +1270,6 @@ static partial class Program
 
         var serviceContractsText = ReadRepoFile("Sussudio/Services/Contracts/ServiceContracts.cs");
         AssertContains(serviceContractsText, "internal sealed class PooledVideoFrameLease : IDisposable");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Contracts", "PooledVideoFrameLease.cs")),
-            "pooled-frame leases live with the pooled frame owner");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Contracts", "PooledVideoFrame.cs")),
-            "pooled-frame ownership types live with ServiceContracts");
 
         AssertContains(serviceContractsText, "public interface IAutomationWindowControl");
         AssertContains(serviceContractsText, "internal interface IPreviewFrameSink");
@@ -1285,26 +1277,6 @@ static partial class Program
         AssertContains(sourceTelemetryProviderText, "public interface ISourceSignalTelemetryProvider");
         AssertContains(sourceTelemetryProviderText, "namespace Sussudio.Models");
         AssertContains(sourceTelemetryProviderText, "public sealed record SourceSignalTelemetrySnapshot");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "Models", "Telemetry", "SourceSignalTelemetrySnapshot.cs")),
-            "source telemetry DTOs live with the probe-linked telemetry provider contract");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Contracts", "RecordingContracts.cs")),
-            "recording service contracts live with ServiceContracts");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Contracts", "AutomationInterfaces.cs")),
-            "automation service interfaces live with ServiceContracts");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Contracts", "IPreviewFrameSink.cs")),
-            "preview sink service interface lives with ServiceContracts");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Contracts", "ServiceInterfaces.cs")),
-            "app service contract interfaces live with ServiceContracts");
 
         AssertContains(agentMapText, "separate from `Sussudio.Automation.Contracts` wire/protocol contracts");
     }
@@ -1335,18 +1307,6 @@ static partial class Program
             var contractPath = Path.Combine(repoRoot, "Sussudio.Automation.Contracts", contractFile);
             AssertEqual(true, File.Exists(contractPath), $"{contractFile} contract source exists");
             AssertContains(File.ReadAllText(contractPath), "namespace Sussudio.Tools");
-            AssertEqual(
-                false,
-                File.Exists(Path.Combine(repoRoot, "tools", "Common", contractFile)),
-                $"tools/Common must not own {contractFile}");
-            AssertEqual(
-                false,
-                File.Exists(Path.Combine(repoRoot, "tools", "Common", "AutomationPipeClient", contractFile)),
-                $"tools/Common/AutomationPipeClient must not own {contractFile}");
-            AssertEqual(
-                false,
-                File.Exists(Path.Combine(repoRoot, "Sussudio", "Models", "Automation", contractFile)),
-                $"app project must not own {contractFile}");
         }
 
         var catalogText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio.Automation.Contracts", "AutomationCommandCatalog.cs"));
@@ -1354,18 +1314,6 @@ static partial class Program
         AssertContains(catalogText, "public enum AutomationCommandKind");
         AssertContains(catalogText, "public static class AutomationCommandCatalog");
         AssertContains(catalogText, "MAINTAINERS - STRICT ORDERING RULES");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "tools", "Common", "AutomationCommandKind.cs")),
-            "tools/Common must not own AutomationCommandKind");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "tools", "Common", "AutomationPipeClient", "AutomationCommandKind.cs")),
-            "tools/Common/AutomationPipeClient must not own AutomationCommandKind");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "Models", "Automation", "AutomationCommandKind.cs")),
-            "app project must not own AutomationCommandKind");
 
         var appIncludes = ReadCompileIncludes(Path.Combine(repoRoot, "Sussudio", "Sussudio.csproj"));
         var appReferences = ReadProjectReferences(Path.Combine(repoRoot, "Sussudio", "Sussudio.csproj"));
@@ -1396,18 +1344,6 @@ static partial class Program
         AssertContains(protocolText, "public static class AutomationSyntheticErrorResponse");
         AssertContains(protocolText, "internal static class AutomationPipeClient");
         AssertContains(protocolText, "internal static class AutomationCommandTransport");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio.Automation.Contracts", "AutomationPipeClientModels.cs")),
-            "pipe client handoff/error models stay folded into AutomationPipeProtocol.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "tools", "Common", "AutomationPipeClient", "AutomationPipeClient.cs")),
-            "tools/Common/AutomationPipeClient must not own AutomationPipeClient.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "tools", "Common", "AutomationPipeClient", "AutomationPipeClient.Models.cs")),
-            "tools/Common/AutomationPipeClient must not own AutomationPipeClient.Models.cs");
         var contractsProjectText = File.ReadAllText(automationContractsProject);
         AssertContains(contractsProjectText, "<_Parameter1>AutomationClient</_Parameter1>");
         AssertContains(contractsProjectText, "<_Parameter1>ssctl</_Parameter1>");
@@ -1967,10 +1903,6 @@ static partial class Program
         AssertContains(nativeXuLocatorText, "NativeXuInterfacePath = interfacePath");
         AssertContains(nativeXuLocatorText, "matches.Length > 1");
         AssertDoesNotContain(nativeXuLocatorText, "return firstCandidate");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "NativeXuProbeDeviceLocator.cs")),
-            "NativeXu probe device lookup lives with top-level probe command routing");
 
         foreach (var file in EnumerateSourceFiles(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe"), SearchOption.AllDirectories))
         {
@@ -2023,14 +1955,6 @@ static partial class Program
         AssertContains(probeProgramText, "public static async Task<int> RunServiceSmokeAsync");
         AssertContains(probeProgramText, "ReadServiceStateAsync");
         AssertContains(probeProgramText, "Service payload snapshot");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.Models.cs")),
-            "old NativeXu probe model bucket removed");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.AtCommands.cs")),
-            "NativeXu direct AT probe commands live with top-level probe command routing");
         AssertContains(probeProgramText, "static class NativeXuProbeAtCommands");
         AssertContains(probeProgramText, "public static async Task<int> RunAtReadAsync");
         AssertContains(probeProgramText, "public static async Task<int> RunAtWriteAsync");
@@ -2075,18 +1999,6 @@ static partial class Program
         AssertContains(probeDefaultExperimentText, "var baselineAdcGainValue = BitConverter.ToInt32(PadToFourBytes(baselineAdcGain), 0);");
         AssertContains(probeDefaultExperimentText, "sequenceSucceeded &= restoredGain && restoredAdcOn && restoredInput;");
         AssertContains(probeDefaultExperimentText, "private static bool TryBuildRestoreTarget");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.DefaultExperiment.Reporting.cs")),
-            "NativeXu default experiment reporting folded into default experiment owner");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.ExperimentPayloads.cs")),
-            "NativeXu probe experiment payload helpers folded into default experiment owner");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.Commands.cs")),
-            "NativeXu probe command IDs and shared raw formatting live with default experiment support");
         AssertContains(probeI2cCommandsText, "static class NativeXuProbeI2cCommands");
         AssertContains(probeI2cCommandsText, "static class NativeXuProbeI2cTransport");
         AssertDoesNotContain(probeI2cCommandsText, "static partial class NativeXuProbeI2cCommands");
@@ -2126,22 +2038,6 @@ static partial class Program
         AssertContains(probeI2cCommandsText, "public static async Task<int> RunSelectorProbeAsync");
         AssertContains(probeI2cCommandsText, "public static int RunTopologyProbe");
         AssertContains(probeI2cCommandsText, "public static async Task<int> RunVerifyAsync");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cCommands.HighSelectorProbe.cs")),
-            "old NativeXu i2c high-selector partial removed");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cCommands.SelectorProbe.cs")),
-            "old NativeXu i2c selector partial removed");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cCommands.TopologyProbe.cs")),
-            "old NativeXu i2c topology partial removed");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cCommands.Verify.cs")),
-            "old NativeXu i2c verify partial removed");
         AssertContains(probeI2cLegacyProbeText, "static class NativeXuProbeI2cLegacyProbe");
         AssertContains(probeI2cLegacyProbeText, "public static int Run()");
         AssertContains(probeI2cLegacyProbeText, "Tests whether rtk_sendI2CATCommand uses the same XU path");
@@ -2150,14 +2046,6 @@ static partial class Program
         AssertContains(probeI2cLegacyProbeText, "ProbeAtWrappedI2cFrames");
         AssertContains(probeI2cCommandsText, "public static byte[]? SendI2cAtGet");
         AssertContains(probeI2cCommandsText, "public static byte[] BuildAtFrameWithPayload");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cLegacyProbe.cs")),
-            "NativeXu legacy i2c-probe workflow lives with the I2C command family");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cSwitch.cs")),
-            "NativeXu captured audio-switch replay workflow lives with top-level probe command routing");
         AssertContains(probeProgramText, "static class NativeXuProbeI2cSwitch");
         AssertContains(probeProgramText, "public static async Task<int> RunAsync");
         AssertContains(probeProgramText, "Current I2C AT state");
@@ -2173,14 +2061,6 @@ static partial class Program
         AssertContains(probeProgramText, "Refusing service smoke mutation without readable initial mode and gain.");
         AssertContains(probeProgramText, "Restore service gain '{initial.AnalogGainPercent.Value:0}'");
         AssertContains(probeProgramText, "Restore service mode '{initial.Mode}'");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cTransport.cs")),
-            "NativeXu I2C-over-AT transport helpers live with the I2C command family");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.ServiceProbe.cs")),
-            "NativeXu service-control smoke/payload workflows live with top-level probe command routing");
         AssertContains(probeProgramText, "static class RtkI2cProbe");
         AssertContains(probeProgramText, "Run(string[] args, CaptureDevice device)");
         AssertContains(probeProgramText, "RTK I2C switch is disabled");
@@ -2192,10 +2072,6 @@ static partial class Program
         AssertContains(probeProgramText, "rtk_closePort failed");
         AssertContains(probeProgramText, "rtk_uninitialize failed");
         AssertDoesNotContain(probeProgramText, "rtk_setCurrentDevice(\"Elgato 4K X\"");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "RtkI2cProbe.cs")),
-            "RTK I2C probe workflow lives with top-level probe command routing");
 
         foreach (var file in EnumerateSourceFiles(Path.Combine(repoRoot, "Sussudio"), SearchOption.AllDirectories))
         {
@@ -2261,10 +2137,6 @@ static partial class Program
         var deviceAudioModeText = audioStateText;
         var deviceAudioRefreshText = audioStateText;
         var deviceAudioRequestControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelDeviceControllers.cs"));
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceAudioState.cs")),
-            "MainViewModel device-audio state folded into MainViewModel.AudioState.cs");
         AssertContains(deviceAudioStateText, "public partial ObservableCollection<string> AvailableDeviceAudioModes");
         AssertContains(deviceAudioStateText, "public partial bool IsDeviceAudioControlSupported");
         AssertContains(deviceAudioStateText, "public partial string SelectedDeviceAudioMode");
@@ -2298,22 +2170,6 @@ static partial class Program
         AssertContains(deviceAudioModeText, "IsCurrentSelectedDevice(device)");
         AssertDoesNotContain(deviceAudioStateText, "TryApplyAtDeviceAudioModeAsync");
         AssertDoesNotContain(deviceAudioStateText, "SetInputSourceAsync");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioControls.cs")),
-            "MainViewModel shared audio-control helper partial");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AnalogAudioGain.cs")),
-            "MainViewModel analog gain write partial");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceAudioRefresh.cs")),
-            "MainViewModel device-audio refresh folded into device audio state");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceAudioMode.cs")),
-            "MainViewModel device-audio mode folded into audio state");
     }
 
     private static void AssertServiceNamespaceMainViewModelRuntimeSourceOwnership(string repoRoot)
@@ -2334,22 +2190,6 @@ static partial class Program
         var outputDriveSpacePresentationBuilderText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "ViewModelBuilders.cs"));
         var mainViewModelCapturePresentationText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.cs"));
         var mainViewModelDisposalText = mainViewModelText;
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.Dispatching.cs")),
-            "MainViewModel dispatch adapter partial folded into MainViewModel.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.Composition.cs")),
-            "MainViewModel composition partial folded into MainViewModel.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.SettingsPersistence.cs")),
-            "MainViewModel settings persistence partial folded into MainViewModel.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.CaptureSelection.cs")),
-            "MainViewModel capture selection partial folded into MainViewModel.cs");
         AssertContains(mainViewModelCompositionText, "private bool EnqueueUiOperation");
         AssertContains(mainViewModelCompositionText, "_uiDispatchController.Enqueue(operation, operationName, allowDuringDispose);");
         AssertContains(mainViewModelCompositionText, "_uiDispatchController.InvokeAsync(operation, cancellationToken);");
@@ -2371,45 +2211,13 @@ static partial class Program
         AssertContains(mainViewModelText, "private bool EnqueueUiOperation");
         AssertContains(mainViewModelAudioCapturePropertyChangesText, "OnIsAudioEnabledChanged");
         AssertContains(mainViewModelAudioStateText, "OnIsAudioPreviewEnabledChanged");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioCapturePropertyChanges.cs")),
-            "MainViewModel.AudioCapturePropertyChanges.cs folded into MainViewModel.AudioState.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioPreviewPropertyChanges.cs")),
-            "MainViewModel audio-preview property-change partial");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioPropertyChanges.cs")),
-            "MainViewModel legacy audio property-change partial");
         AssertContains(mainViewModelAudioStateText, "OnIsCustomAudioInputEnabledChanged");
         AssertContains(mainViewModelAudioStateText, "OnSelectedAudioInputDeviceChanged");
         AssertContains(mainViewModelAudioStateText, "private async Task ApplyAudioInputSelectionAsync");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioInputPropertyChanges.cs")),
-            "MainViewModel audio-input property-change partial");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioInputSelection.cs")),
-            "MainViewModel.AudioInputSelection.cs folded into MainViewModel.AudioState.cs");
         AssertContains(mainViewModelAudioStateText, "OnIsMicrophoneEnabledChanged");
         AssertContains(mainViewModelAudioStateText, "OnSelectedMicrophoneDeviceChanged");
         AssertContains(mainViewModelAudioStateText, "OnMicrophoneVolumeChanged");
         AssertContains(mainViewModelAudioStateText, "SetMicrophoneEndpointVolume");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.MicrophonePropertyChanges.cs")),
-            "MainViewModel.MicrophonePropertyChanges.cs folded into MainViewModel.AudioState.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.MicrophoneVolume.cs")),
-            "MainViewModel.MicrophoneVolume.cs folded into MainViewModel.AudioState.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceAudioRequests.cs")),
-            "MainViewModel device audio request adapter partial");
         AssertContains(
             mainViewModelAudioStateText,
             "partial void OnSelectedDeviceAudioModeChanged(string value)");
@@ -2430,16 +2238,8 @@ static partial class Program
         AssertContains(mainViewModelCaptureModePropertyChangesText, "partial void OnSelectedVideoFormatChanged(string value)");
         AssertContains(mainViewModelCaptureModePropertyChangesText, "partial void OnMjpegDecoderCountChanged(int value)");
         AssertContains(mainViewModelCaptureModePropertyChangesText, "BuildCaptureSettings().UseMjpegHighFrameRateMode");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.CaptureModePropertyChanges.cs")),
-            "MainViewModel.CaptureModePropertyChanges.cs folded into MainViewModel.cs");
         AssertContains(mainViewModelAudioStateText, "OnSelectedDeviceAudioModeChanged");
         AssertContains(mainViewModelAudioStateText, "SetAudioMonitoringEnabledWithVolumeTransitionAsync");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioMonitoring.cs")),
-            "MainViewModel.AudioMonitoring.cs folded into MainViewModel.AudioState.cs");
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "private void SetupTimer()");
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "namespace Sussudio.Controllers;");
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "internal sealed class MainViewModelRuntimeLifecycleController");
@@ -2457,16 +2257,8 @@ static partial class Program
         AssertContains(mainViewModelRecordingRuntimeText, "private void UpdateDiskSpace()");
         AssertContains(mainViewModelRecordingRuntimeText, "DiskSpaceInfo = OutputDriveSpacePresentationBuilder.Build(OutputPath);");
         AssertContains(mainViewModelRecordingRuntimeText, "_recordingBitrateSamples.AddSampleAndCompute(now, totalBytes);");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.RecordingRuntime.cs")),
-            "MainViewModel.RecordingRuntime.cs folded into MainViewModel.cs");
         AssertContains(mainViewModelRecordingStateText, "internal sealed class BitrateSampleWindow");
         AssertContains(mainViewModelRecordingStateText, "private readonly Queue<(long Tick, long Bytes)> _samples = new();");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "BitrateSampleWindow.cs")),
-            "BitrateSampleWindow folded into MainViewModel.cs");
         AssertContains(outputDriveSpacePresentationBuilderText, "new DriveInfo(Path.GetPathRoot(outputPath) ?? \"C:\");");
         AssertContains(outputDriveSpacePresentationBuilderText, "return $\"Free: {freeGb:F1} GB\";");
         AssertContains(outputDriveSpacePresentationBuilderText, "Suppressed exception in {nameof(OutputDriveSpacePresentationBuilder)}.{nameof(Build)} type={ex.GetType().Name}");
@@ -2478,10 +2270,6 @@ static partial class Program
         AssertDoesNotContain(mainViewModelRuntimeEventIngressControllerText, "_viewModel.ReinitializeDeviceAsync(\"system resume\")");
         AssertContains(mainViewModelCapturePresentationText, "partial void OnIsPreviewingChanged(bool value)");
         AssertContains(mainViewModelCapturePresentationText, "ResetLiveCaptureInfo();");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.CapturePresentation.cs")),
-            "MainViewModel.CapturePresentation.cs folded into capture state");
         AssertDoesNotContain(mainViewModelRuntimeLifecycleControllerText, "private void UpdateDiskSpace()");
         AssertDoesNotContain(mainViewModelRuntimeLifecycleControllerText, "partial void OnIsPreviewingChanged(bool value)");
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "public void Start()");
@@ -2493,10 +2281,6 @@ static partial class Program
         AssertDoesNotContain(mainViewModelRuntimeEventIngressControllerText, "partial class MainViewModelRuntimeEventIngressController");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "internal sealed class MainViewModelRuntimeEventIngressControllerContext");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "private readonly MainViewModelRuntimeEventIngressControllerContext _context;");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelRuntimeEventIngressController.cs")),
-            "runtime event ingress controller folded into MainViewModelLifecycleController.cs");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "public required Func<CaptureRuntimeSnapshot> GetRuntimeSnapshot { get; init; }");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "public required Func<Func<Task>, string, bool> EnqueueUiOperation { get; init; }");
         AssertDoesNotContain(mainViewModelRuntimeEventIngressControllerText, "private readonly MainViewModel _viewModel;");
@@ -2574,13 +2358,8 @@ static partial class Program
         var deviceSelectionText = mainViewModelText;
         var audioStateText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioState.cs"));
         var audioDeviceSelectionPolicyText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "ViewModelSelectionPolicies.cs"));
-        AssertEqual(false, File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceSelection.cs")), "old device selection partial folded into capture selection owner");
         AssertContains(mainViewModelText, "public Task RefreshDevicesAsync(CancellationToken cancellationToken = default)");
         AssertContains(mainViewModelText, "=> _deviceRefreshController.RefreshDevicesAsync(cancellationToken: cancellationToken);");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceManagement.cs")),
-            "shallow MainViewModel device-management partial");
         AssertContains(deviceRefreshControllerText, "namespace Sussudio.Controllers;");
         AssertContains(deviceRefreshControllerText, "internal sealed class MainViewModelDeviceRefreshController");
         AssertContains(deviceRefreshControllerText, "internal sealed class MainViewModelDeviceRefreshControllerContext");
@@ -2622,7 +2401,6 @@ static partial class Program
         AssertDoesNotContain(mainViewModelText, "_deviceAudioModeCts");
         AssertDoesNotContain(mainViewModelDisposalText, "_gainFlashDebounceCts");
         AssertContains(mainViewModelDisposalControllerText, "_context.CancelPendingAudioControlWork();");
-        AssertEqual(false, File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioDeviceDiscovery.cs")), "audio endpoint discovery adapter folded into audio state owner");
         AssertContains(audioStateText, "private void OnAudioDevicesChanged()");
         AssertContains(audioStateText, "private void ApplyStartupAudioDeviceScan(");
         AssertContains(audioStateText, "private async Task RefreshAudioDeviceListAsync()");
@@ -2652,10 +2430,6 @@ static partial class Program
         AssertDoesNotContain(mainViewModelDeviceFormatProbeControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(mainViewModelDeviceFormatProbeControllerText, "_viewModel.");
         AssertContains(mainViewModelDeviceFormatProbeControllerText, "_retargetApplier.TryApplyDeviceFormatProbeRetarget(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelDeviceFormatProbeRetargetApplier.cs")),
-            "device format probe retarget applier lives with probe event owner");
         AssertContains(mainViewModelDeviceFormatProbeRetargetApplierText, "public bool TryApplyDeviceFormatProbeRetarget(");
         AssertContains(mainViewModelDeviceFormatProbeRetargetApplierText, "namespace Sussudio.Controllers;");
         AssertContains(mainViewModelDeviceFormatProbeRetargetApplierText, "internal sealed class MainViewModelDeviceFormatProbeRetargetApplier");
@@ -2682,10 +2456,6 @@ static partial class Program
         AssertContains(mainViewModelSourceTelemetryControllerText, "_context.IsAutoResolutionValue(_context.GetSelectedResolution())");
         AssertContains(mainViewModelSourceTelemetryControllerText, "_context.SetPendingModeOptionsRefresh(forceSourceAutoRetarget);");
         AssertContains(mainViewModelSourceTelemetryControllerText, "_context.RebuildResolutionOptions(forceSourceAutoRetarget);");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.Telemetry.cs")),
-            "old MainViewModel telemetry partial removed after controller extraction");
         var recordingCapabilityControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelDeviceControllers.cs"));
         AssertContains(recordingCapabilityControllerText, "namespace Sussudio.Controllers;");
         AssertContains(recordingCapabilityControllerText, "internal sealed class MainViewModelRecordingCapabilityControllerContext");
@@ -2756,20 +2526,8 @@ static partial class Program
         AssertContains(deviceServiceFormatProbeText, "private static void TryLoadFormatCache(CaptureDevice device)");
         AssertContains(deviceServiceFormatProbeText, "public void BeginBackgroundFormatProbe(CaptureDevice device, long requestId = 0)");
         AssertContains(deviceServiceFormatProbeText, "private async Task<bool> QuerySupportedFormatsAsync(CaptureDevice device)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Capture", "DeviceService.FormatProbe.cs")),
-            "DeviceService format probing folded into DeviceService.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Capture", "DeviceService.FormatCache.cs")),
-            "DeviceService format cache folded into format probe owner");
         AssertContains(deviceServiceRootText, "private static void AttachBestAudioDevice(");
         AssertContains(deviceServiceRootText, "private static int ScoreAudioAssociation(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Capture", "DeviceService.AudioAssociation.cs")),
-            "audio endpoint association folded into DeviceService.cs");
         AssertContains(deviceServiceRootText, "private static string? ResolveNativeXuInterfacePath(string deviceId)");
 
         var nativeXuAtProviderText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.cs"));
@@ -2814,55 +2572,7 @@ static partial class Program
         AssertContains(nativeXuAudioProbeExperimentsText, "TryXuSetViaOutput(");
         AssertContains(nativeXuAudioProbeExperimentsText, "UpdatePayloadAsync(");
 
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "CudaD3D11Interop.cs")),
-            "CUDA/D3D11 interop state-only partial");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "CudaD3D11Interop.Initialization.cs")),
-            "CUDA/D3D11 interop initialization folded into bridge owner");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "CudaD3D11Interop.Copy.cs")),
-            "CUDA/D3D11 interop copy hot paths folded into bridge owner");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "CudaD3D11Interop.Lifetime.cs")),
-            "CUDA/D3D11 interop lifetime is consolidated with bridge initialization");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "CudaD3D11InteropBridge.cs")),
-            "unused CUDA/D3D11 interop bridge removed until a live caller owns the path");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "CudaD3D11Interop.Native.cs")),
-            "CUDA/D3D11 native declarations folded into bridge initialization");
 
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "NvdecMjpegDecoder.Initialization.cs")),
-            "unused NVDEC decoder initialization partial remains absent");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "NvdecMjpegDecoder.SharedInitialization.cs")),
-            "unused NVDEC shared-context initialization partial remains absent");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "NvdecMjpegDecoder.Decode.cs")),
-            "unused NVDEC packet decode partial remains absent");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "NvdecMjpegDecoder.Download.cs")),
-            "unused NVDEC CPU download partial remains absent");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "NvdecMjpegDecoder.Lifetime.cs")),
-            "unused NVDEC decoder lifetime partial remains absent");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "NvdecMjpegDecoder.cs")),
-            "unused NVDEC MJPEG decoder removed until a live pipeline caller owns the path");
 
         var captureServiceText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Capture", "CaptureService.cs"));
         var captureServiceTelemetryText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Capture", "CaptureService.RuntimeSnapshots.cs"));
@@ -2874,10 +2584,6 @@ static partial class Program
         AssertContains(captureServiceTelemetryText, "Telemetry poll start deferred until canceled poll exits");
         AssertContains(captureServiceTelemetryText, "private SourceSignalTelemetrySnapshot BuildFallbackTelemetry()");
         AssertContains(captureServiceTelemetryText, "private static SourceSignalTelemetrySnapshot MergeTelemetryWithFallback(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Capture", "CaptureService.Telemetry.cs")),
-            "CaptureService telemetry polling folded into snapshot diagnostics owner");
     }
 
     internal static Task MfDeviceEnumerator_SourceOwnershipLivesInCohesiveEnumerator()
@@ -2901,19 +2607,6 @@ static partial class Program
         AssertContains(rootText, "private static IMFMediaSource CreateMediaSourceByEnumeration(");
         AssertContains(rootText, "MfInteropHelpers.MatchesSymbolicLink(targetSymbolicLink, candidateLink)");
         AssertContains(rootText, "MFCreateDeviceSource(attributes, out var mediaSource)");
-        foreach (var removedFile in new[]
-        {
-            "MfDeviceEnumerator.VideoDevices.cs",
-            "MfDeviceEnumerator.AudioEndpoints.cs",
-            "MfDeviceEnumerator.FormatProbe.cs",
-            "MfDeviceEnumerator.SourceOpening.cs"
-        })
-        {
-            AssertEqual(
-                false,
-                File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", removedFile)),
-                $"{removedFile} removed");
-        }
 
         var subtypeName = RequireType("Sussudio.Services.Capture.MfInteropHelpers")
             .GetMethod("SubtypeGuidToName", BindingFlags.Static | BindingFlags.Public)
@@ -2995,38 +2688,14 @@ static partial class Program
         AssertContains(sourceReaderDeviceEnumerationText, "ReleaseRemainingActivateObjects(activateArrayPtr, activateCount, i + 1);");
         AssertContains(sourceReaderDeviceEnumerationText, "Marshal.ReleaseComObject(activated)");
         AssertContains(sourceReaderDeviceEnumerationText, "Marshal.FreeCoTaskMem(activateArrayPtr);");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MfSourceReaderVideoCapture.DeviceEnumeration.cs")),
-            "source-reader device enumeration fallback folded into negotiation/source-open owner");
         AssertContains(sourceReaderNegotiationText, "private IMFMediaType SelectMediaType(");
         AssertContains(sourceReaderNegotiationText, "private IMFMediaType SelectConvertedMediaType(");
         AssertContains(sourceReaderNegotiationText, "SelectMediaType(");
         AssertContains(sourceReaderNegotiationText, "IMFMediaType.SetGUID(MF_MT_SUBTYPE");
         AssertContains(sourceReaderNegotiationText, "private static void CopyOptionalUInt64(");
         AssertContains(sourceReaderNegotiationText, "private static void CopyOptionalUInt32(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MfSourceReaderVideoCapture.ConvertedMediaType.cs")),
-            "converted source-reader media type construction folded into negotiation owner");
         AssertContains(sourceReaderNegotiationText, "private static bool TryGetFrameSize(");
         AssertContains(sourceReaderNegotiationText, "private static bool TryGetFrameRate(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MfSourceReaderVideoCapture.Negotiation.cs")),
-            "source-reader negotiation and source-open helpers folded into root source-reader owner");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MfSourceReaderVideoCapture.Interop.cs")),
-            "source-reader MF P/Invokes and constants folded into shared MF interop owner");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MfSourceReaderVideoCapture.ComContracts.cs")),
-            "source-reader COM contracts folded into shared MF interop owner");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MfInteropHelpers.cs")),
-            "MF startup and attribute helpers folded into shared MF interop owner");
         AssertContains(mfInteropText, "internal static class MfInterop");
         AssertContains(mfInteropText, "DllImport(\"mfplat.dll\", ExactSpelling = true)");
         AssertContains(mfInteropText, "internal static class MfConstants");
@@ -3044,10 +2713,6 @@ static partial class Program
         AssertContains(mfInteropText, "does NOT use C# interface inheritance");
         AssertContains(mfInteropText, "[PreserveSig] int _Attr_GetItem(ref Guid guidKey, IntPtr pValue);");
         AssertContains(mfInteropText, "int GetSampleTime(out long phnsSampleTime);");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MfSourceReaderVideoCapture.SampleBufferContracts.cs")),
-            "source-reader sample/buffer COM declarations folded into shared MF interop owner");
         AssertContains(sourceReaderRootText, "private IMFMediaSource CreateMediaSource(");
         AssertContains(sourceReaderRootText, "private IMFMediaType SelectMediaType(");
         AssertDoesNotContain(sourceReaderRootText, "private static class MfInterop");

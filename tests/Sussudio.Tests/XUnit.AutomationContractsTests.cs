@@ -1076,10 +1076,6 @@ static partial class Program
         AssertContains(customCommandsText, "errorCode: met ? null : AutomationErrorCodes.Timeout");
         AssertContains(customCommandsText, "private async Task<(bool Met, AutomationSnapshot Snapshot)> WaitForConditionAsync(");
         AssertContains(customCommandsText, "private static bool ConditionSatisfied(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.WaitConditions.cs")),
-            "wait-condition commands folded into AutomationCommandDispatcher.cs");
 
         AssertContains(customCommandsText, "private async Task<AutomationCommandResponse> ExecuteAssertSnapshotCommandAsync(");
         AssertContains(customCommandsText, "_diagnosticsHub.RefreshSnapshotNowAsync(cancellationToken)");
@@ -1088,10 +1084,6 @@ static partial class Program
         AssertContains(customCommandsText, "errorCode: passed ? null : AutomationErrorCodes.AssertionFailed");
         AssertContains(customCommandsText, "private static List<SnapshotAssertion> ParseAssertions(");
         AssertContains(customCommandsText, "private static bool TryEvaluateAssertion(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.Assertions.cs")),
-            "assert-snapshot command body folded into AutomationCommandDispatcher.cs");
 
         return Task.CompletedTask;
     }
@@ -1178,10 +1170,6 @@ static partial class Program
         AssertContains(customCommandsText, "Automation manifest retrieved.");
         AssertContains(customCommandsText, "AutomationCommandCatalog.CreateManifest()");
         AssertContains(customCommandsText, "includeSnapshot: false");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.ReadbackCommands.cs")),
-            "readback commands folded into AutomationCommandDispatcher.cs");
 
         return Task.CompletedTask;
     }
@@ -1348,10 +1336,6 @@ static partial class Program
         AssertContains(portMappedDispatchText, "var visible = RequireBool(payload, AutomationPayloadKeys.Visible);");
         AssertContains(portMappedDispatchText, "_uiPort.SetStatsSectionVisibleAsync(section, visible, cancellationToken)");
         AssertContains(portMappedDispatchText, "Stats section '{section}' {(visible ? \"expanded\" : \"collapsed\")}.");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.UiSettingsCommands.cs")),
-            "UI settings handlers folded into AutomationCommandDispatcher.cs");
 
         return Task.CompletedTask;
     }
@@ -1514,26 +1498,6 @@ static partial class Program
         AssertContains(preflightText, "CryptographicOperations.FixedTimeEquals(expected, actual)");
         AssertContains(preflightText, "RequiresReadyDevices(request.Command) && !IsAutomationReady()");
         AssertContains(preflightText, "_readinessPort.IsInitialized || _readinessPort.Devices.Count > 0");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.Authorization.cs")),
-            "auth gate folded into AutomationCommandDispatcher.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.Preflight.cs")),
-            "preflight gate folded into AutomationCommandDispatcher.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.Payload.cs")),
-            "payload helpers folded into AutomationCommandDispatcher.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.PortMappedDispatch.cs")),
-            "port-mapped dispatch folded into AutomationCommandDispatcher.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.CustomCommands.cs")),
-            "custom command router folded into AutomationCommandDispatcher.cs");
 
         AssertContains(portMappedDispatchText, "private async Task<AutomationCommandResponse?> TryExecutePortMappedCommandAsync(");
         AssertContains(portMappedDispatchText, "private static readonly IReadOnlyDictionary<AutomationCommandKind, AutomationCommandHandler<IAutomationDeviceSelectionPort>> TrivialDeviceSelectionHandlers");
@@ -1545,14 +1509,6 @@ static partial class Program
         AssertContains(portMappedDispatchText, "TrivialCaptureSettingsHandlers.TryGetValue(command");
         AssertContains(portMappedDispatchText, "TrivialAudioHandlers.TryGetValue(command");
         AssertContains(portMappedDispatchText, "TrivialPreviewRecordingHandlers.TryGetValue(command");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.TrivialHandlers.cs")),
-            "trivial port handler tables folded into AutomationCommandDispatcher.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.UiSettingsCommands.cs")),
-            "UI settings command tables folded into AutomationCommandDispatcher.cs");
 
         AssertContains(agentMapText, "`Sussudio/Services/Automation/AutomationCommandDispatcher.cs`");
         AssertDoesNotContain(agentMapText, "`Sussudio/Services/Automation/AutomationCommandDispatcher.PortMappedDispatch.cs`");
@@ -1754,14 +1710,6 @@ static partial class Program
         AssertContains(windowCommandsText, "_windowControl.MoveToAsync(mx, my, cancellationToken)");
         AssertContains(windowCommandsText, "_windowControl.ResizeToAsync(rw, rh, cancellationToken)");
         AssertContains(windowCommandsText, "_windowControl.SnapToRegionAsync(action, cancellationToken)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.WindowActions.cs")),
-            "window action executor folded into AutomationCommandDispatcher.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.WindowCommands.cs")),
-            "window command bodies folded into AutomationCommandDispatcher.cs");
 
         return Task.CompletedTask;
     }
@@ -1784,10 +1732,6 @@ static partial class Program
         AssertContains(customCommandsText, "_diagnosticsHub.VerifyLastRecordingAsync(cancellationToken)");
         AssertContains(customCommandsText, "HdrParity = verification.HdrParity");
         AssertContains(customCommandsText, "errorCode: verification.Succeeded ? null : AutomationErrorCodes.VerificationFailed");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.VerificationCommands.cs")),
-            "verification commands folded into AutomationCommandDispatcher.cs");
 
         return Task.CompletedTask;
     }
@@ -1821,10 +1765,6 @@ static partial class Program
         AssertContains(customCommandsText, "_windowControl.CaptureWindowScreenshotAsync");
         AssertContains(customCommandsText, "CreateCaptureResponse(correlationId, result.Message, result, result.Succeeded)");
         AssertContains(customCommandsText, "errorCode: succeeded ? null : \"capture-failed\"");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.VisualCaptureCommands.cs")),
-            "visual capture commands folded into AutomationCommandDispatcher.cs");
 
         return Task.CompletedTask;
     }
@@ -1979,10 +1919,6 @@ static partial class Program
         AssertContains(flashbackCommandsText, "_flashbackPort.SetFlashbackGpuDecodeAsync(enabled, cancellationToken)");
         AssertContains(flashbackCommandsText, "Flashback buffer duration set to {minutes} minute");
         AssertContains(flashbackCommandsText, "Flashback GPU decode {(enabled ? \"enabled\" : \"disabled\")}.");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.FlashbackCommands.cs")),
-            "Flashback command bodies folded into AutomationCommandDispatcher.cs");
 
         return Task.CompletedTask;
     }
@@ -2691,10 +2627,6 @@ static partial class Program
         AssertContains(customCommandsText, "var maxEntries = GetInt(payload, AutomationPayloadKeys.MaxEntries) ?? 240;");
         AssertContains(customCommandsText, "var maxEntries = GetInt(payload, AutomationPayloadKeys.MaxEntries) ?? 512;");
         AssertContains(customCommandsText, "GetAudioRampTraceSnapshotAsync(maxEntries, cancellationToken)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.DiagnosticCommands.cs")),
-            "diagnostic readback folded into AutomationCommandDispatcher.cs");
 
         var enumType = RequireType("Sussudio.Models.AutomationCommandKind");
         var kind = Enum.Parse(enumType, "GetAudioRampTrace");
@@ -3405,14 +3337,6 @@ static partial class Program
         AssertContains(pipeServerRootText, "Logger.Log($\"Automation pipe server loop error: {ex}\")");
         AssertContains(pipeServerRootText, "Logger.Log($\"Automation pipe connection I/O error: {ioEx}\")");
         AssertContains(pipeServerRootText, "Logger.Log($\"Automation pipe connection error: {ex}\")");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "NamedPipeAutomationServer.ConnectionSession.cs")),
-            "connection session stays with the named-pipe automation server owner");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "NamedPipeAutomationServer.Security.cs")),
-            "pipe security stays with the named-pipe automation server owner");
 
         if (!OperatingSystem.IsWindows())
         {
@@ -3832,10 +3756,6 @@ static partial class Program
         AssertContains(mainWindowText, "_automationHostLifecycleController = new WindowAutomationHostLifecycleController(");
         AssertContains(mainWindowText, "GetPreviewRuntimeSnapshotAsync,\n            this);");
         AssertContains(mainWindowText, "private readonly WindowAutomationHostLifecycleController _automationHostLifecycleController;");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.AutomationHost.cs")),
-            "MainWindow automation host adapter partial");
         AssertContains(automationHostControllerText, "var automationToken = Environment.GetEnvironmentVariable(AutomationPipeProtocol.AutomationKeyEnvVar);");
         AssertContains(automationHostControllerText, "var automationPipeName = Environment.GetEnvironmentVariable(\"SUSSUDIO_AUTOMATION_PIPE\");");
         AssertContains(automationHostControllerText, "automationPipeName = NamedPipeAutomationServer.DefaultPipeName;");
@@ -5189,10 +5109,6 @@ static partial class Program
         AssertContains(modelText, "public sealed class CaptureSessionSnapshot");
         AssertContains(modelText, "internal readonly record struct FlashbackPlaybackSnapshot(");
         AssertContains(modelText, "internal readonly record struct FlashbackBufferStatus(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureSessionCoordinator.Models.cs")),
-            "coordinator model surface folded into the coordinator root");
 
         return Task.CompletedTask;
     }
@@ -5214,10 +5130,6 @@ static partial class Program
         AssertContains(flashbackExportText, "internal Task<FinalizeResult> ExportFlashbackRangeAsync(");
         AssertContains(flashbackExportText, "internal IReadOnlyList<FlashbackSegmentInfo> GetFlashbackSegments()");
         AssertContains(flashbackGuardsText, "private bool TryGetActiveFlashback(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureSessionCoordinator.Flashback.cs")),
-            "CaptureSessionCoordinator Flashback facade folded into the coordinator root");
 
         return Task.CompletedTask;
     }
@@ -5556,10 +5468,6 @@ static partial class Program
         AssertContains(rootText, "public Task UpdateMicrophoneMonitorAsync(bool enabled, string? micDeviceId, string? micDeviceName, CancellationToken cancellationToken = default)");
         AssertContains(rootText, "public Task CleanupAsync(CancellationToken cancellationToken = default)");
 
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureSessionCoordinator.Commands.cs")),
-            "CaptureSessionCoordinator command facade folded into the coordinator root");
 
         return Task.CompletedTask;
     }
@@ -5590,14 +5498,6 @@ static partial class Program
         AssertContains(flashbackPlaybackText, "internal bool FlashbackBeginScrub(TimeSpan position)");
         AssertContains(flashbackPlaybackText, "internal bool FlashbackClearInOutPoints()");
         AssertContains(flashbackPlaybackText, "TryGetActiveFlashback(nameof(FlashbackGoLive), out var controller)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureSessionCoordinator.Flashback.Playback.cs")),
-            "CaptureSessionCoordinator Flashback playback adapters folded into the Flashback coordinator facade");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureSessionCoordinator.Flashback.cs")),
-            "CaptureSessionCoordinator Flashback facade folded into the coordinator root");
         AssertContains(flashbackExportText, "internal Task<FinalizeResult> ExportFlashbackRangeAsync(");
         AssertContains(flashbackExportText, "internal Task<FinalizeResult> ExportFlashbackLastNSecondsAsync(");
         AssertContains(flashbackExportText, "internal IReadOnlyList<FlashbackSegmentInfo> GetFlashbackSegments()");
@@ -5751,10 +5651,6 @@ static partial class Program
         AssertContains(queueExecutionText, "private void DecrementPendingCommands(string operation)");
         AssertContains(queueExecutionText, "Logger.LogEvent(\"CAP-COORD-START\"");
         AssertContains(queueExecutionText, "Logger.LogEvent(\"CAP-COORD-DONE\"");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureSessionCoordinator.Queue.cs")),
-            "CaptureSessionCoordinator queue worker folded into the coordinator root");
 
         return Task.CompletedTask;
     }
@@ -5770,10 +5666,6 @@ static partial class Program
         AssertContains(rootText, "private void RemoveOldestPendingCommand()");
         AssertContains(rootText, "private void RecordCommandQueueLatency(DateTimeOffset enqueuedAtUtc)");
         AssertContains(rootText, "OldestPendingCommandAgeMs = oldestPendingCommandAgeMs,");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureSessionCoordinator.Snapshot.cs")),
-            "CaptureSessionCoordinator snapshot projection folded into the coordinator root");
 
         return Task.CompletedTask;
     }
@@ -5791,10 +5683,6 @@ static partial class Program
         AssertContains(rootText, "private void DisposeWorkerCancellationWhenSafe()");
         AssertContains(rootText, "private void CancelWorkerBestEffort()");
         AssertContains(rootText, "SUSSUDIO_COORDINATOR_DISPOSE_TIMEOUT_MS");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureSessionCoordinator.Disposal.cs")),
-            "CaptureSessionCoordinator disposal lifecycle folded into the coordinator root");
 
         return Task.CompletedTask;
     }
@@ -5817,10 +5705,6 @@ static partial class Program
         AssertContains(pollingAdapterText, "_flashbackPollingController.StopStatusPolling();");
         AssertContains(pollingAdapterText, "StopFlashbackPlayheadAnchorTimer();");
         AssertContains(mainWindowText, "InitializeFlashbackPollingController();");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Flashback.Interactions.cs")),
-            "Flashback polling adapter folded into the MainWindow root composition adapter");
         AssertContains(timelineAdapterText, "StartStatusPolling = () => _flashbackPollingController.StartStatusPolling(),");
         AssertContains(shutdownCleanupText, "StopFlashbackStatusPolling();");
         AssertContains(shutdownCleanupControllerText, "_context.StopTimers();");
@@ -5865,10 +5749,6 @@ static partial class Program
         AssertContains(playheadText, "private void StopFlashbackPlayheadAnchorTimer()");
         AssertContains(playheadText, "=> _flashbackPlayheadMotionController.StopPlayheadAnchorTimer();");
         AssertContains(mainWindowText, "InitializeFlashbackPlayheadMotionController();");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Flashback.Interactions.cs")),
-            "Flashback playhead adapter folded into the MainWindow root composition adapter");
         AssertOccursBefore(mainWindowText, "InitializeFlashbackScrubInteractionController();", "InitializeFlashbackPlayheadMotionController();");
         AssertOccursBefore(mainWindowText, "InitializeFlashbackPlayheadMotionController();", "InitializeFlashbackTimelineController();");
         AssertContains(controllerRootText, "internal sealed class FlashbackPlayheadMotionControllerContext");
@@ -5902,18 +5782,6 @@ static partial class Program
         AssertContains(controllerText, "var labelX = Math.Clamp(x - labelW / 2, 0, Math.Max(0, trackWidth - labelW));");
         AssertContains(controllerText, "var lineX = (float)(x - 1);");
         AssertContains(controllerText, "var handleX = (float)(x - 5);");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Flashback", "FlashbackPlayheadMotionController.Cti.cs")),
-            "Flashback playhead CTI partial is consolidated into the motion controller root");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Flashback", "FlashbackPlayheadMotionController.Visuals.cs")),
-            "Flashback playhead visuals partial is consolidated into the motion controller root");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Flashback", "FlashbackPlayheadMotionController.cs")),
-            "Flashback playhead motion folded into Flashback UI controllers");
         AssertContains(scrubText, "PositionMagneticPlayhead = (x, trackWidth) => _flashbackPlayheadMotionController.PositionMagneticPlayhead(x, trackWidth),");
         AssertContains(scrubControllerText, "_context.PositionMagneticPlayhead(x, width);");
         AssertContains(flashbackText, "RequestPlayheadSnapOnNextUpdate = () => _flashbackPlayheadMotionController.RequestSnapOnNextUpdate(),");
@@ -5956,10 +5824,6 @@ static partial class Program
         AssertContains(controllerText, "\"\\uE768\"");
         AssertContains(controllerText, "return \"LIVE\";");
         AssertContains(controllerText, "return $\"-{FlashbackMarkerPresentationController.FormatDuration(gapFromLive)} / {totalText}\";");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Flashback", "FlashbackPlaybackUiCoordinator.cs")),
-            "Flashback playback presentation and UI coordination live with Flashback UI controllers");
         AssertContains(flashbackText, "private FlashbackPlaybackUiCoordinator _flashbackPlaybackUiCoordinator = null!;");
         AssertContains(flashbackText, "private void InitializeFlashbackPlaybackUiCoordinator()");
         AssertContains(mainWindowText, "InitializeFlashbackPlaybackUiCoordinator();");
@@ -6046,10 +5910,6 @@ static partial class Program
         AssertContains(adapterText, "if (ViewModel == null || _flashbackSettingsBindingController == null)");
         AssertContains(adapterText, "_flashbackSettingsBindingController.HandleBufferDurationSelectionChanged();");
         AssertContains(mainWindowText, "InitializeFlashbackSettingsBindingController();");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Flashback.Interactions.cs")),
-            "Flashback settings adapter folded into the MainWindow root composition adapter");
         AssertContains(bindingsText, "ApplyInitialFlashbackSettings();");
         AssertContains(bindingsText, "AttachFlashbackSettingsBindings();");
 
@@ -6092,14 +5952,6 @@ static partial class Program
         AssertContains(commandControllerText, "NudgePlayback(TimeSpan.FromSeconds(-1), \"nudge left\", \"FLASHBACK_UI_NUDGE_REJECTED direction=left\");");
         AssertContains(commandControllerText, "NudgePlayback(TimeSpan.FromSeconds(1), \"nudge right\", \"FLASHBACK_UI_NUDGE_REJECTED direction=right\");");
         AssertContains(mainWindowText, "InitializeFlashbackCommandController();");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Flashback.Interactions.cs")),
-            "Flashback command adapter folded into the MainWindow root composition adapter");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Flashback", "FlashbackCommandController.cs")),
-            "Flashback command controller folded into FlashbackUiControllers.cs");
         AssertDoesNotContain(flashbackText, "private async Task ApplyFlashbackEnabledToggleAsync(bool requestedEnabled)");
         AssertDoesNotContain(bindingsText, "FlashbackEnabledToggle.IsOn = ViewModel.IsFlashbackEnabled;");
         AssertDoesNotContain(bindingsText, "FlashbackGpuDecodeToggle.IsOn = ViewModel.FlashbackGpuDecode;");
@@ -6122,10 +5974,6 @@ static partial class Program
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
 
         AssertContains(timelineAdapterText, "FlashbackTrackBackground = FlashbackTrackBackground,");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Flashback.Interactions.cs")),
-            "Flashback timeline adapter folded into the MainWindow root composition adapter");
         AssertContains(timelineAdapterText, "FlashbackScrubArea = FlashbackScrubArea,");
         AssertContains(timelineAdapterText, "FlashbackPlayhead = FlashbackPlayhead,");
         AssertContains(timelineAdapterText, "FlashbackLiveEdge = FlashbackLiveEdge,");
@@ -6152,10 +6000,6 @@ static partial class Program
         AssertContains(animationControllerText, "private void CompleteAnimation(Storyboard storyboard)");
         AssertContains(controllerText, "private Storyboard? _timelineStoryboard;");
         AssertContains(controllerText, "new DoubleAnimation");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Flashback", "FlashbackTimelineAnimationController.cs")),
-            "timeline animation folded into Flashback UI controllers");
         AssertContains(flashbackText, "private void FlashbackTrack_SizeChanged(object sender, SizeChangedEventArgs e)");
         AssertContains(flashbackText, "=> _flashbackPlaybackUiCoordinator.HandleTrackSizeChanged(e.NewSize.Width, e.NewSize.Height);");
         AssertContains(playbackCoordinatorText, "public void HandleTrackSizeChanged(double width, double height)");
@@ -6370,22 +6214,10 @@ static partial class Program
         AssertDoesNotContain(fullScreenWindowText, "ReportFlashbackPlaybackRejection(\"nudge right\", \"FLASHBACK_UI_NUDGE_REJECTED direction=right\")");
         AssertDoesNotContain(fullScreenWindowText, "ReportFlashbackPlaybackRejection(\"nudge left\", \"FLASHBACK_UI_NUDGE_REJECTED direction=left\")");
         AssertDoesNotContain(fullScreenWindowText, "ReportFlashbackPlaybackRejection(\"nudge right\", \"FLASHBACK_UI_NUDGE_REJECTED direction=right\")");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.FullScreenFlashbackBridge.cs")),
-            "Flashback fullscreen bridge is consolidated into the fullscreen adapter");
         AssertDoesNotContain(flashbackScrubText, "private bool _isFlashbackScrubbing;");
         AssertDoesNotContain(flashbackScrubText, "private TimeSpan? _lastScrubPointerPosition;");
         AssertDoesNotContain(flashbackScrubText, "private long _lastScrubUpdateTick;");
         AssertDoesNotContain(flashbackScrubControllerText, "var carriedPosition = _isScrubbing ? _context.ViewModel.FlashbackPlaybackPosition : (TimeSpan?)null;");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Flashback.Interactions.cs")),
-            "Flashback scrub adapter folded into the MainWindow root composition adapter");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Flashback", "FlashbackScrubInteractionController.cs")),
-            "Flashback scrub interaction folded into Flashback UI controllers");
         AssertDoesNotContain(mainWindowText, "private bool _isFlashbackScrubbing;");
         AssertDoesNotContain(mainWindowText, "private TimeSpan? _lastScrubPointerPosition;");
 
@@ -6535,14 +6367,6 @@ static partial class Program
         AssertContains(flashbackCommandControllerText, "_suppressFlashbackEnabledToggle = true;");
         AssertContains(flashbackCommandControllerText, "_context.FlashbackEnabledToggle.IsOn = previousEnabled;");
         AssertContains(flashbackCommandControllerText, "_suppressFlashbackEnabledToggle = false;");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Flashback", "FlashbackCommandController.cs")),
-            "Flashback command controller folded into FlashbackUiControllers.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Flashback", "FlashbackTimelineController.cs")),
-            "Flashback timeline folded into Flashback UI controllers");
         AssertDoesNotContain(mainWindowText, "private bool _suppressFlashbackEnabledToggle;");
         AssertDoesNotContain(flashbackWindowText, "ApplyFlashbackEnabledToggleAsync(requestedEnabled)");
 
@@ -6645,26 +6469,6 @@ static partial class Program
             flashbackPlaybackCommandsText,
             automationFacadeText);
 
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.Automation.cs")),
-            "MainViewModel automation catch-all partial");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutomationPreview.cs")),
-            "MainViewModel automation preview partial");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutomationHdr.cs")),
-            "MainViewModel automation HDR partial");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutomationFlashback.cs")),
-            "MainViewModel automation Flashback partial");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutomationCommands.cs")),
-            "MainViewModel automation commands facade folded into MainViewModel.cs");
 
         AssertDoesNotContain(interfaceText, "bool FlashbackPlay();");
         AssertDoesNotContain(interfaceText, "bool FlashbackPause();");
@@ -6797,30 +6601,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var dispatcherText = ReadAutomationCommandDispatcherFamilyText();
 
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.Automation.cs")),
-            "MainViewModel automation catch-all partial");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(
-                GetRepoRoot(),
-                "Sussudio",
-                "ViewModels",
-                "MainViewModel.AutomationRecordingLifecycle.cs")),
-            "MainViewModel automation recording lifecycle bridge partial");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.RecordingLifecycle.cs")),
-            "MainViewModel recording lifecycle facade partial");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.RecordingState.cs")),
-            "MainViewModel recording state folded into MainViewModel.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.Capture.cs")),
-            "MainViewModel capture lifecycle facade partial");
         AssertContains(recordingLifecycleText, "public Task SetRecordingEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertContains(recordingLifecycleText, "=> SetRecordingDesiredStateAsync(enabled, cancellationToken);");
         AssertContains(recordingLifecycleText, "internal Task SetRecordingDesiredStateAsync");
@@ -6866,17 +6646,9 @@ static partial class Program
         AssertContains(recordingRuntimeText, "RecordingSizeInfo = DisplayFormatters.FormatBytes(totalBytes, \"0\");");
         AssertContains(recordingRuntimeText, "RecordingBitrateInfo = smoothed.HasValue ? DisplayFormatters.FormatBitrate(smoothed.Value) : \"--\";");
         AssertContains(flashbackBufferStatusText, "var smoothed = _flashbackBitrateSamples.AddSampleAndCompute(now, diskBytes);");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.FlashbackBufferStatus.cs")),
-            "MainViewModel.FlashbackBufferStatus.cs folded into MainViewModel.FlashbackState.cs");
         AssertContains(recordingStateText, "internal sealed class BitrateSampleWindow");
         AssertContains(recordingStateText, "public double? AddSampleAndCompute(long tick, long bytes)");
         AssertContains(recordingStateText, "private static double? ComputeAverageBitrate(Queue<(long Tick, long Bytes)> samples)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "BitrateSampleWindow.cs")),
-            "BitrateSampleWindow folded into MainViewModel.cs");
         AssertContains(recordingRuntimeText, "if (_pendingModeOptionsRefreshForceRetarget is bool forceSourceAutoRetarget)");
         AssertContains(recordingRuntimeText, "_pendingModeOptionsRefreshForceRetarget = null;");
         AssertContains(recordingRuntimeText, "RebuildResolutionOptions(forceSourceAutoRetarget);");
@@ -7010,14 +6782,6 @@ static partial class Program
         AssertDoesNotContain(appText, "StopRecordingAndWaitAsync().ConfigureAwait(false)");
         AssertDoesNotContain(appText, "viewModel == null || !viewModel.IsRecording");
         AssertDoesNotContain(recordingStateText, "if (!IsRecording)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.Capture.cs")),
-            "MainViewModel capture lifecycle facade partial");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.RecordingLifecycle.cs")),
-            "MainViewModel recording lifecycle facade partial");
 
         return Task.CompletedTask;
     }
@@ -7132,18 +6896,6 @@ static partial class Program
             true,
             microphoneUpdateIndex >= 0 && microphonePersistIndex > microphoneUpdateIndex,
             "automation microphone persists only after monitor update");
-        foreach (var stalePath in new[]
-        {
-            "MainViewModel.AutomationAudio.cs",
-            "MainViewModel.AutomationDeviceAudio.cs",
-            "MainViewModel.AutomationMicrophone.cs"
-        })
-        {
-            AssertEqual(
-                false,
-                File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", stalePath)),
-                $"stale audio automation partial {stalePath}");
-        }
 
         return Task.CompletedTask;
     }
@@ -7233,14 +6985,6 @@ static partial class Program
         AssertContains(automationOptionsBuilderText, "IsMicrophoneEnabled = input.IsMicrophoneEnabled");
         AssertContains(automationOptionsBuilderText, "MicrophoneVolumePercent = input.MicrophoneVolume");
         AssertContains(automationOptionsBuilderText, "FlashbackGpuDecode = input.FlashbackGpuDecode");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutomationOptionsSnapshot.cs")),
-            "MainViewModel.AutomationOptionsSnapshot.cs folded into MainViewModel.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutomationSnapshots.cs")),
-            "MainViewModel.AutomationSnapshots.cs folded into MainViewModel.cs");
 
         return Task.CompletedTask;
     }
@@ -7331,10 +7075,6 @@ static partial class Program
         var rawAudioCapturePropertyChangesText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs")
             .Replace("\r\n", "\n");
         var flashbackEncoderSettingsText = viewModelFiles["MainViewModel.FlashbackState.cs"];
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutomationFlashback.cs")),
-            "MainViewModel automation Flashback partial");
         var rawFlashbackSettingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackState.cs")
             .Replace("\r\n", "\n");
         var coordinatorText = ReadCaptureSessionCoordinatorSource();
@@ -7366,22 +7106,6 @@ static partial class Program
         AssertMemberContains(flashbackPlaybackCommandsText, "FlashbackSetOutPoint", "_sessionCoordinator.FlashbackSetOutPoint()");
         AssertMemberContains(flashbackPlaybackCommandsText, "FlashbackSetOutPointAt", "_sessionCoordinator.FlashbackSetOutPointAt(position)");
         AssertMemberContains(flashbackPlaybackCommandsText, "FlashbackClearInOutPoints", "=> _sessionCoordinator.FlashbackClearInOutPoints()");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.FlashbackMarkers.cs")),
-            "MainViewModel.FlashbackMarkers.cs folded into MainViewModel.FlashbackState.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.FlashbackPlaybackAutomation.cs")),
-            "MainViewModel.FlashbackPlaybackAutomation.cs folded into MainViewModel.FlashbackState.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.FlashbackPlayback.cs")),
-            "MainViewModel.FlashbackPlayback.cs folded into MainViewModel.FlashbackState.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.FlashbackPlaybackCommands.cs")),
-            "MainViewModel.FlashbackPlaybackCommands.cs folded into MainViewModel.FlashbackState.cs");
         AssertMemberContains(flashbackBufferStatusText, "UpdateFlashbackBufferStatus", "_sessionCoordinator.GetFlashbackBufferStatus()");
         AssertMemberContains(flashbackBufferStatusText, "UpdateFlashbackBufferStatus", "_sessionCoordinator.GetFlashbackPlaybackSnapshot()");
         AssertMemberContains(flashbackBufferStatusText, "UpdateFlashbackBufferStatus", "FlashbackInPoint = playback.InPoint;");
@@ -7390,10 +7114,6 @@ static partial class Program
         AssertMemberContains(flashbackBufferStatusText, "UpdateFlashbackBufferStatus", "FlashbackOutPoint = null;");
         AssertMemberContains(flashbackBufferStatusText, "UpdateFlashbackBufferStatus", "if (FlashbackState != FlashbackPlaybackState.Live)");
         AssertMemberContains(flashbackBufferStatusText, "UpdateFlashbackBufferStatus", "FlashbackState = FlashbackPlaybackState.Live;");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.FlashbackBufferStatus.cs")),
-            "MainViewModel.FlashbackBufferStatus.cs folded into MainViewModel.FlashbackState.cs");
         var updateFlashbackBufferStatus = ExtractMemberCode(flashbackBufferStatusText, "UpdateFlashbackBufferStatus");
         var inactivePlaybackSnapshotBranch = ExtractTextBetween(
             updateFlashbackBufferStatus,
@@ -7449,10 +7169,6 @@ static partial class Program
         AssertMemberContains(flashbackSettingsText, "RestartFlashbackAfterSettingsUpdateAsync", "await RestartFlashbackAsync().ConfigureAwait(false)");
         AssertMemberContains(flashbackSettingsText, "RestartFlashbackAfterSettingsUpdateAsync", "catch (OperationCanceledException ex)");
         AssertContains(rawFlashbackSettingsText, "RestartFlashbackAfterSettingsUpdate canceled");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.FlashbackSettings.cs")), "MainViewModel.FlashbackSettings.cs folded into FlashbackState");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.FlashbackEncoderSettings.cs")), "MainViewModel.FlashbackEncoderSettings.cs folded into FlashbackState");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.FlashbackExportOperation.cs")), "MainViewModel.FlashbackExportOperation.cs folded into FlashbackExport");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.FlashbackExportAutomation.cs")), "MainViewModel.FlashbackExportAutomation.cs folded into FlashbackExport");
         AssertMemberContains(audioCapturePropertyChangesText, "OnIsAudioEnabledChanged", "var settings = BuildCaptureSettings();");
         AssertMemberContains(rawAudioCapturePropertyChangesText, "OnIsAudioEnabledChanged", "SetAudioMonitoringEnabledWithVolumeTransitionAsync(\n                        true,\n                        \"audio_capture_enable\",");
         AssertMemberContains(audioCapturePropertyChangesText, "OnIsAudioEnabledChanged", "afterMonitoringStarted: () => _sessionCoordinator.RestartFlashbackAsync(settings)");
@@ -7549,18 +7265,6 @@ static partial class Program
         AssertDoesNotContain(exportOperationsText, "resolveRangeAfterEvictionPaused: manager =>");
         AssertContains(exportOperationsText, "private readonly record struct FlashbackExportBackendSnapshot(");
         AssertContains(exportOperationsText, "private async Task<FlashbackExportBackendSnapshotResult> SnapshotFlashbackExportBackendAsync(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackExportBackendSnapshot.cs")),
-            "old Flashback export backend snapshot partial removed");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackExportRangeResolution.cs")),
-            "old Flashback export range-resolution partial removed");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackExportForceRotate.cs")),
-            "old Flashback export force-rotate partial removed");
         AssertContains(exportCoreText, "private static FlashbackExportRangeResolver CreateFlashbackExportRangeResolver(");
         AssertContains(exportCoreText, "private static FlashbackExportRangeResolver CreateFlashbackExportLastNRangeResolver(double seconds)");
         AssertContains(exportOperationsText, "return await ExportFlashbackCoreAsync(");
@@ -7688,10 +7392,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var coordinatorText = ReadCaptureSessionCoordinatorSource();
 
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.FlashbackExport.cs")),
-            "MainViewModel.FlashbackExport.cs folded into MainViewModel.FlashbackState.cs");
         AssertMemberContains(flashbackExportText, "ExportFlashbackAsync", "_sessionCoordinator.ExportFlashbackRangeAsync(");
         AssertMemberContains(flashbackExportText, "ExportFlashbackAsync", "playback.InPointFilePts");
         AssertMemberContains(flashbackExportText, "ExportFlashbackAsync", "playback.OutPointFilePts");
@@ -7767,8 +7467,6 @@ static partial class Program
         AssertContains(rawFlashbackExportOperationText, "DisposeFlashbackExportCtsBestEffort(exportCts, \"ui_stale\");");
         AssertContains(rawFlashbackExportAutomationText, "DisposeFlashbackExportCtsBestEffort(exportCts, \"automation_dispatcher_cleanup\");");
         AssertContains(rawFlashbackExportAutomationText, "DisposeFlashbackExportCtsBestEffort(exportCts, \"automation_inline_cleanup\");");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.FlashbackExportOperation.cs")), "MainViewModel.FlashbackExportOperation.cs folded into FlashbackExport");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.FlashbackExportAutomation.cs")), "MainViewModel.FlashbackExportAutomation.cs folded into FlashbackExport");
         AssertDoesNotContain(
             flashbackExportText + "\n" + flashbackExportOperationText + "\n" + flashbackExportAutomationText,
             "exportCts.Dispose();");
@@ -7828,18 +7526,6 @@ static partial class Program
         AssertContains(automationUiText, "public Task SetStatsSectionVisibleAsync(string section, bool visible, CancellationToken cancellationToken = default)");
         AssertContains(automationUiText, "public Task SetStatsVisibleAsync(bool visible, CancellationToken cancellationToken = default)");
         AssertContains(automationUiText, "public Task SetFrameTimeOverlayVisibleAsync(bool visible, CancellationToken cancellationToken = default)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutomationStatsUi.cs")),
-            "MainViewModel stats UI automation partial");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutomationUi.cs")),
-            "MainViewModel.AutomationUi.cs folded into MainViewModel.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutomationCommands.cs")),
-            "MainViewModel.AutomationCommands.cs folded into MainViewModel.cs");
         return Task.CompletedTask;
     }
 
@@ -7928,22 +7614,6 @@ static partial class Program
         AssertContains(settingsLoadApplicationText, "_pendingSavedDeviceId = loadPlan.PendingDeviceId;");
         AssertContains(settingsLoadApplicationText, "_pendingSavedAudioDeviceId = loadPlan.PendingAudioDeviceId;");
         AssertContains(settingsLoadApplicationText, "_pendingSavedMicrophoneDeviceId = loadPlan.PendingMicrophoneDeviceId;");
-        foreach (var removedFile in new[]
-        {
-            "MainViewModel.SettingsLoadApplication.cs",
-            "MainViewModel.SettingsLoadApplication.Recording.cs",
-            "MainViewModel.SettingsLoadApplication.Audio.cs",
-            "MainViewModel.SettingsLoadApplication.Ui.cs",
-            "MainViewModel.SettingsLoadApplication.DeviceAudio.cs",
-            "MainViewModel.SettingsLoadApplication.Flashback.cs",
-            "MainViewModel.SettingsLoadApplication.PendingDevices.cs"
-        })
-        {
-            AssertEqual(
-                false,
-                File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", removedFile)),
-                $"{removedFile} folded into MainViewModel.cs");
-        }
         AssertContains(settingsProjectionText, "internal static class MainViewModelSettingsPersistenceProjection");
         AssertContains(settingsProjectionText, "internal static MainViewModelSettingsLoadPlan BuildLoadPlan(");
         AssertContains(settingsProjectionText, "internal static UserSettings BuildSaveSettings(");
@@ -7958,10 +7628,6 @@ static partial class Program
             "MainViewModelSettingsPersistenceProjection.Models.cs"
         })
         {
-            AssertEqual(
-                false,
-                File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", removedProjectionFile)),
-                $"{removedProjectionFile} folded into MainViewModel.cs");
         }
         AssertDoesNotContain(settingsProjectionText, "SettingsService");
         AssertDoesNotContain(settingsProjectionText, "Logger");
@@ -7975,10 +7641,6 @@ static partial class Program
         AssertDoesNotContain(settingsPersistenceText, "if (settings.ShowAllCaptureOptions.HasValue)");
         AssertDoesNotContain(settingsPersistenceText, "if (settings.IsStatsVisible.HasValue)");
         AssertContains(settingsPersistenceText, "partial void OnIsStatsVisibleChanged(bool value)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.Settings.cs")),
-            "old settings pass-through partial removed");
         AssertDoesNotContain(settingsPersistenceText, "RebuildResolutionOptions();\n        SaveSettings();");
         AssertContains(settingsProjectionText, "string? SelectedVideoFormat");
         AssertContains(settingsProjectionText, "SelectedVideoFormat: settings.SelectedVideoFormat");
@@ -8238,25 +7900,6 @@ static partial class Program
         AssertContains(previewLifecycleControllerText, "string.Equals(SelectedRecordingFormat, other.SelectedRecordingFormat, StringComparison.Ordinal)");
         AssertDoesNotContain(captureModeTransactionsText, "_automationCaptureModeGate");
         AssertDoesNotContain(captureModeTransactionsText, "SetAutomationCaptureModeAsync(");
-        foreach (var stalePath in new[]
-        {
-            "MainViewModel.AutomationSettings.cs",
-            "MainViewModel.AutomationDeviceSelection.cs",
-            "MainViewModel.AutomationCaptureMode.cs",
-            "MainViewModel.AutomationCaptureModeGate.cs",
-            "MainViewModel.AutomationFrameRate.cs",
-            "MainViewModel.AutomationVideoFormat.cs",
-            "MainViewModel.AutomationMjpegDecoderCount.cs",
-            "MainViewModel.CaptureOptionVisibility.cs",
-            "MainViewModel.HdrModeChanges.cs",
-            "MainViewModel.AutomationCaptureSettings.cs"
-        })
-        {
-            AssertEqual(
-                false,
-                File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", stalePath)),
-                $"stale capture settings automation partial {stalePath}");
-        }
 
         return Task.CompletedTask;
     }
@@ -8290,10 +7933,6 @@ static partial class Program
         AssertContains(deviceSelectionAutomationText, "return partialMatches.Length == 1 ? partialMatches[0] : null;");
         AssertContains(rootViewModelText, "public Task RefreshDevicesAsync(CancellationToken cancellationToken = default)");
         AssertContains(rootViewModelText, "=> _deviceRefreshController.RefreshDevicesAsync(cancellationToken: cancellationToken);");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.DeviceManagement.cs")),
-            "shallow MainViewModel device-management partial");
         AssertContains(deviceRefreshControllerText, "namespace Sussudio.Controllers;");
         AssertContains(deviceRefreshControllerText, "internal sealed class MainViewModelDeviceRefreshController");
         AssertContains(deviceRefreshControllerText, "internal sealed class MainViewModelDeviceRefreshControllerContext");
@@ -8301,14 +7940,6 @@ static partial class Program
         AssertDoesNotContain(deviceRefreshControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(deviceRefreshControllerText, "_viewModel.");
         AssertContains(deviceRefreshControllerText, "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)\n        {\n            if (requestGeneration == Volatile.Read(ref _refreshRequestGeneration))\n            {\n                _context.SetStatusText(\"Device scan canceled\");\n            }\n\n            throw;\n        }");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutomationAudioInputSelection.cs")),
-            "MainViewModel audio input automation partial");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutomationDeviceSelection.cs")),
-            "MainViewModel device selection automation partial folded into MainViewModel.cs");
         AssertContains(selectDevice, "return InvokeOnUiThreadAsync(async () =>");
         AssertContains(selectDevice, "var applied = await ApplySelectedDeviceWithResultAsync(target, cancellationToken).ConfigureAwait(true);");
         AssertContains(selectDevice, "throw new InvalidOperationException(\"Capture device selection did not initialize; rollback was skipped if a newer selection superseded this request.\");");
@@ -8367,10 +7998,6 @@ static partial class Program
         AssertOccursBefore(hdrChangeBlock, "RebuildRecordingFormatOptions();", "if (!_suppressHdrToggleReinitialize && IsInitialized && !IsRecording && SelectedDevice != null && SelectedFormat != null)");
         AssertOccursBefore(hdrChangeBlock, "if (!_suppressHdrToggleReinitialize && IsInitialized && !IsRecording && SelectedDevice != null && SelectedFormat != null)", "EnqueueUiOperation(() => ReinitializeDeviceAsync(\"HDR toggle\"), \"hdr toggle reinitialize\");");
         AssertOccursBefore(hdrChangeBlock, "EnqueueUiOperation(() => ReinitializeDeviceAsync(\"HDR toggle\"), \"hdr toggle reinitialize\");", "SaveSettings();");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutomationHdr.cs")),
-            "MainViewModel HDR automation partial");
 
         return Task.CompletedTask;
     }
@@ -8928,45 +8555,21 @@ static partial class Program
         AssertContains(sourceReaderText, "lock (_cadenceLock)");
         AssertContains(sourceReaderText, "public SourceCadenceMetrics GetSourceCadenceMetrics()");
         AssertContains(sourceReaderText, "private void TrackSourceCadence(long mfTimestamp100ns)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MfSourceReaderVideoCapture.Cadence.cs")),
-            "source-reader cadence metrics folded into active lifecycle owner");
         AssertContains(sourceReaderText, "private unsafe void DiagnoseVtable(IMFSample sample)");
         AssertContains(sourceReaderText, "VTABLE_DIAG RAW slot35_GetSampleTime");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MfSourceReaderVideoCapture.Diagnostics.cs")),
-            "source-reader vtable diagnostic folded into root source-reader owner");
         AssertContains(sourceReaderText, "private bool TryGetDxgiTexture(IMFMediaBuffer buffer, out IntPtr gpuTexture, out int gpuSubresource)");
         AssertContains(sourceReaderText, "private static readonly Guid ID3D11Texture2DIid");
         AssertContains(sourceReaderText, "MF_SOURCE_READER_D3D_RESOURCE_FAIL");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MfSourceReaderVideoCapture.DxgiBuffers.cs")),
-            "MfSourceReaderVideoCapture DXGI texture extraction folded into root source-reader owner");
         AssertContains(ReadRepoFile("Sussudio/Services/Contracts/ServiceContracts.cs"), "public static int GetFrameSizeBytes(int width, int height, bool isP010)");
         AssertDoesNotContain(sourceReaderText, "public static int GetFrameSizeBytes");
         AssertContains(sourceReaderText, "PooledVideoFrame.GetFrameSizeBytes");
         AssertContains(sourceReaderText, "private unsafe static void CopyYuvWithStride(");
         AssertContains(sourceReaderText, "private static string SubtypeGuidToName(Guid subtype)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MfSourceReaderVideoCapture.FrameLayout.cs")),
-            "shared source-reader frame layout helpers folded into the root source-reader state");
         AssertContains(sourceReaderText, "public void StartReading(RawFrameCallback onFrame, CancellationToken ct)");
         AssertContains(sourceReaderText, "public async Task StopAsync()");
         AssertContains(sourceReaderText, "private void ReadLoop(RawFrameCallback? onFrame, DualFrameCallback? onDualFrame, CancellationToken ct)");
         AssertContains(sourceReaderText, "private void ReleaseReaderAndSource()");
         AssertContains(sourceReaderText, "private void SignalFatalError(Exception ex)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MfSourceReaderVideoCapture.ReadLoop.cs")),
-            "source-reader read loop folded into active lifecycle owner");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MfSourceReaderVideoCapture.Lifecycle.cs")),
-            "source-reader lifecycle folded into root source-reader state");
         AssertContains(sourceReaderText, "public Task InitializeAsync(string deviceSymbolicLink, VideoCaptureNegotiationOptions options)");
         AssertContains(sourceReaderText, "MF_SOURCE_READER_INIT ");
         AssertContains(sourceReaderText, "SelectConvertedMediaType(");
@@ -8985,15 +8588,7 @@ static partial class Program
         AssertContains(sourceReaderText, "MF_NATIVE_FORMAT_OVERRIDE");
         AssertContains(sourceReaderText, "Volatile.Write(ref _nativeInputFormat");
         AssertContains(sourceReaderText, "Interlocked.Exchange(ref _framesDelivered");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MfSourceReaderVideoCapture.InitializedSession.cs")),
-            "source-reader initialized-session handoff folded into active lifecycle owner");
         AssertContains(sourceReaderText, "public Task InitializeAsync(string deviceSymbolicLink, VideoCaptureNegotiationOptions options)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MfSourceReaderVideoCapture.Initialization.cs")),
-            "source-reader initialization folded into active lifecycle owner");
         AssertContains(sourceReaderText, "private void ReadLoop(RawFrameCallback? onFrame, DualFrameCallback? onDualFrame, CancellationToken ct)");
         AssertContains(sourceReaderText, "reader.ReadSample(");
         AssertContains(sourceReaderText, "DeliverFrame(sample, onFrame, onDualFrame, arrivalTick);");
@@ -9004,14 +8599,6 @@ static partial class Program
         AssertContains(sourceReaderText, "private unsafe bool TryDeliverFrameFrom2DBuffer(IMFMediaBuffer buffer, RawFrameCallback onFrame, long arrivalTick)");
         AssertContains(sourceReaderText, "private unsafe bool TryDeliverDualFrameFrom2DBuffer(");
         AssertContains(sourceReaderText, "ArrayPool<byte>.Shared.Rent");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MfSourceReaderVideoCapture.RawFrameDelivery.cs")),
-            "raw/compressed source-reader frame extraction folded into root source-reader owner");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MfSourceReaderVideoCapture.FrameDelivery.cs")),
-            "source-reader frame delivery folded into root source-reader owner");
     }
 
     private static void AssertDiagnosticsSnapshotStatusProjectionOwnership(AutomationDiagnosticsHubSourceFamily diagnostics)
@@ -9449,7 +9036,6 @@ static partial class Program
         AssertContains(diagnostics.SnapshotInitializerText, "FlashbackExportId = health.FlashbackExportId,");
         AssertContains(diagnostics.SnapshotInitializerText, "FlashbackPlaybackTargetFps = health.FlashbackPlaybackTargetFps,");
         AssertContains(diagnostics.SnapshotInitializerText, "FlashbackVideoQueueLatencyP95Ms = health.FlashbackVideoQueueLatencyP95Ms,");
-        Assert.False(File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationSnapshotFlashbackProjectionBuilder.cs")));
     }
 
     private static AutomationDiagnosticsHubSourceFamily ReadAutomationDiagnosticsHubSourceFamily()
@@ -10391,11 +9977,6 @@ public sealed class PreviewPacingClassifierTests
         Assert.DoesNotContain("PreviewPacingSlowStageClassifier.Lanes.SourceVisual.cs", agentMapText);
         Assert.DoesNotContain("PreviewPacingSlowStageClassifier.Lanes.DecodeJitter.cs", agentMapText);
         Assert.DoesNotContain("PreviewPacingSlowStageClassifier.Lanes.Render.cs", agentMapText);
-        Assert.False(File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "PreviewPacingSlowStageClassifier.D3D.cs")));
-        Assert.False(File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "PreviewPacingSlowStageClassifier.Lanes.SourceVisual.cs")));
-        Assert.False(File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "PreviewPacingSlowStageClassifier.Lanes.DecodeJitter.cs")));
-        Assert.False(File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "PreviewPacingSlowStageClassifier.Lanes.Render.cs")));
-        Assert.False(File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "PreviewPacingClassificationModels.cs")));
     }
 
     [Fact]
@@ -10443,9 +10024,6 @@ public sealed class PreviewPacingClassifierTests
     [Fact]
     public void AutomationDiagnosticsHub_DoesNotRetainSupersededPreviewPacingPartials()
     {
-        Assert.False(File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.PreviewPacing.cs")));
-        Assert.False(File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.Counters.RealtimePreview.cs")));
-        Assert.False(File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.SnapshotProjection.Flattening.AutomationSnapshot.cs")));
     }
 
     [Fact(DisplayName = "Preview pacing classifier rejects weak samples")]

@@ -1248,14 +1248,6 @@ static partial class Program
             "private bool TryEnqueueChannelPacket(\n        Channel<AudioSamplePacket> queue,\n        AudioSamplePacket packet,\n        ref int queueDepth,\n        ref long dropsBacklogEviction,\n        AudioChannelState channel)");
         AssertContains(queueText, "private static void ReturnRemainingBuffers(Channel<AudioSamplePacket>? queue, ref int queueDepth)");
         AssertContains(queueText, "private readonly record struct AudioSamplePacket(byte[] Buffer, int Length);");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvRecordingSink.AudioQueues.cs")),
-            "LibAvRecordingSink audio queue surface folded into shared queue owner");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvRecordingSink.QueueCleanup.cs")),
-            "LibAvRecordingSink queue cleanup lives with video queue submission and packet ownership");
         AssertContains(videoSubmissionText, "private void ReturnRemainingVideoBuffers(Channel<VideoFramePacket>? queue)");
         AssertContains(videoSubmissionText, "private static void ReturnRemainingGpuBuffers(Channel<GpuFramePacket>? queue, ref int queueDepth)");
         AssertContains(videoSubmissionText, "private static unsafe void ReturnRemainingCudaFrames(Channel<CudaFramePacket>? queue, ref int queueDepth)");
@@ -1277,22 +1269,6 @@ static partial class Program
         AssertContains(videoSubmissionText, "internal sealed class VideoQueueLatencyTracker");
         AssertContains(videoSubmissionText, "public void TrackEnqueueUnderLock(long enqueueTick)");
         AssertContains(videoSubmissionText, "public (int SampleCount, double AverageMs, double P95Ms, double P99Ms, double MaxMs) GetMetrics()");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvRecordingSink.Queues.cs")),
-            "LibAvRecordingSink.Queues.cs folded into LibAvRecordingSink.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvRecordingSink.VideoQueueSubmission.cs")),
-            "LibAvRecordingSink.VideoQueueSubmission.cs folded into LibAvRecordingSink.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "VideoQueueLatencyTracker.cs")),
-            "shared video queue latency tracker folded into the recording queueing owner");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvRecordingSink.Queueing.cs")),
-            "LibAvRecordingSink queueing sidecar folded into the sink root");
 
         return Task.CompletedTask;
     }
@@ -1339,14 +1315,6 @@ static partial class Program
             1,
             rootText.Split("public sealed class LibAvRecordingSink", StringSplitOptions.None).Length - 1,
             "LibAvRecordingSink.cs stays one in-file sink body");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvRecordingSink.EncodingLoop.cs")),
-            "LibAvRecordingSink encoding loop stays folded into the sink root");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvRecordingSink.PacketDrain.cs")),
-            "LibAvRecordingSink packet drains stay folded into the sink root with the encoding loop");
         AssertContains(rootText, "private bool DrainVideoPackets(ChannelReader<VideoFramePacket> reader, int maxPackets = int.MaxValue)");
         AssertContains(rootText, "private bool DrainGpuPackets(ChannelReader<GpuFramePacket> reader, int maxPackets = int.MaxValue)");
         AssertContains(rootText, "private unsafe bool DrainCudaPackets(ChannelReader<CudaFramePacket> reader, int maxPackets = int.MaxValue)");
@@ -1386,10 +1354,6 @@ static partial class Program
         AssertContains(rootText, "private void ResetVideoSessionMetrics()");
         AssertContains(rootText, "ResetVideoDiagnostics();");
         AssertContains(rootText, "private void ResetVideoDiagnostics()");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvRecordingSink.Diagnostics.cs")),
-            "LibAvRecordingSink diagnostics surface lives with the sink root state");
         AssertContains(stopText, "public Task<FinalizeResult> StopAsync(CancellationToken cancellationToken = default)");
         AssertContains(stopText, "=> StopCoreAsync(emergency: false, cancellationToken);");
         AssertContains(stopText, "internal Task<FinalizeResult> StopAsync(bool emergency, CancellationToken cancellationToken = default)");
@@ -1414,31 +1378,7 @@ static partial class Program
         AssertContains(rootText, "private void ScheduleDeferredDisposeCleanup(Task encodingTask)");
         AssertContains(rootText, "private void CompleteWriter<TPacket>(Channel<TPacket>? channel)");
         AssertContains(rootText, "SignalWork(\"complete_writer\");");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvRecordingSink.StopLifecycle.cs")),
-            "LibAvRecordingSink stop/finalize lifecycle lives with the sink root lifecycle");
 
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvRecordingSink.OutputValidation.cs")),
-            "LibAvRecordingSink.OutputValidation.cs folded into the sink root lifecycle");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvRecordingSink.Options.cs")),
-            "LibAvRecordingSink.Options.cs folded into the sink startup owner");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvRecordingSink.VideoSession.cs")),
-            "LibAvRecordingSink video session startup helpers folded into the sink root");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvRecordingSink.Startup.cs")),
-            "LibAvRecordingSink startup shell folded into the sink root with encoding-loop lifecycle");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvRecordingSink.Lifetime.cs")),
-            "LibAvRecordingSink dispose/deferred cleanup lives with the sink root");
 
         return Task.CompletedTask;
     }
@@ -2480,14 +2420,6 @@ static partial class Program
         AssertContains(rootText, "private static CadenceMetrics ComputeCadenceMetrics(");
         AssertContains(rootText, "private static double? TryGetFrameTimestampSeconds(JsonElement frame)");
         AssertContains(rootText, "private static double? TryGetJsonDouble(JsonElement element, string propertyName)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "Verification", "RecordingVerifier.Cadence.cs")),
-            "RecordingVerifier cadence ffprobe pass folded into verifier owner");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "Verification", "RecordingVerifier.Ffprobe.cs")),
-            "RecordingVerifier ffprobe helper partial folded into verifier owner");
 
         return Task.CompletedTask;
     }
@@ -2517,18 +2449,6 @@ static partial class Program
         AssertContains(rootText, "private static IReadOnlyList<MismatchTaxonomyEntry> BuildMismatchTaxonomy(");
         AssertContains(rootText, "private static string? TryGetMismatchPart(");
         AssertContains(rootText, "private static RecordingVerificationResult CreateEarlyFailure(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "Verification", "RecordingVerifier.Results.cs")),
-            "RecordingVerifier.Results.cs folded into RecordingVerifier.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "Verification", "RecordingVerifier.Validation.cs")),
-            "RecordingVerifier validation policy folded into RecordingVerifier.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "Verification", "RecordingVerifier.Ffprobe.cs")),
-            "RecordingVerifier ffprobe probe/process helpers folded into RecordingVerifier.cs");
 
         return Task.CompletedTask;
     }
@@ -3170,18 +3090,6 @@ static partial class Program
         AssertOccursBefore(pooledFlashbackEnqueue, "if (frame.Length < expectedSize)", "frame.TryAddLease(out var lease)");
         AssertContains(pooledFlashbackEnqueue, "RecordFlashbackOutcome(");
         AssertContains(fanoutSource, "private void TrackFlashbackRecordingAcceptedSequence(long sourceSequence)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "UnifiedVideoCapture.SinkFanout.Flashback.cs")),
-            "UnifiedVideoCapture Flashback fanout folded into the source-session owner");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "UnifiedVideoCapture.SinkFanout.cs")),
-            "UnifiedVideoCapture recording/Flashback fanout folded into the source-session owner");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "UnifiedVideoCapture.FrameIngress.cs")),
-            "UnifiedVideoCapture frame ingress folded into the source-session owner");
         AssertDoesNotContain(fanoutSource, "partial class UnifiedVideoCapture");
 
         return Task.CompletedTask;
@@ -3205,14 +3113,6 @@ static partial class Program
         AssertContains(frameIngressSource, "private void EnqueueRecordingFrame(ReadOnlySpan<byte> frameData, int width, int height, bool isP010, long sourceSequence)");
         AssertContains(frameIngressSource, "private void EnqueueFlashbackFrame(ReadOnlySpan<byte> frameData, int width, int height, bool isP010, long sourceSequence)");
         AssertContains(frameIngressSource, "private void TrackFlashbackRecordingAcceptedSequence(long sourceSequence)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "UnifiedVideoCapture.Preview.cs")),
-            "UnifiedVideoCapture preview submission folded into the source-session owner");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "UnifiedVideoCapture.FrameIngress.cs")),
-            "UnifiedVideoCapture frame ingress folded into the source-session owner");
         AssertContains(frameIngressSource, "internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource");
         AssertDoesNotContain(frameIngressSource, "partial class UnifiedVideoCapture");
 
@@ -3267,10 +3167,6 @@ static partial class Program
         AssertContains(initializationSource, "CreateExternalMjpegPipelineIfNeeded(");
         AssertContains(initializationSource, "InstallMjpegPreviewJitterBuffer(capture.Fps > 0 ? capture.Fps : options.Fps);");
         AssertContains(initializationSource, "capture.FatalErrorOccurred += OnCaptureFatalError;");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "UnifiedVideoCapture.Initialization.cs")),
-            "UnifiedVideoCapture initialization folded into root source-session owner");
         AssertContains(lifecycleSource, "public void Start()");
         AssertContains(lifecycleSource, "public async Task StopAsync()");
         AssertContains(lifecycleSource, "public async ValueTask DisposeAsync()");
@@ -3291,14 +3187,6 @@ static partial class Program
         AssertDoesNotContain(mjpegLifecycleSource, "CPU MJPEG pipeline stop did not quiesce cleanly");
         AssertContains(mjpegLifecycleSource, "private static void DisposeMjpegPipelineResources(");
         AssertContains(mjpegLifecycleSource, "private void OnMjpegPipelineFatalError(Exception ex)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "UnifiedVideoCapture.MjpegPipelineLifecycle.cs")),
-            "UnifiedVideoCapture MJPEG startup helpers folded into root source-session owner");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "UnifiedVideoCapture.Lifecycle.cs")),
-            "UnifiedVideoCapture lifecycle folded into root source-session owner");
 
         return Task.CompletedTask;
     }
@@ -3333,10 +3221,6 @@ static partial class Program
         AssertContains(wasapiSource, "private static void CompleteHotAudioWrite(Task task, string target)");
         AssertContains(wasapiSource, "if (!task.IsCompleted)");
         AssertContains(wasapiSource, "Audio writers must copy/enqueue synchronously and return Task.CompletedTask.");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Audio", "WasapiAudioCapture.Fanout.cs")),
-            "converted audio fan-out lives with the WASAPI capture loop");
         AssertContains(contractsSource, "Hot WASAPI callback write.");
         AssertContains(contractsSource, "must not do blocking/async work");
 
@@ -3374,14 +3258,6 @@ static partial class Program
         AssertContains(wasapiSource, "private static unsafe float ReadSample(");
         AssertContains(wasapiSource, "private static void ReturnPacketBuffer(ConvertedAudioPacket packet)");
         AssertContains(wasapiSource, "private readonly struct ConvertedAudioPacket");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Audio", "WasapiAudioCapture.Conversion.cs")),
-            "WASAPI capture conversion folded into capture lifecycle root");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Audio", "WasapiAudioCapture.CaptureLoop.cs")),
-            "WASAPI capture loop folded into capture lifecycle root");
 
         return Task.CompletedTask;
     }
@@ -3409,10 +3285,6 @@ static partial class Program
         AssertContains(wasapiSource, "public void Start()");
         AssertContains(wasapiSource, "public Task StopAsync()");
         AssertContains(wasapiSource, "public async ValueTask DisposeAsync()");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Audio", "WasapiAudioCapture.Initialization.cs")),
-            "WASAPI capture initialization stays folded into capture lifecycle root");
 
         return Task.CompletedTask;
     }
@@ -3442,14 +3314,6 @@ static partial class Program
         AssertContains(playbackSource, "private bool TryWriteChunk(PlaybackChunk chunk)");
         AssertContains(playbackSource, "private bool TryDequeueChunk(out PlaybackChunk chunk)");
         AssertContains(playbackSource, "private readonly record struct PlaybackChunk");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Audio", "WasapiAudioPlayback.Initialization.cs")),
-            "WASAPI playback initialization stays folded into playback lifecycle root");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Audio", "WasapiAudioPlayback.Queue.cs")),
-            "WASAPI playback queue state stays folded into playback lifecycle root");
         AssertContains(playbackSource, "public void Start()");
         AssertContains(playbackSource, "public void PauseRendering()");
         AssertContains(playbackSource, "public void ResumeRendering(double prebufferMs = 0, int prebufferTimeoutMs = 0)");
@@ -3460,10 +3324,6 @@ static partial class Program
         AssertContains(playbackSource, "private unsafe void RenderAvailableFrames()");
         AssertContains(playbackSource, "private void ApplyVolume(Span<byte> buffer)");
         AssertContains(playbackSource, "private void UpdateOutputLevel(ReadOnlySpan<byte> buffer)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Audio", "WasapiAudioPlayback.RenderThread.cs")),
-            "WASAPI playback render thread stays folded into playback lifecycle root");
 
         return Task.CompletedTask;
     }
@@ -3482,10 +3342,6 @@ static partial class Program
         AssertContains(wasapiSource, "private CallbackIntervalMetrics GetCaptureCallbackIntervalMetrics()");
         AssertContains(wasapiSource, "private void TrackCapturePacketFlags(uint flags)");
         AssertContains(wasapiSource, "private readonly record struct CallbackIntervalMetrics");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Audio", "WasapiAudioCapture.Diagnostics.cs")),
-            "WASAPI capture diagnostics folded into capture lifecycle root");
 
         return Task.CompletedTask;
     }
@@ -3533,30 +3389,6 @@ static partial class Program
         AssertContains(rootSource, "internal interface IAudioCaptureClient");
         AssertContains(rootSource, "internal interface IAudioRenderClient");
         AssertContains(rootSource, "internal interface IAudioEndpointVolume");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Audio", "WasapiComInterop.CoreAudio.Contracts.cs")),
-            "Core Audio contract shard folded into the single WASAPI interop owner");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Audio", "WasapiComInterop.AudioClient.Contracts.cs")),
-            "AudioClient contract shard folded into the single WASAPI interop owner");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Audio", "WasapiComInterop.Formats.cs")),
-            "WASAPI format helpers stay with the implementation root instead of a tiny partial");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Audio", "WasapiComInterop.DeviceClients.cs")),
-            "WASAPI device helpers stay with the implementation root instead of a tiny partial");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Audio", "WasapiComInterop.Contracts.cs")),
-            "old combined WASAPI COM contract file removed");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Audio", "WasapiComInterop.CommonContracts.cs")),
-            "shared WASAPI contracts stay with Core Audio contracts instead of a tiny file");
 
         static void AssertComReleaseWrapperClearsReference(string typeName)
         {
@@ -3846,32 +3678,12 @@ static partial class Program
         AssertContains(flashbackStateText, "public Task RestartFlashbackAsync(");
         AssertContains(flashbackStateText, "private async Task RestartFlashbackCoreAsync(");
         AssertContains(flashbackStateText, "UpdateEncodingSettings(settings);");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackControls.cs")),
-            "Flashback controls owner folded into CaptureService.Flashback.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackRecording.cs")),
-            "Flashback recording owner folded into CaptureService.Flashback.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackAudioInputs.cs")),
-            "Flashback audio input restoration folded into Flashback recording owner");
         AssertContains(flashbackRecordingText, "private async Task EnsureFlashbackAudioInputsAsync(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackPreviewBackend.cs")),
-            "Flashback preview backend lifecycle folded into Flashback controls owner");
         AssertContains(previewBackendText, "private async Task EnsureFlashbackPreviewBackendAsync(");
         AssertContains(previewBackendText, "private async Task DisposeFlashbackPreviewBackendAsync(");
         AssertDoesNotContain(previewBackendText, "DisposeFlashbackPreviewBackendCoreAsync");
         AssertContains(previewBackendText, "CreateFlashbackPreviewBackendDisposalRequest(");
         AssertContains(previewBackendText, "await DisposeFlashbackPreviewBackendAsync(transitionToken, purgeSegments: false)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackPreviewBackendDisposal.cs")),
-            "old Flashback preview backend disposal partial removed");
         AssertContains(backendResourcesText, "internal readonly record struct FlashbackPreviewBackendDisposalRequest(");
         AssertContains(backendResourcesText, "public async Task DisposePreviewBackendUnderExportLockAsync(");
         AssertContains(settingsText, "private async Task CycleFlashbackBufferAsync(");
@@ -3930,24 +3742,8 @@ static partial class Program
         AssertContains(backendResourcesText, "preview_init_rollback");
         AssertContains(backendResourcesText, "public async Task<FinalizeResult> FinalizeRecordingAsync(");
         AssertContains(backendResourcesText, "private static FinalizeResult PreserveEndArtifactsOnFailure(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackBackendResources.RecordingFinalize.cs")),
-            "recording finalize policy folded into FlashbackBackendResources.cs");
         AssertContains(backendResourcesText, "private void AttachProducers(FlashbackProducerAttachRequest request)");
         AssertContains(backendResourcesText, "private void DetachProducers(FlashbackProducerDetachRequest request)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackState.cs")),
-            "Flashback state owner folded into CaptureService.Flashback.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackSettings.cs")),
-            "Flashback settings owner folded into CaptureService.Flashback.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackSettingsControls.cs")),
-            "old broad Flashback settings controls file removed");
 
         return Task.CompletedTask;
     }
@@ -3985,10 +3781,6 @@ static partial class Program
         AssertContains(flashbackBackendFinalizationText, "BeginFlashbackBackendCleanup(ex);");
         AssertOccursBefore(flashbackBackendFinalizationText, "LogRecordingIntegritySummary(_lastRecordingIntegrity);", "ReconcileFlashbackBackendAfterRecordingFinalizeAsync(");
         AssertOccursBefore(flashbackBackendFinalizationText, "PublishRecordingFinalizedOutcome(fbResult, updateOutputPath: false);", "CompleteFlashbackPostFinalizeMaintenanceAsync(fbResult)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RecordingFinalizeFlashbackBackendReconcile.cs")),
-            "old Flashback backend reconcile partial removed");
         AssertContains(libAvBackendFinalizationText, "private async Task<FinalizeResult> StopAndDisposeLibAvRecordingBackendAsync(");
         AssertContains(libAvBackendFinalizationText, "StopUnifiedVideoRecordingForLibAvFinalizeAsync(");
         AssertContains(libAvBackendFinalizationText, "DetachLibAvRecordingAudioBeforeSinkStopAsync(");
@@ -4002,22 +3794,6 @@ static partial class Program
         AssertContains(libAvBackendFinalizationText, "reason: \"recording_stop_deferred_drain\"");
         AssertContains(libAvBackendFinalizationText, "_previewAudioGraph.DetachCapture(");
         AssertContains(libAvBackendFinalizationText, "Recording WASAPI capture dispose failed");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RecordingFinalizeLibAvResources.cs")),
-            "old broad LibAv resource finalization partial removed");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RecordingFinalizeLibAvVideoBoundary.cs")),
-            "old LibAv video-boundary finalization partial removed");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RecordingFinalizeLibAvSink.cs")),
-            "old LibAv sink finalization partial removed");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RecordingFinalizeLibAvIdlePreview.cs")),
-            "old LibAv idle-preview finalization partial removed");
         AssertContains(libAvBackendFinalizationText, "RestoreLibAvPreviewFeaturesAfterRecordingAsync(");
         AssertContains(libAvBackendFinalizationText, "PublishRecordingFinalizedOutcome(result, updateOutputPath: true);");
         AssertContains(libAvBackendFinalizationText, "private async Task<OperationCanceledException?> RestoreLibAvPreviewFeaturesAfterRecordingAsync(");
@@ -4030,20 +3806,8 @@ static partial class Program
         AssertContains(libAvBackendFinalizationText, "OnlyWhenMissing: false,");
         AssertContains(libAvBackendFinalizationText, "FlashbackAttachReason: \"mic_monitor_restart\",");
         AssertContains(libAvBackendFinalizationText, "RestartLogEvent: \"MIC_MONITOR_RESTART\",");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RecordingFinalizeLibAvPreviewRestore.cs")),
-            "old LibAv preview-restore finalization partial removed");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RecordingFinalizeFlashback.cs")),
-            "Flashback export-finalize helpers folded into CaptureService.Flashback.cs");
         AssertContains(recordingLifecycleText, "private void PublishRecordingStartedOutcome(RecordingContext recordingContext)");
         AssertContains(recordingLifecycleText, "private void PublishRecordingFinalizedOutcome(FinalizeResult result, bool updateOutputPath)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RecordingOutcomeState.cs")),
-            "old recording outcome-state partial removed");
         AssertDoesNotContain(stopLifecycleText, "private sealed class FlashbackRecordingBoundarySnapshot");
         AssertDoesNotContain(stopLifecycleText, "private void CaptureFlashbackRecordingBoundarySnapshot(");
         AssertDoesNotContain(stopLifecycleText, "FLASHBACK_UNIFIED_RECORDING_FINALIZE_FAIL");
@@ -4382,10 +4146,6 @@ static partial class Program
         AssertDoesNotContain(libAvFinalizeText, "_lastFinalizeUtc = DateTimeOffset.UtcNow;");
         AssertDoesNotContain(flashbackFinalizeText, "_lastPreservedArtifacts = fbResult.PreservedArtifacts;");
         AssertDoesNotContain(libAvFinalizeText, "_lastPreservedArtifacts = result.PreservedArtifacts;");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RecordingOutcomeState.cs")),
-            "old recording outcome-state partial removed");
 
         return Task.CompletedTask;
     }
@@ -4589,10 +4349,6 @@ static partial class Program
         var rootText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.cs")
             .Replace("\r\n", "\n");
 
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.Diagnostics.cs")),
-            "LibAvEncoder diagnostics helpers live with core encoder state, not a standalone partial");
         AssertContains(rootText, "private void EnsureOpen()");
         AssertContains(rootText, "private static void ThrowIfError(int errorCode, string operation)");
         AssertContains(rootText, "private static string GetErrorString(int errorCode)");
@@ -4775,10 +4531,6 @@ static partial class Program
         var videoSubmissionText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.VideoFrames.cs")
             .Replace("\r\n", "\n");
 
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.PacketWriting.cs")),
-            "video packet drain/write helpers stay folded into video submission");
         AssertContains(videoSubmissionText, "private void DrainEncoderPackets()");
         AssertContains(videoSubmissionText, "private void WriteFilteredPackets()");
         AssertContains(videoSubmissionText, "private void DrainBsfPackets()");
@@ -4798,10 +4550,6 @@ static partial class Program
         var videoSubmissionText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.VideoFrames.cs")
             .Replace("\r\n", "\n");
 
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.FrameCopy.cs")),
-            "CPU packed-frame copy is part of video submission, not a standalone partial");
         AssertContains(videoSubmissionText, "private void CopyPackedFrameToVideoFrame(ReadOnlySpan<byte> frameData, LibAvEncoderOptions options)");
         AssertContains(videoSubmissionText, "private static void CopyPlane(byte* sourceStart, byte* destinationStart, int destinationStride, int rowBytes, int rowCount)");
         AssertContains(videoSubmissionText, "Buffer.MemoryCopy(");
@@ -4830,18 +4578,6 @@ static partial class Program
         AssertContains(hardwareFramesText, "public void SendCudaVideoFrame(AVFrame* decodedFrame)");
         AssertContains(hardwareFramesText, "CopySubresourceRegion");
         AssertContains(hardwareFramesText, "AttachHdrFrameSideDataToHwFrame(options)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.VideoSubmission.cs")),
-            "CPU video submission folded into LibAvEncoder.VideoFrames.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.HardwareFrames.cs")),
-            "hardware frame setup/submission folded into LibAvEncoder.VideoFrames.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.HardwareSubmission.cs")),
-            "hardware frame submission lives with LibAvEncoder.VideoFrames.cs");
         AssertDoesNotContain(rootText, "public void SendVideoFrame(ReadOnlySpan<byte> frameData, int width, int height)");
         AssertDoesNotContain(rootText, "public void SendGpuVideoFrame(IntPtr d3d11Texture, int subresourceIndex)");
         AssertDoesNotContain(rootText, "public void SendCudaVideoFrame(AVFrame* decodedFrame)");
@@ -4860,10 +4596,6 @@ static partial class Program
         AssertContains(initializationText, "ThrowIfError(ffmpeg.avcodec_open2(_videoCodecCtx, codec, null), \"avcodec_open2\");");
         AssertContains(initializationText, "ApplyMuxerOptions(options.ContainerFormat, options.FragmentedMp4, &muxerOptions, \"open\");");
         AssertContains(initializationText, "CleanupResources(writeTrailer: false);");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.Initialization.cs")),
-            "LibAvEncoder initialization folded into the encoder root");
 
         return Task.CompletedTask;
     }
@@ -4896,36 +4628,12 @@ static partial class Program
         AssertContains(audioText, "private void InitializeMicrophoneIfNeeded(LibAvEncoderOptions options)");
         AssertContains(audioText, "ffmpeg.avcodec_find_encoder(AVCodecID.AV_CODEC_ID_AAC)");
         AssertContains(audioText, "private void InitializeAudioStream(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.AudioSetup.cs")),
-            "Audio setup helpers live with audio stream initialization");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.AudioSubmission.cs")),
-            "Audio sample submission folded into LibAvEncoder.Audio.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.AudioQueue.cs")),
-            "Audio queue and A/V sync helpers folded into LibAvEncoder.Audio.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.AudioInitialization.cs")),
-            "Audio stream initialization folded into LibAvEncoder.Audio.cs");
         AssertContains(videoSubmissionText, "private bool AttachHdrFrameSideDataIfNeeded(LibAvEncoderOptions options)");
         AssertContains(videoSubmissionText, "private bool AttachHdrFrameSideDataToHwFrame(LibAvEncoderOptions options)");
         AssertContains(videoSubmissionText, "ffmpeg.av_mastering_display_metadata_create_side_data(_videoFrame)");
         AssertContains(videoSubmissionText, "ffmpeg.av_mastering_display_metadata_create_side_data(_hwFrame)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.HdrSideData.cs")),
-            "HDR side-data helpers live with LibAvEncoder.VideoFrames.cs");
         AssertContains(modelsText, "internal sealed record LibAvEncoderOptions");
         AssertContains(modelsText, "internal readonly record struct RotateOutputResult");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.Models.cs")),
-            "LibAvEncoder option/result models live with the encoder root");
         AssertContains(initializationText, "private void ConfigureVideoCodecContext(AVCodecContext* codecContext, LibAvEncoderOptions options)");
         AssertContains(initializationText, "private void ApplyEncoderPrivateOptions(AVCodecContext* codecContext, LibAvEncoderOptions options)");
         AssertContains(initializationText, "private void InitializeVideoBitstreamFilterIfNeeded(LibAvEncoderOptions options)");
@@ -4934,18 +4642,6 @@ static partial class Program
         AssertContains(initializationText, "private static bool TryMapSplitEncodeMode(SplitEncodeMode splitEncodeMode, out long value)");
         AssertContains(initializationText, "private static AVRational ResolveFrameRate(LibAvEncoderOptions options)");
         AssertContains(initializationText, "private static bool IsSampleFormatSupported(AVCodec* codec, AVSampleFormat sampleFormat)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.VideoSetup.cs")),
-            "Video codec setup helpers live with encoder initialization");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.CodecPolicy.cs")),
-            "LibAvEncoder codec/filter/rational policy lives with encoder initialization");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.Initialization.cs")),
-            "LibAvEncoder initialization lives with the encoder root");
         AssertContains(hardwareFramesText, "private static IntPtr CreateSingleTexture2D(IntPtr d3d11Device, int width, int height, bool isP010, uint bindFlags)");
         AssertContains(hardwareFramesText, "private void InitializeHardwareFramesIfNeeded(LibAvEncoderOptions options)");
         AssertContains(hardwareFramesText, "framesCtx->initial_pool_size = 0;");
@@ -4956,30 +4652,10 @@ static partial class Program
         AssertContains(hardwareFramesText, "public void SendCudaVideoFrame(AVFrame* decodedFrame)");
         AssertContains(hardwareFramesText, "CopySubresourceRegion");
         AssertContains(hardwareFramesText, "AttachHdrFrameSideDataToHwFrame(options)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.HardwareFrames.Cuda.cs")),
-            "CUDA hardware frame adoption lives with the hardware frame initializer");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.HardwareSubmission.cs")),
-            "hardware frame submission lives with LibAvEncoder.VideoFrames.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.VideoSubmission.cs")),
-            "CPU video submission folded into LibAvEncoder.VideoFrames.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.HardwareFrames.cs")),
-            "hardware frame setup/submission folded into LibAvEncoder.VideoFrames.cs");
         AssertContains(initializationText, "private static void ValidateOptions(LibAvEncoderOptions options)");
         AssertContains(initializationText, "private static void ValidateRequiredVideoOptions(LibAvEncoderOptions options)");
         AssertContains(initializationText, "private static void ValidateAudioOptions(LibAvEncoderOptions options)");
         AssertContains(initializationText, "private static void ValidateHdrOptions(LibAvEncoderOptions options)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.OptionsValidation.cs")),
-            "LibAvEncoder option validation folded into encoder initialization");
         AssertDoesNotContain(rootText, "private void InitializeAudioStream(");
         AssertDoesNotContain(rootText, "private bool AttachHdrFrameSideDataIfNeeded(LibAvEncoderOptions options)");
         AssertDoesNotContain(rootText, "private bool AttachHdrFrameSideDataToHwFrame(LibAvEncoderOptions options)");
@@ -5014,22 +4690,6 @@ static partial class Program
         AssertContains(outputLifecycleText, "Marshal.Release(_hwPoolTextures[i]);");
         AssertContains(outputLifecycleText, "ffmpeg.avcodec_free_context(&videoCodecCtx)");
         AssertContains(outputLifecycleText, "_isOpen = false;");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.OutputLifecycle.cs")),
-            "output lifecycle folded into LibAvEncoder.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.OutputRotation.cs")),
-            "output rotation folded into LibAvEncoder.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.ResourceCleanup.cs")),
-            "resource cleanup folded into LibAvEncoder.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.NativeResourceRelease.cs")),
-            "Native resource release folded into LibAvEncoder.cs");
         return Task.CompletedTask;
     }
 
@@ -5598,10 +5258,6 @@ static partial class Program
         AssertContains(managerText, "FLASHBACK_BUFFER_SEGMENT_COMPLETE");
         AssertContains(managerText, "FLASHBACK_BUFFER_SEGMENT_EXTEND");
         AssertDoesNotContain(managerText, "partial class FlashbackBufferManager");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackBufferManager.Segments.cs")),
-            "FlashbackBufferManager.Segments.cs folded into FlashbackBufferManager.cs");
 
         return Task.CompletedTask;
     }
@@ -5617,10 +5273,6 @@ static partial class Program
         AssertContains(rootText, "public void UpdateLatestPts(TimeSpan pts)");
         AssertContains(rootText, "public void UpdateDiskBytes(long activeSegmentBytes)");
         AssertContains(rootText, "FLASHBACK_BUFFER_DISK_EVICT");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackBufferManager.LiveAccounting.cs")),
-            "FlashbackBufferManager.LiveAccounting.cs folded into FlashbackBufferManager.cs");
 
         return Task.CompletedTask;
     }
@@ -5638,10 +5290,6 @@ static partial class Program
         AssertContains(mathText, "private static TimeSpan ClampEndPtsToStart(TimeSpan startPts, TimeSpan endPts)");
         AssertContains(mathText, "private static bool IsSameSegmentPath(string? left, string? right)");
         AssertContains(mathText, "private static long ToNonNegativeLongSaturated(double value)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackBufferManager.Math.cs")),
-            "FlashbackBufferManager.Math.cs folded into FlashbackBufferManager.cs");
 
         return Task.CompletedTask;
     }
@@ -5672,10 +5320,6 @@ static partial class Program
         AssertContains(queryText, "private TimeSpan GetDefaultActiveSegmentStartPts()");
         AssertContains(queryText, "public IReadOnlyList<FlashbackSegmentInfo> GetSegmentInfoList()");
         AssertDoesNotContain(queryText, "partial class FlashbackBufferManager");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackBufferManager.Segments.cs")),
-            "FlashbackBufferManager.Segments.cs folded into FlashbackBufferManager.cs");
         AssertContains(docsText, "FlashbackBufferManager.cs");
         AssertContains(docsText, "session-directory path safety");
 
@@ -5702,10 +5346,6 @@ static partial class Program
         AssertContains(recoveryPreserveText, "RecoveryPreserveMarkerFileName");
         AssertContains(recoveryPreserveText, "FLASHBACK_RECOVERY_PRESERVE_MARKER");
         AssertContains(recoveryPreserveText, "FLASHBACK_RECOVERY_PRESERVE_MARKER_CHECK_WARN");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackBufferManager.Lifecycle.cs")),
-            "FlashbackBufferManager.Lifecycle.cs folded into FlashbackBufferManager.cs");
         AssertContains(docsText, "FlashbackBufferManager.cs");
         AssertContains(docsText, "recovery-preserve state");
 
@@ -5740,22 +5380,6 @@ static partial class Program
         AssertContains(evictionText, "private void RetryParkedEvictionDeletes()");
         AssertContains(evictionText, "private void SweepParkedEvictionDeletesBestEffort(string operation)");
         AssertContains(evictionText, "private static bool DeleteEvictedFile(string fullPath, string sessionRoot, long sizeBytes, string reason, int attempt)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackBufferManager.Purge.cs")),
-            "FlashbackBufferManager.Purge.cs folded into FlashbackBufferManager.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackBufferManager.Lifecycle.cs")),
-            "FlashbackBufferManager.Lifecycle.cs folded into FlashbackBufferManager.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackBufferManager.Retention.cs")),
-            "FlashbackBufferManager.Retention.cs folded into FlashbackBufferManager.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackBufferManager.Segments.cs")),
-            "FlashbackBufferManager.Segments.cs folded into FlashbackBufferManager.cs");
 
         return Task.CompletedTask;
     }

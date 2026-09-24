@@ -174,18 +174,6 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
         Assert.DoesNotContain("_currentSettings", healthSnapshotAssemblerText, StringComparison.Ordinal);
         Assert.DoesNotContain("ComputeTickAge(", healthSnapshotAssemblerText, StringComparison.Ordinal);
         Assert.DoesNotContain("return new CaptureHealthSnapshot", getHealthSnapshotText, StringComparison.Ordinal);
-        Assert.False(File.Exists(Path.Combine(
-            FindRepoRoot(),
-            "Sussudio",
-            "Services",
-            "Capture",
-            "CaptureService.HealthSnapshotAssembler.cs")));
-        Assert.False(File.Exists(Path.Combine(
-            FindRepoRoot(),
-            "Sussudio",
-            "Services",
-            "Capture",
-            "CaptureService.HealthSnapshotAssemblyFields.cs")));
 
     }
 
@@ -202,12 +190,6 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
         Assert.Contains("private static CaptureCadenceHealthSnapshotFields BuildCaptureCadenceHealthSnapshotFields(", healthSnapshotText, StringComparison.Ordinal);
         Assert.Contains("private readonly record struct CaptureCadenceHealthSnapshotFields(", healthSnapshotText, StringComparison.Ordinal);
         Assert.Contains("unifiedVideoCapture?.GetSourceCadenceMetrics()", healthSnapshotText, StringComparison.Ordinal);
-        Assert.False(File.Exists(Path.Combine(
-            FindRepoRoot(),
-            "Sussudio",
-            "Services",
-            "Capture",
-            "CaptureService.HealthSnapshotCaptureCadence.cs")));
 
     }
 
@@ -233,12 +215,6 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
         Assert.Contains("GetPreviewVisualCadenceMetrics()", healthSnapshotText, StringComparison.Ordinal);
         Assert.Contains("FrameFingerprintCadenceTracker.Empty", healthSnapshotText, StringComparison.Ordinal);
         Assert.Contains("new MjpegDecoderHealthSnapshot(", healthSnapshotText, StringComparison.Ordinal);
-        Assert.False(File.Exists(Path.Combine(
-            FindRepoRoot(),
-            "Sussudio",
-            "Services",
-            "Capture",
-            "CaptureService.HealthSnapshotMjpeg.cs")));
 
     }
 
@@ -260,18 +236,6 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
         Assert.DoesNotContain("var (avSyncDriftMs, avSyncDriftRate) = ComputeAvSyncDrift();", healthSnapshotText, StringComparison.Ordinal);
         Assert.DoesNotContain("var (avSyncEncoderDriftMs, avSyncEncoderCorrectionSamples) = GetEncoderAvSyncDrift();", healthSnapshotText, StringComparison.Ordinal);
 
-        Assert.False(File.Exists(Path.Combine(
-            FindRepoRoot(),
-            "Sussudio",
-            "Services",
-            "Capture",
-            "CaptureService.HealthSnapshots.AvSync.cs")));
-        Assert.False(File.Exists(Path.Combine(
-            FindRepoRoot(),
-            "Sussudio",
-            "Services",
-            "Capture",
-            "CaptureService.SnapshotAvSync.cs")));
         Assert.Contains("private AvSyncHealthSnapshotFields CaptureAvSyncHealthSnapshotFields()", avSyncSnapshotText, StringComparison.Ordinal);
         Assert.Contains("var (captureDriftMs, captureDriftRateMsPerSec) = GetAvSyncDrift();", avSyncSnapshotText, StringComparison.Ordinal);
         Assert.Contains("var (encoderDriftMs, encoderCorrectionSamples) = GetEncoderAvSyncDrift();", avSyncSnapshotText, StringComparison.Ordinal);
@@ -316,12 +280,6 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
         Assert.Contains("var outputBytes = GetFileLengthOrZero(", flashbackExportStateText, StringComparison.Ordinal);
         Assert.Contains("ThroughputBytesPerSec = throughputBytesPerSec", flashbackExportStateText, StringComparison.Ordinal);
         Assert.Contains("FinalizeResult? LastResult", flashbackExportStateText, StringComparison.Ordinal);
-        Assert.False(File.Exists(Path.Combine(
-            FindRepoRoot(),
-            "Sussudio",
-            "Services",
-            "Capture",
-            "CaptureService.HealthSnapshotFlashbackExport.cs")));
 
     }
 
@@ -342,12 +300,6 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
         Assert.Contains("bufMgr?.StartupCacheOverBudget ?? false", healthSnapshotText, StringComparison.Ordinal);
         Assert.Contains("fbSink?.EncoderFrameRateDenominator", healthSnapshotText, StringComparison.Ordinal);
         Assert.Contains("private readonly record struct FlashbackBufferHealthSnapshotFields", healthSnapshotText, StringComparison.Ordinal);
-        Assert.False(File.Exists(Path.Combine(
-            FindRepoRoot(),
-            "Sussudio",
-            "Services",
-            "Capture",
-            "CaptureService.HealthSnapshotFlashbackBackend.cs")));
 
     }
 
@@ -368,12 +320,6 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
         Assert.Contains("fbSink?.IsForceRotateActive ?? false", healthSnapshotText, StringComparison.Ordinal);
         Assert.Contains("fbSink?.LastGpuQueueRejectReason ?? string.Empty", healthSnapshotText, StringComparison.Ordinal);
         Assert.Contains("private readonly record struct FlashbackQueueHealthSnapshotFields", healthSnapshotText, StringComparison.Ordinal);
-        Assert.False(File.Exists(Path.Combine(
-            FindRepoRoot(),
-            "Sussudio",
-            "Services",
-            "Capture",
-            "CaptureService.HealthSnapshotFlashbackBackend.cs")));
 
     }
 
@@ -414,18 +360,6 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
         Assert.Contains("fbPlayback?.CommandsEnqueued ?? 0", healthSnapshotText, StringComparison.Ordinal);
         Assert.Contains("double[] RecentFrameIntervalsMs", healthSnapshotText, StringComparison.Ordinal);
         Assert.Contains("string LastCommandFailure", healthSnapshotText, StringComparison.Ordinal);
-        Assert.False(File.Exists(Path.Combine(
-            FindRepoRoot(),
-            "Sussudio",
-            "Services",
-            "Capture",
-            "CaptureService.HealthSnapshotFlashbackPlayback.State.cs")));
-        Assert.False(File.Exists(Path.Combine(
-            FindRepoRoot(),
-            "Sussudio",
-            "Services",
-            "Capture",
-            "CaptureService.HealthSnapshotFlashbackPlayback.cs")));
 
     }
 
@@ -465,18 +399,6 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
         Assert.Contains("flashbackIsRecordingBackend ? fbSink?.VideoQueueCount ?? 0 : 0", healthSnapshotText, StringComparison.Ordinal);
         Assert.Contains("Interlocked.Read(ref _videoFramesDropped)", healthSnapshotText, StringComparison.Ordinal);
         Assert.Contains("private readonly record struct ActiveRecordingBackendHealthSnapshotFields", healthSnapshotText, StringComparison.Ordinal);
-        Assert.False(File.Exists(Path.Combine(
-            FindRepoRoot(),
-            "Sussudio",
-            "Services",
-            "Capture",
-            "CaptureService.HealthSnapshotRecordingActiveBackend.cs")));
-        Assert.False(File.Exists(Path.Combine(
-            FindRepoRoot(),
-            "Sussudio",
-            "Services",
-            "Capture",
-            "CaptureService.HealthSnapshotRecording.cs")));
 
     }
 
@@ -496,12 +418,6 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
         Assert.Contains("ResolveSourceTelemetryBackend(telemetry)", healthSnapshotText, StringComparison.Ordinal);
         Assert.Contains("ResolveSourceTelemetryCircuitState(telemetry.Availability, suppressed)", healthSnapshotText, StringComparison.Ordinal);
         Assert.Contains("private readonly record struct SourceTelemetryHealthSnapshotFields", healthSnapshotText, StringComparison.Ordinal);
-        Assert.False(File.Exists(Path.Combine(
-            FindRepoRoot(),
-            "Sussudio",
-            "Services",
-            "Capture",
-            "CaptureService.HealthSnapshotSourceTelemetry.cs")));
 
     }
 
@@ -1020,10 +936,6 @@ static partial class Program
         AssertContains(rootText, "await RefreshSourceTelemetryAsync(transitionToken).ConfigureAwait(false);");
         AssertContains(rootText, "TryCorrectFrameRateFromTelemetry();");
         AssertContains(rootText, "StatusChanged?.Invoke(this, \"Initialized\");");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.Initialization.cs")),
-            "old initialization partial removed");
         AssertContains(telemetryText, "private SourceSignalTelemetrySnapshot BuildFallbackTelemetry()");
         AssertContains(telemetryText, "private static SourceSignalTelemetrySnapshot MergeTelemetryWithFallback(");
         AssertContains(telemetryText, "private void TryCorrectFrameRateFromTelemetry()");
@@ -1037,18 +949,6 @@ static partial class Program
             AssertDoesNotContain(source, "TryCorrectFrameRateFromTelemetry();");
         }
         AssertContains(telemetryText, "private void CaptureEncoderRuntimeTelemetry(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.TelemetryFallback.cs")),
-            "old telemetry fallback partial removed");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.CaptureFormatTelemetry.cs")),
-            "old capture-format telemetry partial removed");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.Telemetry.cs")),
-            "source telemetry polling folded into CaptureService.RuntimeSnapshots.cs");
 
         return Task.CompletedTask;
     }
@@ -1079,10 +979,6 @@ static partial class Program
 
         AssertContains(rootText, "private readonly CaptureSessionStateMachine _sessionStateMachine = new();");
         AssertContains(rootText, "public CaptureSessionState SessionState => CurrentSessionState;");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.TransitionExecution.cs")),
-            "CaptureService transition transaction helpers stay folded into CaptureService.cs");
         AssertContains(transitionExecutionText, "private async Task RunTransitionAsync(");
         AssertContains(transitionExecutionText, "await _sessionTransitionLock.WaitAsync(cancellationToken).ConfigureAwait(false);");
         AssertContains(transitionExecutionText, "ReleaseSemaphoreBestEffort(_sessionTransitionLock, \"session_transition\");");
@@ -1115,10 +1011,6 @@ static partial class Program
         AssertContains(transitionExecutionText, "private void ResetSessionStateAfterCleanup()");
         AssertContains(transitionExecutionText, "=> _sessionStateMachine.ResetAfterCleanup(_isDisposed != 0);");
         AssertContains(stateMachineText, "internal sealed class CaptureSessionStateMachine");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureSessionStateMachine.cs")),
-            "mutable capture session state machine lives with capture model owner");
         AssertContains(stateMachineText, "private CaptureSessionState _state = CaptureSessionState.Uninitialized;");
         AssertContains(stateMachineText, "private long _generation;");
         AssertContains(stateMachineText, "public long Generation => Interlocked.Read(ref _generation);");
@@ -1139,7 +1031,6 @@ static partial class Program
         AssertContains(cleanupText, "await CleanupCoreAsync(CancellationToken.None).ConfigureAwait(false);");
         AssertContains(cleanupText, "public void Dispose()");
         AssertContains(cleanupText, "public ValueTask DisposeAsync()");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.ResourceRelease.cs")), "CaptureService resource-release helpers stay folded into CaptureService.cs");
         AssertContains(resourceReleaseText, "private void DisposeCoordinationLocksBestEffort()");
         AssertContains(resourceReleaseText, "private static void DisposeSemaphoreBestEffort(SemaphoreSlim semaphore, string operation)");
         AssertContains(resourceReleaseText, "private static void ReleaseSemaphoreBestEffort(SemaphoreSlim semaphore, string operation)");
@@ -1161,14 +1052,6 @@ static partial class Program
         AssertDoesNotContain(failureCleanupText, "_sessionState =");
         AssertContains(failureCleanupText, "private void BeginFlashbackBackendCleanup(Exception ex)");
         AssertContains(failureCleanupText, "private static bool IsGpuDeviceLost(Exception ex)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackBackendFailureCleanup.cs")),
-            "CaptureService Flashback backend failure cleanup folded into cleanup lifecycle");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.Failures.cs")),
-            "CaptureService failure callbacks folded into CaptureService.cs");
 
         return Task.CompletedTask;
     }
@@ -1354,10 +1237,6 @@ static partial class Program
         AssertContains(
             stateMachineText,
             "CaptureSessionTransitionPolicy.ResolveSteadyState(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureSessionStateMachine.cs")),
-            "capture session state machine folded into capture model owner");
 
         return Task.CompletedTask;
     }
@@ -1516,14 +1395,6 @@ static partial class Program
             true,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.PreviewLifecycle.cs")),
             "video and audio preview lifecycle share one owner");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.PreviewStart.cs")),
-            "old preview start partial folded into preview lifecycle owner");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.AudioPreviewLifecycle.cs")),
-            "old audio preview partial folded into preview lifecycle owner");
         AssertContains(startText, "public Task StartVideoPreviewAsync(CaptureSettings settings, CancellationToken cancellationToken = default)");
         AssertContains(startText, "await RecyclePreviewPipelineForStartAsync(");
         AssertContains(startText, "if (await TryStartPreviewFromRetainedPipelineAsync(settings, transitionToken).ConfigureAwait(false))");
@@ -1541,41 +1412,13 @@ static partial class Program
         AssertContains(startText, "private bool CanReuseVideoCaptureForPreview(UnifiedVideoCapture capture, CaptureSettings settings)");
         AssertContains(startText, "private static bool CanReuseFlashbackBackend(CaptureSettings current, CaptureSettings next)");
         AssertContains(startText, "private static CaptureSettings CloneCaptureSettings(CaptureSettings source)");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.PreviewStart.Recycle.cs")),
-            "old preview-start recycle partial removed");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.PreviewStart.FastPath.cs")),
-            "old preview-start fast-path partial removed");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.PreviewStart.FreshPipeline.cs")),
-            "old preview-start fresh-pipeline partial removed");
         AssertContains(audioGraphText, "private async Task<WasapiAudioCapture?> StartPreviewAudioGraphAsync(");
         AssertContains(audioGraphText, "private async Task StartPreviewMicrophoneMonitorAsync(");
         AssertContains(audioGraphText, "private async Task RollbackPreviewAudioCaptureStartupAsync(");
         AssertContains(stopText, "public Task StopVideoPreviewAsync(CancellationToken cancellationToken = default)");
         AssertContains(stopText, "private Task StopVideoPreviewCoreAsync(bool teardownPipeline, CancellationToken cancellationToken = default)");
         AssertContains(stopText, "private async Task DisposePreviewPipelineAsync(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.PreviewStop.cs")),
-            "preview stop and disposal folded into preview lifecycle owner");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.PreviewReuse.cs")),
-            "preview reuse helper partial folded into preview start");
         AssertContains(videoPipelineResourcesText, "internal sealed class CaptureVideoPipelineResources");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureVideoPipelineResources.cs")),
-            "video pipeline resources folded into CaptureService.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CapturePipelineResources.cs")),
-            "capture pipeline resources folded into CaptureService.cs");
         AssertContains(videoPipelineResourcesText, "public UnifiedVideoCapture? Capture { get; set; }");
         AssertContains(videoPipelineResourcesText, "public IPreviewFrameSink? PreviewFrameSink { get; set; }");
         AssertContains(videoPipelineResourcesText, "public UnifiedVideoCapture.MjpegPipelineTimingMetrics LastMjpegPipelineTimingMetrics { get; private set; }");
@@ -1591,10 +1434,6 @@ static partial class Program
         AssertDoesNotContain(
             ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs"),
             "_unifiedVideoCapture");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.VideoPipelineLifecycle.cs")),
-            "video pipeline lifecycle helper partial folded into preview start");
         AssertContains(startText, "internal void SetPreviewFrameSink(IPreviewFrameSink? sink)");
         AssertContains(startText, "private void AttachUnifiedVideoCapture(UnifiedVideoCapture unifiedVideoCapture)");
         AssertContains(startText, "private void DetachUnifiedVideoCapture(UnifiedVideoCapture? unifiedVideoCapture)");
@@ -1611,16 +1450,8 @@ static partial class Program
         AssertDoesNotContain(startText, "private UnifiedVideoCapture.MjpegPipelineTimingMetrics _lastMjpegPipelineTimingMetrics;");
         AssertDoesNotContain(startText, "private ParallelMjpegDecodePipeline.PipelineTimingMetrics? _lastFullMjpegPipelineTimingMetrics;");
         AssertDoesNotContain(flashbackPreviewBackendText, "ScheduleDeferredUnifiedVideoCaptureCleanup");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.PreviewPipeline.cs")),
-            "old preview pipeline partial removed after video lifecycle promotion");
         AssertDoesNotContain(freshPipelineText, "new WasapiAudioCapture()");
         AssertDoesNotContain(freshPipelineText, "micCapture.AudioLevelUpdated += OnMicrophoneAudioLevelUpdated;");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.PreviewDisposal.cs")),
-            "old preview disposal partial removed");
 
         return Task.CompletedTask;
     }
@@ -1634,14 +1465,6 @@ static partial class Program
         AssertContains(rootText, "private readonly PreviewAudioGraphResources _previewAudioGraph = new();");
         AssertContains(rootText, "internal sealed class PreviewAudioGraphResources");
         AssertContains(resourceText, "internal sealed class PreviewAudioGraphResources");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "PreviewAudioGraphResources.cs")),
-            "preview audio graph resources folded into CaptureService.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CapturePipelineResources.cs")),
-            "capture pipeline resources folded into CaptureService.cs");
         AssertContains(resourceText, "public WasapiAudioCapture? ProgramCapture;");
         AssertContains(resourceText, "public WasapiAudioCapture? MicrophoneCapture;");
         AssertContains(resourceText, "public WasapiAudioPlayback? Playback;");
@@ -1680,36 +1503,12 @@ static partial class Program
         AssertContains(audioPreviewText, "private async Task RestartMicrophoneMonitorAfterRecordingAsync(");
         AssertContains(audioPreviewText, "private readonly record struct MicrophoneMonitorRestartOptions(");
         AssertDoesNotContain(audioPreviewText, "private async Task StartWasapiPlaybackAsync(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.Audio.cs")),
-            "old audio event projection partial removed after audio preview lifecycle consolidation");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.AudioInputSwitching.cs")),
-            "live audio input switching folded into CaptureService.PreviewLifecycle.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.MicrophoneMonitor.cs")),
-            "microphone monitor state and restart folded into CaptureService.PreviewLifecycle.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.MicrophoneMonitor.Update.cs")),
-            "old microphone monitor update partial removed after monitor consolidation");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.MicrophoneMonitor.Restart.cs")),
-            "old microphone monitor restart partial removed after monitor consolidation");
 
         AssertContains(resourceText, "public async Task StartPlaybackAsync(");
         AssertContains(resourceText, "public void StopPlayback(");
         AssertContains(resourceText, "public void DetachCapture(");
         AssertContains(resourceText, "private static void SafeClearCapturePlayback(");
         AssertContains(resourceText, "private static void DisposePlaybackBestEffort(");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.WasapiPlayback.cs")),
-            "old WASAPI playback partial removed after PreviewAudioGraphResources promotion");
 
         return Task.CompletedTask;
     }

@@ -12,6 +12,11 @@ Use [the cleanup plan](cleanup-plan.md#next-slices) for pending work and
 validation. [The generated baseline](Sussudio-Defragmentation-Baseline.generated.md)
 records measured counts at its stated checkpoint.
 
+Architecture tests protect behavior, ownership, and compilation boundaries.
+Retired-filename absence assertions were removed on 2026-09-23; historical
+filenames do not reserve or prohibit future responsibility boundaries. A move
+still requires matching ownership checks and a regenerated architecture baseline.
+
 ## Architecture Ownership Entry Points
 
 Service dependencies flow from Automation to Capture to Flashback. Capture owns
