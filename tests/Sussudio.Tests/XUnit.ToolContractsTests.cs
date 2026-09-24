@@ -9100,6 +9100,9 @@ static partial class Program
         AssertContains(recordingSettingsText, "VerifyFlashbackDisableRejectedDuringRecordingAsync(");
         AssertContains(recordingSettingsText, "VerifyFlashbackRecordingSettingsDeferredStillRecordingAsync(");
         AssertContains(recordingSettingsText, "private static async Task VerifyFlashbackRecordingSettingsCommandRejectedDuringRecordingAsync(");
+        AssertContains(recordingSettingsText, "AutomationSnapshotFormatter.Get(response, \"ErrorCode\", string.Empty)");
+        AssertContains(recordingSettingsText, "string.Equals(errorCode, \"invalid-state\", StringComparison.OrdinalIgnoreCase)");
+        AssertDoesNotContain(recordingSettingsText, "message.Contains(\"recording\"");
         AssertContains(recordingSettingsText, "RestartFlashback unexpectedly succeeded during recording");
         AssertContains(recordingSettingsText, "SetFlashbackEnabled(false) unexpectedly succeeded during recording");
         AssertContains(recordingSettingsText, "Flashback recording backend did not remain active after mutations");

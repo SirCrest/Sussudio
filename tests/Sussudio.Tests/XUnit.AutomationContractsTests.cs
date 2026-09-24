@@ -636,6 +636,14 @@ public sealed class AutomationDispatcherContractsTests
         => global::Program.AutomationCommandDispatcher_WaitForCondition_RejectsUndefinedCondition();
 
     [Fact]
+    public Task AutomationDispatcherRejectsUnknownVerificationProfile()
+        => global::Program.AutomationCommandDispatcher_VerifyFile_RejectsUnknownProfile();
+
+    [Fact]
+    public Task AutomationDispatcherMapsStateConflictsToInvalidState()
+        => global::Program.AutomationCommandDispatcher_StateConflictMapsToInvalidState();
+
+    [Fact]
     public Task AutomationDispatcherWaitAndAssertCommandsLiveWithSupportOwners()
         => global::Program.AutomationCommandDispatcher_WaitAndAssertCommands_LiveWithSupportOwners();
 
@@ -1770,6 +1778,8 @@ static partial class Program
         AssertContains(customCommandsText, "private async Task<AutomationCommandResponse> ExecuteVerifyFileCommandAsync(");
         AssertContains(customCommandsText, "private async Task<AutomationCommandResponse> ExecuteVerifyLastRecordingCommandAsync(");
         AssertContains(customCommandsText, "ValidatePathPayload(\n            AutomationCommandKind.VerifyFile,\n            AutomationPayloadKeys.FilePath,");
+        AssertContains(customCommandsText, "verificationProfile = verificationProfile.Replace('_', '-');");
+        AssertContains(customCommandsText, "Unknown verification profile '{verificationProfile}'. Expected flashback-export.");
         AssertContains(customCommandsText, "_diagnosticsHub\n            .VerifyFileAsync(filePath, verificationProfile, cancellationToken)");
         AssertContains(customCommandsText, "_diagnosticsHub.VerifyLastRecordingAsync(cancellationToken)");
         AssertContains(customCommandsText, "HdrParity = verification.HdrParity");
@@ -2513,6 +2523,100 @@ static partial class Program
 
         AssertAutomationResponse(response, false, "invalid-request", "error", "undefined wait condition");
         AssertEqual("Invalid wait condition: '999'.", GetPublicProperty(response, "Message"), "undefined wait condition message");
+    }
+
+    internal static async Task AutomationCommandDispatcher_VerifyFile_RejectsUnknownProfile()
+    {
+        var verificationCalls = 0;
+        string? observedProfile = null;
+        var viewModelType = RequireType("Sussudio.Services.Automation.IAutomationViewModel");
+        var diagnosticsType = RequireType("Sussudio.Services.Contracts.IAutomationDiagnosticsHub");
+        var windowControlType = RequireType("Sussudio.Services.Contracts.IAutomationWindowControl");
+        var snapshot = CreateInstance("Sussudio.Models.AutomationSnapshot");
+        var verificationResult = CreateInstance("Sussudio.Models.RecordingVerificationResult");
+        verificationResult.GetType().GetProperty("Succeeded")!.SetValue(verificationResult, true);
+        verificationResult.GetType().GetProperty("Message")!.SetValue(verificationResult, "File verified.");
+        verificationResult.GetType().GetProperty("FileExists")!.SetValue(verificationResult, true);
+        var dispatcher = CreateAutomationCommandDispatcher(
+            CreateConfiguredProxy(viewModelType, (method, _) =>
+                method?.Name == "get_IsInitialized" ? true : GetDefaultReturnValue(method)),
+            CreateConfiguredProxy(diagnosticsType, (method, args) =>
+            {
+                if (method?.Name == "GetLatestSnapshot")
+                {
+                    return snapshot;
+                }
+
+                if (method?.Name == "VerifyFileAsync")
+                {
+                    verificationCalls++;
+                    observedProfile = (string?)args![1];
+                    return CreateTaskFromResult(method.ReturnType.GetGenericArguments()[0], verificationResult);
+                }
+
+                return GetDefaultReturnValue(method);
+            }),
+            CreateThrowingProxy(windowControlType),
+            authToken: null);
+        var filePath = Path.Combine(GetRepoRoot(), "tests", "Sussudio.Tests", "XUnit.AutomationContractsTests.cs");
+        var response = await ExecuteAutomationCommandAsync(
+                dispatcher,
+                CreateAutomationCommandRequest(
+                    "VerifyFile",
+                    authToken: null,
+                    payloadJson: JsonSerializer.Serialize(new
+                    {
+                        filePath,
+                        verificationProfile = "bogus"
+                    })))
+            .ConfigureAwait(false);
+
+        AssertAutomationResponse(response, success: false, errorCode: "invalid-request", status: "error", "unknown verification profile");
+        AssertEqual("Unknown verification profile 'bogus'. Expected flashback-export.", GetPublicProperty(response, "Message"), "unknown verification profile message");
+        AssertEqual(0, verificationCalls, "unknown verification profile does not reach verification");
+
+        var normalizedProfileResponse = await ExecuteAutomationCommandAsync(
+                dispatcher,
+                CreateAutomationCommandRequest(
+                    "VerifyFile",
+                    authToken: null,
+                    payloadJson: JsonSerializer.Serialize(new
+                    {
+                        filePath,
+                        verificationProfile = "flashback_export"
+                    })))
+            .ConfigureAwait(false);
+
+        AssertAutomationResponse(normalizedProfileResponse, success: true, errorCode: null, status: "ok", "normalized verification profile");
+        AssertEqual(1, verificationCalls, "normalized verification profile reaches verification once");
+        AssertEqual("flashback-export", observedProfile, "underscore verification profile is normalized");
+    }
+
+    internal static async Task AutomationCommandDispatcher_StateConflictMapsToInvalidState()
+    {
+        var conflictType = RequireType("Sussudio.Services.Contracts.AutomationStateConflictException");
+        var conflictException = (Exception)(conflictType.GetConstructor(new[] { typeof(string) })
+            ?? throw new InvalidOperationException("AutomationStateConflictException constructor was not found."))
+            .Invoke(new object[] { "True HDR preview cannot be changed while recording." });
+        var dispatcher = CreatePayloadValidationTestDispatcher((method, _) =>
+        {
+            if (method.Name == "SetTrueHdrPreviewEnabledAsync")
+            {
+                throw conflictException;
+            }
+
+            return GetDefaultReturnValue(method);
+        });
+        var response = await ExecuteAutomationCommandAsync(
+                dispatcher,
+                CreateAutomationCommandRequest(
+                    "SetTrueHdrPreviewEnabled",
+                    authToken: null,
+                    payloadJson: "{\"enabled\":true}"))
+            .ConfigureAwait(false);
+
+        AssertAutomationResponse(response, success: false, errorCode: "invalid-state", status: "error", "recording-state conflict");
+        AssertEqual("True HDR preview cannot be changed while recording.", GetPublicProperty(response, "Message"), "state-conflict message");
     }
 
     internal static Task AutomationCommandDispatcher_OneFieldHandlers_MatchCatalogPayloadFields()
@@ -3295,7 +3399,12 @@ static partial class Program
         AssertContains(pipeServerRootText, "if (!_authTokenRequired)\n                {\n                    throw new AutomationPipeSecurityException(");
         AssertContains(pipeServerRootText, "Automation pipe explicit security fallback to token-required default security");
         AssertContains(pipeServerRootText, "private AutomationCommandResponse CreateRequestTimeoutResponse()");
-        AssertContains(pipeServerRootText, "private static void TraceFallback(string line)");
+        AssertDoesNotContain(pipeServerRootText, "TraceFallback");
+        AssertContains(pipeServerRootText, "Logger.Log($\"Automation pipe server disabled: {ex}\")");
+        AssertContains(pipeServerRootText, "Logger.Log($\"Automation pipe server startup failed: {ex}\")");
+        AssertContains(pipeServerRootText, "Logger.Log($\"Automation pipe server loop error: {ex}\")");
+        AssertContains(pipeServerRootText, "Logger.Log($\"Automation pipe connection I/O error: {ioEx}\")");
+        AssertContains(pipeServerRootText, "Logger.Log($\"Automation pipe connection error: {ex}\")");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "NamedPipeAutomationServer.ConnectionSession.cs")),
@@ -7003,6 +7112,8 @@ static partial class Program
         AssertContains(automationAudioText, "WithAudioControlRefreshSuppressed(() => SelectedDeviceAudioMode = normalizedMode);");
         AssertContains(automationAudioText, "WithAudioControlRefreshSuppressed(() => AnalogAudioGainPercent = clampedGain);");
         AssertContains(automationAudioText, "public async Task SelectMicrophoneDeviceAsync(string? deviceId, string? deviceName, CancellationToken cancellationToken = default)");
+        AssertContains(automationAudioText, "throw new AutomationStateConflictException(\"Cannot change microphone device while recording. Stop the recording first.\");");
+        AssertContains(automationAudioText, "throw new AutomationStateConflictException(\"Custom audio input cannot be changed while recording.\");");
         AssertContains(automationAudioText, "Cannot change microphone device while recording. Stop the recording first.");
         AssertContains(automationAudioText, "SelectedMicrophoneDevice = request.Target;");
         AssertContains(automationAudioText, "public Task SetMicrophoneEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
@@ -7011,6 +7122,7 @@ static partial class Program
         AssertContains(automationAudioText, "MicrophoneVolume = Math.Clamp(microphoneVolumePercent, 0.0, 100.0);");
         AssertContains(automationAudioText, "Logger.Log($\"MIC_TOGGLE_NOOP reason=recording_active_idempotent requested={enabled}\");");
         AssertContains(automationAudioText, "Logger.Log($\"MIC_TOGGLE_REFUSED reason=recording_active requested={enabled} current={request.CurrentMicEnabled}\");");
+        AssertContains(automationAudioText, "throw new AutomationStateConflictException(");
         AssertContains(automationAudioText, "Cannot change microphone enable state while recording. Stop the recording first.");
         AssertContains(automationAudioText, "_suppressMicrophoneMonitorUpdate = true;");
         AssertContains(automationAudioText, "await _sessionCoordinator.UpdateMicrophoneMonitorAsync(");
@@ -8233,7 +8345,7 @@ static partial class Program
 
         AssertContains(captureModeTransactionsText, "public Task SetHdrEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertContains(setHdrBlock, "return InvokeOnUiThreadAsync(async () =>");
-        AssertContains(captureModeTransactionsText, "throw new InvalidOperationException(HdrToggleBlockedWhileRecordingMessage);");
+        AssertContains(captureModeTransactionsText, "throw new AutomationStateConflictException(HdrToggleBlockedWhileRecordingMessage);");
         AssertContains(captureModeTransactionsText, "if (enabled && !IsHdrAvailable)");
         AssertContains(captureModeTransactionsText, "throw new InvalidOperationException(\"HDR is not available on the selected device.\");");
         AssertContains(setHdrBlock, "var rollback = CaptureSelectionSnapshot();");
@@ -8247,7 +8359,7 @@ static partial class Program
         AssertContains(setHdrBlock, "throw new InvalidOperationException($\"Failed to apply automation HDR toggle; {rollbackStatus}.\");");
         AssertDoesNotContain(setHdrBlock, "EnqueueUiOperation(() => ReinitializeDeviceAsync(\"HDR toggle\"), \"hdr toggle reinitialize\");");
         AssertContains(captureModeTransactionsText, "public Task SetTrueHdrPreviewEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
-        AssertContains(captureModeTransactionsText, "throw new InvalidOperationException(\"True HDR preview cannot be changed while recording.\");");
+        AssertContains(captureModeTransactionsText, "throw new AutomationStateConflictException(\"True HDR preview cannot be changed while recording.\");");
         AssertContains(captureModeTransactionsText, "IsTrueHdrPreviewEnabled = enabled;");
         AssertContains(captureModeTransactionsText, "partial void OnIsHdrEnabledChanged(bool value)");
         AssertContains(captureModeTransactionsText, "if (_isRevertingHdrToggle)");

@@ -208,7 +208,7 @@ internal static class DiagnosticSessionFlashbackRecordingSettingsScenarios
                 null,
                 "flashback recording settings deferred restart rejection requested",
                 "flashback recording settings deferred: RestartFlashback unexpectedly succeeded during recording",
-                "flashback recording settings deferred: restart rejection message did not mention recording",
+                "flashback recording settings deferred: RestartFlashback rejection did not return invalid-state",
                 sendCommandAsync)
             .ConfigureAwait(false);
     }
@@ -226,7 +226,7 @@ internal static class DiagnosticSessionFlashbackRecordingSettingsScenarios
                 305_000,
                 "flashback recording settings deferred disable rejection requested",
                 "flashback recording settings deferred: SetFlashbackEnabled(false) unexpectedly succeeded during recording",
-                "flashback recording settings deferred: disable rejection message did not mention recording",
+                "flashback recording settings deferred: SetFlashbackEnabled rejection did not return invalid-state",
                 sendCommandAsync)
             .ConfigureAwait(false);
     }
@@ -239,7 +239,7 @@ internal static class DiagnosticSessionFlashbackRecordingSettingsScenarios
         int? timeoutMs,
         string requestedAction,
         string unexpectedSuccessWarning,
-        string messageWarningPrefix,
+        string invalidStateWarningPrefix,
         Func<string, Dictionary<string, object?>?, int?, bool, Task<JsonElement>> sendCommandAsync)
     {
         var response = await sendCommandAsync(
@@ -256,10 +256,10 @@ internal static class DiagnosticSessionFlashbackRecordingSettingsScenarios
             return;
         }
 
-        var message = AutomationSnapshotFormatter.Get(response, "Message", string.Empty);
-        if (!message.Contains("recording", StringComparison.OrdinalIgnoreCase))
+        var errorCode = AutomationSnapshotFormatter.Get(response, "ErrorCode", string.Empty);
+        if (!string.Equals(errorCode, "invalid-state", StringComparison.OrdinalIgnoreCase))
         {
-            warnings.Add($"{messageWarningPrefix} - {message}");
+            warnings.Add($"{invalidStateWarningPrefix} - {errorCode}");
         }
     }
 

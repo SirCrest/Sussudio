@@ -11,6 +11,14 @@ using Sussudio.Models;
 
 namespace Sussudio.Services.Contracts
 {
+    public sealed class AutomationStateConflictException : InvalidOperationException
+    {
+        public AutomationStateConflictException(string message)
+            : base(message)
+        {
+        }
+    }
+
     // Window operations that automation can request without reaching into WinUI
     // implementation details.
     public interface IAutomationWindowControl

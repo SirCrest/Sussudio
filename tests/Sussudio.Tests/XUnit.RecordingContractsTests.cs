@@ -1492,8 +1492,10 @@ static partial class Program
         AssertContains(captureServiceSource, "FLASHBACK_EXPORT_REJECTED reason=flashback_recording_active");
         AssertContains(captureServiceSource, "Flashback export is unavailable while Flashback is the active recording backend.");
         AssertContains(captureServiceSource, "FLASHBACK_DISABLE_BLOCKED reason=recording_active");
+        AssertContains(captureServiceSource, "throw new AutomationStateConflictException(\"Cannot disable Flashback while Flashback recording is active.\");");
         AssertContains(captureServiceSource, "Cannot disable Flashback while Flashback recording is active.");
         AssertContains(captureServiceSource, "FLASHBACK_RESTART_BLOCKED reason=recording_active");
+        AssertContains(captureServiceSource, "throw new AutomationStateConflictException(\"Cannot restart Flashback while Flashback recording is active.\");");
         AssertContains(captureServiceSource, "Cannot restart Flashback while Flashback recording is active.");
         var restartFlashbackWithSettings = ExtractSourceBlock(
             captureServiceSource,

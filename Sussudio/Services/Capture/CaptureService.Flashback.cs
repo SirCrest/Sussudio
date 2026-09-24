@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
 using Sussudio.Services.Audio;
+using Sussudio.Services.Contracts;
 using Sussudio.Services.Flashback;
 using Sussudio.Services.Recording;
 using Sussudio.Services.Runtime;
@@ -51,7 +52,7 @@ public partial class CaptureService
             if (_isRecording && IsFlashbackRecordingBackendActive() && !enabled)
             {
                 Logger.Log("FLASHBACK_DISABLE_BLOCKED reason=recording_active");
-                throw new InvalidOperationException("Cannot disable Flashback while Flashback recording is active.");
+                throw new AutomationStateConflictException("Cannot disable Flashback while Flashback recording is active.");
             }
 
             if (_flashbackEnabled == enabled)
@@ -130,7 +131,7 @@ public partial class CaptureService
             if (_isRecording && IsFlashbackRecordingBackendActive())
             {
                 Logger.Log("FLASHBACK_RESTART_BLOCKED reason=recording_active");
-                throw new InvalidOperationException("Cannot restart Flashback while Flashback recording is active.");
+                throw new AutomationStateConflictException("Cannot restart Flashback while Flashback recording is active.");
             }
 
             await RestartFlashbackCoreAsync(transitionToken).ConfigureAwait(false);
@@ -144,7 +145,7 @@ public partial class CaptureService
             if (_isRecording && IsFlashbackRecordingBackendActive())
             {
                 Logger.Log("FLASHBACK_RESTART_BLOCKED reason=recording_active");
-                throw new InvalidOperationException("Cannot restart Flashback while Flashback recording is active.");
+                throw new AutomationStateConflictException("Cannot restart Flashback while Flashback recording is active.");
             }
 
             UpdateEncodingSettings(settings);

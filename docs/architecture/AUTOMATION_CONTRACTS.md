@@ -59,6 +59,9 @@ top-level token takes precedence and cannot be rescued by a matching payload
 token. Missing or incorrect effective credentials produce `unauthorized`.
 New clients should use the top-level field.
 
+- `invalid-state` means the request was valid but cannot be applied in the current
+  app state, such as changing Flashback settings during a Flashback recording.
+
 The manifest's `Authentication` object describes these locations, precedence,
 and the server-token configuration rule. It is static contract metadata: it
 contains no credential and does not report whether a particular running server

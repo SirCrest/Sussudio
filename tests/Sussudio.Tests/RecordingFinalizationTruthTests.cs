@@ -472,6 +472,7 @@ public sealed class RecordingFinalizationTruthTests
         {
             ("Canceled", "canceled"),
             ("CommandFailed", "command-failed"),
+            ("InvalidState", "invalid-state"),
             ("ManifestMismatch", "manifest-mismatch"),
             ("NotReady", "not-ready"),
             ("Unauthorized", "unauthorized"),

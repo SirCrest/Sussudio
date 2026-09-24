@@ -12,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
 using Sussudio.Services.Capture;
+using Sussudio.Services.Contracts;
 using Sussudio.Services.Flashback;
 using Sussudio.Services.Runtime;
 using Sussudio.Tools;
@@ -181,6 +182,16 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                 correlationId,
                 ex.Message,
                 errorCode: AutomationErrorCodes.InvalidRequest,
+                success: false,
+                status: AutomationResponseStatus.Error,
+                elapsedMs: (long)Math.Round(Stopwatch.GetElapsedTime(commandStartedAt).TotalMilliseconds));
+        }
+        catch (AutomationStateConflictException ex)
+        {
+            return CreateResponse(
+                correlationId,
+                ex.Message,
+                errorCode: AutomationErrorCodes.InvalidState,
                 success: false,
                 status: AutomationResponseStatus.Error,
                 elapsedMs: (long)Math.Round(Stopwatch.GetElapsedTime(commandStartedAt).TotalMilliseconds));
@@ -1580,6 +1591,16 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
             AutomationPayloadKeys.FilePath,
             RequireString(payload, AutomationPayloadKeys.FilePath));
         var verificationProfile = GetString(payload, AutomationPayloadKeys.VerificationProfile);
+        if (verificationProfile != null)
+        {
+            verificationProfile = verificationProfile.Replace('_', '-');
+            if (!string.Equals(verificationProfile, "flashback-export", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new AutomationRequestValidationException(
+                    $"Unknown verification profile '{verificationProfile}'. Expected flashback-export.");
+            }
+        }
+
         var verifyStartedAt = Stopwatch.GetTimestamp();
         var verification = await _diagnosticsHub
             .VerifyFileAsync(filePath, verificationProfile, cancellationToken)
@@ -1694,7 +1715,7 @@ internal sealed record AutomationCommandHandler<TTarget>(
         => new(
             (target, payload, ct) =>
             {
-                var value = GetBoolRequired(payload, propertyName);
+                var value = AutomationCommandDispatcher.RequireBool(payload, propertyName);
                 return action(target, value, ct);
             },
             (command, _) => $"{command} acknowledged.",
@@ -1707,7 +1728,7 @@ internal sealed record AutomationCommandHandler<TTarget>(
         => new(
             (target, payload, ct) =>
             {
-                var value = GetStringRequired(payload, propertyName);
+                var value = AutomationCommandDispatcher.RequireString(payload, propertyName);
                 return action(target, value, ct);
             },
             (command, _) => $"{command} acknowledged.",
@@ -1720,24 +1741,13 @@ internal sealed record AutomationCommandHandler<TTarget>(
         => new(
             (target, payload, ct) =>
             {
-                var value = GetDoubleRequired(payload, propertyName);
+                var value = AutomationCommandDispatcher.RequireDouble(payload, propertyName);
                 return action(target, value, ct);
             },
             (command, _) => $"{command} acknowledged.",
             propertyName,
             AutomationPayloadFieldType.Number);
 
-    private static bool GetBoolRequired(JsonElement payload, string propertyName)
-        => AutomationCommandDispatcher.RequireBool(payload, propertyName);
-
-    private static string GetStringRequired(JsonElement payload, string propertyName)
-        => AutomationCommandDispatcher.RequireString(payload, propertyName);
-
-    // Delegates rather than re-implementing the coercion: the local copy omitted the
-    // finiteness check, so NumberStyles.Float parsed a "NaN" or "Infinity" string payload
-    // straight through to handlers that then computed positions and volumes from it.
-    private static double GetDoubleRequired(JsonElement payload, string propertyName)
-        => AutomationCommandDispatcher.RequireDouble(payload, propertyName);
 }
 
 internal sealed class AutomationRequestValidationException : InvalidOperationException

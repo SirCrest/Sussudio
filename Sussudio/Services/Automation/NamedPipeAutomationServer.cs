@@ -106,14 +106,12 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
         }
         catch (AutomationPipeSecurityException ex)
         {
-            Logger.Log($"Automation pipe server disabled: {ex.Message}");
-            TraceFallback($"[{DateTime.Now:O}] security disabled: {ex}");
+            Logger.Log($"Automation pipe server disabled: {ex}");
             return false;
         }
         catch (Exception ex)
         {
-            Logger.Log($"Automation pipe server startup failed: {ex.Message}");
-            TraceFallback($"[{DateTime.Now:O}] startup failed: {ex}");
+            Logger.Log($"Automation pipe server startup failed: {ex}");
             return false;
         }
 
@@ -209,14 +207,12 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
             }
             catch (AutomationPipeSecurityException ex)
             {
-                Logger.Log($"Automation pipe server disabled: {ex.Message}");
-                TraceFallback($"[{DateTime.Now:O}] security disabled: {ex}");
+                Logger.Log($"Automation pipe server disabled: {ex}");
                 break;
             }
             catch (Exception ex)
             {
-                Logger.Log($"Automation pipe server loop error: {ex.Message}");
-                TraceFallback($"[{DateTime.Now:O}] loop error: {ex}");
+                Logger.Log($"Automation pipe server loop error: {ex}");
                 await Task.Delay(250, cancellationToken).ConfigureAwait(false);
             }
         }
@@ -234,13 +230,11 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
         }
         catch (IOException ioEx)
         {
-            Logger.Log($"Automation pipe connection I/O error: {ioEx.Message}");
-            TraceFallback($"[{DateTime.Now:O}] connection io error: {ioEx}");
+            Logger.Log($"Automation pipe connection I/O error: {ioEx}");
         }
         catch (Exception ex)
         {
-            Logger.Log($"Automation pipe connection error: {ex.Message}");
-            TraceFallback($"[{DateTime.Now:O}] connection error: {ex}");
+            Logger.Log($"Automation pipe connection error: {ex}");
         }
         finally
         {
@@ -273,19 +267,6 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
 
     private AutomationCommandResponse CreateRequestTimeoutResponse()
         => CreateErrorResponse($"Request timed out after {_requestTimeoutMs} ms.", AutomationErrorCodes.RequestTimeout);
-
-    private static void TraceFallback(string line)
-    {
-        try
-        {
-            var path = RuntimePaths.GetRepoLogFile("Sussudio_AutomationPipe.log");
-            File.AppendAllText(path, line + Environment.NewLine);
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"Suppressed exception in NamedPipeAutomationServer.TraceFallback: {ex.Message}");
-        }
-    }
 
     public string PipeName => _pipeName;
 

@@ -12,6 +12,7 @@ using Sussudio.Controllers;
 using Sussudio.Models;
 using Sussudio.Services.Audio;
 using Sussudio.Services.Automation;
+using Sussudio.Services.Contracts;
 using Sussudio.Services.Capture;
 using Sussudio.Services.Capture.Mjpeg;
 using Sussudio.Services.Gpu;
@@ -1160,7 +1161,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         {
             if (IsRecording)
             {
-                throw new InvalidOperationException(HdrToggleBlockedWhileRecordingMessage);
+                throw new AutomationStateConflictException(HdrToggleBlockedWhileRecordingMessage);
             }
 
             if (enabled && !IsHdrAvailable)
@@ -1209,7 +1210,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         {
             if (IsRecording)
             {
-                throw new InvalidOperationException("True HDR preview cannot be changed while recording.");
+                throw new AutomationStateConflictException("True HDR preview cannot be changed while recording.");
             }
 
             IsTrueHdrPreviewEnabled = enabled;
@@ -1580,7 +1581,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         if (request.IsRecording &&
             !string.Equals(request.CurrentDeviceId, request.Target.Id, StringComparison.OrdinalIgnoreCase))
         {
-            throw new InvalidOperationException("Cannot change microphone device while recording. Stop the recording first.");
+            throw new AutomationStateConflictException("Cannot change microphone device while recording. Stop the recording first.");
         }
 
         if (!request.IsRecording)
@@ -1617,7 +1618,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         {
             if (IsRecording)
             {
-                throw new InvalidOperationException("Custom audio input cannot be changed while recording.");
+                throw new AutomationStateConflictException("Custom audio input cannot be changed while recording.");
             }
 
             IsCustomAudioInputEnabled = enabled;
@@ -1866,7 +1867,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             // cannot rewire the device mid-recording, so setting IsMicrophoneEnabled
             // here would leave UI state lying about the actual device wiring.
             Logger.Log($"MIC_TOGGLE_REFUSED reason=recording_active requested={enabled} current={request.CurrentMicEnabled}");
-            throw new InvalidOperationException(
+            throw new AutomationStateConflictException(
                 "Cannot change microphone enable state while recording. Stop the recording first.");
         }
 
