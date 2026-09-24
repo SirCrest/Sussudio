@@ -313,6 +313,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             ValidateNegotiatedOutputMode(
                 negotiatedMode,
                 negotiationMode,
+                requireP010,
                 sourceReaderD3DEnabled);
             CommitInitializedRuntimeState(
                 deviceSymbolicLink,
@@ -440,6 +441,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
     private void ValidateNegotiatedOutputMode(
         SourceReaderNegotiatedMode mode,
         SourceNegotiationMode negotiationMode,
+        bool requireP010,
         bool sourceReaderD3DEnabled)
     {
         if (negotiationMode == SourceNegotiationMode.ConvertedMjpegNv12)
@@ -459,6 +461,13 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         {
             throw new InvalidOperationException(
                 $"External MJPG decode requires native MJPG output, but negotiated {SubtypeGuidToName(mode.Subtype)}.");
+        }
+        else if (negotiationMode == SourceNegotiationMode.Standard &&
+            requireP010 &&
+            mode.Subtype != MfGuids.MFVideoFormat_P010)
+        {
+            throw new InvalidOperationException(
+                $"Standard capture requires P010 output, but negotiated {SubtypeGuidToName(mode.Subtype)}.");
         }
     }
 

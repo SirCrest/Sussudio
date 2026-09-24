@@ -123,6 +123,60 @@ namespace Sussudio.Tests
                 });
         }
 
+        [Fact]
+        public void StandardSourceReaderOutput_RejectsNv12WhenP010IsRequired()
+        {
+            var error = ValidateStandardSourceReaderOutput(requireP010: true, outputIsP010: false);
+
+            Assert.NotNull(error);
+            Assert.Contains("Standard capture requires P010 output", error.Message);
+        }
+
+        [Theory]
+        [InlineData(true, true)]
+        [InlineData(false, false)]
+        public void StandardSourceReaderOutput_AcceptsTheRequestedPixelFormat(
+            bool requireP010,
+            bool outputIsP010)
+        {
+            var error = ValidateStandardSourceReaderOutput(requireP010, outputIsP010);
+
+            Assert.Null(error);
+        }
+
+        private static InvalidOperationException? ValidateStandardSourceReaderOutput(bool requireP010, bool outputIsP010)
+        {
+            var captureType = RequireType("Sussudio.Services.Capture.MfSourceReaderVideoCapture");
+            var capture = Activator.CreateInstance(captureType)!;
+            var negotiatedModeType = captureType.GetNestedType("SourceReaderNegotiatedMode", BindingFlags.NonPublic)!;
+            var outputSubtype = GetMfSubtypeGuid(outputIsP010 ? "MFVideoFormat_P010" : "MFVideoFormat_NV12");
+            var mode = Activator.CreateInstance(
+                negotiatedModeType,
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                binder: null,
+                args: [outputSubtype, 1920, 1080, 60d, outputIsP010 ? "P010 1920x1080@60" : "NV12 1920x1080@60"],
+                culture: null)!;
+            var validate = captureType.GetMethod("ValidateNegotiatedOutputMode", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            var parameters = validate.GetParameters();
+            var standardMode = Enum.Parse(parameters[1].ParameterType, "Standard");
+
+            try
+            {
+                validate.Invoke(capture, [mode, standardMode, requireP010, false]);
+                return null;
+            }
+            catch (TargetInvocationException exception) when (exception.InnerException is InvalidOperationException validationError)
+            {
+                return validationError;
+            }
+        }
+
+        private static Guid GetMfSubtypeGuid(string fieldName)
+        {
+            var mfGuidsType = RequireType("Sussudio.Services.Capture.MfGuids");
+            return (Guid)mfGuidsType.GetField(fieldName, BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)!;
+        }
+
         [Theory]
         [InlineData(120, "RawMjpgPassthrough")]
         [InlineData(60, "ConvertedMjpegNv12")]
