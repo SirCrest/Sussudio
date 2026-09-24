@@ -312,13 +312,13 @@ public sealed class CaptureCleanupBarrierTests
 
     private static Type AppType(string name) => SussudioAssembly.Load().GetType(name, throwOnError: true)!;
     private static TaskCompletionSource NewCompletion() => new(TaskCreationOptions.RunContinuationsAsynchronously);
-    private static object? Invoke(object owner, string name, params object?[] arguments)
-        => owner.GetType().GetMethod(name, InstanceFlags)!.Invoke(owner, arguments);
-    private static Task InvokeTask(object owner, string name, params object?[] arguments)
-        => (Task)Invoke(owner, name, arguments)!;
-    private static Task InvokeDisposeAsync(object owner) => ((ValueTask)Invoke(owner, "DisposeAsync")!).AsTask();
-    private static T GetField<T>(object owner, string name) => (T)owner.GetType().GetField(name, InstanceFlags)!.GetValue(owner)!;
-    private static void SetField(object owner, string name, object? value) => owner.GetType().GetField(name, InstanceFlags)!.SetValue(owner, value);
+    private static object? Invoke(object instance, string name, params object?[] arguments)
+        => instance.GetType().GetMethod(name, InstanceFlags)!.Invoke(instance, arguments);
+    private static Task InvokeTask(object instance, string name, params object?[] arguments)
+        => (Task)Invoke(instance, name, arguments)!;
+    private static Task InvokeDisposeAsync(object instance) => ((ValueTask)Invoke(instance, "DisposeAsync")!).AsTask();
+    private static T GetField<T>(object instance, string name) => (T)instance.GetType().GetField(name, InstanceFlags)!.GetValue(instance)!;
+    private static void SetField(object instance, string name, object? value) => instance.GetType().GetField(name, InstanceFlags)!.SetValue(instance, value);
 
     private static object CreateController(string name, Dictionary<string, object> overrides)
     {

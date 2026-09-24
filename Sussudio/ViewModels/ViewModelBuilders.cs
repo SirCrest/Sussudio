@@ -20,7 +20,7 @@ internal static class OutputDriveSpacePresentationBuilder
         }
         catch (Exception ex)
         {
-            Logger.Log($"Suppressed exception in MainViewModel.RefreshDiskSpace: {ex.Message}");
+            Logger.Log($"Suppressed exception in {nameof(OutputDriveSpacePresentationBuilder)}.{nameof(Build)} type={ex.GetType().Name}: {ex.Message}");
             return "";
         }
     }

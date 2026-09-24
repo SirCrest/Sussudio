@@ -16,8 +16,8 @@ public sealed class LibAvCudaFailureTests
     public async Task CudaSendFailureIsLatchedByOwnerAndReleasesQueuedFrames(bool callbackThrows)
     {
         var assembly = SussudioAssembly.Load();
-        assembly.GetType("Sussudio.Services.Recording.LibAvEncoder", true)!
-            .GetMethod("InitializeFFmpeg")!.Invoke(null, new object[] { true });
+        assembly.GetType("Sussudio.Services.Runtime.FfmpegRuntimeInit", true)!
+            .GetMethod("EnsureInitialized")!.Invoke(null, new object[] { true });
         var sinkType = assembly.GetType("Sussudio.Services.Recording.LibAvRecordingSink", true)!;
         var sink = Activator.CreateInstance(sinkType)!;
         await using var sinkLifetime = (IAsyncDisposable)sink;

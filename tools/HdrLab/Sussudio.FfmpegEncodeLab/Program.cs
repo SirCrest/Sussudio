@@ -342,21 +342,21 @@ internal static class FfmpegEncodeLab
         return args[index];
     }
 
-    private static int ParsePositiveInt(string value, string optionName)
+    private static int ParsePositiveInt(string value, string option)
     {
         if (!int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed) || parsed <= 0)
         {
-            throw new ArgumentException($"Invalid value for {optionName}: '{value}'");
+            throw new ArgumentException($"Invalid value for {option}: '{value}'");
         }
 
         return parsed;
     }
 
-    private static double ParsePositiveDouble(string value, string optionName)
+    private static double ParsePositiveDouble(string value, string option)
     {
         if (!double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed) || parsed <= 0)
         {
-            throw new ArgumentException($"Invalid value for {optionName}: '{value}'");
+            throw new ArgumentException($"Invalid value for {option}: '{value}'");
         }
 
         return parsed;
@@ -496,7 +496,7 @@ internal static class FfmpegEncodeLab
     private static void PrintUsage()
     {
         Console.WriteLine("Usage:");
-        Console.WriteLine("  dotnet run --project tests/Sussudio.FfmpegEncodeLab -- --input <p010 raw file> [--width <int>] [--height <int>] [--fps <double>] [--frames <int>]");
+        Console.WriteLine("  dotnet run --project tools/HdrLab/Sussudio.FfmpegEncodeLab -- --input <p010 raw file> [--width <int>] [--height <int>] [--fps <double>] [--frames <int>]");
         Console.WriteLine();
         Console.WriteLine("Defaults:");
         Console.WriteLine("  --width 1920 --height 1080 --fps 60 --frames 120");
@@ -980,8 +980,8 @@ internal static class HdrCaptureLab
     private static void PrintUsage()
     {
         Console.WriteLine("Usage:");
-        Console.WriteLine("  dotnet run --project tests/Sussudio.HdrLab -- [--device <name contains>] [--width <uint>] [--height <uint>] [--fps <double>] [--frames <int>] [--timeout <seconds>] [--expect-hdr|--allow-sdr]");
-        Console.WriteLine("  dotnet run --project tests/Sussudio.HdrLab -- encode --input <p010 raw file> [--width <int>] [--height <int>] [--fps <double>] [--frames <int>]");
+        Console.WriteLine("  dotnet run --project tools/HdrLab/Sussudio.HdrLab -- [--device <name contains>] [--width <uint>] [--height <uint>] [--fps <double>] [--frames <int>] [--timeout <seconds>] [--expect-hdr|--allow-sdr]");
+        Console.WriteLine("  dotnet run --project tools/HdrLab/Sussudio.HdrLab -- encode --input <p010 raw file> [--width <int>] [--height <int>] [--fps <double>] [--frames <int>]");
     }
 }
 

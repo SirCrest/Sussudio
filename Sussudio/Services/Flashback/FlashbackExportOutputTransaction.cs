@@ -127,13 +127,13 @@ internal sealed class FlashbackExportOutputTransaction : IDisposable
                 failureCode = string.Empty;
                 return true;
             }
-            catch (IOException ex)
+            catch (IOException ex) when (IsDestinationExistsError(ex.HResult & 0xFFFF))
             {
                 Logger.Log($"FLASHBACK_EXPORT_TMP_CREATE_RETRY path='{candidate}' attempt={attempt + 1} type={ex.GetType().Name} msg='{ex.Message}'");
             }
             catch (Exception ex)
             {
-                failureMessage = $"Flashback export failed: could not create temporary output file before writing '{outputPath}'.";
+                failureMessage = $"Flashback export failed: could not create temporary output file before writing '{outputPath}': {ex.Message}";
                 Logger.Log($"FLASHBACK_EXPORT_TMP_CREATE_WARN path='{candidate}' type={ex.GetType().Name} msg='{ex.Message}'");
                 return false;
             }
@@ -143,16 +143,29 @@ internal sealed class FlashbackExportOutputTransaction : IDisposable
         return false;
     }
 
-    internal bool TryPublish(string outputPath, out long outputBytes, out string failureMessage, out string failureCode)
-        => TryPublishCore(outputPath, out outputBytes, out failureMessage, out failureCode, TryValidateCompletedOutputFile);
+    internal bool TryPublish(
+        string outputPath,
+        out long outputBytes,
+        out string failureMessage,
+        out string failureCode,
+        out bool outputPreserved)
+        => TryPublishCore(
+            outputPath,
+            out outputBytes,
+            out failureMessage,
+            out failureCode,
+            TryValidateCompletedOutputFile,
+            out outputPreserved);
 
     private bool TryPublishCore(
         string outputPath,
         out long outputBytes,
         out string failureMessage,
         out string failureCode,
-        CompletedOutputValidator validateOutput)
+        CompletedOutputValidator validateOutput,
+        out bool outputPreserved)
     {
+        outputPreserved = false;
         failureCode = FlashbackExportFailureCodes.OutputWriteFailed;
         if (!validateOutput(TemporaryPath, out outputBytes, out _))
         {
@@ -181,6 +194,7 @@ internal sealed class FlashbackExportOutputTransaction : IDisposable
             return false;
         }
 
+        outputPreserved = true;
         if (!validateOutput(outputPath, out outputBytes, out failureMessage))
         {
             failureCode = outputBytes == 0

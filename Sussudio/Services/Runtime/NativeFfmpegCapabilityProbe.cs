@@ -31,7 +31,7 @@ internal sealed record NativeSplitEncodeProbeResult
     public long ElapsedMilliseconds { get; init; }
 }
 
-// Runs only in a supervised app child, before App, the instance mutex, or Logger.
+// Runs only in a supervised app child, before App or the instance mutex, with its own explicit logger lifetime.
 // A successful fixture proves option acceptance, not the number of physical NVENC engines.
 internal static class NativeFfmpegCapabilityProbe
 {
@@ -71,8 +71,8 @@ internal static class NativeFfmpegCapabilityProbe
             return true;
         }
 
-        // Logger rotates its file on first use. A child must never use the live app's log.
-        Environment.SetEnvironmentVariable("SUSSUDIO_LOG_ROOT", logRoot);
+        // Pass the private root directly; early diagnostics cannot select app logs.
+        Logger.Initialize(logRoot);
         var result = RunNativeTrial(runtimeRoot, mode);
         // This process owns its log and is already bounded by the supervisor.
         // Drain queued diagnostics before its background writer disappears.

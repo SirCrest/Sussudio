@@ -2,7 +2,6 @@ using System.Text.Json;
 using System.Globalization;
 using System.Threading;
 using Sussudio.Models;
-using Sussudio.Tools;
 
 namespace Sussudio.Tools.Ssctl;
 
@@ -67,7 +66,7 @@ internal static class CommandHandlers
         public PipeTransport Transport { get; }
         public bool GlobalJson { get; }
         public List<string> Rest { get; }
-        private CancellationToken RequestCancellationToken { get; }
+        public CancellationToken RequestCancellationToken { get; }
 
         public Task<JsonElement> SendCommandAsync(
             string commandName,
@@ -342,15 +341,15 @@ internal static class CommandHandlers
         var pollMs = ParseOptionalIntFlag(args, "--poll");
         EnsureNoArgs(args, "wait <condition> [--timeout ms] [--poll ms]");
 
-        var payload = new Dictionary<string, object?> { ["condition"] = condition };
+        var payload = new Dictionary<string, object?> { [AutomationPayloadKeys.Condition] = condition };
         if (timeoutMs.HasValue)
         {
-            payload["timeoutMs"] = timeoutMs.Value;
+            payload[AutomationPayloadKeys.TimeoutMs] = timeoutMs.Value;
         }
 
         if (pollMs.HasValue)
         {
-            payload["pollMs"] = pollMs.Value;
+            payload[AutomationPayloadKeys.PollMs] = pollMs.Value;
         }
 
         var responseTimeoutMs = Math.Max(timeoutMs.GetValueOrDefault(0) + 5000, 60000);
@@ -370,9 +369,9 @@ internal static class CommandHandlers
             {
                 new Dictionary<string, object?>
                 {
-                    ["field"] = context.Rest[0],
-                    ["op"] = context.Rest[1],
-                    ["value"] = ParseAssertionValue(context.Rest[2])
+                    [AutomationPayloadKeys.Field] = context.Rest[0],
+                    [AutomationPayloadKeys.Op] = context.Rest[1],
+                    [AutomationPayloadKeys.Value] = ParseAssertionValue(context.Rest[2])
                 }
             };
         }
@@ -390,7 +389,7 @@ internal static class CommandHandlers
 
         var response = await context.SendCommandAsync(
             AutomationCommandKind.AssertSnapshot,
-            new Dictionary<string, object?> { ["assertions"] = assertionsPayload }).ConfigureAwait(false);
+            new Dictionary<string, object?> { [AutomationPayloadKeys.Assertions] = assertionsPayload }).ConfigureAwait(false);
         return WriteResponse(response, context.GlobalJson, responseValue => Formatters.FormatResult(responseValue, includeData: true));
     }
 
@@ -415,10 +414,10 @@ internal static class CommandHandlers
         if (context.Rest.Count > 0)
         {
             var filePath = JoinRemaining(context.Rest, 0);
-            var payload = new Dictionary<string, object?> { ["filePath"] = filePath };
+            var payload = new Dictionary<string, object?> { [AutomationPayloadKeys.FilePath] = filePath };
             if (!string.IsNullOrWhiteSpace(verificationProfile))
             {
-                payload["verificationProfile"] = verificationProfile;
+                payload[AutomationPayloadKeys.VerificationProfile] = verificationProfile;
             }
 
             var response = await context.SendCommandAsync(
@@ -451,7 +450,7 @@ internal static class CommandHandlers
 
         var response = await context.SendCommandAsync(
             Sussudio.Models.AutomationCommandKind.GetDiagnostics,
-            new Dictionary<string, object?> { ["maxEvents"] = max }).ConfigureAwait(false);
+            new Dictionary<string, object?> { [AutomationPayloadKeys.MaxEvents] = max }).ConfigureAwait(false);
         return WriteResponse(response, json, Formatters.FormatDiagnostics);
     }
 
@@ -481,7 +480,7 @@ internal static class CommandHandlers
 
         var response = await context.SendCommandAsync(
             Sussudio.Models.AutomationCommandKind.GetPerformanceTimeline,
-            new Dictionary<string, object?> { ["maxEntries"] = max }).ConfigureAwait(false);
+            new Dictionary<string, object?> { [AutomationPayloadKeys.MaxEntries] = max }).ConfigureAwait(false);
         return WriteResponse(response, json, Formatters.FormatTimeline);
     }
 
@@ -542,21 +541,10 @@ internal static class CommandHandlers
 
     private static async Task<PresentMonProbeCorrelation> TryResolvePreviewPresentCorrelationAsync(CommandContext context)
     {
-        try
-        {
-            var response = await context.SendCommandAsync(Sussudio.Models.AutomationCommandKind.GetSnapshot).ConfigureAwait(false);
-            if (!AutomationSnapshotFormatter.IsSuccess(response) ||
-                !response.TryGetProperty("Snapshot", out var snapshot))
-            {
-                return default;
-            }
-
-            return PresentMonProbe.ReadPreviewCorrelation(snapshot);
-        }
-        catch
-        {
-            return default;
-        }
+        var response = await context.SendCommandAsync(Sussudio.Models.AutomationCommandKind.GetSnapshot).ConfigureAwait(false);
+        return PresentMonProbe.ResolvePreviewCorrelation(
+            response,
+            message => Console.Error.WriteLine($"PresentMon correlation unavailable: {message}"));
     }
 
     private static async Task<int> HandleDiagnosticSessionAsync(CommandContext context)
@@ -584,7 +572,9 @@ internal static class CommandHandlers
                     VerifyRecording = verify,
                     LeaveRunning = leaveRunning
                 },
-                (command, payload, responseTimeoutMs) => context.SendCommandAsync(command, payload, responseTimeoutMs))
+                (command, payload, responseTimeoutMs, commandToken) =>
+                    context.Transport.SendCommandAsync(command, payload, responseTimeoutMs, commandToken),
+                context.RequestCancellationToken)
             .ConfigureAwait(false);
 
         Console.WriteLine(json ? PrettyJson(result) : DiagnosticSessionRunner.Format(result));
@@ -599,7 +589,7 @@ internal static class CommandHandlers
         return HandleSimpleCommandAsync(
             context,
             AutomationCommandKind.SetPreviewEnabled,
-            new Dictionary<string, object?> { ["enabled"] = action switch { "start" => true, "stop" => false, _ => throw new UsageException("preview expects start or stop.") } },
+            new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = action switch { "start" => true, "stop" => false, _ => throw new UsageException("preview expects start or stop.") } },
             includeData: false);
     }
 
@@ -610,7 +600,7 @@ internal static class CommandHandlers
         return HandleSimpleCommandAsync(
             context,
             AutomationCommandKind.SetRecordingEnabled,
-            new Dictionary<string, object?> { ["enabled"] = action switch { "start" => true, "stop" => false, _ => throw new UsageException("record expects start or stop.") } },
+            new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = action switch { "start" => true, "stop" => false, _ => throw new UsageException("record expects start or stop.") } },
             includeData: false);
     }
 
@@ -621,7 +611,7 @@ internal static class CommandHandlers
         return HandleSimpleCommandAsync(
             context,
             kind,
-            new Dictionary<string, object?> { ["outputPath"] = outputPath },
+            new Dictionary<string, object?> { [AutomationPayloadKeys.OutputPath] = outputPath },
             includeData: true);
     }
 
@@ -657,7 +647,7 @@ internal static class CommandHandlers
                 return await HandleSimpleCommandAsync(
                     context,
                     AutomationCommandKind.SelectDevice,
-                    new Dictionary<string, object?> { ["deviceName"] = JoinRemaining(context.Rest, 1) },
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.DeviceName] = JoinRemaining(context.Rest, 1) },
                     includeData: false).ConfigureAwait(false);
             case "audio-select":
                 if (context.Rest.Count < 2)
@@ -668,7 +658,7 @@ internal static class CommandHandlers
                 return await HandleSimpleCommandAsync(
                     context,
                     AutomationCommandKind.SelectAudioInputDevice,
-                    new Dictionary<string, object?> { ["deviceName"] = JoinRemaining(context.Rest, 1) },
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.DeviceName] = JoinRemaining(context.Rest, 1) },
                     includeData: false).ConfigureAwait(false);
             case "mic-select":
             case "microphone-select":
@@ -680,14 +670,14 @@ internal static class CommandHandlers
                 return await HandleSimpleCommandAsync(
                     context,
                     AutomationCommandKind.SelectMicrophoneDevice,
-                    new Dictionary<string, object?> { ["deviceName"] = JoinRemaining(context.Rest, 1) },
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.DeviceName] = JoinRemaining(context.Rest, 1) },
                     includeData: false).ConfigureAwait(false);
             case "custom-audio":
                 EnsureArgCount(context.Rest, 2, "device custom-audio on|off");
                 return await HandleSimpleCommandAsync(
                     context,
                     AutomationCommandKind.SetCustomAudioInput,
-                    new Dictionary<string, object?> { ["enabled"] = ParseOnOff(RequireWord(context.Rest, 1, "device custom-audio on|off")) },
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = ParseOnOff(RequireWord(context.Rest, 1, "device custom-audio on|off")) },
                     includeData: false).ConfigureAwait(false);
             default:
                 throw new UsageException($"Unknown device command '{subcommand}'.");
@@ -699,26 +689,26 @@ internal static class CommandHandlers
         var subcommand = RequireWord(context.Rest, 0, "set <option> ...").ToLowerInvariant();
         return subcommand switch
         {
-            "resolution" => SendSetValueAsync(context, AutomationCommandKind.SetResolution, "resolution", JoinRemaining(context.Rest, 1), "set resolution <value>"),
-            "fps" => SendSetValueAsync(context, AutomationCommandKind.SetFrameRate, "frameRate", ParseDouble(RequireWord(context.Rest, 1, "set fps <value>")), "set fps <value>"),
-            "format" => SendSetValueAsync(context, AutomationCommandKind.SetRecordingFormat, "format", NormalizeRecordingFormat(JoinRemaining(context.Rest, 1)), "set format <value>"),
-            "quality" => SendSetValueAsync(context, AutomationCommandKind.SetQuality, "quality", JoinRemaining(context.Rest, 1), "set quality <value>"),
-            "bitrate" => SendSetValueAsync(context, AutomationCommandKind.SetCustomBitrate, "bitrateMbps", ParseDouble(RequireWord(context.Rest, 1, "set bitrate <value>")), "set bitrate <value>"),
-            "preset" => SendSetValueAsync(context, AutomationCommandKind.SetPreset, "preset", JoinRemaining(context.Rest, 1), "set preset <value>"),
-            "split" => SendSetValueAsync(context, AutomationCommandKind.SetSplitEncodeMode, "splitEncodeMode", JoinRemaining(context.Rest, 1), "set split <value>"),
-            "video-format" => SendSetValueAsync(context, AutomationCommandKind.SetVideoFormat, "videoFormat", JoinRemaining(context.Rest, 1), "set video-format <value>"),
-            "decoders" => SendSetValueAsync(context, AutomationCommandKind.SetMjpegDecoderCount, "decoderCount", ParseInt(RequireWord(context.Rest, 1, "set decoders <value>")), "set decoders <value>"),
-            "hdr" => SendSetValueAsync(context, AutomationCommandKind.SetHdrEnabled, "enabled", ParseOnOff(RequireWord(context.Rest, 1, "set hdr on|off")), "set hdr on|off"),
-            "hdr-preview" => SendSetValueAsync(context, AutomationCommandKind.SetTrueHdrPreviewEnabled, "enabled", ParseOnOff(RequireWord(context.Rest, 1, "set hdr-preview on|off")), "set hdr-preview on|off"),
-            "audio" => SendSetValueAsync(context, AutomationCommandKind.SetAudioEnabled, "enabled", ParseOnOff(RequireWord(context.Rest, 1, "set audio on|off")), "set audio on|off"),
-            "audio-preview" => SendSetValueAsync(context, AutomationCommandKind.SetAudioPreviewEnabled, "enabled", ParseOnOff(RequireWord(context.Rest, 1, "set audio-preview on|off")), "set audio-preview on|off"),
-            "volume" => SendSetValueAsync(context, AutomationCommandKind.SetPreviewVolume, "previewVolumePercent", ParseDouble(RequireWord(context.Rest, 1, "set volume <value>")), "set volume <value>"),
-            "audio-mode" => SendSetValueAsync(context, AutomationCommandKind.SetDeviceAudioMode, "mode", RequireWord(context.Rest, 1, "set audio-mode hdmi|analog"), "set audio-mode hdmi|analog"),
-            "gain" => SendSetValueAsync(context, AutomationCommandKind.SetAnalogAudioGain, "gain", ParseDouble(RequireWord(context.Rest, 1, "set gain <value>")), "set gain <value>"),
-            "output" => SendSetValueAsync(context, AutomationCommandKind.SetOutputPath, "outputPath", JoinRemaining(context.Rest, 1), "set output <path>"),
-            "show-all" => SendSetValueAsync(context, AutomationCommandKind.SetShowAllCaptureOptions, "enabled", ParseOnOff(RequireWord(context.Rest, 1, "set show-all on|off")), "set show-all on|off"),
-            "mic" or "microphone" => SendSetValueAsync(context, AutomationCommandKind.SetMicrophoneEnabled, "enabled", ParseOnOff(RequireWord(context.Rest, 1, "set mic on|off")), "set mic on|off"),
-            "mic-volume" or "microphone-volume" => SendSetValueAsync(context, AutomationCommandKind.SetMicrophoneVolume, "microphoneVolumePercent", ParseDouble(RequireWord(context.Rest, 1, "set mic-volume <value>")), "set mic-volume <value>"),
+            "resolution" => SendSetValueAsync(context, AutomationCommandKind.SetResolution, AutomationPayloadKeys.Resolution, JoinRemaining(context.Rest, 1), "set resolution <value>"),
+            "fps" => SendSetValueAsync(context, AutomationCommandKind.SetFrameRate, AutomationPayloadKeys.FrameRate, ParseDouble(RequireWord(context.Rest, 1, "set fps <value>")), "set fps <value>"),
+            "format" => SendSetValueAsync(context, AutomationCommandKind.SetRecordingFormat, AutomationPayloadKeys.Format, NormalizeRecordingFormat(JoinRemaining(context.Rest, 1)), "set format <value>"),
+            "quality" => SendSetValueAsync(context, AutomationCommandKind.SetQuality, AutomationPayloadKeys.Quality, JoinRemaining(context.Rest, 1), "set quality <value>"),
+            "bitrate" => SendSetValueAsync(context, AutomationCommandKind.SetCustomBitrate, AutomationPayloadKeys.BitrateMbps, ParseDouble(RequireWord(context.Rest, 1, "set bitrate <value>")), "set bitrate <value>"),
+            "preset" => SendSetValueAsync(context, AutomationCommandKind.SetPreset, AutomationPayloadKeys.Preset, JoinRemaining(context.Rest, 1), "set preset <value>"),
+            "split" => SendSetValueAsync(context, AutomationCommandKind.SetSplitEncodeMode, AutomationPayloadKeys.SplitEncodeMode, JoinRemaining(context.Rest, 1), "set split <value>"),
+            "video-format" => SendSetValueAsync(context, AutomationCommandKind.SetVideoFormat, AutomationPayloadKeys.VideoFormat, JoinRemaining(context.Rest, 1), "set video-format <value>"),
+            "decoders" => SendSetValueAsync(context, AutomationCommandKind.SetMjpegDecoderCount, AutomationPayloadKeys.DecoderCount, ParseInt(RequireWord(context.Rest, 1, "set decoders <value>")), "set decoders <value>"),
+            "hdr" => SendSetValueAsync(context, AutomationCommandKind.SetHdrEnabled, AutomationPayloadKeys.Enabled, ParseOnOff(RequireWord(context.Rest, 1, "set hdr on|off")), "set hdr on|off"),
+            "hdr-preview" => SendSetValueAsync(context, AutomationCommandKind.SetTrueHdrPreviewEnabled, AutomationPayloadKeys.Enabled, ParseOnOff(RequireWord(context.Rest, 1, "set hdr-preview on|off")), "set hdr-preview on|off"),
+            "audio" => SendSetValueAsync(context, AutomationCommandKind.SetAudioEnabled, AutomationPayloadKeys.Enabled, ParseOnOff(RequireWord(context.Rest, 1, "set audio on|off")), "set audio on|off"),
+            "audio-preview" => SendSetValueAsync(context, AutomationCommandKind.SetAudioPreviewEnabled, AutomationPayloadKeys.Enabled, ParseOnOff(RequireWord(context.Rest, 1, "set audio-preview on|off")), "set audio-preview on|off"),
+            "volume" => SendSetValueAsync(context, AutomationCommandKind.SetPreviewVolume, AutomationPayloadKeys.PreviewVolumePercent, ParseDouble(RequireWord(context.Rest, 1, "set volume <value>")), "set volume <value>"),
+            "audio-mode" => SendSetValueAsync(context, AutomationCommandKind.SetDeviceAudioMode, AutomationPayloadKeys.Mode, RequireWord(context.Rest, 1, "set audio-mode hdmi|analog"), "set audio-mode hdmi|analog"),
+            "gain" => SendSetValueAsync(context, AutomationCommandKind.SetAnalogAudioGain, AutomationPayloadKeys.Gain, ParseDouble(RequireWord(context.Rest, 1, "set gain <value>")), "set gain <value>"),
+            "output" => SendSetValueAsync(context, AutomationCommandKind.SetOutputPath, AutomationPayloadKeys.OutputPath, JoinRemaining(context.Rest, 1), "set output <path>"),
+            "show-all" => SendSetValueAsync(context, AutomationCommandKind.SetShowAllCaptureOptions, AutomationPayloadKeys.Enabled, ParseOnOff(RequireWord(context.Rest, 1, "set show-all on|off")), "set show-all on|off"),
+            "mic" or "microphone" => SendSetValueAsync(context, AutomationCommandKind.SetMicrophoneEnabled, AutomationPayloadKeys.Enabled, ParseOnOff(RequireWord(context.Rest, 1, "set mic on|off")), "set mic on|off"),
+            "mic-volume" or "microphone-volume" => SendSetValueAsync(context, AutomationCommandKind.SetMicrophoneVolume, AutomationPayloadKeys.MicrophoneVolumePercent, ParseDouble(RequireWord(context.Rest, 1, "set mic-volume <value>")), "set mic-volume <value>"),
             _ => throw new UsageException($"Unknown set command '{subcommand}'.")
         };
     }
@@ -756,8 +746,8 @@ internal static class CommandHandlers
                     Sussudio.Models.AutomationCommandKind.ArmClose,
                     new Dictionary<string, object?>
                     {
-                        ["armed"] = true,
-                        ["actionId"] = actionId
+                        [AutomationPayloadKeys.Armed] = true,
+                        [AutomationPayloadKeys.ActionId] = actionId
                     }).ConfigureAwait(false);
                 if (!IsSuccess(armResponse))
                 {
@@ -769,8 +759,8 @@ internal static class CommandHandlers
                     Sussudio.Models.AutomationCommandKind.WindowAction,
                     new Dictionary<string, object?>
                     {
-                        ["action"] = "Close",
-                        ["actionId"] = actionId
+                        [AutomationPayloadKeys.Action] = "Close",
+                        [AutomationPayloadKeys.ActionId] = actionId
                     },
                     includeData: false).ConfigureAwait(false);
             }
@@ -782,7 +772,7 @@ internal static class CommandHandlers
                 return await HandleSimpleCommandAsync(
                     context,
                     Sussudio.Models.AutomationCommandKind.WindowAction,
-                    new Dictionary<string, object?> { ["action"] = Capitalize(subcommand) },
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = Capitalize(subcommand) },
                     includeData: false).ConfigureAwait(false);
             case "fullscreen":
             case "full-screen":
@@ -790,14 +780,14 @@ internal static class CommandHandlers
                 return await HandleSimpleCommandAsync(
                     context,
                     Sussudio.Models.AutomationCommandKind.SetFullScreenEnabled,
-                    new Dictionary<string, object?> { ["enabled"] = ParseOnOff(RequireWord(context.Rest, 1, "window fullscreen on|off")) },
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = ParseOnOff(RequireWord(context.Rest, 1, "window fullscreen on|off")) },
                     includeData: false).ConfigureAwait(false);
             case "snap":
                 EnsureArgCount(context.Rest, 2, "window snap <dir>");
                 return await HandleSimpleCommandAsync(
                     context,
                     Sussudio.Models.AutomationCommandKind.WindowAction,
-                    new Dictionary<string, object?> { ["action"] = MapSnapAction(RequireWord(context.Rest, 1, "window snap <dir>")) },
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = MapSnapAction(RequireWord(context.Rest, 1, "window snap <dir>")) },
                     includeData: false).ConfigureAwait(false);
             case "move":
                 EnsureArgCount(context.Rest, 3, "window move <x> <y>");
@@ -806,9 +796,9 @@ internal static class CommandHandlers
                     Sussudio.Models.AutomationCommandKind.WindowAction,
                     new Dictionary<string, object?>
                     {
-                        ["action"] = "Move",
-                        ["x"] = ParseInt(RequireWord(context.Rest, 1, "window move <x> <y>")),
-                        ["y"] = ParseInt(RequireWord(context.Rest, 2, "window move <x> <y>"))
+                        [AutomationPayloadKeys.Action] = "Move",
+                        [AutomationPayloadKeys.X] = ParseInt(RequireWord(context.Rest, 1, "window move <x> <y>")),
+                        [AutomationPayloadKeys.Y] = ParseInt(RequireWord(context.Rest, 2, "window move <x> <y>"))
                     },
                     includeData: false).ConfigureAwait(false);
             case "resize":
@@ -818,9 +808,9 @@ internal static class CommandHandlers
                     Sussudio.Models.AutomationCommandKind.WindowAction,
                     new Dictionary<string, object?>
                     {
-                        ["action"] = "Resize",
-                        ["width"] = ParseInt(RequireWord(context.Rest, 1, "window resize <w> <h>")),
-                        ["height"] = ParseInt(RequireWord(context.Rest, 2, "window resize <w> <h>"))
+                        [AutomationPayloadKeys.Action] = "Resize",
+                        [AutomationPayloadKeys.Width] = ParseInt(RequireWord(context.Rest, 1, "window resize <w> <h>")),
+                        [AutomationPayloadKeys.Height] = ParseInt(RequireWord(context.Rest, 2, "window resize <w> <h>"))
                     },
                     includeData: false).ConfigureAwait(false);
             default:
@@ -858,8 +848,8 @@ internal static class CommandHandlers
                 Sussudio.Models.AutomationCommandKind.SetStatsSectionVisible,
                 new Dictionary<string, object?>
                 {
-                    ["section"] = sectionName,
-                    ["visible"] = visible
+                    [AutomationPayloadKeys.Section] = sectionName,
+                    [AutomationPayloadKeys.Visible] = visible
                 },
                 includeData: false);
         }
@@ -868,7 +858,7 @@ internal static class CommandHandlers
         return HandleSimpleCommandAsync(
             context,
             Sussudio.Models.AutomationCommandKind.SetStatsVisible,
-            new Dictionary<string, object?> { ["visible"] = ParseShowHide(subcommand, "stats show|hide") },
+            new Dictionary<string, object?> { [AutomationPayloadKeys.Visible] = ParseShowHide(subcommand, "stats show|hide") },
             includeData: false);
     }
 
@@ -879,7 +869,7 @@ internal static class CommandHandlers
         return HandleSimpleCommandAsync(
             context,
             Sussudio.Models.AutomationCommandKind.SetSettingsVisible,
-            new Dictionary<string, object?> { ["visible"] = visible },
+            new Dictionary<string, object?> { [AutomationPayloadKeys.Visible] = visible },
             includeData: false);
     }
 
@@ -890,7 +880,7 @@ internal static class CommandHandlers
         return HandleSimpleCommandAsync(
             context,
             Sussudio.Models.AutomationCommandKind.SetFrameTimeOverlayVisible,
-            new Dictionary<string, object?> { ["visible"] = visible },
+            new Dictionary<string, object?> { [AutomationPayloadKeys.Visible] = visible },
             includeData: false);
     }
 
@@ -905,18 +895,18 @@ internal static class CommandHandlers
                 EnsureArgCount(context.Rest, 2, "flashback timeline show|hide");
                 var visible = ParseShowHide(context.Rest[1], "flashback timeline show|hide");
                 return HandleSimpleCommandAsync(context, Sussudio.Models.AutomationCommandKind.SetFlashbackTimelineVisible,
-                    new Dictionary<string, object?> { ["visible"] = visible }, includeData: false);
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.Visible] = visible }, includeData: false);
             }
             case "on":
             case "enable":
                 EnsureArgCount(context.Rest, 1, "flashback on|off");
                 return HandleSimpleCommandAsync(context, Sussudio.Models.AutomationCommandKind.SetFlashbackEnabled,
-                    new Dictionary<string, object?> { ["enabled"] = true }, includeData: false);
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = true }, includeData: false);
             case "off":
             case "disable":
                 EnsureArgCount(context.Rest, 1, "flashback on|off");
                 return HandleSimpleCommandAsync(context, Sussudio.Models.AutomationCommandKind.SetFlashbackEnabled,
-                    new Dictionary<string, object?> { ["enabled"] = false }, includeData: false);
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = false }, includeData: false);
             case "apply":
             case "restart":
                 return HandleSimpleCommandAsync(context, Sussudio.Models.AutomationCommandKind.RestartFlashback, includeData: false);
@@ -926,14 +916,14 @@ internal static class CommandHandlers
                 return HandleSimpleCommandAsync(
                     context,
                     Sussudio.Models.AutomationCommandKind.SetFlashbackBufferMinutes,
-                    new Dictionary<string, object?> { ["minutes"] = ParseInt(RequireWord(context.Rest, 1, "flashback buffer <minutes>")) },
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.Minutes] = ParseInt(RequireWord(context.Rest, 1, "flashback buffer <minutes>")) },
                     includeData: false);
             case "gpu-decode":
                 EnsureArgCount(context.Rest, 2, "flashback gpu-decode on|off");
                 return HandleSimpleCommandAsync(
                     context,
                     Sussudio.Models.AutomationCommandKind.SetFlashbackGpuDecode,
-                    new Dictionary<string, object?> { ["enabled"] = ParseOnOff(RequireWord(context.Rest, 1, "flashback gpu-decode on|off")) },
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = ParseOnOff(RequireWord(context.Rest, 1, "flashback gpu-decode on|off")) },
                     includeData: false);
             case "play":
             case "pause":
@@ -968,14 +958,13 @@ internal static class CommandHandlers
         var outputPath = context.Rest.Count >= 3
             ? JoinRemaining(context.Rest, 2)
             : $"temp/flashback_export_{DateTime.Now:yyyyMMdd_HHmmss}.mp4";
-        Directory.CreateDirectory(Path.GetDirectoryName(outputPath) ?? ".");
         return HandleSimpleCommandAsync(context, Sussudio.Models.AutomationCommandKind.FlashbackExport,
             new Dictionary<string, object?>
             {
-                ["seconds"] = seconds,
-                ["outputPath"] = outputPath,
-                ["useSelectionRange"] = useSelectionRange,
-                ["force"] = force
+                [AutomationPayloadKeys.Seconds] = seconds,
+                [AutomationPayloadKeys.OutputPath] = outputPath,
+                [AutomationPayloadKeys.UseSelectionRange] = useSelectionRange,
+                [AutomationPayloadKeys.Force] = force
             }, includeData: true);
     }
 
@@ -985,60 +974,60 @@ internal static class CommandHandlers
         {
             case "play":
             {
-                var playPayload = new Dictionary<string, object?> { ["action"] = "play" };
+                var playPayload = new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "play" };
                 if (context.Rest.Count >= 2)
-                    playPayload["positionMs"] = ParseFlashbackPositionMs(context.Rest[1]);
+                    playPayload[AutomationPayloadKeys.PositionMs] = ParseFlashbackPositionMs(context.Rest[1]);
                 return HandleSimpleCommandAsync(context, Sussudio.Models.AutomationCommandKind.FlashbackAction, playPayload, includeData: true);
             }
             case "pause":
                 return HandleSimpleCommandAsync(context, Sussudio.Models.AutomationCommandKind.FlashbackAction,
-                    new Dictionary<string, object?> { ["action"] = "pause" }, includeData: true);
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "pause" }, includeData: true);
             case "go-live":
                 return HandleSimpleCommandAsync(context, Sussudio.Models.AutomationCommandKind.FlashbackAction,
-                    new Dictionary<string, object?> { ["action"] = "go-live" }, includeData: true);
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "go-live" }, includeData: true);
             case "seek":
                 return HandleSimpleCommandAsync(context, Sussudio.Models.AutomationCommandKind.FlashbackAction,
                     new Dictionary<string, object?>
                     {
-                        ["action"] = "seek",
-                        ["positionMs"] = ParseFlashbackPositionMs(RequireWord(context.Rest, 1, "flashback seek <ms>"))
+                        [AutomationPayloadKeys.Action] = "seek",
+                        [AutomationPayloadKeys.PositionMs] = ParseFlashbackPositionMs(RequireWord(context.Rest, 1, "flashback seek <ms>"))
                     }, includeData: true);
             case "begin-scrub":
                 return HandleSimpleCommandAsync(context, Sussudio.Models.AutomationCommandKind.FlashbackAction,
                     new Dictionary<string, object?>
                     {
-                        ["action"] = "begin-scrub",
-                        ["positionMs"] = ParseFlashbackPositionMs(RequireWord(context.Rest, 1, "flashback begin-scrub <ms>"))
+                        [AutomationPayloadKeys.Action] = "begin-scrub",
+                        [AutomationPayloadKeys.PositionMs] = ParseFlashbackPositionMs(RequireWord(context.Rest, 1, "flashback begin-scrub <ms>"))
                     }, includeData: true);
             case "update-scrub":
                 return HandleSimpleCommandAsync(context, Sussudio.Models.AutomationCommandKind.FlashbackAction,
                     new Dictionary<string, object?>
                     {
-                        ["action"] = "update-scrub",
-                        ["positionMs"] = ParseFlashbackPositionMs(RequireWord(context.Rest, 1, "flashback update-scrub <ms>"))
+                        [AutomationPayloadKeys.Action] = "update-scrub",
+                        [AutomationPayloadKeys.PositionMs] = ParseFlashbackPositionMs(RequireWord(context.Rest, 1, "flashback update-scrub <ms>"))
                     }, includeData: true);
             case "end-scrub":
             {
-                var payload = new Dictionary<string, object?> { ["action"] = "end-scrub" };
+                var payload = new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "end-scrub" };
                 if (context.Rest.Count >= 2)
-                    payload["positionMs"] = ParseFlashbackPositionMs(context.Rest[1]);
+                    payload[AutomationPayloadKeys.PositionMs] = ParseFlashbackPositionMs(context.Rest[1]);
                 return HandleSimpleCommandAsync(context, Sussudio.Models.AutomationCommandKind.FlashbackAction, payload, includeData: true);
             }
             case "set-in":
             case "set-in-point":
                 EnsureArgCount(context.Rest, 1, "flashback set-in");
                 return HandleSimpleCommandAsync(context, Sussudio.Models.AutomationCommandKind.FlashbackAction,
-                    new Dictionary<string, object?> { ["action"] = "set-in-point" }, includeData: true);
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "set-in-point" }, includeData: true);
             case "set-out":
             case "set-out-point":
                 EnsureArgCount(context.Rest, 1, "flashback set-out");
                 return HandleSimpleCommandAsync(context, Sussudio.Models.AutomationCommandKind.FlashbackAction,
-                    new Dictionary<string, object?> { ["action"] = "set-out-point" }, includeData: true);
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "set-out-point" }, includeData: true);
             case "clear-range":
             case "clear-in-out":
                 EnsureArgCount(context.Rest, 1, "flashback clear-range");
                 return HandleSimpleCommandAsync(context, Sussudio.Models.AutomationCommandKind.FlashbackAction,
-                    new Dictionary<string, object?> { ["action"] = "clear-in-out-points" }, includeData: true);
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "clear-in-out-points" }, includeData: true);
             default:
                 throw new UsageException($"Unknown flashback action '{subcommand}'.");
         }
@@ -1067,13 +1056,20 @@ internal sealed class PipeTransport
 {
     private readonly string _pipeName;
     private readonly int? _sessionResponseTimeoutMs;
+    private readonly string? _authToken;
 
     public PipeTransport(string pipeName, int? sessionResponseTimeoutMs = null)
+        : this(pipeName, sessionResponseTimeoutMs, authToken: null)
+    {
+    }
+
+    public PipeTransport(string pipeName, int? sessionResponseTimeoutMs, string? authToken)
     {
         _pipeName = string.IsNullOrWhiteSpace(pipeName)
             ? AutomationPipeProtocol.DefaultPipeName
             : pipeName;
         _sessionResponseTimeoutMs = sessionResponseTimeoutMs;
+        _authToken = authToken;
     }
 
     public async Task<JsonElement> SendCommandAsync(
@@ -1091,6 +1087,7 @@ internal sealed class PipeTransport
                     sessionResponseTimeoutMs: _sessionResponseTimeoutMs,
                     callResponseTimeoutMs: responseTimeoutMs,
                     unknownCommandHandling: AutomationUnknownCommandHandling.ThrowArgumentException,
+                    authToken: _authToken,
                     cancellationToken: cancellationToken)
                 .ConfigureAwait(false);
         }
@@ -1113,6 +1110,15 @@ internal sealed class PipeTransport
             payload,
             sessionResponseTimeoutMs: _sessionResponseTimeoutMs,
             callResponseTimeoutMs: responseTimeoutMs,
-            unknownCommandHandling: AutomationUnknownCommandHandling.ThrowArgumentException,
+            authToken: _authToken,
             cancellationToken: cancellationToken);
+}
+
+// Invalid command-line usage; Program reports it with the usage text instead of a stack trace.
+internal sealed class UsageException : Exception
+{
+    public UsageException(string message)
+        : base(message)
+    {
+    }
 }

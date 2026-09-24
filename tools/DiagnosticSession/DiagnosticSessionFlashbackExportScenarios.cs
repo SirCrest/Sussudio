@@ -1,3 +1,4 @@
+using System.Runtime.ExceptionServices;
 using System.Text.Json;
 using static Sussudio.Tools.AutomationSnapshotFormatter;
 using static Sussudio.Tools.DiagnosticSessionFlashbackExports;
@@ -26,8 +27,8 @@ internal static class DiagnosticSessionFlashbackExportScenarios
 
         var exportPathA = ResolveFlashbackExportOutputPath(outputDirectory, "flashback-concurrent-a.mp4");
         var exportPathB = ResolveFlashbackExportOutputPath(outputDirectory, "flashback-concurrent-b.mp4");
-        var exportPayloadA = new Dictionary<string, object?> { ["seconds"] = 1, ["outputPath"] = exportPathA };
-        var exportPayloadB = new Dictionary<string, object?> { ["seconds"] = 1, ["outputPath"] = exportPathB };
+        var exportPayloadA = new Dictionary<string, object?> { [AutomationPayloadKeys.Seconds] = 1, [AutomationPayloadKeys.OutputPath] = exportPathA };
+        var exportPayloadB = new Dictionary<string, object?> { [AutomationPayloadKeys.Seconds] = 1, [AutomationPayloadKeys.OutputPath] = exportPathB };
 
         var exportTimeoutMs = AutomationPipeProtocol.GetDefaultResponseTimeout("FlashbackExport");
         var exportTaskA = sendCommandAsync("FlashbackExport", exportPayloadA, exportTimeoutMs);
@@ -79,7 +80,7 @@ internal static class DiagnosticSessionFlashbackExportScenarios
         var exportPath = Path.Combine(outputDirectory, "flashback-rotated-export.mp4");
         var exportResponse = await sendCommandAsync(
                 "FlashbackExport",
-                new Dictionary<string, object?> { ["seconds"] = 12, ["outputPath"] = exportPath },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Seconds] = 12, [AutomationPayloadKeys.OutputPath] = exportPath },
                 300_000)
             .ConfigureAwait(false);
         actions.Add("flashback rotated export requested via live-edge force rotation");
@@ -119,38 +120,35 @@ internal static class DiagnosticSessionFlashbackExportScenarios
         DiagnosticSessionBackgroundTasks backgroundTasks,
         List<string> actions,
         List<string> warnings,
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendAsync,
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendRawWithConnectRetryAsync,
+        DiagnosticSessionCommandChannel commandChannel,
         CancellationToken cancellationToken)
     {
         RegisterFlashbackExportPlaybackTask(
             scenarioPlan,
             outputDirectory,
             backgroundTasks,
-            actions,
-            warnings,
-            sendAsync,
-            cancellationToken);
+            actions: actions,
+            warnings: warnings,
+            commandChannel: commandChannel,
+            cancellationToken: cancellationToken);
 
         RegisterFlashbackRangeExportTasks(
             scenarioPlan,
             outputDirectory,
             backgroundTasks,
-            actions,
-            warnings,
-            sendAsync,
-            sendRawWithConnectRetryAsync,
-            cancellationToken);
+            actions: actions,
+            warnings: warnings,
+            commandChannel: commandChannel,
+            cancellationToken: cancellationToken);
 
         RegisterFlashbackExportCoordinationTasks(
             scenarioPlan,
             outputDirectory,
             backgroundTasks,
-            actions,
-            warnings,
-            sendAsync,
-            sendRawWithConnectRetryAsync,
-            cancellationToken);
+            actions: actions,
+            warnings: warnings,
+            commandChannel: commandChannel,
+            cancellationToken: cancellationToken);
     }
 
     private static void RegisterFlashbackExportPlaybackTask(
@@ -159,7 +157,7 @@ internal static class DiagnosticSessionFlashbackExportScenarios
         DiagnosticSessionBackgroundTasks backgroundTasks,
         List<string> actions,
         List<string> warnings,
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendAsync,
+        DiagnosticSessionCommandChannel commandChannel,
         CancellationToken cancellationToken)
     {
         if (scenarioPlan.Kind != DiagnosticSessionScenarioKind.FlashbackExportPlayback)
@@ -172,10 +170,13 @@ internal static class DiagnosticSessionFlashbackExportScenarios
             "flashback-export-playback-task",
             RunFlashbackExportPlaybackAsync(
                 outputDirectory,
-                actions,
-                warnings,
-                sendAsync,
-                cancellationToken));
+                actions: actions,
+                warnings: warnings,
+                sendCommandAsync: commandChannel.SendAsync,
+                sendCleanupCommandAsync: (command, payload, timeout, token) =>
+                    commandChannel.SendWithTokenAsync(command, payload, timeout, true, token),
+                cancellationToken: cancellationToken),
+            ownsBoundedCleanup: true);
         actions.Add("flashback export playback started");
     }
 
@@ -185,8 +186,7 @@ internal static class DiagnosticSessionFlashbackExportScenarios
         DiagnosticSessionBackgroundTasks backgroundTasks,
         List<string> actions,
         List<string> warnings,
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendAsync,
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendRawWithConnectRetryAsync,
+        DiagnosticSessionCommandChannel commandChannel,
         CancellationToken cancellationToken)
     {
         if (scenarioPlan.Kind == DiagnosticSessionScenarioKind.FlashbackRangeExport)
@@ -196,10 +196,10 @@ internal static class DiagnosticSessionFlashbackExportScenarios
                 "flashback-range-export-task",
                 RunFlashbackRangeExportAsync(
                     outputDirectory,
-                    actions,
-                    warnings,
-                    sendAsync,
-                    cancellationToken));
+                    actions: actions,
+                    warnings: warnings,
+                    sendCommandAsync: commandChannel.SendAsync,
+                    cancellationToken: cancellationToken));
             actions.Add("flashback range export started");
         }
 
@@ -210,10 +210,10 @@ internal static class DiagnosticSessionFlashbackExportScenarios
                 "flashback-range-export-audio-switch-task",
                 RunFlashbackRangeExportAsync(
                     outputDirectory,
-                    actions,
-                    warnings,
-                    sendRawWithConnectRetryAsync,
-                    cancellationToken,
+                    actions: actions,
+                    warnings: warnings,
+                    sendCommandAsync: commandChannel.SendRawWithConnectRetryAsync,
+                    cancellationToken: cancellationToken,
                     scenarioLabel: "flashback range export audio switch",
                     exportFileName: "flashback-range-export-audio-switch.mp4",
                     outPointMs: 15_000,
@@ -228,8 +228,7 @@ internal static class DiagnosticSessionFlashbackExportScenarios
         DiagnosticSessionBackgroundTasks backgroundTasks,
         List<string> actions,
         List<string> warnings,
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendAsync,
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendRawWithConnectRetryAsync,
+        DiagnosticSessionCommandChannel commandChannel,
         CancellationToken cancellationToken)
     {
         if (scenarioPlan.Kind == DiagnosticSessionScenarioKind.FlashbackExportConcurrent)
@@ -239,10 +238,10 @@ internal static class DiagnosticSessionFlashbackExportScenarios
                 "flashback-export-concurrent-task",
                 RunFlashbackExportConcurrentAsync(
                     outputDirectory,
-                    actions,
-                    warnings,
-                    sendRawWithConnectRetryAsync,
-                    cancellationToken));
+                    actions: actions,
+                    warnings: warnings,
+                    sendCommandAsync: commandChannel.SendRawWithConnectRetryAsync,
+                    cancellationToken: cancellationToken));
             actions.Add("flashback concurrent export started");
         }
 
@@ -253,10 +252,13 @@ internal static class DiagnosticSessionFlashbackExportScenarios
                 "flashback-disable-during-export-task",
                 RunFlashbackDisableDuringExportAsync(
                     outputDirectory,
-                    actions,
-                    warnings,
-                    sendRawWithConnectRetryAsync,
-                    cancellationToken));
+                    actions: actions,
+                    warnings: warnings,
+                    sendCommandAsync: commandChannel.SendRawWithConnectRetryAsync,
+                    sendCleanupCommandAsync: (command, payload, timeout, token) =>
+                        commandChannel.SendWithTokenAsync(command, payload, timeout, true, token),
+                    cancellationToken: cancellationToken),
+                ownsBoundedCleanup: true);
             actions.Add("flashback disable during export started");
         }
 
@@ -267,10 +269,10 @@ internal static class DiagnosticSessionFlashbackExportScenarios
                 "flashback-rotated-export-task",
                 RunFlashbackRotatedExportAsync(
                     outputDirectory,
-                    actions,
-                    warnings,
-                    sendAsync,
-                    cancellationToken));
+                    actions: actions,
+                    warnings: warnings,
+                    sendCommandAsync: commandChannel.SendAsync,
+                    cancellationToken: cancellationToken));
             actions.Add("flashback rotated export started");
         }
     }
@@ -280,6 +282,7 @@ internal static class DiagnosticSessionFlashbackExportScenarios
         List<string> actions,
         List<string> warnings,
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
+        Func<string, Dictionary<string, object?>?, int?, CancellationToken, Task<JsonElement>> sendCleanupCommandAsync,
         CancellationToken cancellationToken)
     {
         if (!await WaitForFlashbackStressBufferReadyAsync(sendCommandAsync, cancellationToken).ConfigureAwait(false))
@@ -291,66 +294,108 @@ internal static class DiagnosticSessionFlashbackExportScenarios
         var baselineSnapshotResponse = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
         TryGetSnapshot(baselineSnapshotResponse, out var baselineSnapshot);
 
-        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "pause" }, null)
-            .ConfigureAwait(false);
-        await sendCommandAsync(
-                "FlashbackAction",
-                new Dictionary<string, object?> { ["action"] = "seek", ["positionMs"] = 1_000 },
-                null)
-            .ConfigureAwait(false);
-        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "play" }, null)
-            .ConfigureAwait(false);
-        actions.Add("flashback export playback play requested");
-
-        var playbackFrameCountBeforeExport = await CaptureFlashbackExportPlaybackFrameCountBeforeExportAsync(
-                warnings,
-                sendCommandAsync,
-                cancellationToken)
-            .ConfigureAwait(false);
-
-        var exportPath = Path.Combine(outputDirectory, "flashback-export-playback.mp4");
-        var exportResponse = await sendCommandAsync(
-                "FlashbackExport",
-                new Dictionary<string, object?> { ["seconds"] = 1, ["outputPath"] = exportPath },
-                60_000)
-            .ConfigureAwait(false);
-        actions.Add("flashback export during playback requested");
-        if (!AutomationSnapshotFormatter.IsSuccess(exportResponse))
+        var operationFailed = false;
+        try
         {
-            warnings.Add($"flashback export playback: export failed - {AutomationSnapshotFormatter.Get(exportResponse, "Message", "unknown error")}");
-            return;
-        }
+            await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "pause" }, null)
+                .ConfigureAwait(false);
+            await sendCommandAsync(
+                    "FlashbackAction",
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "seek", [AutomationPayloadKeys.PositionMs] = 1_000 },
+                    null)
+                .ConfigureAwait(false);
+            await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "play" }, null)
+                .ConfigureAwait(false);
+            actions.Add("flashback export playback play requested");
 
-        var verifyResponse = await sendCommandAsync(
-                "VerifyFile",
-                CreateFlashbackExportVerifyPayload(exportPath),
-                60_000)
-            .ConfigureAwait(false);
-        if (!AutomationSnapshotFormatter.IsSuccess(verifyResponse))
+            var playbackFrameCountBeforeExport = await CaptureFlashbackExportPlaybackFrameCountBeforeExportAsync(
+                    warnings,
+                    sendCommandAsync,
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+            var exportPath = Path.Combine(outputDirectory, "flashback-export-playback.mp4");
+            var exportResponse = await sendCommandAsync(
+                    "FlashbackExport",
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.Seconds] = 1, [AutomationPayloadKeys.OutputPath] = exportPath },
+                    60_000)
+                .ConfigureAwait(false);
+            actions.Add("flashback export during playback requested");
+            if (!AutomationSnapshotFormatter.IsSuccess(exportResponse))
+            {
+                warnings.Add($"flashback export playback: export failed - {AutomationSnapshotFormatter.Get(exportResponse, "Message", "unknown error")}");
+                operationFailed = true;
+                return;
+            }
+
+            var verifyResponse = await sendCommandAsync(
+                    "VerifyFile",
+                    CreateFlashbackExportVerifyPayload(exportPath),
+                    60_000)
+                .ConfigureAwait(false);
+            if (!AutomationSnapshotFormatter.IsSuccess(verifyResponse))
+            {
+                warnings.Add(
+                    $"flashback export playback verification: {AutomationSnapshotFormatter.Get(verifyResponse, "Message", "verification failed")}");
+                operationFailed = true;
+                return;
+            }
+
+            actions.Add("flashback export during playback verified");
+
+            await ValidateFlashbackExportPlaybackAfterExportAsync(
+                    playbackFrameCountBeforeExport,
+                    warnings,
+                    sendCommandAsync)
+                .ConfigureAwait(false);
+        }
+        catch
         {
-            warnings.Add(
-                $"flashback export playback verification: {AutomationSnapshotFormatter.Get(verifyResponse, "Message", "verification failed")}");
-            return;
+            operationFailed = true;
+            throw;
         }
+        finally
+        {
+            await RestoreFlashbackExportPlaybackAsync(
+                    baselineSnapshot, actions, warnings,
+                    sendCleanupCommandAsync,
+                    operationFailed)
+                .ConfigureAwait(false);
+        }
+    }
 
-        actions.Add("flashback export during playback verified");
+    private static async Task RestoreFlashbackExportPlaybackAsync(
+        JsonElement baselineSnapshot,
+        List<string> actions,
+        List<string> warnings,
+        Func<string, Dictionary<string, object?>?, int?, CancellationToken, Task<JsonElement>> sendCleanupCommandAsync,
+        bool preserveOperationFailure)
+    {
+        using var cleanup = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        try
+        {
+            var response = await sendCleanupCommandAsync(
+                    "FlashbackAction", new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "go-live" }, null,
+                    cleanup.Token)
+                .ConfigureAwait(false);
+            if (!IsSuccess(response))
+            {
+                warnings.Add($"flashback export playback: cleanup go-live failed - {Get(response, "Message", "unknown error")}");
+                return;
+            }
 
-        await ValidateFlashbackExportPlaybackAfterExportAsync(
-                playbackFrameCountBeforeExport,
-                warnings,
-                sendCommandAsync)
-            .ConfigureAwait(false);
-
-        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "go-live" }, null)
-            .ConfigureAwait(false);
-        actions.Add("flashback export playback go-live requested");
-
-        await ValidateFlashbackExportPlaybackFinalStateAsync(
-                baselineSnapshot,
-                warnings,
-                sendCommandAsync,
-                cancellationToken)
-            .ConfigureAwait(false);
+            actions.Add("flashback export playback go-live requested");
+            await ValidateFlashbackExportPlaybackFinalStateAsync(
+                    baselineSnapshot, warnings,
+                    (command, payload, timeout) => sendCleanupCommandAsync(command, payload, timeout, cleanup.Token),
+                    cleanup.Token)
+                .ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            warnings.Add($"flashback export playback: cleanup go-live threw {ex.GetType().Name}: {ex.Message}");
+            if (!preserveOperationFailure) throw;
+        }
     }
 
     private static async Task<long> CaptureFlashbackExportPlaybackFrameCountBeforeExportAsync(
@@ -414,14 +459,16 @@ internal static class DiagnosticSessionFlashbackExportScenarios
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
         CancellationToken cancellationToken)
     {
-        await Task.Delay(250, cancellationToken).ConfigureAwait(false);
-        var finalSnapshotResponse = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
-        if (!TryGetSnapshot(finalSnapshotResponse, out var finalSnapshot))
+        var liveSnapshot = await WaitForFlashbackPlaybackStateAsync(
+                sendCommandAsync, "Live", TimeSpan.FromSeconds(5), cancellationToken)
+            .ConfigureAwait(false);
+        if (liveSnapshot is null)
         {
-            warnings.Add("flashback export playback: no final snapshot returned");
+            warnings.Add("flashback export playback: playback did not return Live within 5s after go-live");
             return;
         }
 
+        var finalSnapshot = liveSnapshot.Value;
         var commandHealth = BuildPlaybackCommandHealth(finalSnapshot, baselineSnapshot);
         var pending = GetInt(finalSnapshot, "FlashbackPlaybackPendingCommands");
         var state = GetString(finalSnapshot, "FlashbackPlaybackState") ?? "Unknown";
@@ -456,86 +503,129 @@ internal static class DiagnosticSessionFlashbackExportScenarios
         int outPointMs = 5_000,
         bool switchAudioDuringExport = false)
     {
-        var selection = await PrepareFlashbackSelectionRangeAsync(
-                outPointMs,
-                scenarioLabel,
-                actions,
-                warnings,
-                sendCommandAsync,
-                cancellationToken)
-            .ConfigureAwait(false);
-        if (selection is null)
+        JsonElement? baselineSnapshot = null;
+        var selectionNeedsCleanup = false;
+        var operationFailed = false;
+        var cleanupSucceeded = false;
+        try
         {
-            return;
-        }
+            baselineSnapshot = await PrepareFlashbackSelectionRangeAsync(
+                    outPointMs,
+                    scenarioLabel,
+                    actions,
+                    warnings,
+                    sendCommandAsync,
+                    cancellationToken,
+                    () => selectionNeedsCleanup = true)
+                .ConfigureAwait(false);
+            if (baselineSnapshot is null)
+            {
+                return;
+            }
 
-        var exportPath = ResolveFlashbackExportOutputPath(outputDirectory, exportFileName);
-        var exportTask = sendCommandAsync(
+            var exportPath = ResolveFlashbackExportOutputPath(outputDirectory, exportFileName);
+            var exportTask = sendCommandAsync(
                 "FlashbackExport",
                 new Dictionary<string, object?>
                 {
-                    ["seconds"] = 1,
-                    ["outputPath"] = exportPath,
-                    ["useSelectionRange"] = true
+                    [AutomationPayloadKeys.Seconds] = 1,
+                    [AutomationPayloadKeys.OutputPath] = exportPath,
+                    [AutomationPayloadKeys.UseSelectionRange] = true
                 },
-                60_000)
-            ;
-        Task? audioSwitchTask = null;
-        if (switchAudioDuringExport)
+                60_000);
+            Task? audioSwitchTask = null;
+            if (switchAudioDuringExport)
+            {
+                audioSwitchTask = ToggleAudioEnabledDuringFlashbackExportAsync(
+                    exportTask,
+                    baselineSnapshot.Value,
+                    actions,
+                    warnings,
+                    sendCommandAsync,
+                    cancellationToken);
+            }
+
+            JsonElement exportResponse;
+            try
+            {
+                exportResponse = await exportTask.ConfigureAwait(false);
+            }
+            catch
+            {
+                // The audio task still owns its restore even when export fails.
+                // Observe its outcome before selection cleanup, preserving export's failure.
+                if (audioSwitchTask is not null)
+                {
+                    try
+                    {
+                        await audioSwitchTask.ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        warnings.Add($"{scenarioLabel}: audio switch failed after export failure - {ex.GetType().Name}: {ex.Message}");
+                    }
+                }
+                throw;
+            }
+
+            if (audioSwitchTask is not null)
+            {
+                await audioSwitchTask.ConfigureAwait(false);
+            }
+
+            actions.Add($"{scenarioLabel} requested");
+            if (!AutomationSnapshotFormatter.IsSuccess(exportResponse))
+            {
+                warnings.Add($"{scenarioLabel}: export failed - {AutomationSnapshotFormatter.Get(exportResponse, "Message", "unknown error")}");
+                return;
+            }
+
+            var verifyResponse = await sendCommandAsync(
+                    "VerifyFile",
+                    CreateFlashbackExportVerifyPayload(exportPath),
+                    60_000)
+                .ConfigureAwait(false);
+            if (!AutomationSnapshotFormatter.IsSuccess(verifyResponse))
+            {
+                warnings.Add(
+                    $"{scenarioLabel} verification: {AutomationSnapshotFormatter.Get(verifyResponse, "Message", "verification failed")}");
+            }
+            else
+            {
+                actions.Add($"{scenarioLabel} verified");
+            }
+
+            var snapshotResponse = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
+            if (!TryGetSnapshot(snapshotResponse, out var snapshot))
+            {
+                warnings.Add($"{scenarioLabel}: no snapshot returned after export");
+                return;
+            }
+
+            ValidateFlashbackRangeExportResult(snapshot, outPointMs, scenarioLabel, warnings);
+        }
+        catch
         {
-            audioSwitchTask = ToggleAudioEnabledDuringFlashbackExportAsync(
-                exportTask,
-                selection.Value.BaselineSnapshot,
-                actions,
-                warnings,
-                sendCommandAsync,
-                cancellationToken);
+            operationFailed = true;
+            throw;
+        }
+        finally
+        {
+            if (selectionNeedsCleanup)
+            {
+                cleanupSucceeded = await CleanupFlashbackRangeSelectionAsync(
+                        sendCommandAsync, scenarioLabel, warnings, operationFailed)
+                    .ConfigureAwait(false);
+            }
         }
 
-        var exportResponse = await exportTask.ConfigureAwait(false);
-        if (audioSwitchTask is not null)
+        if (cleanupSucceeded)
         {
-            await audioSwitchTask.ConfigureAwait(false);
+            actions.Add($"{scenarioLabel} cleared range and went live");
         }
-
-        actions.Add($"{scenarioLabel} requested");
-        if (!AutomationSnapshotFormatter.IsSuccess(exportResponse))
-        {
-            warnings.Add($"{scenarioLabel}: export failed - {AutomationSnapshotFormatter.Get(exportResponse, "Message", "unknown error")}");
-            await CleanupFlashbackSelectionAsync(sendCommandAsync).ConfigureAwait(false);
-            return;
-        }
-
-        var verifyResponse = await sendCommandAsync(
-                "VerifyFile",
-                CreateFlashbackExportVerifyPayload(exportPath),
-                60_000)
-            .ConfigureAwait(false);
-        if (!AutomationSnapshotFormatter.IsSuccess(verifyResponse))
-        {
-            warnings.Add(
-                $"{scenarioLabel} verification: {AutomationSnapshotFormatter.Get(verifyResponse, "Message", "verification failed")}");
-        }
-        else
-        {
-            actions.Add($"{scenarioLabel} verified");
-        }
-
-        var snapshotResponse = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
-        if (!TryGetSnapshot(snapshotResponse, out var snapshot))
-        {
-            warnings.Add($"{scenarioLabel}: no snapshot returned after export");
-            await CleanupFlashbackSelectionAsync(sendCommandAsync).ConfigureAwait(false);
-            return;
-        }
-
-        ValidateFlashbackRangeExportResult(snapshot, outPointMs, scenarioLabel, warnings);
-
-        await CleanupFlashbackSelectionAsync(sendCommandAsync).ConfigureAwait(false);
-        actions.Add($"{scenarioLabel} cleared range and went live");
 
         await ValidateFlashbackRangeExportCleanupAsync(
-                selection.Value.BaselineSnapshot,
+                baselineSnapshot.Value,
                 scenarioLabel,
                 warnings,
                 sendCommandAsync,
@@ -543,18 +633,50 @@ internal static class DiagnosticSessionFlashbackExportScenarios
             .ConfigureAwait(false);
     }
 
-    private readonly record struct FlashbackSelectionRange(
-        JsonElement BaselineSnapshot,
-        int RangeStartMs,
-        int RangeEndMs);
+    private static async Task<bool> CleanupFlashbackRangeSelectionAsync(
+        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
+        string scenarioLabel,
+        List<string> warnings,
+        bool preserveOperationFailure)
+    {
+        ExceptionDispatchInfo? firstFailure = null;
+        var succeeded = true;
+        foreach (var action in new[] { "clear-in-out-points", "go-live" })
+        {
+            try
+            {
+                var response = await sendCommandAsync(
+                        "FlashbackAction", new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = action }, null)
+                    .ConfigureAwait(false);
+                if (!IsSuccess(response))
+                {
+                    succeeded = false;
+                    warnings.Add($"{scenarioLabel}: cleanup {action} failed - {Get(response, "Message", "unknown error")}");
+                }
+            }
+            catch (Exception ex)
+            {
+                succeeded = false;
+                firstFailure ??= ExceptionDispatchInfo.Capture(ex);
+                warnings.Add($"{scenarioLabel}: cleanup {action} threw {ex.GetType().Name}: {ex.Message}");
+            }
+        }
+        if (!preserveOperationFailure)
+        {
+            firstFailure?.Throw();
+        }
 
-    private static async Task<FlashbackSelectionRange?> PrepareFlashbackSelectionRangeAsync(
+        return succeeded;
+    }
+
+    private static async Task<JsonElement?> PrepareFlashbackSelectionRangeAsync(
         int outPointMs,
         string scenarioLabel,
         List<string> actions,
         List<string> warnings,
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Action markSelectionCleanupRequired)
     {
         const int liveEdgeSafetyMarginMs = 5_000;
         const int leftEdgeSafetyMarginMs = 10_000;
@@ -589,9 +711,10 @@ internal static class DiagnosticSessionFlashbackExportScenarios
             return null;
         }
 
-        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "clear-in-out-points" }, null)
+        markSelectionCleanupRequired();
+        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "clear-in-out-points" }, null)
             .ConfigureAwait(false);
-        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "pause" }, null)
+        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "pause" }, null)
             .ConfigureAwait(false);
         await MarkFlashbackSelectionPointAsync(
                 rangeStartMs,
@@ -614,7 +737,7 @@ internal static class DiagnosticSessionFlashbackExportScenarios
                 cancellationToken)
             .ConfigureAwait(false);
 
-        return new FlashbackSelectionRange(baselineSnapshot, rangeStartMs, rangeEndMs);
+        return baselineSnapshot;
     }
 
     private static async Task MarkFlashbackSelectionPointAsync(
@@ -629,7 +752,7 @@ internal static class DiagnosticSessionFlashbackExportScenarios
     {
         await sendCommandAsync(
                 "FlashbackAction",
-                new Dictionary<string, object?> { ["action"] = "seek", ["positionMs"] = positionMs },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "seek", [AutomationPayloadKeys.PositionMs] = positionMs },
                 null)
             .ConfigureAwait(false);
         if (!await WaitForFlashbackPlaybackPositionAsync(sendCommandAsync, positionMs, TimeSpan.FromSeconds(5), cancellationToken).ConfigureAwait(false))
@@ -637,7 +760,7 @@ internal static class DiagnosticSessionFlashbackExportScenarios
             warnings.Add($"{scenarioLabel}: playback did not reach {label}-point seek before marking range");
         }
 
-        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = action }, null)
+        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = action }, null)
             .ConfigureAwait(false);
         actions.Add($"{scenarioLabel} {label} point set positionMs={positionMs}");
     }
@@ -711,6 +834,7 @@ internal static class DiagnosticSessionFlashbackExportScenarios
         List<string> actions,
         List<string> warnings,
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
+        Func<string, Dictionary<string, object?>?, int?, CancellationToken, Task<JsonElement>> sendCleanupCommandAsync,
         CancellationToken cancellationToken)
     {
         if (!await WaitForFlashbackStressBufferReadyAsync(sendCommandAsync, cancellationToken).ConfigureAwait(false))
@@ -719,75 +843,132 @@ internal static class DiagnosticSessionFlashbackExportScenarios
             return;
         }
 
-        var exportPath = ResolveFlashbackExportOutputPath(outputDirectory, "flashback-disable-during-export.mp4");
-        var exportTask = sendCommandAsync(
-            "FlashbackExport",
-            new Dictionary<string, object?> { ["seconds"] = 3, ["outputPath"] = exportPath },
-            AutomationPipeProtocol.GetDefaultResponseTimeout("FlashbackExport"));
-
-        await Task.Delay(100, cancellationToken).ConfigureAwait(false);
-        var disableTask = SendCommandWithConnectRetryAsync(
-            sendCommandAsync,
-            "SetFlashbackEnabled",
-            new Dictionary<string, object?> { ["enabled"] = false },
-            305_000,
-            TimeSpan.FromSeconds(30),
-            cancellationToken);
-        actions.Add("flashback disable/export requests issued");
-
-        var exportResponse = await exportTask.ConfigureAwait(false);
-        var disableResponse = await disableTask.ConfigureAwait(false);
-        if (!AutomationSnapshotFormatter.IsSuccess(exportResponse))
+        Task<JsonElement>? exportTask = null;
+        Task<JsonElement?>? disableTask = null;
+        Exception? operationFailure = null;
+        var returnedFailure = false;
+        try
         {
-            warnings.Add(
-                $"flashback disable during export: export failed - {AutomationSnapshotFormatter.Get(exportResponse, "Message", "unknown error")}");
-        }
+            var exportPath = ResolveFlashbackExportOutputPath(outputDirectory, "flashback-disable-during-export.mp4");
+            exportTask = sendCommandAsync(
+                "FlashbackExport",
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Seconds] = 3, [AutomationPayloadKeys.OutputPath] = exportPath },
+                AutomationPipeProtocol.GetDefaultResponseTimeout("FlashbackExport"));
 
-        if (disableResponse is null || !AutomationSnapshotFormatter.IsSuccess(disableResponse.Value))
-        {
-            var message = disableResponse is null
-                ? "no response"
-                : AutomationSnapshotFormatter.Get(disableResponse.Value, "Message", "unknown error");
-            warnings.Add(
-                $"flashback disable during export: disable failed - {message}");
-        }
-
-        if (AutomationSnapshotFormatter.IsSuccess(exportResponse))
-        {
-            await ValidateFlashbackDisableDuringExportFileAsync(exportPath, warnings, sendCommandAsync)
-                .ConfigureAwait(false);
-        }
-
-        if (disableResponse.HasValue && AutomationSnapshotFormatter.IsSuccess(disableResponse.Value))
-        {
-            await ValidateFlashbackDisabledAfterExportAsync(warnings, actions, sendCommandAsync, cancellationToken)
-                .ConfigureAwait(false);
-        }
-
-        var enableResponse = await SendCommandWithConnectRetryAsync(
-                sendCommandAsync,
+            await Task.Delay(100, cancellationToken).ConfigureAwait(false);
+            disableTask = SendCommandWithConnectRetryAsync(
+                (command, payload, timeout, _) => sendCommandAsync(command, payload, timeout),
                 "SetFlashbackEnabled",
-                new Dictionary<string, object?> { ["enabled"] = true },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = false },
                 305_000,
                 TimeSpan.FromSeconds(30),
-                cancellationToken)
-            .ConfigureAwait(false);
-        actions.Add("flashback re-enabled after disable/export");
-        if (enableResponse is null || !AutomationSnapshotFormatter.IsSuccess(enableResponse.Value))
-        {
-            var message = enableResponse is null
-                ? "no response"
-                : AutomationSnapshotFormatter.Get(enableResponse.Value, "Message", "unknown error");
-            warnings.Add(
-                $"flashback disable during export: re-enable failed - {message}");
-            return;
-        }
+                cancellationToken);
+            actions.Add("flashback disable/export requests issued");
 
-        await ValidateFlashbackReenabledAfterDisableDuringExportAsync(warnings, sendCommandAsync, cancellationToken)
-            .ConfigureAwait(false);
+            var exportResponse = await exportTask.ConfigureAwait(false);
+            var disableResponse = await disableTask.ConfigureAwait(false);
+            if (!AutomationSnapshotFormatter.IsSuccess(exportResponse))
+            {
+                returnedFailure = true;
+                warnings.Add(
+                    $"flashback disable during export: export failed - {AutomationSnapshotFormatter.Get(exportResponse, "Message", "unknown error")}");
+            }
+
+            if (disableResponse is null || !AutomationSnapshotFormatter.IsSuccess(disableResponse.Value))
+            {
+                returnedFailure = true;
+                var message = disableResponse is null
+                    ? "no response"
+                    : AutomationSnapshotFormatter.Get(disableResponse.Value, "Message", "unknown error");
+                warnings.Add(
+                    $"flashback disable during export: disable failed - {message}");
+            }
+
+            if (AutomationSnapshotFormatter.IsSuccess(exportResponse))
+            {
+                returnedFailure |= !await ValidateFlashbackDisableDuringExportFileAsync(exportPath, warnings, sendCommandAsync)
+                    .ConfigureAwait(false);
+            }
+
+            if (disableResponse.HasValue && AutomationSnapshotFormatter.IsSuccess(disableResponse.Value))
+            {
+                await ValidateFlashbackDisabledAfterExportAsync(warnings, actions, sendCommandAsync, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+        }
+        catch (Exception ex)
+        {
+            operationFailure = ex;
+            throw;
+        }
+        finally
+        {
+            // A canceled delay or failed export must not release a request still in flight.
+            ExceptionDispatchInfo? pendingFailure = null;
+            foreach (var task in new Task?[] { exportTask, disableTask })
+            {
+                if (task is null) continue;
+                try { await task.ConfigureAwait(false); }
+                catch (Exception ex) when (!ReferenceEquals(ex, operationFailure))
+                {
+                    pendingFailure ??= ExceptionDispatchInfo.Capture(ex);
+                    warnings.Add($"flashback disable during export: outstanding request threw {ex.GetType().Name}: {ex.Message}");
+                }
+                catch { /* The primary exception is already propagating. */ }
+            }
+
+            if (disableTask is not null)
+            {
+                await RestoreFlashbackAfterDisableDuringExportAsync(
+                        actions, warnings,
+                        sendCleanupCommandAsync,
+                        operationFailure is not null || returnedFailure || pendingFailure is not null)
+                    .ConfigureAwait(false);
+            }
+
+            if (operationFailure is null && !returnedFailure) pendingFailure?.Throw();
+        }
     }
 
-    private static async Task ValidateFlashbackDisableDuringExportFileAsync(
+    private static async Task RestoreFlashbackAfterDisableDuringExportAsync(
+        List<string> actions,
+        List<string> warnings,
+        Func<string, Dictionary<string, object?>?, int?, CancellationToken, Task<JsonElement>> sendCleanupCommandAsync,
+        bool preserveOperationFailure)
+    {
+        using var cleanup = new CancellationTokenSource(TimeSpan.FromSeconds(335));
+        Task<JsonElement> SendAsync(string command, Dictionary<string, object?>? payload, int? timeout)
+            => sendCleanupCommandAsync(command, payload, timeout, cleanup.Token);
+        try
+        {
+            var enableResponse = await SendCommandWithConnectRetryAsync(
+                    sendCleanupCommandAsync, "SetFlashbackEnabled",
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = true },
+                    305_000, TimeSpan.FromSeconds(30), cleanup.Token)
+                .ConfigureAwait(false);
+            if (enableResponse is null || !AutomationSnapshotFormatter.IsSuccess(enableResponse.Value))
+            {
+                var message = enableResponse is null
+                    ? "no response"
+                    : AutomationSnapshotFormatter.Get(enableResponse.Value, "Message", "unknown error");
+                warnings.Add($"flashback disable during export: re-enable failed - {message}");
+                return;
+            }
+
+            if (await ValidateFlashbackReenabledAfterDisableDuringExportAsync(warnings, SendAsync, cleanup.Token)
+                .ConfigureAwait(false))
+            {
+                actions.Add("flashback re-enabled after disable/export");
+            }
+        }
+        catch (Exception ex)
+        {
+            warnings.Add($"flashback disable during export: cleanup re-enable threw {ex.GetType().Name}: {ex.Message}");
+            if (!preserveOperationFailure) throw;
+        }
+    }
+
+    private static async Task<bool> ValidateFlashbackDisableDuringExportFileAsync(
         string exportPath,
         List<string> warnings,
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync)
@@ -801,7 +982,9 @@ internal static class DiagnosticSessionFlashbackExportScenarios
         {
             warnings.Add(
                 $"flashback disable during export verification: {AutomationSnapshotFormatter.Get(verifyResponse, "Message", "verification failed")}");
+            return false;
         }
+        return true;
     }
 
     private static async Task ValidateFlashbackDisabledAfterExportAsync(
@@ -837,7 +1020,7 @@ internal static class DiagnosticSessionFlashbackExportScenarios
         actions.Add("flashback disable during export verified");
     }
 
-    private static async Task ValidateFlashbackReenabledAfterDisableDuringExportAsync(
+    private static async Task<bool> ValidateFlashbackReenabledAfterDisableDuringExportAsync(
         List<string> warnings,
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
         CancellationToken cancellationToken)
@@ -851,7 +1034,9 @@ internal static class DiagnosticSessionFlashbackExportScenarios
         if (activeSnapshot?.ValueKind != JsonValueKind.Object)
         {
             warnings.Add("flashback disable during export: Flashback did not report active after re-enable");
+            return false;
         }
+        return true;
     }
 
     internal static async Task RunSelectedRejectedExportScenariosAsync(
@@ -908,7 +1093,7 @@ internal static class DiagnosticSessionFlashbackExportScenarios
         var exportPath = Path.Combine(outputDirectory, "flashback-rejected-export.mp4");
         var exportResponse = await sendCommandAsync(
                 "FlashbackExport",
-                new Dictionary<string, object?> { ["seconds"] = 1, ["outputPath"] = exportPath },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Seconds] = 1, [AutomationPayloadKeys.OutputPath] = exportPath },
                 60_000,
                 true)
             .ConfigureAwait(false);
@@ -974,7 +1159,7 @@ internal static class DiagnosticSessionFlashbackExportScenarios
         var exportPath = Path.Combine(outputDirectory, "flashback-recording-rejected-export.mp4");
         var exportResponse = await sendCommandAsync(
                 "FlashbackExport",
-                new Dictionary<string, object?> { ["seconds"] = 1, ["outputPath"] = exportPath },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Seconds] = 1, [AutomationPayloadKeys.OutputPath] = exportPath },
                 60_000,
                 true)
             .ConfigureAwait(false);

@@ -4,7 +4,7 @@ using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
-using Sussudio.Services.Recording;
+using Sussudio.Services.Runtime;
 
 namespace Sussudio
 {
@@ -14,16 +14,28 @@ namespace Sussudio
 
         public App()
         {
+            // Program constructs App only after acquiring process admission.
+            string logRoot;
+            try
+            {
+                logRoot = RuntimePaths.GetRepoLogRoot();
+            }
+            catch (Exception ex)
+            {
+                // Preserve Trace-only fallback when every log directory is unavailable.
+                Logger.Log($"Logger directory resolution failed: {ex.Message}");
+                logRoot = string.Empty;
+            }
+            Logger.Initialize(logRoot);
             InitializeComponent();
 
-            // Add global exception handlers
             UnhandledException += App_UnhandledException;
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
 
             Logger.LogSystemInfo();
             try
             {
-                LibAvEncoder.InitializeFFmpeg(requireNativeRuntime: true);
+                FfmpegRuntimeInit.EnsureInitialized(requireNativeRuntime: true);
             }
             catch (Exception ex)
             {

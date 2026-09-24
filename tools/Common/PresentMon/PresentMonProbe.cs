@@ -66,6 +66,28 @@ public static class PresentMonProbe
             GetPositiveLong(snapshot, "PreviewD3DLastRenderedUtcUnixMs"));
     }
 
+    internal static PresentMonProbeCorrelation ResolvePreviewCorrelation(
+        JsonElement snapshotResponse,
+        Action<string>? onUnavailable = null)
+    {
+        if (!AutomationSnapshotFormatter.IsSuccess(snapshotResponse))
+        {
+            var errorCode = AutomationSnapshotFormatter.Get(snapshotResponse, "ErrorCode", "unknown");
+            var message = AutomationSnapshotFormatter.Get(snapshotResponse, "Message", "No error message was returned.");
+            onUnavailable?.Invoke($"GetSnapshot failed ({errorCode}): {message}");
+            return default;
+        }
+
+        if (!snapshotResponse.TryGetProperty("Snapshot", out var snapshot) ||
+            snapshot.ValueKind is not JsonValueKind.Object)
+        {
+            onUnavailable?.Invoke("GetSnapshot succeeded without a Snapshot object.");
+            return default;
+        }
+
+        return ReadPreviewCorrelation(snapshot);
+    }
+
     public static async Task<PresentMonProbeResult> RunAsync(
         PresentMonProbeOptions options,
         CancellationToken cancellationToken = default)

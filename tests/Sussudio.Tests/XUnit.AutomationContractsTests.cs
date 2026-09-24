@@ -28,6 +28,7 @@ public sealed class AutomationAppSurfaceContractsTests
     [InlineData(true, "RecoveredFinalizationFailure", "Incomplete", false, true)]
     [InlineData(true, "RecoveredFinalizationFailure", "NotStarted", true, true)]
     [InlineData(false, "", "Incomplete", false, true)]
+    [InlineData(false, "", "Failed", false, true)]
     public void RestoredRecordingHistoryDoesNotMarkANewCaptureAsFailed(
         bool encodingFailed, string failureType, string integrityStatus, bool isRecording, bool expectedFailure)
     {
@@ -37,8 +38,12 @@ public sealed class AutomationAppSurfaceContractsTests
         var runtime = Activator.CreateInstance(parameters[0].ParameterType)!;
         var health = Activator.CreateInstance(parameters[1].ParameterType)!;
         var lanes = Activator.CreateInstance(parameters[3].ParameterType)!;
-        runtime.GetType().GetProperty("RecordingIntegrityStatus")!.SetValue(runtime, integrityStatus);
-        runtime.GetType().GetProperty("RecordingIntegrityAudioStatus")!.SetValue(runtime, "NotStarted");
+        var recordingIntegrityStatus = runtime.GetType().GetProperty("RecordingIntegrityStatus")!;
+        recordingIntegrityStatus.SetValue(runtime, Enum.Parse(recordingIntegrityStatus.PropertyType, integrityStatus));
+        var recordingIntegrityAudioStatus = runtime.GetType().GetProperty("RecordingIntegrityAudioStatus")!;
+        recordingIntegrityAudioStatus.SetValue(
+            runtime,
+            Enum.Parse(recordingIntegrityAudioStatus.PropertyType, "Disabled"));
         health.GetType().GetProperty("RecordingEncodingFailed")!.SetValue(health, encodingFailed);
         health.GetType().GetProperty("RecordingEncodingFailureType")!.SetValue(health, failureType);
         var result = evaluate.Invoke(null, new[] { runtime, health, (object)isRecording, lanes });
@@ -133,13 +138,24 @@ public sealed class AutomationAppSurfaceContractsTests
         => global::Program.NamedPipeAutomationServer_RequestTimeoutsUseBoundedDispatchCancellation();
 
     [Theory]
-    [InlineData("canceled", false)]
-    [InlineData("CaNcElEd", false)]
-    [InlineData(null, false)]
-    [InlineData("execution-failed", false)]
-    [InlineData(null, true)]
-    public Task AutomationPipeServerTimeoutWaitsForDispatchAndPreservesOutcome(string? responseError, bool dispatchFaults)
-        => global::Program.NamedPipeAutomationServer_TimeoutWaitsForDispatchAndPreservesOutcome(responseError, dispatchFaults);
+    [InlineData("canceled", false, false)]
+    [InlineData("CaNcElEd", false, false)]
+    [InlineData(null, false, false)]
+    [InlineData("execution-failed", false, false)]
+    [InlineData(null, true, false)]
+    [InlineData("canceled", false, true)]
+    [InlineData("CaNcElEd", false, true)]
+    [InlineData(null, false, true)]
+    [InlineData("execution-failed", false, true)]
+    [InlineData(null, true, true)]
+    public Task AutomationPipeServerTimeoutWaitsForDispatchAndPreservesOutcome(
+        string? responseError, bool dispatchFaults, bool cancelAfterAdmission)
+        => global::Program.NamedPipeAutomationServer_TimeoutWaitsForDispatchAndPreservesOutcome(
+            responseError, dispatchFaults, cancelAfterAdmission);
+
+    [Fact]
+    public Task AutomationPipeServerShutdownPreservesServerCancellationIdentity()
+        => global::Program.NamedPipeAutomationServer_ShutdownPreservesServerCancellationIdentity();
 
     [Fact]
     public Task AutomationPipeServerRequestLimitHandlesCrLfBoundary()
@@ -282,6 +298,7 @@ public sealed class AutomationContractsProtocolXunitTests
     public void AutomationPipeProtocol_ExposesStableWireDefaults()
     {
         Assert.Equal("SussudioAutomation", AutomationPipeProtocol.DefaultPipeName);
+        Assert.Equal("SUSSUDIO_AUTOMATION_PIPE", AutomationPipeProtocol.AutomationPipeEnvVar);
         Assert.Equal("SUSSUDIO_AUTOMATION_TOKEN", AutomationPipeProtocol.AutomationKeyEnvVar);
         Assert.Equal(2, AutomationPipeProtocol.CommandManifestRevision);
         Assert.Equal(5000, AutomationPipeProtocol.DefaultConnectTimeoutMs);
@@ -323,7 +340,7 @@ public sealed class AutomationContractsProtocolXunitTests
     }
 
     [Fact]
-    public void AutomationPipeProtocol_ResolvesExplicitAndEnvironmentAuthTokens()
+    public void AutomationPipeProtocol_ResolvesEnvironmentAuthToken()
     {
         lock (AutomationTokenLock)
         {
@@ -331,7 +348,6 @@ public sealed class AutomationContractsProtocolXunitTests
             try
             {
                 Environment.SetEnvironmentVariable(AutomationPipeProtocol.AutomationKeyEnvVar, "env-token");
-                Assert.Equal("explicit-token", AutomationPipeProtocol.GetConfiguredAuthToken("explicit-token"));
                 Assert.Equal("env-token", AutomationPipeProtocol.GetConfiguredAuthToken());
 
                 Environment.SetEnvironmentVariable(AutomationPipeProtocol.AutomationKeyEnvVar, "   ");
@@ -389,6 +405,89 @@ public sealed class AutomationContractsProtocolXunitTests
 
 public sealed class AutomationDiagnosticsLoopContractsTests
 {
+    [Theory]
+    [InlineData("Disabled")]
+    [InlineData("Buffering")]
+    [InlineData("Live")]
+    [InlineData("Scrubbing")]
+    [InlineData("Playing")]
+    [InlineData("Paused")]
+    [InlineData("N/A")]
+    [InlineData(null)]
+    [InlineData("pLaYiNg")]
+    public void FlashbackPlaybackHealthAndWireEvaluationPreservePerformanceGates(string? wireState)
+    {
+        var assembly = SussudioAssembly.Load();
+        var hubType = assembly.GetType("Sussudio.Services.Automation.AutomationDiagnosticsHub", throwOnError: true)!;
+        var healthType = assembly.GetType("Sussudio.Models.CaptureHealthSnapshot", throwOnError: true)!;
+        var stateType = assembly.GetType("Sussudio.Models.FlashbackPlaybackState", throwOnError: true)!;
+        var snapshotType = assembly.GetType("Sussudio.Models.AutomationSnapshot", throwOnError: true)!;
+        var flashbackEvaluator = hubType.GetNestedType("FlashbackDiagnosticEvaluator", BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("FlashbackDiagnosticEvaluator was not found on AutomationDiagnosticsHub.");
+        var evaluateHealth = flashbackEvaluator.GetMethod("TryBuildFlashbackPlaybackDiagnosticEvaluation", BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("Flashback playback evaluation was not found on its nested owner.");
+        var evaluateWire = hubType.GetMethod("UpdateFlashbackPlaybackPerformanceAlerts", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var lanesType = evaluateHealth.GetParameters()[1].ParameterType;
+        Assert.True(lanesType.IsValueType);
+        var lanes = Activator.CreateInstance(lanesType)!;
+        var typedState = wireState is null or "N/A" ? null : Enum.Parse(stateType, wireState, ignoreCase: true);
+        var playing = string.Equals(wireState, "Playing", StringComparison.OrdinalIgnoreCase);
+
+        foreach (var sample in new (string Name, long Frames, int Samples, double Target, double Observed, double Low, bool Slow, bool Frametime)[]
+        {
+            ("slow frame threshold", 60, 0, 120, 89.999, 0, true, false),
+            ("below slow frame threshold", 59, 0, 120, 89.999, 0, false, false),
+            ("exact slow ratio", 60, 0, 120, 90, 0, false, false),
+            ("zero observed slow rate", 60, 0, 120, 0, 0, false, false),
+            ("zero target slow rate", 60, 0, 0, 1, 0, false, false),
+            ("frametime sample thresholds", 1200, 1200, 120, 120, 117.599, false, true),
+            ("below frametime frame threshold", 1199, 1200, 120, 120, 117.599, false, false),
+            ("below frametime sample threshold", 1200, 1199, 120, 120, 117.599, false, false),
+            ("exact one percent low ratio", 1200, 1200, 120, 120, 120 * 0.98, false, false),
+            ("zero one percent low", 1200, 1200, 120, 120, 0, false, false),
+            ("zero target frametime rate", 1200, 1200, 0, 120, 1, false, false),
+            ("frametime independent of observed rate", 1200, 1200, 120, 0, 117.599, false, true),
+            ("slow diagnostic precedence", 1200, 1200, 120, 89, 100, true, true)
+        })
+        {
+            var health = Activator.CreateInstance(healthType)!;
+            Set(health, "FlashbackPlaybackState", typedState);
+            Set(health, "FlashbackPlaybackTargetFps", sample.Target);
+            Set(health, "FlashbackPlaybackFrameCount", sample.Frames);
+            Set(health, "FlashbackPlaybackCadenceSampleCount", sample.Samples);
+            Set(health, "FlashbackPlaybackObservedFps", sample.Observed);
+            Set(health, "FlashbackPlaybackOnePercentLowFps", sample.Low);
+            var evaluation = evaluateHealth.Invoke(null, new[] { health, lanes, (object)sample.Target, 0L, false });
+            var expectedSummary = !playing ? null : sample.Slow
+                ? "Flashback playback is below target rate."
+                : sample.Frametime ? "Flashback playback frametime is below target." : null;
+            Assert.Equal(expectedSummary, evaluation?.GetType().GetProperty("Summary")!.GetValue(evaluation));
+
+            var wireSnapshot = Activator.CreateInstance(snapshotType)!;
+            Set(wireSnapshot, "FlashbackPlaybackState", wireState);
+            Set(wireSnapshot, "FlashbackPlaybackTargetFps", sample.Target);
+            Set(wireSnapshot, "SelectedFrameRate", sample.Target);
+            Set(wireSnapshot, "FlashbackPlaybackFrameCount", sample.Frames);
+            Set(wireSnapshot, "FlashbackPlaybackCadenceSampleCount", sample.Samples);
+            Set(wireSnapshot, "FlashbackPlaybackObservedFps", sample.Observed);
+            Set(wireSnapshot, "FlashbackPlaybackOnePercentLowFps", sample.Low);
+            var hub = RuntimeHelpers.GetUninitializedObject(hubType);
+            foreach (var fieldName in new[] { "_stateLock", "_recentEvents", "_eventThrottleTicks", "_activeAlerts" })
+            {
+                var field = hubType.GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic)!;
+                field.SetValue(hub, Activator.CreateInstance(field.FieldType));
+            }
+
+            evaluateWire.Invoke(hub, new object?[] { wireSnapshot, playing });
+            var alerts = (HashSet<string>)hubType.GetField("_activeAlerts", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(hub)!;
+            Assert.True(alerts.Contains("flashback-playback-slow") == (playing && sample.Slow), $"{wireState ?? "null"}: {sample.Name} slow alert");
+            Assert.True(alerts.Contains("flashback-playback-frametime-degraded") == (playing && sample.Frametime), $"{wireState ?? "null"}: {sample.Name} frametime alert");
+        }
+
+        static void Set(object target, string propertyName, object? value)
+            => target.GetType().GetProperty(propertyName)!.SetValue(target, value);
+    }
+
     public AutomationDiagnosticsLoopContractsTests()
     {
         global::Program.EnsureTargetAssemblyLoadedForXUnit();
@@ -413,6 +512,86 @@ public sealed class AutomationDispatcherContractsTests
     [Fact]
     public Task AutomationDispatcherExtractsBoolPayloadFields()
         => global::Program.AutomationCommandDispatcher_GetBool_ExtractsFromJsonPayload();
+
+    [Theory]
+    [InlineData(null, null)]
+    [InlineData("null", null)]
+    [InlineData("\"\"", null)]
+    [InlineData("\" \"", null)]
+    [InlineData("\" 1080p \"", " 1080p ")]
+    [InlineData("42", "42")]
+    [InlineData("{}", "{}")]
+    [InlineData("[]", "[]")]
+    public Task RequiredStringCoercionMatchesAcrossDispatchRoutes(string? valueJson, string? expected)
+        => global::Program.AutomationCommandDispatcher_RequiredCoercionMatchesRoutes("string", valueJson, expected);
+
+    [Theory]
+    [InlineData(null, null)]
+    [InlineData("null", null)]
+    [InlineData("\"\"", null)]
+    [InlineData("\"invalid\"", null)]
+    [InlineData("{}", null)]
+    [InlineData("1.5", null)]
+    [InlineData("2147483648", null)]
+    [InlineData("true", true)]
+    [InlineData("false", false)]
+    [InlineData("\"true\"", true)]
+    [InlineData("\"False\"", false)]
+    [InlineData("0", false)]
+    [InlineData("-1", true)]
+    public Task RequiredBoolCoercionMatchesAcrossDispatchRoutes(string? valueJson, bool? expected)
+        => global::Program.AutomationCommandDispatcher_RequiredCoercionMatchesRoutes("bool", valueJson, expected);
+
+    [Theory]
+    [InlineData(null, null)]
+    [InlineData("null", null)]
+    [InlineData("\"NaN\"", null)]
+    [InlineData("\"Infinity\"", null)]
+    [InlineData("1e400", null)]
+    [InlineData("1.25", 1.25)]
+    [InlineData("\"1.25\"", 1.25)]
+    public Task RequiredNumberCoercionMatchesAcrossDispatchRoutes(string? valueJson, double? expected)
+        => global::Program.AutomationCommandDispatcher_RequiredCoercionMatchesRoutes("number", valueJson, expected);
+
+    [Theory]
+    [InlineData("WindowAction", "{\"action\":\"unknown\"}", "Invalid window action")]
+    [InlineData("WindowAction", "{\"action\":\"Move\",\"x\":1}", "Move requires 'y'")]
+    [InlineData("WindowAction", "{\"action\":\"Resize\",\"width\":640}", "Resize requires 'height'")]
+    [InlineData("FlashbackAction", "{}", "Missing required string")]
+    [InlineData("FlashbackAction", "{\"action\":\"unknown\"}", "Invalid flashback action")]
+    [InlineData("FlashbackAction", "{\"action\":\"seek\"}", "Missing required numeric")]
+    [InlineData("FlashbackAction", "{\"action\":\"seek\",\"positionMs\":-1}", "Flashback positionMs must be finite")]
+    [InlineData("FlashbackExport", "{\"seconds\":0}", "Flashback export seconds must be finite")]
+    [InlineData("FlashbackExport", "{}", "Missing required string")]
+    [InlineData("SetMicrophoneEnabled", "{}", "Missing 'enabled'")]
+    [InlineData("SetFlashbackEnabled", "{}", "Missing 'enabled'")]
+    [InlineData("SetFlashbackBufferMinutes", "{}", "Missing 'minutes'")]
+    [InlineData("SetMjpegDecoderCount", "{\"decoderCount\":1.5}", "Missing required integer")]
+    [InlineData("SetOutputPath", "{\"outputPath\":\"\\u0000\"}", "not a valid path")]
+    [InlineData("AssertSnapshot", "{\"assertions\":[42]}", "at least one valid assertion")]
+    public Task MalformedCustomRequestsDoNotReachMutationPorts(string command, string payload, string message)
+        => global::Program.AutomationCommandDispatcher_MalformedRequestDoesNotMutate(command, payload, message);
+
+    [Theory]
+    [InlineData("SetStatsVisible", "{\"visible\":true}", "execution")]
+    [InlineData("SetDeviceAudioMode", "{\"mode\":\"hdmi\"}", "execution")]
+    [InlineData("SetDeviceAudioMode", "{\"mode\":\"hdmi\"}", "argument")]
+    [InlineData("SetDeviceAudioMode", "{\"mode\":\"hdmi\"}", "canceled")]
+    public Task MutationPortFailuresKeepExecutionOrCancellationIdentity(string command, string payload, string failure)
+        => global::Program.AutomationCommandDispatcher_MutationFailureKeepsIdentity(command, payload, failure);
+
+    [Fact]
+    public Task DirectoryIoFailureKeepsExecutionIdentity()
+        => global::Program.AutomationCommandDispatcher_DirectoryIoFailureKeepsExecutionIdentity();
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("null")]
+    [InlineData("\"NaN\"")]
+    [InlineData("\"Infinity\"")]
+    [InlineData("{}")]
+    public Task MalformedOptionalNumbersKeepExistingFallbacks(string? valueJson)
+        => global::Program.AutomationCommandDispatcher_OptionalNumbersKeepFallbacks(valueJson);
 
     [Theory]
     [InlineData(null)]
@@ -455,6 +634,14 @@ public sealed class AutomationDispatcherContractsTests
     [Fact]
     public Task AutomationDispatcherRejectsUndefinedWaitCondition()
         => global::Program.AutomationCommandDispatcher_WaitForCondition_RejectsUndefinedCondition();
+
+    [Fact]
+    public Task AutomationDispatcherRejectsUnknownVerificationProfile()
+        => global::Program.AutomationCommandDispatcher_VerifyFile_RejectsUnknownProfile();
+
+    [Fact]
+    public Task AutomationDispatcherMapsStateConflictsToInvalidState()
+        => global::Program.AutomationCommandDispatcher_StateConflictMapsToInvalidState();
 
     [Fact]
     public Task AutomationDispatcherAssertSnapshotBoundsAndEvaluatesRequests()
@@ -794,6 +981,14 @@ public sealed class AutomationCaptureFlashbackRoutingContractsTests
         => global::Program.ServiceNamespaces_FollowServiceFolders();
 
     [Fact]
+    public Task ServiceDependenciesEnforceOrchestratorDirection()
+        => global::Program.ServiceDependencies_EnforceOrchestratorDirection();
+
+    [Fact]
+    public Task ServiceDependenciesKeepAudioAndTelemetryConsumed()
+        => global::Program.ServiceDependencies_KeepAudioAndTelemetryConsumed();
+
+    [Fact]
     public Task MfDeviceEnumeratorSourceOwnershipLivesInCohesiveEnumerator()
         => global::Program.MfDeviceEnumerator_SourceOwnershipLivesInCohesiveEnumerator();
 
@@ -880,7 +1075,7 @@ static partial class Program
                 dispatcher,
                 CreateAutomationCommandRequest("AssertSnapshot", null, oversizedPayload))
             .ConfigureAwait(false);
-        AssertAutomationResponse(oversizedResponse, success: false, errorCode: "command-failed", status: "error", "oversized assertions are rejected");
+        AssertAutomationResponse(oversizedResponse, success: false, errorCode: "invalid-request", status: "error", "oversized assertions are rejected");
         AssertEqual(0, Volatile.Read(ref refreshCount), "oversized assertions do not refresh snapshot");
 
         var knownFieldResponse = await ExecuteAutomationCommandAsync(
@@ -907,7 +1102,7 @@ static partial class Program
                 dispatcher,
                 CreateAutomationCommandRequest("AssertSnapshot", null, "{}"))
             .ConfigureAwait(false);
-        AssertAutomationResponse(malformedResponse, success: false, errorCode: "command-failed", status: "error", "malformed assertions are rejected");
+        AssertAutomationResponse(malformedResponse, success: false, errorCode: "invalid-request", status: "error", "malformed assertions are rejected");
         AssertEqual(2, Volatile.Read(ref refreshCount), "malformed assertions do not refresh snapshot");
     }
 
@@ -932,11 +1127,12 @@ static partial class Program
         AssertDoesNotContain(customCommandsText, "_viewModel.SetMicrophoneEnabledAsync");
         AssertDoesNotContain(customCommandsText, "_viewModel.SetMicrophoneVolumeAsync");
         AssertContains(audioControlCommandsText, "private async Task<AutomationCommandResponse> ExecuteSetDeviceAudioModeCommandAsync(");
-        AssertContains(audioControlCommandsText, "var mode = DeviceAudioModeParser.NormalizeOrThrow(RequireString(payload, \"mode\"));");
+        AssertContains(audioControlCommandsText, "var mode = RequireString(payload, AutomationPayloadKeys.Mode);");
+        AssertContains(audioControlCommandsText, "mode = DeviceAudioModeParser.NormalizeOrThrow(mode);");
         AssertContains(audioControlCommandsText, "_audioPort.SetDeviceAudioModeAsync(mode, cancellationToken)");
         AssertContains(audioControlCommandsText, "Device audio mode changed: {mode}.");
         AssertContains(audioControlCommandsText, "private async Task<AutomationCommandResponse> ExecuteSetAnalogAudioGainCommandAsync(");
-        AssertContains(audioControlCommandsText, "var gain = RequireDouble(payload, \"gain\");");
+        AssertContains(audioControlCommandsText, "var gain = RequireDouble(payload, AutomationPayloadKeys.Gain);");
         AssertContains(audioControlCommandsText, "_audioPort.SetAnalogAudioGainAsync(gain, cancellationToken)");
         AssertContains(audioControlCommandsText, "Analog audio gain set to {gain:0.###}%.");
         AssertContains(audioControlCommandsText, "private async Task<AutomationCommandResponse> ExecuteSetMicrophoneEnabledCommandAsync(");
@@ -944,7 +1140,7 @@ static partial class Program
         AssertContains(audioControlCommandsText, "_audioPort.SetMicrophoneEnabledAsync(enabled, cancellationToken)");
         AssertContains(audioControlCommandsText, "Microphone {(enabled ? \"enabled\" : \"disabled\")}.");
         AssertContains(audioControlCommandsText, "private async Task<AutomationCommandResponse> ExecuteSetMicrophoneVolumeCommandAsync(");
-        AssertContains(audioControlCommandsText, "var volume = RequireDouble(payload, \"microphoneVolumePercent\");");
+        AssertContains(audioControlCommandsText, "var volume = RequireDouble(payload, AutomationPayloadKeys.MicrophoneVolumePercent);");
         AssertContains(audioControlCommandsText, "_audioPort.SetMicrophoneVolumeAsync(volume, cancellationToken)");
         AssertContains(audioControlCommandsText, "Microphone volume set to {Math.Clamp(volume, 0.0, 100.0):0.###}%.");
 
@@ -996,7 +1192,7 @@ static partial class Program
             AssertAutomationResponse(
                 response,
                 success: false,
-                errorCode: "command-failed",
+                errorCode: "invalid-request",
                 status: "error",
                 "invalid audio mode");
             AssertEqual(0, Volatile.Read(ref mutationCalls), "invalid audio mode invokes no settings mutation");
@@ -1035,7 +1231,7 @@ static partial class Program
         AssertDoesNotContain(customCommandsText, "_viewModel.SetOutputPathAsync");
         AssertDoesNotContain(customCommandsText, "_viewModel.SetRecordingEnabledAsync");
         AssertContains(captureControlCommandsText, "private async Task<AutomationCommandResponse> ExecuteSetMjpegDecoderCountCommandAsync(");
-        AssertContains(captureControlCommandsText, "var decoderCount = GetInt(payload, \"decoderCount\");");
+        AssertContains(captureControlCommandsText, "var decoderCount = GetInt(payload, AutomationPayloadKeys.DecoderCount);");
         AssertContains(captureControlCommandsText, "Missing required integer property 'decoderCount'.");
         AssertContains(captureControlCommandsText, "_captureSettingsPort.SetMjpegDecoderCountAsync(decoderCount.Value, cancellationToken)");
         AssertContains(captureControlCommandsText, "private async Task<AutomationCommandResponse> ExecuteSetOutputPathCommandAsync(");
@@ -1069,8 +1265,8 @@ static partial class Program
         AssertContains(portMappedDispatchText, "if (command == AutomationCommandKind.SetStatsSectionVisible)");
         AssertContains(portMappedDispatchText, "ExecuteSetStatsSectionVisibleCommandAsync(payload, correlationId, cancellationToken)");
         AssertContains(portMappedDispatchText, "private async Task<AutomationCommandResponse> ExecuteSetStatsSectionVisibleCommandAsync(");
-        AssertContains(portMappedDispatchText, "var section = RequireString(payload, \"section\");");
-        AssertContains(portMappedDispatchText, "var visible = RequireBool(payload, \"visible\");");
+        AssertContains(portMappedDispatchText, "var section = RequireString(payload, AutomationPayloadKeys.Section);");
+        AssertContains(portMappedDispatchText, "var visible = RequireBool(payload, AutomationPayloadKeys.Visible);");
         AssertContains(portMappedDispatchText, "_uiPort.SetStatsSectionVisibleAsync(section, visible, cancellationToken)");
         AssertContains(portMappedDispatchText, "Stats section '{section}' {(visible ? \"expanded\" : \"collapsed\")}.");
 
@@ -1104,8 +1300,8 @@ static partial class Program
         AssertContains(deviceCommandsText, "_deviceSelectionPort.RefreshDevicesForAutomationAsync(cancellationToken)");
         AssertContains(deviceCommandsText, "Device list refresh requested.");
         AssertContains(deviceCommandsText, "private async Task<AutomationCommandResponse> ExecuteSelectDeviceCommandAsync(");
-        AssertContains(deviceCommandsText, "var deviceId = GetString(payload, \"deviceId\");");
-        AssertContains(deviceCommandsText, "var deviceName = GetString(payload, \"deviceName\");");
+        AssertContains(deviceCommandsText, "var deviceId = GetString(payload, AutomationPayloadKeys.DeviceId);");
+        AssertContains(deviceCommandsText, "var deviceName = GetString(payload, AutomationPayloadKeys.DeviceName);");
         AssertContains(deviceCommandsText, "_deviceSelectionPort.SelectDeviceAsync(deviceId, deviceName, cancellationToken)");
         AssertContains(deviceCommandsText, "private async Task<AutomationCommandResponse> ExecuteSelectAudioInputDeviceCommandAsync(");
         AssertContains(deviceCommandsText, "_deviceSelectionPort.SelectAudioInputDeviceAsync(deviceId, deviceName, cancellationToken)");
@@ -1297,13 +1493,60 @@ static partial class Program
             .ConfigureAwait(false);
         AssertAutomationResponse(protectedCommandResponse, success: false, errorCode: "unauthorized", status: "error", "missing token rejects non-authenticate command");
 
+        const string manifestToken = "manifest-auth-dummy-20260912";
+        const string wrongManifestToken = "wrong-manifest-auth-dummy";
+        var manifestDispatcher = CreateAutomationCommandDispatcher(authToken: manifestToken);
+        var matchingPayload = JsonSerializer.Serialize(new Dictionary<string, string> { ["authToken"] = manifestToken });
+        var wrongPayload = JsonSerializer.Serialize(new Dictionary<string, string> { ["authToken"] = wrongManifestToken });
+        (string? TopLevel, string Payload, bool Success, string Scenario)[] manifestRequests =
+        {
+            (manifestToken, "{}", true, "exact top-level token authorizes manifest retrieval"),
+            (manifestToken, wrongPayload, true, "matching top-level token takes precedence over wrong payload"),
+            (null, matchingPayload, true, "null top-level token allows legacy fallback on manifest retrieval"),
+            (string.Empty, matchingPayload, true, "empty top-level token allows legacy fallback on manifest retrieval"),
+            (" \t\r\n", matchingPayload, true, "whitespace top-level token allows legacy fallback on manifest retrieval"),
+            (wrongManifestToken, matchingPayload, false, "wrong nonblank top-level token prevents legacy rescue"),
+            (manifestToken + " ", matchingPayload, false, "nonblank top-level token is compared without trimming"),
+            (manifestToken.ToUpperInvariant(), matchingPayload, false, "top-level token comparison is case-sensitive"),
+            (null, "{}", false, "manifest retrieval requires configured credentials"),
+            (wrongManifestToken, "{}", false, "wrong top-level token cannot retrieve manifest"),
+            (null, wrongPayload, false, "wrong legacy payload token cannot retrieve manifest")
+        };
+        var staticManifestJson = AutomationCommandCatalog.CreateManifestJson();
+        Assert.DoesNotContain(manifestToken, staticManifestJson, StringComparison.Ordinal);
+        Assert.DoesNotContain(wrongManifestToken, staticManifestJson, StringComparison.Ordinal);
+
+        foreach (var testCase in manifestRequests)
+        {
+            var response = await ExecuteAutomationCommandAsync(manifestDispatcher,
+                CreateAutomationCommandRequest("GetAutomationManifest", testCase.TopLevel, testCase.Payload))
+                .ConfigureAwait(false);
+            AssertAutomationResponse(response, testCase.Success, testCase.Success ? null : "unauthorized",
+                testCase.Success ? "ok" : "error", testCase.Scenario);
+            Assert.Null(GetPublicProperty(response, "Snapshot"));
+            var manifest = GetPublicProperty(response, "Data");
+            if (testCase.Success)
+            {
+                Assert.NotNull(manifest);
+                var manifestJson = JsonSerializer.Serialize(manifest, manifest!.GetType());
+                Assert.Equal(staticManifestJson, manifestJson);
+                Assert.DoesNotContain(manifestToken, manifestJson, StringComparison.Ordinal);
+                Assert.DoesNotContain(wrongManifestToken, manifestJson, StringComparison.Ordinal);
+            }
+            else
+            {
+                Assert.Null(manifest);
+            }
+        }
+
         var dispatcherText = ReadAutomationCommandDispatcherFamilyText();
 
         AssertContains(dispatcherText, "if (string.IsNullOrWhiteSpace(_authToken))\n        {\n            return true;\n        }");
         AssertContains(dispatcherText, "var providedToken = request.AuthToken;");
-        AssertContains(dispatcherText, "providedToken = GetString(request.Payload, \"authToken\");");
+        AssertContains(dispatcherText, "providedToken = GetString(request.Payload, AutomationPayloadKeys.AuthToken);");
         AssertContains(dispatcherText, "CryptographicOperations.FixedTimeEquals(expected, actual)");
         AssertContains(dispatcherText, "Logger.LogEvent(\"AUTO-AUTH-FAILED\"");
+        AssertContains(dispatcherText, "Logger.LogEvent(\"AUTO-AUTH-LEGACY-PAYLOAD\"");
         AssertContains(dispatcherText, "errorCode: authorized ? null : AutomationErrorCodes.Unauthorized");
         AssertContains(dispatcherText, "errorCode: AutomationErrorCodes.Unauthorized");
         AssertContains(dispatcherText, "status: authorized ? AutomationResponseStatus.Ok : AutomationResponseStatus.Error");
@@ -1383,7 +1626,7 @@ static partial class Program
         AssertContains(windowCommandsText, "Full screen {(enabled ? \"enter\" : \"exit\")} requested.");
         AssertContains(windowCommandsText, "_windowControl.OpenRecordingsFolderAsync(cancellationToken)");
         AssertContains(windowCommandsText, "Recordings folder open requested.");
-        AssertContains(windowCommandsText, "var armed = GetBool(payload, \"armed\") ?? true;");
+        AssertContains(windowCommandsText, "var armed = GetBool(payload, AutomationPayloadKeys.Armed) ?? true;");
         AssertContains(windowCommandsText, "var actionId = NormalizeCloseActionId(payload);");
         AssertContains(windowCommandsText, "if (armed && actionId == null)");
         AssertContains(windowCommandsText, "_closeArmActionId = armed ? actionId : null;");
@@ -1789,6 +2032,183 @@ static partial class Program
                ?? throw new InvalidOperationException($"Failed to create Task<{resultType.Name}>.");
     }
 
+    internal static async Task AutomationCommandDispatcher_RequiredCoercionMatchesRoutes(
+        string kind, string? valueJson, object? expected)
+    {
+        (string Command, string Key, string OtherFields, string Method, int Argument)[] routes = kind switch
+        {
+            "string" => new[]
+            {
+                ("SetResolution", "resolution", "", "SetResolutionAsync", 0),
+                ("SetStatsSectionVisible", "section", "\"visible\":false", "SetStatsSectionVisibleAsync", 0)
+            },
+            "bool" => new[]
+            {
+                ("SetStatsVisible", "visible", "", "SetStatsVisibleAsync", 0),
+                ("SetStatsSectionVisible", "visible", "\"section\":\"preview\"", "SetStatsSectionVisibleAsync", 1)
+            },
+            "number" => new[]
+            {
+                ("SetFrameRate", "frameRate", "", "SetFrameRateAsync", 0),
+                ("SetAnalogAudioGain", "gain", "", "SetAnalogAudioGainAsync", 0)
+            },
+            _ => throw new ArgumentOutOfRangeException(nameof(kind))
+        };
+
+        foreach (var route in routes)
+        {
+            var observed = new List<(string Method, object? Value)>();
+            var dispatcher = CreatePayloadValidationTestDispatcher((method, arguments) =>
+            {
+                observed.Add((method.Name, arguments![route.Argument]));
+                return GetDefaultReturnValue(method);
+            });
+            var fields = new List<string>();
+            if (route.OtherFields.Length > 0) fields.Add(route.OtherFields);
+            if (valueJson != null) fields.Add($"\"{route.Key}\":{valueJson}");
+            var request = CreateAutomationCommandRequest(route.Command, null, "{" + string.Join(',', fields) + "}");
+            var response = await ExecuteAutomationCommandAsync(dispatcher, request).ConfigureAwait(false);
+
+            AssertAutomationResponse(response, expected != null, expected == null ? "invalid-request" : null,
+                expected == null ? "error" : "ok", $"{route.Command} {valueJson ?? "missing"}");
+            Assert.Equal(GetPublicProperty(request, "CorrelationId"), GetPublicProperty(response, "CorrelationId"));
+            if (expected == null)
+            {
+                Assert.Empty(observed);
+                Assert.Equal("failed", GetAutomationLifecycle(response));
+                Assert.NotNull(GetPublicProperty(response, "ElapsedMs"));
+            }
+            else
+            {
+                var mutation = Assert.Single(observed);
+                Assert.Equal(route.Method, mutation.Method);
+                Assert.Equal(expected, mutation.Value);
+            }
+        }
+    }
+
+    internal static async Task AutomationCommandDispatcher_MalformedRequestDoesNotMutate(
+        string command, string payload, string message)
+    {
+        var mutationCalls = new List<string>();
+        var dispatcher = CreatePayloadValidationTestDispatcher((method, _) =>
+        {
+            mutationCalls.Add(method.Name);
+            return CreateNoHardwareReturnValue(method.ReturnType);
+        });
+        var response = await ExecuteAutomationCommandAsync(
+            dispatcher, CreateAutomationCommandRequest(command, null, payload)).ConfigureAwait(false);
+
+        AssertAutomationResponse(response, false, "invalid-request", "error", command);
+        Assert.Contains(message, (string)GetPublicProperty(response, "Message")!, StringComparison.Ordinal);
+        Assert.Empty(mutationCalls);
+    }
+
+    internal static async Task AutomationCommandDispatcher_MutationFailureKeepsIdentity(
+        string command, string payload, string failure)
+    {
+        var mutationCalls = 0;
+        Exception cause = failure switch
+        {
+            "execution" => new InvalidOperationException("injected mutation failure"),
+            "argument" => new ArgumentOutOfRangeException("value", "injected mutation failure"),
+            "canceled" => new OperationCanceledException("injected cancellation"),
+            _ => throw new ArgumentOutOfRangeException(nameof(failure))
+        };
+        var dispatcher = CreatePayloadValidationTestDispatcher((_, _) =>
+        {
+            mutationCalls++;
+            return Task.FromException(cause);
+        });
+        var response = await ExecuteAutomationCommandAsync(
+            dispatcher, CreateAutomationCommandRequest(command, null, payload)).ConfigureAwait(false);
+
+        Assert.Equal(1, mutationCalls);
+        AssertAutomationResponse(response, false, failure == "canceled" ? "canceled" : "command-failed", "error", command);
+        Assert.Equal(failure == "canceled" ? "Command canceled." : cause.Message, GetPublicProperty(response, "Message"));
+    }
+
+    internal static async Task AutomationCommandDispatcher_DirectoryIoFailureKeepsExecutionIdentity()
+    {
+        var filePath = Path.Combine(Path.GetTempPath(), $"automation_directory_conflict_{Guid.NewGuid():N}.tmp");
+        File.WriteAllBytes(filePath, Array.Empty<byte>());
+        try
+        {
+            var mutationCalls = 0;
+            var dispatcher = CreatePayloadValidationTestDispatcher((method, _) =>
+            {
+                mutationCalls++;
+                return GetDefaultReturnValue(method);
+            });
+            var response = await ExecuteAutomationCommandAsync(dispatcher, CreateAutomationCommandRequest(
+                "SetOutputPath", null, $"{{\"outputPath\":{JsonSerializer.Serialize(filePath)}}}")).ConfigureAwait(false);
+
+            AssertAutomationResponse(response, false, "command-failed", "error", "directory conflicts with a file");
+            Assert.Equal(0, mutationCalls);
+            Assert.True(File.Exists(filePath));
+        }
+        finally
+        {
+            File.Delete(filePath);
+        }
+    }
+
+    internal static async Task AutomationCommandDispatcher_OptionalNumbersKeepFallbacks(string? valueJson)
+    {
+        var outputPath = Path.Combine(Path.GetTempPath(), $"fb_optional_numbers_{Guid.NewGuid():N}.mp4");
+        const string failureCode = "flashback-export-buffer-inactive";
+        var failure = RequireType("Sussudio.Services.Flashback.FlashbackExportFailureCodes")
+            .GetMethod("Create", BindingFlags.Static | BindingFlags.NonPublic)!
+            .Invoke(null, new object?[] { outputPath, "buffer inactive", failureCode, null })!;
+        var observed = new List<(string Method, object?[] Arguments)>();
+        var dispatcher = CreatePayloadValidationTestDispatcher((method, arguments) =>
+        {
+            observed.Add((method.Name, arguments!));
+            return method.Name == "ExportFlashbackAutomationAsync"
+                ? CreateTaskFromResult(failure.GetType(), failure)
+                : Task.FromResult(true);
+        });
+        var secondsField = valueJson == null ? "" : $",\"seconds\":{valueJson}";
+        var export = await ExecuteAutomationCommandAsync(dispatcher, CreateAutomationCommandRequest(
+            "FlashbackExport", null, $"{{\"outputPath\":{JsonSerializer.Serialize(outputPath)}{secondsField}}}")).ConfigureAwait(false);
+        AssertAutomationResponse(export, false, failureCode, "error", "optional export seconds");
+        var exported = Assert.Single(observed);
+        Assert.Equal("ExportFlashbackAutomationAsync", exported.Method);
+        Assert.Equal(300d, exported.Arguments[0]);
+        Assert.Equal(outputPath, exported.Arguments[1]);
+        Assert.False(File.Exists(outputPath));
+
+        foreach (var action in new[] { "play", "end-scrub" })
+        {
+            observed.Clear();
+            var positionField = valueJson == null ? "" : $",\"positionMs\":{valueJson}";
+            var response = await ExecuteAutomationCommandAsync(dispatcher, CreateAutomationCommandRequest(
+                "FlashbackAction", null, $"{{\"action\":\"{action}\"{positionField}}}")).ConfigureAwait(false);
+            AssertAutomationResponse(response, true, null, "ok", $"optional {action} position");
+            var mutation = Assert.Single(observed);
+            Assert.Equal("ExecuteFlashbackActionAsync", mutation.Method);
+            Assert.Null(mutation.Arguments[1]);
+        }
+    }
+
+    private static object CreatePayloadValidationTestDispatcher(Func<MethodInfo, object?[]?, object?> mutation)
+    {
+        object? HandleMutation(MethodInfo? method, object?[]? arguments)
+        {
+            if (method?.Name == "get_IsInitialized") return true;
+            if (method == null || method.IsSpecialName) return GetDefaultReturnValue(method);
+            return mutation(method, arguments);
+        }
+
+        var snapshot = CreateInstance("Sussudio.Models.AutomationSnapshot");
+        return CreateAutomationCommandDispatcher(
+            CreateConfiguredProxy(RequireType("Sussudio.Services.Automation.IAutomationViewModel"), HandleMutation),
+            CreateConfiguredProxy(RequireType("Sussudio.Services.Contracts.IAutomationDiagnosticsHub"), (method, _) =>
+                method?.Name == "GetLatestSnapshot" ? snapshot : GetDefaultReturnValue(method)),
+            CreateConfiguredProxy(RequireType("Sussudio.Services.Contracts.IAutomationWindowControl"), HandleMutation),
+            authToken: null);
+    }
+
     internal static Task AutomationCommandDispatcher_GetString_ExtractsFromJsonPayload()
     {
         var dispatcherType = RequireType("Sussudio.Services.Automation.AutomationCommandDispatcher");
@@ -1949,8 +2369,102 @@ static partial class Program
                 authToken: null,
                 payloadJson: "{\"condition\":\"999\",\"timeoutMs\":250,\"pollMs\":50}"));
 
-        AssertAutomationResponse(response, false, "command-failed", "error", "undefined wait condition");
+        AssertAutomationResponse(response, false, "invalid-request", "error", "undefined wait condition");
         AssertEqual("Invalid wait condition: '999'.", GetPublicProperty(response, "Message"), "undefined wait condition message");
+    }
+
+    internal static async Task AutomationCommandDispatcher_VerifyFile_RejectsUnknownProfile()
+    {
+        var verificationCalls = 0;
+        string? observedProfile = null;
+        var viewModelType = RequireType("Sussudio.Services.Automation.IAutomationViewModel");
+        var diagnosticsType = RequireType("Sussudio.Services.Contracts.IAutomationDiagnosticsHub");
+        var windowControlType = RequireType("Sussudio.Services.Contracts.IAutomationWindowControl");
+        var snapshot = CreateInstance("Sussudio.Models.AutomationSnapshot");
+        var verificationResult = CreateInstance("Sussudio.Models.RecordingVerificationResult");
+        verificationResult.GetType().GetProperty("Succeeded")!.SetValue(verificationResult, true);
+        verificationResult.GetType().GetProperty("Message")!.SetValue(verificationResult, "File verified.");
+        verificationResult.GetType().GetProperty("FileExists")!.SetValue(verificationResult, true);
+        var dispatcher = CreateAutomationCommandDispatcher(
+            CreateConfiguredProxy(viewModelType, (method, _) =>
+                method?.Name == "get_IsInitialized" ? true : GetDefaultReturnValue(method)),
+            CreateConfiguredProxy(diagnosticsType, (method, args) =>
+            {
+                if (method?.Name == "GetLatestSnapshot")
+                {
+                    return snapshot;
+                }
+
+                if (method?.Name == "VerifyFileAsync")
+                {
+                    verificationCalls++;
+                    observedProfile = (string?)args![1];
+                    return CreateTaskFromResult(method.ReturnType.GetGenericArguments()[0], verificationResult);
+                }
+
+                return GetDefaultReturnValue(method);
+            }),
+            CreateThrowingProxy(windowControlType),
+            authToken: null);
+        var filePath = Path.Combine(GetRepoRoot(), "tests", "Sussudio.Tests", "XUnit.AutomationContractsTests.cs");
+        var response = await ExecuteAutomationCommandAsync(
+                dispatcher,
+                CreateAutomationCommandRequest(
+                    "VerifyFile",
+                    authToken: null,
+                    payloadJson: JsonSerializer.Serialize(new
+                    {
+                        filePath,
+                        verificationProfile = "bogus"
+                    })))
+            .ConfigureAwait(false);
+
+        AssertAutomationResponse(response, success: false, errorCode: "invalid-request", status: "error", "unknown verification profile");
+        AssertEqual("Unknown verification profile 'bogus'. Expected flashback-export.", GetPublicProperty(response, "Message"), "unknown verification profile message");
+        AssertEqual(0, verificationCalls, "unknown verification profile does not reach verification");
+
+        var normalizedProfileResponse = await ExecuteAutomationCommandAsync(
+                dispatcher,
+                CreateAutomationCommandRequest(
+                    "VerifyFile",
+                    authToken: null,
+                    payloadJson: JsonSerializer.Serialize(new
+                    {
+                        filePath,
+                        verificationProfile = "flashback_export"
+                    })))
+            .ConfigureAwait(false);
+
+        AssertAutomationResponse(normalizedProfileResponse, success: true, errorCode: null, status: "ok", "normalized verification profile");
+        AssertEqual(1, verificationCalls, "normalized verification profile reaches verification once");
+        AssertEqual("flashback-export", observedProfile, "underscore verification profile is normalized");
+    }
+
+    internal static async Task AutomationCommandDispatcher_StateConflictMapsToInvalidState()
+    {
+        var conflictType = RequireType("Sussudio.Services.Contracts.AutomationStateConflictException");
+        var conflictException = (Exception)(conflictType.GetConstructor(new[] { typeof(string) })
+            ?? throw new InvalidOperationException("AutomationStateConflictException constructor was not found."))
+            .Invoke(new object[] { "True HDR preview cannot be changed while recording." });
+        var dispatcher = CreatePayloadValidationTestDispatcher((method, _) =>
+        {
+            if (method.Name == "SetTrueHdrPreviewEnabledAsync")
+            {
+                throw conflictException;
+            }
+
+            return GetDefaultReturnValue(method);
+        });
+        var response = await ExecuteAutomationCommandAsync(
+                dispatcher,
+                CreateAutomationCommandRequest(
+                    "SetTrueHdrPreviewEnabled",
+                    authToken: null,
+                    payloadJson: "{\"enabled\":true}"))
+            .ConfigureAwait(false);
+
+        AssertAutomationResponse(response, success: false, errorCode: "invalid-state", status: "error", "recording-state conflict");
+        AssertEqual("True HDR preview cannot be changed while recording.", GetPublicProperty(response, "Message"), "state-conflict message");
     }
 
     internal static Task AutomationCommandDispatcher_OneFieldHandlers_MatchCatalogPayloadFields()
@@ -2020,10 +2534,10 @@ static partial class Program
         AssertContains(dispatcherText, "ExecuteGetPerformanceTimelineCommand(payload, correlationId)");
         AssertContains(dispatcherText, "ExecuteGetAudioRampTraceCommandAsync(payload, correlationId, cancellationToken)");
         AssertContains(customCommandsText, "private AutomationCommandResponse ExecuteGetDiagnosticsCommand(");
-        AssertContains(customCommandsText, "var maxEvents = GetInt(payload, \"maxEvents\") ?? 100;");
+        AssertContains(customCommandsText, "var maxEvents = GetInt(payload, AutomationPayloadKeys.MaxEvents) ?? 100;");
         AssertContains(customCommandsText, "private AutomationCommandResponse ExecuteGetPerformanceTimelineCommand(");
-        AssertContains(customCommandsText, "var maxEntries = GetInt(payload, \"maxEntries\") ?? 240;");
-        AssertContains(customCommandsText, "var maxEntries = GetInt(payload, \"maxEntries\") ?? 512;");
+        AssertContains(customCommandsText, "var maxEntries = GetInt(payload, AutomationPayloadKeys.MaxEntries) ?? 240;");
+        AssertContains(customCommandsText, "var maxEntries = GetInt(payload, AutomationPayloadKeys.MaxEntries) ?? 512;");
         AssertContains(customCommandsText, "GetAudioRampTraceSnapshotAsync(maxEntries, cancellationToken)");
 
         var enumType = RequireType("Sussudio.Models.AutomationCommandKind");
@@ -2482,7 +2996,9 @@ static partial class Program
         var nonRecoverable = (bool)isRecoverable.Invoke(null, new object[] { new InvalidOperationException() })!;
         AssertEqual(false, nonRecoverable, "InvalidOperationException is not recoverable");
 
-        AssertContains(appRootSource, "LibAvEncoder.InitializeFFmpeg(requireNativeRuntime: true);");
+        AssertContains(appRootSource, "Logger.Initialize(logRoot);");
+        AssertOccursBefore(appRootSource, "Logger.Initialize(logRoot);", "InitializeComponent();");
+        AssertContains(appRootSource, "FfmpegRuntimeInit.EnsureInitialized(requireNativeRuntime: true);");
         AssertContains(appRootSource, "UnhandledException += App_UnhandledException;");
         AssertContains(appRootSource, "AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;");
         AssertContains(appRootSource, "private static bool IsRecoverableUnhandled(Exception ex)");
@@ -2502,7 +3018,7 @@ static partial class Program
         AssertDoesNotContain(startupSource, "Logger.");
         var entrySource = ReadRepoFile("Sussudio/Program.cs");
         var childDispatch = entrySource.IndexOf("NativeFfmpegCapabilityProbe.TryRunChildProcess(", StringComparison.Ordinal);
-        var normalAdmission = entrySource.IndexOf("AppProcessStartup.RunNormal(StartApplication)", StringComparison.Ordinal);
+        var normalAdmission = entrySource.IndexOf("AppProcessStartup.RunAsSingleInstance(StartApplication)", StringComparison.Ordinal);
         AssertEqual(true, childDispatch >= 0 && normalAdmission > childDispatch, "private child dispatch precedes normal admission");
         var comInitialization = entrySource.IndexOf("ComWrappersSupport.InitializeComWrappers();", StringComparison.Ordinal);
         var applicationStart = entrySource.IndexOf("Application.Start(", StringComparison.Ordinal);
@@ -2719,7 +3235,12 @@ static partial class Program
         AssertContains(pipeServerRootText, "if (!_authTokenRequired)\n                {\n                    throw new AutomationPipeSecurityException(");
         AssertContains(pipeServerRootText, "Automation pipe explicit security fallback to token-required default security");
         AssertContains(pipeServerRootText, "private AutomationCommandResponse CreateRequestTimeoutResponse()");
-        AssertContains(pipeServerRootText, "private static void TraceFallback(string line)");
+        AssertDoesNotContain(pipeServerRootText, "TraceFallback");
+        AssertContains(pipeServerRootText, "Logger.Log($\"Automation pipe server disabled: {ex}\")");
+        AssertContains(pipeServerRootText, "Logger.Log($\"Automation pipe server startup failed: {ex}\")");
+        AssertContains(pipeServerRootText, "Logger.Log($\"Automation pipe server loop error: {ex}\")");
+        AssertContains(pipeServerRootText, "Logger.Log($\"Automation pipe connection I/O error: {ioEx}\")");
+        AssertContains(pipeServerRootText, "Logger.Log($\"Automation pipe connection error: {ex}\")");
 
         if (!OperatingSystem.IsWindows())
         {
@@ -2833,13 +3354,8 @@ static partial class Program
         AssertContains(pipeServerText, "private sealed class ConnectionSession");
         AssertContains(pipeServerText, "var session = new ConnectionSession(this, server, cancellationToken);");
         AssertContains(pipeServerText, "var requestCancellation = CancellationTokenSource.CreateLinkedTokenSource(requestTimeout.Token, _serverCancellation);");
-        AssertContains(pipeServerText, "if (await WaitForDispatchCompletionAsync(dispatchTask, requestCancellation.Token).ConfigureAwait(false))");
-        AssertContains(pipeServerText, "using var registration = cancellationToken.Register(");
-        AssertContains(pipeServerText, "requestCancellation.Cancel();");
         AssertDoesNotContain(pipeServerText, "WaitForDispatchCompletionAsync(dispatchTask, CancellationToken.None)");
-        AssertContains(pipeServerText, "var responseAfterCancellation = await dispatchTask.ConfigureAwait(false);");
         AssertContains(pipeServerText, "Automation command exceeded request timeout; waiting for dispatch to stop");
-        AssertContains(pipeServerText, "responseAfterCancellation = _owner.CreateRequestTimeoutResponse();");
         AssertDoesNotContain(pipeServerText, "DispatchContinues");
         AssertDoesNotContain(pipeServerText, "ObserveTimedOutDispatch");
         AssertContains(pipeServerText, "Request timed out after {_owner._requestTimeoutMs} ms.");
@@ -2856,19 +3372,24 @@ static partial class Program
 
     internal static async Task NamedPipeAutomationServer_TimeoutWaitsForDispatchAndPreservesOutcome(
         string? responseError,
-        bool dispatchFaults)
+        bool dispatchFaults,
+        bool cancelAfterAdmission)
     {
         var responseType = RequireType("Sussudio.Models.AutomationCommandResponse");
         var completionType = typeof(TaskCompletionSource<>).MakeGenericType(responseType);
         var completion = Activator.CreateInstance(completionType, TaskCreationOptions.RunContinuationsAsynchronously)!;
         var dispatchTask = (Task)completionType.GetProperty("Task")!.GetValue(completion)!;
-        var dispatchCalled = false;
+        var admitted = new TaskCompletionSource<CancellationToken>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var cancellationObserved = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        CancellationTokenRegistration registration = default;
         var dispatcher = CreateConfiguredProxy(RequireType("Sussudio.Services.Contracts.IAutomationCommandDispatcher"),
             (method, arguments) =>
             {
                 Assert.Equal("ExecuteAsync", method!.Name);
-                Assert.True(((CancellationToken)arguments![1]!).IsCancellationRequested);
-                dispatchCalled = true;
+                var token = (CancellationToken)arguments![1]!;
+                Assert.Equal(!cancelAfterAdmission, token.IsCancellationRequested);
+                registration = token.Register(() => cancellationObserved.TrySetResult(true));
+                admitted.TrySetResult(token);
                 return dispatchTask;
             });
 
@@ -2883,41 +3404,119 @@ static partial class Program
         var execute = sessionType.GetMethod("ExecuteCommandWithTimeoutAsync", BindingFlags.Instance | BindingFlags.NonPublic)!;
         using var timeout = new CancellationTokenSource();
         using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(timeout.Token);
-        timeout.Cancel();
+        if (!cancelAfterAdmission) timeout.Cancel();
 
         var execution = (Task)execute.Invoke(session, new object[]
         {
             CreateAutomationCommandRequest("GetSnapshot", null, "{}"), timeout, cancellation
         })!;
-        Assert.True(dispatchCalled);
-        Assert.False(execution.IsCompleted, "Request timeout must wait for the admitted dispatch to stop.");
-
-        if (dispatchFaults)
+        try
         {
-            var failure = new InvalidOperationException("dispatch failure after cancellation");
-            completionType.GetMethod("SetException", new[] { typeof(Exception) })!
-                .Invoke(completion, new object[] { failure });
-            var actual = await Assert.ThrowsAsync<InvalidOperationException>(
+            var dispatchToken = await admitted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            if (cancelAfterAdmission)
+            {
+                Assert.False(dispatchToken.IsCancellationRequested);
+                Assert.False(execution.IsCompleted);
+                timeout.Cancel();
+            }
+            await cancellationObserved.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.True(dispatchToken.IsCancellationRequested);
+            await Assert.ThrowsAsync<TimeoutException>(() => execution.WaitAsync(TimeSpan.FromMilliseconds(50)));
+
+            if (dispatchFaults)
+            {
+                var failure = new InvalidOperationException("dispatch failure after cancellation");
+                completionType.GetMethod("SetException", new[] { typeof(Exception) })!
+                    .Invoke(completion, new object[] { failure });
+                var actual = await Assert.ThrowsAsync<InvalidOperationException>(
+                    () => execution.WaitAsync(TimeSpan.FromSeconds(5)));
+                Assert.Same(failure, actual);
+                return;
+            }
+
+            var response = Activator.CreateInstance(responseType)!;
+            SetPropertyBackingField(response, "Success", responseError == null);
+            SetPropertyBackingField(response, "ErrorCode", responseError);
+            completionType.GetMethod("SetResult")!.Invoke(completion, new[] { response });
+            await execution.WaitAsync(TimeSpan.FromSeconds(5));
+            var result = execution.GetType().GetProperty("Result")!.GetValue(execution)!;
+            if (string.Equals(responseError, "canceled", StringComparison.OrdinalIgnoreCase))
+            {
+                Assert.NotSame(response, result);
+                AssertAutomationResponse(result, false, "request-timeout", "error", "dispatch canceled after timeout");
+                Assert.Equal("failed", GetAutomationLifecycle(result));
+            }
+            else
+            {
+                Assert.Same(response, result);
+            }
+        }
+        finally
+        {
+            registration.Dispose();
+            completionType.GetMethod("TrySetResult")!.Invoke(completion, new[] { Activator.CreateInstance(responseType)! });
+            try { await dispatchTask.ConfigureAwait(false); } catch { }
+            try { await execution.WaitAsync(TimeSpan.FromSeconds(5)); } catch { }
+        }
+    }
+
+    internal static async Task NamedPipeAutomationServer_ShutdownPreservesServerCancellationIdentity()
+    {
+        var responseType = RequireType("Sussudio.Models.AutomationCommandResponse");
+        var completionType = typeof(TaskCompletionSource<>).MakeGenericType(responseType);
+        var completion = Activator.CreateInstance(completionType, TaskCreationOptions.RunContinuationsAsynchronously)!;
+        var dispatchTask = (Task)completionType.GetProperty("Task")!.GetValue(completion)!;
+        var admitted = new TaskCompletionSource<CancellationToken>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var cancellationObserved = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        CancellationTokenRegistration registration = default;
+        var dispatcher = CreateConfiguredProxy(RequireType("Sussudio.Services.Contracts.IAutomationCommandDispatcher"),
+            (method, arguments) =>
+            {
+                Assert.Equal("ExecuteAsync", method!.Name);
+                var token = (CancellationToken)arguments![1]!;
+                Assert.False(token.IsCancellationRequested);
+                registration = token.Register(() => cancellationObserved.TrySetResult(true));
+                admitted.TrySetResult(token);
+                return dispatchTask;
+            });
+
+        var pipeName = $"unit-pipe-shutdown-{Guid.NewGuid():N}";
+        using var server = CreateNamedPipeAutomationServer(pipeName, false, new byte[] { 1 },
+            _ => CreateTestPipeServerStream(pipeName), () => CreateTestPipeServerStream(pipeName), dispatcher);
+        using var pipe = CreateTestPipeServerStream(pipeName);
+        using var shutdown = new CancellationTokenSource();
+        using var timeout = new CancellationTokenSource();
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(timeout.Token, shutdown.Token);
+        var sessionType = server.GetType().GetNestedType("ConnectionSession", BindingFlags.NonPublic)!;
+        var session = Activator.CreateInstance(sessionType,
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+            binder: null, args: new object[] { server, pipe, shutdown.Token }, culture: null)!;
+        var execute = sessionType.GetMethod("ExecuteCommandWithTimeoutAsync", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var execution = (Task)execute.Invoke(session, new object[]
+        {
+            CreateAutomationCommandRequest("GetSnapshot", null, "{}"), timeout, cancellation
+        })!;
+
+        try
+        {
+            var dispatchToken = await admitted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.False(execution.IsCompleted);
+            shutdown.Cancel();
+            await cancellationObserved.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.True(dispatchToken.IsCancellationRequested);
+
+            var failure = await Assert.ThrowsAnyAsync<OperationCanceledException>(
                 () => execution.WaitAsync(TimeSpan.FromSeconds(5)));
-            Assert.Same(failure, actual);
-            return;
+            Assert.Equal(shutdown.Token, failure.CancellationToken);
+            Assert.False(timeout.IsCancellationRequested);
+            Assert.False(dispatchTask.IsCompleted);
         }
-
-        var response = Activator.CreateInstance(responseType)!;
-        SetPropertyBackingField(response, "Success", responseError == null);
-        SetPropertyBackingField(response, "ErrorCode", responseError);
-        completionType.GetMethod("SetResult")!.Invoke(completion, new[] { response });
-        await execution.WaitAsync(TimeSpan.FromSeconds(5));
-        var result = execution.GetType().GetProperty("Result")!.GetValue(execution)!;
-        if (string.Equals(responseError, "canceled", StringComparison.OrdinalIgnoreCase))
+        finally
         {
-            Assert.NotSame(response, result);
-            AssertAutomationResponse(result, false, "request-timeout", "error", "dispatch canceled after timeout");
-            Assert.Equal("failed", GetAutomationLifecycle(result));
-        }
-        else
-        {
-            Assert.Same(response, result);
+            registration.Dispose();
+            completionType.GetMethod("TrySetResult")!.Invoke(completion, new[] { Activator.CreateInstance(responseType)! });
+            await dispatchTask.ConfigureAwait(false);
+            try { await execution.WaitAsync(TimeSpan.FromSeconds(5)); } catch { }
         }
     }
 
@@ -3263,7 +3862,7 @@ static partial class Program
         AssertContains(loggerText, "private static async Task RunLogWriterAsync()");
         AssertContains(loggerText, "public static async Task ShutdownAsync(TimeSpan timeout)");
         AssertContains(loggerText, "LogChannel.Writer.TryComplete();");
-        AssertContains(loggerText, "await LogWriterTask.WaitAsync(timeout).ConfigureAwait(false);");
+        AssertContains(loggerText, "await _logWriterTask.WaitAsync(timeout).ConfigureAwait(false);");
         AssertDoesNotContain(loggerText, "LogWriterCancellation");
         AssertContains(loggerText, "private static void WriteDirect(string entry)");
         var logMethod = ExtractTextBetween(loggerText, "public static void Log(string message", "public static void LogVerbose(");
@@ -3272,7 +3871,11 @@ static partial class Program
         AssertDoesNotContain(logMethod, "File.");
         AssertContains(loggerText, "private static void RotatePriorLog()");
         AssertContains(loggerText, "public static void LogSystemInfo()");
-        AssertContains(loggerText, "new ManagementObjectSearcher(");
+        AssertDoesNotContain(loggerText, "System.Management");
+        AssertDoesNotContain(loggerText, "ManagementObjectSearcher");
+        AssertContains(loggerText, "CPU info unavailable:");
+        AssertContains(loggerText, "RAM info unavailable:");
+        AssertContains(loggerText, "GPU info unavailable:");
         AssertContains(loggerText, "public static void LogStructured(");
         AssertContains(loggerText, "public static void LogFatalBreadcrumb(");
         AssertContains(
@@ -3366,7 +3969,8 @@ static partial class Program
             var health = Activator.CreateInstance(healthType)
                 ?? throw new InvalidOperationException("Failed to create isolated CaptureHealthSnapshot.");
             SetPropertyOrBackingField(health, "RecordingBackend", "FFmpeg");
-            SetPropertyOrBackingField(health, "FlashbackPlaybackState", "Paused");
+            var playbackStateType = RequireLoadedType(appAssembly, "Sussudio.Models.FlashbackPlaybackState");
+            SetPropertyOrBackingField(health, "FlashbackPlaybackState", Enum.Parse(playbackStateType, "Paused"));
             SetPropertyOrBackingField(health, "FlashbackPlaybackSegmentSwitches", 2L);
             SetPropertyOrBackingField(health, "FlashbackPlaybackFmp4Reopens", 1L);
             SetPropertyOrBackingField(health, "FlashbackPlaybackDroppedFrames", 6L);
@@ -3423,6 +4027,54 @@ static partial class Program
             var detailJson = AssertSingleJsonArrayItem(healthRoot, "SourceTelemetryDetails");
             AssertJsonString(detailJson, "DisplayValue", "BT.2020", "SourceTelemetryDetailEntry source-gen JSON DisplayValue");
             AssertJsonString(detailJson, "RawValue", "bt2020", "SourceTelemetryDetailEntry source-gen JSON RawValue");
+
+            foreach (var stateName in new string?[] { "Disabled", "Buffering", "Live", "Scrubbing", "Playing", "Paused", null })
+            {
+                var state = stateName == null ? null : Enum.Parse(playbackStateType, stateName);
+                SetPropertyOrBackingField(health, "FlashbackPlaybackState", state);
+                var stateJson = SerializeWithLoggingJsonContext(appAssembly, healthType, health, "CaptureHealthSnapshot");
+                using var stateDocument = JsonDocument.Parse(stateJson);
+                AssertJsonString(stateDocument.RootElement, "FlashbackPlaybackState", stateName ?? "N/A", "typed health source-gen state JSON");
+                var restored = DeserializeWithLoggingJsonContext(appAssembly, healthType, stateJson, "CaptureHealthSnapshot");
+                AssertEqual(state, GetPropertyValue(restored, "FlashbackPlaybackState"), "typed health source-gen state roundtrip");
+            }
+
+            foreach (var valueJson in new[] { "null", "\"N/A\"" })
+            {
+                var restored = DeserializeWithLoggingJsonContext(appAssembly, healthType,
+                    $"{{\"FlashbackPlaybackState\":{valueJson}}}", "CaptureHealthSnapshot");
+                AssertEqual(null, GetPropertyValue(restored, "FlashbackPlaybackState"), "source-gen reads absent or legacy null state");
+                using var restoredDocument = JsonDocument.Parse(SerializeWithLoggingJsonContext(appAssembly, healthType, restored, "CaptureHealthSnapshot"));
+                AssertJsonString(restoredDocument.RootElement, "FlashbackPlaybackState", "N/A", "source-gen rewrites absent state as N/A");
+            }
+
+            foreach (var valueJson in new[] { "0", "999", "true", "{}", "[]", "\"\"", "\"Unknown\"", "\"playing\"", "\" Playing \"", "\"0\"", "\"999\"" })
+            {
+                try
+                {
+                    DeserializeWithLoggingJsonContext(appAssembly, healthType,
+                        $"{{\"FlashbackPlaybackState\":{valueJson}}}", "CaptureHealthSnapshot");
+                    throw new InvalidOperationException($"Source-generated health deserialization accepted invalid state {valueJson}.");
+                }
+                catch (TargetInvocationException exception)
+                {
+                    AssertEqual("System.Text.Json.JsonException", exception.InnerException?.GetType().FullName, "source-gen rejects undefined JSON state");
+                }
+            }
+
+            foreach (var undefined in new[] { -1, 999 })
+            {
+                SetPropertyOrBackingField(health, "FlashbackPlaybackState", Enum.ToObject(playbackStateType, undefined));
+                try
+                {
+                    SerializeWithLoggingJsonContext(appAssembly, healthType, health, "CaptureHealthSnapshot");
+                    throw new InvalidOperationException($"Source-generated health serialization accepted undefined enum {undefined}.");
+                }
+                catch (TargetInvocationException exception)
+                {
+                    AssertEqual("System.Text.Json.JsonException", exception.InnerException?.GetType().FullName, "source-gen rejects undefined enum writes");
+                }
+            }
         }
         finally
         {
@@ -3452,6 +4104,29 @@ static partial class Program
         var serializeMethod = RequireJsonTypeInfoSerializeMethod(serializerType).MakeGenericMethod(payloadType);
         return serializeMethod.Invoke(null, new[] { payload, jsonTypeInfo }) as string
             ?? throw new InvalidOperationException($"{jsonTypeInfoPropertyName} source-generated serialization returned null.");
+    }
+
+    private static object DeserializeWithLoggingJsonContext(
+        Assembly appAssembly,
+        Type payloadType,
+        string json,
+        string jsonTypeInfoPropertyName)
+    {
+        var contextType = RequireLoadedType(appAssembly, "Sussudio.LoggingJsonContext");
+        var defaultContext = contextType.GetProperty("Default", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)!.GetValue(null)!;
+        var jsonTypeInfo = contextType.GetProperty(jsonTypeInfoPropertyName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(defaultContext)!;
+        var serializerType = jsonTypeInfo.GetType().Assembly.GetType("System.Text.Json.JsonSerializer", throwOnError: true)!;
+        var deserialize = serializerType.GetMethods(BindingFlags.Public | BindingFlags.Static).Single(method =>
+        {
+            if (method.Name != "Deserialize" || !method.IsGenericMethodDefinition)
+                return false;
+            var parameters = method.GetParameters();
+            return parameters.Length == 2 && parameters[0].ParameterType == typeof(string) &&
+                parameters[1].ParameterType.IsGenericType &&
+                parameters[1].ParameterType.GetGenericTypeDefinition().FullName == "System.Text.Json.Serialization.Metadata.JsonTypeInfo`1";
+        });
+        return deserialize.MakeGenericMethod(payloadType).Invoke(null, new[] { json, jsonTypeInfo })
+            ?? throw new InvalidOperationException($"{jsonTypeInfoPropertyName} source-generated deserialization returned null.");
     }
 
     private static MethodInfo RequireJsonTypeInfoSerializeMethod(Type serializerType)
@@ -3603,7 +4278,7 @@ static partial class Program
         var previewLifecycleText = ReadCaptureServicePreviewLifecycleSource();
         var coordinatorText = ReadCaptureSessionCoordinatorSource();
         var flashbackPreviewBackendText = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.Flashback.cs");
-        var flashbackBackendResourcesText = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Flashback/FlashbackBackendResources.cs");
+        var flashbackBackendResourcesText = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/FlashbackBackendResources.cs");
         var viewModelPreviewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs")
             .Replace("\r\n", "\n");
         var startVideoPreview = ExtractTextBetween(
@@ -3706,13 +4381,31 @@ static partial class Program
             "private void OnWasapiAudioLevelUpdated");
         AssertContains(updateAudioInput, "await newCapture.InitializeAsync(resolvedId, transitionToken)");
         AssertContains(updateAudioInput, "await _previewAudioGraph.StartPlaybackAsync(");
-        AssertContains(updateAudioInput, "transitionToken,");
+        AssertContains(updateAudioInput, "cancellationToken: transitionToken)");
         AssertOccursBefore(
             updateAudioInput,
             "await newCapture.InitializeAsync(resolvedId, transitionToken)",
             "_previewAudioGraph.DetachCapture(");
         AssertContains(updateAudioInput, "_audioDeviceId = previousDeviceId;");
         AssertContains(updateAudioInput, "_audioDeviceName = previousDeviceName;");
+        AssertOccursBefore(updateAudioInput, "newCapture.Start();", "_previewAudioGraph.ProgramCapture = newCapture;");
+        AssertOccursBefore(updateAudioInput, "_previewAudioGraph.ProgramCapture = newCapture;", "captureCommitted = true;");
+        AssertContains(updateAudioInput, "finally\n                {\n                    if (!captureCommitted)");
+        AssertOccursBefore(updateAudioInput, "captureCommitted = true;", "AttachFlashbackAudioIfSupported(newCapture");
+        var candidateCleanup = ExtractTextBetween(updateAudioInput,
+            "if (!captureCommitted)", "_audioDeviceId = audioDeviceId;");
+        foreach (var operation in new[]
+        {
+            "newCapture.AudioLevelUpdated -= OnWasapiAudioLevelUpdated;",
+            "_previewAudioGraph.DetachCaptureFailure(newCapture);",
+            "await newCapture.DisposeAsync().ConfigureAwait(false);"
+        })
+        {
+            AssertContains(candidateCleanup, operation);
+            AssertEqual(1, updateAudioInput.Split(operation, StringSplitOptions.None).Length - 1,
+                "uncommitted audio capture has one cleanup owner: " + operation);
+        }
+
         AssertContains(updateAudioInput, "activeSink != null && !ReferenceEquals(activeSink, _flashbackBackend.Sink)");
         AssertOccursBefore(
             updateAudioInput,
@@ -3745,18 +4438,18 @@ static partial class Program
         AssertContains(captureServiceText, "CloneCaptureSettings(currentSettings)");
         AssertContains(flashbackBackendResourcesText, "SettingsSnapshot = request.SettingsSnapshot;");
         AssertContains(flashbackBackendResourcesText, "ClearSinkAndSettings();");
-        AssertContains(captureServiceText, "_flashbackBackend.DisposePreviewBackendAsync(request)");
+        AssertContains(captureServiceText, "_flashbackBackend.DisposePreviewBackendUnderExportLockAsync(");
         AssertContains(flashbackBackendResourcesText, "Clear();");
-        AssertContains(flashbackBackendResourcesText, "public async Task<FlashbackPlaybackController> StartPreviewBackendAsync(");
+        AssertContains(flashbackBackendResourcesText, "public async Task StartPreviewBackendAsync(");
         AssertContains(flashbackBackendResourcesText, "var bufferManager = new FlashbackBufferManager(");
-        AssertContains(flashbackBackendResourcesText, "flashbackSink.SetFatalErrorCallback(request.FatalErrorCallback);");
-        AssertContains(flashbackBackendResourcesText, "flashbackSink.FrameEncoded += request.FrameEncodedHandler;");
+        AssertContains(flashbackBackendResourcesText, "flashbackSink.SetFatalErrorCallback(_onFatalError);");
+        AssertContains(flashbackBackendResourcesText, "flashbackSink.FrameEncoded += _onFrameEncodedHandler;");
         AssertContains(flashbackBackendResourcesText, "Install(");
         AssertContains(flashbackBackendResourcesText, "AttachProducers(");
         AssertContains(flashbackBackendResourcesText, "playbackController.Initialize(");
         AssertContains(flashbackBackendResourcesText, "private async Task RollBackPreviewBackendStartAsync(");
-        AssertContains(flashbackBackendResourcesText, "flashbackSink.FrameEncoded -= request.FrameEncodedHandler;");
-        AssertContains(flashbackBackendResourcesText, "request.ScheduleDeferredCleanup(");
+        AssertContains(flashbackBackendResourcesText, "flashbackSink.FrameEncoded -= _onFrameEncodedHandler;");
+        AssertContains(flashbackBackendResourcesText, "ScheduleDeferredArtifactCleanup(");
         AssertDoesNotContain(captureServiceText, "var bufferManager = new FlashbackBufferManager(");
         AssertDoesNotContain(captureServiceText, "FlashbackPlaybackController? playbackController = null;");
         AssertDoesNotContain(captureServiceText, "flashbackSink.SetFatalErrorCallback(OnFlashbackBackendFatalError);");
@@ -3818,7 +4511,7 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
                 .Replace("\r\n", "\n");
-        var flashbackBackendResourcesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.cs")
+        var flashbackBackendResourcesText = ReadRepoFile("Sussudio/Services/Capture/FlashbackBackendResources.cs")
             .Replace("\r\n", "\n");
         var flashbackText = string.Join("\n", flashbackTexts);
 
@@ -3888,10 +4581,11 @@ static partial class Program
             "    private void OnFlashbackFrameEncoded");
         var backendCycleBuffer = ExtractTextBetween(
             flashbackBackendResourcesText,
-            "public async Task<FlashbackBufferCycleResult> CycleSinkOnlyAsync",
+            "public async Task<FlashbackBufferCycleOutcome> CycleSinkOnlyAsync",
             "    private async Task RollBackPreviewBackendStartAsync");
         AssertContains(cycleBuffer, "await _flashbackExportOperationLock.WaitAsync(cancellationToken).ConfigureAwait(false);");
-        AssertContains(cycleBuffer, "exportOperationLockAlreadyHeld: true");
+        AssertOccursBefore(cycleBuffer, "_flashbackBackendLeaseLock.WaitAsync(", "_flashbackExportOperationLock.WaitAsync(");
+        AssertOccursBefore(cycleBuffer, "_flashbackExportOperationLock.WaitAsync(", "_flashbackBackend.DisposePreviewBackendUnderExportLockAsync(");
         AssertContains(cycleBuffer, "ReleaseFlashbackExportOperationLockIfHeld(ref exportOperationLockHeld);");
         AssertContains(backendCycleBuffer, "preserveSegments: !request.PurgeSegments");
         AssertContains(backendCycleBuffer, "private FlashbackBufferCyclePlaybackState DisposePlaybackForBufferCycle(");
@@ -3938,31 +4632,17 @@ static partial class Program
         // Flashback must honor user codec/preset settings directly. The legacy snapshot
         // field remains for compatibility, but the old silent AV1->HEVC path must stay gone.
         AssertDoesNotContain(createFlashbackSessionContext, "FLASHBACK_CODEC_DOWNGRADE");
-        AssertContains(captureServiceText, "private static string? ResolveFlashbackCodecDowngradeReason(");
-        AssertContains(captureServiceText, "=> null;");
         AssertDoesNotContain(captureServiceText, "AV1->HEVC: software MJPEG pipeline at");
         AssertDoesNotContain(captureServiceText, "NVENC preset '");
-        // Snapshot field remains populated from the compatibility resolver so
-        // downstream consumers share the same no-downgrade contract.
         var snapshotsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
             .Replace("\r\n", "\n");
-        AssertContains(snapshotsText, "FlashbackCodecDowngradeReason = ResolveFlashbackCodecDowngradeReason(requestedSettings, unifiedVideoCapture),");
+        AssertDoesNotContain(snapshotsText, "ResolveFlashbackCodecDowngradeReason");
         var contractsText = ReadAutomationSnapshotFamilyText();
         AssertContains(contractsText, "public string? FlashbackExportVerificationFormat { get; init; }");
         AssertContains(contractsText, "public string? FlashbackCodecDowngradeReason { get; init; }");
-        var automationDiagnosticsHubText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs")
-            .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationSnapshotFlashbackProjectionBuilder.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadAutomationSnapshotInitializerText()
-            + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationSnapshotFlashbackProjectionBuilder.cs")
-                .Replace("\r\n", "\n");
-        AssertContains(automationDiagnosticsHubText, "ExportVerificationFormat = captureRuntime.FlashbackExportVerificationFormat ?? health.FlashbackExportVerificationFormat,");
-        AssertContains(automationDiagnosticsHubText, "CodecDowngradeReason = captureRuntime.FlashbackCodecDowngradeReason ?? health.FlashbackCodecDowngradeReason");
+        var automationDiagnosticsHubText = ReadAutomationSnapshotInitializerText();
+        AssertContains(automationDiagnosticsHubText, "FlashbackExportVerificationFormat = captureRuntime.FlashbackExportVerificationFormat ?? health.FlashbackExportVerificationFormat,");
+        AssertContains(automationDiagnosticsHubText, "FlashbackCodecDowngradeReason = captureRuntime.FlashbackCodecDowngradeReason ?? health.FlashbackCodecDowngradeReason");
         AssertDoesNotContain(captureServiceText, "var fbFileNameFormatOverride =");
         AssertDoesNotContain(captureServiceText, "FileNameFormatOverride = fbFileNameFormatOverride");
         AssertContains(ensureFlashbackPreviewBackend, "var failureToken = ex is OperationCanceledException && cancellationToken.IsCancellationRequested");
@@ -3978,7 +4658,7 @@ static partial class Program
         AssertContains(backendCycleBuffer, "await oldSink.StopAsync(committedCycleToken)");
         AssertContains(backendCycleBuffer, "await newSink.StartAsync(");
         AssertContains(backendCycleBuffer, "request.CreateSessionContext(),");
-        AssertContains(backendCycleBuffer, "committedCycleToken,");
+        AssertContains(backendCycleBuffer, "cancellationToken: committedCycleToken)");
         AssertContains(backendCycleBuffer, "FLASHBACK_BUFFER_CYCLE_CANCEL_DEFERRED");
         AssertOccursBefore(
             backendCycleBuffer,
@@ -4372,6 +5052,9 @@ static partial class Program
         AssertContains(coordinatorText, "public bool PropagateCancellationToOperation { get; init; }");
         AssertContains(coordinatorText, "bool propagateCancellationToOperation = false");
         AssertContains(coordinatorText, "propagateCancellationToOperation: true");
+        AssertContains(coordinatorText, "A caller cancellation token cancels the returned task immediately and prevents queued work");
+        AssertContains(coordinatorText, "when that enqueue explicitly opts into propagation");
+        AssertContains(coordinatorText, "coordinator disposal uses its separate");
 
         return Task.CompletedTask;
     }
@@ -4889,17 +5572,14 @@ static partial class Program
         AssertContains(pollingAdapterText, "private FlashbackPollingController _flashbackPollingController = null!;");
         AssertContains(pollingAdapterText, "private void InitializeFlashbackPollingController()");
         AssertContains(pollingAdapterText, "IsWindowClosing = () => _isWindowClosing,");
-        AssertContains(pollingAdapterText, "=> _flashbackPollingController.StartStatusPolling();");
         AssertContains(pollingAdapterText, "_flashbackPollingController.StopStatusPolling();");
-        AssertContains(pollingAdapterText, "StopFlashbackCtiAnchorTimer();");
-        AssertContains(pollingAdapterText, "=> _flashbackPollingController.StartPlaybackPolling();");
-        AssertContains(pollingAdapterText, "=> _flashbackPollingController.StopPlaybackPolling();");
+        AssertContains(pollingAdapterText, "StopFlashbackPlayheadAnchorTimer();");
         AssertContains(mainWindowText, "InitializeFlashbackPollingController();");
-        AssertContains(timelineAdapterText, "StartStatusPolling = StartFlashbackStatusPolling,");
+        AssertContains(timelineAdapterText, "StartStatusPolling = () => _flashbackPollingController.StartStatusPolling(),");
         AssertContains(shutdownCleanupText, "StopFlashbackStatusPolling();");
         AssertContains(shutdownCleanupControllerText, "_context.StopTimers();");
-        AssertContains(flashbackText, "StartPlaybackPolling = StartFlashbackPlaybackPolling,");
-        AssertContains(flashbackText, "StopPlaybackPolling = StopFlashbackPlaybackPolling,");
+        AssertContains(flashbackText, "StartPlaybackPolling = () => _flashbackPollingController.StartPlaybackPolling(),");
+        AssertContains(flashbackText, "StopPlaybackPolling = () => _flashbackPollingController.StopPlaybackPolling(),");
         AssertContains(playbackCoordinatorText, "_context.StartPlaybackPolling();");
         AssertContains(playbackCoordinatorText, "_context.StopPlaybackPolling();");
         AssertContains(controllerText, "internal sealed class FlashbackPollingController");
@@ -4936,12 +5616,8 @@ static partial class Program
         AssertContains(playheadText, "private FlashbackPlayheadMotionController _flashbackPlayheadMotionController = null!;");
         AssertContains(playheadText, "private void InitializeFlashbackPlayheadMotionController()");
         AssertContains(playheadText, "IsScrubbing = () => _flashbackScrubInteractionController.IsScrubbing,");
-        AssertContains(playheadText, "private void RequestFlashbackPlayheadSnapOnNextUpdate()");
-        AssertContains(playheadText, "private void PositionFlashbackMagneticPlayhead(double x, double trackWidth)");
-        AssertContains(playheadText, "private void RefreshFlashbackCtiMotion(string reason)");
-        AssertContains(playheadText, "=> _flashbackPlayheadMotionController.RefreshCtiMotion(reason);");
-        AssertContains(playheadText, "private void StopFlashbackCtiAnchorTimer()");
-        AssertContains(playheadText, "=> _flashbackPlayheadMotionController.StopCtiAnchorTimer();");
+        AssertContains(playheadText, "private void StopFlashbackPlayheadAnchorTimer()");
+        AssertContains(playheadText, "=> _flashbackPlayheadMotionController.StopPlayheadAnchorTimer();");
         AssertContains(mainWindowText, "InitializeFlashbackPlayheadMotionController();");
         AssertOccursBefore(mainWindowText, "InitializeFlashbackScrubInteractionController();", "InitializeFlashbackPlayheadMotionController();");
         AssertOccursBefore(mainWindowText, "InitializeFlashbackPlayheadMotionController();", "InitializeFlashbackTimelineController();");
@@ -4949,20 +5625,20 @@ static partial class Program
         AssertContains(controllerRootText, "internal sealed class FlashbackPlayheadMotionController");
         AssertContains(controllerRootText, "private enum FlashbackPlayheadMotion");
         AssertContains(controllerRootText, "private Visual? _flashbackPlayheadVisual;");
-        AssertContains(controllerRootText, "private DispatcherQueueTimer? _flashbackCtiAnchorTimer;");
+        AssertContains(controllerRootText, "private DispatcherQueueTimer? _flashbackPlayheadAnchorTimer;");
         AssertContains(controllerRootText, "private CompositionEasingFunction? _flashbackPlayheadEaseLinear;");
         AssertContains(controllerRootText, "private bool _snapFlashbackPlayheadOnNextUpdate;");
         AssertContains(controllerRootText, "public void RequestSnapOnNextUpdate()");
         AssertContains(controllerRootText, "public void PositionMagneticPlayhead(double x, double trackWidth)");
-        AssertContains(controllerText, "public void RefreshCtiMotion(string reason)");
-        AssertContains(controllerText, "public void StopCtiAnchorTimer()");
-        AssertContains(controllerText, "private void StartFlashbackCtiAnchorTimer()");
-        AssertContains(controllerText, "private void FlashbackCtiAnchorTimer_Tick(DispatcherQueueTimer sender, object args)");
+        AssertContains(controllerText, "public void RefreshPlayheadMotion(string reason)");
+        AssertContains(controllerText, "public void StopPlayheadAnchorTimer()");
+        AssertContains(controllerText, "private void StartFlashbackPlayheadAnchorTimer()");
+        AssertContains(controllerText, "private void FlashbackPlayheadAnchorTimer_Tick(DispatcherQueueTimer sender, object args)");
         AssertContains(controllerText, "FlashbackTimelineGeometry.IsUsableTrackDimension(trackW)");
         AssertContains(controllerText, "state == FlashbackPlaybackState.Live");
         AssertContains(controllerText, "SnapPlayheadVisualsToFraction(1.0, trackW);");
         AssertContains(controllerText, "StartLinearPlayheadExtrapolation(");
-        AssertContains(controllerText, "RefreshCtiMotion(\"anchor_tick\");");
+        AssertContains(controllerText, "RefreshPlayheadMotion(\"anchor_tick\");");
         AssertContains(controllerText, "FLASHBACK_CTI_ANCHOR_TICK_FAIL");
         AssertContains(controllerText, "private void EnsureFlashbackPlayheadVisuals()");
         AssertContains(controllerText, "private void PositionFlashbackPlayhead(double x, double trackWidth, FlashbackPlayheadMotion motion)");
@@ -4976,17 +5652,19 @@ static partial class Program
         AssertContains(controllerText, "var labelX = Math.Clamp(x - labelW / 2, 0, Math.Max(0, trackWidth - labelW));");
         AssertContains(controllerText, "var lineX = (float)(x - 1);");
         AssertContains(controllerText, "var handleX = (float)(x - 5);");
-        AssertContains(scrubText, "PositionMagneticPlayhead = PositionFlashbackMagneticPlayhead,");
+        AssertContains(scrubText, "PositionMagneticPlayhead = (x, trackWidth) => _flashbackPlayheadMotionController.PositionMagneticPlayhead(x, trackWidth),");
         AssertContains(scrubControllerText, "_context.PositionMagneticPlayhead(x, width);");
-        AssertContains(playbackCoordinatorText, "_context.RefreshCtiMotion(\"state_change\");");
-        AssertContains(pollingAdapterText, "StopFlashbackCtiAnchorTimer();");
+        AssertContains(flashbackText, "RequestPlayheadSnapOnNextUpdate = () => _flashbackPlayheadMotionController.RequestSnapOnNextUpdate(),");
+        AssertContains(flashbackText, "RefreshPlayheadMotion = reason => _flashbackPlayheadMotionController.RefreshPlayheadMotion(reason),");
+        AssertContains(playbackCoordinatorText, "_context.RefreshPlayheadMotion(\"state_change\");");
+        AssertContains(pollingAdapterText, "StopFlashbackPlayheadAnchorTimer();");
         AssertContains(playbackCoordinatorText, "_context.RequestPlayheadSnapOnNextUpdate();");
-        AssertDoesNotContain(playheadText, "private DispatcherQueueTimer? _flashbackCtiAnchorTimer;");
+        AssertDoesNotContain(playheadText, "private DispatcherQueueTimer? _flashbackPlayheadAnchorTimer;");
         AssertDoesNotContain(playheadText, "private void StartLinearPlayheadExtrapolation(");
         AssertDoesNotContain(playheadText, "FLASHBACK_CTI_ANCHOR_TICK_FAIL");
         AssertDoesNotContain(flashbackText, "private enum FlashbackPlayheadMotion");
         AssertDoesNotContain(flashbackText, "private Visual? _flashbackPlayheadVisual;");
-        AssertDoesNotContain(flashbackText, "private DispatcherQueueTimer? _flashbackCtiAnchorTimer;");
+        AssertDoesNotContain(flashbackText, "private DispatcherQueueTimer? _flashbackPlayheadAnchorTimer;");
         AssertDoesNotContain(flashbackText, "private void StartLinearPlayheadExtrapolation(");
 
         return Task.CompletedTask;
@@ -5026,11 +5704,11 @@ static partial class Program
         AssertContains(playbackCoordinatorText, "_context.PlaybackPresentation.UpdateState(state);");
         AssertContains(playbackCoordinatorText, "_context.StartPlaybackPolling();");
         AssertContains(playbackCoordinatorText, "_context.StopPlaybackPolling();");
-        AssertContains(playbackCoordinatorText, "_context.RefreshCtiMotion(\"state_change\");");
+        AssertContains(playbackCoordinatorText, "_context.RefreshPlayheadMotion(\"state_change\");");
         AssertContains(playbackCoordinatorText, "public void UpdateBufferPresentation()\n    {\n        UpdateBufferFill();\n        UpdatePosition();\n        _context.UpdateMarkers();\n    }");
         AssertContains(playbackCoordinatorText, "_context.PlaybackPresentation.UpdateBufferFill(duration);");
         AssertContains(playbackCoordinatorText, "_context.PlaybackPresentation.UpdatePosition(");
-        AssertContains(playbackCoordinatorText, "_context.RefreshCtiMotion(\"position_change\");");
+        AssertContains(playbackCoordinatorText, "_context.RefreshPlayheadMotion(\"position_change\");");
         AssertContains(flashbackText, "private void UpdateFlashbackBufferPresentation()\n        => _flashbackPlaybackUiCoordinator.UpdateBufferPresentation();");
         AssertContains(flashbackPropertyChangedText, "UpdateBuffer = UpdateFlashbackBufferPresentation,");
         AssertContains(flashbackPropertyChangedControllerText, "case nameof(MainViewModel.FlashbackBufferFillPercent):");
@@ -5039,7 +5717,7 @@ static partial class Program
         AssertDoesNotContain(flashbackPropertyChangedText, "UpdateFlashbackBufferFill();\n        UpdateFlashbackPositionUI();");
         AssertDoesNotContain(flashbackText, "_flashbackPlaybackPresentationController.UpdateState(state);");
         AssertDoesNotContain(flashbackText, "if (state == FlashbackPlaybackState.Playing)");
-        AssertDoesNotContain(flashbackText, "RefreshFlashbackCtiMotion(\"position_change\");");
+        AssertDoesNotContain(flashbackText, "RefreshFlashbackPlayheadMotion(\"position_change\");");
         AssertDoesNotContain(flashbackText, "FlashbackPlayPauseIcon.Glyph =");
         AssertDoesNotContain(flashbackText, "FlashbackGoLiveButton.IsEnabled =");
         AssertDoesNotContain(flashbackText, "FlashbackBufferDurationText.Text =");
@@ -5093,15 +5771,11 @@ static partial class Program
         AssertContains(adapterText, "FlashbackEnabledToggle = FlashbackEnabledToggle,");
         AssertContains(adapterText, "FlashbackGpuDecodeToggle = FlashbackGpuDecodeToggle,");
         AssertContains(adapterText, "FlashbackBufferDurationCombo = FlashbackBufferDurationCombo,");
-        AssertContains(adapterText, "ApplyFlashbackTimelineLockout = ApplyFlashbackTimelineLockout");
+        AssertContains(adapterText, "ApplyFlashbackTimelineLockout = () => _flashbackTimelineController.ApplyLockout()");
         AssertContains(adapterText, "private void ApplyInitialFlashbackSettings()");
         AssertContains(adapterText, "=> _flashbackSettingsBindingController.ApplyInitialSettings();");
         AssertContains(adapterText, "private void AttachFlashbackSettingsBindings()");
         AssertContains(adapterText, "=> _flashbackSettingsBindingController.AttachBindings();");
-        AssertContains(adapterText, "private void SyncFlashbackGpuDecodeSetting()");
-        AssertContains(adapterText, "=> _flashbackSettingsBindingController.SyncGpuDecodeToggle();");
-        AssertContains(adapterText, "private void SyncFlashbackBufferDurationSetting()");
-        AssertContains(adapterText, "=> _flashbackSettingsBindingController.SyncBufferDurationSelection();");
         AssertContains(adapterText, "private void FlashbackBufferDurationCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)");
         AssertContains(adapterText, "if (ViewModel == null || _flashbackSettingsBindingController == null)");
         AssertContains(adapterText, "_flashbackSettingsBindingController.HandleBufferDurationSelectionChanged();");
@@ -5128,9 +5802,9 @@ static partial class Program
         AssertContains(controllerText, "int.TryParse(tag, out var minutes)");
         AssertContains(controllerText, "_context.ViewModel.FlashbackBufferMinutes = minutes;");
         AssertContains(controllerText, "FLASHBACK_UI_BUFFER_DURATION_CHANGED");
-        AssertContains(propertyChangedText, "TryHandleFlashback = TryHandleFlashbackPropertyChanged");
-        AssertContains(flashbackPropertyChangedText, "SyncGpuDecodeSetting = SyncFlashbackGpuDecodeSetting,");
-        AssertContains(flashbackPropertyChangedText, "SyncBufferDurationSetting = SyncFlashbackBufferDurationSetting");
+        AssertContains(propertyChangedText, "TryHandleFlashback = propertyName => _flashbackPropertyChangedController.TryHandlePropertyChanged(propertyName)");
+        AssertContains(flashbackPropertyChangedText, "SyncGpuDecodeSetting = () => _flashbackSettingsBindingController.SyncGpuDecodeToggle(),");
+        AssertContains(flashbackPropertyChangedText, "SyncBufferDurationSetting = () => _flashbackSettingsBindingController.SyncBufferDurationSelection(),");
         AssertContains(flashbackPropertyChangedControllerText, "case nameof(MainViewModel.FlashbackGpuDecode):");
         AssertContains(flashbackPropertyChangedControllerText, "_context.SyncGpuDecodeSetting();");
         AssertContains(flashbackPropertyChangedControllerText, "case nameof(MainViewModel.FlashbackBufferMinutes):");
@@ -5203,7 +5877,7 @@ static partial class Program
         AssertOccursBefore(playbackCoordinatorText, "_context.ApplyTrackSize(width, height);", "_context.RequestPlayheadSnapOnNextUpdate();");
         AssertOccursBefore(playbackCoordinatorText, "_context.RequestPlayheadSnapOnNextUpdate();", "UpdatePosition();");
         AssertOccursBefore(playbackCoordinatorText, "UpdatePosition();", "_context.UpdateMarkers();");
-        AssertOccursBefore(playbackCoordinatorText, "_context.UpdateMarkers();", "_context.RefreshCtiMotion(\"size_changed\");");
+        AssertOccursBefore(playbackCoordinatorText, "_context.UpdateMarkers();", "_context.RefreshPlayheadMotion(\"size_changed\");");
         AssertContains(agentMapText, "timeline visibility, lockout, toggle synchronization, timeline track layout");
         AssertContains(agentMapText, "sizing, show/hide storyboard state");
         AssertContains(agentMapText, "show/hide storyboard state");
@@ -5248,7 +5922,7 @@ static partial class Program
         AssertContains(controllerText, "Canvas.SetLeft(_context.SelectionRegion, selLeft);");
         AssertContains(flashbackText, "UpdateMarkers = UpdateFlashbackMarkers,");
         AssertContains(playbackCoordinatorText, "_context.UpdateMarkers();");
-        AssertContains(propertyChangedText, "TryHandleFlashback = TryHandleFlashbackPropertyChanged");
+        AssertContains(propertyChangedText, "TryHandleFlashback = propertyName => _flashbackPropertyChangedController.TryHandlePropertyChanged(propertyName)");
         AssertContains(flashbackPropertyChangedText, "UpdateRangeMarkers = UpdateFlashbackMarkers,");
         AssertContains(flashbackPropertyChangedControllerText, "case nameof(MainViewModel.FlashbackInPoint):");
         AssertContains(flashbackPropertyChangedControllerText, "case nameof(MainViewModel.FlashbackOutPoint):");
@@ -5273,13 +5947,11 @@ static partial class Program
         AssertContains(flashbackText, "private FlashbackExportProgressPresentationController _flashbackExportProgressPresentationController = null!;");
         AssertContains(flashbackText, "private void InitializeFlashbackExportProgressPresentationController()");
         AssertContains(flashbackText, "FlashbackExportProgressBar = FlashbackExportProgressBar,");
-        AssertContains(flashbackText, "=> _flashbackExportProgressPresentationController.UpdateProgress(progress);");
-        AssertContains(flashbackText, "=> _flashbackExportProgressPresentationController.UpdateExporting(isExporting);");
         AssertContains(mainWindowText, "InitializeFlashbackExportProgressPresentationController();");
         AssertContains(mainWindowText, "InitializeFlashbackPropertyChangedController();");
-        AssertContains(propertyChangedText, "TryHandleFlashback = TryHandleFlashbackPropertyChanged");
-        AssertContains(flashbackPropertyChangedText, "UpdateExportProgress = UpdateFlashbackExportProgress,");
-        AssertContains(flashbackPropertyChangedText, "UpdateExportingPresentation = UpdateFlashbackExportingPresentation,");
+        AssertContains(propertyChangedText, "TryHandleFlashback = propertyName => _flashbackPropertyChangedController.TryHandlePropertyChanged(propertyName)");
+        AssertContains(flashbackPropertyChangedText, "UpdateExportProgress = progress => _flashbackExportProgressPresentationController.UpdateProgress(progress),");
+        AssertContains(flashbackPropertyChangedText, "UpdateExportingPresentation = isExporting => _flashbackExportProgressPresentationController.UpdateExporting(isExporting),");
         AssertContains(flashbackPropertyChangedControllerText, "case nameof(MainViewModel.FlashbackExportProgress):");
         AssertContains(flashbackPropertyChangedControllerText, "_context.UpdateExportProgress(_context.GetExportProgress());");
         AssertContains(flashbackPropertyChangedControllerText, "case nameof(MainViewModel.IsFlashbackExporting):");
@@ -5325,8 +5997,8 @@ static partial class Program
         AssertContains(flashbackScrubText, "XAML-facing Flashback pointer scrub adapter");
         AssertContains(flashbackScrubText, "private FlashbackScrubInteractionController _flashbackScrubInteractionController = null!;");
         AssertContains(flashbackScrubText, "private void InitializeFlashbackScrubInteractionController()");
-        AssertContains(flashbackScrubText, "PositionMagneticPlayhead = PositionFlashbackMagneticPlayhead,");
-        AssertContains(flashbackScrubText, "RefreshCtiMotion = RefreshFlashbackCtiMotion,");
+        AssertContains(flashbackScrubText, "PositionMagneticPlayhead = (x, trackWidth) => _flashbackPlayheadMotionController.PositionMagneticPlayhead(x, trackWidth),");
+        AssertContains(flashbackScrubText, "RefreshPlayheadMotion = reason => _flashbackPlayheadMotionController.RefreshPlayheadMotion(reason),");
         AssertContains(flashbackScrubText, "GetTickCount64 = () => Environment.TickCount64,");
         AssertContains(flashbackScrubControllerText, "internal sealed class FlashbackScrubInteractionController");
         AssertContains(flashbackScrubControllerText, "private bool _isScrubbing;");
@@ -5511,13 +6183,13 @@ static partial class Program
         AssertContains(viewModelText, "IsFlashbackTimelineVisible = false;");
         AssertContains(bindingsText, "ApplyInitialFlashbackSettings();");
         AssertContains(flashbackSettingsText, "private FlashbackSettingsBindingController _flashbackSettingsBindingController = null!;");
-        AssertContains(flashbackSettingsText, "ApplyFlashbackTimelineLockout = ApplyFlashbackTimelineLockout");
+        AssertContains(flashbackSettingsText, "ApplyFlashbackTimelineLockout = () => _flashbackTimelineController.ApplyLockout()");
         AssertContains(flashbackSettingsControllerText, "_context.FlashbackEnabledToggle.IsOn = _context.ViewModel.IsFlashbackEnabled;");
         AssertContains(flashbackSettingsControllerText, "_context.ApplyFlashbackTimelineLockout();");
-        AssertContains(propertyChangedText, "TryHandleFlashback = TryHandleFlashbackPropertyChanged");
+        AssertContains(propertyChangedText, "TryHandleFlashback = propertyName => _flashbackPropertyChangedController.TryHandlePropertyChanged(propertyName)");
         AssertContains(flashbackPropertyChangedText, "private void InitializeFlashbackPropertyChangedController()");
-        AssertContains(flashbackPropertyChangedText, "ApplyTimelineLockout = ApplyFlashbackTimelineLockout,");
-        AssertContains(flashbackPropertyChangedText, "ApplyTimelineVisibility = ApplyFlashbackTimelineVisibility,");
+        AssertContains(flashbackPropertyChangedText, "ApplyTimelineLockout = () => _flashbackTimelineController.ApplyLockout(),");
+        AssertContains(flashbackPropertyChangedText, "ApplyTimelineVisibility = show => _flashbackTimelineController.ApplyVisibility(show),");
         AssertContains(flashbackPropertyChangedText, "IsFlashbackEnabled = () => ViewModel.IsFlashbackEnabled,");
         AssertContains(flashbackPropertyChangedText, "UpdateFlashbackKeepAliveHint = UpdateFlashbackKeepAliveHint,");
         AssertContains(flashbackPropertyChangedControllerText, "case nameof(MainViewModel.IsFlashbackEnabled):");
@@ -5528,14 +6200,12 @@ static partial class Program
         AssertContains(flashbackTimelineText, "private FlashbackTimelineController _flashbackTimelineController = null!;");
         AssertContains(flashbackTimelineText, "FlashbackToggle = FlashbackToggle,");
         AssertContains(flashbackTimelineText, "FlashbackTimelinePanel = FlashbackTimelinePanel,");
-        AssertContains(flashbackTimelineText, "SnapPlayheadOnNextOpen = RequestFlashbackPlayheadSnapOnNextUpdate,");
-        AssertContains(flashbackTimelineText, "ClearScrubInteraction = ClearFlashbackScrubInteractionForLockout,");
+        AssertContains(flashbackTimelineText, "SnapPlayheadOnNextOpen = () => _flashbackPlayheadMotionController.RequestSnapOnNextUpdate(),");
+        AssertContains(flashbackTimelineText, "ClearScrubInteraction = () => _flashbackScrubInteractionController.ClearForLockout(),");
         AssertContains(flashbackTimelineText, "=> _flashbackTimelineController.OnToggleChecked();");
-        AssertContains(flashbackTimelineText, "=> _flashbackTimelineController.ApplyLockout();");
         AssertContains(fullScreenText, "ResetFlashbackTimelineAnimation = _flashbackTimelineController.ResetAnimationForFullScreen,");
         AssertContains(flashbackTimelineControllerText, "public void ResetAnimationForFullScreen()");
         AssertDoesNotContain(flashbackTimelineText, "ResetFlashbackTimelineAnimationForFullScreen");
-        AssertContains(flashbackTimelineText, "=> _flashbackScrubInteractionController.ClearForLockout();");
         AssertContains(flashbackTimelineControllerText, "internal sealed class FlashbackTimelineController");
         AssertContains(flashbackTimelineControllerText, "private readonly FlashbackTimelineAnimationController _animationController;");
         AssertContains(flashbackTimelineAnimationControllerText, "private Storyboard? _timelineStoryboard;");
@@ -5682,8 +6352,8 @@ static partial class Program
         AssertContains(dispatcherText, "errorCode: AutomationErrorCodes.FlashbackActionFailed");
         AssertContains(dispatcherText, "RequestedPositionMs = requestedPositionMs");
         AssertContains(dispatcherText, "LastCommandFailureUtcUnixMs = snapshot.FlashbackPlaybackLastCommandFailureUtcUnixMs");
-        AssertContains(dispatcherText, "var useSelectionRange = GetBool(payload, \"useSelectionRange\") ?? false;");
-        AssertContains(dispatcherText, "_ = GetBool(payload, \"force\") ?? false;");
+        AssertContains(dispatcherText, "var useSelectionRange = GetBool(payload, AutomationPayloadKeys.UseSelectionRange) ?? false;");
+        AssertContains(dispatcherText, "_ = GetBool(payload, AutomationPayloadKeys.Force) ?? false;");
         AssertContains(dispatcherText, "ExportFlashbackAutomationAsync(seconds, outputPath, useSelectionRange, cancellationToken)");
         AssertContains(dispatcherText, "FlashbackExportFailureCodes.Classify(exportResult)");
         AssertContains(dispatcherText, "FailureKind = failureKind");
@@ -5691,9 +6361,9 @@ static partial class Program
         var flashbackValidationText = ReadRepoFile("Sussudio.Automation.Contracts/AutomationCommandCatalog.cs")
             .Replace("\r\n", "\n");
         AssertContains(flashbackValidationText, "Flashback positionMs must be finite, non-negative, and within TimeSpan range.");
-        AssertContains(dispatcherText, "AutomationFlashbackAction.BeginScrub => RequireDouble(payload, \"positionMs\")");
-        AssertContains(dispatcherText, "AutomationFlashbackAction.UpdateScrub => RequireDouble(payload, \"positionMs\")");
-        AssertContains(dispatcherText, "AutomationFlashbackAction.EndScrub => GetDouble(payload, \"positionMs\")");
+        AssertContains(dispatcherText, "AutomationFlashbackAction.BeginScrub => RequireDouble(payload, AutomationPayloadKeys.PositionMs)");
+        AssertContains(dispatcherText, "AutomationFlashbackAction.UpdateScrub => RequireDouble(payload, AutomationPayloadKeys.PositionMs)");
+        AssertContains(dispatcherText, "AutomationFlashbackAction.EndScrub => GetDouble(payload, AutomationPayloadKeys.PositionMs)");
         AssertContains(dispatcherText, "private readonly IAutomationReadinessPort _readinessPort;");
         AssertContains(dispatcherText, "private readonly IAutomationDeviceSelectionPort _deviceSelectionPort;");
         AssertContains(dispatcherText, "private readonly IAutomationSnapshotQueryPort _snapshotQueryPort;");
@@ -5849,8 +6519,11 @@ static partial class Program
         AssertContains(recordingStateText, "internal sealed class BitrateSampleWindow");
         AssertContains(recordingStateText, "public double? AddSampleAndCompute(long tick, long bytes)");
         AssertContains(recordingStateText, "private static double? ComputeAverageBitrate(Queue<(long Tick, long Bytes)> samples)");
-        AssertContains(recordingRuntimeText, "_pendingModeOptionsRefresh = false;");
-        AssertContains(recordingRuntimeText, "RebuildResolutionOptions();");
+        AssertContains(recordingRuntimeText, "if (_pendingModeOptionsRefreshForceRetarget is bool forceSourceAutoRetarget)");
+        AssertContains(recordingRuntimeText, "_pendingModeOptionsRefreshForceRetarget = null;");
+        AssertContains(recordingRuntimeText, "RebuildResolutionOptions(forceSourceAutoRetarget);");
+        AssertContains(recordingRuntimeText, "private void SetPendingModeOptionsRefresh(bool forceSourceAutoRetarget)");
+        AssertContains(recordingRuntimeText, "_pendingModeOptionsRefreshForceRetarget == true || forceSourceAutoRetarget");
         AssertContains(runtimeLifecycleControllerText, "_context.UpdateRecordingStats();");
         AssertDoesNotContain(runtimeLifecycleControllerText, "private void UpdateRecordingStats()");
         AssertDoesNotContain(runtimeLifecycleControllerText, "private static double? ComputeAverageBitrate(");
@@ -6060,6 +6733,8 @@ static partial class Program
         AssertContains(automationAudioText, "WithAudioControlRefreshSuppressed(() => SelectedDeviceAudioMode = normalizedMode);");
         AssertContains(automationAudioText, "WithAudioControlRefreshSuppressed(() => AnalogAudioGainPercent = clampedGain);");
         AssertContains(automationAudioText, "public async Task SelectMicrophoneDeviceAsync(string? deviceId, string? deviceName, CancellationToken cancellationToken = default)");
+        AssertContains(automationAudioText, "throw new AutomationStateConflictException(\"Cannot change microphone device while recording. Stop the recording first.\");");
+        AssertContains(automationAudioText, "throw new AutomationStateConflictException(\"Custom audio input cannot be changed while recording.\");");
         AssertContains(automationAudioText, "Cannot change microphone device while recording. Stop the recording first.");
         AssertContains(automationAudioText, "SelectedMicrophoneDevice = request.Target;");
         AssertContains(automationAudioText, "public Task SetMicrophoneEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
@@ -6068,6 +6743,7 @@ static partial class Program
         AssertContains(automationAudioText, "MicrophoneVolume = Math.Clamp(microphoneVolumePercent, 0.0, 100.0);");
         AssertContains(automationAudioText, "Logger.Log($\"MIC_TOGGLE_NOOP reason=recording_active_idempotent requested={enabled}\");");
         AssertContains(automationAudioText, "Logger.Log($\"MIC_TOGGLE_REFUSED reason=recording_active requested={enabled} current={request.CurrentMicEnabled}\");");
+        AssertContains(automationAudioText, "throw new AutomationStateConflictException(");
         AssertContains(automationAudioText, "Cannot change microphone enable state while recording. Stop the recording first.");
         AssertContains(automationAudioText, "_suppressMicrophoneMonitorUpdate = true;");
         AssertContains(automationAudioText, "await _sessionCoordinator.UpdateMicrophoneMonitorAsync(");
@@ -6090,18 +6766,6 @@ static partial class Program
             true,
             microphoneUpdateIndex >= 0 && microphonePersistIndex > microphoneUpdateIndex,
             "automation microphone persists only after monitor update");
-        foreach (var stalePath in new[]
-        {
-            "MainViewModel.AutomationAudio.cs",
-            "MainViewModel.AutomationDeviceAudio.cs",
-            "MainViewModel.AutomationMicrophone.cs"
-        })
-        {
-            AssertEqual(
-                false,
-                File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", stalePath)),
-                $"stale audio automation partial {stalePath}");
-        }
 
         return Task.CompletedTask;
     }
@@ -6463,7 +7127,7 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs")
                 .Replace("\r\n", "\n");
-        var backendResourcesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.cs")
+        var backendResourcesText = ReadRepoFile("Sussudio/Services/Capture/FlashbackBackendResources.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(exportOperationsText, "internal async Task<FinalizeResult> ExportFlashbackRangeAsync");
@@ -6509,7 +7173,7 @@ static partial class Program
         var backendSnapshot = ExtractMemberCode(exportOperationsText, "SnapshotFlashbackExportBackendAsync");
         AssertContains(backendSnapshot, "var bufferManager = _flashbackBackend.BufferManager;");
         AssertContains(backendSnapshot, "var flashbackSink = _flashbackBackend.Sink;");
-        AssertContains(backendSnapshot, "var flashbackExporter = bufferManager != null\n                ? _flashbackBackend.Exporter ??= new FlashbackExporter()\n                : _flashbackBackend.Exporter;");
+        AssertContains(backendSnapshot, "var flashbackExporter = bufferManager != null\n                ? _flashbackBackend.GetOrCreateExporter()\n                : _flashbackBackend.Exporter;");
         AssertContains(backendSnapshot, "await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);\n            exportOperationLockHeld = true;");
         AssertOccursBefore(backendSnapshot, "await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);", "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);");
         AssertContains(backendSnapshot, "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);\n            if (sessionLockHeld)");
@@ -6526,22 +7190,22 @@ static partial class Program
         AssertContains(exportCore, "if (!exportOperationLockAlreadyHeld)");
         AssertContains(exportCore, "ReleaseFlashbackExportOperationLockIfHeld(ref exportOperationLockHeld);");
         AssertOccursBefore(exportCore, "if (bufferManager == null)", "var exporter = snapshotExporter;");
-        AssertContains(exportCore, "var exporter = snapshotExporter;\n            if (exporter == null)\n            {\n                exporter = _flashbackBackend.Exporter ??= new FlashbackExporter();\n            }");
+        AssertContains(exportCore, "var exporter = snapshotExporter;\n            if (exporter == null)\n            {\n                exporter = _flashbackBackend.GetOrCreateExporter();\n            }");
         AssertContains(exportCore, "var preparedExport = PrepareFlashbackExportRequest(");
         AssertContains(exportCore, "if (preparedExport.FailureResult is { } preparationFailure)");
         AssertContains(exportCoreText, "FLASHBACK_EXPORT_FORCE_ROTATE_FALLBACK reason=force_rotate_timeout");
         AssertContains(exportCore, "live-edge partial fallback: active segment was not closed before timeout; export may omit the newest frames");
         AssertContains(exportCore, "if (preparedExport.ForceRotateFallbackUsed && result.Succeeded)\n            {\n                result = FinalizeResult.Success(");
-        AssertContains(exportCore, "_flashbackExport.RecordLastFlashbackExportResult(exportId, result);\n            _flashbackExport.CompleteFlashbackExportDiagnostics(exportId, result);");
+        AssertContains(exportCore, "_flashbackExport.RecordLastResult(exportId, result);\n            _flashbackExport.CompleteDiagnostics(exportId, result);");
 
         var backendCleanup = ExtractTextBetween(
             backendResourcesText,
-            "public async Task<bool> CleanupArtifactsAfterExportAsync",
-            "    public async Task<FlashbackPlaybackController> StartPreviewBackendAsync");
+            "private async Task<bool> CleanupArtifactsAfterExportAsync",
+            "    public async Task StartPreviewBackendAsync");
         AssertContains(backendCleanup, "FlashbackBackendArtifactCleanupRequest request,");
-        AssertContains(backendCleanup, "bool exportOperationLockAlreadyHeld = false)");
-        AssertContains(backendCleanup, "var lockAcquired = exportOperationLockAlreadyHeld;");
-        AssertContains(backendCleanup, "if (!exportOperationLockAlreadyHeld)");
+        AssertContains(backendCleanup, "_exportOperationLock.WaitAsync(");
+        AssertContains(backendCleanup, "return CleanupArtifactsUnderExportLock(request, mode);");
+        AssertDoesNotContain(backendCleanup, "exportOperationLockAlreadyHeld");
         AssertContains(backendCleanup, "request.Reason");
         AssertContains(backendCleanup, "request.FlashbackExporter.Dispose();");
         AssertContains(backendCleanup, "request.BufferManager.PurgeAllSegments();");
@@ -6549,40 +7213,31 @@ static partial class Program
         AssertContains(backendCleanup, "FLASHBACK_BUFFER_CLEANUP_PRESERVE_RECOVERY mode={mode} reason='{request.Reason}'");
         AssertContains(backendCleanup, "FLASHBACK_BUFFER_CLEANUP_RETIRE mode={mode} reason='{request.Reason}'");
         AssertContains(backendCleanup, "request.BufferManager.MarkSessionRetiredForStartupCleanup(request.Reason);");
-        AssertContains(backendCleanup, "FLASHBACK_BACKEND_CLEANUP_LOCK_REUSED");
-        AssertContains(backendCleanup, "if (lockAcquired && releaseLockOnExit)");
-        AssertContains(backendCleanup, "releaseExportOperationLock(mode);");
-
-        var cleanupBridge = ExtractTextBetween(
-            captureServiceText,
-            "private async Task<bool> CleanupFlashbackBackendArtifactsAfterExportAsync",
-            "\n}");
-        AssertContains(cleanupBridge, "_flashbackBackend.CleanupArtifactsAfterExportAsync(");
-        AssertContains(cleanupBridge, "WaitForFlashbackBackendCleanupExportLockAsync");
-        AssertContains(cleanupBridge, "ReleaseFlashbackBackendCleanupExportLock");
+        AssertContains(backendCleanup, "if (lockAcquired)");
+        AssertContains(backendCleanup, "_exportOperationLock.Release();");
+        var callerHeldCleanup = ExtractDeclaredMemberCode(
+            backendResourcesText,
+            "private static bool CleanupArtifactsUnderExportLock(");
+        AssertDoesNotContain(callerHeldCleanup, "_exportOperationLock");
 
         var disposeBackend = ExtractTextBetween(
             captureServiceText,
             "private async Task DisposeFlashbackPreviewBackendAsync",
-            "    private async Task DisposeFlashbackPreviewBackendCoreAsync");
-        AssertContains(disposeBackend, "await _flashbackExportOperationLock.WaitAsync(cancellationToken).ConfigureAwait(false);");
-        AssertContains(disposeBackend, "exportOperationLockAlreadyHeld: true");
-        AssertContains(disposeBackend, "ReleaseFlashbackExportOperationLockIfHeld(ref exportOperationLockHeld);");
-
-        var disposeBackendCore = ExtractTextBetween(
-            captureServiceText,
-            "private async Task DisposeFlashbackPreviewBackendCoreAsync",
             "    private FlashbackPreviewBackendDisposalRequest CreateFlashbackPreviewBackendDisposalRequest");
-        AssertContains(disposeBackendCore, "FlashbackPreviewBackendDisposalRequest request)");
-        AssertContains(disposeBackendCore, "_flashbackBackend.DisposePreviewBackendAsync(request)");
+        AssertContains(disposeBackend, "await _flashbackExportOperationLock.WaitAsync(cancellationToken).ConfigureAwait(false);");
+        AssertOccursBefore(disposeBackend, "_flashbackBackendLeaseLock.WaitAsync(", "_flashbackExportOperationLock.WaitAsync(");
+        AssertOccursBefore(disposeBackend, "_flashbackExportOperationLock.WaitAsync(", "_flashbackBackend.DisposePreviewBackendUnderExportLockAsync(");
+        AssertContains(disposeBackend, "await _flashbackBackend.DisposePreviewBackendUnderExportLockAsync(");
+        AssertContains(disposeBackend, "CreateFlashbackPreviewBackendDisposalRequest(");
+        AssertContains(disposeBackend, "ReleaseFlashbackExportOperationLockIfHeld(ref exportOperationLockHeld);");
 
         var disposeBackendResources = ExtractTextBetween(
             backendResourcesText,
-            "public async Task DisposePreviewBackendAsync",
-            "    public void ScheduleDeferredArtifactCleanup");
-        AssertContains(disposeBackendResources, "request.ExportOperationLockAlreadyHeld");
+            "public async Task DisposePreviewBackendUnderExportLockAsync",
+            "    private void ScheduleDeferredArtifactCleanup");
+        AssertDoesNotContain(disposeBackendResources, "request.ExportOperationLockAlreadyHeld");
         AssertContains(disposeBackendResources, "request.PurgeSegments ? \"preview_backend_dispose_purge\" : \"preview_backend_dispose\"");
-        AssertContains(disposeBackendResources, "\"preview_backend_dispose\",\n                request.AcquireExportOperationLockAsync,\n                request.ReleaseExportOperationLock,\n                request.ExportOperationLockAlreadyHeld)");
+        AssertContains(disposeBackendResources, "CleanupArtifactsUnderExportLock(cleanupRequest, \"preview_backend_dispose\")");
 
         return Task.CompletedTask;
     }
@@ -6749,7 +7404,7 @@ static partial class Program
         var settingsPersistenceText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
         var settingsLoadApplicationText = settingsPersistenceText;
         var settingsProjectionText = settingsPersistenceText[..settingsPersistenceText.IndexOf("public partial class MainViewModel", StringComparison.Ordinal)];
-        var settingsServiceText = ReadRepoFile("Sussudio/Services/Runtime/RuntimeHelpers.cs").Replace("\r\n", "\n");
+        var settingsServiceText = ReadRepoFile("Sussudio/Services/Runtime/SettingsService.cs").Replace("\r\n", "\n");
 
         AssertContains(settingsServiceText, "public bool? IsStatsVisible { get; set; }");
         AssertContains(settingsServiceText, "public string? SelectedVideoFormat { get; set; }");
@@ -6825,22 +7480,6 @@ static partial class Program
         AssertContains(settingsLoadApplicationText, "_pendingSavedDeviceId = loadPlan.PendingDeviceId;");
         AssertContains(settingsLoadApplicationText, "_pendingSavedAudioDeviceId = loadPlan.PendingAudioDeviceId;");
         AssertContains(settingsLoadApplicationText, "_pendingSavedMicrophoneDeviceId = loadPlan.PendingMicrophoneDeviceId;");
-        foreach (var removedFile in new[]
-        {
-            "MainViewModel.SettingsLoadApplication.cs",
-            "MainViewModel.SettingsLoadApplication.Recording.cs",
-            "MainViewModel.SettingsLoadApplication.Audio.cs",
-            "MainViewModel.SettingsLoadApplication.Ui.cs",
-            "MainViewModel.SettingsLoadApplication.DeviceAudio.cs",
-            "MainViewModel.SettingsLoadApplication.Flashback.cs",
-            "MainViewModel.SettingsLoadApplication.PendingDevices.cs"
-        })
-        {
-            AssertEqual(
-                false,
-                File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", removedFile)),
-                $"{removedFile} folded into MainViewModel.cs");
-        }
         AssertContains(settingsProjectionText, "internal static class MainViewModelSettingsPersistenceProjection");
         AssertContains(settingsProjectionText, "internal static MainViewModelSettingsLoadPlan BuildLoadPlan(");
         AssertContains(settingsProjectionText, "internal static UserSettings BuildSaveSettings(");
@@ -6855,10 +7494,6 @@ static partial class Program
             "MainViewModelSettingsPersistenceProjection.Models.cs"
         })
         {
-            AssertEqual(
-                false,
-                File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", removedProjectionFile)),
-                $"{removedProjectionFile} folded into MainViewModel.cs");
         }
         AssertDoesNotContain(settingsProjectionText, "SettingsService");
         AssertDoesNotContain(settingsProjectionText, "Logger");
@@ -7131,25 +7766,6 @@ static partial class Program
         AssertContains(previewLifecycleControllerText, "string.Equals(SelectedRecordingFormat, other.SelectedRecordingFormat, StringComparison.Ordinal)");
         AssertDoesNotContain(captureModeTransactionsText, "_automationCaptureModeGate");
         AssertDoesNotContain(captureModeTransactionsText, "SetAutomationCaptureModeAsync(");
-        foreach (var stalePath in new[]
-        {
-            "MainViewModel.AutomationSettings.cs",
-            "MainViewModel.AutomationDeviceSelection.cs",
-            "MainViewModel.AutomationCaptureMode.cs",
-            "MainViewModel.AutomationCaptureModeGate.cs",
-            "MainViewModel.AutomationFrameRate.cs",
-            "MainViewModel.AutomationVideoFormat.cs",
-            "MainViewModel.AutomationMjpegDecoderCount.cs",
-            "MainViewModel.CaptureOptionVisibility.cs",
-            "MainViewModel.HdrModeChanges.cs",
-            "MainViewModel.AutomationCaptureSettings.cs"
-        })
-        {
-            AssertEqual(
-                false,
-                File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", stalePath)),
-                $"stale capture settings automation partial {stalePath}");
-        }
 
         return Task.CompletedTask;
     }
@@ -7171,7 +7787,7 @@ static partial class Program
             "public Task SetCustomAudioInputEnabledAsync");
 
         AssertContains(deviceSelectionAutomationText, "public Task RefreshDevicesForAutomationAsync");
-        AssertContains(deviceSelectionAutomationText, "=> InvokeOnUiThreadAsync(() => _deviceRefreshController.RefreshDevicesAsync(cancellationToken, throwOnScanFailure: true), cancellationToken);");
+        AssertContains(deviceSelectionAutomationText, "=> InvokeOnUiThreadAsync(() => _deviceRefreshController.RefreshDevicesAsync(throwOnScanFailure: true, cancellationToken: cancellationToken), cancellationToken);");
         AssertContains(deviceSelectionAutomationText, "public Task SelectDeviceAsync");
         AssertContains(deviceSelectionAutomationText, "private CaptureDevice? ResolveDevice");
         AssertContains(deviceSelectionAutomationText, "public Task SelectAudioInputDeviceAsync");
@@ -7182,7 +7798,7 @@ static partial class Program
         AssertContains(deviceSelectionAutomationText, ".Take(2)");
         AssertContains(deviceSelectionAutomationText, "return partialMatches.Length == 1 ? partialMatches[0] : null;");
         AssertContains(rootViewModelText, "public Task RefreshDevicesAsync(CancellationToken cancellationToken = default)");
-        AssertContains(rootViewModelText, "=> _deviceRefreshController.RefreshDevicesAsync(cancellationToken);");
+        AssertContains(rootViewModelText, "=> _deviceRefreshController.RefreshDevicesAsync(cancellationToken: cancellationToken);");
         AssertContains(deviceRefreshControllerText, "namespace Sussudio.Controllers;");
         AssertContains(deviceRefreshControllerText, "internal sealed class MainViewModelDeviceRefreshController");
         AssertContains(deviceRefreshControllerText, "internal sealed class MainViewModelDeviceRefreshControllerContext");
@@ -7213,7 +7829,7 @@ static partial class Program
 
         AssertContains(captureModeTransactionsText, "public Task SetHdrEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertContains(setHdrBlock, "return InvokeOnUiThreadAsync(async () =>");
-        AssertContains(captureModeTransactionsText, "throw new InvalidOperationException(HdrToggleBlockedWhileRecordingMessage);");
+        AssertContains(captureModeTransactionsText, "throw new AutomationStateConflictException(HdrToggleBlockedWhileRecordingMessage);");
         AssertContains(captureModeTransactionsText, "if (enabled && !IsHdrAvailable)");
         AssertContains(captureModeTransactionsText, "throw new InvalidOperationException(\"HDR is not available on the selected device.\");");
         AssertContains(setHdrBlock, "var rollback = CaptureSelectionSnapshot();");
@@ -7227,12 +7843,11 @@ static partial class Program
         AssertContains(setHdrBlock, "throw new InvalidOperationException($\"Failed to apply automation HDR toggle; {rollbackStatus}.\");");
         AssertDoesNotContain(setHdrBlock, "EnqueueUiOperation(() => ReinitializeDeviceAsync(\"HDR toggle\"), \"hdr toggle reinitialize\");");
         AssertContains(captureModeTransactionsText, "public Task SetTrueHdrPreviewEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
-        AssertContains(captureModeTransactionsText, "throw new InvalidOperationException(\"True HDR preview cannot be changed while recording.\");");
+        AssertContains(captureModeTransactionsText, "throw new AutomationStateConflictException(\"True HDR preview cannot be changed while recording.\");");
         AssertContains(captureModeTransactionsText, "IsTrueHdrPreviewEnabled = enabled;");
         AssertContains(captureModeTransactionsText, "partial void OnIsHdrEnabledChanged(bool value)");
         AssertContains(captureModeTransactionsText, "if (_isRevertingHdrToggle)");
-        AssertContains(captureModeTransactionsText, "_pendingSdrAutoSelectionForDeviceChange = false;");
-        AssertContains(captureModeTransactionsText, "_pendingSdrAutoFriendlyFrameRateBucket = null;");
+        AssertContains(captureModeTransactionsText, "_captureModeSelection.ClearPendingSdrAutoSelection();");
         AssertContains(captureModeTransactionsText, "IsHdrEnabled = !value;");
         AssertContains(captureModeTransactionsText, "StatusText = HdrToggleBlockedWhileRecordingMessage;");
         AssertContains(captureModeTransactionsText, "ResetModeSelectionState();");
@@ -7592,6 +8207,9 @@ static partial class Program
         AssertContains(diagnostics.EvaluationText, "private static string FormatPreviewSlowFrameAlertDetail");
         AssertContains(diagnostics.EvaluationText, "private static bool IsCaptureOnePercentLowDegraded(");
         AssertContains(diagnostics.EvaluationText, "private PerformanceEvaluation EvaluatePerformance(");
+        AssertContains(
+            diagnostics.EvaluationText,
+            "private PerformanceEvaluation EvaluatePerformance(\n        ViewModelRuntimeSnapshot viewModel,\n        CaptureHealthSnapshot health,\n        PreviewRuntimeSnapshot previewRuntime,");
         AssertContains(diagnostics.EvaluationText, "private static DiagnosticEvaluation BuildDiagnosticEvaluation(");
         AssertContains(diagnostics.EvaluationText, "var lanes = BuildDiagnosticEvaluationLanes(");
         AssertContains(diagnostics.EvaluationText, "var flashbackDiagnostic = FlashbackDiagnosticEvaluator.TryBuildFlashbackDiagnosticEvaluation(");
@@ -7628,181 +8246,185 @@ static partial class Program
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "\"Flashback backend settings differ from requested settings.\"");
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "private static DiagnosticEvaluation? TryBuildFlashbackRecordingDegradationDiagnosticEvaluation(");
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "\"Flashback recording path is dropping or backing up.\"");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "private static DiagnosticEvaluation? TryBuildRealtimeDiagnosticEvaluation(");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "TryBuildRealtimeStateDiagnosticEvaluation(health, isPreviewing, isRecording, lanes)");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "TryBuildRealtimeRecordingDiagnosticEvaluation(captureRuntime, health, isRecording, lanes)");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "TryBuildRealtimeSourceDiagnosticEvaluation(health, isPreviewing, visualCadenceHealthy, lanes)");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "TryBuildRealtimeMjpegDiagnosticEvaluation(health, recentMjpeg, lanes)");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "TryBuildRealtimePreviewDiagnosticEvaluation(");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "private static DiagnosticEvaluation? TryBuildRealtimeStateDiagnosticEvaluation(");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "\"diagnostic_unavailable\"");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "private static DiagnosticEvaluation? TryBuildRealtimeRecordingDiagnosticEvaluation(");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "\"recording\"");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "\"audio\"");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "private static DiagnosticEvaluation? TryBuildRealtimeSourceDiagnosticEvaluation(");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "\"source_capture\"");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "private static DiagnosticEvaluation? TryBuildRealtimeMjpegDiagnosticEvaluation(");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "\"source_signal\"");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "\"mjpeg_decode\"");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "private static DiagnosticEvaluation? TryBuildRealtimePreviewDiagnosticEvaluation(");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "TryBuildRealtimePreviewSchedulerDiagnosticEvaluation(");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "TryBuildRealtimePreviewRendererDiagnosticEvaluation(lanes)");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "TryBuildRealtimePreviewPresentDiagnosticEvaluation(");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "private static DiagnosticEvaluation? TryBuildRealtimePreviewSchedulerDiagnosticEvaluation(");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "\"preview_scheduler\"");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "private static DiagnosticEvaluation? TryBuildRealtimePreviewRendererDiagnosticEvaluation(");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "\"renderer\"");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "private static DiagnosticEvaluation? TryBuildRealtimePreviewPresentDiagnosticEvaluation(");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "\"present_display\"");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "Preview scheduler failed to submit frames.");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "Renderer pacing is the likely preview bottleneck.");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "Present/display cadence is the likely preview bottleneck.");
-        AssertContains(diagnostics.DiagnosticEvaluationRealtimeText, "Present/display 1% low is below target.");
-        AssertContains(diagnostics.DiagnosticEvaluationLanesText, "private static DiagnosticEvaluationLanes BuildDiagnosticEvaluationLanes(");
-        AssertContains(diagnostics.DiagnosticEvaluationLanesText, "BuildSourceLane(health)");
-        AssertContains(diagnostics.DiagnosticEvaluationLanesText, "BuildPreviewLane(");
-        AssertContains(diagnostics.DiagnosticEvaluationLanesText, "BuildRenderLane(previewRuntime, recentRenderer)");
-        AssertContains(diagnostics.DiagnosticEvaluationLanesText, "BuildRecordingLane(captureRuntime)");
-        AssertContains(diagnostics.DiagnosticEvaluationLanesText, "BuildAudioLane(captureRuntime)");
-        AssertContains(diagnostics.DiagnosticEvaluationLanesText, "BuildFlashbackRecordingLane(health)");
-        AssertContains(diagnostics.DiagnosticEvaluationLanesText, "private static string BuildDecodeLane(");
-        AssertContains(diagnostics.DiagnosticEvaluationLanesText, "private static string BuildRecordingLane(CaptureRuntimeSnapshot captureRuntime)");
-        AssertContains(diagnostics.DiagnosticEvaluationLanesText, "private static string BuildAudioLane(CaptureRuntimeSnapshot captureRuntime)");
-        AssertContains(diagnostics.DiagnosticEvaluationLanesText, "private static string BuildFlashbackRecordingLane(CaptureHealthSnapshot health)");
-        AssertContains(diagnostics.DiagnosticEvaluationLanesText, "private static string BuildFlashbackExportLane(CaptureHealthSnapshot health)");
-        AssertContains(diagnostics.DiagnosticEvaluationLanesText, "private static string BuildFlashbackTempCacheLane(CaptureHealthSnapshot health)");
-        AssertContains(diagnostics.DiagnosticEvaluationLanesText, "private static string BuildFlashbackPlaybackCommandLane(");
-        AssertContains(diagnostics.DiagnosticEvaluationLanesText, "private static string BuildFlashbackPlaybackPerformanceLane(");
-        AssertContains(diagnostics.DiagnosticEvaluationLanesText, "private static string BuildSourceLane(CaptureHealthSnapshot health)");
-        AssertContains(diagnostics.DiagnosticEvaluationLanesText, "private static string BuildSourceSignalLane(");
-        AssertContains(diagnostics.DiagnosticEvaluationLanesText, "private static string BuildPreviewLane(");
-        AssertContains(diagnostics.DiagnosticEvaluationLanesText, "private static DiagnosticEvaluationRenderLane BuildRenderLane(");
-        AssertContains(diagnostics.DiagnosticEvaluationLanesText, "private static string BuildPresentLane(");
-        AssertContains(diagnostics.DiagnosticEvaluationLanesText, "private static string BuildVisualLane(CaptureHealthSnapshot health)");
-        AssertContains(diagnostics.DiagnosticEvaluationLanesText, "private readonly record struct DiagnosticEvaluationRenderLane(");
-        AssertContains(diagnostics.DiagnosticEvaluationLanesText, "var sourceTarget =");
+        AssertContains(diagnostics.EvaluationText, "private static DiagnosticEvaluation? TryBuildRealtimeDiagnosticEvaluation(");
+        AssertContains(diagnostics.EvaluationText, "TryBuildRealtimeStateDiagnosticEvaluation(health, isPreviewing, isRecording, lanes)");
+        AssertContains(diagnostics.EvaluationText, "TryBuildRealtimeRecordingDiagnosticEvaluation(captureRuntime, health, isRecording, lanes)");
+        AssertContains(diagnostics.EvaluationText, "TryBuildRealtimeSourceDiagnosticEvaluation(health, isPreviewing, visualCadenceHealthy, lanes)");
+        AssertContains(diagnostics.EvaluationText, "TryBuildRealtimeMjpegDiagnosticEvaluation(health, recentMjpeg, lanes)");
+        AssertContains(diagnostics.EvaluationText, "TryBuildRealtimePreviewDiagnosticEvaluation(");
+        AssertContains(diagnostics.EvaluationText, "private static DiagnosticEvaluation? TryBuildRealtimeStateDiagnosticEvaluation(");
+        AssertContains(diagnostics.EvaluationText, "\"diagnostic_unavailable\"");
+        AssertContains(diagnostics.EvaluationText, "private static DiagnosticEvaluation? TryBuildRealtimeRecordingDiagnosticEvaluation(");
+        AssertContains(diagnostics.EvaluationText, "\"recording\"");
+        AssertContains(diagnostics.EvaluationText, "\"audio\"");
+        AssertContains(diagnostics.EvaluationText, "private static DiagnosticEvaluation? TryBuildRealtimeSourceDiagnosticEvaluation(");
+        AssertContains(diagnostics.EvaluationText, "\"source_capture\"");
+        AssertContains(diagnostics.EvaluationText, "private static DiagnosticEvaluation? TryBuildRealtimeMjpegDiagnosticEvaluation(");
+        AssertContains(diagnostics.EvaluationText, "\"source_signal\"");
+        AssertContains(diagnostics.EvaluationText, "\"mjpeg_decode\"");
+        AssertContains(diagnostics.EvaluationText, "private static DiagnosticEvaluation? TryBuildRealtimePreviewDiagnosticEvaluation(");
+        AssertContains(diagnostics.EvaluationText, "TryBuildRealtimePreviewSchedulerDiagnosticEvaluation(");
+        AssertContains(diagnostics.EvaluationText, "TryBuildRealtimePreviewRendererDiagnosticEvaluation(lanes)");
+        AssertContains(diagnostics.EvaluationText, "TryBuildRealtimePreviewPresentDiagnosticEvaluation(");
+        AssertContains(diagnostics.EvaluationText, "private static DiagnosticEvaluation? TryBuildRealtimePreviewSchedulerDiagnosticEvaluation(");
+        AssertContains(diagnostics.EvaluationText, "\"preview_scheduler\"");
+        AssertContains(diagnostics.EvaluationText, "private static DiagnosticEvaluation? TryBuildRealtimePreviewRendererDiagnosticEvaluation(");
+        AssertContains(diagnostics.EvaluationText, "\"renderer\"");
+        AssertContains(diagnostics.EvaluationText, "private static DiagnosticEvaluation? TryBuildRealtimePreviewPresentDiagnosticEvaluation(");
+        AssertContains(diagnostics.EvaluationText, "\"present_display\"");
+        AssertContains(diagnostics.EvaluationText, "Preview scheduler failed to submit frames.");
+        AssertContains(diagnostics.EvaluationText, "Renderer pacing is the likely preview bottleneck.");
+        AssertContains(diagnostics.EvaluationText, "Present/display cadence is the likely preview bottleneck.");
+        AssertContains(diagnostics.EvaluationText, "Present/display 1% low is below target.");
+        AssertContains(diagnostics.EvaluationText, "private static DiagnosticEvaluationLanes BuildDiagnosticEvaluationLanes(");
+        AssertContains(diagnostics.EvaluationText, "BuildSourceLane(health)");
+        AssertContains(diagnostics.EvaluationText, "BuildPreviewLane(");
+        AssertContains(diagnostics.EvaluationText, "BuildRenderLane(previewRuntime, recentRenderer)");
+        AssertContains(diagnostics.EvaluationText, "BuildRecordingLane(captureRuntime)");
+        AssertContains(diagnostics.EvaluationText, "BuildAudioLane(captureRuntime)");
+        AssertContains(diagnostics.EvaluationText, "BuildFlashbackRecordingLane(health)");
+        AssertContains(diagnostics.EvaluationText, "private static string BuildDecodeLane(");
+        AssertContains(diagnostics.EvaluationText, "private static string BuildRecordingLane(CaptureRuntimeSnapshot captureRuntime)");
+        AssertContains(diagnostics.EvaluationText, "private static string BuildAudioLane(CaptureRuntimeSnapshot captureRuntime)");
+        AssertContains(diagnostics.EvaluationText, "private static string BuildFlashbackRecordingLane(CaptureHealthSnapshot health)");
+        AssertContains(diagnostics.EvaluationText, "private static string BuildFlashbackExportLane(CaptureHealthSnapshot health)");
+        AssertContains(diagnostics.EvaluationText, "private static string BuildFlashbackTempCacheLane(CaptureHealthSnapshot health)");
+        AssertContains(diagnostics.EvaluationText, "private static string BuildFlashbackPlaybackCommandLane(");
+        AssertContains(diagnostics.EvaluationText, "private static string BuildFlashbackPlaybackPerformanceLane(");
+        AssertContains(diagnostics.EvaluationText, "private static string BuildSourceLane(CaptureHealthSnapshot health)");
+        AssertContains(diagnostics.EvaluationText, "private static string BuildSourceSignalLane(");
+        AssertContains(diagnostics.EvaluationText, "private static string BuildPreviewLane(");
+        AssertContains(diagnostics.EvaluationText, "private static DiagnosticEvaluationRenderLane BuildRenderLane(");
+        AssertContains(diagnostics.EvaluationText, "private static string BuildPresentLane(");
+        AssertContains(diagnostics.EvaluationText, "private static string BuildVisualLane(CaptureHealthSnapshot health)");
+        AssertContains(diagnostics.EvaluationText, "private readonly record struct DiagnosticEvaluationRenderLane(");
+        AssertContains(diagnostics.EvaluationText, "var sourceTarget =");
         // internal, not private: FlashbackDiagnosticEvaluator takes it as a parameter.
-        AssertContains(diagnostics.DiagnosticEvaluationLanesText, "internal readonly record struct DiagnosticEvaluationLanes(");
+        AssertContains(diagnostics.EvaluationText, "internal readonly record struct DiagnosticEvaluationLanes(");
         AssertDoesNotContain(diagnostics.HubText, "private PerformanceEvaluation EvaluatePerformance(");
         AssertDoesNotContain(diagnostics.HubText, "private static DiagnosticEvaluation BuildDiagnosticEvaluation(");
     }
 
     private static void AssertDiagnosticsAlertEventOwnership(AutomationDiagnosticsHubSourceFamily diagnostics)
     {
-        AssertContains(diagnostics.AlertsText, "private void UpdateAlerts(AutomationSnapshot snapshot, FlashbackRecordingRecentCounters flashbackRecordingRecent)");
-        AssertContains(diagnostics.AlertsText, "private void ObserveFlashbackExportCompletion(AutomationSnapshot snapshot)");
-        AssertContains(diagnostics.AlertsText, "private void AddEventThrottled(");
-        AssertContains(diagnostics.AlertsText, "private void SetAlertState(");
-        AssertContains(diagnostics.AlertsText, "public IReadOnlyList<DiagnosticsEvent> GetRecentEvents");
-        AssertContains(diagnostics.AlertsText, "UpdateSignalAlerts(");
-        AssertContains(diagnostics.AlertsText, "private void UpdateSignalAlerts(");
-        AssertContains(diagnostics.AlertsText, "UpdatePreviewSignalAlerts(");
-        AssertContains(diagnostics.AlertsText, "UpdateAudioSignalAlerts(snapshot);");
-        AssertContains(diagnostics.AlertsText, "UpdateRecordingGrowthAlerts(snapshot);");
-        AssertContains(diagnostics.AlertsText, "UpdateCaptureSignalAlerts(");
-        AssertContains(diagnostics.AlertsText, "private void UpdatePreviewSignalAlerts(");
-        AssertContains(diagnostics.AlertsText, "\"preview-blank\"");
-        AssertContains(diagnostics.AlertsText, "\"preview-stall\"");
-        AssertContains(diagnostics.AlertsText, "\"preview-startup-timeout\"");
-        AssertContains(diagnostics.AlertsText, "\"preview-startup-failed\"");
-        AssertContains(diagnostics.AlertsText, "\"preview-cadence-slow\"");
-        AssertContains(diagnostics.AlertsText, "\"preview-display-low-1pct\"");
-        AssertContains(diagnostics.AlertsText, "private void UpdateCaptureSignalAlerts(");
-        AssertContains(diagnostics.AlertsText, "\"capture-cadence-drop\"");
-        AssertContains(diagnostics.AlertsText, "\"capture-cadence-low-1pct\"");
-        AssertContains(diagnostics.AlertsText, "private void UpdateAudioSignalAlerts(");
-        AssertContains(diagnostics.AlertsText, "\"audio-muted-suspect\"");
-        AssertContains(diagnostics.AlertsText, "private void UpdateRecordingGrowthAlerts(");
-        AssertContains(diagnostics.AlertsText, "RecordingFailureCodes.NotGrowing");
-        AssertContains(diagnostics.AlertsText, "var nowUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();");
-        AssertContains(diagnostics.AlertsText, "UpdateFlashbackRecordingAlerts(snapshot, flashbackRecordingRecent);");
-        AssertContains(diagnostics.AlertsText, "UpdateFlashbackPlaybackAlerts(snapshot, nowUnixMs);");
-        AssertContains(diagnostics.AlertsText, "private void UpdateFlashbackRecordingAlerts(");
-        AssertContains(diagnostics.AlertsText, "UpdateFlashbackExportAlerts(");
-        AssertContains(diagnostics.AlertsText, "UpdateFlashbackStorageAlerts(snapshot);");
-        AssertContains(diagnostics.AlertsText, "UpdateFlashbackEncoderAlerts(snapshot);");
-        AssertContains(diagnostics.AlertsText, "UpdateFlashbackRecordingDegradationAlert(");
-        AssertContains(diagnostics.AlertsText, "\"flashback-recording-degraded\"");
-        AssertContains(diagnostics.AlertsText, "private void UpdateFlashbackExportAlerts(");
-        AssertContains(diagnostics.AlertsText, "\"flashback-export-stalled\"");
-        AssertContains(diagnostics.AlertsText, "\"flashback-export-rotation-gap\"");
-        AssertContains(diagnostics.AlertsText, "private void UpdateFlashbackStorageAlerts(");
-        AssertContains(diagnostics.AlertsText, "\"flashback-temp-cache-pressure\"");
-        AssertContains(diagnostics.AlertsText, "private void UpdateFlashbackEncoderAlerts(");
-        AssertContains(diagnostics.AlertsText, "\"flashback-encoding-failed\"");
-        AssertContains(diagnostics.AlertsText, "private void UpdateFlashbackRecordingDegradationAlert(");
-        AssertContains(diagnostics.AlertsText, "private void UpdateFlashbackPlaybackAlerts(");
-        AssertContains(diagnostics.AlertsText, "UpdateFlashbackPlaybackCommandAlerts(snapshot, nowUnixMs);");
-        AssertContains(diagnostics.AlertsText, "UpdateFlashbackPlaybackPerformanceAlerts(snapshot);");
-        AssertContains(diagnostics.AlertsText, "\"flashback-playback-audio-master-fallback\"");
-        AssertContains(diagnostics.AlertsText, "private void UpdateFlashbackPlaybackPerformanceAlerts(");
-        AssertContains(diagnostics.AlertsText, "UpdateFlashbackPlaybackCadenceAlerts(");
-        AssertContains(diagnostics.AlertsText, "UpdateFlashbackPlaybackAudioAlerts(snapshot, playbackActive);");
-        AssertContains(diagnostics.AlertsText, "UpdateFlashbackPlaybackSubmitFailureAlert(snapshot);");
-        AssertContains(diagnostics.AlertsText, "private void UpdateFlashbackPlaybackSubmitFailureAlert(");
-        AssertContains(diagnostics.AlertsText, "\"flashback-playback-submit-failures\"");
-        AssertContains(diagnostics.AlertsText, "private void UpdateFlashbackPlaybackAudioAlerts(");
-        AssertContains(diagnostics.AlertsText, "\"flashback-playback-audio-queue-backlog\"");
-        AssertContains(diagnostics.AlertsText, "private void UpdateFlashbackPlaybackCommandAlerts(");
-        AssertContains(diagnostics.AlertsText, "\"flashback-playback-command-stalled\"");
-        AssertContains(diagnostics.AlertsText, "private void UpdateFlashbackPlaybackCadenceAlerts(");
-        AssertContains(diagnostics.AlertsText, "\"flashback-playback-slow\"");
-        AssertDoesNotContain(diagnostics.HubText, "private void UpdateAlerts(AutomationSnapshot snapshot, FlashbackRecordingRecentCounters flashbackRecordingRecent)");
+        AssertContains(diagnostics.SnapshotsText, "private void UpdateAlerts(\n        AutomationSnapshot snapshot,\n        FlashbackRecordingRecentCounters flashbackRecordingRecent,\n        bool playbackActive,\n        PreviewStartupState? previewStartupState)");
+        AssertContains(diagnostics.SnapshotsText, "private void ObserveFlashbackExportCompletion(AutomationSnapshot snapshot)");
+        AssertContains(diagnostics.SnapshotsText, "private void AddEventThrottled(");
+        AssertContains(diagnostics.SnapshotsText, "private void SetAlertState(");
+        AssertContains(diagnostics.SnapshotsText, "public IReadOnlyList<DiagnosticsEvent> GetRecentEvents");
+        AssertContains(diagnostics.SnapshotsText, "UpdateSignalAlerts(");
+        AssertContains(diagnostics.SnapshotsText, "private void UpdateSignalAlerts(");
+        AssertContains(diagnostics.SnapshotsText, "UpdatePreviewSignalAlerts(");
+        AssertContains(diagnostics.SnapshotsText, "UpdateAudioSignalAlerts(snapshot);");
+        AssertContains(diagnostics.SnapshotsText, "UpdateRecordingGrowthAlerts(snapshot);");
+        AssertContains(diagnostics.SnapshotsText, "UpdateCaptureSignalAlerts(");
+        AssertContains(diagnostics.SnapshotsText, "private void UpdatePreviewSignalAlerts(");
+        AssertContains(diagnostics.SnapshotsText, "\"preview-blank\"");
+        AssertContains(diagnostics.SnapshotsText, "\"preview-stall\"");
+        AssertContains(diagnostics.SnapshotsText, "\"preview-startup-timeout\"");
+        AssertContains(diagnostics.SnapshotsText, "\"preview-startup-failed\"");
+        AssertContains(diagnostics.SnapshotsText, "\"preview-cadence-slow\"");
+        AssertContains(diagnostics.SnapshotsText, "\"preview-display-low-1pct\"");
+        AssertContains(diagnostics.SnapshotsText, "private void UpdateCaptureSignalAlerts(");
+        AssertContains(diagnostics.SnapshotsText, "\"capture-cadence-drop\"");
+        AssertContains(diagnostics.SnapshotsText, "\"capture-cadence-low-1pct\"");
+        AssertContains(diagnostics.SnapshotsText, "private void UpdateAudioSignalAlerts(");
+        AssertContains(diagnostics.SnapshotsText, "\"audio-muted-suspect\"");
+        AssertContains(diagnostics.SnapshotsText, "private void UpdateRecordingGrowthAlerts(");
+        AssertContains(diagnostics.SnapshotsText, "RecordingFailureCodes.NotGrowing");
+        AssertContains(diagnostics.SnapshotsText, "var nowUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();");
+        AssertContains(diagnostics.SnapshotsText, "UpdateFlashbackRecordingAlerts(snapshot, flashbackRecordingRecent);");
+        AssertContains(diagnostics.SnapshotsText, "var playbackActive = health.FlashbackPlaybackState == FlashbackPlaybackState.Playing;");
+        AssertContains(diagnostics.SnapshotsText, "UpdateFlashbackPlaybackAlerts(snapshot, nowUnixMs, playbackActive);");
+        AssertContains(diagnostics.SnapshotsText, "private void UpdateFlashbackRecordingAlerts(");
+        AssertContains(diagnostics.SnapshotsText, "UpdateFlashbackExportAlerts(");
+        AssertContains(diagnostics.SnapshotsText, "UpdateFlashbackStorageAlerts(snapshot);");
+        AssertContains(diagnostics.SnapshotsText, "UpdateFlashbackEncoderAlerts(snapshot);");
+        AssertContains(diagnostics.SnapshotsText, "UpdateFlashbackRecordingDegradationAlert(");
+        AssertContains(diagnostics.SnapshotsText, "\"flashback-recording-degraded\"");
+        AssertContains(diagnostics.SnapshotsText, "private void UpdateFlashbackExportAlerts(");
+        AssertContains(diagnostics.SnapshotsText, "\"flashback-export-stalled\"");
+        AssertContains(diagnostics.SnapshotsText, "\"flashback-export-rotation-gap\"");
+        AssertContains(diagnostics.SnapshotsText, "private void UpdateFlashbackStorageAlerts(");
+        AssertContains(diagnostics.SnapshotsText, "\"flashback-temp-cache-pressure\"");
+        AssertContains(diagnostics.SnapshotsText, "private void UpdateFlashbackEncoderAlerts(");
+        AssertContains(diagnostics.SnapshotsText, "\"flashback-encoding-failed\"");
+        AssertContains(diagnostics.SnapshotsText, "private void UpdateFlashbackRecordingDegradationAlert(");
+        AssertContains(diagnostics.SnapshotsText, "private void UpdateFlashbackPlaybackAlerts(");
+        AssertContains(diagnostics.SnapshotsText, "UpdateFlashbackPlaybackCommandAlerts(snapshot, nowUnixMs);");
+        AssertContains(diagnostics.SnapshotsText, "UpdateFlashbackPlaybackPerformanceAlerts(snapshot, playbackActive);");
+        AssertContains(diagnostics.SnapshotsText, "\"flashback-playback-audio-master-fallback\"");
+        AssertContains(diagnostics.SnapshotsText, "private void UpdateFlashbackPlaybackPerformanceAlerts(");
+        AssertContains(diagnostics.SnapshotsText, "UpdateFlashbackPlaybackCadenceAlerts(");
+        AssertContains(diagnostics.SnapshotsText, "UpdateFlashbackPlaybackAudioAlerts(snapshot, playbackActive);");
+        AssertContains(diagnostics.SnapshotsText, "UpdateFlashbackPlaybackSubmitFailureAlert(snapshot);");
+        AssertContains(diagnostics.SnapshotsText, "private void UpdateFlashbackPlaybackSubmitFailureAlert(");
+        AssertContains(diagnostics.SnapshotsText, "\"flashback-playback-submit-failures\"");
+        AssertContains(diagnostics.SnapshotsText, "private void UpdateFlashbackPlaybackAudioAlerts(");
+        AssertContains(diagnostics.SnapshotsText, "\"flashback-playback-audio-queue-backlog\"");
+        AssertContains(diagnostics.SnapshotsText, "private void UpdateFlashbackPlaybackCommandAlerts(");
+        AssertContains(diagnostics.SnapshotsText, "\"flashback-playback-command-stalled\"");
+        AssertContains(diagnostics.SnapshotsText, "private void UpdateFlashbackPlaybackCadenceAlerts(");
+        AssertContains(diagnostics.SnapshotsText, "\"flashback-playback-slow\"");
+        AssertContains(diagnostics.SnapshotsText, "previewStartupState == PreviewStartupState.WaitingForFirstVisual");
+        AssertContains(diagnostics.SnapshotsText, "previewStartupState == PreviewStartupState.Failed");
+        AssertDoesNotContain(diagnostics.SnapshotsText, "string.Equals(snapshot.FlashbackPlaybackState, \"Playing\", StringComparison.OrdinalIgnoreCase)");
+        AssertDoesNotContain(diagnostics.SnapshotsText, "string.Equals(snapshot.PreviewStartupState");
+        AssertDoesNotContain(diagnostics.HubText, "private void UpdateAlerts(");
     }
 
     private static void AssertDiagnosticsRefreshSourceReaderOwnership()
     {
-        var sourceReaderSources = ReadMfSourceReaderVideoCaptureSourceFamily();
-        var sourceReaderRootText = sourceReaderSources.RootText;
-        var sourceReaderFrameLayoutText = sourceReaderSources.FrameLayoutText;
-        var sourceReaderLifecycleText = sourceReaderSources.LifecycleText;
-        var sourceReaderInitializationText = sourceReaderSources.InitializationText;
-        var sourceReaderInitializedSessionText = sourceReaderSources.InitializedSessionText;
-        var sourceReaderReadLoopText = sourceReaderSources.ReadLoopText;
-        var sourceReaderText = sourceReaderSources.SourceFamilyText;
+        var sourceReaderText = ReadNormalizedRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs");
+
         AssertContains(sourceReaderText, "Keep source cadence state coherent with diagnostics snapshots");
         AssertContains(sourceReaderText, "lock (_cadenceLock)");
-        AssertContains(sourceReaderLifecycleText, "public SourceCadenceMetrics GetSourceCadenceMetrics()");
-        AssertContains(sourceReaderLifecycleText, "private void TrackSourceCadence(long mfTimestamp100ns)");
-        AssertContains(sourceReaderRootText, "private unsafe void DiagnoseVtable(IMFSample sample)");
-        AssertContains(sourceReaderRootText, "VTABLE_DIAG RAW slot35_GetSampleTime");
-        AssertContains(sourceReaderRootText, "private bool TryGetDxgiTexture(IMFMediaBuffer buffer, out IntPtr gpuTexture, out int gpuSubresource)");
-        AssertContains(sourceReaderRootText, "private static readonly Guid ID3D11Texture2DIid");
-        AssertContains(sourceReaderRootText, "MF_SOURCE_READER_D3D_RESOURCE_FAIL");
+        AssertContains(sourceReaderText, "public SourceCadenceMetrics GetSourceCadenceMetrics()");
+        AssertContains(sourceReaderText, "private void TrackSourceCadence(long mfTimestamp100ns)");
+        AssertContains(sourceReaderText, "private unsafe void DiagnoseVtable(IMFSample sample)");
+        AssertContains(sourceReaderText, "VTABLE_DIAG RAW slot35_GetSampleTime");
+        AssertContains(sourceReaderText, "private bool TryGetDxgiTexture(IMFMediaBuffer buffer, out IntPtr gpuTexture, out int gpuSubresource)");
+        AssertContains(sourceReaderText, "private static readonly Guid ID3D11Texture2DIid");
+        AssertContains(sourceReaderText, "MF_SOURCE_READER_D3D_RESOURCE_FAIL");
         AssertContains(ReadRepoFile("Sussudio/Services/Contracts/ServiceContracts.cs"), "public static int GetFrameSizeBytes(int width, int height, bool isP010)");
-        AssertDoesNotContain(sourceReaderFrameLayoutText, "public static int GetFrameSizeBytes");
-        AssertContains(sourceReaderFrameLayoutText, "PooledVideoFrame.GetFrameSizeBytes");
-        AssertContains(sourceReaderFrameLayoutText, "private unsafe static void CopyYuvWithStride(");
-        AssertContains(sourceReaderFrameLayoutText, "private static string SubtypeGuidToName(Guid subtype)");
-        AssertContains(sourceReaderLifecycleText, "public void StartReading(RawFrameCallback onFrame, CancellationToken ct)");
-        AssertContains(sourceReaderLifecycleText, "public async Task StopAsync()");
-        AssertContains(sourceReaderLifecycleText, "private void ReadLoop(RawFrameCallback? onFrame, DualFrameCallback? onDualFrame, CancellationToken ct)");
-        AssertContains(sourceReaderLifecycleText, "private void ReleaseReaderAndSource()");
-        AssertContains(sourceReaderLifecycleText, "private void SignalFatalError(Exception ex)");
-        AssertContains(sourceReaderInitializationText, "public Task InitializeAsync(string deviceSymbolicLink, VideoCaptureNegotiationOptions options)");
-        AssertContains(sourceReaderInitializationText, "MF_SOURCE_READER_INIT ");
-        AssertContains(sourceReaderInitializationText, "SelectConvertedMediaType(");
-        AssertContains(sourceReaderInitializationText, "ApplyCurrentMediaTypeAndReconcileActualOutput(");
-        AssertContains(sourceReaderInitializationText, "CommitInitializedRuntimeState(");
-        AssertContains(sourceReaderInitializedSessionText, "private readonly record struct SourceReaderNegotiatedMode(");
-        AssertContains(sourceReaderInitializedSessionText, "private SourceReaderNegotiatedMode ApplyCurrentMediaTypeAndReconcileActualOutput(");
-        AssertContains(sourceReaderInitializedSessionText, "sourceReader.GetCurrentMediaType(");
-        AssertContains(sourceReaderInitializedSessionText, "private void ValidateNegotiatedOutputMode(");
-        AssertContains(sourceReaderInitializedSessionText, "private void CommitInitializedRuntimeState(");
-        AssertContains(sourceReaderInitializedSessionText, "MF_NATIVE_FORMAT_OVERRIDE");
-        AssertContains(sourceReaderInitializedSessionText, "Volatile.Write(ref _nativeInputFormat");
-        AssertContains(sourceReaderInitializedSessionText, "Interlocked.Exchange(ref _framesDelivered");
-        AssertContains(sourceReaderRootText, "public Task InitializeAsync(string deviceSymbolicLink, VideoCaptureNegotiationOptions options)");
-        AssertContains(sourceReaderReadLoopText, "private void ReadLoop(RawFrameCallback? onFrame, DualFrameCallback? onDualFrame, CancellationToken ct)");
-        AssertContains(sourceReaderReadLoopText, "reader.ReadSample(");
-        AssertContains(sourceReaderReadLoopText, "DeliverFrame(sample, onFrame, onDualFrame, arrivalTick);");
-        AssertContains(sourceReaderRootText, "private unsafe void DeliverFrame(");
-        AssertContains(sourceReaderRootText, "private unsafe void DeliverDualFrameFromBuffer(");
-        AssertContains(sourceReaderRootText, "Marshal.Release(gpuTexture)");
-        AssertContains(sourceReaderRootText, "private unsafe void DeliverRawFrameFromBuffer(IMFMediaBuffer buffer, RawFrameCallback onFrame, long arrivalTick)");
-        AssertContains(sourceReaderRootText, "private unsafe bool TryDeliverFrameFrom2DBuffer(IMFMediaBuffer buffer, RawFrameCallback onFrame, long arrivalTick)");
-        AssertContains(sourceReaderRootText, "private unsafe bool TryDeliverDualFrameFrom2DBuffer(");
-        AssertContains(sourceReaderRootText, "ArrayPool<byte>.Shared.Rent");
+        AssertDoesNotContain(sourceReaderText, "public static int GetFrameSizeBytes");
+        AssertContains(sourceReaderText, "PooledVideoFrame.GetFrameSizeBytes");
+        AssertContains(sourceReaderText, "private unsafe static void CopyYuvWithStride(");
+        AssertContains(sourceReaderText, "private static string SubtypeGuidToName(Guid subtype)");
+        AssertContains(sourceReaderText, "public void StartReading(RawFrameCallback onFrame, CancellationToken ct)");
+        AssertContains(sourceReaderText, "public async Task StopAsync()");
+        AssertContains(sourceReaderText, "private void ReadLoop(RawFrameCallback? onFrame, DualFrameCallback? onDualFrame, CancellationToken ct)");
+        AssertContains(sourceReaderText, "private void ReleaseReaderAndSource()");
+        AssertContains(sourceReaderText, "private void SignalFatalError(Exception ex)");
+        AssertContains(sourceReaderText, "public Task InitializeAsync(string deviceSymbolicLink, VideoCaptureNegotiationOptions options)");
+        AssertContains(sourceReaderText, "MF_SOURCE_READER_INIT ");
+        AssertContains(sourceReaderText, "SelectConvertedMediaType(");
+        AssertContains(sourceReaderText, "out SourceReaderNegotiatedMode selectedMode");
+        AssertDoesNotContain(sourceReaderText, "out Guid selectedSubtype");
+        AssertContains(sourceReaderText, "private IMFMediaSource OpenMediaSourceWithBusyRetry(string deviceSymbolicLink)");
+        AssertDoesNotContain(sourceReaderText, "deviceOpenLastEx");
+        AssertDoesNotContain(sourceReaderText, "if ((hr == MfHResults.MF_E_SHUTDOWN || hr == MfHResults.MF_E_INVALIDREQUEST)");
+        AssertContains(sourceReaderText, "ApplyCurrentMediaTypeAndReconcileActualOutput(");
+        AssertContains(sourceReaderText, "CommitInitializedRuntimeState(");
+        AssertContains(sourceReaderText, "private readonly record struct SourceReaderNegotiatedMode(");
+        AssertContains(sourceReaderText, "private SourceReaderNegotiatedMode ApplyCurrentMediaTypeAndReconcileActualOutput(");
+        AssertContains(sourceReaderText, "sourceReader.GetCurrentMediaType(");
+        AssertContains(sourceReaderText, "private void ValidateNegotiatedOutputMode(");
+        AssertContains(sourceReaderText, "private void CommitInitializedRuntimeState(");
+        AssertContains(sourceReaderText, "MF_NATIVE_FORMAT_OVERRIDE");
+        AssertContains(sourceReaderText, "Volatile.Write(ref _nativeInputFormat");
+        AssertContains(sourceReaderText, "Interlocked.Exchange(ref _framesDelivered");
+        AssertContains(sourceReaderText, "public Task InitializeAsync(string deviceSymbolicLink, VideoCaptureNegotiationOptions options)");
+        AssertContains(sourceReaderText, "private void ReadLoop(RawFrameCallback? onFrame, DualFrameCallback? onDualFrame, CancellationToken ct)");
+        AssertContains(sourceReaderText, "reader.ReadSample(");
+        AssertContains(sourceReaderText, "DeliverFrame(sample, onFrame, onDualFrame, arrivalTick);");
+        AssertContains(sourceReaderText, "private unsafe void DeliverFrame(");
+        AssertContains(sourceReaderText, "private unsafe void DeliverDualFrameFromBuffer(");
+        AssertContains(sourceReaderText, "Marshal.Release(gpuTexture)");
+        AssertContains(sourceReaderText, "private unsafe void DeliverRawFrameFromBuffer(IMFMediaBuffer buffer, RawFrameCallback onFrame, long arrivalTick)");
+        AssertContains(sourceReaderText, "private unsafe bool TryDeliverFrameFrom2DBuffer(IMFMediaBuffer buffer, RawFrameCallback onFrame, long arrivalTick)");
+        AssertContains(sourceReaderText, "private unsafe bool TryDeliverDualFrameFrom2DBuffer(");
+        AssertContains(sourceReaderText, "ArrayPool<byte>.Shared.Rent");
     }
 
     private static void AssertDiagnosticsSnapshotStatusProjectionOwnership(AutomationDiagnosticsHubSourceFamily diagnostics)
@@ -7814,9 +8436,12 @@ static partial class Program
 
     private static void AssertDiagnosticsRefreshSnapshotProjectionOwnership(AutomationDiagnosticsHubSourceFamily diagnostics)
     {
-        AssertContains(diagnostics.SnapshotProjectionText, "BuildAutomationSnapshotProjectionSet(");
-        AssertContains(diagnostics.SnapshotProjectionText, "BuildAutomationSnapshotFromProjections(projections);");
-        AssertContains(diagnostics.SnapshotProjectionText, "return new AutomationSnapshotProjectionSet(");
+        AssertContains(diagnostics.SnapshotInitializerText, "RecordingVideoQueueLatencyP95Ms = health.RecordingVideoQueueLatencyP95Ms,");
+        AssertContains(diagnostics.SnapshotInitializerText, "RecordingIntegrityStatus = captureRuntime.RecordingIntegrityStatus.ToString(),");
+        AssertContains(diagnostics.SnapshotInitializerText, "RecordingIntegrityAudioStatus = captureRuntime.RecordingIntegrityAudioStatus.ToString(),");
+        AssertContains(diagnostics.SnapshotInitializerText, "MemoryWorkingSetMb = processResources.MemoryWorkingSetMb,");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionText, "AutomationSnapshotProjectionSet");
+        AssertDoesNotContain(diagnostics.SnapshotProjectionText, "BuildAutomationSnapshotFromProjections");
     }
 
     private static void AssertDiagnosticSessionPreviewMetricsOwnership(string diagnosticSessionText, AutomationDiagnosticsHubSourceFamily diagnostics)
@@ -7885,32 +8510,23 @@ static partial class Program
         AssertContains(diagnosticSessionText, "totalFrameMaxObserved={result.PreviewD3DTotalFrameCpuMaxMsObserved:0.##}");
         AssertContains(diagnosticSessionText, "changeFpsMin={result.VisualCadenceMinChangeFpsObserved:0.##}");
         AssertContains(diagnosticSessionText, "repeatPctMax={result.VisualCadenceMaxRepeatPercentObserved:0.###}");
-        AssertContains(diagnostics.TimelineText, "PreviewCadenceSlowFramePercent = preview.CadenceSlowFramePercent");
-        AssertContains(diagnostics.TimelineText, "PreviewCadenceOnePercentLowFps = preview.CadenceOnePercentLowFps");
+        AssertContains(diagnostics.HubText, "PreviewCadenceSlowFramePercent = snapshot.PreviewCadenceSlowFramePercent,");
+        AssertContains(diagnostics.HubText, "PreviewCadenceOnePercentLowFps = snapshot.PreviewCadenceOnePercentLowFps,");
         AssertContains(diagnostics.SourceFamilyText, "1pctLow={previewRuntime.DisplayCadenceOnePercentLowFps:0.##}fps");
-        AssertContains(diagnostics.TimelineText, "PreviewD3DPresentCallP95Ms = preview.D3DPresentCallP95Ms");
-        AssertContains(diagnostics.TimelineText, "PreviewD3DTotalFrameCpuP95Ms = preview.D3DTotalFrameCpuP95Ms");
-        AssertContains(diagnostics.TimelineText, "PreviewD3DInputUploadCpuP99Ms = preview.D3DInputUploadCpuP99Ms");
-        AssertContains(diagnostics.TimelineText, "PreviewD3DRenderSubmitCpuP99Ms = preview.D3DRenderSubmitCpuP99Ms");
-        AssertContains(diagnostics.TimelineText, "PreviewD3DPresentCallP99Ms = preview.D3DPresentCallP99Ms");
-        AssertContains(diagnostics.TimelineText, "PreviewD3DTotalFrameCpuP99Ms = preview.D3DTotalFrameCpuP99Ms");
-        AssertContains(diagnostics.TimelineText, "PreviewD3DFrameStatsRecentMissedRefreshCount = preview.D3DFrameStatsRecentMissedRefreshCount");
-        AssertContains(diagnostics.TimelineProjectionPreviewText, "CadenceSlowFramePercent: snapshot.PreviewCadenceSlowFramePercent");
-        AssertContains(diagnostics.TimelineProjectionPreviewText, "D3DFrameStatsRecentMissedRefreshCount: snapshot.PreviewD3DFrameStatsRecentMissedRefreshCount");
-        AssertContains(diagnostics.TimelineText, "FlashbackPlaybackP99FrameMs = flashbackPlayback.P99FrameMs");
-        AssertContains(diagnostics.TimelineText, "FlashbackPlaybackDecodeP99Ms = flashbackPlayback.DecodeP99Ms");
-        AssertContains(diagnostics.TimelineText, "FlashbackPlaybackPendingCommands = flashbackPlayback.PendingCommands");
-        AssertContains(diagnostics.TimelineText, "FlashbackPlaybackSubmitFailures = flashbackPlayback.SubmitFailures");
-        AssertContains(diagnostics.TimelineProjectionFlashbackPlaybackText, "P99FrameMs: snapshot.FlashbackPlaybackP99FrameMs");
-        AssertContains(diagnostics.TimelineProjectionFlashbackPlaybackText, "DecodeP99Ms: snapshot.FlashbackPlaybackDecodeP99Ms");
-        AssertContains(diagnostics.TimelineProjectionFlashbackPlaybackText, "PendingCommands: snapshot.FlashbackPlaybackPendingCommands");
-        AssertContains(diagnostics.TimelineProjectionFlashbackPlaybackText, "SubmitFailures: snapshot.FlashbackPlaybackSubmitFailures");
-        AssertContains(diagnostics.TimelineText, "FlashbackExportPercent = flashbackExport.Percent");
-        AssertContains(diagnostics.TimelineText, "FlashbackExportThroughputBytesPerSec = flashbackExport.ThroughputBytesPerSec");
-        AssertContains(diagnostics.TimelineText, "FlashbackExportLastProgressAgeMs = flashbackExport.LastProgressAgeMs");
-        AssertContains(diagnostics.TimelineText, "Percent: snapshot.FlashbackExportPercent");
-        AssertContains(diagnostics.TimelineText, "ThroughputBytesPerSec: snapshot.FlashbackExportThroughputBytesPerSec");
-        AssertContains(diagnostics.TimelineText, "LastProgressAgeMs: snapshot.FlashbackExportLastProgressAgeMs");
+        AssertContains(diagnostics.HubText, "PreviewD3DPresentCallP95Ms = snapshot.PreviewD3DPresentCallP95Ms,");
+        AssertContains(diagnostics.HubText, "PreviewD3DTotalFrameCpuP95Ms = snapshot.PreviewD3DTotalFrameCpuP95Ms,");
+        AssertContains(diagnostics.HubText, "PreviewD3DInputUploadCpuP99Ms = snapshot.PreviewD3DInputUploadCpuP99Ms,");
+        AssertContains(diagnostics.HubText, "PreviewD3DRenderSubmitCpuP99Ms = snapshot.PreviewD3DRenderSubmitCpuP99Ms,");
+        AssertContains(diagnostics.HubText, "PreviewD3DPresentCallP99Ms = snapshot.PreviewD3DPresentCallP99Ms,");
+        AssertContains(diagnostics.HubText, "PreviewD3DTotalFrameCpuP99Ms = snapshot.PreviewD3DTotalFrameCpuP99Ms,");
+        AssertContains(diagnostics.HubText, "PreviewD3DFrameStatsRecentMissedRefreshCount = snapshot.PreviewD3DFrameStatsRecentMissedRefreshCount,");
+        AssertContains(diagnostics.HubText, "FlashbackPlaybackP99FrameMs = snapshot.FlashbackPlaybackP99FrameMs,");
+        AssertContains(diagnostics.HubText, "FlashbackPlaybackDecodeP99Ms = snapshot.FlashbackPlaybackDecodeP99Ms,");
+        AssertContains(diagnostics.HubText, "FlashbackPlaybackPendingCommands = snapshot.FlashbackPlaybackPendingCommands,");
+        AssertContains(diagnostics.HubText, "FlashbackPlaybackSubmitFailures = snapshot.FlashbackPlaybackSubmitFailures,");
+        AssertContains(diagnostics.HubText, "FlashbackExportPercent = snapshot.FlashbackExportPercent,");
+        AssertContains(diagnostics.HubText, "FlashbackExportThroughputBytesPerSec = snapshot.FlashbackExportThroughputBytesPerSec,");
+        AssertContains(diagnostics.HubText, "FlashbackExportLastProgressAgeMs = snapshot.FlashbackExportLastProgressAgeMs,");
     }
 
     internal static Task Diagnostics_HdrTruthVerdict_TreatsHdrSourceSdrRequestAsExpected()
@@ -7942,16 +8558,16 @@ static partial class Program
 
     private static void AssertDiagnosticsRefreshRuntimeOwnership(AutomationDiagnosticsHubSourceFamily diagnostics)
     {
-        AssertContains(diagnostics.VerificationText, "public async Task<RecordingVerificationResult> VerifyLastRecordingAsync");
-        AssertContains(diagnostics.VerificationText, "public async Task<RecordingVerificationResult> VerifyFileAsync");
-        AssertContains(diagnostics.VerificationText, "private bool ShouldAutoVerifySnapshot(");
-        AssertContains(diagnostics.VerificationText, "private RecordingVerificationResult? CaptureLastVerificationForSnapshot(");
-        AssertContains(diagnostics.VerificationText, "private void ScheduleAutoVerificationIfNeeded(");
-        AssertContains(diagnostics.VerificationText, "Automatic recording verification started.");
-        AssertContains(diagnostics.VerificationText, "private static CaptureRuntimeSnapshot ApplyVerificationProfile(");
-        AssertContains(diagnostics.VerificationText, "string.Equals(verificationProfile, \"flashback-export\"");
-        AssertContains(diagnostics.VerificationText, "CaptureSessionEpoch = runtimeSnapshot.CaptureSessionEpoch,");
-        AssertContains(diagnostics.VerificationText, "SourceTelemetryEpoch = runtimeSnapshot.SourceTelemetryEpoch,");
+        AssertContains(diagnostics.SnapshotsText, "public async Task<RecordingVerificationResult> VerifyLastRecordingAsync");
+        AssertContains(diagnostics.SnapshotsText, "public async Task<RecordingVerificationResult> VerifyFileAsync");
+        AssertContains(diagnostics.SnapshotsText, "private bool ShouldAutoVerifySnapshot(");
+        AssertContains(diagnostics.SnapshotsText, "private RecordingVerificationResult? CaptureLastVerificationForSnapshot(");
+        AssertContains(diagnostics.SnapshotsText, "private void ScheduleAutoVerificationIfNeeded(");
+        AssertContains(diagnostics.SnapshotsText, "Automatic recording verification started.");
+        AssertContains(diagnostics.SnapshotsText, "private static CaptureRuntimeSnapshot ApplyVerificationProfile(");
+        AssertContains(diagnostics.SnapshotsText, "string.Equals(verificationProfile, \"flashback-export\"");
+        AssertContains(diagnostics.SnapshotsText, "CaptureSessionEpoch = runtimeSnapshot.CaptureSessionEpoch,");
+        AssertContains(diagnostics.SnapshotsText, "SourceTelemetryEpoch = runtimeSnapshot.SourceTelemetryEpoch,");
         AssertDoesNotContain(diagnostics.HubText, "public async Task<RecordingVerificationResult> VerifyLastRecordingAsync");
         AssertContains(diagnostics.HubText, "private readonly IAutomationSnapshotQueryPort _snapshotQueryPort;");
         AssertContains(diagnostics.HubText, "IAutomationSnapshotQueryPort snapshotQueryPort,");
@@ -7963,18 +8579,18 @@ static partial class Program
         AssertContains(diagnostics.SnapshotsText, "token => _snapshotQueryPort.GetCaptureRuntimeSnapshotAsync(token)");
         AssertContains(diagnostics.SnapshotsText, "token => _snapshotQueryPort.GetCaptureHealthSnapshotAsync(token)");
         AssertContains(diagnostics.SnapshotsText, "token => _snapshotQueryPort.GetRecordingStatsSnapshotAsync(token)");
-        AssertContains(diagnostics.VerificationText, "await _snapshotQueryPort\n                .GetCaptureRuntimeSnapshotAsync(cancellationToken)");
+        AssertContains(diagnostics.SnapshotsText, "await _snapshotQueryPort\n                .GetCaptureRuntimeSnapshotAsync(cancellationToken)");
         AssertContains(diagnostics.SnapshotsText, "var shouldAutoVerify = ShouldAutoVerifySnapshot(snapshot);");
         AssertContains(diagnostics.SnapshotsText, "ScheduleAutoVerificationIfNeeded(shouldAutoVerify);");
         AssertContains(diagnostics.SnapshotsText, "private static PreviewPacingClassification ClassifyPreviewPacing(");
         AssertContains(diagnostics.SnapshotsText, "ClassifyPreviewPacing(");
         AssertContains(diagnostics.HubText, "public void Start()");
         AssertContains(diagnostics.HubText, "private async Task RunLoopAsync(CancellationToken cancellationToken)");
-        AssertContains(diagnostics.HdrText, "private static HdrTruthVerdict BuildHdrTruthVerdict(");
-        AssertContains(diagnostics.HdrText, "private static PreviewHdrState BuildPreviewHdrState(");
-        AssertContains(diagnostics.HdrText, "private readonly record struct PreviewHdrState(");
-        AssertContains(diagnostics.HdrText, "private static bool IsHdrSubtype(string? subtype)");
-        AssertContains(diagnostics.HdrText, "static string NormalizeFormatToken(string? text)");
+        AssertContains(diagnostics.SnapshotProjectionText, "private static HdrTruthVerdict BuildHdrTruthVerdict(");
+        AssertContains(diagnostics.SnapshotProjectionText, "private static PreviewHdrState BuildPreviewHdrState(");
+        AssertContains(diagnostics.SnapshotProjectionText, "private readonly record struct PreviewHdrState(");
+        AssertContains(diagnostics.SnapshotProjectionText, "private static bool IsHdrSubtype(string? subtype)");
+        AssertContains(diagnostics.SnapshotProjectionText, "static string NormalizeFormatToken(string? text)");
         AssertDoesNotContain(diagnostics.HubText, "private static HdrTruthVerdict BuildHdrTruthVerdict(");
         AssertContains(diagnostics.SnapshotsText, "var previewHdrState = BuildPreviewHdrState(captureRuntime, viewModelSnapshot, previewRuntime);");
         AssertDoesNotContain(diagnostics.SnapshotsText, "var previewHdrInputDetected =");
@@ -7986,66 +8602,34 @@ static partial class Program
         AssertContains(diagnostics.SnapshotsText, "var snapshot = BuildAutomationSnapshot(");
         AssertDoesNotContain(diagnostics.SnapshotsText, "new AutomationSnapshot");
         AssertContains(diagnostics.SnapshotsText, "AppendPerformanceTimelineEntry(snapshot);");
-        AssertContains(diagnostics.SnapshotsCoreText, "public AutomationSnapshot GetLatestSnapshot()");
-        AssertContains(diagnostics.SnapshotsCoreText, "public Task<AutomationSnapshot> RefreshSnapshotNowAsync(CancellationToken cancellationToken = default)");
-        AssertContains(diagnostics.SnapshotsCoreText, "await _refreshGate.WaitAsync(cancellationToken).ConfigureAwait(false);");
-        AssertContains(diagnostics.SnapshotsCoreText, "return await RefreshSnapshotCoreAsync(cancellationToken).ConfigureAwait(false);");
-        AssertContains(diagnostics.SnapshotsCoreText, "private async Task<AutomationSnapshot> RefreshSnapshotCoreAsync");
-        AssertContains(diagnostics.SnapshotsCoreText, "private AudioSignalState UpdateAudioSignalState(");
-        AssertContains(diagnostics.SnapshotsCoreText, "private bool UpdateRecordingFileGrowthState(");
-        AssertContains(diagnostics.SnapshotsCoreText, "private readonly record struct AudioSignalState(");
+        AssertContains(diagnostics.SnapshotsText, "public AutomationSnapshot GetLatestSnapshot()");
+        AssertContains(diagnostics.SnapshotsText, "public Task<AutomationSnapshot> RefreshSnapshotNowAsync(CancellationToken cancellationToken = default)");
+        AssertContains(diagnostics.SnapshotsText, "await _refreshGate.WaitAsync(cancellationToken).ConfigureAwait(false);");
+        AssertContains(diagnostics.SnapshotsText, "return await RefreshSnapshotCoreAsync(cancellationToken).ConfigureAwait(false);");
+        AssertContains(diagnostics.SnapshotsText, "private async Task<AutomationSnapshot> RefreshSnapshotCoreAsync");
+        AssertContains(diagnostics.SnapshotsText, "private AudioSignalState UpdateAudioSignalState(");
+        AssertContains(diagnostics.SnapshotsText, "private bool UpdateRecordingFileGrowthState(");
+        AssertContains(diagnostics.SnapshotsText, "private readonly record struct AudioSignalState(");
         AssertContains(diagnostics.SnapshotsText, "UpdateAudioSignalState(viewModelSnapshot, nowTick);");
         AssertContains(diagnostics.SnapshotsText, "UpdateRecordingFileGrowthState(");
-        AssertContains(diagnostics.SnapshotsCoreText, "var audioSignalPresent = viewModelSnapshot.AudioPeak >= AudioSignalThreshold;");
-        AssertContains(diagnostics.SnapshotsCoreText, "private LastOutputProbe ProbeLastOutput(");
-        AssertContains(diagnostics.SnapshotsCoreText, "private readonly record struct LastOutputProbe(");
-        AssertContains(diagnostics.SnapshotsCoreText, "private ProcessResourceSnapshot CaptureProcessResourceSnapshot()");
-        AssertContains(diagnostics.SnapshotsCoreText, "private double CalculateProcessCpuPercent(double processCpuTotalMs)");
-        AssertContains(diagnostics.SnapshotsCoreText, "private readonly record struct ProcessResourceSnapshot(");
-        AssertContains(diagnostics.TimelineText, "public IReadOnlyList<PerformanceTimelineEntry> GetPerformanceTimeline");
-        AssertContains(diagnostics.TimelineText, "private void AppendPerformanceTimelineEntry(AutomationSnapshot snapshot)");
-        AssertContains(diagnostics.TimelineText, "BuildPerformanceTimelineEntry(snapshot)");
-        AssertContains(diagnostics.TimelineText, "private static PerformanceTimelineEntry BuildPerformanceTimelineEntry(AutomationSnapshot snapshot)");
-        AssertContains(diagnostics.TimelineText, "var core = BuildPerformanceTimelineCoreProjection(snapshot);");
-        AssertContains(diagnostics.TimelineText, "var preview = BuildPerformanceTimelinePreviewProjection(snapshot);");
-        AssertContains(diagnostics.TimelineText, "var flashbackPlayback = BuildPerformanceTimelineFlashbackPlaybackProjection(snapshot);");
-        AssertContains(diagnostics.TimelineText, "var flashbackExport = BuildPerformanceTimelineFlashbackExportProjection(snapshot);");
-        AssertContains(diagnostics.TimelineText, "var system = BuildPerformanceTimelineSystemProjection(snapshot);");
-        AssertContains(diagnostics.TimelineText, "CaptureCadenceFivePercentLowFps = core.CaptureCadenceFivePercentLowFps");
-        AssertContains(diagnostics.TimelineText, "PreviewD3DPresentCallP95Ms = preview.D3DPresentCallP95Ms");
-        AssertContains(diagnostics.TimelineText, "FlashbackPlaybackCommandsEnqueued = flashbackPlayback.CommandsEnqueued");
-        AssertContains(diagnostics.TimelineText, "FlashbackExportPercent = flashbackExport.Percent");
-        AssertContains(diagnostics.TimelineText, "ProcessCpuPercent = system.ProcessCpuPercent");
-        AssertContains(diagnostics.TimelineText, "private static PerformanceTimelineCoreProjection BuildPerformanceTimelineCoreProjection(");
-        AssertContains(diagnostics.TimelineText, "CaptureCadenceFivePercentLowFps: snapshot.CaptureCadenceFivePercentLowFps");
-        AssertContains(diagnostics.TimelineProjectionPreviewText, "private static PerformanceTimelinePreviewProjection BuildPerformanceTimelinePreviewProjection(");
-        AssertContains(diagnostics.TimelineProjectionPreviewText, "D3DPresentCallP95Ms: snapshot.PreviewD3DPresentCallP95Ms");
-        AssertContains(diagnostics.TimelineProjectionFlashbackPlaybackText, "private static PerformanceTimelineFlashbackPlaybackProjection BuildPerformanceTimelineFlashbackPlaybackProjection(");
-        AssertContains(diagnostics.TimelineProjectionFlashbackPlaybackText, "var cadence = BuildPerformanceTimelineFlashbackPlaybackCadenceProjection(snapshot);");
-        AssertContains(diagnostics.TimelineProjectionFlashbackPlaybackText, "var decode = BuildPerformanceTimelineFlashbackPlaybackDecodeProjection(snapshot);");
-        AssertContains(diagnostics.TimelineProjectionFlashbackPlaybackText, "var commands = BuildPerformanceTimelineFlashbackPlaybackCommandsProjection(snapshot);");
-        AssertContains(diagnostics.TimelineProjectionFlashbackPlaybackText, "var audioMaster = BuildPerformanceTimelineFlashbackPlaybackAudioMasterProjection(snapshot);");
-        AssertContains(diagnostics.TimelineProjectionFlashbackPlaybackText, "var stages = BuildPerformanceTimelineFlashbackPlaybackStagesProjection(snapshot);");
-        AssertContains(diagnostics.TimelineProjectionFlashbackPlaybackText, "var backend = BuildPerformanceTimelineFlashbackPlaybackBackendProjection(snapshot);");
-        AssertContains(diagnostics.TimelineProjectionFlashbackPlaybackText, "private static PerformanceTimelineFlashbackPlaybackCadenceProjection BuildPerformanceTimelineFlashbackPlaybackCadenceProjection(");
-        AssertContains(diagnostics.TimelineProjectionFlashbackPlaybackText, "private static PerformanceTimelineFlashbackPlaybackDecodeProjection BuildPerformanceTimelineFlashbackPlaybackDecodeProjection(");
-        AssertContains(diagnostics.TimelineProjectionFlashbackPlaybackText, "private static PerformanceTimelineFlashbackPlaybackCommandsProjection BuildPerformanceTimelineFlashbackPlaybackCommandsProjection(");
-        AssertContains(diagnostics.TimelineProjectionFlashbackPlaybackText, "private static PerformanceTimelineFlashbackPlaybackAudioMasterProjection BuildPerformanceTimelineFlashbackPlaybackAudioMasterProjection(");
-        AssertContains(diagnostics.TimelineProjectionFlashbackPlaybackText, "private static PerformanceTimelineFlashbackPlaybackStagesProjection BuildPerformanceTimelineFlashbackPlaybackStagesProjection(");
-        AssertContains(diagnostics.TimelineProjectionFlashbackPlaybackText, "private static PerformanceTimelineFlashbackPlaybackBackendProjection BuildPerformanceTimelineFlashbackPlaybackBackendProjection(");
-        AssertContains(diagnostics.TimelineProjectionFlashbackPlaybackText, "CommandsEnqueued: snapshot.FlashbackPlaybackCommandsEnqueued");
-        AssertContains(diagnostics.TimelineText, "private static PerformanceTimelineFlashbackExportProjection BuildPerformanceTimelineFlashbackExportProjection(");
-        AssertContains(diagnostics.TimelineText, "Percent: snapshot.FlashbackExportPercent");
-        AssertContains(diagnostics.TimelineText, "private static PerformanceTimelineSystemProjection BuildPerformanceTimelineSystemProjection(");
-        AssertContains(diagnostics.TimelineText, "ProcessCpuPercent: snapshot.ProcessCpuPercent");
+        AssertContains(diagnostics.SnapshotsText, "var audioSignalPresent = viewModelSnapshot.AudioPeak >= AudioSignalThreshold;");
+        AssertContains(diagnostics.SnapshotsText, "private LastOutputProbe ProbeLastOutput(");
+        AssertContains(diagnostics.SnapshotsText, "private readonly record struct LastOutputProbe(");
+        AssertContains(diagnostics.SnapshotsText, "private ProcessResourceSnapshot CaptureProcessResourceSnapshot()");
+        AssertContains(diagnostics.SnapshotsText, "private double CalculateProcessCpuPercent(double processCpuTotalMs)");
+        AssertContains(diagnostics.SnapshotsText, "private readonly record struct ProcessResourceSnapshot(");
+        AssertContains(diagnostics.HubText, "public IReadOnlyList<PerformanceTimelineEntry> GetPerformanceTimeline");
+        AssertContains(diagnostics.HubText, "private void AppendPerformanceTimelineEntry(AutomationSnapshot snapshot)");
+        AssertContains(diagnostics.HubText, "BuildPerformanceTimelineEntry(snapshot)");
+        AssertContains(diagnostics.HubText, "private static PerformanceTimelineEntry BuildPerformanceTimelineEntry(AutomationSnapshot snapshot)");
         AssertDoesNotContain(diagnostics.HubText, "private async Task<AutomationSnapshot> RefreshSnapshotCoreAsync");
         AssertContains(diagnostics.SnapshotsText, "var shouldAutoVerify = ShouldAutoVerifySnapshot(snapshot);");
         AssertContains(diagnostics.SnapshotsText, "var lastVerification = CaptureLastVerificationForSnapshot(\n            recordingStarted,\n            captureRuntime.LastOutputPath);");
         AssertContains(diagnostics.SnapshotsText, "_lastVerification = null;");
         AssertContains(diagnostics.SnapshotsText, "ScheduleAutoVerificationIfNeeded(shouldAutoVerify);");
         AssertContains(diagnostics.SnapshotsText, "Automatic recording verification started.");
-        AssertContains(diagnostics.SnapshotsCoreText, "new FileInfo(lastOutputPath).Length");
-        AssertContains(diagnostics.SnapshotsCoreText, "GC.GetGCMemoryInfo()");
+        AssertContains(diagnostics.SnapshotsText, "new FileInfo(lastOutputPath).Length");
+        AssertContains(diagnostics.SnapshotsText, "GC.GetGCMemoryInfo()");
         AssertDoesNotContain(diagnostics.HubText, "private double CalculateProcessCpuPercent(double processCpuTotalMs)");
         AssertContains(diagnostics.SourceFamilyText, "private readonly SemaphoreSlim _refreshGate = new(1, 1);");
         AssertContains(diagnostics.SourceFamilyText, "await _refreshGate.WaitAsync(cancellationToken).ConfigureAwait(false);");
@@ -8068,47 +8652,32 @@ static partial class Program
 
     private static void AssertDiagnosticsPreviewRuntimeProjectionOwnership(AutomationDiagnosticsHubSourceFamily diagnostics)
     {
-        AssertContains(diagnostics.SnapshotProjectionText, "var previewSummary = BuildPreviewRuntimeProjection(previewRuntime, previewHdrState, captureRuntime);");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "private static PreviewRuntimeProjection BuildPreviewRuntimeProjection(");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "Frame = BuildPreviewRuntimeFrameProjection(previewRuntime),");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "Cadence = BuildPreviewRuntimeCadenceProjection(previewRuntime),");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "Surface = BuildPreviewRuntimeSurfaceProjection(previewRuntime),");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "Startup = BuildPreviewRuntimeStartupProjection(previewRuntime),");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "GpuPlayback = BuildPreviewRuntimeGpuPlaybackProjection(previewRuntime),");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "Color = BuildPreviewRuntimeColorProjection(previewHdrState, captureRuntime)");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "private static PreviewRuntimeFrameProjection BuildPreviewRuntimeFrameProjection(");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "EstimatedPipelineLatencyMs = (long)previewRuntime.EstimatedPipelineLatencyMs");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "private static PreviewRuntimeCadenceProjection BuildPreviewRuntimeCadenceProjection(");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "OnePercentLowFps = previewRuntime.DisplayCadenceOnePercentLowFps,");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "SlowFramePercent = previewRuntime.DisplayCadenceSlowFramePercent");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "private static PreviewRuntimeSurfaceProjection BuildPreviewRuntimeSurfaceProjection(");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "RendererAttached = previewRuntime.RendererAttached");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "private static PreviewRuntimeStartupProjection BuildPreviewRuntimeStartupProjection(");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "Strategy = previewRuntime.StartupStrategy.ToString(),");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "RendererMode = previewRuntime.RendererMode");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "private static PreviewRuntimeGpuPlaybackProjection BuildPreviewRuntimeGpuPlaybackProjection(");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "PlaybackState = previewRuntime.GpuPlaybackState,");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "private static PreviewRuntimeColorProjection BuildPreviewRuntimeColorProjection(");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "HdrInputDetected = previewHdrState.InputDetected,");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "AdapterColorMetadata = captureRuntime.PreviewColorMetadata");
-        AssertDoesNotContain(diagnostics.SnapshotProjectionText, "PreviewFramesArrived = previewRuntime.FramesArrived,");
-        AssertDoesNotContain(diagnostics.SnapshotProjectionText, "EstimatedPipelineLatencyMs = (long)previewRuntime.EstimatedPipelineLatencyMs,");
-        AssertDoesNotContain(diagnostics.SnapshotProjectionText, "PreviewStartupStrategy = previewRuntime.StartupStrategy.ToString(),");
-        AssertDoesNotContain(diagnostics.SnapshotProjectionText, "PreviewHdrInputDetected = previewHdrState.InputDetected,");
-        AssertDoesNotContain(diagnostics.SnapshotProjectionText, "PreviewAdapterColorMetadata = captureRuntime.PreviewColorMetadata,");
+        AssertContains(diagnostics.SnapshotInitializerText, "var previewFrame = BuildPreviewRuntimeFrameProjection(previewRuntime);");
+        AssertContains(diagnostics.SnapshotInitializerText, "var previewStartup = BuildPreviewRuntimeStartupProjection(previewRuntime);");
+        AssertContains(diagnostics.SnapshotProjectionText, "private static PreviewRuntimeFrameProjection BuildPreviewRuntimeFrameProjection(");
+        AssertContains(diagnostics.SnapshotProjectionText, "EstimatedPipelineLatencyMs = (long)previewRuntime.EstimatedPipelineLatencyMs");
+        AssertContains(diagnostics.SnapshotProjectionText, "private static PreviewRuntimeStartupProjection BuildPreviewRuntimeStartupProjection(");
+        AssertContains(diagnostics.SnapshotProjectionText, "Strategy = previewRuntime.StartupStrategy.ToString(),");
+        AssertContains(diagnostics.SnapshotInitializerText, "EstimatedPipelineLatencyMs = previewFrame.EstimatedPipelineLatencyMs,");
+        AssertContains(diagnostics.SnapshotInitializerText, "PreviewStartupStrategy = previewStartup.Strategy,");
+        AssertContains(diagnostics.SnapshotInitializerText, "PreviewCadenceOnePercentLowFps = previewRuntime.DisplayCadenceOnePercentLowFps,");
+        AssertContains(diagnostics.SnapshotInitializerText, "PreviewCadenceSlowFramePercent = previewRuntime.DisplayCadenceSlowFramePercent,");
+        AssertContains(diagnostics.SnapshotInitializerText, "PreviewRendererAttached = previewRuntime.RendererAttached,");
+        AssertContains(diagnostics.SnapshotInitializerText, "PreviewGpuPlaybackState = previewRuntime.GpuPlaybackState,");
+        AssertContains(diagnostics.SnapshotInitializerText, "PreviewHdrInputDetected = previewHdrState.InputDetected,");
+        AssertContains(diagnostics.SnapshotInitializerText, "PreviewAdapterColorMetadata = captureRuntime.PreviewColorMetadata,");
     }
 
     private static void AssertDiagnosticSessionToolSurfaceOwnership()
     {
         var diagnosticSessionToolSources = ReadDiagnosticSessionToolSurfaceSourceFamily();
         var ssctlProgramText = diagnosticSessionToolSources.SsctlProgramText;
-        var ssctlHelpText = diagnosticSessionToolSources.SsctlHelpText;
         var ssctlCommandHandlersText = diagnosticSessionToolSources.SsctlCommandHandlersText;
         var mcpDiagnosticSessionText = diagnosticSessionToolSources.McpDiagnosticSessionText;
         AssertContains(ssctlProgramText, "SsctlHelpWriter.Write(Console.Out);");
         AssertContains(ssctlProgramText, "internal static class SsctlHelpWriter");
         AssertDoesNotContain(ssctlProgramText, "DiagnosticSessionScenarioCatalog.HelpList");
-        AssertContains(ssctlHelpText, "DiagnosticSessionOptions.CliUsage");
+        AssertContains(ssctlProgramText, "DiagnosticSessionOptions.CliUsage");
         AssertContains(ssctlCommandHandlersText, "DiagnosticSessionOptions.CliUsage");
         AssertContains(ssctlCommandHandlersText, "DiagnosticSessionOptions.DefaultScenario");
         AssertContains(ssctlCommandHandlersText, "DiagnosticSessionOptions.DefaultDurationSeconds");
@@ -8182,7 +8751,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "skipped state-mutating scenario");
         AssertContains(diagnosticSessionText, "CreateCleanupCts(TimeSpan.FromMilliseconds(recordingCleanupTimeoutMs))");
         AssertContains(diagnosticSessionText, "AutomationCommandKind.SetRecordingEnabled,");
-        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"enabled\"] = false }");
+        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = false }");
         AssertContains(diagnosticSessionText, "recordingCleanupTimeoutMs,");
         AssertContains(diagnosticSessionText, "private static async Task<bool> StopRecordingForCleanupAsync(");
         AssertContains(diagnosticSessionText, "var shouldStopRecordingForVerification = startedRecording && options.VerifyRecording;");
@@ -8244,7 +8813,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "var shouldRunVerification =");
         AssertContains(diagnosticSessionText, "recording verification skipped: scenario does not produce a recording or export artifact");
         AssertContains(diagnosticSessionText, "verificationCommand = \"VerifyFile\"");
-        AssertContains(diagnosticSessionText, "[\"verificationProfile\"] = \"flashback-export\"");
+        AssertContains(diagnosticSessionText, "[AutomationPayloadKeys.VerificationProfile] = \"flashback-export\"");
         AssertContains(diagnosticScenariosText, "FlashbackRangeExport,");
         AssertContains(diagnosticScenariosText, "FlashbackExportVerificationFileName: \"flashback-range-export.mp4\"");
         AssertContains(diagnosticScenariosText, "FlashbackRangeExportAudioSwitch,");
@@ -8286,60 +8855,26 @@ static partial class Program
     private static void AssertDiagnosticsRefreshSnapshotConstructionOwnership(AutomationDiagnosticsHubSourceFamily diagnostics)
     {
         AssertContains(diagnostics.SnapshotProjectionText, "private AutomationSnapshot BuildAutomationSnapshot(");
-        AssertContains(diagnostics.SnapshotProjectionText, "private static AutomationSnapshot BuildAutomationSnapshotFromProjections(");
         AssertContains(diagnostics.SnapshotInitializerText, "return new AutomationSnapshot");
+        AssertEqual(1, diagnostics.SnapshotProjectionText.Split("return new AutomationSnapshot", StringSplitOptions.None).Length - 1,
+            "one final snapshot initializer owns the wire mapping");
         AssertDoesNotContain(diagnostics.HubText, "new AutomationSnapshot");
-
-        var flashbackBuilder = ReadAutomationDiagnosticsHubSourceFile("AutomationSnapshotFlashbackProjectionBuilder.cs");
-        foreach (var method in new[] { "BuildFlashbackExportProjection(", "BuildFlashbackRecordingProjection(", "BuildFlashbackPlaybackProjection(" })
-        {
-            AssertContains(flashbackBuilder, method);
-            AssertDoesNotContain(diagnostics.SnapshotProjectionText, method["Build".Length..^1] + " " + method);
-        }
+        AssertContains(diagnostics.SnapshotInitializerText, "FlashbackExportId = health.FlashbackExportId,");
+        AssertContains(diagnostics.SnapshotInitializerText, "FlashbackPlaybackTargetFps = health.FlashbackPlaybackTargetFps,");
+        AssertContains(diagnostics.SnapshotInitializerText, "FlashbackVideoQueueLatencyP95Ms = health.FlashbackVideoQueueLatencyP95Ms,");
     }
 
     private static AutomationDiagnosticsHubSourceFamily ReadAutomationDiagnosticsHubSourceFamily()
     {
+        var snapshotProjectionText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs");
         return new AutomationDiagnosticsHubSourceFamily
         {
             HubText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.cs"),
             EvaluationText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Evaluation.cs"),
             DiagnosticEvaluationFlashbackText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.FlashbackEvaluation.cs"),
-            DiagnosticEvaluationRealtimeText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Evaluation.cs"),
-            DiagnosticEvaluationLanesText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Evaluation.cs"),
-            AlertsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Snapshots.cs"),
-            VerificationText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Snapshots.cs"),
-            HdrText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
-            SnapshotsText = ReadAutomationDiagnosticsHubSnapshotsSource(),
-            SnapshotsCoreText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Snapshots.cs"),
-            SnapshotProjectionText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
-            SnapshotInitializerText = ReadAutomationSnapshotInitializerText(),
-            SnapshotProjectionAudioText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
-            SnapshotProjectionCaptureIngestText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
-            SnapshotProjectionWasapiAudioText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
-            SnapshotProjectionCaptureFormatText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
-            SnapshotProjectionCaptureCadenceText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
-            SnapshotProjectionVisualCadenceText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
-            SnapshotProjectionMjpegText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
-            SnapshotProjectionMjpegPreviewJitterText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
-            SnapshotProjectionFlashbackExportText = ReadAutomationDiagnosticsHubSourceFile("AutomationSnapshotFlashbackProjectionBuilder.cs"),
-            SnapshotProjectionFlashbackPlaybackText = ReadAutomationDiagnosticsHubSourceFile("AutomationSnapshotFlashbackProjectionBuilder.cs"),
-            SnapshotProjectionFlashbackRecordingText = ReadAutomationDiagnosticsHubSourceFile("AutomationSnapshotFlashbackProjectionBuilder.cs"),
-            SnapshotProjectionFlashbackRecordingQueuesText = ReadAutomationDiagnosticsHubSourceFile("AutomationSnapshotFlashbackProjectionBuilder.cs"),
-            SnapshotProjectionPreviewD3DText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
-            SnapshotProjectionPreviewD3DFrameFlowText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
-            SnapshotProjectionPreviewD3DCpuTimingText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
-            SnapshotProjectionPreviewRuntimeText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
-            SnapshotProjectionProcessResourcesText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
-            SnapshotProjectionRecordingIntegrityText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
-            SnapshotProjectionRecordingPipelineText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
-            SnapshotProjectionSourceSignalText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
-            SnapshotProjectionSourceTelemetryText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
-            SnapshotProjectionUserSettingsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
-            PreviewPacingText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Snapshots.cs"),
-            TimelineText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.cs"),
-            TimelineProjectionPreviewText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.cs"),
-            TimelineProjectionFlashbackPlaybackText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.cs"),
+            SnapshotsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Snapshots.cs"),
+            SnapshotProjectionText = snapshotProjectionText,
+            SnapshotInitializerText = ExtractMemberCodeFromDeclaration(snapshotProjectionText, "private AutomationSnapshot BuildAutomationSnapshot("),
         };
     }
 
@@ -8351,12 +8886,7 @@ static partial class Program
 
     private static string ReadAutomationDiagnosticsHubSnapshotsSource()
     {
-        return string.Join(
-            "\n",
-            new[]
-            {
-                ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Snapshots.cs"),
-            });
+        return ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Snapshots.cs");
     }
 
     private sealed class AutomationDiagnosticsHubSourceFamily
@@ -8366,41 +8896,9 @@ static partial class Program
         public string HubText { get; init; } = string.Empty;
         public string EvaluationText { get; init; } = string.Empty;
         public string DiagnosticEvaluationFlashbackText { get; init; } = string.Empty;
-        public string DiagnosticEvaluationRealtimeText { get; init; } = string.Empty;
-        public string DiagnosticEvaluationLanesText { get; init; } = string.Empty;
-        public string AlertsText { get; init; } = string.Empty;
-        public string VerificationText { get; init; } = string.Empty;
-        public string HdrText { get; init; } = string.Empty;
         public string SnapshotsText { get; init; } = string.Empty;
-        public string SnapshotsCoreText { get; init; } = string.Empty;
         public string SnapshotProjectionText { get; init; } = string.Empty;
         public string SnapshotInitializerText { get; init; } = string.Empty;
-        public string SnapshotProjectionAudioText { get; init; } = string.Empty;
-        public string SnapshotProjectionCaptureIngestText { get; init; } = string.Empty;
-        public string SnapshotProjectionWasapiAudioText { get; init; } = string.Empty;
-        public string SnapshotProjectionCaptureFormatText { get; init; } = string.Empty;
-        public string SnapshotProjectionCaptureCadenceText { get; init; } = string.Empty;
-        public string SnapshotProjectionVisualCadenceText { get; init; } = string.Empty;
-        public string SnapshotProjectionMjpegText { get; init; } = string.Empty;
-        public string SnapshotProjectionMjpegPreviewJitterText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlashbackExportText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlashbackPlaybackText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlashbackRecordingText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlashbackRecordingQueuesText { get; init; } = string.Empty;
-        public string SnapshotProjectionPreviewD3DText { get; init; } = string.Empty;
-        public string SnapshotProjectionPreviewD3DFrameFlowText { get; init; } = string.Empty;
-        public string SnapshotProjectionPreviewD3DCpuTimingText { get; init; } = string.Empty;
-        public string SnapshotProjectionPreviewRuntimeText { get; init; } = string.Empty;
-        public string SnapshotProjectionProcessResourcesText { get; init; } = string.Empty;
-        public string SnapshotProjectionRecordingIntegrityText { get; init; } = string.Empty;
-        public string SnapshotProjectionRecordingPipelineText { get; init; } = string.Empty;
-        public string SnapshotProjectionSourceSignalText { get; init; } = string.Empty;
-        public string SnapshotProjectionSourceTelemetryText { get; init; } = string.Empty;
-        public string SnapshotProjectionUserSettingsText { get; init; } = string.Empty;
-        public string PreviewPacingText { get; init; } = string.Empty;
-        public string TimelineText { get; init; } = string.Empty;
-        public string TimelineProjectionPreviewText { get; init; } = string.Empty;
-        public string TimelineProjectionFlashbackPlaybackText { get; init; } = string.Empty;
 
         public string SourceFamilyText => _sourceFamilyText ??= string.Join(
             "\n",
@@ -8409,90 +8907,26 @@ static partial class Program
                 HubText,
                 EvaluationText,
                 DiagnosticEvaluationFlashbackText,
-                DiagnosticEvaluationRealtimeText,
-                DiagnosticEvaluationLanesText,
-                AlertsText,
-                VerificationText,
-                HdrText,
                 SnapshotsText,
                 SnapshotProjectionText,
-                SnapshotInitializerText,
-                SnapshotProjectionAudioText,
-                SnapshotProjectionCaptureIngestText,
-                SnapshotProjectionWasapiAudioText,
-                SnapshotProjectionCaptureFormatText,
-                SnapshotProjectionCaptureCadenceText,
-                SnapshotProjectionMjpegText,
-                SnapshotProjectionMjpegPreviewJitterText,
-                SnapshotProjectionFlashbackExportText,
-                SnapshotProjectionFlashbackPlaybackText,
-                SnapshotProjectionFlashbackRecordingText,
-                SnapshotProjectionFlashbackRecordingQueuesText,
-                SnapshotProjectionPreviewD3DText,
-                SnapshotProjectionPreviewD3DFrameFlowText,
-                SnapshotProjectionPreviewRuntimeText,
-                SnapshotProjectionProcessResourcesText,
-                SnapshotProjectionRecordingIntegrityText,
-                SnapshotProjectionRecordingPipelineText,
-                SnapshotProjectionSourceSignalText,
-                SnapshotProjectionSourceTelemetryText,
-                SnapshotProjectionUserSettingsText,
-                HdrText,
-                PreviewPacingText,
-                TimelineText,
-                TimelineProjectionPreviewText,
-                TimelineProjectionFlashbackPlaybackText,
-                SnapshotProjectionPreviewD3DCpuTimingText,
             });
     }
 
-    private static AutomationDiagnosticsHubCountersSourceFamily ReadAutomationDiagnosticsHubCountersSource()
+    private static string ReadAutomationDiagnosticsHubCountersSource()
     {
-        var countersText = ReadNormalizedRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs");
-
-        return new AutomationDiagnosticsHubCountersSourceFamily(
-            countersText,
-            countersText);
+        return ReadNormalizedRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs");
     }
 
     private static string ReadCaptureServiceDiagnosticsRefreshSource()
     {
         return ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.cs")
-            + "\n" + ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.cs")
-            + "\n" + ReadCaptureServiceAudioSource()
             + "\n" + ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
-            + "\n" + ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
-            + "\n" + ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
-            + "\n" + ReadCaptureServiceFlashbackOrchestrationSource()
-            + "\n" + ReadCaptureServiceRecordingFinalizationSource();
+            + "\n" + ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs");
     }
 
     private static string ReadFlashbackBackendResourcesSource()
     {
-        return ReadNormalizedRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.cs");
-    }
-
-    private static MfSourceReaderVideoCaptureSourceFamily ReadMfSourceReaderVideoCaptureSourceFamily()
-    {
-        var rootText = ReadNormalizedRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs");
-        var diagnosticsText = rootText;
-        var frameLayoutText = rootText;
-        var lifecycleText = rootText;
-        var initializationText = rootText;
-        var initializedSessionText = initializationText;
-        var readLoopText = lifecycleText;
-        var frameDeliveryText = rootText;
-
-        return new MfSourceReaderVideoCaptureSourceFamily(
-            rootText,
-            diagnosticsText,
-            frameLayoutText,
-            lifecycleText,
-            initializationText,
-            initializedSessionText,
-            readLoopText,
-            frameDeliveryText,
-            rootText);
+        return ReadNormalizedRepoFile("Sussudio/Services/Capture/FlashbackBackendResources.cs");
     }
 
     private static DiagnosticSessionSourceFamily ReadDiagnosticSessionSourceFamily()
@@ -8523,7 +8957,6 @@ static partial class Program
     {
         return new DiagnosticSessionToolSurfaceSourceFamily(
             ReadNormalizedRepoFile("tools/ssctl/Program.cs"),
-            ReadNormalizedRepoFile("tools/ssctl/Program.cs"),
             ReadNormalizedRepoFile("tools/ssctl/CommandHandlers.cs"),
             ReadNormalizedRepoFile("tools/McpServer/Tools/AppStateTools.cs"));
     }
@@ -8543,17 +8976,6 @@ static partial class Program
         return ReadRepoFile(path).Replace("\r\n", "\n");
     }
 
-    private readonly record struct MfSourceReaderVideoCaptureSourceFamily(
-        string RootText,
-        string DiagnosticsText,
-        string FrameLayoutText,
-        string LifecycleText,
-        string InitializationText,
-        string InitializedSessionText,
-        string ReadLoopText,
-        string FrameDeliveryText,
-        string SourceFamilyText);
-
     private readonly record struct DiagnosticSessionSourceFamily(
         string SourceFamilyText,
         string ModelsText,
@@ -8561,17 +8983,12 @@ static partial class Program
 
     private readonly record struct DiagnosticSessionToolSurfaceSourceFamily(
         string SsctlProgramText,
-        string SsctlHelpText,
         string SsctlCommandHandlersText,
         string McpDiagnosticSessionText);
 
-    private readonly record struct AutomationDiagnosticsHubCountersSourceFamily(
-        string RealtimePreviewText,
-        string SourceFamilyText);
-
     private static void AssertDiagnosticsRefreshFlashbackRecordingAndStorageAlertCoverage(
         AutomationDiagnosticsHubSourceFamily diagnostics,
-        AutomationDiagnosticsHubCountersSourceFamily counters)
+        string counters)
     {
         AssertContains(diagnostics.SourceFamilyText, "\"flashback-export-stalled\"");
         AssertContains(diagnostics.SourceFamilyText, "DiagnosticsCategory.Flashback");
@@ -8582,7 +8999,7 @@ static partial class Program
         AssertContains(diagnostics.SourceFamilyText, "throughputBps={health.FlashbackExportThroughputBytesPerSec:0.##}");
         AssertContains(diagnostics.SourceFamilyText, "kind={exportFailureKind}");
         AssertContains(diagnostics.SourceFamilyText, "private const int FlashbackExportStallThresholdMs = 30000;");
-        AssertContains(diagnostics.AlertsText, "exportLastProgressAgeMs >= FlashbackExportStallThresholdMs");
+        AssertContains(diagnostics.SnapshotsText, "exportLastProgressAgeMs >= FlashbackExportStallThresholdMs");
         AssertContains(diagnostics.SourceFamilyText, "\"Flashback export progress is stalled.\"");
         AssertContains(diagnostics.SourceFamilyText, "$\"{lanes.Export} progressAgeMs={exportLastProgressAgeMs}\"");
         AssertContains(diagnostics.SourceFamilyText, "private long _lastFlashbackExportCompletionEventId;");
@@ -8602,24 +9019,24 @@ static partial class Program
         AssertContains(diagnostics.SourceFamilyText, "private const double FlashbackRecordingQueueDepthWarningRatio = 0.75;");
         AssertContains(diagnostics.SourceFamilyText, "private const double FlashbackAudioQueueDepthWarningRatio = 0.90;");
         AssertContains(diagnostics.SourceFamilyText, "private const long FlashbackRecordingQueueAgeWarningMs = 500;");
-        AssertContains(diagnostics.AlertsText, "\"flashback-temp-cache-pressure\"");
-        AssertContains(diagnostics.AlertsText, "snapshot.FlashbackStartupCacheOverBudget");
-        AssertContains(diagnostics.AlertsText, "snapshot.FlashbackTempDriveFreeBytes < FlashbackTempDriveLowFreeBytes");
+        AssertContains(diagnostics.SnapshotsText, "\"flashback-temp-cache-pressure\"");
+        AssertContains(diagnostics.SnapshotsText, "snapshot.FlashbackStartupCacheOverBudget");
+        AssertContains(diagnostics.SnapshotsText, "snapshot.FlashbackTempDriveFreeBytes < FlashbackTempDriveLowFreeBytes");
         AssertContains(diagnostics.SourceFamilyText, "\"flashback_storage\"");
         AssertContains(diagnostics.SourceFamilyText, "\"Flashback temp storage is under pressure.\"");
-        AssertContains(diagnostics.AlertsText, "\"flashback-encoding-failed\"");
-        AssertContains(diagnostics.AlertsText, "snapshot.FlashbackEncodingFailed");
-        AssertContains(diagnostics.AlertsText, "Flashback encoder failed: type={snapshot.FlashbackEncodingFailureType ?? \"Unknown\"}");
-        AssertContains(diagnostics.AlertsText, "\"flashback-recording-degraded\"");
-        AssertContains(counters.SourceFamilyText, "private FlashbackRecordingRecentCounters UpdateFlashbackRecordingRecentCounters(");
-        AssertContains(counters.SourceFamilyText, "Interlocked.Exchange(ref _lastFlashbackVideoSequenceGaps, sequenceGaps)");
-        AssertContains(counters.SourceFamilyText, "Interlocked.Exchange(ref _lastFlashbackGpuFramesDropped, gpuFramesDropped)");
-        AssertContains(counters.SourceFamilyText, "Interlocked.Exchange(ref _lastFlashbackVideoBackpressureEvents, backpressureEvents)");
-        AssertContains(counters.SourceFamilyText, "private D3DRendererRecentCounters UpdateD3DRendererRecentCounters(");
-        AssertContains(counters.SourceFamilyText, "private MjpegRecentCounters UpdateMjpegRecentCounters(");
+        AssertContains(diagnostics.SnapshotsText, "\"flashback-encoding-failed\"");
+        AssertContains(diagnostics.SnapshotsText, "snapshot.FlashbackEncodingFailed");
+        AssertContains(diagnostics.SnapshotsText, "Flashback encoder failed: type={snapshot.FlashbackEncodingFailureType ?? \"Unknown\"}");
+        AssertContains(diagnostics.SnapshotsText, "\"flashback-recording-degraded\"");
+        AssertContains(counters, "private FlashbackRecordingRecentCounters UpdateFlashbackRecordingRecentCounters(");
+        AssertContains(counters, "Interlocked.Exchange(ref _lastFlashbackVideoSequenceGaps, sequenceGaps)");
+        AssertContains(counters, "Interlocked.Exchange(ref _lastFlashbackGpuFramesDropped, gpuFramesDropped)");
+        AssertContains(counters, "Interlocked.Exchange(ref _lastFlashbackVideoBackpressureEvents, backpressureEvents)");
+        AssertContains(counters, "private D3DRendererRecentCounters UpdateD3DRendererRecentCounters(");
+        AssertContains(counters, "private MjpegRecentCounters UpdateMjpegRecentCounters(");
         AssertContains(diagnostics.SourceFamilyText, "var recentFlashbackRecording = UpdateFlashbackRecordingRecentCounters(health, nowTick);");
-        AssertContains(diagnostics.SourceFamilyText, "UpdateAlerts(snapshot, recentFlashbackRecording);");
-        AssertContains(diagnostics.SourceFamilyText, "private void UpdateAlerts(AutomationSnapshot snapshot, FlashbackRecordingRecentCounters flashbackRecordingRecent)");
+        AssertContains(diagnostics.SourceFamilyText, "UpdateAlerts(snapshot, recentFlashbackRecording, playbackActive, previewRuntime.StartupState);");
+        AssertContains(diagnostics.SourceFamilyText, "private void UpdateAlerts(\n        AutomationSnapshot snapshot,\n        FlashbackRecordingRecentCounters flashbackRecordingRecent,\n        bool playbackActive,\n        PreviewStartupState? previewStartupState)");
         AssertContains(diagnostics.SourceFamilyText, "var flashbackRecordingQueueBacklog =");
         AssertContains(diagnostics.SourceFamilyText, "var flashbackAudioQueueBacklog =");
         AssertContains(diagnostics.SourceFamilyText, "IsFlashbackRecordingQueueBackedUp(");
@@ -8627,21 +9044,19 @@ static partial class Program
         AssertContains(diagnostics.SourceFamilyText, "flashbackRecordingRecentForceRotateGap");
         AssertContains(diagnostics.SourceFamilyText, "IsFlashbackForceRotateRejectReason(snapshot.FlashbackVideoQueueLastRejectReason)");
         AssertContains(diagnostics.SourceFamilyText, "flashbackRecordingRecent.SequenceGaps > 0");
-        AssertContains(diagnostics.AlertsText, "(flashbackRecordingRecent.SequenceGaps > 0 && !flashbackRecordingRecentForceRotateGap)");
-        AssertContains(diagnostics.AlertsText, "flashbackRecordingRecent.GpuFramesDropped > 0");
-        AssertContains(diagnostics.AlertsText, "flashbackRecordingRecentBackpressure");
-        AssertContains(diagnostics.AlertsText, "flashbackRecordingQueueBacklog");
-        AssertContains(diagnostics.AlertsText, "flashbackAudioQueueBacklog");
-        AssertContains(diagnostics.AlertsText, "snapshot.FlashbackVideoBackpressureLastWaitMs >= FlashbackRecordingBackpressureWarningMs");
-        AssertContains(diagnostics.AlertsText, "Flashback recording path degraded:");
-        AssertContains(diagnostics.AlertsText, "\"flashback-export-rotation-gap\"");
-        AssertContains(diagnostics.AlertsText, "Flashback export rotation skipped live-edge frames:");
+        AssertContains(diagnostics.SnapshotsText, "(flashbackRecordingRecent.SequenceGaps > 0 && !flashbackRecordingRecentForceRotateGap)");
+        AssertContains(diagnostics.SnapshotsText, "flashbackRecordingRecent.GpuFramesDropped > 0");
+        AssertContains(diagnostics.SnapshotsText, "flashbackRecordingRecentBackpressure");
+        AssertContains(diagnostics.SnapshotsText, "flashbackRecordingQueueBacklog");
+        AssertContains(diagnostics.SnapshotsText, "flashbackAudioQueueBacklog");
+        AssertContains(diagnostics.SnapshotsText, "snapshot.FlashbackVideoBackpressureLastWaitMs >= FlashbackRecordingBackpressureWarningMs");
+        AssertContains(diagnostics.SnapshotsText, "Flashback recording path degraded:");
+        AssertContains(diagnostics.SnapshotsText, "\"flashback-export-rotation-gap\"");
+        AssertContains(diagnostics.SnapshotsText, "Flashback export rotation skipped live-edge frames:");
         AssertContains(diagnostics.SourceFamilyText, "forceRotate={snapshot.FlashbackForceRotateActive}");
         AssertContains(diagnostics.SourceFamilyText, "requested={snapshot.FlashbackForceRotateRequested} draining={snapshot.FlashbackForceRotateDraining}");
-        AssertContains(diagnostics.SourceFamilyText, "FatalCleanupInProgress = flashbackRecording.FatalCleanupInProgress");
         AssertContains(diagnostics.SourceFamilyText, "FatalCleanupInProgress = health.FatalCleanupInProgress");
-        AssertContains(diagnostics.SourceFamilyText, "CleanupInProgress = flashbackRecording.CleanupInProgress");
-        AssertContains(diagnostics.SourceFamilyText, "CleanupInProgress = health.FlashbackCleanupInProgress");
+        AssertContains(diagnostics.SourceFamilyText, "FlashbackCleanupInProgress = health.FlashbackCleanupInProgress");
         AssertContains(diagnostics.SourceFamilyText, "recentBackpressureEvents={flashbackRecordingRecent.BackpressureEvents}");
         AssertContains(diagnostics.SourceFamilyText, "private static bool IsFlashbackRecordingQueueBackedUp(");
         AssertContains(diagnostics.SourceFamilyText, "queueDepth >= Math.Ceiling(queueCapacity * FlashbackRecordingQueueDepthWarningRatio)");
@@ -8652,9 +9067,9 @@ static partial class Program
         AssertContains(diagnostics.SourceFamilyText, "string.Equals(reason, \"force_rotate_queue_guard\"");
         AssertContains(diagnostics.SourceFamilyText, "flashback recording active={health.FlashbackActive}");
         AssertContains(diagnostics.SourceFamilyText, "fatalCleanup={health.FatalCleanupInProgress} flashbackCleanup={health.FlashbackCleanupInProgress}");
-        AssertContains(diagnostics.SourceFamilyText, "var recordingIntegrityIncomplete =");
-        AssertContains(diagnostics.SourceFamilyText, "string.Equals(captureRuntime.RecordingIntegrityStatus, \"Incomplete\", StringComparison.OrdinalIgnoreCase)");
-        AssertContains(diagnostics.SourceFamilyText, "(recordingIntegrityIncomplete && !isRecording)");
+        AssertContains(diagnostics.SourceFamilyText, "var recordingIntegrityFailed =");
+        AssertContains(diagnostics.SourceFamilyText, "captureRuntime.RecordingIntegrityStatus is RecordingIntegrityStatus.Incomplete or RecordingIntegrityStatus.Failed");
+        AssertContains(diagnostics.SourceFamilyText, "idleRecordingIntegrityFailed");
         AssertContains(diagnostics.SourceFamilyText, "var flashbackRecordingDegraded =");
         AssertContains(diagnostics.SourceFamilyText, "recentFlashbackRecording.EncoderDroppedFrames > 0");
         AssertContains(diagnostics.SourceFamilyText, "recentFlashbackRecording.BackpressureEvents > 0");
@@ -8681,7 +9096,7 @@ static partial class Program
 
     private static void AssertDiagnosticsRefreshFlashbackPlaybackAndPreviewAlertCoverage(
         AutomationDiagnosticsHubSourceFamily diagnostics,
-        AutomationDiagnosticsHubCountersSourceFamily counters)
+        string counters)
     {
         AssertContains(diagnostics.SourceFamilyText, "\"flashback-playback-command-stalled\"");
         AssertContains(diagnostics.SourceFamilyText, "private const int FlashbackPlaybackCommandStallThresholdMs = 1000;");
@@ -8707,8 +9122,7 @@ static partial class Program
         AssertContains(diagnostics.SourceFamilyText, "snapshot.FlashbackPlaybackPendingCommands > 0");
         AssertContains(diagnostics.SourceFamilyText, "FlashbackPlaybackCommandQueueCapacity");
         AssertContains(diagnostics.SourceFamilyText, "TargetFps = health.FlashbackPlaybackTargetFps");
-        AssertContains(diagnostics.SourceFamilyText, "FlashbackPlaybackTargetFps = flashbackPlayback.TargetFps");
-        AssertContains(diagnostics.SourceFamilyText, "TargetFps: snapshot.FlashbackPlaybackTargetFps");
+        AssertContains(diagnostics.SourceFamilyText, "FlashbackPlaybackTargetFps = snapshot.FlashbackPlaybackTargetFps,");
         AssertContains(diagnostics.SourceFamilyText, "PtsCadenceMismatchCount = health.FlashbackPlaybackPtsCadenceMismatchCount");
         AssertContains(diagnostics.SourceFamilyText, "ptsMismatch={snapshot.FlashbackPlaybackPtsCadenceMismatchCount}");
         AssertContains(diagnostics.SourceFamilyText, "private static double ResolveFlashbackPlaybackTargetFps(double flashbackPlaybackTargetFps, double fallbackFrameRate)");
@@ -8716,18 +9130,20 @@ static partial class Program
         AssertContains(diagnostics.SourceFamilyText, "snapshot.FlashbackPlaybackObservedFps < playbackTargetFps * FlashbackPlaybackSlowFpsRatio");
         AssertContains(diagnostics.SourceFamilyText, "snapshot.FlashbackPlaybackTargetFps <= selectedCaptureFps * FlashbackPlaybackSlowFpsRatio");
         AssertContains(diagnostics.SourceFamilyText, "snapshot.PreviewCadenceObservedFps <= snapshot.FlashbackPlaybackTargetFps * FlashbackPlaybackSlowFpsRatio");
-        AssertContains(diagnostics.SourceFamilyText, "IsFlashbackPlaybackFrametimeDegraded(\n                snapshot.FlashbackPlaybackState");
-        AssertContains(diagnostics.SourceFamilyText, "snapshot.FlashbackPlaybackState,\n                playbackTargetFps,\n                snapshot.FlashbackPlaybackFrameCount");
+        AssertContains(diagnostics.SourceFamilyText, "IsFlashbackPlaybackFrametimeDegraded(\n                playbackActive");
+        AssertContains(diagnostics.SourceFamilyText, "playbackActive,\n                playbackTargetFps,\n                snapshot.FlashbackPlaybackFrameCount");
+        AssertContains(diagnostics.SourceFamilyText, "health.FlashbackPlaybackState == FlashbackPlaybackState.Playing");
+        AssertContains(diagnostics.SourceFamilyText, "var playbackActive = health.FlashbackPlaybackState == FlashbackPlaybackState.Playing;");
+        AssertDoesNotContain(diagnostics.SourceFamilyText, "string.Equals(snapshot.FlashbackPlaybackState, \"Playing\", StringComparison.OrdinalIgnoreCase)");
+        AssertContains(diagnostics.SourceFamilyText, "EvaluatePerformance(\n            viewModelSnapshot,\n            health,\n            previewRuntime,\n            recordingFileGrowing,\n            visualCadenceHealthy,\n            lastVerification);");
         AssertContains(diagnostics.SourceFamilyText, "IsCaptureOnePercentLowDegraded(\n                snapshot.ExpectedCaptureFrameRate");
         AssertContains(diagnostics.SourceFamilyText, "IsPreviewOnePercentLowDegraded(\n                snapshot.PreviewCadenceExpectedIntervalMs");
         AssertContains(diagnostics.SourceFamilyText, "\"Source/capture 1% low is below target, but sampled visual cadence confirms source-rate output.\"");
         AssertContains(diagnostics.SourceFamilyText, "$\"{lanes.Source} | {lanes.Visual}\"");
-        AssertContains(diagnostics.SourceFamilyText, "captureCadenceExpectedFrameRate: health.ExpectedFrameRate");
-        AssertContains(diagnostics.SourceFamilyText, "captureCadenceOnePercentLowFps: health.CaptureCadenceOnePercentLowFps");
-        AssertContains(diagnostics.SourceFamilyText, "previewCadenceExpectedIntervalMs: previewRuntime.DisplayCadenceExpectedIntervalMs");
-        AssertContains(diagnostics.SourceFamilyText, "previewCadenceOnePercentLowFps: previewRuntime.DisplayCadenceOnePercentLowFps");
-        AssertContains(diagnostics.SourceFamilyText, "reasons.Add($\"capture 1% low {captureCadenceOnePercentLowFps:0.##}fps\")");
-        AssertContains(diagnostics.SourceFamilyText, "reasons.Add($\"preview 1% low {previewCadenceOnePercentLowFps:0.##}fps\")");
+        AssertContains(diagnostics.EvaluationText, "health.CaptureCadenceOnePercentLowFps");
+        AssertContains(diagnostics.EvaluationText, "previewRuntime.DisplayCadenceOnePercentLowFps");
+        AssertContains(diagnostics.EvaluationText, "reasons.Add($\"capture 1% low {health.CaptureCadenceOnePercentLowFps:0.##}fps\")");
+        AssertContains(diagnostics.EvaluationText, "reasons.Add($\"preview 1% low {previewRuntime.DisplayCadenceOnePercentLowFps:0.##}fps\")");
         AssertContains(diagnostics.SourceFamilyText, "snapshot.FlashbackPlaybackOnePercentLowFps");
         AssertContains(diagnostics.SourceFamilyText, "frameCount >= FlashbackPlaybackOnePercentLowMinimumFrames");
         AssertContains(diagnostics.SourceFamilyText, "cadenceSampleCount >= FlashbackPlaybackOnePercentLowMinimumFrames");
@@ -8753,7 +9169,7 @@ static partial class Program
         AssertContains(diagnostics.SourceFamilyText, "var playbackCommandFailure = string.IsNullOrWhiteSpace(health.FlashbackPlaybackLastCommandFailure)");
         AssertContains(diagnostics.SourceFamilyText, "var playbackTargetFps = ResolveFlashbackPlaybackTargetFps(\n            health.FlashbackPlaybackTargetFps,\n            health.ExpectedFrameRate);");
         AssertContains(diagnostics.SourceFamilyText, "lastFailure={playbackCommandFailure} failureAgeMs={playbackCommandFailureAgeMs}");
-        AssertContains(diagnostics.SourceFamilyText, "playback perf state={health.FlashbackPlaybackState}");
+        AssertContains(diagnostics.SourceFamilyText, "playback perf state={health.FlashbackPlaybackState?.ToString() ?? \"N/A\"}");
         AssertContains(diagnostics.SourceFamilyText, "fps={health.FlashbackPlaybackObservedFps:0.##}/{playbackTargetFps:0.##}");
         AssertContains(diagnostics.SourceFamilyText, "target={health.FlashbackPlaybackTargetFps:0.##}");
         AssertContains(diagnostics.SourceFamilyText, "encoder={FormatEncoderFrameRate(health)} source={(health.SourceFrameRateExact ?? 0):0.##} present={previewRuntime.DisplayCadenceObservedFps:0.##}");
@@ -8772,15 +9188,15 @@ static partial class Program
         AssertContains(diagnostics.SourceFamilyText, "health.FlashbackPlaybackSubmitFailures <= 0");
         AssertContains(diagnostics.SourceFamilyText, "UpdatePreviewJitterRecentCounters(health, nowTick)");
         AssertContains(diagnostics.SourceFamilyText, "UpdateD3DRendererRecentCounters(previewRuntime, nowTick)");
-        AssertContains(counters.RealtimePreviewText, "private PreviewJitterRecentCounters UpdatePreviewJitterRecentCounters(");
-        AssertContains(counters.RealtimePreviewText, "private long _lastPreviewJitterTotalDropped;");
-        AssertContains(counters.RealtimePreviewText, "Interlocked.Exchange(ref _lastPreviewJitterTotalDropped, totalDropped)");
-        AssertContains(counters.RealtimePreviewText, "private D3DRendererRecentCounters UpdateD3DRendererRecentCounters(");
-        AssertContains(counters.RealtimePreviewText, "private long _lastD3DFramesSubmitted;");
-        AssertContains(counters.RealtimePreviewText, "Interlocked.Exchange(ref _lastD3DFramesSubmitted, submitted)");
-        AssertContains(counters.RealtimePreviewText, "private MjpegRecentCounters UpdateMjpegRecentCounters(");
-        AssertContains(counters.RealtimePreviewText, "Interlocked.Exchange(ref _lastMjpegCompressedDropsQueueFull, compressedQueueDrops)");
-        AssertContains(counters.RealtimePreviewText, "private FlashbackRecordingRecentCounters UpdateFlashbackRecordingRecentCounters(");
+        AssertContains(counters, "private PreviewJitterRecentCounters UpdatePreviewJitterRecentCounters(");
+        AssertContains(counters, "private long _lastPreviewJitterTotalDropped;");
+        AssertContains(counters, "Interlocked.Exchange(ref _lastPreviewJitterTotalDropped, totalDropped)");
+        AssertContains(counters, "private D3DRendererRecentCounters UpdateD3DRendererRecentCounters(");
+        AssertContains(counters, "private long _lastD3DFramesSubmitted;");
+        AssertContains(counters, "Interlocked.Exchange(ref _lastD3DFramesSubmitted, submitted)");
+        AssertContains(counters, "private MjpegRecentCounters UpdateMjpegRecentCounters(");
+        AssertContains(counters, "Interlocked.Exchange(ref _lastMjpegCompressedDropsQueueFull, compressedQueueDrops)");
+        AssertContains(counters, "private FlashbackRecordingRecentCounters UpdateFlashbackRecordingRecentCounters(");
         AssertDoesNotContain(diagnostics.HubText, "private long _lastPreviewJitterTotalDropped;");
         AssertDoesNotContain(diagnostics.HubText, "private long _lastD3DFramesSubmitted;");
         AssertContains(diagnostics.SourceFamilyText, "recentSubmitted={recentRendererSubmitted} recentDropped={recentRenderer.Dropped}");
@@ -8788,8 +9204,8 @@ static partial class Program
         AssertContains(diagnostics.SourceFamilyText, "clearedDrops={health.MjpegPreviewJitterClearedDropCount}");
         AssertContains(diagnostics.SourceFamilyText, "resumeReprimes={health.MjpegPreviewJitterResumeReprimeCount} recentDeadlineDrops={recentPreviewDeadlineDrops} recentUnderflows={recentPreviewUnderflows} lastDropReason={previewLastDropReason}");
         AssertContains(diagnostics.SourceFamilyText, "UpdateD3DFrameStatsRecentCounters(previewRuntime, nowTick)");
-        AssertContains(counters.RealtimePreviewText, "private long UpdateD3DFrameLatencyWaitRecentCounters(");
-        AssertContains(counters.RealtimePreviewText, "Interlocked.Exchange(ref _lastD3DFrameLatencyWaitTimeouts, timeouts)");
+        AssertContains(counters, "private long UpdateD3DFrameLatencyWaitRecentCounters(");
+        AssertContains(counters, "Interlocked.Exchange(ref _lastD3DFrameLatencyWaitTimeouts, timeouts)");
         AssertContains(diagnostics.SourceFamilyText, "recentMissed={recentD3DMissedRefreshes} recentFail={recentD3DStatsFailures}");
         AssertContains(diagnostics.SourceFamilyText, "\"capture-cadence-low-1pct\"");
         AssertContains(diagnostics.SourceFamilyText, "\"Capture cadence 1% low is below target:");
@@ -8815,7 +9231,7 @@ static partial class Program
         AssertContains(diagnostics.SourceFamilyText, "if (!previewOnePercentLowDegraded)");
         AssertContains(diagnostics.SourceFamilyText, "var visualCadenceHealthy =\n            IsVisualCadenceHealthy(");
         AssertContains(diagnostics.SourceFamilyText, "Present/display 1% low is below target, but sampled visual cadence confirms source-rate output.");
-        AssertContains(diagnostics.SourceFamilyText, "if (visualCadenceHealthy)\n        {\n            return new DiagnosticEvaluation(\n                \"Healthy\",");
+        AssertContains(diagnostics.SourceFamilyText, "if (visualCadenceHealthy)\n        {\n            return DiagnosticEvaluation.Create(\n                \"Healthy\",");
         AssertContains(diagnostics.SourceFamilyText, "private static bool IsMjpegDuplicateCadenceDetected(CaptureHealthSnapshot health)");
         AssertContains(diagnostics.SourceFamilyText, "health.MjpegPacketHashDuplicateFramePercent < 20.0");
         AssertContains(diagnostics.SourceFamilyText, "health.MjpegPacketHashUniqueObservedFps <= health.ExpectedFrameRate * 0.75");
@@ -8861,16 +9277,16 @@ static partial class Program
         AssertContains(exportCoreText, "FlashbackExportPlanner.CreateRequest(");
         AssertContains(exportCoreText, "CreateFlashbackExportThrottleDelayProvider");
         AssertContains(plannerText, "internal static class FlashbackExportPlanner");
-        AssertContains(exportDiagnosticsText, "public long BeginFlashbackExportDiagnostics(");
-        AssertContains(exportDiagnosticsText, "public void RecordRejectedFlashbackExportDiagnostics(");
-        AssertContains(exportDiagnosticsText, "public void CompleteFlashbackExportDiagnostics(");
-        AssertContains(exportDiagnosticsText, "public IProgress<ExportProgress> CreateFlashbackExportProgressSink(");
-        AssertContains(exportDiagnosticsText, "public void UpdateFlashbackExportProgress(");
-        AssertContains(exportDiagnosticsText, "public void RecordFlashbackExportForceRotateFallback(");
-        AssertContains(exportDiagnosticsText, "public sealed class FlashbackExportProgressForwarder");
+        AssertContains(exportDiagnosticsText, "public long BeginDiagnostics(");
+        AssertContains(exportDiagnosticsText, "public void RecordRejectedDiagnostics(");
+        AssertContains(exportDiagnosticsText, "public void CompleteDiagnostics(");
+        AssertContains(exportDiagnosticsText, "public IProgress<ExportProgress> CreateProgressSink(");
+        AssertContains(exportDiagnosticsText, "public void UpdateProgress(");
+        AssertContains(exportDiagnosticsText, "public void RecordForceRotateFallback(");
+        AssertContains(exportDiagnosticsText, "public sealed class ProgressForwarder");
         AssertContains(captureServiceText, "await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);");
         AssertContains(captureServiceText, "FlashbackExporter? snapshotExporter = null,");
-        AssertContains(captureServiceText, "var exporter = snapshotExporter;\n            if (exporter == null)\n            {\n                exporter = _flashbackBackend.Exporter ??= new FlashbackExporter();\n            }");
+        AssertContains(captureServiceText, "var exporter = snapshotExporter;\n            if (exporter == null)\n            {\n                exporter = _flashbackBackend.GetOrCreateExporter();\n            }");
         AssertOccursBefore(captureServiceText, "if (bufferManager == null)", "var exporter = snapshotExporter;");
         AssertContains(captureServiceText, "var sessionLockHeld = false;");
         AssertContains(captureServiceText, "sessionLockHeld = true;");
@@ -8892,16 +9308,16 @@ static partial class Program
         AssertContains(exportLastNMethod, "snapshotExporter: snapshot.Exporter,");
         AssertContains(exportLastNMethod, "resolveRangeAfterEvictionPaused: CreateFlashbackExportLastNRangeResolver(seconds)");
         var backendSnapshotMethod = ExtractMemberCode(exportOperationsText, "SnapshotFlashbackExportBackendAsync");
-        AssertContains(backendSnapshotMethod, "new FlashbackExporter()");
+        AssertContains(backendSnapshotMethod, "_flashbackBackend.GetOrCreateExporter()");
         AssertContains(backendSnapshotMethod, "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);\n            if (sessionLockHeld)");
         AssertOccursBefore(backendSnapshotMethod, "await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);", "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);");
         AssertContains(flashbackBackendText, "outerPauseApplied = bufferManager != null;");
         AssertContains(captureServiceText, "return FailFlashbackExport(outputPath, \"Flashback export cancelled.\", FlashbackExportFailureCodes.Cancelled, inPoint, outPoint);");
         AssertContains(captureServiceText, "var exportId = 0L;");
         AssertContains(captureServiceText, "var evictionPaused = false;");
-        AssertContains(captureServiceText, "exportId = _flashbackExport.BeginFlashbackExportDiagnostics(inPoint, outPoint, outputPath);");
+        AssertContains(captureServiceText, "exportId = _flashbackExport.BeginDiagnostics(inPoint, outPoint, outputPath);");
         AssertContains(captureServiceText, "var forceRotateResult = flashbackSink?.ForceRotateForExport(inPoint, outPoint, ct);");
-        AssertContains(captureServiceText, "_flashbackExport.RecordFlashbackExportForceRotateFallback(");
+        AssertContains(captureServiceText, "_flashbackExport.RecordForceRotateFallback(");
         AssertContains(captureServiceText, "FLASHBACK_EXPORT_FORCE_ROTATE_FALLBACK reason=force_rotate_timeout");
         AssertContains(captureServiceText, "private sealed class FlashbackRecordingBoundarySnapshot");
         AssertContains(captureServiceText, "captureBoundarySnapshot: sink => CaptureFlashbackRecordingBoundarySnapshot(sink, recordingBoundary)");
@@ -8909,20 +9325,20 @@ static partial class Program
         AssertOccursBefore(flashbackBackendText, "captureBoundarySnapshot?.Invoke(flashbackSink);", "var exportResult = await exportRecordingAsync(");
         AssertContains(captureServiceText, "counters: recordingBoundary.Counters ?? CaptureFlashbackRecordingIntegrityCountersSinceBaseline");
         AssertContains(captureServiceText, "var flashbackFinalAudioCounters = recordingBoundary.AudioCounters ??");
-        AssertContains(captureServiceText, "FoldRequestedProgramAudioIntegrityIntoFinalizeResult(\n            fbResult,\n            flashbackFinalAudioCounters);");
+        AssertContains(captureServiceText, "fbResult = ApplyRecordingFinalizePolicies(");
         AssertContains(captureServiceText, "evictionPaused = true;");
         AssertContains(captureServiceText, "if (exportId != 0)");
         AssertContains(captureServiceText, "if (evictionPaused)");
         AssertContains(captureServiceText, "ResumeFlashbackEvictionBestEffort(bufferManager, \"flashback_export\");");
         AssertContains(flashbackBackendText, "resumeEvictionBestEffort(bufferManager, \"flashback_recording_finalize\");");
-        AssertContains(captureServiceText, "_flashbackExport.RecordLastFlashbackExportResult(exportId, failure);");
-        AssertContains(exportDiagnosticsText, "public void RecordLastFlashbackExportResult(long exportId, FinalizeResult result)");
+        AssertContains(captureServiceText, "_flashbackExport.RecordLastResult(exportId, failure);");
+        AssertContains(exportDiagnosticsText, "public void RecordLastResult(long exportId, FinalizeResult result)");
         AssertContains(exportDiagnosticsText, "Volatile.Write(ref _lastFlashbackExportResultId, exportId);");
         AssertContains(captureServiceText, "private FinalizeResult FailFlashbackExport(\n        string outputPath,\n        string statusMessage,\n        string failureCode,\n        TimeSpan? inPoint = null,\n        TimeSpan? outPoint = null)");
         AssertContains(captureServiceText, "Logger.Log($\"FLASHBACK_EXPORT_REJECTED status='{statusMessage}' output='{outputPath}'\");");
         AssertContains(exportDiagnosticsText, "_lastExportResult = result;");
-        AssertContains(captureServiceText, "_flashbackExport.RecordRejectedFlashbackExportDiagnostics(outputPath, result, inPoint, outPoint);");
-        AssertContains(exportDiagnosticsText, "public void RecordRejectedFlashbackExportDiagnostics(\n        string outputPath,\n        FinalizeResult result,\n        TimeSpan? inPoint = null,\n        TimeSpan? outPoint = null)");
+        AssertContains(captureServiceText, "_flashbackExport.RecordRejectedDiagnostics(outputPath, result, inPoint, outPoint);");
+        AssertContains(exportDiagnosticsText, "public void RecordRejectedDiagnostics(\n        string outputPath,\n        FinalizeResult result,\n        TimeSpan? inPoint = null,\n        TimeSpan? outPoint = null)");
         AssertContains(exportDiagnosticsText, "if (_flashbackExportActive)");
         AssertContains(exportDiagnosticsText, "Volatile.Write(ref _lastFlashbackExportResultId, 0);");
         AssertContains(exportDiagnosticsText, "FLASHBACK_EXPORT_REJECTED_DIAGNOSTICS_DEFERRED");
@@ -8933,7 +9349,7 @@ static partial class Program
         AssertContains(captureServiceText, "var failure = FlashbackExportFailureCodes.Create(");
         AssertContains(captureServiceText, "ex is OperationCanceledException && ct.IsCancellationRequested");
         AssertContains(captureServiceText, "FlashbackExportFailureCodes.FromException(ex)");
-        AssertContains(captureServiceText, "_flashbackExport.CompleteFlashbackExportDiagnostics(exportId, failure);\n            }\n            else\n            {\n                _flashbackExport.RecordRejectedFlashbackExportDiagnostics(outputPath, failure, inPoint, outPoint);\n            }\n            return failure;");
+        AssertContains(captureServiceText, "_flashbackExport.CompleteDiagnostics(exportId, failure);\n            }\n            else\n            {\n                _flashbackExport.RecordRejectedDiagnostics(outputPath, failure, inPoint, outPoint);\n            }\n            return failure;");
         AssertContains(exportDiagnosticsText, "_flashbackExportStartedUtcUnixMs = now;");
         AssertContains(exportDiagnosticsText, "_flashbackExportCompletedUtcUnixMs = now;");
         AssertContains(exportDiagnosticsText, "var completedUtcUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();");
@@ -9064,7 +9480,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "coalescedSeekEnd={result.FlashbackPlaybackSeekCommandsCoalescedAtEnd}");
         AssertContains(diagnosticSessionText, "failureUtcEnd={result.FlashbackPlaybackLastCommandFailureUtcUnixMsAtEnd}");
         AssertContains(diagnosticSessionText, "Flashback Playback Perf:");
-        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"action\"] = \"play\", [\"positionMs\"] = playPositionMs }");
+        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = \"play\", [AutomationPayloadKeys.PositionMs] = playPositionMs }");
         AssertContains(diagnosticSessionText, "flashback playback started at completed segment");
         AssertContains(diagnosticSessionText, "flashback playback returned live");
         AssertContains(diagnosticSessionText, "ValidateFlashbackPlaybackSession(");
@@ -9148,11 +9564,11 @@ static partial class Program
         AssertDoesNotContain(diagnosticSessionText, "flashback scrub stress: playback worker still alive after drain wait");
         AssertContains(diagnosticSessionText, "GetString(lastSnapshot, \"FlashbackPlaybackState\")");
         AssertContains(diagnosticSessionText, "internal static async Task RunFlashbackRestartCycleAsync(");
-        AssertContains(diagnosticSessionText, "flashback restart cycle export verified");
+        AssertContains(diagnosticSessionText, "\"flashback restart cycle\"");
         AssertContains(diagnosticSessionText, "internal static async Task RunFlashbackEncoderCycleAsync(");
         AssertContains(diagnosticSessionText, "\"flashback-encoder-cycle-export.mp4\"");
         AssertContains(diagnosticSessionText, "flashback encoder preset restored to");
-        AssertContains(diagnosticSessionText, "flashback encoder cycle export verified");
+        AssertContains(diagnosticSessionText, "\"flashback encoder cycle\"");
         AssertContains(diagnosticSessionText, "internal static async Task RunFlashbackExportPlaybackAsync(");
         AssertContains(diagnosticSessionText, "flashback export during playback verified");
         AssertContains(diagnosticSessionText, "internal static async Task RunFlashbackSegmentPlaybackAsync(");
@@ -9169,7 +9585,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "internal static async Task ToggleAudioEnabledDuringFlashbackExportAsync(");
         AssertContains(diagnosticSessionText, "\"SetAudioEnabled\"");
         AssertContains(diagnosticSessionText, "FlashbackExportActive");
-        AssertContains(diagnosticSessionText, "[\"useSelectionRange\"] = true");
+        AssertContains(diagnosticSessionText, "[AutomationPayloadKeys.UseSelectionRange] = true");
         AssertContains(diagnosticSessionText, "actions.Add($\"{scenarioLabel} verified\")");
         AssertContains(diagnosticSessionText, "internal static async Task RunFlashbackLifecycleAsync(");
         AssertContains(diagnosticSessionText, "internal static async Task RunFlashbackExportConcurrentAsync(");
@@ -9180,7 +9596,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "flashback concurrent exports verified");
         AssertContains(diagnosticSessionText, "internal static async Task RunFlashbackDisableDuringExportAsync(");
         AssertContains(diagnosticSessionText, "\"flashback-disable-during-export.mp4\"");
-        AssertContains(diagnosticSessionText, "var disableTask = SendCommandWithConnectRetryAsync(");
+        AssertContains(diagnosticSessionText, "disableTask = SendCommandWithConnectRetryAsync(");
         AssertContains(diagnosticSessionText, "flashback disable/export requests issued");
         AssertContains(diagnosticSessionText, "flashback disable during export verified");
         AssertContains(diagnosticSessionText, "internal static async Task RunFlashbackRotatedExportAsync(");
@@ -9191,18 +9607,18 @@ static partial class Program
         AssertContains(diagnosticSessionText, "flashback rotated export verified");
         AssertContains(diagnosticSessionText, "internal static async Task RunFlashbackPreviewCycleAsync(");
         AssertContains(diagnosticSessionText, "\"flashback-preview-off-export.mp4\"");
-        AssertContains(diagnosticSessionText, "flashback preview cycle export verified");
+        AssertContains(diagnosticSessionText, "\"flashback preview cycle\"");
         AssertContains(diagnosticSessionText, "internal static async Task RunFlashbackPlaybackPreviewCycleAsync(");
         AssertContains(diagnosticSessionText, "\"flashback-playback-preview-cycle.mp4\"");
         AssertContains(diagnosticSessionText, "flashback playback preview cycle preview stopped during playback");
         AssertContains(diagnosticSessionText, "flashback playback preview cycle: playback did not return live after preview stop");
-        AssertContains(diagnosticSessionText, "flashback playback preview cycle export verified");
+        AssertContains(diagnosticSessionText, "\"flashback playback preview cycle\"");
         AssertContains(diagnosticSessionText, "internal static async Task<JsonElement?> WaitForPreviewActiveAsync(");
         AssertContains(diagnosticSessionText, "internal static async Task RunFlashbackRecordingPreviewCycleAsync(");
         AssertContains(diagnosticSessionText, "flashback recording preview cycle preview stopped");
         AssertContains(diagnosticSessionText, "const int recordingCleanupTimeoutMs = 300_000;");
         AssertContains(diagnosticSessionText, "AutomationCommandKind.SetRecordingEnabled,");
-        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"enabled\"] = false }");
+        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = false }");
         AssertContains(diagnosticSessionText, "recordingCleanupTimeoutMs,");
         AssertContains(diagnosticSessionText, "internal static async Task<JsonElement?> WaitForFlashbackRecordingReadyAsync(");
         AssertContains(diagnosticSessionText, "internal static async Task<FlashbackRecordingSettingsDeferredPresetState> RunFlashbackRecordingSettingsDeferredAsync(");
@@ -9233,16 +9649,16 @@ static partial class Program
         AssertContains(diagnosticSessionText, "var rangeStartMs = Math.Max(0, rangeEndMs - outPointMs);");
         AssertContains(diagnosticSessionText, "requiredStartMs>={leftEdgeSafetyMarginMs}");
         AssertContains(diagnosticSessionText, "\"flashback stress: Flashback buffer did not become export-ready within 30s\"");
-        AssertContains(diagnosticSessionText, "\"FlashbackAction\", new Dictionary<string, object?> { [\"action\"] = \"pause\" }");
-        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"action\"] = \"seek\", [\"positionMs\"] = 500 }");
+        AssertContains(diagnosticSessionText, "\"FlashbackAction\", new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = \"pause\" }");
+        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = \"seek\", [AutomationPayloadKeys.PositionMs] = 500 }");
         AssertContains(diagnosticSessionText, "foreach (var positionMs in new[] { 750, 1_250, 2_000, 3_250, 1_500 })");
         AssertContains(diagnosticSessionText, "actions.Add(\"flashback scrub burst requested\");");
-        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"action\"] = \"begin-scrub\", [\"positionMs\"] = 500 }");
+        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = \"begin-scrub\", [AutomationPayloadKeys.PositionMs] = 500 }");
         AssertContains(diagnosticSessionText, "private static async Task<int> RunFlashbackScrubStressUpdateBurstAsync(");
-        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"action\"] = \"update-scrub\", [\"positionMs\"] = positions[i] }");
+        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = \"update-scrub\", [AutomationPayloadKeys.PositionMs] = positions[i] }");
         AssertContains(diagnosticSessionText, "return positions[^1];");
-        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"action\"] = \"end-scrub\", [\"positionMs\"] = finalScrubPositionMs }");
-        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"seconds\"] = 1, [\"outputPath\"] = exportPath }");
+        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = \"end-scrub\", [AutomationPayloadKeys.PositionMs] = finalScrubPositionMs }");
+        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [AutomationPayloadKeys.Seconds] = 1, [AutomationPayloadKeys.OutputPath] = exportPath }");
         AssertContains(diagnosticSessionText, "internal static Dictionary<string, object?> CreateFlashbackExportVerifyPayload(string filePath)");
         AssertContains(diagnosticSessionText, "\"flashback stress: playback command queue did not drain within 10s \"");
         AssertContains(diagnosticSessionText, "$\"maxPending={GetInt(lastSnapshot, \"FlashbackPlaybackMaxPendingCommands\")} \"");
@@ -9387,11 +9803,6 @@ public sealed class PreviewPacingClassifierTests
         Assert.DoesNotContain("PreviewPacingSlowStageClassifier.Lanes.SourceVisual.cs", agentMapText);
         Assert.DoesNotContain("PreviewPacingSlowStageClassifier.Lanes.DecodeJitter.cs", agentMapText);
         Assert.DoesNotContain("PreviewPacingSlowStageClassifier.Lanes.Render.cs", agentMapText);
-        Assert.False(File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "PreviewPacingSlowStageClassifier.D3D.cs")));
-        Assert.False(File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "PreviewPacingSlowStageClassifier.Lanes.SourceVisual.cs")));
-        Assert.False(File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "PreviewPacingSlowStageClassifier.Lanes.DecodeJitter.cs")));
-        Assert.False(File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "PreviewPacingSlowStageClassifier.Lanes.Render.cs")));
-        Assert.False(File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "PreviewPacingClassificationModels.cs")));
     }
 
     [Fact]
@@ -9421,9 +9832,7 @@ public sealed class PreviewPacingClassifierTests
         Assert.Contains("private static PreviewPacingClassification ClassifyPreviewPacing(", diagnosticsSnapshotsText);
         Assert.Contains("PreviewPacingSlowStageClassifier.Classify", diagnosticsSnapshotsText);
         Assert.Contains("PreviewCadenceOnePercentLowFps = previewRuntime.DisplayCadenceOnePercentLowFps", diagnosticsHubText);
-        Assert.Contains("CaptureCadenceEstimatedDroppedFrames = captureCadence.EstimatedDroppedFrames", diagnosticsHubText);
-        Assert.Contains("EstimatedDroppedFrames = captureCadence.EstimatedDroppedFrames", diagnosticsHubText);
-        Assert.Contains("EstimatedDroppedFrames = health.CaptureCadenceEstimatedDroppedFrames", diagnosticsHubText);
+        Assert.Contains("CaptureCadenceEstimatedDroppedFrames = health.CaptureCadenceEstimatedDroppedFrames", diagnosticsHubText);
         Assert.Contains("RecentD3DMissedRefreshes = recentD3DMissedRefreshes", diagnosticsHubText);
         Assert.Contains("RecentPreviewJitterScheduleLateCount = recentPreviewJitter.ScheduleLateCount", diagnosticsHubText);
         Assert.Contains("RecentD3DFrameLatencyWaitTimeoutCount = recentD3DFrameLatencyWaitTimeouts", diagnosticsHubText);
@@ -9433,18 +9842,14 @@ public sealed class PreviewPacingClassifierTests
         Assert.Contains("PreviewPacingLikelySlowStage = previewPacingClassification.LikelySlowStage", diagnosticsHubText);
         Assert.Contains("PreviewPacingSlowStageConfidence = previewPacingClassification.Confidence", diagnosticsHubText);
         Assert.Contains("PreviewPacingSlowStageEvidence = previewPacingClassification.Evidence", diagnosticsHubText);
-        Assert.Contains("PreviewPacingLikelySlowStage = preview.PacingLikelySlowStage", diagnosticsHubText);
-        Assert.Contains("PreviewPacingSlowStageConfidence = preview.PacingSlowStageConfidence", diagnosticsHubText);
-        Assert.Contains("PreviewPacingSlowStageEvidence = preview.PacingSlowStageEvidence", diagnosticsHubText);
-        Assert.Contains("PacingLikelySlowStage: snapshot.PreviewPacingLikelySlowStage", diagnosticsHubText);
+        Assert.Contains("PreviewPacingLikelySlowStage = snapshot.PreviewPacingLikelySlowStage,", diagnosticsHubText);
+        Assert.Contains("PreviewPacingSlowStageConfidence = snapshot.PreviewPacingSlowStageConfidence,", diagnosticsHubText);
+        Assert.Contains("PreviewPacingSlowStageEvidence = snapshot.PreviewPacingSlowStageEvidence,", diagnosticsHubText);
     }
 
     [Fact]
     public void AutomationDiagnosticsHub_DoesNotRetainSupersededPreviewPacingPartials()
     {
-        Assert.False(File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.PreviewPacing.cs")));
-        Assert.False(File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.Counters.RealtimePreview.cs")));
-        Assert.False(File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.SnapshotProjection.Flattening.AutomationSnapshot.cs")));
     }
 
     [Fact(DisplayName = "Preview pacing classifier rejects weak samples")]
@@ -9709,5 +10114,157 @@ public sealed class PreviewPacingClassifierTests
         throw new InvalidOperationException(
             $"Could not locate repository root from '{AppContext.BaseDirectory}'.");
     }
+}
+}
+
+namespace Sussudio.Tests
+{
+public sealed unsafe class MfSourceReaderFrameStrideTests
+{
+    private const int Width = 6;
+    private const int Height = 4;
+    private const int GuardBytes = 16;
+    private const byte SourceGuard = 0xA5;
+    private const byte SourcePadding = 0xEE;
+    private const byte DestinationGuard = 0xB6;
+
+    private delegate void CopyFrameDelegate(
+        byte* sourceStart, int stride, Span<byte> destination, int width, int height, bool isP010);
+
+    private static readonly CopyFrameDelegate CopyFrame = BindCopyFrame();
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void CopyYuvWithStride_PreservesPackedBytesAndGuardRegions(bool isP010, bool padded)
+    {
+        var expected = ExpectedPackedFrame(isP010);
+        var rowBytes = isP010 ? Width * 2 : Width;
+        var stride = rowBytes + (padded ? 4 : 0);
+        var source = CreatePitchedSource(expected, rowBytes, stride);
+        var originalSource = (byte[])source.Clone();
+        var destination = Enumerable.Repeat(DestinationGuard, GuardBytes + expected.Length + GuardBytes).ToArray();
+        var expectedDestination = (byte[])destination.Clone();
+        expected.CopyTo(expectedDestination, GuardBytes);
+
+        InvokeCopy(source, GuardBytes, stride, destination, GuardBytes, expected.Length + GuardBytes, isP010);
+
+        Assert.Equal(expectedDestination, destination);
+        Assert.Equal(originalSource, source);
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void CopyYuvWithStride_RejectsShortDestinationWithoutCopying(bool isP010, bool padded)
+    {
+        var expected = ExpectedPackedFrame(isP010);
+        var rowBytes = isP010 ? Width * 2 : Width;
+        var stride = rowBytes + (padded ? 4 : 0);
+        var source = CreatePitchedSource(expected, rowBytes, stride);
+        var originalSource = (byte[])source.Clone();
+        var destination = Enumerable.Repeat(DestinationGuard, GuardBytes + expected.Length + GuardBytes).ToArray();
+        var originalDestination = (byte[])destination.Clone();
+
+        var error = Assert.Throws<ArgumentException>(() =>
+            InvokeCopy(source, GuardBytes, stride, destination, GuardBytes, expected.Length - 1, isP010));
+
+        Assert.Equal("Destination span is too small for packed frame.", error.Message);
+        Assert.Equal(originalDestination, destination);
+        Assert.Equal(originalSource, source);
+    }
+
+    [Theory]
+    [InlineData(false, 0)]
+    [InlineData(false, -1)]
+    [InlineData(false, -6)]
+    [InlineData(false, -10)]
+    [InlineData(false, int.MinValue)]
+    [InlineData(false, 5)]
+    [InlineData(true, 0)]
+    [InlineData(true, -1)]
+    [InlineData(true, -12)]
+    [InlineData(true, -16)]
+    [InlineData(true, int.MinValue)]
+    [InlineData(true, 11)]
+    public void CopyYuvWithStride_RejectsUnsupportedStrideWithoutCopying(bool isP010, int stride)
+    {
+        var rowBytes = isP010 ? Width * 2 : Width;
+        var packedBytes = rowBytes * (Height + Height / 2);
+        // Keep backward addresses in bounds so a negative-pitch regression fails safely.
+        var source = Enumerable.Repeat(SourceGuard, 256).ToArray();
+        var originalSource = (byte[])source.Clone();
+        var destination = Enumerable.Repeat(DestinationGuard, GuardBytes + packedBytes + GuardBytes).ToArray();
+        var originalDestination = (byte[])destination.Clone();
+
+        var error = Assert.Throws<InvalidOperationException>(() =>
+            InvokeCopy(source, 128, stride, destination, GuardBytes, packedBytes, isP010));
+
+        Assert.Equal($"Source stride ({stride}) is smaller than packed row width ({rowBytes}).", error.Message);
+        Assert.Equal(originalDestination, destination);
+        Assert.Equal(originalSource, source);
+    }
+
+    private static CopyFrameDelegate BindCopyFrame()
+    {
+        var type = SussudioAssembly.Load().GetType("Sussudio.Services.Capture.MfSourceReaderVideoCapture", throwOnError: true)!;
+        var method = type.GetMethod(
+            "CopyYuvWithStride",
+            BindingFlags.Static | BindingFlags.NonPublic,
+            binder: null,
+            types: new[] { typeof(byte*), typeof(int), typeof(Span<byte>), typeof(int), typeof(int), typeof(bool) },
+            modifiers: null)
+            ?? throw new InvalidOperationException("MfSourceReaderVideoCapture.CopyYuvWithStride was not found.");
+        return method.CreateDelegate<CopyFrameDelegate>();
+    }
+
+    private static void InvokeCopy(
+        byte[] source, int sourceOffset, int stride, byte[] destination, int destinationOffset,
+        int destinationLength, bool isP010)
+    {
+        fixed (byte* sourceStart = source)
+        {
+            CopyFrame(sourceStart + sourceOffset, stride,
+                destination.AsSpan(destinationOffset, destinationLength), Width, Height, isP010);
+        }
+    }
+
+    private static byte[] CreatePitchedSource(byte[] packedFrame, int rowBytes, int stride)
+    {
+        var source = Enumerable.Repeat(SourceGuard, GuardBytes + stride * 6 + GuardBytes).ToArray();
+        for (var row = 0; row < 6; row++)
+        {
+            var pitchedRow = source.AsSpan(GuardBytes + row * stride, stride);
+            pitchedRow.Fill(SourcePadding);
+            packedFrame.AsSpan(row * rowBytes, rowBytes).CopyTo(pitchedRow);
+        }
+        return source;
+    }
+
+    private static byte[] ExpectedPackedFrame(bool isP010)
+        => isP010
+            ? new byte[]
+            {
+                // Four Y rows followed by two interleaved UV rows; every low six-bit value is nonzero.
+                0x01, 0x04, 0x02, 0x08, 0x03, 0x0C, 0x04, 0x10, 0x05, 0x14, 0x06, 0x18,
+                0x07, 0x24, 0x08, 0x28, 0x09, 0x2C, 0x0A, 0x30, 0x0B, 0x34, 0x0C, 0x38,
+                0x0D, 0x44, 0x0E, 0x48, 0x0F, 0x4C, 0x10, 0x50, 0x11, 0x54, 0x12, 0x58,
+                0x13, 0x64, 0x14, 0x68, 0x15, 0x6C, 0x16, 0x70, 0x17, 0x74, 0x18, 0x78,
+                0x19, 0x84, 0x1A, 0xC4, 0x1B, 0x88, 0x1C, 0xC8, 0x1D, 0x8C, 0x1E, 0xCC,
+                0x1F, 0x94, 0x20, 0xD4, 0x21, 0x98, 0x22, 0xD8, 0x23, 0x9C, 0x24, 0xDC
+            }
+            : new byte[]
+            {
+                0x01, 0x02, 0x03, 0x04, 0x05, 0x06,
+                0x11, 0x12, 0x13, 0x14, 0x15, 0x16,
+                0x21, 0x22, 0x23, 0x24, 0x25, 0x26,
+                0x31, 0x32, 0x33, 0x34, 0x35, 0x36,
+                0x81, 0xC1, 0x82, 0xC2, 0x83, 0xC3,
+                0x91, 0xD1, 0x92, 0xD2, 0x93, 0xD3
+            };
 }
 }

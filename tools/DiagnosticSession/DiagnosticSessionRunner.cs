@@ -14,6 +14,11 @@ public static class DiagnosticSessionRunner
     // Scenario names and broad requirements live in DiagnosticSessionScenarioCatalog.
     // RunAsync reads like a phase plan: scenario execution, cleanup,
     // verification, post-run snapshots, then summary.
+    /// <summary>Runs a diagnostic session with a sender that does not accept cancellation.</summary>
+    /// <remarks>
+    /// Cancellation stops waiting for a command; the sender's request can continue until it completes.
+    /// Use the overload with a cancellation-aware sender for transport cancellation. That sender must honor the token.
+    /// </remarks>
     public static Task<DiagnosticSessionResult> RunAsync(
         DiagnosticSessionOptions options,
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
@@ -128,7 +133,7 @@ public static class DiagnosticSessionRunner
             setStage("timeline");
             var timelineResponse = await sendAsync(
                     "GetPerformanceTimeline",
-                    new Dictionary<string, object?> { ["maxEntries"] = 240 },
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.MaxEntries] = 240 },
                     null)
                 .ConfigureAwait(false);
             if (timelineResponse.TryGetProperty("Data", out var timelineData))
@@ -282,13 +287,11 @@ internal static class DiagnosticSessionScenarioPhaseRunner
                         context.DurationSeconds,
                         context.OutputDirectory,
                         backgroundTasks,
-                        context.Actions,
-                        context.Warnings,
-                        context.CommandChannel.SendAsync,
-                        context.CommandChannel.SendRawWithConnectRetryAsync,
-                        context.CommandChannel.SendAsync,
-                        scenarioPhase,
-                        context.ScenarioCancellationToken)
+                        actions: context.Actions,
+                        warnings: context.Warnings,
+                        commandChannel: context.CommandChannel,
+                        phaseState: scenarioPhase,
+                        cancellationToken: context.ScenarioCancellationToken)
                     .ConfigureAwait(false);
 
                 await RunSamplingAndCompleteAsync(context, backgroundTasks, scenarioPhase).ConfigureAwait(false);
@@ -485,7 +488,8 @@ internal static class DiagnosticSessionScenarioPhaseRunner
 internal readonly record struct DiagnosticSessionBackgroundTaskRegistration(
     int AwaitOrder,
     string Stage,
-    Task Task);
+    Task Task,
+    bool OwnsBoundedCleanup);
 
 internal readonly record struct DiagnosticSessionBackgroundTaskDrainResult(
     PresentMonProbeResult? PresentMon,
@@ -497,9 +501,9 @@ internal sealed class DiagnosticSessionBackgroundTasks
     private Task<PresentMonProbeResult>? _presentMonTask;
     private Task<FlashbackRecordingSettingsDeferredPresetState>? _recordingSettingsDeferredTask;
 
-    internal void AddScenario(int awaitOrder, string stage, Task task)
+    internal void AddScenario(int awaitOrder, string stage, Task task, bool ownsBoundedCleanup = false)
     {
-        _scenarioTasks.Add(new DiagnosticSessionBackgroundTaskRegistration(awaitOrder, stage, task));
+        _scenarioTasks.Add(new DiagnosticSessionBackgroundTaskRegistration(awaitOrder, stage, task, ownsBoundedCleanup));
     }
 
     internal void SetPresentMon(Task<PresentMonProbeResult> task)
@@ -540,6 +544,7 @@ internal sealed class DiagnosticSessionBackgroundTasks
             await ObserveTaskAfterFaultAsync(
                     registration.Task,
                     registration.Stage,
+                    registration.OwnsBoundedCleanup,
                     warnings,
                     recordTerminalException)
                 .ConfigureAwait(false);
@@ -673,6 +678,7 @@ internal sealed class DiagnosticSessionBackgroundTasks
     private static async Task ObserveTaskAfterFaultAsync(
         Task? task,
         string stage,
+        bool ownsBoundedCleanup,
         List<string> warnings,
         Action<Exception, string> recordTerminalException)
     {
@@ -683,6 +689,13 @@ internal sealed class DiagnosticSessionBackgroundTasks
 
         try
         {
+            // These scenarios retain the channel until their locally bounded restoration finishes.
+            if (ownsBoundedCleanup)
+            {
+                await task.ConfigureAwait(false);
+                return;
+            }
+
             var completedTask = task.IsCompleted
                 ? task
                 : await Task.WhenAny(task, Task.Delay(TimeSpan.FromSeconds(2))).ConfigureAwait(false);
@@ -748,7 +761,7 @@ internal static class DiagnosticSessionCleanupActions
             using var cleanupCts = CreateCleanupCts(TimeSpan.FromMilliseconds(recordingCleanupTimeoutMs));
             var stopResponse = await commandChannel.SendWithTokenAsync(
                     AutomationCommandKind.SetRecordingEnabled,
-                    new Dictionary<string, object?> { ["enabled"] = false },
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = false },
                     recordingCleanupTimeoutMs,
                     false,
                     cleanupCts.Token)
@@ -793,7 +806,7 @@ internal static class DiagnosticSessionCleanupActions
             using var cleanupCts = CreateCleanupCts(TimeSpan.FromSeconds(15));
             await commandChannel.SendWithTokenAsync(
                     AutomationCommandKind.FlashbackAction,
-                    new Dictionary<string, object?> { ["action"] = "go-live" },
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "go-live" },
                     15_000,
                     false,
                     cleanupCts.Token)
@@ -842,7 +855,7 @@ internal static class DiagnosticSessionCleanupActions
             using var cleanupCts = CreateCleanupCts(TimeSpan.FromSeconds(15));
             await commandChannel.SendWithTokenAsync(
                     AutomationCommandKind.SetPreviewEnabled,
-                    new Dictionary<string, object?> { ["enabled"] = false },
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = false },
                     15_000,
                     false,
                     cleanupCts.Token)
@@ -875,7 +888,7 @@ internal static class DiagnosticSessionCleanupActions
                 using var cleanupCts = CreateCleanupCts(TimeSpan.FromMilliseconds(cleanupTimeoutMs));
                 await commandChannel.SendWithTokenAsync(
                         AutomationCommandKind.SetFlashbackEnabled,
-                        new Dictionary<string, object?> { ["enabled"] = false },
+                        new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = false },
                         cleanupTimeoutMs,
                         false,
                         cleanupCts.Token)
@@ -897,7 +910,7 @@ internal static class DiagnosticSessionCleanupActions
                 using var cleanupCts = CreateCleanupCts(TimeSpan.FromMilliseconds(cleanupTimeoutMs));
                 await commandChannel.SendWithTokenAsync(
                         AutomationCommandKind.SetFlashbackEnabled,
-                        new Dictionary<string, object?> { ["enabled"] = true },
+                        new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = true },
                         cleanupTimeoutMs,
                         false,
                         cleanupCts.Token)
@@ -1023,9 +1036,9 @@ internal static class DiagnosticSessionRecordingChecks
                 verificationCommand = "VerifyFile";
                 verificationPayload = new Dictionary<string, object?>
                 {
-                    ["filePath"] = flashbackExportVerificationPath,
+                    [AutomationPayloadKeys.FilePath] = flashbackExportVerificationPath,
                     ["strict"] = true,
-                    ["verificationProfile"] = "flashback-export"
+                    [AutomationPayloadKeys.VerificationProfile] = "flashback-export"
                 };
             }
 

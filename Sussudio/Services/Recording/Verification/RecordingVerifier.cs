@@ -16,7 +16,7 @@ namespace Sussudio.Services.Recording;
 // Strict post-recording verifier. It compares ffprobe evidence against the
 // negotiated runtime snapshot, so Auto/native modes verify against what the
 // capture device actually delivered rather than only what the user requested.
-public sealed class RecordingVerifier : IRecordingVerifier
+public sealed class RecordingVerifier
 {
     private static readonly Lazy<string> CachedFfprobePath = new(FindFfprobePath);
     private readonly IProcessSupervisor _processSupervisor;
@@ -46,12 +46,12 @@ public sealed class RecordingVerifier : IRecordingVerifier
     {
         if (string.IsNullOrWhiteSpace(outputPath))
         {
-            return CreateEarlyFailure(outputPath, "No output file path is available for verification.", "missing-output-path");
+            return CreateEarlyFailure(outputPath, "No output file path is available for verification.", RecordingFailureCodes.VerificationMissingOutputPath);
         }
 
         if (!File.Exists(outputPath))
         {
-            return CreateEarlyFailure(outputPath, $"Output file does not exist: {outputPath}", "output-not-found");
+            return CreateEarlyFailure(outputPath, $"Output file does not exist: {outputPath}", RecordingFailureCodes.VerificationOutputNotFound);
         }
 
         long fileSize;
@@ -63,12 +63,12 @@ public sealed class RecordingVerifier : IRecordingVerifier
         {
             return CreateEarlyFailure(outputPath,
                 $"Output file length is unavailable ({ex.GetType().Name}: {ex.Message}): {outputPath}",
-                "output-stat-failed", fileExists: true);
+                RecordingFailureCodes.VerificationOutputStatFailed, fileExists: true);
         }
 
         if (fileSize <= 0)
         {
-            return CreateEarlyFailure(outputPath, $"Output file is empty: {outputPath}", "output-empty", fileExists: true, fileSizeBytes: fileSize);
+            return CreateEarlyFailure(outputPath, $"Output file is empty: {outputPath}", RecordingFailureCodes.VerificationOutputEmpty, fileExists: true, fileSizeBytes: fileSize);
         }
 
         var availability = await ProbeFfprobeAvailabilityAsync(cancellationToken).ConfigureAwait(false);
@@ -79,7 +79,7 @@ public sealed class RecordingVerifier : IRecordingVerifier
 
         if (!availability.Started || availability.TimedOut || availability.ExitCode != 0)
         {
-            return CreateEarlyFailure(outputPath, "Strict verification failed: ffprobe is not accessible.", "ffprobe-unavailable", fileExists: true, fileSizeBytes: fileSize);
+            return CreateEarlyFailure(outputPath, "Strict verification failed: ffprobe is not accessible.", RecordingFailureCodes.FfprobeUnavailable, fileExists: true, fileSizeBytes: fileSize);
         }
 
         var ffprobeArgs =
@@ -186,8 +186,10 @@ public sealed class RecordingVerifier : IRecordingVerifier
             $"color_space={colorSpaceRaw ?? "unknown"}, side_data_types={string.Join("|", hdrSideDataProbe.SideDataTypes)}");
 
         var success = mismatches.Count == 0;
-        var primaryMismatch = ParsePrimaryMismatch(mismatches);
         var hdrParity = BuildHdrParityResult(runtimeSnapshot, hdrValidation, mismatches);
+        var primaryMismatch = mismatches.Count > 0 && !string.IsNullOrWhiteSpace(mismatches[0])
+            ? hdrParity.MismatchTaxonomy[0]
+            : null;
         return new RecordingVerificationResult
         {
             Succeeded = success,
@@ -223,9 +225,9 @@ public sealed class RecordingVerifier : IRecordingVerifier
             CadenceSevereGapPercent = cadenceMetrics?.SevereGapPercent,
             CadenceEstimatedDroppedFrames = cadenceMetrics?.EstimatedDroppedFrames,
             CadenceEstimatedDropPercent = cadenceMetrics?.EstimatedDropPercent,
-            PrimaryMismatchCode = primaryMismatch.Code,
-            PrimaryMismatchExpected = primaryMismatch.Expected,
-            PrimaryMismatchActual = primaryMismatch.Actual,
+            PrimaryMismatchCode = primaryMismatch?.Code,
+            PrimaryMismatchExpected = primaryMismatch?.Expected,
+            PrimaryMismatchActual = primaryMismatch?.Actual,
             Mismatches = mismatches,
             HdrParity = hdrParity
         };
@@ -549,14 +551,8 @@ public sealed class RecordingVerifier : IRecordingVerifier
         => string.Equals(runtimeSnapshot.RecordingBackend, "Flashback", StringComparison.OrdinalIgnoreCase) ||
            string.Equals(runtimeSnapshot.RecordingIntegrityBackend, "Flashback", StringComparison.OrdinalIgnoreCase);
 
-    private static (string? Code, string? Expected, string? Actual) ParsePrimaryMismatch(IReadOnlyList<string> mismatches)
+    private static (string? Code, string? Expected, string? Actual) ParseMismatch(string? raw)
     {
-        if (mismatches == null || mismatches.Count == 0)
-        {
-            return (null, null, null);
-        }
-
-        var raw = mismatches[0];
         if (string.IsNullOrWhiteSpace(raw))
         {
             return (null, null, null);
@@ -618,7 +614,7 @@ public sealed class RecordingVerifier : IRecordingVerifier
         var entries = new List<MismatchTaxonomyEntry>(mismatches.Count);
         foreach (var mismatch in mismatches)
         {
-            var (code, expected, actual) = ParsePrimaryMismatch(new[] { mismatch });
+            var (code, expected, actual) = ParseMismatch(mismatch);
             var normalizedCode = code ?? mismatch;
             var category = normalizedCode switch
             {
@@ -696,8 +692,8 @@ public sealed class RecordingVerifier : IRecordingVerifier
             FileExists = true,
             FileSizeBytes = fileSize,
             VerificationMode = "ffprobe",
-            PrimaryMismatchCode = "ffprobe-failed",
-            Mismatches = new[] { "ffprobe-failed" }
+            PrimaryMismatchCode = RecordingFailureCodes.FfprobeFailed,
+            Mismatches = new[] { RecordingFailureCodes.FfprobeFailed }
         };
 
     private readonly record struct CadenceMetrics(

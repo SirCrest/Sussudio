@@ -3,125 +3,11 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 
 namespace Sussudio.Services.Runtime;
-
-// Persisted user preferences. Missing nullable values mean "use current app
-// defaults" so new settings can be added without breaking older installs.
-public class UserSettings
-{
-    public string? SelectedDeviceId { get; set; }
-    public string? OutputPath { get; set; }
-    public string? SelectedRecordingFormat { get; set; }
-    public string? SelectedQuality { get; set; }
-    public string? SelectedPreset { get; set; }
-    public string? SelectedSplitEncodeMode { get; set; }
-    public double? CustomBitrateMbps { get; set; }
-    public bool? IsHdrEnabled { get; set; }
-    public bool? IsAudioEnabled { get; set; }
-    public bool? IsAudioPreviewEnabled { get; set; }
-    public bool? IsCustomAudioInputEnabled { get; set; }
-    public string? SelectedAudioInputDeviceId { get; set; }
-    public bool? IsMicrophoneEnabled { get; set; }
-    public string? SelectedMicrophoneDeviceId { get; set; }
-    public double? MicrophoneVolume { get; set; }
-    public double? PreviewVolume { get; set; }
-    public bool? IsStatsVisible { get; set; }
-    public string? SelectedDeviceAudioMode { get; set; }
-    public double? AnalogAudioGainPercent { get; set; }
-    public bool? FlashbackGpuDecode { get; set; }
-    public int? FlashbackBufferMinutes { get; set; }
-    public string? SelectedVideoFormat { get; set; }
-}
-
-[JsonSerializable(typeof(UserSettings))]
-[JsonSourceGenerationOptions(WriteIndented = true)]
-internal partial class SettingsJsonContext : JsonSerializerContext;
-
-// LocalAppData settings store for the WinUI app. Load is forgiving and Save is
-// serialized so UI updates cannot corrupt the JSON file.
-public static class SettingsService
-{
-    private static readonly object _lock = new();
-
-    private static string GetSettingsDirectory()
-        => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Sussudio");
-
-    private static string GetSettingsFilePath()
-        => Path.Combine(GetSettingsDirectory(), "settings.json");
-
-    public static UserSettings Load()
-    {
-        var settingsFilePath = GetSettingsFilePath();
-        lock (_lock)
-        {
-            try
-            {
-                if (!File.Exists(settingsFilePath))
-                {
-                    Logger.Log("SETTINGS_LOAD: no settings file found, using defaults.");
-                    return new UserSettings();
-                }
-
-                var json = File.ReadAllText(settingsFilePath);
-                var settings = JsonSerializer.Deserialize(json, SettingsJsonContext.Default.UserSettings);
-                if (settings == null)
-                {
-                    Logger.Log("SETTINGS_LOAD: deserialization returned null, using defaults.");
-                    return new UserSettings();
-                }
-
-                Logger.Log($"SETTINGS_LOAD: loaded from {settingsFilePath}");
-                return settings;
-            }
-            catch (Exception ex)
-            {
-                Logger.Log($"SETTINGS_LOAD: failed to load ({ex.GetType().Name}: {ex.Message}), using defaults.");
-                return new UserSettings();
-            }
-        }
-    }
-
-    public static bool Save(UserSettings settings, out string failure)
-    {
-        var settingsFilePath = GetSettingsFilePath();
-        lock (_lock)
-        {
-            return SaveToFile(settings, settingsFilePath, out failure);
-        }
-    }
-
-    internal static bool SaveToFile(UserSettings settings, string settingsFilePath, out string failure)
-    {
-        failure = string.Empty;
-        try
-        {
-            var settingsDirectory = Path.GetDirectoryName(settingsFilePath);
-            if (!string.IsNullOrWhiteSpace(settingsDirectory))
-            {
-                Directory.CreateDirectory(settingsDirectory);
-            }
-
-            var json = JsonSerializer.Serialize(settings, SettingsJsonContext.Default.UserSettings);
-            var tempPath = settingsFilePath + ".tmp";
-            File.WriteAllText(tempPath, json);
-            File.Move(tempPath, settingsFilePath, overwrite: true);
-            Logger.Log($"SETTINGS_SAVE: saved to {settingsFilePath}");
-            return true;
-        }
-        catch (Exception ex)
-        {
-            failure = $"{ex.GetType().Name}: {ex.Message}";
-            Logger.Log($"SETTINGS_SAVE: failed ({failure})");
-            return false;
-        }
-    }
-}
 
 // Lock-free max-update helpers. Several diagnostic counters across capture,
 // recording, and flashback need to track high-water marks under contention; the
@@ -170,10 +56,10 @@ internal static class AtomicMax
 // path keeps that reporting decision at the call site instead of duplicating the loop.
 internal static class AtomicCounter
 {
-    public static bool TryDecrement(ref int target) => TrySubtract(ref target, 1);
+    public static bool TryDecrement(ref int target) => TrySubtractSaturating(ref target, 1);
 
     // Callers supply a positive amount; false means the full amount was unavailable.
-    public static bool TrySubtract(ref int target, int amount)
+    public static bool TrySubtractSaturating(ref int target, int amount)
     {
         while (true)
         {
@@ -445,6 +331,82 @@ internal static class PercentileHelpers
     }
 }
 
+// Summary statistics over a window of frame intervals (ms), shared by the capture
+// source-cadence and renderer present-cadence metrics. The target interval falls
+// back to the observed average when no expected rate is known; an interval of at
+// least SlowIntervalFactor x target counts as slow (a severe gap on the source side).
+internal readonly record struct IntervalCadenceStatistics(
+    int SampleCount,
+    double ObservedFps,
+    double TargetIntervalMs,
+    double AverageIntervalMs,
+    double P95IntervalMs,
+    double P99IntervalMs,
+    double MaxIntervalMs,
+    double OnePercentLowFps,
+    double FivePercentLowFps,
+    double SampleDurationMs,
+    double JitterStdDevMs,
+    long SlowIntervalCount)
+{
+    public const double SlowIntervalFactor = 1.6;
+
+    public static IntervalCadenceStatistics Compute(double[] samples, double expectedIntervalMs)
+    {
+        var sampleCount = samples.Length;
+        if (sampleCount == 0)
+        {
+            throw new ArgumentException("At least one interval sample is required.", nameof(samples));
+        }
+
+        var sum = 0.0;
+        var max = 0.0;
+        for (var i = 0; i < sampleCount; i++)
+        {
+            sum += samples[i];
+            if (samples[i] > max)
+            {
+                max = samples[i];
+            }
+        }
+
+        var average = sum / sampleCount;
+        var targetIntervalMs = expectedIntervalMs > 0 ? expectedIntervalMs : average;
+        var slowThresholdMs = targetIntervalMs * SlowIntervalFactor;
+
+        long slowIntervalCount = 0;
+        var varianceSum = 0.0;
+        for (var i = 0; i < sampleCount; i++)
+        {
+            var delta = samples[i] - average;
+            varianceSum += delta * delta;
+            if (samples[i] >= slowThresholdMs)
+            {
+                slowIntervalCount++;
+            }
+        }
+
+        var sorted = (double[])samples.Clone();
+        Array.Sort(sorted);
+        var p95IntervalMs = PercentileHelpers.FromSorted(sorted, 0.95);
+        var p99IntervalMs = PercentileHelpers.FromSorted(sorted, 0.99);
+
+        return new IntervalCadenceStatistics(
+            SampleCount: sampleCount,
+            ObservedFps: average > double.Epsilon ? 1000.0 / average : 0,
+            TargetIntervalMs: targetIntervalMs,
+            AverageIntervalMs: average,
+            P95IntervalMs: p95IntervalMs,
+            P99IntervalMs: p99IntervalMs,
+            MaxIntervalMs: max,
+            OnePercentLowFps: p99IntervalMs > double.Epsilon ? 1000.0 / p99IntervalMs : 0,
+            FivePercentLowFps: p95IntervalMs > double.Epsilon ? 1000.0 / p95IntervalMs : 0,
+            SampleDurationMs: sum,
+            JitterStdDevMs: Math.Sqrt(varianceSum / sampleCount),
+            SlowIntervalCount: slowIntervalCount);
+    }
+}
+
 // Common "how old is this telemetry sample" computation. Several diagnostics
 // surfaces (snapshot builders, view-model age refresh, automation hub) need the
 // same clamped, floor-rounded seconds-since-timestamp value, plus a short-circuit
@@ -665,14 +627,14 @@ public sealed class ProcessSupervisor : IProcessSupervisor
                 var exitTask = process.WaitForExitAsync(cancellationToken);
                 try
                 {
-                    await exitTask.WaitAsync(TimeSpan.FromMilliseconds(spec.TimeoutMs), cancellationToken);
+                    await exitTask.WaitAsync(TimeSpan.FromMilliseconds(spec.TimeoutMs), cancellationToken).ConfigureAwait(false);
                 }
                 catch (TimeoutException)
                 {
                     timedOut = true;
                     Logger.LogEvent("CAP-PROC-TIMEOUT", $"{spec.FileName} timeoutMs={spec.TimeoutMs}");
                     var killWaitMs = Math.Clamp(spec.TimeoutMs / 2, 250, 5000);
-                    var exited = await TryTerminateAsync(process, spec.FileName, killWaitMs, "timeout");
+                    var exited = await TryTerminateAsync(process, spec.FileName, killWaitMs, "timeout").ConfigureAwait(false);
                     if (!exited)
                     {
                         Logger.LogEvent("CAP-PROC-STILL-ALIVE", $"{spec.FileName} reason=timeout pid={processId}");
@@ -683,7 +645,7 @@ public sealed class ProcessSupervisor : IProcessSupervisor
             {
                 Logger.LogEvent("CAP-PROC-CANCEL", $"{spec.FileName}");
                 var cancelKillWaitMs = Math.Clamp(spec.TimeoutMs, 1000, 10000);
-                var exited = await TryTerminateAsync(process, spec.FileName, cancelKillWaitMs, "canceled");
+                var exited = await TryTerminateAsync(process, spec.FileName, cancelKillWaitMs, "canceled").ConfigureAwait(false);
                 if (!exited)
                 {
                     Logger.LogEvent("CAP-PROC-STILL-ALIVE", $"{spec.FileName} reason=canceled pid={processId}");
@@ -693,10 +655,10 @@ public sealed class ProcessSupervisor : IProcessSupervisor
 
             var canReadOutputs = process.HasExited;
             var stdout = canReadOutputs
-                ? await TryReadWithTimeoutAsync(stdoutTask, outputReadTimeoutMs)
+                ? await TryReadWithTimeoutAsync(stdoutTask, outputReadTimeoutMs).ConfigureAwait(false)
                 : (Output: string.Empty, ReadException: (Exception?)null);
             var stderr = canReadOutputs
-                ? await TryReadWithTimeoutAsync(stderrTask, outputReadTimeoutMs)
+                ? await TryReadWithTimeoutAsync(stderrTask, outputReadTimeoutMs).ConfigureAwait(false)
                 : (Output: string.Empty, ReadException: (Exception?)null);
 
             if (!canReadOutputs)
@@ -770,7 +732,7 @@ public sealed class ProcessSupervisor : IProcessSupervisor
     {
         TryKill(process);
 
-        if (await WaitForExitWithTimeoutAsync(process, killWaitMs))
+        if (await WaitForExitWithTimeoutAsync(process, killWaitMs).ConfigureAwait(false))
         {
             return true;
         }
@@ -780,7 +742,7 @@ public sealed class ProcessSupervisor : IProcessSupervisor
         // Retry once with an additional bounded wait window.
         TryKill(process);
         var recoveryWaitMs = Math.Clamp(killWaitMs / 2, 250, 5000);
-        if (await WaitForExitWithTimeoutAsync(process, recoveryWaitMs))
+        if (await WaitForExitWithTimeoutAsync(process, recoveryWaitMs).ConfigureAwait(false))
         {
             Logger.LogEvent("CAP-PROC-KILL-RECOVERED", $"{fileName} reason={reason} recoveryWaitMs={recoveryWaitMs}");
             return true;
@@ -798,7 +760,7 @@ public sealed class ProcessSupervisor : IProcessSupervisor
 
         try
         {
-            await process.WaitForExitAsync().WaitAsync(TimeSpan.FromMilliseconds(timeoutMs));
+            await process.WaitForExitAsync().WaitAsync(TimeSpan.FromMilliseconds(timeoutMs)).ConfigureAwait(false);
             return true;
         }
         catch (TimeoutException)
@@ -811,7 +773,7 @@ public sealed class ProcessSupervisor : IProcessSupervisor
     {
         try
         {
-            return (await readTask.WaitAsync(TimeSpan.FromMilliseconds(timeoutMs)), null);
+            return (await readTask.WaitAsync(TimeSpan.FromMilliseconds(timeoutMs)).ConfigureAwait(false), null);
         }
         catch (Exception ex)
         {

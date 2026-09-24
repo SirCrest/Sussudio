@@ -5,13 +5,15 @@
   <ItemGroup>
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.0" />
     <PackageVersion Include="FFmpeg.AutoGen" Version="8.0.0" />
-    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.5" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
     <PackageVersion Include="Microsoft.Win32.SystemEvents" Version="8.0.0" />
     <PackageVersion Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.7463" />
     <PackageVersion Include="Microsoft.WindowsAppSDK" Version="1.8.260101001" />
     <PackageVersion Include="ModelContextProtocol" Version="1.2.0" />
-    <PackageVersion Include="System.Management" Version="8.0.0" />
+    <!-- Intentionally retain the runtime versions used by Vortice 3.8.3. -->
+    <PackageVersion Include="SharpGen.Runtime" Version="2.4.2-beta" />
+    <PackageVersion Include="SharpGen.Runtime.COM" Version="2.4.2-beta" />
     <PackageVersion Include="System.Text.Json" Version="10.0.4" />
     <PackageVersion Include="Vortice.Direct3D11" Version="3.8.3" />
     <PackageVersion Include="Vortice.DXGI" Version="3.8.3" />

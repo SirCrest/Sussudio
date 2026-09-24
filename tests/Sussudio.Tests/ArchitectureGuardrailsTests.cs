@@ -176,7 +176,7 @@ static partial class Program
 
         AssertContains(closureSection, "| AutomationDiagnosticsHub | Ready |");
         AssertContains(closureSection, "`Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs`");
-        AssertContains(closureSection, "`Sussudio/Services/Automation/AutomationSnapshotFlashbackProjectionBuilder.cs`");
+        AssertContains(closureSection, "`tests/Sussudio.Tests/AutomationSnapshotRegressionTests.cs`");
         AssertContains(closureSection, "`Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`");
         AssertContains(closureSection, "`Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs`");
         AssertContains(closureSection, "`Sussudio/Services/Automation/AutomationDiagnosticsHub.Evaluation.cs`");
@@ -208,12 +208,14 @@ static partial class Program
         AssertContains(previewBackendEntry, "AV1 encoder support probing");
         AssertContains(previewBackendEntry, "video/audio readiness");
         AssertContains(previewBackendEntry, "resource-owner request construction");
-        AssertContains(previewBackendEntry, "deferred cleanup handoff");
+        AssertContains(previewBackendEntry, "`CaptureService` owns the shared export semaphore");
+        AssertContains(previewBackendEntry, "deferred cleanup awaits the detached sink");
         AssertContains(previewBackendEntry, "preview backend disposal request construction");
-        AssertContains(previewBackendEntry, "`FlashbackBackendResources.cs` owns startup construction");
+        AssertContains(previewBackendEntry, "`Sussudio/Services/Capture/FlashbackBackendResources.cs` owns startup construction");
+        AssertContains(previewBackendEntry, "Capture-owned integration");
         AssertContains(previewBackendEntry, "producer attach/detach request");
         AssertContains(previewBackendEntry, "feed wiring");
-        AssertContains(previewBackendEntry, "`FlashbackBackendResources.cs`");
+        AssertContains(previewBackendEntry, "`Sussudio/Services/Capture/FlashbackBackendResources.cs`");
         AssertContains(previewBackendEntry, "rollback cleanup");
         AssertDoesNotContain(previewBackendEntry, "`FlashbackBackendResources.Startup.cs`");
         AssertDoesNotContain(previewBackendEntry, "`FlashbackBackendResources.Teardown.cs`");
@@ -388,7 +390,9 @@ static partial class Program
 
     private static bool IsAllowedSingleFilePartial(string typeName, string relativePath)
         => relativePath.EndsWith(".xaml.cs", StringComparison.OrdinalIgnoreCase) ||
-           typeName.EndsWith("JsonContext", StringComparison.Ordinal);
+           typeName.EndsWith("JsonContext", StringComparison.Ordinal) ||
+           (typeName == "NativeXuAudioControlService" &&
+            relativePath == "Sussudio/Services/Audio/NativeXuAudioControlService.cs");
 
     internal static Task ArchitectureDocs_ReadRepoFileLiteralPathsResolve()
     {
@@ -1091,20 +1095,23 @@ static partial class Program
         }
     }
 
-    // Namespace-folder rules above pin where a service file lives, not which
-    // service it may import. That gap let two reverse dependencies into Capture
-    // and Flashback survive after their real usage was removed. Preview,
-    // Recording, Gpu, Runtime and Contracts are consumed by the capture and
-    // flashback pipelines, so an import in the other direction is a cycle.
+    // Automation consumes Capture, which integrates Flashback. Audio, Telemetry,
+    // Interop, and the other leaf services may consume each other, but not these
+    // lifecycle owners. Check qualified service references in type names and
+    // imports, including alias/static imports and nested service namespaces.
     private static readonly string[] LeafServiceDomains =
     {
-        "Contracts", "Runtime", "Gpu", "Preview", "Recording", "NativeXu"
+        "Contracts", "Runtime", "Gpu", "Preview", "Recording", "NativeXu", "Audio", "Telemetry", "Interop"
     };
 
     private static readonly string[] OrchestrationServiceDomains =
     {
-        "Capture", "Flashback", "Automation", "Audio", "Telemetry"
+        "Capture", "Flashback", "Automation"
     };
+
+    private static readonly Regex ServiceDomainReferenceRegex = new(
+        @"\bSussudio\s*\.\s*Services\s*\.\s*(?<domain>\w+)\b",
+        RegexOptions.CultureInvariant);
 
     private static void AssertServiceDependencyDirection(string repoRoot)
     {
@@ -1113,26 +1120,106 @@ static partial class Program
         foreach (var file in EnumerateSourceFiles(servicesRoot, SearchOption.AllDirectories))
         {
             var relative = Path.GetRelativePath(servicesRoot, file);
-            var domain = relative.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)[0];
-            if (Array.IndexOf(LeafServiceDomains, domain) < 0)
+            AssertServiceSourceDependencyDirection(relative, File.ReadAllText(file));
+        }
+    }
+
+    private static void AssertServiceSourceDependencyDirection(string relativePath, string source)
+    {
+        var domain = relativePath.Split('/', '\\')[0];
+        var code = StripCSharpCommentsAndLiterals(source);
+        foreach (Match reference in ServiceDomainReferenceRegex.Matches(code))
+        {
+            var dependency = reference.Groups["domain"].Value;
+            if (dependency == domain)
             {
                 continue;
             }
 
-            var code = StripCSharpCommentsAndLiterals(File.ReadAllText(file));
-            foreach (var forbidden in OrchestrationServiceDomains)
+            var reverseOrchestration = domain switch
             {
-                if (Regex.IsMatch(
-                        code,
-                        $@"^\s*using\s+Sussudio\.Services\.{forbidden}\s*;",
-                        RegexOptions.Multiline | RegexOptions.CultureInvariant))
-                {
-                    throw new InvalidOperationException(
-                        $"Sussudio/Services/{relative} imports Sussudio.Services.{forbidden}; " +
-                        $"{domain} is consumed by {forbidden} and must not depend back on it.");
-                }
+                "Capture" => dependency == "Automation",
+                "Flashback" => dependency is "Capture" or "Automation",
+                _ => false
+            };
+            var leafDependsOnOwner = Array.IndexOf(LeafServiceDomains, domain) >= 0 &&
+                Array.IndexOf(OrchestrationServiceDomains, dependency) >= 0;
+            if (reverseOrchestration || leafDependsOnOwner)
+            {
+                throw new InvalidOperationException(
+                    $"Sussudio/Services/{relativePath} references Sussudio.Services.{dependency}; " +
+                    $"{domain} must not depend back on {dependency}.");
             }
         }
+    }
+
+    internal static Task ServiceDependencies_EnforceOrchestratorDirection()
+    {
+        var references = new[]
+        {
+            "using Sussudio.Services.DOMAIN;",
+            "using Backend = Sussudio.Services.DOMAIN.Backend;",
+            "global using Backend = global::Sussudio.Services.DOMAIN;",
+            "using static global::Sussudio.Services.DOMAIN.Backend;",
+            "using Sussudio.Services.DOMAIN.Nested;",
+            "class Example { Sussudio . Services . DOMAIN.Backend? Field; }"
+        };
+        foreach (var (consumer, dependency) in new[]
+        {
+            ("Automation", "Capture"), ("Automation", "Flashback"), ("Capture", "Flashback")
+        })
+        {
+            foreach (var reference in references)
+            {
+                AssertServiceSourceDependencyDirection(
+                    $"{consumer}/Example.cs", reference.Replace("DOMAIN", dependency, StringComparison.Ordinal));
+                var forbiddenSource = reference.Replace("DOMAIN", consumer, StringComparison.Ordinal);
+                var failure = Assert.Throws<InvalidOperationException>(() =>
+                    AssertServiceSourceDependencyDirection($"{dependency}/Example.cs", forbiddenSource));
+                Assert.Contains($"{dependency} must not depend back on {consumer}", failure.Message);
+            }
+        }
+
+        AssertServiceSourceDependencyDirection("Flashback/Example.cs", """"
+            namespace Sussudio.Services.Flashback.Nested;
+            // using Sussudio.Services.Capture;
+            /* using Sussudio.Services.Automation; */
+            class Example
+            {
+                string Plain = "Sussudio.Services.Capture.Backend";
+                string Verbatim = @"Sussudio.Services.Automation.Backend";
+                string Raw = """Sussudio.Services.Capture.Backend""";
+            }
+            """");
+        AssertServiceSourceDependencyDirection("Flashback/Example.cs", "using Sussudio.Services.CaptureDiagnostics;");
+        return Task.CompletedTask;
+    }
+
+    internal static Task ServiceDependencies_KeepAudioAndTelemetryConsumed()
+    {
+        foreach (var consumer in new[] { "Audio", "Telemetry", "Interop" })
+        {
+            foreach (var dependency in new[] { "Capture", "Flashback", "Automation" })
+            {
+                var failure = Assert.Throws<InvalidOperationException>(() =>
+                    AssertServiceSourceDependencyDirection($"{consumer}/Example.cs",
+                        $"using Backend = global::Sussudio.Services.{dependency}.Backend;"));
+                Assert.Contains($"{consumer} must not depend back on {dependency}", failure.Message);
+            }
+        }
+
+        foreach (var (consumer, dependency) in new[]
+        {
+            ("Audio", "Telemetry"), ("Audio", "Recording"), ("Audio", "Runtime"),
+            ("Audio", "NativeXu"), ("Audio", "Interop"), ("Capture", "Interop"),
+            ("Telemetry", "Contracts"), ("Telemetry", "NativeXu")
+        })
+        {
+            AssertServiceSourceDependencyDirection(
+                $"{consumer}/Example.cs", $"using Sussudio.Services.{dependency};");
+        }
+
+        return Task.CompletedTask;
     }
 
     private static void AssertServiceContractsBoundaryOwnership(string repoRoot)
@@ -1220,18 +1307,6 @@ static partial class Program
             var contractPath = Path.Combine(repoRoot, "Sussudio.Automation.Contracts", contractFile);
             AssertEqual(true, File.Exists(contractPath), $"{contractFile} contract source exists");
             AssertContains(File.ReadAllText(contractPath), "namespace Sussudio.Tools");
-            AssertEqual(
-                false,
-                File.Exists(Path.Combine(repoRoot, "tools", "Common", contractFile)),
-                $"tools/Common must not own {contractFile}");
-            AssertEqual(
-                false,
-                File.Exists(Path.Combine(repoRoot, "tools", "Common", "AutomationPipeClient", contractFile)),
-                $"tools/Common/AutomationPipeClient must not own {contractFile}");
-            AssertEqual(
-                false,
-                File.Exists(Path.Combine(repoRoot, "Sussudio", "Models", "Automation", contractFile)),
-                $"app project must not own {contractFile}");
         }
 
         var catalogText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio.Automation.Contracts", "AutomationCommandCatalog.cs"));
@@ -1841,7 +1916,9 @@ static partial class Program
         }
         var probeProgramText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.cs"));
         var coreAudioEndpointProbeText = File.ReadAllText(Path.Combine(repoRoot, "tools", "CoreAudioEndpointProbe", "Program.cs"));
-        AssertContains(probeProgramText, "Probe-local runtime shims used by linked app service sources.");
+        AssertContains(nativeXuProbeProjectText, "CaptureModels.cs");
+        AssertContains(nativeXuProbeProjectText, @"Include=""..\..\Sussudio\Models\Flashback\FlashbackModels.cs"" Link=""Shared\Models\Flashback\FlashbackModels.cs""");
+        AssertDoesNotContain(StripCSharpCommentsAndLiterals(probeProgramText), "class CaptureDevice");
         AssertContains(probeProgramText, "NativeXuInterfacePath");
         AssertContains(probeProgramText, "EnumerateKsInterfaces(ElgatoVendorId");
         AssertContains(probeProgramText, "RTK_IO selects by name, not by native XU path");
@@ -2016,7 +2093,7 @@ static partial class Program
         string name,
         string? nativeXuInterfacePath)
     {
-        var deviceType = assembly.GetType("CaptureDevice")
+        var deviceType = assembly.GetType("Sussudio.Models.CaptureDevice")
             ?? throw new InvalidOperationException("NativeXuAudioProbe CaptureDevice type not found.");
         var device = Activator.CreateInstance(deviceType)
             ?? throw new InvalidOperationException("Failed to create NativeXuAudioProbe CaptureDevice.");
@@ -2079,13 +2156,15 @@ static partial class Program
         AssertContains(deviceAudioModeText, "private async Task<bool> ApplyDeviceAudioModeAsync");
         AssertContains(deviceAudioModeText, "CaptureDevice? targetDevice = null");
         AssertContains(deviceAudioStateText, "private async Task<bool> ApplyAnalogAudioGainAsync");
-        AssertContains(deviceAudioStateText, "NativeXuAtCommandProvider.SetAnalogGainAsync(device, gainByte, persistFlash: false, cancellationToken)");
+        AssertContains(deviceAudioStateText, "_deviceAudioControlService.SetAudioModeAsync(device, mode, cancellationToken)");
+        AssertContains(deviceAudioStateText, "_deviceAudioControlService.SetAnalogGainPercentAsync(device, gainPercent, persistFlash: false, cancellationToken)");
         AssertContains(deviceAudioRequestControllerText, "namespace Sussudio.Controllers;");
         AssertContains(deviceAudioRequestControllerText, "internal sealed class MainViewModelDeviceAudioRequestController");
         AssertDoesNotContain(deviceAudioRequestControllerText, "partial class MainViewModelDeviceAudioRequestController");
         AssertContains(deviceAudioRequestControllerText, "internal sealed class MainViewModelDeviceAudioRequestControllerContext");
         AssertContains(deviceAudioRequestControllerText, "public void ScheduleAnalogGainFlashPersist(CaptureDevice device, byte gainByte)");
-        AssertContains(deviceAudioRequestControllerText, "NativeXuAtCommandProvider.SetAnalogGainAsync(device, gainByte, persistFlash: true, token)");
+        AssertContains(deviceAudioRequestControllerText, "_context.PersistAnalogAudioGainAsync(device, gainByte, token)");
+        AssertContains(deviceAudioRequestControllerText, "_context.SetStatusText(\"Analog gain applied but could not be saved to the device; it may revert after power cycle.\")");
         AssertContains(deviceAudioStateText, "private async Task<bool> ApplyDeviceAudioModeAsync");
         AssertContains(deviceAudioStateText, "private bool IsCurrentSelectedDevice(CaptureDevice device)");
         AssertContains(deviceAudioModeText, "IsCurrentSelectedDevice(device)");
@@ -2182,7 +2261,7 @@ static partial class Program
         AssertContains(mainViewModelRecordingStateText, "private readonly Queue<(long Tick, long Bytes)> _samples = new();");
         AssertContains(outputDriveSpacePresentationBuilderText, "new DriveInfo(Path.GetPathRoot(outputPath) ?? \"C:\");");
         AssertContains(outputDriveSpacePresentationBuilderText, "return $\"Free: {freeGb:F1} GB\";");
-        AssertContains(outputDriveSpacePresentationBuilderText, "Suppressed exception in MainViewModel.RefreshDiskSpace");
+        AssertContains(outputDriveSpacePresentationBuilderText, "Suppressed exception in {nameof(OutputDriveSpacePresentationBuilder)}.{nameof(Build)} type={ex.GetType().Name}");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "private void OnSystemPowerModeChanged");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "e.Mode != PowerModes.Resume");
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "_eventIngressController = _context.CreateEventIngressController();");
@@ -2280,7 +2359,7 @@ static partial class Program
         var audioStateText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioState.cs"));
         var audioDeviceSelectionPolicyText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "ViewModelSelectionPolicies.cs"));
         AssertContains(mainViewModelText, "public Task RefreshDevicesAsync(CancellationToken cancellationToken = default)");
-        AssertContains(mainViewModelText, "=> _deviceRefreshController.RefreshDevicesAsync(cancellationToken);");
+        AssertContains(mainViewModelText, "=> _deviceRefreshController.RefreshDevicesAsync(cancellationToken: cancellationToken);");
         AssertContains(deviceRefreshControllerText, "namespace Sussudio.Controllers;");
         AssertContains(deviceRefreshControllerText, "internal sealed class MainViewModelDeviceRefreshController");
         AssertContains(deviceRefreshControllerText, "internal sealed class MainViewModelDeviceRefreshControllerContext");
@@ -2288,7 +2367,7 @@ static partial class Program
         AssertDoesNotContain(deviceRefreshControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(deviceRefreshControllerText, "_viewModel.");
         AssertContains(deviceRefreshControllerText, "public async Task RefreshDevicesAsync(");
-        AssertContains(deviceRefreshControllerText, "CancellationToken cancellationToken = default,");
+        AssertContains(deviceRefreshControllerText, "CancellationToken cancellationToken = default)");
         AssertContains(deviceRefreshControllerText, "bool throwOnScanFailure = false");
         AssertContains(deviceRefreshControllerText, "if (throwOnScanFailure)");
         AssertContains(deviceRefreshControllerText, "_context.EnumerateCaptureDeviceDiscoveryAsync()");
@@ -2317,7 +2396,7 @@ static partial class Program
         AssertDoesNotContain(deviceAudioRequestControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(deviceAudioRequestControllerText, "_viewModel.");
         AssertContains(deviceAudioRequestControllerText, "public void HandleAnalogAudioGainPercentChanged(double value)");
-        AssertContains(deviceAudioRequestControllerText, "NativeXuAtCommandProvider.SetAnalogGainAsync(device, gainByte, persistFlash: true, token)");
+        AssertContains(deviceAudioRequestControllerText, "_context.PersistAnalogAudioGainAsync(device, gainByte, token)");
         AssertDoesNotContain(mainViewModelText, "private void CancelPendingAudioControlWork()");
         AssertDoesNotContain(mainViewModelText, "_deviceAudioModeCts");
         AssertDoesNotContain(mainViewModelDisposalText, "_gainFlashDebounceCts");
@@ -2368,14 +2447,15 @@ static partial class Program
         AssertContains(mainViewModelSourceTelemetryControllerText, "public required Func<SourceSignalTelemetrySnapshot> GetLatestSourceTelemetry { get; init; }");
         AssertContains(mainViewModelSourceTelemetryControllerText, "public required Func<SourceSignalTelemetrySnapshot, DateTimeOffset, string> BuildSourceTelemetrySummary { get; init; }");
         AssertContains(mainViewModelSourceTelemetryControllerText, "public required Func<string?, bool> IsAutoResolutionValue { get; init; }");
-        AssertContains(mainViewModelSourceTelemetryControllerText, "public required Action RebuildResolutionOptions { get; init; }");
+        AssertContains(mainViewModelSourceTelemetryControllerText, "public required Action<bool> RebuildResolutionOptions { get; init; }");
         AssertDoesNotContain(mainViewModelSourceTelemetryControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(mainViewModelSourceTelemetryControllerText, "_viewModel.");
         AssertContains(mainViewModelSourceTelemetryControllerText, "public void OnSourceTelemetryUpdated(object? sender, SourceSignalTelemetrySnapshot snapshot)");
         AssertContains(mainViewModelSourceTelemetryControllerText, "SOURCE_TELEMETRY_UI_ENQUEUE_FAILED");
         AssertContains(mainViewModelSourceTelemetryControllerText, "private int? _lastTelemetryAgeBucket;");
         AssertContains(mainViewModelSourceTelemetryControllerText, "_context.IsAutoResolutionValue(_context.GetSelectedResolution())");
-        AssertContains(mainViewModelSourceTelemetryControllerText, "_context.RebuildResolutionOptions();");
+        AssertContains(mainViewModelSourceTelemetryControllerText, "_context.SetPendingModeOptionsRefresh(forceSourceAutoRetarget);");
+        AssertContains(mainViewModelSourceTelemetryControllerText, "_context.RebuildResolutionOptions(forceSourceAutoRetarget);");
         var recordingCapabilityControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelDeviceControllers.cs"));
         AssertContains(recordingCapabilityControllerText, "namespace Sussudio.Controllers;");
         AssertContains(recordingCapabilityControllerText, "internal sealed class MainViewModelRecordingCapabilityControllerContext");
@@ -2454,8 +2534,8 @@ static partial class Program
         var nativeXuAtRollingPollText = nativeXuAtProviderText;
         var nativeXuDeviceSupportText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "NativeXu", "KsExtensionUnitNative.cs"));
         AssertContains(nativeXuAtProviderText, "device.NativeXuInterfacePath");
-        AssertContains(nativeXuAtProviderText, "NativeXuDeviceSupport.TryGetSupported4kXIds(device, out var vendorId, out var productId)");
-        AssertContains(nativeXuAtProviderText, "NativeXuDeviceSupport.EnumerateSelectedInterfaces(vendorId, productId, device)");
+        AssertContains(nativeXuAtProviderText, "NativeXuDeviceSupport.TryGetSupported4kXIds(device, out _, out _)");
+        AssertContains(nativeXuAtProviderText, "NativeXuDeviceSupport.EnumerateSelectedInterfacePath(device.NativeXuInterfacePath)");
         AssertContains(nativeXuAtProviderText, "NativeXuDeviceSupport.TryAcquireTransportGateAsync(cancellationToken)");
         AssertDoesNotContain(nativeXuAtProviderText, "new KsExtensionUnitNative.KsInterfacePath(selectedInterfacePath, Guid.Empty)");
         AssertContains(nativeXuAtProviderText, "nativexu-interface-ambiguous");
@@ -2465,7 +2545,7 @@ static partial class Program
         AssertContains(nativeXuDeviceSupportText, "internal static class NativeXuDeviceSupport");
         AssertContains(nativeXuDeviceSupportText, "public static readonly Guid ExtensionUnitGuid");
         AssertContains(nativeXuDeviceSupportText, "private static readonly SemaphoreSlim TransportGate");
-        AssertContains(nativeXuDeviceSupportText, "public static IReadOnlyList<KsExtensionUnitNative.KsInterfacePath> EnumerateSelectedInterfaces(");
+        AssertContains(nativeXuDeviceSupportText, "public static IReadOnlyList<KsExtensionUnitNative.KsInterfacePath> EnumerateSelectedInterfacePath(");
         AssertContains(nativeXuDeviceSupportText, "public static bool HasSelectedInterface(CaptureDevice? device, string operation)");
         AssertContains(nativeXuDeviceSupportText, "public static bool TryGetSupported4kXIds(");
         AssertContains(nativeXuDeviceSupportText, "public static bool TryParseVendorProductIds(");
@@ -2483,7 +2563,14 @@ static partial class Program
         AssertContains(nativeXuAudioServiceText, "NativeXuDeviceSupport.EnumerateSelectedInterfacePath(selectedInterfacePath)");
         AssertContains(nativeXuAudioServiceText, "NativeXuDeviceSupport.TryAcquireTransportGateAsync(cancellationToken)");
         AssertContains(nativeXuAudioServiceText, "TryXuGetDirect(");
-        AssertContains(nativeXuAudioServiceText, "TryXuSetViaOutput(");
+        AssertDoesNotContain(nativeXuAudioServiceText, "TryXuSetViaOutput(");
+        var nativeXuAudioProbeExperimentsText = File.ReadAllText(Path.Combine(
+            repoRoot,
+            "tools",
+            "NativeXuAudioProbe",
+            "NativeXuAudioControlService.Experiments.cs"));
+        AssertContains(nativeXuAudioProbeExperimentsText, "TryXuSetViaOutput(");
+        AssertContains(nativeXuAudioProbeExperimentsText, "UpdatePayloadAsync(");
 
 
 
@@ -2515,23 +2602,44 @@ static partial class Program
         AssertContains(rootText, "private static string ReadAudioEndpointFriendlyName(");
         AssertContains(rootText, "public static Task<List<MediaFormat>> ProbeVideoFormatsAsync(string symbolicLink)");
         AssertContains(rootText, "private static string SubtypeGuidToName(Guid subtype)");
+        AssertContains(rootText, "=> MfInteropHelpers.SubtypeGuidToName(subtype);");
         AssertContains(rootText, "private static IMFMediaSource CreateMediaSource(string symbolicLink)");
         AssertContains(rootText, "private static IMFMediaSource CreateMediaSourceByEnumeration(");
         AssertContains(rootText, "MfInteropHelpers.MatchesSymbolicLink(targetSymbolicLink, candidateLink)");
         AssertContains(rootText, "MFCreateDeviceSource(attributes, out var mediaSource)");
-        foreach (var removedFile in new[]
+
+        var subtypeName = RequireType("Sussudio.Services.Capture.MfInteropHelpers")
+            .GetMethod("SubtypeGuidToName", BindingFlags.Static | BindingFlags.Public)
+            ?? throw new InvalidOperationException("MfInteropHelpers.SubtypeGuidToName was not found.");
+        var subtypeMappings = new (Guid Subtype, string Name)[]
         {
-            "MfDeviceEnumerator.VideoDevices.cs",
-            "MfDeviceEnumerator.AudioEndpoints.cs",
-            "MfDeviceEnumerator.FormatProbe.cs",
-            "MfDeviceEnumerator.SourceOpening.cs"
-        })
+            (new Guid(0x30313050, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71), "P010"),
+            (new Guid(0x3231564E, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71), "NV12"),
+            (new Guid(0x32595559, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71), "YUY2"),
+            (new Guid(0x59565955, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71), "UYVY"),
+            (new Guid(0x47504A4D, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71), "MJPG"),
+            (new Guid(0x00000014, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71), "RGB24")
+        };
+        foreach (var (subtype, expectedName) in subtypeMappings)
         {
             AssertEqual(
-                false,
-                File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "DeviceDiscovery", removedFile)),
-                $"{removedFile} removed");
+                expectedName,
+                (string)subtypeName.Invoke(null, new object?[] { subtype })!,
+                $"MF subtype {expectedName}");
         }
+
+        var fourCcSubtype = new Guid(
+            0x44434241, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71);
+        AssertEqual(
+            "ABCD",
+            (string)subtypeName.Invoke(null, new object?[] { fourCcSubtype })!,
+            "MF subtype FourCC fallback");
+        var unknownSubtype = new Guid(
+            0x01234567, 0x89AB, 0xCDEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF);
+        AssertEqual(
+            unknownSubtype.ToString("B"),
+            (string)subtypeName.Invoke(null, new object?[] { unknownSubtype })!,
+            "MF subtype GUID fallback");
 
         return Task.CompletedTask;
     }
@@ -2544,6 +2652,7 @@ static partial class Program
         var sourceReaderNegotiationText = sourceReaderRootText;
         var sourceReaderDeviceEnumerationText = sourceReaderNegotiationText;
         var mfInteropText = ReadRepoFile("Sussudio/Services/Capture/MfInterop.cs").Replace("\r\n", "\n");
+        var deviceEnumeratorText = ReadRepoFile("Sussudio/Services/Capture/MfDeviceEnumerator.cs").Replace("\r\n", "\n");
 
         AssertContains(deviceRootText, "var likelyByCapability = LooksLikeHighBandwidthCapture(captureDevice);");
         AssertContains(deviceRootText, "public async Task<DeviceDiscoveryResult> EnumerateCaptureDeviceDiscoveryAsync(");
@@ -2570,6 +2679,12 @@ static partial class Program
         AssertContains(sourceReaderDeviceEnumerationText, "MfInterop.MFEnumDeviceSources(attrs, out activateArrayPtr, out var activateCount)");
         AssertContains(sourceReaderDeviceEnumerationText, "MfInteropHelpers.MatchesSymbolicLink(targetSymbolicLink, link)");
         AssertContains(mfInteropText, "public static bool MatchesSymbolicLink(string? target, string? candidate)");
+        AssertContains(mfInteropText, "public static void ReleaseComObject<T>(ref T? comObject)");
+        AssertContains(mfInteropText, "ComObjectReleaser.ReleaseComObject(ref comObject");
+        AssertContains(mfInteropText, "public static void ReleaseComObjectSafe(object? obj)");
+        AssertContains(mfInteropText, "ComObjectReleaser.ReleaseComObjectSafe(obj");
+        AssertContains(deviceEnumeratorText, "MfInteropHelpers.ReleaseComObject(ref activate)");
+        AssertDoesNotContain(sourceReaderRootText, "WasapiComInterop");
         AssertContains(sourceReaderDeviceEnumerationText, "ReleaseRemainingActivateObjects(activateArrayPtr, activateCount, i + 1);");
         AssertContains(sourceReaderDeviceEnumerationText, "Marshal.ReleaseComObject(activated)");
         AssertContains(sourceReaderDeviceEnumerationText, "Marshal.FreeCoTaskMem(activateArrayPtr);");
@@ -2586,6 +2701,9 @@ static partial class Program
         AssertContains(mfInteropText, "internal static class MfConstants");
         AssertContains(mfInteropText, "internal static class MfHResults");
         AssertContains(mfInteropText, "internal static class MfGuids");
+        AssertContains(mfInteropText, "MF_DEVSOURCE_ATTRIBUTE_FRIENDLY_NAME = new(");
+        AssertContains(mfInteropText, "MFVideoFormat_YUY2 = new(");
+        AssertContains(mfInteropText, "MFVideoFormat_UYVY = new(");
         AssertDoesNotContain(mfInteropText, "public sealed partial class MfSourceReaderVideoCapture");
         AssertContains(mfInteropText, "internal interface IMFSourceReader");
         AssertContains(mfInteropText, "internal interface IMFMediaBuffer");
@@ -2614,7 +2732,7 @@ static partial class Program
     }
 
     private static string ReadMfDeviceEnumeratorFile(string fileName) =>
-        ReadRepoFile($"Sussudio/Services/Capture/DeviceDiscovery/{fileName}");
+        ReadRepoFile($"Sussudio/Services/Capture/{fileName}");
 }
 
 namespace Sussudio.Tests

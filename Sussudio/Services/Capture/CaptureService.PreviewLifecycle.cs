@@ -199,7 +199,7 @@ public partial class CaptureService
                 $"FLASHBACK_FAST_PATH_FORMAT_MISMATCH " +
                 $"existing_p010={sinkIsP010} requested_p010={unifiedVideoCapture.IsP010}");
             throw new InvalidOperationException(
-                $"Flashback fast path: pixel-format mismatch Ã¢â‚¬â€ sink was built for " +
+                $"Flashback fast path: pixel-format mismatch — sink was built for " +
                 $"{(sinkIsP010 ? "P010" : "NV12")} but UVC session negotiated " +
                 $"{(unifiedVideoCapture.IsP010 ? "P010" : "NV12")}. " +
                 "Rebuild the flashback backend with the correct format.");
@@ -252,12 +252,15 @@ public partial class CaptureService
             Logger.LogFatalBreadcrumb($"PREVIEW_START phase=init_uvc {(int)settings.Width}x{(int)settings.Height}@{settings.FrameRate:0.###} p010={requireP010} pxfmt={settings.RequestedPixelFormat} mjpeg_hfr={useMjpegHighFrameRateMode}");
             await unifiedVideoCapture.InitializeAsync(
                 _currentDevice!.Id,
-                width: (int)settings.Width,
-                height: (int)settings.Height,
-                fps: settings.FrameRate,
-                requireP010: requireP010,
-                requestedPixelFormat: settings.RequestedPixelFormat,
-                useMjpegHighFrameRateMode: useMjpegHighFrameRateMode,
+                new VideoCaptureNegotiationOptions(
+                    Width: (int)settings.Width,
+                    Height: (int)settings.Height,
+                    Fps: settings.FrameRate,
+                    RequireP010: requireP010,
+                    RequestedPixelFormat: settings.RequestedPixelFormat,
+                    Mode: useMjpegHighFrameRateMode
+                        ? SourceNegotiationMode.HighFrameRateMjpegRequested
+                        : SourceNegotiationMode.Standard),
                 mjpegDecoderCount: settings.MjpegDecoderCount).ConfigureAwait(false);
             Logger.LogFatalBreadcrumb($"PREVIEW_START phase=init_done");
             unifiedVideoCapture.SetPreviewSink(_videoPipeline.PreviewFrameSink);
@@ -626,8 +629,8 @@ public partial class CaptureService
             {
                 AttachFlashbackAudioIfSupported(_previewAudioGraph.ProgramCapture, "audio_preview_start");
                 await _previewAudioGraph.StartPlaybackAsync(
-                    transitionToken,
-                    _flashbackBackend.PlaybackController).ConfigureAwait(false);
+                    _flashbackBackend.PlaybackController,
+                    cancellationToken: transitionToken).ConfigureAwait(false);
             }
             catch
             {
@@ -714,8 +717,8 @@ public partial class CaptureService
                 try
                 {
                     await _previewAudioGraph.StartPlaybackAsync(
-                        transitionToken,
-                        _flashbackBackend.PlaybackController).ConfigureAwait(false);
+                        _flashbackBackend.PlaybackController,
+                        cancellationToken: transitionToken).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException) when (transitionToken.IsCancellationRequested)
                 {
@@ -1052,97 +1055,67 @@ public partial class CaptureService
             if (!string.IsNullOrEmpty(resolvedId))
             {
                 var newCapture = new WasapiAudioCapture();
+                var captureCommitted = false;
                 try
                 {
-                    await newCapture.InitializeAsync(resolvedId, transitionToken).ConfigureAwait(false);
-                    newCapture.AudioLevelUpdated += OnWasapiAudioLevelUpdated;
-                    _previewAudioGraph.AttachCaptureFailure(newCapture, "program", OnWasapiCaptureFailed);
-                }
-                catch
-                {
-                    _audioDeviceId = previousDeviceId;
-                    _audioDeviceName = previousDeviceName;
                     try
                     {
-                        newCapture.AudioLevelUpdated -= OnWasapiAudioLevelUpdated;
-                        _previewAudioGraph.DetachCaptureFailure(newCapture);
-                        await newCapture.DisposeAsync().ConfigureAwait(false);
+                        await newCapture.InitializeAsync(resolvedId, transitionToken).ConfigureAwait(false);
+                        newCapture.AudioLevelUpdated += OnWasapiAudioLevelUpdated;
+                        _previewAudioGraph.AttachCaptureFailure(newCapture, "program", OnWasapiCaptureFailed);
+                    }
+                    catch
+                    {
+                        _audioDeviceId = previousDeviceId;
+                        _audioDeviceName = previousDeviceName;
+                        throw;
+                    }
+
+                    if (switchGen != Volatile.Read(ref _audioSwitchGeneration))
+                    {
+                        Logger.Log($"AUDIO_INPUT_SWITCH_ABORT reason=generation_mismatch gen={switchGen}");
+                        return;
+                    }
+
+                    _previewAudioGraph.DetachCapture(
+                        oldCapture,
+                        OnWasapiAudioLevelUpdated,
+                        _flashbackBackend.PlaybackController);
+
+                    _previewAudioGraph.ProgramCapture = null;
+                    try
+                    {
+                        await oldCapture.DisposeAsync().ConfigureAwait(false);
                     }
                     catch (Exception ex)
                     {
-                        Logger.Log($"AUDIO_INPUT_SWITCH_NEW_DISPOSE_WARN type={ex.GetType().Name} msg={ex.Message}");
+                        Logger.Log($"AUDIO_INPUT_SWITCH_OLD_DISPOSE_FAIL type={ex.GetType().Name} msg={ex.Message}");
+                        throw;
                     }
 
-                    throw;
-                }
-
-                if (switchGen != Volatile.Read(ref _audioSwitchGeneration))
-                {
-                    Logger.Log($"AUDIO_INPUT_SWITCH_ABORT reason=generation_mismatch gen={switchGen}");
-                    try
-                    {
-                        newCapture.AudioLevelUpdated -= OnWasapiAudioLevelUpdated;
-                        _previewAudioGraph.DetachCaptureFailure(newCapture);
-                        await newCapture.DisposeAsync().ConfigureAwait(false);
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.Log($"AUDIO_INPUT_SWITCH_NEW_DISPOSE_WARN type={ex.GetType().Name} msg={ex.Message}");
-                    }
-
-                    return;
-                }
-
-                _previewAudioGraph.DetachCapture(
-                    oldCapture,
-                    OnWasapiAudioLevelUpdated,
-                    _flashbackBackend.PlaybackController);
-
-                _previewAudioGraph.ProgramCapture = null;
-                try
-                {
-                    await oldCapture.DisposeAsync().ConfigureAwait(false);
-                }
-                catch (Exception ex)
-                {
-                    Logger.Log($"AUDIO_INPUT_SWITCH_OLD_DISPOSE_FAIL type={ex.GetType().Name} msg={ex.Message}");
-                    try
-                    {
-                        newCapture.AudioLevelUpdated -= OnWasapiAudioLevelUpdated;
-                        _previewAudioGraph.DetachCaptureFailure(newCapture);
-                        await newCapture.DisposeAsync().ConfigureAwait(false);
-                    }
-                    catch (Exception disposeEx)
-                    {
-                        Logger.Log($"AUDIO_INPUT_SWITCH_NEW_DISPOSE_WARN type={disposeEx.GetType().Name} msg={disposeEx.Message}");
-                    }
-
-                    throw;
-                }
-
-                try
-                {
                     // Starting after old-worker cleanup prevents two producers from feeding one sink.
                     // Start() rejects a quarantined predecessor that missed its stop deadline.
                     newCapture.Start();
+                    _previewAudioGraph.ProgramCapture = newCapture;
+                    captureCommitted = true;
                 }
-                catch
+                finally
                 {
-                    try
+                    if (!captureCommitted)
                     {
-                        newCapture.AudioLevelUpdated -= OnWasapiAudioLevelUpdated;
-                        _previewAudioGraph.DetachCaptureFailure(newCapture);
-                        await newCapture.DisposeAsync().ConfigureAwait(false);
+                        try
+                        {
+                            newCapture.AudioLevelUpdated -= OnWasapiAudioLevelUpdated;
+                            _previewAudioGraph.DetachCaptureFailure(newCapture);
+                            await newCapture.DisposeAsync().ConfigureAwait(false);
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.Log($"AUDIO_INPUT_SWITCH_NEW_DISPOSE_WARN type={ex.GetType().Name} msg={ex.Message}");
+                        }
                     }
-                    catch (Exception disposeEx)
-                    {
-                        Logger.Log($"AUDIO_INPUT_SWITCH_NEW_DISPOSE_WARN type={disposeEx.GetType().Name} msg={disposeEx.Message}");
-                    }
-
-                    throw;
                 }
 
-                _previewAudioGraph.ProgramCapture = newCapture;
                 _audioDeviceId = audioDeviceId;
                 _audioDeviceName = audioDeviceName;
                 _previewAudioGraph.ResetCaptureFault();
@@ -1160,8 +1133,8 @@ public partial class CaptureService
                     try
                     {
                         await _previewAudioGraph.StartPlaybackAsync(
-                            transitionToken,
-                            _flashbackBackend.PlaybackController).ConfigureAwait(false);
+                            _flashbackBackend.PlaybackController,
+                            cancellationToken: transitionToken).ConfigureAwait(false);
                     }
                     catch (Exception ex) when (ex is not OperationCanceledException)
                     {

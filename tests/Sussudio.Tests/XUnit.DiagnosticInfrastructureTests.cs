@@ -32,6 +32,27 @@ namespace Sussudio.Tests
         public Task RawSendsRemainConcurrentAndRetainOwnershipThroughDisposal(bool failSend)
             => global::Program.DiagnosticInfrastructure_DisposeDuringRawSend(failSend);
 
+        [Theory]
+        [InlineData("flashback-playback", false)]
+        [InlineData("flashback-stress", false)]
+        [InlineData("flashback-scrub-stress", true)]
+        [InlineData("flashback-restart-cycle", false)]
+        [InlineData("flashback-encoder-cycle", false)]
+        [InlineData("flashback-export-playback", false)]
+        [InlineData("flashback-segment-playback", false)]
+        [InlineData("flashback-range-export", false)]
+        [InlineData("flashback-range-export-audio-switch", true)]
+        [InlineData("flashback-lifecycle", false)]
+        [InlineData("flashback-export-concurrent", true)]
+        [InlineData("flashback-disable-during-export", true)]
+        [InlineData("flashback-rotated-export", false)]
+        [InlineData("flashback-preview-cycle", false)]
+        [InlineData("flashback-playback-preview-cycle", false)]
+        [InlineData("flashback-recording-preview-cycle", false)]
+        [InlineData("flashback-recording-settings-deferred", false)]
+        public Task ScenarioStartupPreservesCommandSerializationChoice(string scenario, bool raw)
+            => global::Program.DiagnosticInfrastructure_ScenarioCommandRouting(scenario, raw);
+
         [Fact]
         public Task AnAdmittedTransportCanDisposeItsOwnChannel()
             => global::Program.DiagnosticInfrastructure_TransportCanDisposeChannel();
@@ -66,6 +87,64 @@ namespace Sussudio.Tests
 static partial class Program
 {
     private static readonly TimeSpan DiagnosticInfrastructureWaitLimit = TimeSpan.FromSeconds(10);
+
+    internal static async Task DiagnosticInfrastructure_ScenarioCommandRouting(string scenario, bool raw)
+    {
+        var assembly = LoadDiagnosticSessionRunnerAssembly();
+        var startupType = assembly.GetType("Sussudio.Tools.DiagnosticSessionScenarioStartup", throwOnError: true)!;
+        var planType = assembly.GetType("Sussudio.Tools.DiagnosticSessionScenarioPlan", throwOnError: true)!;
+        var backgroundType = assembly.GetType("Sussudio.Tools.DiagnosticSessionBackgroundTasks", throwOnError: true)!;
+        var phaseType = assembly.GetType("Sussudio.Tools.DiagnosticSessionScenarioPhaseState", throwOnError: true)!;
+        var presetType = assembly.GetType("Sussudio.Tools.FlashbackRecordingSettingsDeferredPresetState", throwOnError: true)!;
+        var plan = planType.GetMethod("From", BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null, new object[] { scenario });
+        var background = Activator.CreateInstance(backgroundType, nonPublic: true)!;
+        var outputDirectory = Path.Combine(GetRepoRoot(), "temp", "diagnostic-routing-unused");
+        var options = CreateDiagnosticSessionOptions(assembly, scenario, 0, 100, outputDirectory);
+        using var cancellation = new CancellationTokenSource();
+        DiagnosticInfrastructureChannel? channel = null;
+        bool? serializedSendObserved = null;
+        var observedToken = CancellationToken.None;
+        var commands = new List<string>();
+        try
+        {
+            channel = new DiagnosticInfrastructureChannel((command, _, _, token) =>
+            {
+                token.ThrowIfCancellationRequested();
+                commands.Add(command);
+                serializedSendObserved = channel!.IsSerializedSendActive;
+                observedToken = token;
+                // Stop at the first snapshot: exercise routing without running a scenario or touching hardware.
+                cancellation.Cancel();
+                return Task.FromResult(JsonSerializer.SerializeToElement(new { Success = false, Message = "routing sentinel" }));
+            }, cancellation.Token);
+            var startup = (Task)startupType.GetMethod("StartAsync", BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null,
+                new object?[]
+                {
+                    options, plan, 0, outputDirectory, background, new List<string>(), channel.Warnings,
+                    channel.Instance, Activator.CreateInstance(phaseType, nonPublic: true), cancellation.Token
+                })!;
+            var completion = (Task)backgroundType.GetMethod("CompleteRegisteredScenarioWorkAsync", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .Invoke(background, new[] { Activator.CreateInstance(presetType) })!;
+            try
+            {
+                await Task.WhenAll(startup, completion).WaitAsync(DiagnosticInfrastructureWaitLimit).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException exception) when (cancellation.IsCancellationRequested)
+            {
+                Assert.Equal(cancellation.Token, exception.CancellationToken);
+            }
+
+            Assert.Equal(new[] { "GetSnapshot" }, commands);
+            Assert.Equal(cancellation.Token, observedToken);
+            Assert.Equal(!raw, serializedSendObserved);
+            Assert.Equal(!raw, channel.Warnings.Any(warning => warning.Contains("routing sentinel", StringComparison.Ordinal)));
+        }
+        finally
+        {
+            cancellation.Cancel();
+            channel?.Dispose();
+        }
+    }
 
     internal static async Task DiagnosticInfrastructure_ArtifactWriteFailures(string blockedOutput)
     {
@@ -510,11 +589,13 @@ static partial class Program
         private readonly Func<string, Dictionary<string, object?>?, int?, bool, CancellationToken, Task<JsonElement>> _send;
         private readonly Func<string, Dictionary<string, object?>?, int?, CancellationToken, Task<JsonElement>> _sendRaw;
 
-        internal DiagnosticInfrastructureChannel(Func<string, Dictionary<string, object?>?, int?, CancellationToken, Task<JsonElement>> sender)
+        internal DiagnosticInfrastructureChannel(
+            Func<string, Dictionary<string, object?>?, int?, CancellationToken, Task<JsonElement>> sender,
+            CancellationToken defaultCancellationToken = default)
         {
             var channelType = LoadDiagnosticSessionRunnerAssembly().GetType("Sussudio.Tools.DiagnosticSessionCommandChannel", throwOnError: true)!;
             _channel = (IDisposable)Activator.CreateInstance(channelType, BindingFlags.Instance | BindingFlags.NonPublic, null,
-                new object[] { sender, CancellationToken.None, Warnings }, null)!;
+                new object[] { sender, defaultCancellationToken, Warnings }, null)!;
             _gate = (SemaphoreSlim)channelType.GetField("_sendGate", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(_channel)!;
             var methods = channelType.GetMethods(BindingFlags.Instance | BindingFlags.NonPublic);
             _send = methods.Single(method => method.Name == "SendWithTokenAsync" && method.GetParameters()[0].ParameterType == typeof(string))
@@ -524,6 +605,8 @@ static partial class Program
         }
 
         internal List<string> Warnings { get; } = new();
+        internal object Instance => _channel;
+        internal bool IsSerializedSendActive => _gate.CurrentCount == 0;
         internal Task<JsonElement> SendAsync(string command, CancellationToken token = default) => _send(command, null, null, false, token);
         internal Task<JsonElement> SendRawAsync(string command) => _sendRaw(command, null, null, CancellationToken.None);
         internal SafeWaitHandle GetGateHandle() => _gate.AvailableWaitHandle.SafeWaitHandle;

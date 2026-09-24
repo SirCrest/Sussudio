@@ -13,11 +13,9 @@ internal sealed class PreviewRuntimeSnapshotSamplingControllerContext
     public required MainViewModel ViewModel { get; init; }
     public required PreviewRendererHostController RendererHostController { get; init; }
     public required PreviewStartupSessionController StartupSessionController { get; init; }
-    public required PreviewStartupSignalCoordinator StartupSignalCoordinator { get; init; }
     public required Func<bool> IsGpuElementVisible { get; init; }
     public required Func<bool> IsCpuElementVisible { get; init; }
     public required Func<bool> IsPlaceholderVisible { get; init; }
-    public required Func<int> GetStartupVisualTimeoutMs { get; init; }
 }
 
 internal sealed class PreviewRuntimeSnapshotSamplingController
@@ -41,13 +39,12 @@ internal sealed class PreviewRuntimeSnapshotSamplingController
     private PreviewRuntimeSnapshot BuildSnapshot()
     {
         var startupSession = _context.StartupSessionController;
-        var startupSignals = _context.StartupSignalCoordinator;
-        var startupSignalSnapshot = startupSignals.Snapshot;
+        var startupSignalSnapshot = startupSession.SignalSnapshot;
         var startupMissingSignals = startupSession.MissingSignals;
         if (string.IsNullOrWhiteSpace(startupMissingSignals) &&
             startupSession.ShouldRefreshMissingSignalsForSnapshot)
         {
-            startupMissingSignals = startupSignals.BuildMissingSignals();
+            startupMissingSignals = startupSession.BuildMissingSignals();
         }
 
         var rendererHost = _context.RendererHostController;
@@ -62,11 +59,11 @@ internal sealed class PreviewRuntimeSnapshotSamplingController
             rendererHost.FramesDropped,
             rendererHost.LastPresentedTick,
             rendererHost.PreviewMinPresentationIntervalMs,
-            startupSession.State.ToString(),
+            startupSession.State,
             startupSession.IsWaitingForFirstVisual,
             startupSession.AttemptId,
             startupSession.RequestedUtc,
-            _context.GetStartupVisualTimeoutMs(),
+            startupSession.VisualTimeoutMs,
             startupSignalSnapshot.GpuSignalMediaOpened,
             startupSignalSnapshot.GpuSignalFirstFrame,
             startupSignalSnapshot.GpuSignalPlaybackAdvancing,
@@ -77,7 +74,7 @@ internal sealed class PreviewRuntimeSnapshotSamplingController
             startupSession.RecoveryAttemptCount,
             startupSession.LastFailureReason,
             startupSession.FirstVisualConfirmed,
-            startupSignals.PositionEventCount);
+            startupSession.PositionEventCount);
         var previewRuntimeEpoch = GetOrAdvancePreviewRuntimeSnapshotEpoch(signature);
         return PreviewRuntimeSnapshotController.Build(new PreviewRuntimeSnapshotInput
         {
@@ -138,7 +135,7 @@ internal readonly record struct PreviewRuntimeSnapshotSignature(
     long FramesDropped,
     long LastPresentedTick,
     double PreviewMinPresentationIntervalMs,
-    string StartupState,
+    PreviewStartupState StartupState,
     bool IsStartupWaitingForFirstVisual,
     string? StartupAttemptId,
     DateTimeOffset? StartupRequestedUtc,
@@ -169,7 +166,7 @@ internal sealed class PreviewRuntimeSnapshotInput
     public long FramesDropped { get; init; }
     public long LastPresentedTick { get; init; }
     public double PreviewMinPresentationIntervalMs { get; init; }
-    public string StartupState { get; init; } = "Idle";
+    public PreviewStartupState StartupState { get; init; } = PreviewStartupState.Idle;
     public bool IsStartupWaitingForFirstVisual { get; init; }
     public string? StartupAttemptId { get; init; }
     public DateTimeOffset? StartupRequestedUtc { get; init; }

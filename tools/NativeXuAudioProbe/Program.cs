@@ -105,22 +105,12 @@ if (args.Any(arg => string.Equals(arg, "--service-smoke", StringComparison.Ordin
 
 return await NativeXuProbeDefaultExperiment.RunAsync(device);
 
-// Probe-local runtime shims used by linked app service sources.
+// Probe-host logging adapter for linked service sources. Keep tracing independent
+// of the app file logger and its background writer lifecycle.
 internal static class Logger
 {
     public static void Log(string message)
         => Trace.TraceInformation(message);
-}
-
-public sealed class CaptureDevice
-{
-    public string Id { get; set; } = string.Empty;
-    public string Name { get; set; } = string.Empty;
-    public string? NativeXuInterfacePath { get; set; }
-
-    public string DisplayName => string.IsNullOrWhiteSpace(Name) ? "Unknown Device" : Name;
-
-    public override string ToString() => DisplayName;
 }
 
 /// <summary>
@@ -352,8 +342,8 @@ static class RtkI2cProbe
 }
 
 // CLI-only device locator for NativeXuAudioProbe. It finds supported Elgato
-// KS/XU interfaces and turns the selected interface path into a lightweight
-// CaptureDevice model for the shared audio-control services.
+// KS/XU interfaces and constructs the shared production CaptureDevice model
+// from the selected interface path.
 internal static class NativeXuProbeDeviceLocator
 {
     private const ushort ElgatoVendorId = 0x0FD9;
@@ -557,7 +547,7 @@ static class NativeXuProbeAtCommands
         Console.WriteLine($"BEFORE: AT 0x{getOpcode:X2} = {(before != null ? BitConverter.ToString(before) : "(null)")}");
 
         Console.WriteLine($"WRITING: AT 0x{setOpcode:X2} value={value} (bytes: {BitConverter.ToString(BitConverter.GetBytes(value))})");
-        var ok = await NativeXuAtCommandProvider.SendNamedSetCommandPublicAsync(dev, setOpcode, BitConverter.GetBytes(value), $"SET 0x{setOpcode:X2}={value}");
+        var ok = await NativeXuAtCommandProvider.SendNamedSetCommandAsync(dev, setOpcode, BitConverter.GetBytes(value), $"SET 0x{setOpcode:X2}={value}");
         Console.WriteLine($"Result: {ok}");
 
         await Task.Delay(500);
@@ -686,7 +676,7 @@ static class NativeXuProbeI2cSwitch
         var set10 = NativeXuProbeI2cTransport.SendI2cAtSet(dev, new byte[] { 0x00, 0x4A, 0x01, 0x00, 0x10, 0x01 });
         Console.WriteLine($"  5. I2C SET 0x10 = 01: {(set10 ? "OK" : "failed")}");
 
-        var set5B = await NativeXuAtCommandProvider.SendNamedSetCommandPublicAsync(
+        var set5B = await NativeXuAtCommandProvider.SendNamedSetCommandAsync(
             dev, 0x5B, new byte[] { 0x00, 0x05, 0x00, 0x00 }, "AT_0x5B_commit");
         Console.WriteLine($"  6. UVC AT SET 0x5B = 00-05-00-00: {(set5B ? "OK" : "failed")}");
 
@@ -794,14 +784,14 @@ static class NativeXuProbeServiceProbe
         {
             if (!string.IsNullOrWhiteSpace(targetMode))
             {
-                var applied = await service.SetAudioModeAsync(device, targetMode, CancellationToken.None).ConfigureAwait(false);
+                var applied = await service.ExperimentSetAudioModeAsync(device, targetMode, CancellationToken.None).ConfigureAwait(false);
                 serviceSucceeded &= applied;
                 Console.WriteLine($"Set mode '{targetMode}': {(applied ? "ok" : "failed")}");
             }
 
             if (targetGain.HasValue)
             {
-                var applied = await service.SetAnalogGainPercentAsync(device, targetGain.Value, CancellationToken.None).ConfigureAwait(false);
+                var applied = await service.ExperimentSetAnalogGainPercentAsync(device, targetGain.Value, CancellationToken.None).ConfigureAwait(false);
                 serviceSucceeded &= applied;
                 Console.WriteLine($"Set gain '{targetGain.Value:0}': {(applied ? "ok" : "failed")}");
             }
@@ -810,14 +800,14 @@ static class NativeXuProbeServiceProbe
         {
             if (restoreGain)
             {
-                var restored = await service.SetAnalogGainPercentAsync(device, initial.AnalogGainPercent!.Value, CancellationToken.None).ConfigureAwait(false);
+                var restored = await service.ExperimentSetAnalogGainPercentAsync(device, initial.AnalogGainPercent!.Value, CancellationToken.None).ConfigureAwait(false);
                 serviceSucceeded &= restored;
                 Console.WriteLine($"Restore gain '{initial.AnalogGainPercent.Value:0}': {(restored ? "ok" : "failed")}");
             }
 
             if (restoreMode)
             {
-                var restored = await service.SetAudioModeAsync(device, initial.Mode!, CancellationToken.None).ConfigureAwait(false);
+                var restored = await service.ExperimentSetAudioModeAsync(device, initial.Mode!, CancellationToken.None).ConfigureAwait(false);
                 serviceSucceeded &= restored;
                 Console.WriteLine($"Restore mode '{initial.Mode}': {(restored ? "ok" : "failed")}");
             }
@@ -845,25 +835,25 @@ static class NativeXuProbeServiceProbe
         var succeeded = true;
         try
         {
-            var setModeResult = await service.SetAudioModeAsync(device, "Analog", CancellationToken.None).ConfigureAwait(false);
+            var setModeResult = await service.ExperimentSetAudioModeAsync(device, "Analog", CancellationToken.None).ConfigureAwait(false);
             succeeded &= setModeResult;
-            Console.WriteLine($"SetAudioModeAsync('Analog') => {setModeResult}");
+            Console.WriteLine($"ExperimentSetAudioModeAsync('Analog') => {setModeResult}");
 
             await PrintServiceStateAsync(service, device, "After mode");
 
-            var setGainResult = await service.SetAnalogGainPercentAsync(device, 50d, CancellationToken.None).ConfigureAwait(false);
+            var setGainResult = await service.ExperimentSetAnalogGainPercentAsync(device, 50d, CancellationToken.None).ConfigureAwait(false);
             succeeded &= setGainResult;
-            Console.WriteLine($"SetAnalogGainPercentAsync(50) => {setGainResult}");
+            Console.WriteLine($"ExperimentSetAnalogGainPercentAsync(50) => {setGainResult}");
 
             await PrintServiceStateAsync(service, device, "After gain");
         }
         finally
         {
-            var restoredGain = await service.SetAnalogGainPercentAsync(device, initial.AnalogGainPercent.Value, CancellationToken.None).ConfigureAwait(false);
+            var restoredGain = await service.ExperimentSetAnalogGainPercentAsync(device, initial.AnalogGainPercent.Value, CancellationToken.None).ConfigureAwait(false);
             succeeded &= restoredGain;
             Console.WriteLine($"Restore service gain '{initial.AnalogGainPercent.Value:0}' => {restoredGain}");
 
-            var restoredMode = await service.SetAudioModeAsync(device, initial.Mode, CancellationToken.None).ConfigureAwait(false);
+            var restoredMode = await service.ExperimentSetAudioModeAsync(device, initial.Mode, CancellationToken.None).ConfigureAwait(false);
             succeeded &= restoredMode;
             Console.WriteLine($"Restore service mode '{initial.Mode}' => {restoredMode}");
         }

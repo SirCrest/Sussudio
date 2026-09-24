@@ -465,7 +465,7 @@ public sealed class AutomationSnapshot
     public bool PreviewGpuElementVisible { get; init; }
     public bool PreviewCpuElementVisible { get; init; }
     public bool PreviewRendererAttached { get; init; }
-    public string PreviewStartupState { get; init; } = "Idle";
+    public string? PreviewStartupState { get; init; } = "Idle";
     public string? PreviewAttemptId { get; init; }
     public double? PreviewStartupElapsedMs { get; init; }
     public int PreviewStartupTimeoutMs { get; init; }
@@ -823,6 +823,7 @@ public sealed class AutomationSnapshot
     public long FlashbackPlaybackCommandsEnqueued { get; init; }
     public long FlashbackPlaybackCommandsProcessed { get; init; }
     public long FlashbackPlaybackCommandsDropped { get; init; }
+    // Legacy name for readiness, thread, and disposal rejections; mailbox rejection/drop accounting is separate.
     public long FlashbackPlaybackCommandsSkippedNotReady { get; init; }
     public long FlashbackPlaybackScrubUpdatesCoalesced { get; init; }
     public long FlashbackPlaybackSeekCommandsCoalesced { get; init; }

@@ -284,6 +284,8 @@ public sealed class NativeFfmpegCapabilitiesTests
             return true;
         }
 
+        assembly.GetType("Sussudio.Logger", throwOnError: true)!
+            .GetMethod("Initialize", Static)!.Invoke(null, new object[] { args[4] });
         init.GetMethod("EnsureInitializedAtRoot", Static)!.Invoke(null, new object[] { args[3] });
         if (args[1] == "catalog")
         {

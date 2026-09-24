@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -129,7 +130,7 @@ internal sealed partial class D3D11PreviewRenderer
         Logger.Log($"D3D11_PREVIEW_SWAPCHAIN_COLOR_SPACE_SET colorSpace={targetColorSpace} ({label}).");
     }
 
-    private bool TryResolveInputView(PendingFrame frame, out ID3D11VideoProcessorInputView? inputView, out bool disposeInputView)
+    private bool TryResolveInputView(PendingFrame frame, [NotNullWhen(true)] out ID3D11VideoProcessorInputView? inputView, out bool disposeInputView)
     {
         inputView = null;
         disposeInputView = false;
@@ -138,7 +139,7 @@ internal sealed partial class D3D11PreviewRenderer
         {
             inputView = ResolveExternalInputView(frame.D3DTexture, frame.D3DSubresourceIndex);
             disposeInputView = !_externalInputViewCacheEnabled;
-            return true;
+            return inputView != null;
         }
 
         if (_deviceContext == null || _inputTextures.Length == 0 || _inputViews.Length != _inputTextures.Length)
@@ -445,7 +446,7 @@ internal sealed partial class D3D11PreviewRenderer
 
             try
             {
-                if (_videoContext == null || _videoProcessor == null || _outputView == null || inputView == null || _swapChain == null)
+                if (_videoContext == null || _videoProcessor == null || _outputView == null || _swapChain == null)
                 {
                     return;
                 }
@@ -472,7 +473,7 @@ internal sealed partial class D3D11PreviewRenderer
             {
                 if (disposeInputView)
                 {
-                    inputView?.Dispose();
+                    inputView.Dispose();
                 }
             }
         }

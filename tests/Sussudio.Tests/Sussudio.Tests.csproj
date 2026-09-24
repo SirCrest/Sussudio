@@ -31,6 +31,7 @@
     <Compile Include="..\..\Sussudio\Services\Automation\PreviewPacingSlowStageClassifier.cs" Link="Production\PreviewPacingSlowStageClassifier.cs" />
     <Compile Include="..\..\Sussudio\Controllers\Audio\AudioControlBindingController.cs" Link="Production\AudioControlBindingController.cs" />
     <Compile Include="..\..\Sussudio\Controllers\Capture\CaptureBindingControllers.cs" Link="Production\CaptureBindingControllers.cs" />
+    <Compile Include="..\..\Sussudio\ViewModels\FrameRateTimingPolicy.Match.cs" Link="Production\FrameRateTimingPolicy.Match.cs" />
     <Compile Include="..\..\Sussudio\Services\Runtime\AppProcessStartup.cs" Link="Production\AppProcessStartup.cs" />
     <Compile Include="..\..\Sussudio\Models\Recording\RecordingSettingsSelection.cs" Link="Production\RecordingSettingsSelection.cs" />
     <Compile Include="..\..\Sussudio\Controllers\ViewModel\MainViewModelRecordingSettingsController.cs" Link="Production\MainViewModelRecordingSettingsController.cs" />

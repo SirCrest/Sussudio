@@ -27,7 +27,7 @@ public static class FramePacingVerdictTools
         var snapshotResponse = await pipeClient.SendCommandAsync(AutomationCommandKind.GetSnapshot, cancellationToken: cancellationToken).ConfigureAwait(false);
         if (!AutomationSnapshotFormatter.IsSuccess(snapshotResponse))
         {
-            return McpToolResultFactory.FromResponse(snapshotResponse, GetMessage(snapshotResponse));
+            return McpToolResultFactory.FromResponse(snapshotResponse, McpToolResultFactory.GetMessage(snapshotResponse));
         }
 
         if (!snapshotResponse.TryGetProperty("Snapshot", out var snapshot) ||
@@ -38,12 +38,12 @@ public static class FramePacingVerdictTools
 
         var timelinePayload = new Dictionary<string, object?>
         {
-            ["maxEntries"] = maxTimelineEntries
+            [AutomationPayloadKeys.MaxEntries] = maxTimelineEntries
         };
         var timelineResponse = await pipeClient.SendCommandAsync(AutomationCommandKind.GetPerformanceTimeline, timelinePayload, cancellationToken: cancellationToken).ConfigureAwait(false);
         if (!AutomationSnapshotFormatter.IsSuccess(timelineResponse))
         {
-            return McpToolResultFactory.FromResponse(timelineResponse, GetMessage(timelineResponse));
+            return McpToolResultFactory.FromResponse(timelineResponse, McpToolResultFactory.GetMessage(timelineResponse));
         }
 
         var timeline = ReadTimeline(timelineResponse);
@@ -105,9 +105,6 @@ public static class FramePacingVerdictTools
 
         return McpToolResultFactory.FromResponse(snapshotResponse, text);
     }
-
-    private static string GetMessage(JsonElement response)
-        => AutomationSnapshotFormatter.Get(response, "Message", "Command failed.");
 
     private sealed record TimelineRow(
         long DxgiRecentMissed,
@@ -196,7 +193,7 @@ public static class FramePacingVerdictTools
         return new[]
             {
                 AutomationSnapshotFormatter.GetDouble(snapshot, "ExpectedCaptureFrameRate"),
-                AutomationSnapshotFormatter.GetDouble(snapshot, "SourceFrameRateExact"),
+                AutomationSnapshotFormatter.GetDouble(snapshot, "DetectedSourceFrameRate"),
                 AutomationSnapshotFormatter.GetDouble(snapshot, "FlashbackPlaybackTargetFps"),
                 AutomationSnapshotFormatter.GetDouble(snapshot, "EncoderFrameRate")
             }

@@ -28,6 +28,11 @@ static partial class Program
 
     private static int Main(string[] args)
     {
+        if (Sussudio.Tests.LoggerLifecycleTests.TryRunChildProcess(args, out var loggerExitCode))
+        {
+            return loggerExitCode;
+        }
+
         if (Sussudio.Tests.AppProcessStartupTests.TryRunChildProcess(args, out var startupExitCode))
         {
             return startupExitCode;
@@ -41,6 +46,11 @@ static partial class Program
         if (Sussudio.Tests.PresentMonCancellationTests.TryRunChildProcess(args, out var presentMonExitCode))
         {
             return presentMonExitCode;
+        }
+
+        if (Sussudio.Tests.RecordingNativeTestChild.TryRunChildProcess(args, out var recordingExitCode))
+        {
+            return recordingExitCode;
         }
 
         var assemblyPath = ResolveAssemblyPath(args);
@@ -861,7 +871,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         return ExtractMemberCodeFromDeclaration(
             source,
-            "private static AutomationSnapshot BuildAutomationSnapshotFromProjections(");
+            "private AutomationSnapshot BuildAutomationSnapshot(");
     }
 
     private static string ExtractMemberCodeFromDeclaration(string source, string declarationToken)
@@ -1339,7 +1349,7 @@ static partial class Program
         }
     }
 
-    private static Assembly LoadToolAssemblyIsolated(string relativeAssemblyPath)
+    internal static Assembly LoadToolAssemblyIsolated(string relativeAssemblyPath)
     {
         var fullPath = Path.GetFullPath(Path.Combine(GetRepoRoot(), relativeAssemblyPath));
         lock (ToolAssemblyCacheLock)
@@ -1651,12 +1661,17 @@ static partial class Program
 
     // Shared MCP tool-surface helpers used by the legacy Program harness and xUnit wrappers.
 
-    private static Process StartMcpServerProcess(string assemblyPath, string? pipeName = null)
+    private static Process StartMcpServerProcess(
+        string assemblyPath,
+        string? pipeName = null,
+        string? workingDirectory = null,
+        IReadOnlyList<string>? arguments = null,
+        IReadOnlyDictionary<string, string?>? environmentVariables = null)
     {
         var startInfo = new ProcessStartInfo
         {
             FileName = "dotnet",
-            WorkingDirectory = GetRepoRoot(),
+            WorkingDirectory = workingDirectory ?? GetRepoRoot(),
             UseShellExecute = false,
             RedirectStandardInput = true,
             RedirectStandardOutput = true,
@@ -1667,9 +1682,30 @@ static partial class Program
             ? assemblyPath
             : Path.Combine(GetRepoRoot(), assemblyPath);
         startInfo.ArgumentList.Add(Path.GetFullPath(resolvedAssemblyPath));
+        if (arguments != null)
+        {
+            foreach (var argument in arguments)
+            {
+                startInfo.ArgumentList.Add(argument);
+            }
+        }
         if (!string.IsNullOrWhiteSpace(pipeName))
         {
             startInfo.Environment["SUSSUDIO_AUTOMATION_PIPE"] = pipeName;
+        }
+        if (environmentVariables != null)
+        {
+            foreach (var (name, value) in environmentVariables)
+            {
+                if (value == null)
+                {
+                    startInfo.Environment.Remove(name);
+                }
+                else
+                {
+                    startInfo.Environment[name] = value;
+                }
+            }
         }
 
         var process = new Process { StartInfo = startInfo };
@@ -1913,17 +1949,6 @@ static partial class Program
         }
 
         return Convert.ToBoolean(GetPropertyValue(result, "IsError"), CultureInfo.InvariantCulture);
-    }
-
-    private static async Task<string> InvokeFormatterBatchAsync(
-        MethodInfo executeBatch,
-        object pipeClient,
-        string emptyMessage,
-        Array commands)
-    {
-        var task = executeBatch.Invoke(null, new object?[] { pipeClient, emptyMessage, commands }) as Task<string>
-            ?? throw new InvalidOperationException("ToolCommandFormatter.ExecuteBatchAsync did not return Task<string>.");
-        return await task.ConfigureAwait(false);
     }
 
     private static void AssertNoToolSchemaExposesPipeClient(JsonElement tools)

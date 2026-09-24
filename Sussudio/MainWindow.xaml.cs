@@ -73,14 +73,12 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         RegisterCloseLifecycle(appWindow);
         InitializeShellControllers();
 
-        // Subscribe to ViewModel changes
         ViewModel.PropertyChanged += ViewModel_PropertyChanged;
         ViewModel.PreviewStartRequested += ViewModel_PreviewStartRequested;
         ViewModel.PreviewStopRequested += ViewModel_PreviewStopRequested;
         ViewModel.PreviewReinitRequested += ViewModel_PreviewReinitRequested;
         ViewModel.PreviewRendererStopRequested += ViewModel_PreviewRendererStopRequested;
 
-        // Wire up UI controls to ViewModel
         SetupBindings();
         SetupButtonHoverAnimations();
         SetupControlBarShadow();
@@ -162,8 +160,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         InitializePreviewSurfacePresentationController();
         InitializePreviewStartupSessionController();
         InitializePreviewLifecycleEventController();
-        InitializePreviewStartupSignalCoordinator();
-        InitializePreviewStartupWatchdogController();
         InitializePreviewRuntimeSnapshotSamplingController();
         InitializePreviewStartupOverlayController();
         InitializePreviewFadeInController();
@@ -214,16 +210,20 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     {
         _propertyChangedRouter = new MainWindowPropertyChangedRouter(new MainWindowPropertyChangedRouterContext
         {
-            TryHandleCaptureSelection = TryHandleCaptureSelectionPropertyChanged,
+            TryHandleCaptureSelection = propertyName => _captureSelectionBindingController.TryHandlePropertyChanged(propertyName),
             TryHandleStatusStrip = TryHandleStatusStripPropertyChanged,
-            TryHandlePreviewAsync = TryHandlePreviewPropertyChangedAsync,
-            TryHandleRecording = TryHandleRecordingPropertyChanged,
-            TryHandleOutput = TryHandleOutputPropertyChanged,
-            TryHandleCaptureOption = TryHandleCaptureOptionPropertyChanged,
-            TryHandleAudio = TryHandleAudioPropertyChanged,
-            TryHandleShell = TryHandleShellPropertyChanged,
-            TryHandleLiveSignal = TryHandleLiveSignalPropertyChanged,
-            TryHandleFlashback = TryHandleFlashbackPropertyChanged
+            TryHandlePreviewAsync = propertyName => _previewLifecycleEventController.TryHandlePropertyChangedAsync(propertyName),
+            TryHandleRecording = propertyName => _recordingStatePresentationController.TryHandlePropertyChanged(propertyName),
+            TryHandleOutput = propertyName => _outputPathController.TryHandlePropertyChanged(propertyName),
+            TryHandleCaptureOption = propertyName => _captureOptionBindingController.TryHandlePropertyChanged(propertyName),
+            TryHandleAudio = propertyName => _audioControlPresentationController.TryHandlePropertyChanged(propertyName),
+            TryHandleShell = propertyName => _shellPropertyChangedController.TryHandlePropertyChanged(propertyName),
+            TryHandleLiveSignal = propertyName => _liveSignalInfoController.TryHandlePropertyChanged(
+                propertyName,
+                ViewModel.LiveResolution,
+                ViewModel.LiveFrameRate,
+                ViewModel.LivePixelFormat),
+            TryHandleFlashback = propertyName => _flashbackPropertyChangedController.TryHandlePropertyChanged(propertyName)
         });
     }
 
@@ -285,20 +285,11 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         });
     }
 
-    private void StartFlashbackStatusPolling()
-        => _flashbackPollingController.StartStatusPolling();
-
     private void StopFlashbackStatusPolling()
     {
         _flashbackPollingController.StopStatusPolling();
-        StopFlashbackCtiAnchorTimer();
+        StopFlashbackPlayheadAnchorTimer();
     }
-
-    private void StartFlashbackPlaybackPolling()
-        => _flashbackPollingController.StartPlaybackPolling();
-
-    private void StopFlashbackPlaybackPolling()
-        => _flashbackPollingController.StopPlaybackPolling();
 
     // XAML-facing Flashback playhead motion adapter.
     private void InitializeFlashbackPlayheadMotionController()
@@ -316,17 +307,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         });
     }
 
-    private void RequestFlashbackPlayheadSnapOnNextUpdate()
-        => _flashbackPlayheadMotionController.RequestSnapOnNextUpdate();
-
-    private void PositionFlashbackMagneticPlayhead(double x, double trackWidth)
-        => _flashbackPlayheadMotionController.PositionMagneticPlayhead(x, trackWidth);
-
-    private void RefreshFlashbackCtiMotion(string reason)
-        => _flashbackPlayheadMotionController.RefreshCtiMotion(reason);
-
-    private void StopFlashbackCtiAnchorTimer()
-        => _flashbackPlayheadMotionController.StopCtiAnchorTimer();
+    private void StopFlashbackPlayheadAnchorTimer()
+        => _flashbackPlayheadMotionController.StopPlayheadAnchorTimer();
 
     // XAML-facing Flashback pointer scrub adapter.
     private void InitializeFlashbackScrubInteractionController()
@@ -335,8 +317,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         {
             ViewModel = ViewModel,
             ScrubArea = FlashbackScrubArea,
-            PositionMagneticPlayhead = PositionFlashbackMagneticPlayhead,
-            RefreshCtiMotion = RefreshFlashbackCtiMotion,
+            PositionMagneticPlayhead = (x, trackWidth) => _flashbackPlayheadMotionController.PositionMagneticPlayhead(x, trackWidth),
+            RefreshPlayheadMotion = reason => _flashbackPlayheadMotionController.RefreshPlayheadMotion(reason),
             GetTickCount64 = () => Environment.TickCount64,
         });
     }
@@ -356,9 +338,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private void FlashbackScrubArea_PointerCaptureLost(object sender, PointerRoutedEventArgs e)
         => _flashbackScrubInteractionController.PointerCaptureLost(sender as UIElement, e);
 
-    private void ClearFlashbackScrubInteractionForLockout()
-        => _flashbackScrubInteractionController.ClearForLockout();
-
     private void InitializeFlashbackSettingsBindingController()
     {
         _flashbackSettingsBindingController = new FlashbackSettingsBindingController(new FlashbackSettingsBindingControllerContext
@@ -367,7 +346,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             FlashbackEnabledToggle = FlashbackEnabledToggle,
             FlashbackGpuDecodeToggle = FlashbackGpuDecodeToggle,
             FlashbackBufferDurationCombo = FlashbackBufferDurationCombo,
-            ApplyFlashbackTimelineLockout = ApplyFlashbackTimelineLockout
+            ApplyFlashbackTimelineLockout = () => _flashbackTimelineController.ApplyLockout()
         });
     }
 
@@ -376,12 +355,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
     private void AttachFlashbackSettingsBindings()
         => _flashbackSettingsBindingController.AttachBindings();
-
-    private void SyncFlashbackGpuDecodeSetting()
-        => _flashbackSettingsBindingController.SyncGpuDecodeToggle();
-
-    private void SyncFlashbackBufferDurationSetting()
-        => _flashbackSettingsBindingController.SyncBufferDurationSelection();
 
     private void FlashbackBufferDurationCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
@@ -404,10 +377,10 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             FlashbackScrubArea = FlashbackScrubArea,
             FlashbackPlayhead = FlashbackPlayhead,
             FlashbackLiveEdge = FlashbackLiveEdge,
-            SnapPlayheadOnNextOpen = RequestFlashbackPlayheadSnapOnNextUpdate,
-            StartStatusPolling = StartFlashbackStatusPolling,
+            SnapPlayheadOnNextOpen = () => _flashbackPlayheadMotionController.RequestSnapOnNextUpdate(),
+            StartStatusPolling = () => _flashbackPollingController.StartStatusPolling(),
             StopStatusPolling = StopFlashbackStatusPolling,
-            ClearScrubInteraction = ClearFlashbackScrubInteractionForLockout,
+            ClearScrubInteraction = () => _flashbackScrubInteractionController.ClearForLockout(),
         });
     }
 
@@ -416,12 +389,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
     private void FlashbackToggle_Unchecked(object sender, RoutedEventArgs e)
         => _flashbackTimelineController.OnToggleUnchecked();
-
-    private void ApplyFlashbackTimelineVisibility(bool show)
-        => _flashbackTimelineController.ApplyVisibility(show);
-
-    private void ApplyFlashbackTimelineLockout()
-        => _flashbackTimelineController.ApplyLockout();
 
     private void InitializeFlashbackMarkerPresentationController()
     {
@@ -457,12 +424,12 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         {
             ViewModel = ViewModel,
             ApplyTrackSize = _flashbackTimelineController.ApplyTrackSize,
-            RequestPlayheadSnapOnNextUpdate = RequestFlashbackPlayheadSnapOnNextUpdate,
+            RequestPlayheadSnapOnNextUpdate = () => _flashbackPlayheadMotionController.RequestSnapOnNextUpdate(),
             UpdateMarkers = UpdateFlashbackMarkers,
-            RefreshCtiMotion = RefreshFlashbackCtiMotion,
+            RefreshPlayheadMotion = reason => _flashbackPlayheadMotionController.RefreshPlayheadMotion(reason),
             IsScrubbing = () => _flashbackScrubInteractionController.IsScrubbing,
-            StartPlaybackPolling = StartFlashbackPlaybackPolling,
-            StopPlaybackPolling = StopFlashbackPlaybackPolling,
+            StartPlaybackPolling = () => _flashbackPollingController.StartPlaybackPolling(),
+            StopPlaybackPolling = () => _flashbackPollingController.StopPlaybackPolling(),
             PlaybackPresentation = _flashbackPlaybackPresentationController,
         });
     }
@@ -472,9 +439,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
     private void UpdateFlashbackStateUI()
         => _flashbackPlaybackUiCoordinator.UpdateState();
-
-    private void UpdateFlashbackBufferFill()
-        => _flashbackPlaybackUiCoordinator.UpdateBufferFill();
 
     private void UpdateFlashbackPositionUI()
         => _flashbackPlaybackUiCoordinator.UpdatePosition();
@@ -491,12 +455,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             });
     }
 
-    private void UpdateFlashbackExportProgress(double progress)
-        => _flashbackExportProgressPresentationController.UpdateProgress(progress);
-
-    private void UpdateFlashbackExportingPresentation(bool isExporting)
-        => _flashbackExportProgressPresentationController.UpdateExporting(isExporting);
-
     private void InitializeFlashbackPropertyChangedController()
     {
         _flashbackPropertyChangedController = new FlashbackPropertyChangedController(new FlashbackPropertyChangedControllerContext
@@ -504,24 +462,21 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             IsTimelineVisible = () => ViewModel.IsFlashbackTimelineVisible,
             GetExportProgress = () => ViewModel.FlashbackExportProgress,
             IsExporting = () => ViewModel.IsFlashbackExporting,
-            ApplyTimelineVisibility = ApplyFlashbackTimelineVisibility,
-            ApplyTimelineLockout = ApplyFlashbackTimelineLockout,
+            ApplyTimelineVisibility = show => _flashbackTimelineController.ApplyVisibility(show),
+            ApplyTimelineLockout = () => _flashbackTimelineController.ApplyLockout(),
             IsFlashbackEnabled = () => ViewModel.IsFlashbackEnabled,
             UpdateFlashbackKeepAliveHint = UpdateFlashbackKeepAliveHint,
             UpdateState = UpdateFlashbackStateUI,
             UpdateBuffer = UpdateFlashbackBufferPresentation,
             UpdatePlaybackPosition = UpdateFlashbackPositionUI,
             UpdateRangeMarkers = UpdateFlashbackMarkers,
-            UpdateExportProgress = UpdateFlashbackExportProgress,
-            UpdateExportingPresentation = UpdateFlashbackExportingPresentation,
-            SyncGpuDecodeSetting = SyncFlashbackGpuDecodeSetting,
-            SyncBufferDurationSetting = SyncFlashbackBufferDurationSetting,
+            UpdateExportProgress = progress => _flashbackExportProgressPresentationController.UpdateProgress(progress),
+            UpdateExportingPresentation = isExporting => _flashbackExportProgressPresentationController.UpdateExporting(isExporting),
+            SyncGpuDecodeSetting = () => _flashbackSettingsBindingController.SyncGpuDecodeToggle(),
+            SyncBufferDurationSetting = () => _flashbackSettingsBindingController.SyncBufferDurationSelection(),
             UpdateHealthMessage = UpdateFlashbackHealthPresentation
         });
     }
-
-    private bool TryHandleFlashbackPropertyChanged(string propertyName)
-        => _flashbackPropertyChangedController.TryHandlePropertyChanged(propertyName);
 
     private void InitializeFlashbackHealthPresentationController()
     {
@@ -757,9 +712,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private void AttachDeviceAudioGainAndMeterBindings()
         => _audioControlBindingController.AttachDeviceAudioGainAndMeterBindings();
 
-    private bool TryHandleAudioPropertyChanged(string propertyName)
-        => _audioControlPresentationController.TryHandlePropertyChanged(propertyName);
-
     private void InitializeAudioControlPresentationController()
     {
         _audioControlPresentationController = new AudioControlPresentationController(new AudioControlPresentationControllerContext
@@ -812,9 +764,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private void ResetAudioMeterVisuals()
         => _audioMeterController.ResetVisuals();
 
-    private void ResetMicrophoneMeterVisuals()
-        => _audioMeterController.ResetMicrophoneVisuals();
-
     private void SetAudioMeterTargetLevel(double targetLevel)
         => _audioMeterController.SetAudioMeterTargetLevel(targetLevel);
 
@@ -844,7 +793,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             MicMeterRow = MicMeterRow,
             DeviceAudioRowTranslate = DeviceAudioRowTranslate,
             MicMeterRowTranslate = MicMeterRowTranslate,
-            ResetMicrophoneMeterVisuals = ResetMicrophoneMeterVisuals,
+            ResetMicrophoneMeterVisuals = () => _audioMeterController.ResetMicrophoneVisuals(),
         });
     }
 
@@ -903,7 +852,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             DeviceAudioModeToggle = DeviceAudioModeToggle,
             AnalogAudioGainSlider = AnalogAudioGainSlider,
             ResetAudioMeterVisuals = ResetAudioMeterVisuals,
-            ApplyHdrToggleEnabledState = ApplyHdrToggleEnabledState,
+            ApplyHdrToggleEnabledState = () => _captureOptionPresentationController.ApplyHdrToggleEnabledState(),
             RefreshHdrHintText = RefreshHdrHintText,
             UpdateDeviceApplyButtonState = UpdateDeviceApplyButtonState,
             ApplyWindowTitle = ApplyWindowTitle,
@@ -1002,30 +951,27 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             CustomBitrateNumberBox = CustomBitrateNumberBox,
             HdrToggle = HdrToggle,
             TrueHdrPreviewToggle = TrueHdrPreviewToggle,
-            ApplyInitialDecoderCountSelection = ApplyInitialDecoderCountSelection,
+            ApplyInitialDecoderCountSelection = () => _captureOptionPresentationController.ApplyInitialDecoderCountSelection(),
             ApplyBitrateVisibility = ApplyBitrateVisibility,
-            ApplyHdrToggleEnabledState = ApplyHdrToggleEnabledState,
+            ApplyHdrToggleEnabledState = () => _captureOptionPresentationController.ApplyHdrToggleEnabledState(),
             ApplyAudioClipVisibility = ApplyAudioClipVisibility,
             RefreshHdrHintText = RefreshHdrHintText,
             UpdateFpsTelemetryTooltip = UpdateFpsTelemetryTooltip,
             UpdateVideoContentOverlays = UpdateVideoContentOverlays,
             SetHdrPassthroughEnabled = enabled => _previewRendererHostController.SetHdrPassthroughEnabled(enabled),
             UpdateDecoderCountVisibility = UpdateDecoderCountVisibility,
-            EnsureResolutionSelection = EnsureResolutionSelection,
-            EnsureFrameRateSelection = EnsureFrameRateSelection,
-            EnsureFormatSelection = EnsureFormatSelection,
-            EnsureQualitySelection = EnsureQualitySelection,
-            EnsurePresetSelection = EnsurePresetSelection,
-            EnsureSplitEncodeModeSelection = EnsureSplitEncodeModeSelection,
+            EnsureResolutionSelection = () => _captureSelectionBindingController.EnsureResolutionSelection(),
+            EnsureFrameRateSelection = () => _captureSelectionBindingController.EnsureFrameRateSelection(),
+            EnsureFormatSelection = () => _captureSelectionBindingController.EnsureFormatSelection(),
+            EnsureQualitySelection = () => _captureSelectionBindingController.EnsureQualitySelection(),
+            EnsurePresetSelection = () => _captureSelectionBindingController.EnsurePresetSelection(),
+            EnsureSplitEncodeModeSelection = () => _captureSelectionBindingController.EnsureSplitEncodeModeSelection(),
             SaveSettings = () => ViewModel.TriggerSaveSettings()
         });
     }
 
     private void AttachCaptureSelectionBindings()
         => _captureSelectionBindingController.AttachCollectionBindings();
-
-    private bool TryHandleCaptureSelectionPropertyChanged(string? propertyName)
-        => _captureSelectionBindingController.TryHandlePropertyChanged(propertyName);
 
     private void AttachDeviceSelectionChangedBinding()
         => _captureSelectionBindingController.AttachDeviceSelectionChangedBinding();
@@ -1054,32 +1000,14 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private void ApplyDeviceAudioControlState()
         => _captureSelectionBindingController.ApplyDeviceAudioControlState();
 
-    private void EnsureResolutionSelection()
-        => _captureSelectionBindingController.EnsureResolutionSelection();
-
     private void HandleAvailableResolutionsPropertyChanged()
         => _captureSelectionBindingController.HandleAvailableResolutionsPropertyChanged();
-
-    private void EnsureFrameRateSelection()
-        => _captureSelectionBindingController.EnsureFrameRateSelection();
 
     private void HandleAvailableFrameRatesPropertyChanged()
         => _captureSelectionBindingController.HandleAvailableFrameRatesPropertyChanged();
 
-    private void EnsureFormatSelection()
-        => _captureSelectionBindingController.EnsureFormatSelection();
-
-    private void EnsureQualitySelection()
-        => _captureSelectionBindingController.EnsureQualitySelection();
-
-    private void EnsurePresetSelection()
-        => _captureSelectionBindingController.EnsurePresetSelection();
-
     private void HandleAvailablePresetsPropertyChanged()
         => _captureSelectionBindingController.HandleAvailablePresetsPropertyChanged();
-
-    private void EnsureSplitEncodeModeSelection()
-        => _captureSelectionBindingController.EnsureSplitEncodeModeSelection();
 
     private void HandleAvailableSplitEncodeModesPropertyChanged()
         => _captureSelectionBindingController.HandleAvailableSplitEncodeModesPropertyChanged();
@@ -1108,14 +1036,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private void HandleTrueHdrPreviewEnabledChanged()
         => _captureOptionBindingController.HandleTrueHdrPreviewEnabledChanged();
 
-    private bool TryHandleCaptureOptionPropertyChanged(string propertyName)
-        => _captureOptionBindingController.TryHandlePropertyChanged(propertyName);
-
     private Task ToggleRecordingFromButtonAsync()
         => _recordingButtonActionController.ToggleRecordingAsync();
-
-    private bool TryHandleRecordingPropertyChanged(string propertyName)
-        => _recordingStatePresentationController.TryHandlePropertyChanged(propertyName);
 
     private void ApplyInitialRecordingStatePresentation()
         => _recordingStatePresentationController.HandleFfmpegMissingChanged();
@@ -1171,12 +1093,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         _ = RunUiEventHandlerAsync(() => CapturePreviewScreenshotAsync(), nameof(ScreenshotButton_Click));
     }
 
-    private bool TryHandleOutputPropertyChanged(string propertyName)
-        => _outputPathController.TryHandlePropertyChanged(propertyName);
-
-    private void ApplyInitialDecoderCountSelection()
-        => _captureOptionPresentationController.ApplyInitialDecoderCountSelection();
-
     private void UpdateDecoderCountVisibility()
         => _captureOptionPresentationController.UpdateDecoderCountVisibility();
 
@@ -1188,9 +1104,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
     private void UpdateFpsTelemetryTooltip()
         => _captureOptionPresentationController.UpdateFpsTelemetryTooltip();
-
-    private void ApplyHdrToggleEnabledState()
-        => _captureOptionPresentationController.ApplyHdrToggleEnabledState();
 
     private void ApplyBitrateVisibility()
         => _captureOptionPresentationController.ApplyBitrateVisibility();
@@ -1207,11 +1120,9 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         ApplyInitialFlashbackSettings();
         FlashbackKeepAliveHintText.Visibility = Visibility.Collapsed;
 
-        // Bind all collections to ComboBoxes
         AttachCaptureSelectionBindings();
         InitializeCaptureOptionCollections();
 
-        // Set initial values
         UpdateOutputPathDisplay();
         ApplyInitialStatusStripPresentation();
         UpdateLiveSignalInfoVisibility();
@@ -1457,9 +1368,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private void SetupButtonHoverAnimations()
         => _controlBarAnimationController.AttachHoverAnimations();
 
-    private IReadOnlyList<FrameworkElement> GetEntranceButtons()
-        => _controlBarAnimationController.EntranceButtons;
-
     private void InitializeLaunchEntranceAnimationController()
     {
         _launchEntranceAnimationController = new LaunchEntranceAnimationController(new LaunchEntranceAnimationControllerContext
@@ -1471,10 +1379,10 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             StatsRow = StatsRow,
             PreviewBorder = PreviewBorder,
             PreviewBorderScale = PreviewBorderScale,
-            GetEntranceButtons = GetEntranceButtons,
+            GetEntranceButtons = () => _controlBarAnimationController.EntranceButtons,
             IsPreviewFirstVisualConfirmed = () => IsPreviewFirstVisualConfirmed,
-            StartSplashLoadingPhrases = StartSplashLoadingPhrases,
-            StopSplashLoadingPhrases = StopSplashLoadingPhrases,
+            StartSplashLoadingPhrases = () => _splashLoadingPhraseController.Start(),
+            StopSplashLoadingPhrases = () => _splashLoadingPhraseController.Stop(),
             AddPreviewShellEntranceAnimations = AddPreviewShellEntranceAnimations,
             FadeInControlBarShadow = () => FadeInControlBarShadow(delayMs: 400, durationMs: 500),
         });
@@ -1548,12 +1456,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private void SettingsToggleButton_Click(object sender, RoutedEventArgs e)
         => _settingsShelfController.Toggle();
 
-    // dead-surface: no call site, retained deliberately. SettingsShelfLifecycle_LivesInController
-    // pins this exact forwarder body as the evidence that shelf visibility is owned by the
-    // controller rather than by this adapter.
-    private void ApplySettingsVisibility(bool visible)
-        => _settingsShelfController.ApplyVisibility(visible);
-
     private void InitializeShellElevationController()
     {
         _shellElevationController = new ShellElevationController(new ShellElevationControllerContext
@@ -1577,9 +1479,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             IsSettingsVisible = () => ViewModel.IsSettingsVisible,
         });
     }
-
-    private bool TryHandleShellPropertyChanged(string propertyName)
-        => _shellPropertyChangedController.TryHandlePropertyChanged(propertyName);
 
     private void InitializeStatsOverlayCompositionController()
     {
@@ -1726,9 +1625,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private void StopStatsDockPolling()
         => _statsOverlayCompositionController.StopPolling();
 
-    private void ShowStatsDockPanel()
-        => _statsOverlayCompositionController.ShowDockPanel();
-
     private void HideStatsDockPanel(bool immediate = false)
         => _statsOverlayCompositionController.HideDockPanel(immediate);
 
@@ -1785,13 +1681,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private void StopLiveSignalInfoTimers()
         => _liveSignalInfoController.StopTimers();
 
-    private bool TryHandleLiveSignalPropertyChanged(string propertyName)
-        => _liveSignalInfoController.TryHandlePropertyChanged(
-            propertyName,
-            ViewModel.LiveResolution,
-            ViewModel.LiveFrameRate,
-            ViewModel.LivePixelFormat);
-
     private bool TryHandleStatusStripPropertyChanged(string? propertyName)
         => _statusStripPresentationController.TryHandlePropertyChanged(
             propertyName,
@@ -1810,24 +1699,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             ViewModel.IsRecording,
             ViewModel.IsFlashbackEnabled);
 
-    private void UpdateStatusTextPresentation()
-        => _statusStripPresentationController.UpdateStatusText(ViewModel.StatusText);
-
-    private void UpdateRecordingTimePresentation()
-        => _statusStripPresentationController.UpdateRecordingTime(ViewModel.RecordingTime);
-
-    private void UpdateDiskSpacePresentation()
-        => _statusStripPresentationController.UpdateDiskSpace(ViewModel.DiskSpaceInfo);
-
-    private void UpdateRecordingSizePresentation()
-        => _statusStripPresentationController.UpdateRecordingSize(ViewModel.RecordingSizeInfo);
-
-    private void UpdateRecordingBitratePresentation()
-        => _statusStripPresentationController.UpdateRecordingBitrate(ViewModel.RecordingBitrateInfo);
-
-    private void UpdateDiskWarningPresentation()
-        => _statusStripPresentationController.UpdateDiskWarning(ViewModel.IsDiskWarningActive);
-
     private void ApplyWindowTitle()
         => Title = _windowTitleController.BuildTitle(ViewModel.IsRecording, ViewModel.RecordingTime);
 
@@ -1841,12 +1712,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             SplashLoadingTransformB = SplashLoadingTransformB,
         });
     }
-
-    private void StartSplashLoadingPhrases()
-        => _splashLoadingPhraseController.Start();
-
-    private void StopSplashLoadingPhrases()
-        => _splashLoadingPhraseController.Stop();
 
     private void InitializeFullScreenController()
     {
@@ -1879,7 +1744,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             ResetSettingsShelfAnimation = _settingsShelfController.ResetAnimationState,
             SyncFlashbackTimelineToggle = _flashbackTimelineController.SyncToggle,
             HideStatsDockPanelImmediate = () => HideStatsDockPanel(immediate: true),
-            ShowStatsDockPanel = ShowStatsDockPanel,
+            ShowStatsDockPanel = () => _statsOverlayCompositionController.ShowDockPanel(),
             UpdateVideoContentOverlays = UpdateVideoContentOverlays,
             FadeInVideoShadow = () => FadeInVideoFrameShadow(delayMs: 0, durationMs: 400),
             IsWindowClosing = () => _isWindowClosing,
@@ -1909,18 +1774,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             () => _fullScreenController.SetEnabledAsync(enabled),
             cancellationToken);
 
-    private void EnterFullScreen()
-        => _fullScreenController.Enter();
-
-    private void ExitFullScreen()
-        => _fullScreenController.Exit();
-
-    private Task EnterFullScreenAsync()
-        => _fullScreenController.EnterAsync();
-
-    private Task ExitFullScreenAsync()
-        => _fullScreenController.ExitAsync();
-
     private void OnContentKeyDown(object sender, KeyRoutedEventArgs e)
         => _fullScreenController.OnKeyDown(e);
 
@@ -1948,11 +1801,9 @@ private PreviewAudioFadeController _previewAudioFadeController = null!;
     private PreviewSurfacePresentationController _previewSurfacePresentationController = null!;
     private PreviewSurfaceShadowController _previewSurfaceShadowController = null!;
     private PreviewStartupSessionController _previewStartupSessionController = null!;
-    private PreviewStartupSignalCoordinator _previewStartupSignalCoordinator = null!;
     private PreviewStartupOverlayController _previewStartupOverlayController = null!;
     private PreviewTransitionAnimationController _previewTransitionAnimationController = null!;
     private PreviewReinitTransitionController _previewReinitTransitionController = null!;
-    private PreviewStartupWatchdogController _previewStartupWatchdogController = null!;
 
     private void InitializePreviewButtonPresentationController()
     {
@@ -1997,18 +1848,18 @@ private PreviewAudioFadeController _previewAudioFadeController = null!;
             PrimePreviewAudioFadeIn = () => _previewAudioFadeController.PrimeFadeIn(),
             IsPreviewReinitAnimating = () => IsPreviewReinitAnimating,
             PreparePreviewStartupPresentation = () => _previewTransitionAnimationController.PrepareStartupPresentation(),
-            StopPreviewStartupWatchdog = () => _previewStartupWatchdogController.Stop(),
-            StartPreviewStartupWatchdog = () => _previewStartupWatchdogController.Start(),
+            StopPreviewStartupWatchdog = () => _previewStartupSessionController.StopWatchdog(),
+            StartPreviewStartupWatchdog = () => _previewStartupSessionController.StartWatchdog(),
             StopPreviewStartupOverlay = () => _previewStartupOverlayController.Stop(IsPreviewReinitAnimating),
             SetPreviewStartupState = _previewStartupSessionController.SetStartupState,
             GetPreviewStartupAttemptLabel = () => _previewStartupSessionController.AttemptLabel,
             StartPreviewRendererAsync = _previewRendererHostController.StartAsync,
             IsPreviewFirstVisualConfirmed = () => _previewStartupSessionController.FirstVisualConfirmed,
             RevealPreviewUnavailablePlaceholder = () => _previewTransitionAnimationController.RevealUnavailablePlaceholder(),
-            SchedulePreviewStartupFailureStop = reason => _previewStartupWatchdogController.ScheduleFailureStop(reason),
+            SchedulePreviewStartupFailureStop = reason => _previewStartupSessionController.ScheduleFailureStop(reason),
             ShowStopPreviewButtonPresentation = () => _previewButtonPresentationController.ShowStopPreview(),
             ShowStartPreviewButtonPresentation = () => _previewButtonPresentationController.ShowStartPreview(),
-            ApplyHdrToggleEnabledState = ApplyHdrToggleEnabledState,
+            ApplyHdrToggleEnabledState = () => _captureOptionPresentationController.ApplyHdrToggleEnabledState(),
             StopPreviewRendererAsync = _previewRendererHostController.StopAsync,
             ResetPreviewStartupTracking = preserveReinitAnimation => _previewStartupSessionController.ResetStartupTracking(
                 keepRecoveryCount: false,
@@ -2068,11 +1919,9 @@ private PreviewAudioFadeController _previewAudioFadeController = null!;
             ViewModel = ViewModel,
             RendererHostController = _previewRendererHostController,
             StartupSessionController = _previewStartupSessionController,
-            StartupSignalCoordinator = _previewStartupSignalCoordinator,
             IsGpuElementVisible = () => PreviewSwapChainPanel.Visibility == Visibility.Visible,
             IsCpuElementVisible = () => PreviewImage.Visibility == Visibility.Visible,
             IsPlaceholderVisible = () => NoDevicePlaceholder.Visibility == Visibility.Visible,
-            GetStartupVisualTimeoutMs = () => PreviewStartupVisualTimeoutMs
         });
     }
 
@@ -2138,9 +1987,6 @@ private PreviewAudioFadeController _previewAudioFadeController = null!;
 
     private void SetPreviewStopRequestedByUser(bool value)
         => _previewLifecycleEventController.SetStopRequestedByUser(value);
-
-    private Task<bool> TryHandlePreviewPropertyChangedAsync(string propertyName)
-        => _previewLifecycleEventController.TryHandlePropertyChangedAsync(propertyName);
 
     private void ViewModel_PreviewStartRequested(object? sender, EventArgs e)
         => _previewLifecycleEventController.HandlePreviewStartRequested();
@@ -2303,10 +2149,6 @@ private PreviewAudioFadeController _previewAudioFadeController = null!;
             IsPreviewing = () => ViewModel.IsPreviewing,
             IsPreviewStopRequestedByUser = () => IsPreviewStopRequestedByUser,
             GetSelectedDeviceName = () => ViewModel.SelectedDevice?.Name,
-            ResetSignalState = ResetPreviewSignalState,
-            ResetFailureStopSchedule = ResetPreviewStartupFailureStopSchedule,
-            MarkFirstVisualSignalConfirmed = MarkPreviewStartupFirstVisualConfirmed,
-            StopWatchdog = StopPreviewStartupWatchdog,
             StopOverlay = StopPreviewStartupOverlay,
             StopFadeInTimer = StopPreviewFadeInTimer,
             ScheduleFadeIn = SchedulePreviewFadeIn,
@@ -2316,32 +2158,21 @@ private PreviewAudioFadeController _previewAudioFadeController = null!;
                 _previewReinitTransitionController.ClearForStartupReset(preserveReinitAnimation, callerName),
             Log = message => Logger.Log(message),
             CreateAttemptId = () => Guid.NewGuid().ToString("N"),
-            GetUtcNow = () => DateTimeOffset.UtcNow
+            GetUtcNow = () => DateTimeOffset.UtcNow,
+            DispatcherQueue = _dispatcherQueue,
+            IsWindowClosing = () => _isWindowClosing,
+            GetTimeoutDiagnosticSnapshot = GetPreviewStartupTimeoutDiagnosticSnapshot,
+            GetPlaybackSnapshotState = GetPreviewStartupPlaybackSnapshotState,
+            SetStatusText = value => ViewModel.StatusText = value,
+            StopPreviewForFailureAsync = _ => ViewModel.StopPreviewAsync(userInitiated: true, teardownPipeline: true),
+            RunUiEventHandlerAsync = RunUiEventHandlerAsync
         });
-
-    private PreviewStartupState CurrentPreviewStartupState
-        => _previewStartupSessionController.State;
 
     private string PreviewStartupAttemptLabel
         => _previewStartupSessionController.AttemptLabel;
 
     private string? PreviewStartupAttemptId
         => _previewStartupSessionController.AttemptId;
-
-    private DateTimeOffset? PreviewStartupRequestedUtc
-        => _previewStartupSessionController.RequestedUtc;
-
-    private string? PreviewStartupMissingSignals
-    {
-        get => _previewStartupSessionController.MissingSignals;
-        set => _previewStartupSessionController.SetMissingSignals(value);
-    }
-
-    private int PreviewStartupRecoveryAttemptCount
-        => _previewStartupSessionController.RecoveryAttemptCount;
-
-    private string? PreviewStartupLastFailureReason
-        => _previewStartupSessionController.LastFailureReason;
 
     private bool IsPreviewFirstVisualConfirmed
         => _previewStartupSessionController.FirstVisualConfirmed;
@@ -2358,52 +2189,11 @@ private PreviewAudioFadeController _previewAudioFadeController = null!;
     private void ResetPreviewStartupTracking(bool keepRecoveryCount = false, bool preserveReinitAnimation = false)
         => _previewStartupSessionController.ResetStartupTracking(keepRecoveryCount, preserveReinitAnimation);
 
-    private void InitializePreviewStartupSignalCoordinator()
-        => _previewStartupSignalCoordinator = new PreviewStartupSignalCoordinator(new PreviewStartupSignalCoordinatorContext
-        {
-            IsSignalWindowActive = IsPreviewStartupSignalWindowActive,
-            IsFirstVisualConfirmed = () => IsPreviewFirstVisualConfirmed,
-            GetAttemptLabel = () => PreviewStartupAttemptLabel,
-            SetMissingSignals = value => PreviewStartupMissingSignals = value,
-            Log = message => Logger.Log(message),
-            ConfirmFirstVisual = ConfirmPreviewFirstVisual,
-            GetPlaybackSnapshotState = GetPreviewStartupPlaybackSnapshotState
-        });
-
-    private PreviewStartupReadinessSignalSnapshot PreviewStartupSignalSnapshot
-        => _previewStartupSignalCoordinator.Snapshot;
-
-    private PreviewStartupSignalFlags _previewStartupRequiredSignals => PreviewStartupSignalSnapshot.RequiredSignals;
-    private PreviewStartupSignalFlags _previewStartupReceivedSignals => PreviewStartupSignalSnapshot.ReceivedSignals;
-    private PreviewStartupStrategy _previewStartupStrategy => PreviewStartupSignalSnapshot.Strategy;
-    private long PreviewStartupGpuPositionEventCount => _previewStartupSignalCoordinator.PositionEventCount;
-
-    private bool IsPreviewStartupSignalWindowActive()
-        => _previewStartupSessionController.IsSignalWindowActive(ViewModel.IsPreviewing);
-
     private void ResetPreviewSignalState()
-        => _previewStartupSignalCoordinator.Reset();
+        => _previewStartupSessionController.ResetSignalState();
 
     private void ConfigurePreviewStartupSignals(PreviewStartupStrategy strategy, PreviewStartupSignalFlags requiredSignals)
-        => _previewStartupSignalCoordinator.Configure(strategy, requiredSignals);
-
-    private string BuildPreviewStartupMissingSignals()
-        => _previewStartupSignalCoordinator.BuildMissingSignals();
-
-    private void MarkPreviewStartupFirstVisualConfirmed()
-        => _previewStartupSignalCoordinator.MarkFirstVisualConfirmed();
-
-    private void MarkGpuStartupSignal(PreviewStartupSignalFlags signal, string signalName)
-        => _previewStartupSignalCoordinator.MarkGpuStartupSignal(signal, signalName);
-
-    private void MarkGpuStartupSignalFirstFrame()
-        => _previewStartupSignalCoordinator.MarkGpuStartupSignalFirstFrame();
-
-    private void MarkGpuStartupSignalPlaybackAdvancing(TimeSpan position)
-        => _previewStartupSignalCoordinator.MarkGpuStartupSignalPlaybackAdvancing(position);
-
-    private void LogPreviewStartupPlaybackSnapshot(string reason)
-        => _previewStartupSignalCoordinator.LogPlaybackSnapshot(reason);
+        => _previewStartupSessionController.ConfigureSignals(strategy, requiredSignals);
 
     private PreviewStartupPlaybackSnapshotState GetPreviewStartupPlaybackSnapshotState()
     {
@@ -2414,49 +2204,17 @@ private PreviewAudioFadeController _previewAudioFadeController = null!;
             PreviewSwapChainPanel.Visibility.ToString());
     }
 
-    private int PreviewStartupVisualTimeoutMs => _previewStartupWatchdogController.VisualTimeoutMs;
-
-    private void InitializePreviewStartupWatchdogController()
-        => _previewStartupWatchdogController = new PreviewStartupWatchdogController(new PreviewStartupWatchdogControllerContext
-        {
-            DispatcherQueue = _dispatcherQueue,
-            IsWaitingForFirstVisual = () => _previewStartupSessionController.IsWaitingForFirstVisual,
-            IsSignalWindowActive = IsPreviewStartupSignalWindowActive,
-            IsWindowClosing = () => _isWindowClosing,
-            IsPreviewStopRequestedByUser = () => IsPreviewStopRequestedByUser,
-            IsPreviewing = () => ViewModel.IsPreviewing,
-            GetElapsedMilliseconds = () => _previewStartupSessionController.GetElapsedMilliseconds(DateTimeOffset.UtcNow),
-            GetAttemptLabel = () => PreviewStartupAttemptLabel,
-            BuildMissingSignals = BuildPreviewStartupMissingSignals,
-            GetMissingSignals = () => PreviewStartupMissingSignals,
-            SetMissingSignals = value => PreviewStartupMissingSignals = value,
-            MarkStartupFailed = reason => SetPreviewStartupState(PreviewStartupState.Failed, reason),
-            GetTimeoutDiagnosticSnapshot = GetPreviewStartupTimeoutDiagnosticSnapshot,
-            LogPlaybackSnapshot = LogPreviewStartupPlaybackSnapshot,
-            StopStartupOverlay = StopPreviewStartupOverlay,
-            SetStatusText = value => ViewModel.StatusText = value,
-            StopPreviewForFailureAsync = _ => ViewModel.StopPreviewAsync(userInitiated: true, teardownPipeline: true),
-            RunUiEventHandlerAsync = RunUiEventHandlerAsync
-        });
-
     private void StopPreviewStartupWatchdog()
-        => _previewStartupWatchdogController.Stop();
+        => _previewStartupSessionController.StopWatchdog();
 
     private void SchedulePreviewStartupFailureStop(string reason)
-        => _previewStartupWatchdogController.ScheduleFailureStop(reason);
+        => _previewStartupSessionController.ScheduleFailureStop(reason);
 
-    private void ResetPreviewStartupFailureStopSchedule()
-        => _previewStartupWatchdogController.ResetFailureStopSchedule();
-
-    private PreviewStartupTimeoutDiagnosticSnapshot GetPreviewStartupTimeoutDiagnosticSnapshot()
-        => new(
+    private (string PlaceholderVisibility, string GpuVisibility, string CpuVisibility) GetPreviewStartupTimeoutDiagnosticSnapshot()
+        => (
             NoDevicePlaceholder.Visibility.ToString(),
             PreviewSwapChainPanel.Visibility.ToString(),
-            PreviewImage.Visibility.ToString(),
-            _previewStartupStrategy,
-            _previewStartupRequiredSignals,
-            _previewStartupReceivedSignals,
-            PreviewStartupMissingSignals);
+            PreviewImage.Visibility.ToString());
 }
 
 internal sealed class MainWindowPropertyChangedRouterContext

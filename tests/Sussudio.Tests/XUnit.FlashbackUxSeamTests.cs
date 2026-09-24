@@ -18,7 +18,7 @@ public sealed class FlashbackUxSeamTests
     {
         var method = global::Program.ExtractDeclaredMemberCode(ThreadCommandsSource(), "private void HandlePauseCommand");
 
-        var seekIndex = method.IndexOf("SeekAndDisplayKeyframe(decoder, ref fileOpen, pausePos", StringComparison.Ordinal);
+        var seekIndex = method.IndexOf("SeekAndDisplayKeyframe(worker.Decoder, ref worker.FileOpen, pausePos", StringComparison.Ordinal);
         var forwardDecodeIndex = method.IndexOf("DecodeForwardToPauseTarget(", StringComparison.Ordinal);
         var pausedIndex = method.LastIndexOf("SetState(FlashbackPlaybackState.Paused, \"user\");", StringComparison.Ordinal);
 
@@ -37,7 +37,7 @@ public sealed class FlashbackUxSeamTests
         var method = global::Program.ExtractDeclaredMemberCode(ThreadCommandsSource(), "private void HandlePauseCommand");
         Assert.Contains("SetState(FlashbackPlaybackState.Paused, \"user\");", method);
         Assert.Contains("frozen_frame=true", method);
-        Assert.Contains("pendingExactResumeTarget = SaturatingAdd(PlaybackPosition, frozenValidStart);", method);
+        Assert.Contains("worker.PendingExactResumeTarget = SaturatingAdd(PlaybackPosition, worker.FrozenValidStart);", method);
     }
 
     [Fact]

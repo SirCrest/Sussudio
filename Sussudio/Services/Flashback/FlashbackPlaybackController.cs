@@ -60,7 +60,7 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
     public long CommandsEnqueued => _commandMailbox.CommandsEnqueued;
     public long CommandsProcessed => _commandMailbox.CommandsProcessed;
     public long CommandsDropped => _commandMailbox.CommandsDropped;
-    public long CommandsSkippedNotReady => Interlocked.Read(ref _commandsSkippedNotReady);
+    public long CommandsRejected => Interlocked.Read(ref _commandsRejected);
     public long ScrubUpdatesCoalesced => _commandMailbox.ScrubUpdatesCoalesced;
     public long SeekCommandsCoalesced => _commandMailbox.SeekCommandsCoalesced;
     public int CommandQueueCapacityCommands => FlashbackPlaybackCommandMailbox.Capacity;
@@ -77,7 +77,7 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
     public string LastCommandFailure => Volatile.Read(ref _lastCommandFailure);
     public bool PlaybackThreadAlive => _playbackThread is { IsAlive: true };
 
-    private long _commandsSkippedNotReady;
+    private long _commandsRejected;
     private long _lastCommandFailureUtcUnixMs;
     private string _lastCommandFailure = string.Empty;
 
@@ -146,12 +146,12 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
     private bool RejectCommandIfNotReady(CommandKind kind, TimeSpan? position = null)
     {
         if (IsReady) return false;
-        return RejectCommand(
+        RecordCommandRejection(
             kind,
             "not_ready",
             $"not_ready initialized={_initialized} disposed={_disposedFlag != 0}",
-            true,
             position);
+        return true;
     }
 
     private void SetLastSubmitFailure(string failure)
@@ -318,7 +318,11 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
     public bool UpdateScrub(TimeSpan position)
     {
         if (RejectCommandIfNotReady(CommandKind.UpdateScrub, position)) return false;
-        if (!PlaybackThreadAlive) return RejectCommand(CommandKind.UpdateScrub, "thread_not_running", "thread_not_running", false, position);
+        if (!PlaybackThreadAlive)
+        {
+            RecordCommandRejection(CommandKind.UpdateScrub, "thread_not_running", "thread_not_running", position);
+            return false;
+        }
         return SendUpdateScrubCommand(position);
     }
 
@@ -334,7 +338,11 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
             MarkCommandNoOp(CommandKind.EndScrub, "live_thread_not_running", position);
             return false;
         }
-        if (!PlaybackThreadAlive) return RejectCommand(CommandKind.EndScrub, "thread_not_running", "thread_not_running", false, position);
+        if (!PlaybackThreadAlive)
+        {
+            RecordCommandRejection(CommandKind.EndScrub, "thread_not_running", "thread_not_running", position);
+            return false;
+        }
         return SendEndScrubCommand(position);
     }
 
@@ -380,7 +388,8 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
     {
         if (_disposedFlag != 0 && command.Kind != CommandKind.Stop)
         {
-            return RejectCommand(command.Kind, "disposed", "disposed", false);
+            RecordCommandRejection(command.Kind, "disposed", "disposed");
+            return false;
         }
 
         if (!_commandMailbox.TryEnqueue(command))
@@ -429,18 +438,16 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
         return true;
     }
 
-    private bool RejectCommand(
+    private void RecordCommandRejection(
         CommandKind kind,
         string failure,
         string reason,
-        bool returnValue,
         TimeSpan? position = null)
     {
-        Interlocked.Increment(ref _commandsSkippedNotReady);
+        Interlocked.Increment(ref _commandsRejected);
         var detail = FormatCommandDetail(position: position);
         SetLastCommandFailure($"{failure}:{kind}{detail}");
         Logger.Log($"FLASHBACK_PLAYBACK_CMD_SKIP kind={kind} reason={reason}{detail}");
-        return returnValue;
     }
 
     private void SetNoFileFailure(CommandKind kind, TimeSpan position)
@@ -516,9 +523,9 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
         Logger.Log("FLASHBACK_PLAYBACK_DISPOSED");
     }
 
-    public event Action<FlashbackPlaybackState, FlashbackPlaybackState, string>? StateChanged;
+    public event Action<FlashbackPlaybackState, FlashbackPlaybackState, string, bool>? StateChanged;
 
-    private void SetState(FlashbackPlaybackState newState, string reason = "")
+    private void SetState(FlashbackPlaybackState newState, string reason = "", bool isInvoluntaryLiveReturn = false)
     {
         var oldState = _state;
         if (oldState == newState) return;
@@ -526,7 +533,7 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
         Logger.Log($"FLASHBACK_PLAYBACK_STATE {oldState} -> {newState} reason='{reason}'");
         try
         {
-            StateChanged?.Invoke(oldState, newState, reason);
+            StateChanged?.Invoke(oldState, newState, reason, isInvoluntaryLiveReturn);
         }
         catch (Exception ex)
         {
@@ -656,7 +663,13 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
         double OnePercentLowFps,
         double FivePercentLowFps,
         double SampleDurationMs,
-        double[] RecentFrameIntervalsMs);
+        double[] RecentFrameIntervalsMs)
+    {
+        public static readonly PlaybackCadenceMetrics Empty = new()
+        {
+            RecentFrameIntervalsMs = Array.Empty<double>()
+        };
+    }
 
     public readonly record struct PlaybackDecodeMetrics(
         int SampleCount,

@@ -17,7 +17,7 @@ public static class Program
             return probeExitCode;
         }
 
-        return AppProcessStartup.RunNormal(StartApplication);
+        return AppProcessStartup.RunAsSingleInstance(StartApplication);
     }
 
     private static void StartApplication()

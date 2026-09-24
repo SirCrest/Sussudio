@@ -16,17 +16,17 @@ internal sealed unsafe partial class LibAvEncoder
         public AVFrame* Frame;
         public SwrContext* SwrCtx;
         public int FrameSize;
-        /// <summary>Capacity of <see cref="ResampleBuffer"/> in bytes.</summary>
+        /// <summary>Capacity of <see cref="InputAccumulatorBuffer"/> in bytes.</summary>
         public int AccumulatorCapacity;
         /// <summary>Interleaved-float accumulator for partial input frames.</summary>
-        public byte* ResampleBuffer;
+        public byte* InputAccumulatorBuffer;
         /// <summary>Capacity of <see cref="SampleQueueBuffer"/> in samples per channel.</summary>
         public int SampleQueueCapacity;
         /// <summary>Planar-float sample queue awaiting encoding.</summary>
         public byte* SampleQueueBuffer;
         /// <summary>Number of valid samples currently in <see cref="SampleQueueBuffer"/>.</summary>
         public int BufferedSamples;
-        /// <summary>Number of bytes currently in <see cref="ResampleBuffer"/>.</summary>
+        /// <summary>Number of bytes currently in <see cref="InputAccumulatorBuffer"/>.</summary>
         public int AccumulatorBytes;
         /// <summary>Running PTS counter (in samples) for this stream.</summary>
         public long NextPts;
@@ -95,7 +95,7 @@ internal sealed unsafe partial class LibAvEncoder
 
             if (state.AccumulatorBytes == frameBytes)
             {
-                EncodeStreamChunk(ref state, state.ResampleBuffer, state.FrameSize,
+                EncodeStreamChunk(ref state, state.InputAccumulatorBuffer, state.FrameSize,
                     trackDriftCorrection, driftCorrectionThresholdMs);
                 state.AccumulatorBytes = 0;
             }
@@ -181,7 +181,7 @@ internal sealed unsafe partial class LibAvEncoder
             var pendingSamples = s.AccumulatorBytes / inputBlockAlign;
             if (pendingSamples > 0)
             {
-                EncodeStreamChunk(ref s, s.ResampleBuffer, pendingSamples,
+                EncodeStreamChunk(ref s, s.InputAccumulatorBuffer, pendingSamples,
                     trackDriftCorrection, driftCorrectionThresholdMs);
             }
 
@@ -198,7 +198,7 @@ internal sealed unsafe partial class LibAvEncoder
             return;
         }
 
-        if (s.ResampleBuffer == null)
+        if (s.InputAccumulatorBuffer == null)
         {
             throw CreateLibAvException("LIBAV_ENCODER_ERROR operation=CopyToAccumulator msg=Audio accumulator buffer is null.");
         }
@@ -207,7 +207,7 @@ internal sealed unsafe partial class LibAvEncoder
         {
             Buffer.MemoryCopy(
                 sourcePtr,
-                s.ResampleBuffer + destinationOffset,
+                s.InputAccumulatorBuffer + destinationOffset,
                 s.AccumulatorCapacity - destinationOffset,
                 source.Length);
         }
@@ -530,7 +530,7 @@ internal sealed unsafe partial class LibAvEncoder
         {
             Logger.Log(
                 $"LIBAV_AV_SYNC_DRIFT_WARNING videoFrame={videoFrame} driftMs={driftMs:F1} " +
-                $"audioSamples={audioSamples} Ã¢â‚¬â€ drift exceeds 500ms, investigate audio delivery");
+                $"audioSamples={audioSamples} — drift exceeds 500ms, investigate audio delivery");
         }
     }
 
@@ -571,53 +571,8 @@ internal sealed unsafe partial class LibAvEncoder
             return;
         }
 
-        var codec = ffmpeg.avcodec_find_encoder(AVCodecID.AV_CODEC_ID_AAC);
-        if (codec == null)
-        {
-            throw CreateLibAvException("LIBAV_ENCODER_ERROR operation=avcodec_find_encoder(audio) codec='aac' msg=Encoder not available.");
-        }
-
-        _audio.Stream = ffmpeg.avformat_new_stream(_formatCtx, codec);
-        if (_audio.Stream == null)
-        {
-            throw CreateLibAvException("LIBAV_ENCODER_ERROR operation=avformat_new_stream(audio) msg=Stream allocation returned null.");
-        }
-
-        _audio.CodecCtx = ffmpeg.avcodec_alloc_context3(codec);
-        if (_audio.CodecCtx == null)
-        {
-            throw CreateLibAvException("LIBAV_ENCODER_ERROR operation=avcodec_alloc_context3(audio) msg=Codec context allocation returned null.");
-        }
-
-        ConfigureAudioCodecContext(_audio.CodecCtx, options, codec);
-
-        // Skip GLOBAL_HEADER for MPEG-TS; AAC needs ADTS framing per segment.
-        if (options.ContainerFormat != "mpegts" &&
-            (_formatCtx->oformat->flags & ffmpeg.AVFMT_GLOBALHEADER) != 0)
-        {
-            _audio.CodecCtx->flags |= ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER;
-        }
-
-        ThrowIfError(ffmpeg.avcodec_open2(_audio.CodecCtx, codec, null), "avcodec_open2(audio)");
-
-        _audio.FrameSize = _audio.CodecCtx->frame_size;
-        if (_audio.FrameSize <= 0)
-        {
-            throw CreateLibAvException(
-                $"LIBAV_ENCODER_ERROR operation=InitializeAudioIfNeeded msg=Unexpected AAC frame size value={_audio.FrameSize}");
-        }
-
-        _audio.Stream->time_base = _audio.CodecCtx->time_base;
-        _audio.CachedTimeBase = _audio.CodecCtx->time_base;
-
-        ThrowIfError(
-            ffmpeg.avcodec_parameters_from_context(_audio.Stream->codecpar, _audio.CodecCtx),
-            "avcodec_parameters_from_context(audio)");
-
-        InitializeAudioResampler(options);
-        AllocateAudioFrame();
-        AllocateAudioAccumulator(options);
-        AllocateAudioSampleQueue(options);
+        InitializeAudioStream(ref _audio, options.AudioSampleRate, options.AudioChannels,
+            options.AudioBitRate, options.ContainerFormat, "audio");
     }
 
     private void InitializeMicrophoneIfNeeded(LibAvEncoderOptions options)
@@ -627,165 +582,118 @@ internal sealed unsafe partial class LibAvEncoder
             return;
         }
 
+        InitializeAudioStream(ref _mic, options.MicrophoneSampleRate, options.MicrophoneChannels,
+            options.MicrophoneBitRate, options.ContainerFormat, "mic");
+    }
+
+    private void InitializeAudioStream(
+        ref AudioStreamState state,
+        int sampleRate,
+        int channels,
+        int bitRate,
+        string containerFormat,
+        string streamLabel)
+    {
         var codec = ffmpeg.avcodec_find_encoder(AVCodecID.AV_CODEC_ID_AAC);
         if (codec == null)
         {
-            throw CreateLibAvException("LIBAV_ENCODER_ERROR operation=avcodec_find_encoder(mic) codec='aac' msg=Encoder not available.");
+            throw CreateLibAvException($"LIBAV_ENCODER_ERROR operation=avcodec_find_encoder({streamLabel}) codec='aac' msg=Encoder not available.");
         }
 
-        _mic.Stream = ffmpeg.avformat_new_stream(_formatCtx, codec);
-        if (_mic.Stream == null)
+        state.Stream = ffmpeg.avformat_new_stream(_formatCtx, codec);
+        if (state.Stream == null)
         {
-            throw CreateLibAvException("LIBAV_ENCODER_ERROR operation=avformat_new_stream(mic) msg=Stream allocation returned null.");
+            throw CreateLibAvException($"LIBAV_ENCODER_ERROR operation=avformat_new_stream({streamLabel}) msg=Stream allocation returned null.");
         }
 
-        _mic.CodecCtx = ffmpeg.avcodec_alloc_context3(codec);
-        if (_mic.CodecCtx == null)
+        state.CodecCtx = ffmpeg.avcodec_alloc_context3(codec);
+        if (state.CodecCtx == null)
         {
-            throw CreateLibAvException("LIBAV_ENCODER_ERROR operation=avcodec_alloc_context3(mic) msg=Codec context allocation returned null.");
+            throw CreateLibAvException($"LIBAV_ENCODER_ERROR operation=avcodec_alloc_context3({streamLabel}) msg=Codec context allocation returned null.");
         }
 
-        _mic.CodecCtx->codec_type = AVMediaType.AVMEDIA_TYPE_AUDIO;
-        _mic.CodecCtx->sample_rate = options.MicrophoneSampleRate;
-        _mic.CodecCtx->sample_fmt = AVSampleFormat.AV_SAMPLE_FMT_FLTP;
-        _mic.CodecCtx->bit_rate = options.MicrophoneBitRate;
-        _mic.CodecCtx->time_base = new AVRational { num = 1, den = options.MicrophoneSampleRate };
-        ffmpeg.av_channel_layout_default(&_mic.CodecCtx->ch_layout, options.MicrophoneChannels);
-
-        if (!IsSampleFormatSupported(codec, _mic.CodecCtx->sample_fmt))
-        {
-            throw CreateLibAvException(
-                $"LIBAV_ENCODER_ERROR operation=InitializeMicrophoneIfNeeded msg=Requested sample format '{_mic.CodecCtx->sample_fmt}' is not supported by AAC encoder.");
-        }
+        ConfigureAudioCodecContext(state.CodecCtx, sampleRate, channels, bitRate, codec, streamLabel);
 
         // Skip GLOBAL_HEADER for MPEG-TS; AAC needs ADTS framing per segment.
-        if (options.ContainerFormat != "mpegts" &&
+        if (containerFormat != "mpegts" &&
             (_formatCtx->oformat->flags & ffmpeg.AVFMT_GLOBALHEADER) != 0)
         {
-            _mic.CodecCtx->flags |= ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER;
+            state.CodecCtx->flags |= ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER;
         }
 
-        ThrowIfError(ffmpeg.avcodec_open2(_mic.CodecCtx, codec, null), "avcodec_open2(mic)");
+        ThrowIfError(ffmpeg.avcodec_open2(state.CodecCtx, codec, null), $"avcodec_open2({streamLabel})");
 
-        _mic.FrameSize = _mic.CodecCtx->frame_size;
-        if (_mic.FrameSize <= 0)
+        state.FrameSize = state.CodecCtx->frame_size;
+        if (state.FrameSize <= 0)
         {
+            var operation = streamLabel == "mic" ? nameof(InitializeMicrophoneIfNeeded) : nameof(InitializeAudioIfNeeded);
             throw CreateLibAvException(
-                $"LIBAV_ENCODER_ERROR operation=InitializeMicrophoneIfNeeded msg=Unexpected AAC frame size value={_mic.FrameSize}");
+                $"LIBAV_ENCODER_ERROR operation={operation} msg=Unexpected AAC frame size value={state.FrameSize}");
         }
 
-        _mic.Stream->time_base = _mic.CodecCtx->time_base;
-        _mic.CachedTimeBase = _mic.CodecCtx->time_base;
+        state.Stream->time_base = state.CodecCtx->time_base;
+        state.CachedTimeBase = state.CodecCtx->time_base;
 
         ThrowIfError(
-            ffmpeg.avcodec_parameters_from_context(_mic.Stream->codecpar, _mic.CodecCtx),
-            "avcodec_parameters_from_context(mic)");
+            ffmpeg.avcodec_parameters_from_context(state.Stream->codecpar, state.CodecCtx),
+            $"avcodec_parameters_from_context({streamLabel})");
 
-        AVChannelLayout inputLayout = default;
-        ffmpeg.av_channel_layout_default(&inputLayout, options.MicrophoneChannels);
-        var swrCtx = _mic.SwrCtx;
-        try
-        {
-            var result = ffmpeg.swr_alloc_set_opts2(
-                &swrCtx,
-                &_mic.CodecCtx->ch_layout,
-                _mic.CodecCtx->sample_fmt,
-                _mic.CodecCtx->sample_rate,
-                &inputLayout,
-                AVSampleFormat.AV_SAMPLE_FMT_FLT,
-                options.MicrophoneSampleRate,
-                0,
-                null);
-            _mic.SwrCtx = swrCtx;
-            ThrowIfError(result, "swr_alloc_set_opts2(mic)");
-            if (_mic.SwrCtx == null)
-            {
-                throw CreateLibAvException("LIBAV_ENCODER_ERROR operation=swr_alloc_set_opts2(mic) msg=Resampler allocation returned null.");
-            }
-
-            ThrowIfError(ffmpeg.swr_init(_mic.SwrCtx), "swr_init(mic)");
-        }
-        finally
-        {
-            ffmpeg.av_channel_layout_uninit(&inputLayout);
-        }
-
-        _mic.Frame = ffmpeg.av_frame_alloc();
-        if (_mic.Frame == null)
-        {
-            throw CreateLibAvException("LIBAV_ENCODER_ERROR operation=av_frame_alloc(mic) msg=Frame allocation returned null.");
-        }
-
-        _mic.Frame->format = (int)_mic.CodecCtx->sample_fmt;
-        _mic.Frame->nb_samples = _mic.FrameSize;
-        _mic.Frame->sample_rate = _mic.CodecCtx->sample_rate;
-        ThrowIfError(ffmpeg.av_channel_layout_copy(&_mic.Frame->ch_layout, &_mic.CodecCtx->ch_layout), "av_channel_layout_copy(mic_frame)");
-        ThrowIfError(ffmpeg.av_frame_get_buffer(_mic.Frame, 0), "av_frame_get_buffer(mic)");
-        if (_mic.Frame->extended_data == null)
-        {
-            throw CreateLibAvException("LIBAV_ENCODER_ERROR operation=av_frame_get_buffer(mic) msg=extended_data was null.");
-        }
-
-        _mic.AccumulatorCapacity = checked(_mic.FrameSize * options.MicrophoneChannels * sizeof(float));
-        _mic.ResampleBuffer = (byte*)ffmpeg.av_malloc((ulong)_mic.AccumulatorCapacity);
-        if (_mic.ResampleBuffer == null)
-        {
-            throw CreateLibAvException(
-                $"LIBAV_ENCODER_ERROR operation=av_malloc(mic_accumulator) msg=Allocation returned null size={_mic.AccumulatorCapacity}.");
-        }
-
-        _mic.SampleQueueCapacity = checked((_mic.FrameSize * 2) + MaxDriftCorrectionSamplesPerPass);
-        var queueBytes = checked(_mic.SampleQueueCapacity * options.MicrophoneChannels * sizeof(float));
-        _mic.SampleQueueBuffer = (byte*)ffmpeg.av_malloc((ulong)queueBytes);
-        if (_mic.SampleQueueBuffer == null)
-        {
-            throw CreateLibAvException(
-                $"LIBAV_ENCODER_ERROR operation=av_malloc(mic_sample_queue) msg=Allocation returned null size={queueBytes}.");
-        }
+        InitializeAudioResampler(ref state, sampleRate, channels, streamLabel);
+        AllocateAudioFrame(ref state, streamLabel);
+        AllocateAudioAccumulator(ref state, channels, streamLabel);
+        AllocateAudioSampleQueue(ref state, channels, streamLabel);
     }
 
-    private void ConfigureAudioCodecContext(AVCodecContext* codecContext, LibAvEncoderOptions options, AVCodec* codec)
+    private void ConfigureAudioCodecContext(
+        AVCodecContext* codecContext,
+        int sampleRate,
+        int channels,
+        int bitRate,
+        AVCodec* codec,
+        string streamLabel)
     {
         codecContext->codec_type = AVMediaType.AVMEDIA_TYPE_AUDIO;
-        codecContext->sample_rate = options.AudioSampleRate;
+        codecContext->sample_rate = sampleRate;
         codecContext->sample_fmt = AVSampleFormat.AV_SAMPLE_FMT_FLTP;
-        codecContext->bit_rate = options.AudioBitRate;
-        codecContext->time_base = new AVRational { num = 1, den = options.AudioSampleRate };
-        ffmpeg.av_channel_layout_default(&codecContext->ch_layout, options.AudioChannels);
+        codecContext->bit_rate = bitRate;
+        codecContext->time_base = new AVRational { num = 1, den = sampleRate };
+        ffmpeg.av_channel_layout_default(&codecContext->ch_layout, channels);
 
         if (!IsSampleFormatSupported(codec, codecContext->sample_fmt))
         {
+            var operation = streamLabel == "mic" ? nameof(InitializeMicrophoneIfNeeded) : nameof(ConfigureAudioCodecContext);
             throw CreateLibAvException(
-                $"LIBAV_ENCODER_ERROR operation=ConfigureAudioCodecContext msg=Requested sample format '{codecContext->sample_fmt}' is not supported by AAC encoder.");
+                $"LIBAV_ENCODER_ERROR operation={operation} msg=Requested sample format '{codecContext->sample_fmt}' is not supported by AAC encoder.");
         }
     }
 
-    private void InitializeAudioResampler(LibAvEncoderOptions options)
+    private void InitializeAudioResampler(ref AudioStreamState state, int sampleRate, int channels, string streamLabel)
     {
+        var diagnosticSuffix = streamLabel == "mic" ? "(mic)" : string.Empty;
         AVChannelLayout inputLayout = default;
-        ffmpeg.av_channel_layout_default(&inputLayout, options.AudioChannels);
-        var swrCtx = _audio.SwrCtx;
+        ffmpeg.av_channel_layout_default(&inputLayout, channels);
+        var swrCtx = state.SwrCtx;
 
         try
         {
             var result = ffmpeg.swr_alloc_set_opts2(
                 &swrCtx,
-                &_audio.CodecCtx->ch_layout,
-                _audio.CodecCtx->sample_fmt,
-                _audio.CodecCtx->sample_rate,
+                &state.CodecCtx->ch_layout,
+                state.CodecCtx->sample_fmt,
+                state.CodecCtx->sample_rate,
                 &inputLayout,
                 AVSampleFormat.AV_SAMPLE_FMT_FLT,
-                options.AudioSampleRate,
+                sampleRate,
                 0,
                 null);
-            _audio.SwrCtx = swrCtx;
-            ThrowIfError(result, "swr_alloc_set_opts2");
-            if (_audio.SwrCtx == null)
+            state.SwrCtx = swrCtx;
+            ThrowIfError(result, $"swr_alloc_set_opts2{diagnosticSuffix}");
+            if (state.SwrCtx == null)
             {
-                throw CreateLibAvException("LIBAV_ENCODER_ERROR operation=swr_alloc_set_opts2 msg=Resampler allocation returned null.");
+                throw CreateLibAvException($"LIBAV_ENCODER_ERROR operation=swr_alloc_set_opts2{diagnosticSuffix} msg=Resampler allocation returned null.");
             }
 
-            ThrowIfError(ffmpeg.swr_init(_audio.SwrCtx), "swr_init");
+            ThrowIfError(ffmpeg.swr_init(state.SwrCtx), $"swr_init{diagnosticSuffix}");
         }
         finally
         {
@@ -793,46 +701,46 @@ internal sealed unsafe partial class LibAvEncoder
         }
     }
 
-    private void AllocateAudioFrame()
+    private void AllocateAudioFrame(ref AudioStreamState state, string streamLabel)
     {
-        _audio.Frame = ffmpeg.av_frame_alloc();
-        if (_audio.Frame == null)
+        state.Frame = ffmpeg.av_frame_alloc();
+        if (state.Frame == null)
         {
-            throw CreateLibAvException("LIBAV_ENCODER_ERROR operation=av_frame_alloc(audio) msg=Frame allocation returned null.");
+            throw CreateLibAvException($"LIBAV_ENCODER_ERROR operation=av_frame_alloc({streamLabel}) msg=Frame allocation returned null.");
         }
 
-        _audio.Frame->format = (int)_audio.CodecCtx->sample_fmt;
-        _audio.Frame->nb_samples = _audio.FrameSize;
-        _audio.Frame->sample_rate = _audio.CodecCtx->sample_rate;
-        ThrowIfError(ffmpeg.av_channel_layout_copy(&_audio.Frame->ch_layout, &_audio.CodecCtx->ch_layout), "av_channel_layout_copy(audio_frame)");
-        ThrowIfError(ffmpeg.av_frame_get_buffer(_audio.Frame, 0), "av_frame_get_buffer(audio)");
+        state.Frame->format = (int)state.CodecCtx->sample_fmt;
+        state.Frame->nb_samples = state.FrameSize;
+        state.Frame->sample_rate = state.CodecCtx->sample_rate;
+        ThrowIfError(ffmpeg.av_channel_layout_copy(&state.Frame->ch_layout, &state.CodecCtx->ch_layout), $"av_channel_layout_copy({streamLabel}_frame)");
+        ThrowIfError(ffmpeg.av_frame_get_buffer(state.Frame, 0), $"av_frame_get_buffer({streamLabel})");
 
-        if (_audio.Frame->extended_data == null)
+        if (state.Frame->extended_data == null)
         {
-            throw CreateLibAvException("LIBAV_ENCODER_ERROR operation=av_frame_get_buffer(audio) msg=extended_data was null.");
-        }
-    }
-
-    private void AllocateAudioAccumulator(LibAvEncoderOptions options)
-    {
-        _audio.AccumulatorCapacity = checked(_audio.FrameSize * options.AudioChannels * sizeof(float));
-        _audio.ResampleBuffer = (byte*)ffmpeg.av_malloc((ulong)_audio.AccumulatorCapacity);
-        if (_audio.ResampleBuffer == null)
-        {
-            throw CreateLibAvException(
-                $"LIBAV_ENCODER_ERROR operation=av_malloc(audio_accumulator) msg=Allocation returned null size={_audio.AccumulatorCapacity}.");
+            throw CreateLibAvException($"LIBAV_ENCODER_ERROR operation=av_frame_get_buffer({streamLabel}) msg=extended_data was null.");
         }
     }
 
-    private void AllocateAudioSampleQueue(LibAvEncoderOptions options)
+    private void AllocateAudioAccumulator(ref AudioStreamState state, int channels, string streamLabel)
     {
-        _audio.SampleQueueCapacity = checked((_audio.FrameSize * 2) + MaxDriftCorrectionSamplesPerPass);
-        var queueBytes = checked(_audio.SampleQueueCapacity * options.AudioChannels * sizeof(float));
-        _audio.SampleQueueBuffer = (byte*)ffmpeg.av_malloc((ulong)queueBytes);
-        if (_audio.SampleQueueBuffer == null)
+        state.AccumulatorCapacity = checked(state.FrameSize * channels * sizeof(float));
+        state.InputAccumulatorBuffer = (byte*)ffmpeg.av_malloc((ulong)state.AccumulatorCapacity);
+        if (state.InputAccumulatorBuffer == null)
         {
             throw CreateLibAvException(
-                $"LIBAV_ENCODER_ERROR operation=av_malloc(audio_sample_queue) msg=Allocation returned null size={queueBytes}.");
+                $"LIBAV_ENCODER_ERROR operation=av_malloc({streamLabel}_accumulator) msg=Allocation returned null size={state.AccumulatorCapacity}.");
+        }
+    }
+
+    private void AllocateAudioSampleQueue(ref AudioStreamState state, int channels, string streamLabel)
+    {
+        state.SampleQueueCapacity = checked((state.FrameSize * 2) + MaxDriftCorrectionSamplesPerPass);
+        var queueBytes = checked(state.SampleQueueCapacity * channels * sizeof(float));
+        state.SampleQueueBuffer = (byte*)ffmpeg.av_malloc((ulong)queueBytes);
+        if (state.SampleQueueBuffer == null)
+        {
+            throw CreateLibAvException(
+                $"LIBAV_ENCODER_ERROR operation=av_malloc({streamLabel}_sample_queue) msg=Allocation returned null size={queueBytes}.");
         }
     }
 }

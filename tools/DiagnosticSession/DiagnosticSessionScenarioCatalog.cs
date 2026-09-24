@@ -393,9 +393,7 @@ internal static class DiagnosticSessionScenarioStartup
         DiagnosticSessionBackgroundTasks backgroundTasks,
         List<string> actions,
         List<string> warnings,
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendAsync,
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendRawWithConnectRetryAsync,
-        Func<string, Dictionary<string, object?>?, int?, bool, Task<JsonElement>> sendAsyncWithFailurePolicy,
+        DiagnosticSessionCommandChannel commandChannel,
         DiagnosticSessionScenarioPhaseState phaseState,
         CancellationToken cancellationToken)
     {
@@ -404,37 +402,36 @@ internal static class DiagnosticSessionScenarioStartup
                 durationSeconds,
                 outputDirectory,
                 backgroundTasks,
-                actions,
-                sendAsync,
-                cancellationToken)
+                actions: actions,
+                commandChannel: commandChannel,
+                cancellationToken: cancellationToken)
             .ConfigureAwait(false);
 
         RegisterFlashbackScenarioTasks(
             scenarioPlan,
             outputDirectory,
             backgroundTasks,
-            actions,
-            warnings,
-            sendAsync,
-            sendRawWithConnectRetryAsync,
-            cancellationToken);
+            actions: actions,
+            warnings: warnings,
+            commandChannel: commandChannel,
+            cancellationToken: cancellationToken);
 
         RegisterDeferredFlashbackRecordingSettingsTask(
             scenarioPlan,
             backgroundTasks,
-            actions,
-            warnings,
-            sendAsyncWithFailurePolicy,
-            cancellationToken);
+            actions: actions,
+            warnings: warnings,
+            commandChannel: commandChannel,
+            cancellationToken: cancellationToken);
 
         await TryStartFlashbackPlaybackAsync(
                 scenarioPlan,
                 outputDirectory,
-                actions,
-                warnings,
-                sendAsync,
-                phaseState,
-                cancellationToken)
+                actions: actions,
+                warnings: warnings,
+                commandChannel: commandChannel,
+                phaseState: phaseState,
+                cancellationToken: cancellationToken)
             .ConfigureAwait(false);
     }
 
@@ -444,7 +441,7 @@ internal static class DiagnosticSessionScenarioStartup
         string outputDirectory,
         DiagnosticSessionBackgroundTasks backgroundTasks,
         List<string> actions,
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendAsync,
+        DiagnosticSessionCommandChannel commandChannel,
         CancellationToken cancellationToken)
     {
         if (!options.IncludePresentMon)
@@ -452,7 +449,7 @@ internal static class DiagnosticSessionScenarioStartup
             return;
         }
 
-        var correlationSnapshotResponse = await sendAsync("GetSnapshot", null, null).ConfigureAwait(false);
+        var correlationSnapshotResponse = await commandChannel.SendAsync("GetSnapshot", null, null).ConfigureAwait(false);
         TryGetSnapshot(correlationSnapshotResponse, out var correlationSnapshot);
         backgroundTasks.SetPresentMon(PresentMonProbe.RunAsync(PresentMonProbe.CreateOptions(
             durationSeconds: Math.Max(1, durationSeconds),
@@ -470,63 +467,60 @@ internal static class DiagnosticSessionScenarioStartup
         DiagnosticSessionBackgroundTasks backgroundTasks,
         List<string> actions,
         List<string> warnings,
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendAsync,
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendRawWithConnectRetryAsync,
+        DiagnosticSessionCommandChannel commandChannel,
         CancellationToken cancellationToken)
     {
         DiagnosticSessionFlashbackStressScenario.RegisterSelectedFlashbackStressScenarioTasks(
             scenarioPlan,
             outputDirectory,
             backgroundTasks,
-            actions,
-            warnings,
-            sendAsync,
-            sendRawWithConnectRetryAsync,
-            cancellationToken);
+            actions: actions,
+            warnings: warnings,
+            commandChannel: commandChannel,
+            cancellationToken: cancellationToken);
 
         DiagnosticSessionFlashbackCycleScenarios.RegisterSelectedFlashbackCycleScenarioTasks(
             scenarioPlan,
             outputDirectory,
             backgroundTasks,
-            actions,
-            warnings,
-            sendAsync,
-            cancellationToken);
+            actions: actions,
+            warnings: warnings,
+            commandChannel: commandChannel,
+            cancellationToken: cancellationToken);
 
         DiagnosticSessionFlashbackSegmentPlaybackScenarios.RegisterSelectedFlashbackSegmentPlaybackScenarioTask(
             scenarioPlan,
             backgroundTasks,
-            actions,
-            warnings,
-            sendAsync,
-            cancellationToken);
+            actions: actions,
+            warnings: warnings,
+            commandChannel: commandChannel,
+            cancellationToken: cancellationToken);
 
         DiagnosticSessionFlashbackExportScenarios.RegisterSelectedFlashbackExportScenarioTasks(
             scenarioPlan,
             outputDirectory,
             backgroundTasks,
-            actions,
-            warnings,
-            sendAsync,
-            sendRawWithConnectRetryAsync,
-            cancellationToken);
+            actions: actions,
+            warnings: warnings,
+            commandChannel: commandChannel,
+            cancellationToken: cancellationToken);
 
         DiagnosticSessionFlashbackLifecycleScenarios.RegisterSelectedFlashbackLifecycleScenarioTask(
             scenarioPlan,
             backgroundTasks,
-            actions,
-            warnings,
-            sendAsync,
-            cancellationToken);
+            actions: actions,
+            warnings: warnings,
+            commandChannel: commandChannel,
+            cancellationToken: cancellationToken);
 
         DiagnosticSessionFlashbackPreviewCycleScenarios.RegisterSelectedFlashbackPreviewCycleScenarioTasks(
             scenarioPlan,
             outputDirectory,
             backgroundTasks,
-            actions,
-            warnings,
-            sendAsync,
-            cancellationToken);
+            actions: actions,
+            warnings: warnings,
+            commandChannel: commandChannel,
+            cancellationToken: cancellationToken);
     }
 
     private static void RegisterDeferredFlashbackRecordingSettingsTask(
@@ -534,7 +528,7 @@ internal static class DiagnosticSessionScenarioStartup
         DiagnosticSessionBackgroundTasks backgroundTasks,
         List<string> actions,
         List<string> warnings,
-        Func<string, Dictionary<string, object?>?, int?, bool, Task<JsonElement>> sendAsyncWithFailurePolicy,
+        DiagnosticSessionCommandChannel commandChannel,
         CancellationToken cancellationToken)
     {
         if (!(scenarioPlan.Kind == DiagnosticSessionScenarioKind.FlashbackRecordingSettingsDeferred))
@@ -543,10 +537,10 @@ internal static class DiagnosticSessionScenarioStartup
         }
 
         backgroundTasks.SetRecordingSettingsDeferred(RunFlashbackRecordingSettingsDeferredAsync(
-            actions,
-            warnings,
-            sendAsyncWithFailurePolicy,
-            cancellationToken));
+            actions: actions,
+            warnings: warnings,
+            sendCommandAsync: commandChannel.SendAsync,
+            cancellationToken: cancellationToken));
         actions.Add("flashback recording settings deferred started");
     }
 
@@ -555,7 +549,7 @@ internal static class DiagnosticSessionScenarioStartup
         string outputDirectory,
         List<string> actions,
         List<string> warnings,
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendAsync,
+        DiagnosticSessionCommandChannel commandChannel,
         DiagnosticSessionScenarioPhaseState phaseState,
         CancellationToken cancellationToken)
     {
@@ -570,16 +564,17 @@ internal static class DiagnosticSessionScenarioStartup
             return;
         }
 
-        if (!await WaitForFlashbackStressBufferReadyAsync(sendAsync, cancellationToken).ConfigureAwait(false))
+        if (!await WaitForFlashbackStressBufferReadyAsync(
+                sendCommandAsync: commandChannel.SendAsync, cancellationToken: cancellationToken).ConfigureAwait(false))
         {
             warnings.Add("flashback playback: Flashback buffer did not become export-ready within 30s");
             return;
         }
 
         var prerollExportPath = Path.Combine(outputDirectory, "flashback-playback-preroll.mp4");
-        var prerollExportResponse = await sendAsync(
+        var prerollExportResponse = await commandChannel.SendAsync(
                 "FlashbackExport",
-                new Dictionary<string, object?> { ["seconds"] = 1, ["outputPath"] = prerollExportPath },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Seconds] = 1, [AutomationPayloadKeys.OutputPath] = prerollExportPath },
                 AutomationPipeProtocol.GetDefaultResponseTimeout("FlashbackExport"))
             .ConfigureAwait(false);
         if (!IsSuccess(prerollExportResponse))
@@ -591,9 +586,9 @@ internal static class DiagnosticSessionScenarioStartup
         actions.Add("flashback playback preroll export completed");
 
         var playbackTarget = await DiagnosticSessionFlashbackSegments.WaitForFlashbackPlayableCompletedSegmentAsync(
-                sendAsync,
+                sendCommandAsync: commandChannel.SendAsync,
                 TimeSpan.FromSeconds(45),
-                cancellationToken)
+                cancellationToken: cancellationToken)
             .ConfigureAwait(false);
         if (playbackTarget is null)
         {
@@ -604,9 +599,9 @@ internal static class DiagnosticSessionScenarioStartup
         var target = playbackTarget.Value;
         var playPositionMs = Math.Max(0, target.BoundaryPositionMs - 500);
         phaseState.PlaybackStartUnconfirmed = true;
-        var playResponse = await sendAsync(
+        var playResponse = await commandChannel.SendAsync(
                 "FlashbackAction",
-                new Dictionary<string, object?> { ["action"] = "play", ["positionMs"] = playPositionMs },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "play", [AutomationPayloadKeys.PositionMs] = playPositionMs },
                 null)
             .ConfigureAwait(false);
         phaseState.PlaybackStartUnconfirmed = HasUnconfirmedCommandOutcome(playResponse);
@@ -621,10 +616,10 @@ internal static class DiagnosticSessionScenarioStartup
             "flashback playback started at completed segment " +
             $"segment={target.Segment.SequenceNumber} positionMs={playPositionMs}");
         var playingSnapshot = await WaitForFlashbackPlaybackStateAsync(
-                sendAsync,
+                sendCommandAsync: commandChannel.SendAsync,
                 "Playing",
                 TimeSpan.FromSeconds(5),
-                cancellationToken)
+                cancellationToken: cancellationToken)
             .ConfigureAwait(false);
         if (playingSnapshot is null)
         {
@@ -688,7 +683,7 @@ internal static class DiagnosticSessionScenarioSetup
             phaseState.FlashbackEnableUnconfirmed = true;
             var response = await commandChannel.SendAsync(
                     AutomationCommandKind.SetFlashbackEnabled,
-                    new Dictionary<string, object?> { ["enabled"] = true },
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = true },
                     null)
                 .ConfigureAwait(false);
             phaseState.FlashbackEnableUnconfirmed = HasUnconfirmedCommandOutcome(response);
@@ -704,7 +699,7 @@ internal static class DiagnosticSessionScenarioSetup
             phaseState.FlashbackDisableUnconfirmed = true;
             var response = await commandChannel.SendAsync(
                     AutomationCommandKind.SetFlashbackEnabled,
-                    new Dictionary<string, object?> { ["enabled"] = false },
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = false },
                     null)
                 .ConfigureAwait(false);
             phaseState.FlashbackDisableUnconfirmed = HasUnconfirmedCommandOutcome(response);
@@ -732,7 +727,7 @@ internal static class DiagnosticSessionScenarioSetup
         phaseState.PreviewStartUnconfirmed = true;
         var response = await commandChannel.SendAsync(
                 AutomationCommandKind.SetPreviewEnabled,
-                new Dictionary<string, object?> { ["enabled"] = true },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = true },
                 null)
             .ConfigureAwait(false);
         phaseState.PreviewStartUnconfirmed = HasUnconfirmedCommandOutcome(response);
@@ -772,7 +767,7 @@ internal static class DiagnosticSessionScenarioSetup
         phaseState.RecordingStartUnconfirmed = true;
         var response = await commandChannel.SendAsync(
                 AutomationCommandKind.SetRecordingEnabled,
-                new Dictionary<string, object?> { ["enabled"] = true },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = true },
                 null)
             .ConfigureAwait(false);
         phaseState.RecordingStartUnconfirmed = HasUnconfirmedCommandOutcome(response);

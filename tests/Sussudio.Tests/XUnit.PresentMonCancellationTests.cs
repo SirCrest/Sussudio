@@ -58,18 +58,19 @@ static partial class Program
         Directory.CreateDirectory(directory);
         var csvPath = Path.Combine(directory, "capture.csv");
         using var cancellation = new CancellationTokenSource();
-        var probe = RequireSharedToolType("Sussudio.Tools.PresentMonProbe");
-        var optionsType = probe.Assembly.GetType("Sussudio.Tools.PresentMonProbeOptions")!;
-        var options = Activator.CreateInstance(optionsType)!;
-        optionsType.GetProperty("ProcessId")!.SetValue(options, Environment.ProcessId);
-        optionsType.GetProperty("DurationSeconds")!.SetValue(options, 30);
-        optionsType.GetProperty("PresentMonPath")!.SetValue(options, PresentMonTestExecutable());
-        optionsType.GetProperty("OutputFile")!.SetValue(options, csvPath);
-        optionsType.GetProperty("KeepCsv")!.SetValue(options, keepCsv);
-        var run = (Task)probe.GetMethod("RunAsync")!.Invoke(null, new[] { options, (object)cancellation.Token })!;
+        Task? run = null;
         int? childId = null;
         try
         {
+            var probe = RequireSharedToolType("Sussudio.Tools.PresentMonProbe");
+            var optionsType = probe.Assembly.GetType("Sussudio.Tools.PresentMonProbeOptions")!;
+            var options = Activator.CreateInstance(optionsType)!;
+            optionsType.GetProperty("ProcessId")!.SetValue(options, Environment.ProcessId);
+            optionsType.GetProperty("DurationSeconds")!.SetValue(options, 30);
+            optionsType.GetProperty("PresentMonPath")!.SetValue(options, CreatePresentMonTestExecutable(directory));
+            optionsType.GetProperty("OutputFile")!.SetValue(options, csvPath);
+            optionsType.GetProperty("KeepCsv")!.SetValue(options, keepCsv);
+            run = (Task)probe.GetMethod("RunAsync")!.Invoke(null, new[] { options, (object)cancellation.Token })!;
             childId = await WaitForPresentMonTestChildAsync(csvPath + ".pid", run).ConfigureAwait(false);
             Assert.True(File.Exists(csvPath));
             cancellation.Cancel();
@@ -81,7 +82,7 @@ static partial class Program
         finally
         {
             cancellation.Cancel();
-            await StopPresentMonTestRunAsync(run, childId).ConfigureAwait(false);
+            if (run is not null) await StopPresentMonTestRunAsync(run, childId).ConfigureAwait(false);
             if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
         }
     }
@@ -134,7 +135,7 @@ static partial class Program
             var assembly = LoadDiagnosticSessionRunnerAssembly();
             var options = CreateDiagnosticSessionOptions(assembly, "observe", 30, 100, directory);
             options.GetType().GetProperty("IncludePresentMon")!.SetValue(options, true);
-            options.GetType().GetProperty("PresentMonPath")!.SetValue(options, PresentMonTestExecutable());
+            options.GetType().GetProperty("PresentMonPath")!.SetValue(options, CreatePresentMonTestExecutable(directory));
             run = RunTokenAwareDiagnosticSessionAsync(assembly, options, SendAsync, cancellation.Token);
             var result = await run.WaitAsync(TimeSpan.FromSeconds(20)).ConfigureAwait(false);
             Assert.True(cancellation.IsCancellationRequested);
@@ -167,34 +168,27 @@ static partial class Program
         }
     }
 
-    private static readonly object PresentMonTestExecutableLock = new();
-    private static string? presentMonTestExecutable;
-
-    // PresentMonProbe.ResolvePresentMonPath admits only known PresentMon
-    // executable names, so the fake PresentMon these tests inject cannot be the
-    // test apphost under its own name. Publish a copy of the apphost under an
-    // admitted name instead; the apphost resolves its managed dll by filename
-    // relative to itself, so the copy must sit beside the real one.
-    private static string PresentMonTestExecutable()
+    private static string CreatePresentMonTestExecutable(string directory)
     {
-        lock (PresentMonTestExecutableLock)
+        var assemblyPath = typeof(Sussudio.Tests.PresentMonCancellationTests).Assembly.Location;
+        var apphostPath = Path.ChangeExtension(assemblyPath, ".exe");
+        Assert.True(File.Exists(apphostPath), $"The test apphost is required: {apphostPath}");
+        var childDirectory = Directory.CreateDirectory(Path.Combine(directory, "presentmon-child")).FullName;
+
+        // The approved executable name still hosts Sussudio.Tests.dll, so retain
+        // its original managed target and runtime companions beside this private copy.
+        foreach (var dependency in Directory.EnumerateFiles(Path.GetDirectoryName(assemblyPath)!, "*.dll"))
         {
-            if (presentMonTestExecutable is not null)
-            {
-                return presentMonTestExecutable;
-            }
-
-            var appHost = Path.ChangeExtension(typeof(Sussudio.Tests.PresentMonCancellationTests).Assembly.Location, ".exe");
-            Assert.True(File.Exists(appHost), $"The test apphost is required: {appHost}");
-            var aliased = Path.Combine(Path.GetDirectoryName(appHost)!, "PresentMon-2.4.1-x64.exe");
-            if (!File.Exists(aliased))
-            {
-                File.Copy(appHost, aliased);
-            }
-
-            presentMonTestExecutable = aliased;
-            return aliased;
+            File.Copy(dependency, Path.Combine(childDirectory, Path.GetFileName(dependency)));
         }
+        foreach (var extension in new[] { ".deps.json", ".runtimeconfig.json" })
+        {
+            var companion = Path.ChangeExtension(assemblyPath, extension);
+            File.Copy(companion, Path.Combine(childDirectory, Path.GetFileName(companion)));
+        }
+        var executable = Path.Combine(childDirectory, "PresentMon.exe");
+        File.Copy(apphostPath, executable);
+        return executable;
     }
 
     private static async Task<int> WaitForPresentMonTestChildAsync(string pidPath, Task? run = null)
@@ -288,24 +282,7 @@ static partial class Program
             cancellation.Cancel();
             if (childId is null && File.Exists(readyPath) && int.TryParse(File.ReadAllText(readyPath), out var recordedId))
                 childId = recordedId;
-            if (childId is { } ownedId)
-            {
-                try
-                {
-                    using var child = Process.GetProcessById(ownedId);
-                    if (!child.HasExited)
-                    {
-                        child.Kill(entireProcessTree: true);
-                        await child.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(3)).ConfigureAwait(false);
-                    }
-                }
-                catch (ArgumentException) { }
-            }
-            if (run is not null)
-            {
-                try { await run.WaitAsync(TimeSpan.FromSeconds(5)).ConfigureAwait(false); }
-                catch (OperationCanceledException) { }
-            }
+            if (run is not null) await StopPresentMonTestRunAsync(run, childId).ConfigureAwait(false);
             if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
         }
     }

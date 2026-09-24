@@ -1545,12 +1545,15 @@ project file when this bridge changes. `tests/Sussudio.Tests/XUnit.CoreRuntimeCo
 owns the cohesive KS bridge and probe-link ownership checks beside the Native
 XU provider contract wrappers.
 
-Native device enumeration ownership is grouped under
-`Sussudio/Services/Capture/DeviceDiscovery/`. Keep Media Foundation constants,
-GUIDs, P/Invoke declarations, MF video-device enumeration, WASAPI capture
+Native device enumeration ownership lives in
+`Sussudio/Services/Capture/MfDeviceEnumerator.cs`. Keep shared Media Foundation
+constants, GUIDs, shared P/Invoke declarations, helper methods, and Capture-local
+COM release forwarding in `MfInterop.cs`. Keep the enumerator's private MF
+entry points unchanged; keep MF video-device enumeration, WASAPI capture
 endpoint enumeration and friendly-name reads, native video format probing,
 subtype/FourCC naming, and direct plus enumeration-fallback MF source
-activation in `MfDeviceEnumerator.cs`.
+activation in `MfDeviceEnumerator.cs`. The shared best-effort COM release body
+lives in `Sussudio/Services/Interop/ComObjectReleaser.cs`.
 
 Capture service source telemetry polling, provider reads, fallback snapshot
 construction, merge policy, capture-format runtime telemetry, NTSC frame-rate
@@ -1632,7 +1635,7 @@ Deferred unified-video cleanup after LibAv drains lives with the video pipeline
 resource owner. Pending LibAv drain task state and reentry policy live in
 `Sussudio/Services/Capture/CaptureService.cs`. Flashback backend
 artifact cleanup request/retry/dispose/purge mechanics live in
-`Sussudio/Services/Flashback/FlashbackBackendResources.cs`.
+`Sussudio/Services/Capture/FlashbackBackendResources.cs`.
 
 Capture read-only automation probes now live in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs` alongside
@@ -1658,7 +1661,7 @@ guardrails, delivered-cadence frame-rate rational preservation/inference, and
 legacy Flashback export verification/downgrade snapshot fields stay with that
 same Flashback recording owner.
 Preview-backend resource state now belongs to
-`Sussudio/Services/Flashback/FlashbackBackendResources.cs`, which owns the
+`Sussudio/Services/Capture/FlashbackBackendResources.cs`, which owns the
 preview backend resource grouping, install/take/clear state, and
 recovery-preserve flag storage and policy. It also owns recording-finalize
 handoff plus the video/audio/microphone attach and detach request shapes and

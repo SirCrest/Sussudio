@@ -6,7 +6,7 @@ using Xunit;
 namespace Sussudio.Tests;
 
 public sealed class InProcessRecordingStructureVerifierTests
-    : IClassFixture<InProcessRecordingStructureVerifierTests.BundledRuntime>
+    : IClassFixture<BundledRuntime>
 {
     private readonly BundledRuntime _runtime;
 
@@ -132,35 +132,41 @@ public sealed class InProcessRecordingStructureVerifierTests
         bool Audio = false, bool Microphone = false, bool Hdr = false, uint Width = 64,
         double? ExpectedSeconds = null, string RequestedTracks = "video", string? ObservedTracks = "video",
         int ObservedTrackCount = 0);
+}
 
-    public sealed class BundledRuntime
+// xUnit class fixture shared by the recording-structure, Flashback prebuffer and
+// Flashback rotation tests: verifies and initializes the bundled native libav runtime once.
+public sealed class BundledRuntime
+{
+    private readonly Assembly _assembly = SussudioAssembly.Load();
+    private readonly Lazy<IReadOnlyDictionary<string, string>> _fixtureHashes;
+    public string FixtureDirectory { get; } = Path.Combine(AppContext.BaseDirectory, "Fixtures", "RecordingStructure");
+    public IReadOnlyDictionary<string, string> FixtureHashes => _fixtureHashes.Value;
+
+    public BundledRuntime()
     {
-        private readonly Assembly _assembly = SussudioAssembly.Load();
-        public string FixtureDirectory { get; } = Path.Combine(AppContext.BaseDirectory, "Fixtures", "RecordingStructure");
-        public IReadOnlyDictionary<string, string> FixtureHashes { get; }
-
-        public BundledRuntime()
+        var nativeDirectory = Path.Combine(Path.GetDirectoryName(_assembly.Location)!, "ffmpeg");
+        var nativeManifest = Path.Combine(nativeDirectory, "manifest.json");
+        Assert.True(File.Exists(nativeManifest), $"Build the app with its bundled native libav runtime: {nativeManifest}");
+        using var native = JsonDocument.Parse(File.ReadAllText(nativeManifest));
+        foreach (var library in native.RootElement.GetProperty("files").EnumerateArray())
         {
-            var nativeDirectory = Path.Combine(Path.GetDirectoryName(_assembly.Location)!, "ffmpeg");
-            var nativeManifest = Path.Combine(nativeDirectory, "manifest.json");
-            Assert.True(File.Exists(nativeManifest), $"Build the app with its bundled native libav runtime: {nativeManifest}");
-            using var native = JsonDocument.Parse(File.ReadAllText(nativeManifest));
-            foreach (var library in native.RootElement.GetProperty("files").EnumerateArray())
-            {
-                var libraryPath = Path.Combine(nativeDirectory, library.GetProperty("fileName").GetString()!);
-                Assert.True(File.Exists(libraryPath), $"Bundled native libav library is missing: {libraryPath}");
-            }
-            // Do not skip an unavailable runtime or let a malformed-media case pass
-            // before libav has actually initialized. This also checks the binding ABI.
-            Type("Sussudio.Services.Recording.LibAvEncoder").GetMethod("InitializeFFmpeg")!
-                .Invoke(null, new object[] { true });
+            var libraryPath = Path.Combine(nativeDirectory, library.GetProperty("fileName").GetString()!);
+            Assert.True(File.Exists(libraryPath), $"Bundled native libav library is missing: {libraryPath}");
+        }
+        // Do not skip an unavailable runtime or let a malformed-media case pass
+        // before libav has actually initialized. This also checks the binding ABI.
+        Type("Sussudio.Services.Runtime.FfmpegRuntimeInit").GetMethod("EnsureInitialized")!
+            .Invoke(null, new object[] { true });
 
+        _fixtureHashes = new Lazy<IReadOnlyDictionary<string, string>>(() =>
+        {
             using var fixtures = JsonDocument.Parse(File.ReadAllText(Path.Combine(FixtureDirectory, "manifest.json")));
-            FixtureHashes = fixtures.RootElement.EnumerateArray().ToDictionary(
+            return fixtures.RootElement.EnumerateArray().ToDictionary(
                 entry => entry.GetProperty("Name").GetString()!,
                 entry => entry.GetProperty("Sha256").GetString()!, StringComparer.Ordinal);
-        }
-
-        internal Type Type(string name) => _assembly.GetType(name, throwOnError: true)!;
+        });
     }
+
+    internal Type Type(string name) => _assembly.GetType(name, throwOnError: true)!;
 }

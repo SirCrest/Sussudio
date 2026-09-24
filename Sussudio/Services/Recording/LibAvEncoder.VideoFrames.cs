@@ -294,19 +294,7 @@ internal sealed unsafe partial class LibAvEncoder
                 ffmpeg.av_buffer_unref(&codecHwDeviceCtx);
             }
 
-            if (_hwFramesCtx != null)
-            {
-                var hwFramesCtx = _hwFramesCtx;
-                ffmpeg.av_buffer_unref(&hwFramesCtx);
-                _hwFramesCtx = null;
-            }
-
-            if (_hwDeviceCtx != null)
-            {
-                var hwDeviceCtx = _hwDeviceCtx;
-                ffmpeg.av_buffer_unref(&hwDeviceCtx);
-                _hwDeviceCtx = null;
-            }
+            ReleaseRetainedHardwareContexts();
 
             _videoCodecCtx->pix_fmt = options.IsP010 ? AVPixelFormat.AV_PIX_FMT_P010LE : AVPixelFormat.AV_PIX_FMT_NV12;
             _useHardwareFrames = false;

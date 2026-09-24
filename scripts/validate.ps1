@@ -233,11 +233,11 @@ if ($Restore) {
 
 if (-not $SkipBuild) {
     $steps += Invoke-Step -Name "build" -Kind "build" -Command @(
-        "dotnet", "build", $solution, "-p:Platform=$Platform", "--no-restore", "-v", "minimal")
+        "dotnet", "build", $solution, "-p:Platform=$Platform", "-c", $Configuration, "--no-restore", "-v", "minimal")
 }
 
 $steps += Invoke-Step -Name "tests" -Kind "tests" -Command @(
-    "dotnet", "test", $testProject, "-p:Platform=$Platform", "--no-restore", "-v", "minimal")
+    "dotnet", "test", $testProject, "-p:Platform=$Platform", "-c", $Configuration, "--no-restore", "-v", "minimal")
 
 if (Test-Path -LiteralPath $harnessDll) {
     $steps += Invoke-Step -Name "assembly-load-smoke" -Kind "smoke" -Command @(

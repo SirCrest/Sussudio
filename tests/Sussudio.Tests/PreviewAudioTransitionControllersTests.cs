@@ -214,7 +214,7 @@ public sealed class PreviewAudioTransitionControllersTests
         using var h = new ControllerHarness(0.8, pause.DelayAsync);
         using var cancellation = new CancellationTokenSource();
         var operation = h.Controller.PrimeForAudioTransition("start");
-        var ramp = h.Controller.RampUpForAudioTransitionAsync(operation, "start", cancellation.Token);
+        var ramp = h.Controller.RampUpForAudioTransitionAsync(operation, "start", cancellationToken: cancellation.Token);
         await pause.Entered.Task;
         cancellation.Cancel();
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => ramp);
@@ -496,9 +496,9 @@ public sealed class PreviewAudioTransitionControllersTests
     }
 
     [Fact]
-    public async Task Recorder_BeginSessionMarksSamplingActiveAndAdvancesTheSessionId()
+    public void Recorder_BeginSessionMarksSamplingActiveAndAdvancesTheSessionId()
     {
-        var recorder = CreateRecorder();
+        using var recorder = CreateRecorder();
 
         var first = recorder.BeginSession("device_change", 0.6);
         var snapshot = recorder.GetSnapshot();
@@ -513,7 +513,6 @@ public sealed class PreviewAudioTransitionControllersTests
         Assert.True(second > first, "a superseding session must take a new id");
 
         recorder.CompleteSession(second, "preview_stop");
-        await Task.Delay(50);
     }
 
     [Theory]
@@ -713,15 +712,14 @@ public sealed class PreviewAudioTransitionControllersTests
     }
 
     [Fact]
-    public async Task Recorder_RecordsACompletionPointForARealSession()
+    public void Recorder_RecordsACompletionPointForARealSession()
     {
-        var recorder = CreateRecorder();
+        using var recorder = CreateRecorder();
         var sessionId = recorder.BeginSession("device_change", 0.6);
 
         recorder.CompleteSession(sessionId, "device_change");
 
         Assert.Contains(recorder.GetSnapshot().Entries, entry => entry.Kind == "session-complete");
-        await Task.Delay(50);
     }
 
     [Fact]

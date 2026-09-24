@@ -17,7 +17,7 @@ namespace Sussudio.Services.Recording;
 // Bounded-queue recording sink that isolates capture callbacks from libav.
 // Capture threads enqueue raw/GPU/CUDA video and audio quickly; one encoding
 // task drains the queues and serializes every LibAvEncoder call.
-public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, IRawVideoFrameTryEncoder, IRawVideoFrameLeaseTryEncoder, IGpuVideoFrameEncoder, IGpuVideoFrameTryEncoder
+public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameTryEncoder, IRawVideoFrameLeaseTryEncoder, IGpuVideoFrameTryEncoder
 {
     private const int VideoQueueCapacity = 360;
     private const int AudioQueueCapacity = 3600;
@@ -60,8 +60,8 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
     private int _height;
     private bool _audioEnabled;
     private bool _microphoneEnabled;
-    private bool _started;
-    private bool _disposed;
+    private volatile bool _started;
+    private volatile bool _disposed;
     private int _disposeFinalized;
     private int _deferredDisposeScheduled;
     private int _finalizationWaitTimedOut;
@@ -164,7 +164,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
 
         try
         {
-            LibAvEncoder.InitializeFFmpeg(requireNativeRuntime: true);
+            FfmpegRuntimeInit.EnsureInitialized(requireNativeRuntime: true);
 
             _microphoneEnabled = context.MicrophoneEnabled;
             var options = CreateOptions(context);
@@ -638,11 +638,17 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             if (remainingMs <= 0)
             {
                 var noProgressMs = now - Interlocked.Read(ref _lastFinalizationProgressTick);
-                if (progressDeadline <= absoluteDeadline && now >= progressDeadline)
+                if (progressDeadline < absoluteDeadline && now >= progressDeadline)
                 {
                     Logger.Log(
                         $"LIBAV_SINK_FINALIZE_NO_PROGRESS_TIMEOUT stage={Volatile.Read(ref _finalizationStage)} no_progress_ms={noProgressMs}");
                     ReportFinalizationProgress(noProgressWarning: true);
+                }
+                else if (now >= absoluteDeadline)
+                {
+                    Logger.Log(
+                        $"LIBAV_SINK_FINALIZE_ABSOLUTE_TIMEOUT timeout_ms={timeoutMs} stage={Volatile.Read(ref _finalizationStage)} no_progress_ms={noProgressMs}");
+                    ReportFinalizationProgress(noProgressWarning: false);
                 }
                 return false;
             }
@@ -1381,9 +1387,6 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
     private readonly record struct GpuFramePacket(IntPtr Texture, int Subresource);
     private readonly record struct CudaFramePacket(IntPtr Frame);
 
-    public void EnqueueGpuVideoFrame(IntPtr d3d11Texture2D, int subresourceIndex)
-        => TryEnqueueGpuVideoFrame(d3d11Texture2D, subresourceIndex);
-
     public bool TryEnqueueGpuVideoFrame(IntPtr d3d11Texture2D, int subresourceIndex)
     {
         var queue = _gpuQueue;
@@ -1439,9 +1442,6 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             Logger.Log($"LIBAV_SINK_CUDA_OVERLOAD count={dropped}");
         }
     }
-
-    public void EnqueueRawVideoFrame(ReadOnlySpan<byte> data, int expectedSize)
-        => TryEnqueueRawVideoFrame(data, expectedSize);
 
     public bool TryEnqueueRawVideoFrame(ReadOnlySpan<byte> data, int expectedSize)
     {

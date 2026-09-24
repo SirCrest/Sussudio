@@ -436,7 +436,7 @@ public partial class MainViewModel
 
                 if (_captureService.IsAudioPreviewActive)
                 {
-                    await RampPreviewVolumeUpForAudioTransitionAsync(volumeOperation, reason, cancellationToken, traceSession: false);
+                    await RampPreviewVolumeUpForAudioTransitionAsync(volumeOperation, reason, traceSession: false, cancellationToken: cancellationToken);
                 }
                 else
                 {
@@ -451,7 +451,7 @@ public partial class MainViewModel
                 return;
             }
 
-            await RampPreviewVolumeDownForAudioTransitionAsync(volumeOperation, reason, cancellationToken, traceSession: false);
+            await RampPreviewVolumeDownForAudioTransitionAsync(volumeOperation, reason, traceSession: false, cancellationToken: cancellationToken);
             if (teardownCapture)
             {
                 await _sessionCoordinator.StopAudioPreviewWithTeardownAsync(cancellationToken);
@@ -655,10 +655,10 @@ public partial class MainViewModel
     private Task RampPreviewVolumeDownForAudioTransitionAsync(
         PreviewAudioVolumeOperation operation,
         string reason,
-        CancellationToken cancellationToken = default,
-        bool traceSession = true)
+        bool traceSession = true,
+        CancellationToken cancellationToken = default)
         => _previewAudioVolumeTransitionController.RampDownForAudioTransitionAsync(
-            operation, reason, cancellationToken, traceSession);
+            operation, reason, traceSession: traceSession, cancellationToken: cancellationToken);
 
     private PreviewAudioVolumeOperation PrimePreviewVolumeForAudioTransition(string reason)
         => _previewAudioVolumeTransitionController.PrimeForAudioTransition(reason);
@@ -666,10 +666,10 @@ public partial class MainViewModel
     private Task RampPreviewVolumeUpForAudioTransitionAsync(
         PreviewAudioVolumeOperation operation,
         string reason,
-        CancellationToken cancellationToken = default,
-        bool traceSession = true)
+        bool traceSession = true,
+        CancellationToken cancellationToken = default)
         => _previewAudioVolumeTransitionController.RampUpForAudioTransitionAsync(
-            operation, reason, cancellationToken, traceSession);
+            operation, reason, traceSession: traceSession, cancellationToken: cancellationToken);
 
     private void RestorePreviewVolumeAfterUnavailableAudio(PreviewAudioVolumeOperation operation, string reason)
         => _previewAudioVolumeTransitionController.RestoreAfterUnavailableAudio(operation, reason);
@@ -983,9 +983,7 @@ public partial class MainViewModel
         Logger.Log($"=== Updating device audio mode ({reason}) ===");
         Logger.Log($"  Mode: {mode}");
 
-        var isAnalog = string.Equals(mode, DeviceAudioMode.Analog, StringComparison.OrdinalIgnoreCase);
-        var gainByte = DeviceAudioGainMapper.PercentToGainByte(AnalogAudioGainPercent);
-        var applied = await NativeXuAtCommandProvider.SwitchAudioInputAsync(device, isAnalog, gainByte, cancellationToken).ConfigureAwait(false);
+        var applied = await _deviceAudioControlService.SetAudioModeAsync(device, mode, cancellationToken).ConfigureAwait(false);
 
         if (!applied)
         {
@@ -1074,7 +1072,7 @@ public partial class MainViewModel
         Logger.Log($"=== Updating analog audio gain ({reason}) ===");
         Logger.Log($"  GainPercent: {gainPercent:0} GainByte: 0x{gainByte:X2}");
 
-        var applied = await NativeXuAtCommandProvider.SetAnalogGainAsync(device, gainByte, persistFlash: false, cancellationToken).ConfigureAwait(false);
+        var applied = await _deviceAudioControlService.SetAnalogGainPercentAsync(device, gainPercent, persistFlash: false, cancellationToken).ConfigureAwait(false);
 
         if (!applied)
         {
@@ -1099,24 +1097,5 @@ public partial class MainViewModel
         }
 
         return true;
-    }
-}
-
-internal static class DeviceAudioGainMapper
-{
-    private const double GainCurveK = 4.0;
-
-    internal static byte PercentToGainByte(double percent)
-    {
-        var x = Math.Clamp(percent / 100.0, 0.0, 1.0);
-        var curved = Math.Log(1.0 + x * (Math.Exp(GainCurveK) - 1.0)) / GainCurveK;
-        return (byte)Math.Clamp(Math.Round(curved * 255.0), 0, 255);
-    }
-
-    internal static double GainByteToPercent(byte gainByte)
-    {
-        var y = gainByte / 255.0;
-        var x = (Math.Exp(GainCurveK * y) - 1.0) / (Math.Exp(GainCurveK) - 1.0);
-        return Math.Clamp(x * 100.0, 0.0, 100.0);
     }
 }

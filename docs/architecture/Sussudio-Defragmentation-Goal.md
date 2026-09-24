@@ -35,13 +35,11 @@ So the remaining risk is the inverse of the original symptom: too few, too large
 than too many tiny ones. Do not read the historical snapshot above as a live mandate to
 consolidate further.
 
-Note also that the current layout is now enforced. Candidate split filenames that must not
-exist are listed once in `docs/architecture/architecture.policy.json` and checked by
-`tests/Sussudio.Tests/ArchitecturePolicyTests.cs`; a handful of guards whose asserted path is
-a directory combined with a loop variable remain in their owning suites. Add policy entries
-there rather than writing new `File.Exists` assertions beside the test that motivated them.
-The suites also carry `AssertContains` checks that pin specific method bodies to specific
-files. Any further slice has to update the policy and those checks in the same change.
+As of 2026-09-23, retired-filename absence checks have been removed by the owner's
+decision. Tests still check behavioral contracts, implementation ownership, and
+linked compilation boundaries. A historical filename alone does not prohibit a
+future cohesive owner. Update the relevant ownership checks and this architecture
+map whenever a responsibility moves, and regenerate the measured baseline.
 
 **Always take live numbers from `Sussudio-Defragmentation-Baseline.generated.md`**, which is
 produced by `scripts/architecture/Capture-SussudioDefragBaseline.ps1` and is test-asserted

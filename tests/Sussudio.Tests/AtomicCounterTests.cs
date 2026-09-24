@@ -17,7 +17,7 @@ public sealed class AtomicCounterTests
     [InlineData(int.MaxValue - 1, int.MaxValue, 0, false)]
     public void SubtractionSaturatesAndReportsWhetherTheFullAmountWasAvailable(int initial, int amount, int remaining, bool expected)
     {
-        var subtract = Resolve("TrySubtract").CreateDelegate<Subtract>();
+        var subtract = Resolve("TrySubtractSaturating").CreateDelegate<Subtract>();
         var target = initial;
         Assert.Equal(expected, subtract(ref target, amount));
         Assert.Equal(remaining, target);
@@ -37,7 +37,7 @@ public sealed class AtomicCounterTests
     [Fact]
     public void ConcurrentSubtractionsDoNotCountAPartialFinalSubtractionAsSuccess()
     {
-        var subtract = Resolve("TrySubtract").CreateDelegate<Subtract>();
+        var subtract = Resolve("TrySubtractSaturating").CreateDelegate<Subtract>();
         var target = 1001;
         var successes = 0;
         Parallel.For(0, 1000, _ =>

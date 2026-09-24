@@ -51,6 +51,21 @@ public sealed class RecordingFinalizationTruthTests
                 typeof(bool), typeof(string), typeof(bool), typeof(long)
             },
             modifiers: null)!;
+        var succeededProperty = resultType.GetProperty("Succeeded", BindingFlags.Public | BindingFlags.Instance)!;
+        var outcomeProperty = resultType.GetProperty("Outcome", BindingFlags.Public | BindingFlags.Instance)!;
+        Assert.False(succeededProperty.CanWrite);
+
+        var directlyConstructed = Activator.CreateInstance(resultType)!;
+        Assert.False(Read<bool>(directlyConstructed, "Succeeded"));
+        outcomeProperty.SetValue(directlyConstructed, Enum.Parse(outcomeProperty.PropertyType, "Saved"));
+        Assert.True(Read<bool>(directlyConstructed, "Succeeded"));
+        outcomeProperty.SetValue(directlyConstructed, Enum.Parse(outcomeProperty.PropertyType, "Failed"));
+        Assert.False(Read<bool>(directlyConstructed, "Succeeded"));
+        outcomeProperty.SetValue(directlyConstructed, Enum.Parse(outcomeProperty.PropertyType, "None"));
+        Assert.False(Read<bool>(directlyConstructed, "Succeeded"));
+
+        var flashbackSink = RuntimeContractSource.ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs");
+        Assert.Contains("Outcome = RecordingFinalizeOutcome.Saved", flashbackSink, StringComparison.Ordinal);
 
         var saved = success.Invoke(null, new object?[] { "saved.mp4", "Recording saved", true, 17L })!;
         Assert.True(Read<bool>(saved, "Succeeded"));
@@ -188,7 +203,7 @@ public sealed class RecordingFinalizationTruthTests
             projection,
             StringComparison.Ordinal);
         Assert.Contains(
-            "RecordingRecoveryPath = recordingOutput.RecordingRecoveryPath",
+            "RecordingRecoveryPath = captureRuntime.RecordingRecoveryPath",
             projection,
             StringComparison.Ordinal);
     }
@@ -398,6 +413,16 @@ public sealed class RecordingFinalizationTruthTests
             ("FinalizationTimeout", "recording-finalization-timeout"),
             ("FinalizationUnresolved", "recording-finalization-unresolved"),
             ("FinalizationFailed", "recording-finalization-failed"),
+            ("VerificationMissingOutputPath", "missing-output-path"),
+            ("VerificationOutputNotFound", "output-not-found"),
+            ("VerificationOutputStatFailed", "output-stat-failed"),
+            ("VerificationOutputEmpty", "output-empty"),
+            ("FfprobeUnavailable", "ffprobe-unavailable"),
+            ("FfprobeFailed", "ffprobe-failed"),
+            ("OutputPathEmpty", "recording-output-path-empty"),
+            ("OutputMissing", "recording-output-missing"),
+            ("OutputStatFailed", "recording-output-stat-failed"),
+            ("OutputEmpty", "recording-output-empty"),
             ("StreamTopologyMismatch", "recording-stream-topology-mismatch"),
             ("RequiredStreamHasNoPackets", "recording-required-stream-has-no-packets"),
             ("VideoDurationInvalid", "recording-video-duration-invalid"),
@@ -411,7 +436,6 @@ public sealed class RecordingFinalizationTruthTests
             ("FlashbackFinalizationTimeout", "recording-flashback-finalization-timeout"),
             ("FlashbackEncodeDrainTimeout", "recording-flashback-encode-drain-timeout"),
             ("NotGrowing", "recording-not-growing"),
-            ("MuxFailed", "recording-mux-failed"),
             ("FinalOutputInvalid", "recording-final-output-invalid"),
             ("UnifiedStopFailed", "recording-unified-stop-failed"),
             ("StopFailed", "recording-stop-failed"),
@@ -448,6 +472,7 @@ public sealed class RecordingFinalizationTruthTests
         {
             ("Canceled", "canceled"),
             ("CommandFailed", "command-failed"),
+            ("InvalidState", "invalid-state"),
             ("ManifestMismatch", "manifest-mismatch"),
             ("NotReady", "not-ready"),
             ("Unauthorized", "unauthorized"),

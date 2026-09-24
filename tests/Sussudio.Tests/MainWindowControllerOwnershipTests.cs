@@ -17,7 +17,6 @@ static partial class Program
         var mainWindowText = ReadMainWindowCompositionSource();
         var propertyChangedRouterText = rootText;
         var previewText = ReadMainWindowPropertyChangedPreviewAdapterSource();
-        var previewPropertyChangedHandler = ExtractMemberCode(previewText, "TryHandlePreviewPropertyChangedAsync");
         var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs").Replace("\r\n", "\n");
         var previewReinitText = ReadMainWindowPreviewTransitionsAdapterSource();
         var previewReinitTransitionControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs").Replace("\r\n", "\n");
@@ -42,16 +41,16 @@ static partial class Program
         AssertContains(rootText, "private void InitializeMainWindowPropertyChangedRouter()");
         AssertContains(mainWindowText, "InitializeMainWindowPropertyChangedRouter();");
         AssertContains(rootText, "=> _propertyChangedRouter.RouteAsync(e.PropertyName);");
-        AssertContains(rootText, "TryHandleCaptureSelection = TryHandleCaptureSelectionPropertyChanged,");
+        AssertContains(rootText, "TryHandleCaptureSelection = propertyName => _captureSelectionBindingController.TryHandlePropertyChanged(propertyName),");
         AssertContains(rootText, "TryHandleStatusStrip = TryHandleStatusStripPropertyChanged,");
-        AssertContains(rootText, "TryHandlePreviewAsync = TryHandlePreviewPropertyChangedAsync,");
-        AssertContains(rootText, "TryHandleRecording = TryHandleRecordingPropertyChanged,");
-        AssertContains(rootText, "TryHandleOutput = TryHandleOutputPropertyChanged,");
-        AssertContains(rootText, "TryHandleCaptureOption = TryHandleCaptureOptionPropertyChanged,");
-        AssertContains(rootText, "TryHandleAudio = TryHandleAudioPropertyChanged,");
-        AssertContains(rootText, "TryHandleShell = TryHandleShellPropertyChanged,");
-        AssertContains(rootText, "TryHandleLiveSignal = TryHandleLiveSignalPropertyChanged,");
-        AssertContains(rootText, "TryHandleFlashback = TryHandleFlashbackPropertyChanged");
+        AssertContains(rootText, "TryHandlePreviewAsync = propertyName => _previewLifecycleEventController.TryHandlePropertyChangedAsync(propertyName),");
+        AssertContains(rootText, "TryHandleRecording = propertyName => _recordingStatePresentationController.TryHandlePropertyChanged(propertyName),");
+        AssertContains(rootText, "TryHandleOutput = propertyName => _outputPathController.TryHandlePropertyChanged(propertyName),");
+        AssertContains(rootText, "TryHandleCaptureOption = propertyName => _captureOptionBindingController.TryHandlePropertyChanged(propertyName),");
+        AssertContains(rootText, "TryHandleAudio = propertyName => _audioControlPresentationController.TryHandlePropertyChanged(propertyName),");
+        AssertContains(rootText, "TryHandleShell = propertyName => _shellPropertyChangedController.TryHandlePropertyChanged(propertyName),");
+        AssertContains(rootText, "TryHandleLiveSignal = propertyName => _liveSignalInfoController.TryHandlePropertyChanged(\n                propertyName,\n                ViewModel.LiveResolution,\n                ViewModel.LiveFrameRate,\n                ViewModel.LivePixelFormat),");
+        AssertContains(rootText, "TryHandleFlashback = propertyName => _flashbackPropertyChangedController.TryHandlePropertyChanged(propertyName)");
 
         AssertContains(propertyChangedRouterText, "internal sealed class MainWindowPropertyChangedRouterContext");
         AssertContains(propertyChangedRouterText, "internal sealed class MainWindowPropertyChangedRouter");
@@ -87,7 +86,6 @@ static partial class Program
 
         AssertContains(previewText, "private PreviewLifecycleEventController _previewLifecycleEventController = null!;");
         AssertContains(previewText, "private void InitializePreviewLifecycleEventController()");
-        AssertContains(previewText, "=> _previewLifecycleEventController.TryHandlePropertyChangedAsync(propertyName);");
         AssertContains(previewText, "=> _previewLifecycleEventController.HandlePreviewStartRequested();");
         AssertContains(previewText, "=> _previewLifecycleEventController.HandlePreviewStopRequested();");
         AssertContains(previewText, "private void ViewModel_PreviewStartRequested(object? sender, EventArgs e)");
@@ -104,11 +102,6 @@ static partial class Program
         AssertContains(previewLifecycleControllerText, "public void HandlePreviewStopRequested()");
         AssertContains(previewLifecycleControllerText, "private async Task HandlePreviewingChangedAsync()");
         AssertDoesNotContain(previewText, "private bool _isPreviewReinitAnimating;");
-        AssertDoesNotContain(previewPropertyChangedHandler, "ViewModel_PreviewReinitRequested(");
-        AssertDoesNotContain(previewPropertyChangedHandler, "ViewModel_PreviewRendererStopRequested(");
-        AssertDoesNotContain(previewPropertyChangedHandler, "HandlePreviewReinitializingChanged(");
-        AssertDoesNotContain(previewPropertyChangedHandler, "case nameof(MainViewModel.IsPreviewing):");
-        AssertDoesNotContain(previewPropertyChangedHandler, "await HandlePreviewingChangedAsync();");
         AssertContains(previewReinitText, "private PreviewReinitTransitionController _previewReinitTransitionController = null!;");
         AssertContains(previewReinitText, "private bool IsPreviewReinitAnimating");
         AssertContains(previewReinitText, "private async Task ViewModel_PreviewReinitRequested(string reason)");
@@ -152,28 +145,18 @@ static partial class Program
         AssertOccursBefore(rendererReinitDispose, "renderer.Stop();", "renderer.RenderThreadFailed -= OnD3DRendererRenderThreadFailed;");
         AssertOccursBefore(rendererReinitDispose, "renderer.Stop();", "_d3d11Renderer = null;");
         AssertDoesNotContain(rendererStop, "renderer.StopRenderThread();");
-        AssertContains(recordingText, "private bool TryHandleRecordingPropertyChanged(string propertyName)");
-        AssertContains(recordingText, "=> _recordingStatePresentationController.TryHandlePropertyChanged(propertyName);");
         AssertDoesNotContain(recordingText, "case nameof(MainViewModel.IsRecording):");
         AssertContains(recordingStatePresentationControllerText, "public bool TryHandlePropertyChanged(string propertyName)");
         AssertContains(recordingStatePresentationControllerText, "case nameof(MainViewModel.IsRecording):");
-        AssertContains(outputText, "private bool TryHandleOutputPropertyChanged(string propertyName)");
-        AssertContains(outputText, "=> _outputPathController.TryHandlePropertyChanged(propertyName);");
         AssertDoesNotContain(outputText, "case nameof(MainViewModel.OutputPath):");
         AssertContains(outputPathControllerText, "public bool TryHandlePropertyChanged(string propertyName)");
         AssertContains(outputPathControllerText, "case nameof(MainViewModel.OutputPath):");
-        AssertContains(captureOptionBindingsText, "private bool TryHandleCaptureOptionPropertyChanged(string propertyName)");
-        AssertContains(captureOptionBindingsText, "=> _captureOptionBindingController.TryHandlePropertyChanged(propertyName);");
         AssertContains(captureOptionBindingControllerText, "public bool TryHandlePropertyChanged(string propertyName)");
         AssertContains(captureOptionBindingControllerText, "case nameof(MainViewModel.IsHdrEnabled):");
-        AssertContains(audioText, "private bool TryHandleAudioPropertyChanged(string propertyName)");
-        AssertContains(audioText, "=> _audioControlPresentationController.TryHandlePropertyChanged(propertyName);");
         AssertDoesNotContain(audioText, "case nameof(MainViewModel.IsAudioPreviewActive):");
         AssertContains(shellText, "private ShellPropertyChangedController _shellPropertyChangedController = null!;");
         AssertContains(shellText, "private void InitializeShellPropertyChangedController()");
         AssertContains(mainWindowText, "InitializeShellPropertyChangedController();");
-        AssertContains(shellText, "private bool TryHandleShellPropertyChanged(string propertyName)");
-        AssertContains(shellText, "=> _shellPropertyChangedController.TryHandlePropertyChanged(propertyName);");
         AssertDoesNotContain(shellText, "_statsOverlayCompositionController.TryHandlePropertyChanged(propertyName, ViewModel.IsStatsVisible)");
         AssertDoesNotContain(shellText, "_settingsShelfController.TryHandlePropertyChanged(propertyName, ViewModel.IsSettingsVisible)");
         AssertDoesNotContain(shellText, "case nameof(MainViewModel.IsStatsVisible):");
@@ -186,13 +169,9 @@ static partial class Program
         AssertContains(settingsShelfControllerText, "case nameof(MainViewModel.IsSettingsVisible):");
         AssertDoesNotContain(shellText, "StatsToggle.IsChecked = ViewModel.IsStatsVisible;");
         AssertDoesNotContain(shellText, "_statsOverlayController.SyncStatsVisibility(ViewModel.IsStatsVisible);");
-        AssertContains(liveSignalText, "private bool TryHandleLiveSignalPropertyChanged(string propertyName)");
-        AssertContains(liveSignalText, "=> _liveSignalInfoController.TryHandlePropertyChanged(");
         AssertDoesNotContain(liveSignalText, "case nameof(MainViewModel.LiveResolution):");
         AssertContains(liveSignalControllerText, "public bool TryHandlePropertyChanged(string propertyName, string liveResolution, string liveFrameRate, string livePixelFormat)");
         AssertContains(liveSignalControllerText, "case nameof(MainViewModel.LiveResolution):");
-        AssertContains(flashbackText, "private bool TryHandleFlashbackPropertyChanged(string propertyName)");
-        AssertContains(flashbackText, "=> _flashbackPropertyChangedController.TryHandlePropertyChanged(propertyName);");
         AssertContains(flashbackControllerText, "internal sealed class FlashbackPropertyChangedController");
         AssertContains(flashbackControllerText, "case nameof(MainViewModel.IsFlashbackTimelineVisible):");
         AssertContains(flashbackControllerText, "public required Func<bool> IsFlashbackEnabled { get; init; }");
@@ -228,6 +207,8 @@ static partial class Program
         AssertContains(composition, "private readonly StatsUiSampler _sampler;");
         AssertContains(composition, "private readonly FrameTimeGraphController _frameTimeGraph;");
         AssertContains(composition, "private readonly StatsDockMotionController _dockMotion;");
+        AssertContains(composition, "new StatsHardwareRowsInputProvider(context.HardwareSources)");
+        AssertContains(composition, "public StatsHardwareRowsInputProvider(StatsOverlayHardwareSourceContext context)");
         AssertContains(composition, "_context.StatsToggle.Checked += StatsToggle_Checked;");
         AssertContains(composition, "_context.StatsToggle.Checked -= StatsToggle_Checked;");
         AssertContains(composition, "_context.FrameTimeOverlayToggle.Checked += FrameTimeOverlayToggle_Checked;");
@@ -297,7 +278,7 @@ static partial class Program
         AssertContains(adapterText, "SettingsToggleButton,");
         AssertContains(adapterText, "FrameTimeOverlayToggle,");
         AssertContains(adapterText, "=> _controlBarAnimationController.AttachHoverAnimations();");
-        AssertContains(adapterText, "=> _controlBarAnimationController.EntranceButtons;");
+        AssertContains(adapterText, "GetEntranceButtons = () => _controlBarAnimationController.EntranceButtons,");
         AssertContains(mainWindowText, "InitializeControlBarAnimationController();");
         AssertContains(mainWindowText, "SetupButtonHoverAnimations();");
         AssertContains(launchEntranceShellText, "var buttons = _context.GetEntranceButtons();");
@@ -486,8 +467,7 @@ static partial class Program
         AssertContains(recordingPropertyChangedText, "RecordButtonStartingContent = RecordButtonStartingContent,");
         AssertContains(recordingPropertyChangedText, "RecordButtonRecordingContent = RecordButtonRecordingContent,");
         AssertContains(mainWindowText, "InitializeRecordingButtonChromeController();");
-        AssertContains(propertyChangedText, "TryHandleRecording = TryHandleRecordingPropertyChanged,");
-        AssertContains(recordingPropertyChangedText, "=> _recordingStatePresentationController.TryHandlePropertyChanged(propertyName);");
+        AssertContains(propertyChangedText, "TryHandleRecording = propertyName => _recordingStatePresentationController.TryHandlePropertyChanged(propertyName),");
         AssertContains(recordingPropertyChangedText, "RecordingButtonChrome = _recordingButtonChromeController,");
         AssertContains(recordingPresentationText, "case nameof(MainViewModel.IsRecording):");
         AssertContains(recordingPresentationText, "HandleRecordingChanged();");
@@ -578,7 +558,6 @@ static partial class Program
         AssertContains(adapterText, "AudioRecordToggle = AudioRecordToggle,");
         AssertContains(adapterText, "AnalogAudioGainSlider = AnalogAudioGainSlider,");
         AssertContains(adapterText, "ApplyWindowTitle = ApplyWindowTitle,");
-        AssertContains(adapterText, "=> _recordingStatePresentationController.TryHandlePropertyChanged(propertyName);");
         AssertContains(adapterText, "private void ApplyInitialRecordingStatePresentation()");
         AssertContains(adapterText, "=> _recordingStatePresentationController.HandleFfmpegMissingChanged();");
         AssertContains(bindingsText, "ApplyInitialRecordingStatePresentation();");
@@ -847,9 +826,7 @@ internal static Task ResponsiveShellLayout_LivesInController()
         AssertContains(adapterText, "=> _outputPathController.UpdateDisplay();");
         AssertContains(mainWindowText, "InitializeOutputPathController();");
         AssertContains(bindingsText, "AttachOutputPathDisplay();");
-        AssertContains(propertyChangedText, "TryHandleOutput = TryHandleOutputPropertyChanged,");
-        AssertContains(adapterText, "private bool TryHandleOutputPropertyChanged(string propertyName)");
-        AssertContains(adapterText, "=> _outputPathController.TryHandlePropertyChanged(propertyName);");
+        AssertContains(propertyChangedText, "TryHandleOutput = propertyName => _outputPathController.TryHandlePropertyChanged(propertyName),");
         AssertDoesNotContain(adapterText, "case nameof(MainViewModel.OutputPath):");
         AssertContains(controllerText, "internal sealed class OutputPathController");
         AssertContains(controllerText, "public void AttachDisplay()");
@@ -961,15 +938,9 @@ internal static Task ResponsiveShellLayout_LivesInController()
     {
         var mainViewModelFiles = ReadMainViewModelCodeFiles();
         var mainViewModelText = string.Join("\n", mainViewModelFiles.Values);
-        var outputPathSelectionPath = Path.Combine(
-            GetRepoRoot(),
-            "Sussudio",
-            "ViewModels",
-            "MainViewModel.OutputPathSelection.cs");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md");
 
-        AssertEqual(false, File.Exists(outputPathSelectionPath), "MainViewModel output picker partial retired");
         AssertDoesNotContain(mainViewModelText, "BrowseOutputPathAsync");
         AssertDoesNotContain(mainViewModelText, "FolderPicker");
         AssertDoesNotContain(mainViewModelText, "FileTypeFilter");
@@ -1019,7 +990,7 @@ internal static Task ResponsiveShellLayout_LivesInController()
         AssertContains(builderText, "internal static string Build(string outputPath)");
         AssertContains(builderText, "new DriveInfo(Path.GetPathRoot(outputPath) ?? \"C:\");");
         AssertContains(builderText, "return $\"Free: {freeGb:F1} GB\";");
-        AssertContains(builderText, "Logger.Log($\"Suppressed exception in MainViewModel.RefreshDiskSpace: {ex.Message}\");");
+        AssertContains(builderText, "Logger.Log($\"Suppressed exception in {nameof(OutputDriveSpacePresentationBuilder)}.{nameof(Build)} type={ex.GetType().Name}: {ex.Message}\");");
         AssertContains(builderText, "return \"\";");
         AssertDoesNotContain(builderText, "DiskSpaceInfo =");
 
@@ -1264,7 +1235,10 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
         AssertContains(settingsShelfText, "private SettingsShelfController _settingsShelfController = null!;");
         AssertContains(settingsShelfText, "private void InitializeSettingsShelfController()");
         AssertContains(settingsShelfText, "=> _settingsShelfController.Toggle();");
-        AssertContains(settingsShelfText, "=> _settingsShelfController.ApplyVisibility(visible);");
+        var shellWiring = ExtractMemberCode(settingsShelfText, "InitializeShellPropertyChangedController");
+        AssertContains(shellWiring, "SettingsShelf = _settingsShelfController,");
+        AssertContains(shellWiring, "IsSettingsVisible = () => ViewModel.IsSettingsVisible,");
+        AssertContains(controllerText, "_context.SettingsShelf.TryHandlePropertyChanged(propertyName, _context.IsSettingsVisible())");
         AssertContains(mainWindowText, "InitializeSettingsShelfController();");
         AssertContains(fullScreenText, "ResetSettingsShelfAnimation = _settingsShelfController.ResetAnimationState,");
         AssertDoesNotContain(settingsShelfText, "ResetSettingsShelfAnimationForFullScreen");
@@ -1372,8 +1346,6 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
         AssertContains(liveSignalAdapterText, "ViewModel.LiveResolution,");
         AssertContains(liveSignalAdapterText, "private void StopLiveSignalInfoTimers()");
         AssertContains(liveSignalAdapterText, "=> _liveSignalInfoController.StopTimers();");
-        AssertContains(liveSignalAdapterText, "private bool TryHandleLiveSignalPropertyChanged(string propertyName)");
-        AssertContains(liveSignalAdapterText, "=> _liveSignalInfoController.TryHandlePropertyChanged(");
         AssertDoesNotContain(liveSignalAdapterText, "case nameof(MainViewModel.LiveResolution):");
         AssertContains(mainWindowText, "InitializeLiveSignalInfoController();");
         AssertContains(bindingsText, "UpdateLiveSignalInfoVisibility();");
@@ -1422,13 +1394,7 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
         AssertContains(adapterText, "RecordingBitrateTextBlock = RecordingBitrateTextBlock,");
         AssertContains(adapterText, "private void ApplyInitialStatusStripPresentation()");
         AssertContains(adapterText, "private StatusStripPresentationSnapshot BuildStatusStripPresentationSnapshot()");
-        AssertContains(adapterText, "private void UpdateStatusTextPresentation()");
-        AssertContains(adapterText, "private void UpdateRecordingTimePresentation()");
-        AssertContains(adapterText, "private void UpdateDiskSpacePresentation()");
-        AssertContains(adapterText, "private void UpdateRecordingSizePresentation()");
-        AssertContains(adapterText, "private void UpdateRecordingBitratePresentation()");
         AssertDoesNotContain(adapterText, "private void UpdateFlashbackBitratePresentation()");
-        AssertContains(adapterText, "private void UpdateDiskWarningPresentation()");
         AssertContains(adapterText, "private bool TryHandleStatusStripPropertyChanged(string? propertyName)");
         AssertContains(adapterText, "_statusStripPresentationController.TryHandlePropertyChanged(");
         AssertContains(adapterText, "BuildStatusStripPresentationSnapshot(),");
@@ -1443,6 +1409,12 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
         AssertContains(controllerText, "internal sealed class StatusStripPresentationController");
         AssertContains(controllerText, "public void ApplyInitial(StatusStripPresentationSnapshot snapshot)");
         AssertContains(controllerText, "public bool TryHandlePropertyChanged(");
+        AssertContains(controllerText, "private void UpdateStatusText(string statusText)");
+        AssertContains(controllerText, "private void UpdateRecordingTime(string recordingTime)");
+        AssertContains(controllerText, "private void UpdateDiskSpace(string diskSpaceInfo)");
+        AssertContains(controllerText, "private void UpdateRecordingSize(string recordingSizeInfo)");
+        AssertContains(controllerText, "private void UpdateRecordingBitrate(string recordingBitrateInfo)");
+        AssertContains(controllerText, "private void UpdateDiskWarning(bool isDiskWarningActive)");
         AssertContains(controllerText, "case nameof(MainViewModel.StatusText):");
         AssertContains(controllerText, "case nameof(MainViewModel.RecordingTime):");
         AssertContains(controllerText, "case nameof(MainViewModel.DiskSpaceInfo):");
@@ -1474,17 +1446,11 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
         AssertDoesNotContain(propertyChangedText, "RecordingBitrateTextBlock.Text = ViewModel.RecordingBitrateInfo;");
         AssertDoesNotContain(propertyChangedText, "DiskWarningInfoBar.IsOpen = ViewModel.IsDiskWarningActive;");
         AssertDoesNotContain(propertyChangedText, "case nameof(MainViewModel.StatusText):");
-        AssertDoesNotContain(propertyChangedText, "UpdateStatusTextPresentation();");
         AssertDoesNotContain(propertyChangedText, "case nameof(MainViewModel.RecordingTime):");
-        AssertDoesNotContain(propertyChangedText, "UpdateRecordingTimePresentation();");
         AssertDoesNotContain(propertyChangedText, "case nameof(MainViewModel.DiskSpaceInfo):");
-        AssertDoesNotContain(propertyChangedText, "UpdateDiskSpacePresentation();");
         AssertDoesNotContain(propertyChangedText, "case nameof(MainViewModel.RecordingSizeInfo):");
-        AssertDoesNotContain(propertyChangedText, "UpdateRecordingSizePresentation();");
         AssertDoesNotContain(propertyChangedText, "case nameof(MainViewModel.RecordingBitrateInfo):");
-        AssertDoesNotContain(propertyChangedText, "UpdateRecordingBitratePresentation();");
         AssertDoesNotContain(propertyChangedText, "case nameof(MainViewModel.IsDiskWarningActive):");
-        AssertDoesNotContain(propertyChangedText, "UpdateDiskWarningPresentation();");
         AssertDoesNotContain(adapterText, "case nameof(MainViewModel.StatusText):");
         AssertDoesNotContain(adapterText, "case nameof(MainViewModel.RecordingTime):");
         AssertDoesNotContain(adapterText, "case nameof(MainViewModel.DiskSpaceInfo):");
@@ -1721,8 +1687,7 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
         AssertContains(audioBindingsText, "ApplyInitialMicrophoneControlsVisibility = ApplyInitialMicrophoneControlsVisibility,");
         AssertContains(audioControlBindingControllerText, "_context.SetupMicrophoneVolumeBindings();");
         AssertContains(audioControlBindingControllerText, "_context.ApplyInitialMicrophoneControlsVisibility();");
-        AssertContains(propertyChangedText, "TryHandleAudio = TryHandleAudioPropertyChanged,");
-        AssertContains(audioPropertyChangedText, "=> _audioControlPresentationController.TryHandlePropertyChanged(propertyName);");
+        AssertContains(propertyChangedText, "TryHandleAudio = propertyName => _audioControlPresentationController.TryHandlePropertyChanged(propertyName),");
         AssertContains(audioControlPresentationControllerText, "case nameof(MainViewModel.IsMicrophoneEnabled):");
         AssertContains(audioControlPresentationControllerText, "case nameof(MainViewModel.MicrophoneVolume):");
         AssertContains(audioControlPresentationControllerText, "HandleMicrophoneEnabledChanged();");
@@ -1871,8 +1836,7 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
 
         AssertContains(fullScreenSource, "public Task SetFullScreenEnabledAsync(bool enabled, CancellationToken cancellationToken = default)\n        => InvokeOnUiThreadAsync(\n            () => _fullScreenController.SetEnabledAsync(enabled),");
         AssertContains(fullScreenSource, "private void OnContentKeyDown(object sender, KeyRoutedEventArgs e)\n        => _fullScreenController.OnKeyDown(e);");
-        AssertContains(fullScreenSource, "private Task EnterFullScreenAsync()\n        => _fullScreenController.EnterAsync();");
-        AssertContains(fullScreenSource, "private Task ExitFullScreenAsync()\n        => _fullScreenController.ExitAsync();");
+        AssertContains(fullScreenSource, "private void ToggleFullScreen()\n        => _fullScreenController.Toggle();");
         AssertContains(fullScreenControllerRootSource, "internal sealed class FullScreenController");
         AssertContains(fullScreenControllerRootSource, "public async Task EnterAsync()");
         AssertContains(fullScreenControllerRootSource, "public async Task ExitAsync()");
@@ -2135,44 +2099,38 @@ namespace Sussudio.Tests
         var statsSnapshotBuilderText = statsSnapshotText;
         var statsWindowText = ReadRepoFile("Sussudio/StatsWindow.xaml.cs");
 
-        AssertContains(statsSnapshotBuilderText, "internal static class StatsSnapshotBuilder");
-        AssertContains(statsSnapshotBuilderText, "public static StatsSnapshot Build(");
-        AssertContains(statsSnapshotBuilderText, "internal readonly record struct StatsSnapshotRenderMetrics(");
-        AssertContains(statsSnapshotBuilderText, "internal readonly record struct StatsSnapshotViewState(");
-        AssertContains(statsSnapshotBuilderText, "return new StatsSnapshot(");
-        AssertContains(statsSnapshotText, "public sealed record StatsSnapshot(");
-        Assert.False(
-            File.Exists(Path.Combine(Environment.CurrentDirectory, "Sussudio", "ViewModels", "StatsSnapshot.cs")),
-            "stats snapshot DTO and builder folded into StatsPresentationBuilder.cs");
-        AssertContains(mainWindowText, "InitializeStatsOverlayCompositionController();");
-        AssertContains(statsOverlayText, "private StatsSnapshot RefreshStatsIfDueAndGetSnapshot()");
-        AssertContains(statsOverlayCompositionText, "private readonly StatsSnapshotProvider _statsSnapshotProvider;");
-        AssertContains(statsOverlayText, "GetCaptureHealthSnapshot = ViewModel.GetCaptureHealthSnapshot,");
-        AssertContains(statsOverlayText, "GetRenderer = () => _previewRendererHostController.Renderer,");
-        AssertContains(statsOverlayText, "GetPreviewMinPresentationIntervalMs = () => _previewRendererHostController.PreviewMinPresentationIntervalMs");
-        AssertContains(statsOverlayText, "IsPreviewing = () => ViewModel.IsPreviewing,");
-        AssertContains(statsOverlayText, "IsRecording = () => ViewModel.IsRecording");
-        AssertContains(statsOverlayText, "=> _statsOverlayCompositionController.RefreshStatsIfDueAndGetSnapshot();");
-        AssertContains(statsOverlayCompositionText, "private static StatsSnapshotProvider CreateSnapshotProvider(");
-        AssertContains(statsOverlayCompositionText, "=> _sampler.RefreshIfDueAndGetSnapshot();");
-        AssertContains(statsSnapshotProviderText, "internal sealed class StatsSnapshotProvider");
-        AssertDoesNotContain(statsSnapshotProviderText, "internal sealed partial class StatsSnapshotProvider");
-        AssertContains(statsSnapshotProviderText, "private StatsSnapshotRenderMetrics _renderMetrics;");
-        AssertContains(statsSnapshotProviderText, "public StatsSnapshot GetSnapshot(CaptureHealthSnapshot health, bool refreshDetails)");
-        AssertContains(statsSnapshotProviderText, "BuildRenderMetrics(renderer, expectedIntervalMs)");
-        AssertContains(statsSnapshotProviderText, "new StatsSnapshotViewState(_context.IsPreviewing(), _context.IsRecording())");
-        AssertContains(statsSnapshotProviderText, "return StatsSnapshotBuilder.Build(health, renderMetrics, viewState);");
-        AssertDoesNotContain(statsSnapshotProviderText, "MainViewModel ViewModel");
-        AssertContains(statsSnapshotProviderText, "var presentCadence = renderer?.GetPresentCadenceMetrics(previewMinPresentationIntervalMs);");
-        AssertContains(statsSnapshotProviderText, "PreviewRecentPresentIntervalsMs: presentCadence?.RecentIntervalsMs ?? Array.Empty<double>()");
-        Assert.False(
-            File.Exists(Path.Combine(Environment.CurrentDirectory, "Sussudio", "Controllers", "Stats", "StatsSnapshotProvider.cs")),
-            "stats snapshot provider lives with stats overlay composition");
-        AssertDoesNotContain(statsOverlayText, "var renderer = new StatsSnapshotRenderMetrics(");
-        AssertDoesNotContain(statsOverlayText, "return new StatsSnapshot(");
-        AssertDoesNotContain(statsOverlayText, "return StatsSnapshotBuilder.Build(health, renderMetrics, viewState);");
-        AssertContains(statsWindowText, "private readonly Func<Action<StatsSnapshot>, IDisposable> _subscribe;");
-        AssertDoesNotContain(statsWindowText, "public sealed record StatsSnapshot(");
+        Assert.Contains("internal static class StatsSnapshotBuilder", statsSnapshotBuilderText, StringComparison.Ordinal);
+        Assert.Contains("public static StatsSnapshot Build(", statsSnapshotBuilderText, StringComparison.Ordinal);
+        Assert.Contains("internal readonly record struct StatsSnapshotRenderMetrics(", statsSnapshotBuilderText, StringComparison.Ordinal);
+        Assert.Contains("internal readonly record struct StatsSnapshotViewState(", statsSnapshotBuilderText, StringComparison.Ordinal);
+        Assert.Contains("return new StatsSnapshot(", statsSnapshotBuilderText, StringComparison.Ordinal);
+        Assert.Contains("public sealed record StatsSnapshot(", statsSnapshotText, StringComparison.Ordinal);
+        Assert.Contains("InitializeStatsOverlayCompositionController();", mainWindowText, StringComparison.Ordinal);
+        Assert.Contains("private StatsSnapshot RefreshStatsIfDueAndGetSnapshot()", statsOverlayText, StringComparison.Ordinal);
+        Assert.Contains("private readonly StatsSnapshotProvider _statsSnapshotProvider;", statsOverlayCompositionText, StringComparison.Ordinal);
+        Assert.Contains("GetCaptureHealthSnapshot = ViewModel.GetCaptureHealthSnapshot,", statsOverlayText, StringComparison.Ordinal);
+        Assert.Contains("GetRenderer = () => _previewRendererHostController.Renderer,", statsOverlayText, StringComparison.Ordinal);
+        Assert.Contains("GetPreviewMinPresentationIntervalMs = () => _previewRendererHostController.PreviewMinPresentationIntervalMs", statsOverlayText, StringComparison.Ordinal);
+        Assert.Contains("IsPreviewing = () => ViewModel.IsPreviewing,", statsOverlayText, StringComparison.Ordinal);
+        Assert.Contains("IsRecording = () => ViewModel.IsRecording", statsOverlayText, StringComparison.Ordinal);
+        Assert.Contains("=> _statsOverlayCompositionController.RefreshStatsIfDueAndGetSnapshot();", statsOverlayText, StringComparison.Ordinal);
+        Assert.Contains("private static StatsSnapshotProvider CreateSnapshotProvider(", statsOverlayCompositionText, StringComparison.Ordinal);
+        Assert.Contains("=> _sampler.RefreshIfDueAndGetSnapshot();", statsOverlayCompositionText, StringComparison.Ordinal);
+        Assert.Contains("internal sealed class StatsSnapshotProvider", statsSnapshotProviderText, StringComparison.Ordinal);
+        Assert.DoesNotContain("internal sealed partial class StatsSnapshotProvider", statsSnapshotProviderText, StringComparison.Ordinal);
+        Assert.Contains("private StatsSnapshotRenderMetrics _renderMetrics;", statsSnapshotProviderText, StringComparison.Ordinal);
+        Assert.Contains("public StatsSnapshot GetSnapshot(CaptureHealthSnapshot health, bool refreshDetails)", statsSnapshotProviderText, StringComparison.Ordinal);
+        Assert.Contains("BuildRenderMetrics(renderer, expectedIntervalMs)", statsSnapshotProviderText, StringComparison.Ordinal);
+        Assert.Contains("new StatsSnapshotViewState(_context.IsPreviewing(), _context.IsRecording())", statsSnapshotProviderText, StringComparison.Ordinal);
+        Assert.Contains("return StatsSnapshotBuilder.Build(health, renderMetrics, viewState);", statsSnapshotProviderText, StringComparison.Ordinal);
+        Assert.DoesNotContain("MainViewModel ViewModel", statsSnapshotProviderText, StringComparison.Ordinal);
+        Assert.Contains("var presentCadence = renderer?.GetPresentCadenceMetrics(previewMinPresentationIntervalMs);", statsSnapshotProviderText, StringComparison.Ordinal);
+        Assert.Contains("PreviewRecentPresentIntervalsMs: presentCadence?.RecentIntervalsMs ?? Array.Empty<double>()", statsSnapshotProviderText, StringComparison.Ordinal);
+        Assert.DoesNotContain("var renderer = new StatsSnapshotRenderMetrics(", statsOverlayText, StringComparison.Ordinal);
+        Assert.DoesNotContain("return new StatsSnapshot(", statsOverlayText, StringComparison.Ordinal);
+        Assert.DoesNotContain("return StatsSnapshotBuilder.Build(health, renderMetrics, viewState);", statsOverlayText, StringComparison.Ordinal);
+        Assert.Contains("private readonly Func<Action<StatsSnapshot>, IDisposable> _subscribe;", statsWindowText, StringComparison.Ordinal);
+        Assert.DoesNotContain("public sealed record StatsSnapshot(", statsWindowText, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -2353,12 +2311,6 @@ namespace Sussudio.Tests
 
     private static string ReadRepoFile(string relativePath)
         => RuntimeContractSource.ReadRepoFile(relativePath).Replace("\r\n", "\n");
-
-    private static void AssertContains(string actual, string expectedSubstring)
-        => Assert.Contains(expectedSubstring, actual, StringComparison.Ordinal);
-
-    private static void AssertDoesNotContain(string actual, string unexpectedSubstring)
-        => Assert.DoesNotContain(unexpectedSubstring, actual, StringComparison.Ordinal);
 
     private static void AssertNearlyEqual(double expected, double actual, double tolerance)
         => Assert.True(

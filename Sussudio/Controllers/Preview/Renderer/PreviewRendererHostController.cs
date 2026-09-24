@@ -264,7 +264,7 @@ internal sealed class PreviewRendererHostController
         => PreviewRendererStartupPlanBuilder.Build(
             _context.ViewModel.IsPreviewing,
             _context.ViewModel.SelectedFormat,
-            _context.ViewModel.IsPreviewing ? _context.ViewModel.BuildCurrentSettings() : null,
+            _context.ViewModel.IsPreviewing ? _context.ViewModel.BuildCaptureSettings() : null,
             _context.ViewModel.IsPreviewing ? _context.ViewModel.ProbeVideoSource() : null);
 
     private void StartCpuRenderer()

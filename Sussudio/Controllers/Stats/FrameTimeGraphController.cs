@@ -107,9 +107,9 @@ internal sealed class FrameTimeGraphController : IDisposable
         _timer.Start();
     }
 
-    public void SetExpectedFrameRate(double expectedFps)
+    public void SetExpectedFrameRate(double fps)
     {
-        var scale = FrameTimeGraphScale.FromExpectedFps(expectedFps);
+        var scale = FrameTimeGraphScale.FromExpectedFps(fps);
         if (Math.Abs(scale.ExpectedFps - _scale.ExpectedFps) < 0.001) return;
         _scale = scale;
         PublishScaleLabels();

@@ -66,8 +66,7 @@ public partial class CaptureService
                 ? "MfSourceReader"
                 : null,
             ReaderSourceSubtype = _actualPixelFormat,
-            FlashbackExportVerificationFormat = ResolveFlashbackExportVerificationFormat(currentSettings, unifiedVideoCapture),
-            FlashbackCodecDowngradeReason = ResolveFlashbackCodecDowngradeReason(currentSettings, unifiedVideoCapture),
+            FlashbackExportVerificationFormat = ResolveFlashbackExportVerificationFormat(currentSettings),
             LastFrameArrivalMs = ComputeTickAge(unifiedVideoCapture?.LastVideoFrameArrivedTick ?? 0),
             VideoFramesArrived = unifiedVideoCapture?.VideoFramesArrived ?? 0,
             LastVideoEnqueueAgeMs = ComputeTickAge(recordingHealth.LastVideoEnqueueTick),
@@ -92,7 +91,7 @@ public partial class CaptureService
         UnifiedVideoCapture? unifiedVideoCapture)
     {
         var sourceCadence = unifiedVideoCapture?.GetSourceCadenceMetrics()
-            ?? default(MfSourceReaderVideoCapture.SourceCadenceMetrics);
+            ?? MfSourceReaderVideoCapture.SourceCadenceMetrics.Empty;
 
         return new CaptureCadenceHealthSnapshotFields(
             sourceCadence.SampleCount,
@@ -122,7 +121,7 @@ public partial class CaptureService
             timingSnapshot.Summary,
             fullTiming,
             unifiedVideoCapture?.GetMjpegPreviewJitterMetrics()
-                ?? default(MjpegPreviewJitterBuffer.Metrics),
+                ?? MjpegPreviewJitterBuffer.Metrics.Empty,
             unifiedVideoCapture?.GetPreviewVisualCadenceMetrics()
                 ?? VisualCadenceTracker.Empty,
             unifiedVideoCapture?.GetPreviewVisualCenterCadenceMetrics()
@@ -262,7 +261,7 @@ private FlashbackBufferHealthSnapshotFields CaptureFlashbackBufferHealthSnapshot
             bufMgr?.SegmentCount ?? 0,
             bufMgr?.TotalDiskBytes ?? 0,
             bufMgr?.TotalBytesWritten ?? 0,
-            bufMgr?.TempDriveAvailableFreeBytes ?? 0,
+            bufMgr?.TempDriveAvailableFreeBytes ?? -1,
             bufMgr?.StartupCacheBudgetBytes ?? 0,
             bufMgr?.StartupCacheBytes ?? 0,
             bufMgr?.StartupCacheSessionCount ?? 0,
@@ -447,7 +446,7 @@ private FlashbackBufferHealthSnapshotFields CaptureFlashbackBufferHealthSnapshot
         string GpuQueueLastRejectReason);
 
 private readonly record struct FlashbackPlaybackStateHealthSnapshotFields(
-        string State,
+        FlashbackPlaybackState? State,
         long PositionMs,
         string DecoderHwAccel,
         long FrameCount,
@@ -479,7 +478,7 @@ private readonly record struct FlashbackPlaybackStateHealthSnapshotFields(
         bool ThreadAlive);
 
     private readonly record struct FlashbackPlaybackHealthSnapshotFields(
-        string State,
+        FlashbackPlaybackState? State,
         long PositionMs,
         string DecoderHwAccel,
         long FrameCount,
@@ -545,7 +544,7 @@ private readonly record struct FlashbackPlaybackStateHealthSnapshotFields(
         long CommandsEnqueued,
         long CommandsProcessed,
         long CommandsDropped,
-        long CommandsSkippedNotReady,
+        long CommandsRejected,
         long ScrubUpdatesCoalesced,
         long SeekCommandsCoalesced,
         int CommandQueueCapacity,
@@ -637,7 +636,7 @@ private readonly record struct FlashbackPlaybackStateHealthSnapshotFields(
             commands.CommandsEnqueued,
             commands.CommandsProcessed,
             commands.CommandsDropped,
-            commands.CommandsSkippedNotReady,
+            commands.CommandsRejected,
             commands.ScrubUpdatesCoalesced,
             commands.SeekCommandsCoalesced,
             commands.CommandQueueCapacity,
@@ -657,7 +656,7 @@ private readonly record struct FlashbackPlaybackStateHealthSnapshotFields(
     private static FlashbackPlaybackStateHealthSnapshotFields CaptureFlashbackPlaybackStateHealthSnapshotFields(
         FlashbackPlaybackController? fbPlayback)
         => new(
-            fbPlayback?.State.ToString() ?? "N/A",
+            fbPlayback?.State,
             (long)(fbPlayback?.PlaybackPosition.TotalMilliseconds ?? 0),
             fbPlayback?.DecoderHwAccel ?? "N/A",
             fbPlayback?.PlaybackFrameCount ?? 0,
@@ -703,7 +702,7 @@ private readonly record struct FlashbackPlaybackStateHealthSnapshotFields(
     private static FlashbackPlaybackCadenceHealthSnapshotFields CaptureFlashbackPlaybackCadenceHealthSnapshotFields(
         FlashbackPlaybackController? fbPlayback)
     {
-        var playbackCadence = fbPlayback?.GetPlaybackCadenceMetrics() ?? default;
+        var playbackCadence = fbPlayback?.GetPlaybackCadenceMetrics() ?? FlashbackPlaybackController.PlaybackCadenceMetrics.Empty;
         return new FlashbackPlaybackCadenceHealthSnapshotFields(
             playbackCadence.SampleCount,
             playbackCadence.P95FrameMs,
@@ -782,7 +781,7 @@ private readonly record struct FlashbackPlaybackStateHealthSnapshotFields(
         long CommandsEnqueued,
         long CommandsProcessed,
         long CommandsDropped,
-        long CommandsSkippedNotReady,
+        long CommandsRejected,
         long ScrubUpdatesCoalesced,
         long SeekCommandsCoalesced,
         int CommandQueueCapacity,
@@ -804,7 +803,7 @@ private readonly record struct FlashbackPlaybackStateHealthSnapshotFields(
             fbPlayback?.CommandsEnqueued ?? 0,
             fbPlayback?.CommandsProcessed ?? 0,
             fbPlayback?.CommandsDropped ?? 0,
-            fbPlayback?.CommandsSkippedNotReady ?? 0,
+            fbPlayback?.CommandsRejected ?? 0,
             fbPlayback?.ScrubUpdatesCoalesced ?? 0,
             fbPlayback?.SeekCommandsCoalesced ?? 0,
             fbPlayback?.CommandQueueCapacityCommands ?? 0,
@@ -1106,7 +1105,7 @@ private RecordingHealthSnapshotFields CaptureRecordingHealthSnapshotFields(
 
         public long SnapshotUtcUnixMs { get; init; }
 
-        public FlashbackExportState.FlashbackExportHealthSnapshotFields FlashbackExport { get; init; }
+        public FlashbackExportState.HealthSnapshotFields FlashbackExport { get; init; }
 
         public FlashbackBufferHealthSnapshotFields FlashbackBuffer { get; init; }
 
@@ -1238,7 +1237,7 @@ private RecordingHealthSnapshotFields CaptureRecordingHealthSnapshotFields(
                 FlashbackPlaybackCommandsEnqueued = flashbackPlayback.CommandsEnqueued,
                 FlashbackPlaybackCommandsProcessed = flashbackPlayback.CommandsProcessed,
                 FlashbackPlaybackCommandsDropped = flashbackPlayback.CommandsDropped,
-                FlashbackPlaybackCommandsSkippedNotReady = flashbackPlayback.CommandsSkippedNotReady,
+                FlashbackPlaybackCommandsSkippedNotReady = flashbackPlayback.CommandsRejected,
                 FlashbackPlaybackScrubUpdatesCoalesced = flashbackPlayback.ScrubUpdatesCoalesced,
                 FlashbackPlaybackSeekCommandsCoalesced = flashbackPlayback.SeekCommandsCoalesced,
                 FlashbackPlaybackCommandQueueCapacity = flashbackPlayback.CommandQueueCapacity,

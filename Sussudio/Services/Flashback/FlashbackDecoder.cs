@@ -10,6 +10,7 @@ using System.Threading;
 using FFmpeg.AutoGen;
 using Sussudio.Services.Gpu;
 using Sussudio.Services.Recording;
+using Sussudio.Services.Runtime;
 
 namespace Sussudio.Services.Flashback;
 
@@ -414,7 +415,6 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
                 throw CreateException(streamCountFailure);
             }
 
-            // Find video stream
             _videoStreamIndex = ffmpeg.av_find_best_stream(
                 _formatCtx, AVMediaType.AVMEDIA_TYPE_VIDEO, -1, -1, null, 0);
             if (!IsValidStreamIndex(_videoStreamIndex, streamCount))
@@ -422,7 +422,6 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
                 throw CreateException("No video stream found in file.");
             }
 
-            // Find audio stream (optional)
             _audioStreamIndex = ffmpeg.av_find_best_stream(
                 _formatCtx, AVMediaType.AVMEDIA_TYPE_AUDIO, -1, -1, null, 0);
             if (_audioStreamIndex >= 0 && !IsValidStreamIndex(_audioStreamIndex, streamCount))
@@ -431,11 +430,9 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
                 _audioStreamIndex = -1;
             }
 
-            // Set up video decoder
             var codecStartedAt = Stopwatch.GetTimestamp();
             InitializeVideoDecoder();
 
-            // Set up audio decoder (if present)
             if (_audioStreamIndex >= 0)
             {
                 InitializeAudioDecoder();
@@ -1400,7 +1397,7 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
             return;
         }
 
-        LibAvEncoder.InitializeFFmpeg(requireNativeRuntime: true);
+        FfmpegRuntimeInit.EnsureInitialized(requireNativeRuntime: true);
 
         // Create persistent D3D11VA hw device context (reused across all file opens)
         if (d3dDevicePtr != IntPtr.Zero && d3dContextPtr != IntPtr.Zero)

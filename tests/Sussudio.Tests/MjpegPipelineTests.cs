@@ -69,7 +69,7 @@ namespace Sussudio.Tests
         {
             WithGpuNativeMjpegDecodeEnvironment(
                 value: null,
-                () => Assert.Equal(preferNative, ShouldPreferGpuNativeMjpegDecode(isMjpegHighFrameRateDecode: true, fps)));
+                () => Assert.Equal(preferNative, ShouldPreferGpuNativeMjpegDecode(fps)));
         }
 
         [Fact]
@@ -77,7 +77,7 @@ namespace Sussudio.Tests
         {
             WithGpuNativeMjpegDecodeEnvironment(
                 value: "1",
-                () => Assert.True(ShouldPreferGpuNativeMjpegDecode(isMjpegHighFrameRateDecode: true, fps: 120)));
+                () => Assert.True(ShouldPreferGpuNativeMjpegDecode(fps: 120)));
         }
 
         [Fact]
@@ -85,7 +85,7 @@ namespace Sussudio.Tests
         {
             WithGpuNativeMjpegDecodeEnvironment(
                 value: "0",
-                () => Assert.False(ShouldPreferGpuNativeMjpegDecode(isMjpegHighFrameRateDecode: true, fps: 60)));
+                () => Assert.False(ShouldPreferGpuNativeMjpegDecode(fps: 60)));
         }
 
         [Fact]
@@ -95,13 +95,9 @@ namespace Sussudio.Tests
                 value: null,
                 () =>
                 {
-                    var isMjpegHighFrameRateDecode = IsMjpegHighFrameRateDecode(
-                        useMjpegHighFrameRateMode: false,
-                        requireP010: false,
-                        requestedPixelFormat: "MJPG");
-
-                    Assert.False(isMjpegHighFrameRateDecode);
-                    Assert.False(ShouldPreferGpuNativeMjpegDecode(isMjpegHighFrameRateDecode));
+                    Assert.Equal(
+                        "Standard",
+                        ResolveSourceNegotiationMode("Standard", requireP010: false, "MJPG", fps: 120));
                 });
         }
 
@@ -112,13 +108,9 @@ namespace Sussudio.Tests
                 value: null,
                 () =>
                 {
-                    var isMjpegHighFrameRateDecode = IsMjpegHighFrameRateDecode(
-                        useMjpegHighFrameRateMode: true,
-                        requireP010: false,
-                        requestedPixelFormat: "NV12");
-
-                    Assert.False(isMjpegHighFrameRateDecode);
-                    Assert.False(ShouldPreferGpuNativeMjpegDecode(isMjpegHighFrameRateDecode));
+                    Assert.Equal(
+                        "Standard",
+                        ResolveSourceNegotiationMode("HighFrameRateMjpegRequested", requireP010: false, "NV12", fps: 120));
                 });
         }
 
@@ -129,14 +121,76 @@ namespace Sussudio.Tests
                 value: null,
                 () =>
                 {
-                    var isMjpegHighFrameRateDecode = IsMjpegHighFrameRateDecode(
-                        useMjpegHighFrameRateMode: true,
-                        requireP010: true,
-                        requestedPixelFormat: "MJPG");
-
-                    Assert.False(isMjpegHighFrameRateDecode);
-                    Assert.False(ShouldPreferGpuNativeMjpegDecode(isMjpegHighFrameRateDecode));
+                    Assert.Equal(
+                        "Standard",
+                        ResolveSourceNegotiationMode("HighFrameRateMjpegRequested", requireP010: true, "MJPG", fps: 120));
                 });
+        }
+
+        [Fact]
+        public void StandardSourceReaderOutput_RejectsNv12WhenP010IsRequired()
+        {
+            var error = ValidateStandardSourceReaderOutput(requireP010: true, outputIsP010: false);
+
+            Assert.NotNull(error);
+            Assert.Contains("Standard capture requires P010 output", error.Message);
+        }
+
+        [Theory]
+        [InlineData(true, true)]
+        [InlineData(false, false)]
+        public void StandardSourceReaderOutput_AcceptsTheRequestedPixelFormat(
+            bool requireP010,
+            bool outputIsP010)
+        {
+            var error = ValidateStandardSourceReaderOutput(requireP010, outputIsP010);
+
+            Assert.Null(error);
+        }
+
+        private static InvalidOperationException? ValidateStandardSourceReaderOutput(bool requireP010, bool outputIsP010)
+        {
+            var captureType = RequireType("Sussudio.Services.Capture.MfSourceReaderVideoCapture");
+            var capture = Activator.CreateInstance(captureType)!;
+            var negotiatedModeType = captureType.GetNestedType("SourceReaderNegotiatedMode", BindingFlags.NonPublic)!;
+            var outputSubtype = GetMfSubtypeGuid(outputIsP010 ? "MFVideoFormat_P010" : "MFVideoFormat_NV12");
+            var mode = Activator.CreateInstance(
+                negotiatedModeType,
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                binder: null,
+                args: [outputSubtype, 1920, 1080, 60d, outputIsP010 ? "P010 1920x1080@60" : "NV12 1920x1080@60"],
+                culture: null)!;
+            var validate = captureType.GetMethod("ValidateNegotiatedOutputMode", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            var parameters = validate.GetParameters();
+            var standardMode = Enum.Parse(parameters[1].ParameterType, "Standard");
+
+            try
+            {
+                validate.Invoke(capture, [mode, standardMode, requireP010, false]);
+                return null;
+            }
+            catch (TargetInvocationException exception) when (exception.InnerException is InvalidOperationException validationError)
+            {
+                return validationError;
+            }
+        }
+
+        private static Guid GetMfSubtypeGuid(string fieldName)
+        {
+            var mfGuidsType = RequireType("Sussudio.Services.Capture.MfGuids");
+            return (Guid)mfGuidsType.GetField(fieldName, BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)!;
+        }
+
+        [Theory]
+        [InlineData(120, "RawMjpgPassthrough")]
+        [InlineData(60, "ConvertedMjpegNv12")]
+        public void HighFrameRateMjpegRequest_ResolvesOnceToReaderMode(double fps, string expectedMode)
+        {
+            WithGpuNativeMjpegDecodeEnvironment(
+                value: null,
+                () => Assert.Equal(
+                    expectedMode,
+                    ResolveSourceNegotiationMode("HighFrameRateMjpegRequested", requireP010: false, "MJPG", fps)));
         }
 
         [Fact]
@@ -181,33 +235,34 @@ namespace Sussudio.Tests
         [InlineData("P010", true)]
         public async Task UncompressedInitialization_DoesNotInstallJpegDecode(string format, bool requireP010)
         {
-            var isMjpeg = IsMjpegHighFrameRateDecode(
-                useMjpegHighFrameRateMode: true, requireP010, requestedPixelFormat: format);
-            var attempts = new List<bool>();
-            var usesExternalDecode = await InvokeMjpegInitializationAsync(
-                preferGpuNative: false,
-                external => { attempts.Add(external); return Task.CompletedTask; },
-                _ => throw new InvalidOperationException("Uncompressed capture must not retry JPEG decode."),
-                isMjpegHighFrameRateDecode: isMjpeg);
+            var requestedMode = ResolveSourceNegotiationMode(
+                "HighFrameRateMjpegRequested",
+                requireP010,
+                format,
+                fps: 120);
+            var attempts = new List<string>();
+            var selectedMode = await InvokeMjpegInitializationAsync(
+                requestedMode,
+                mode => { attempts.Add(mode); return Task.CompletedTask; },
+                _ => throw new InvalidOperationException("Uncompressed capture must not retry JPEG decode."));
 
-            Assert.False(usesExternalDecode);
-            Assert.Equal(new[] { false }, attempts);
+            Assert.Equal("Standard", selectedMode);
+            Assert.Equal(new[] { "Standard" }, attempts);
         }
 
         [Fact]
         public async Task UncompressedInitialization_DoesNotRetryFailureAsJpeg()
         {
             var failure = new InvalidOperationException("uncompressed source unavailable");
-            var attempts = new List<bool>();
+            var attempts = new List<string>();
             var error = await Assert.ThrowsAsync<InvalidOperationException>(
                 () => InvokeMjpegInitializationAsync(
-                    preferGpuNative: true,
-                    external => { attempts.Add(external); return Task.FromException(failure); },
-                    _ => throw new InvalidOperationException("Unexpected JPEG fallback."),
-                    isMjpegHighFrameRateDecode: false));
+                    "Standard",
+                    mode => { attempts.Add(mode); return Task.FromException(failure); },
+                    _ => throw new InvalidOperationException("Unexpected JPEG fallback.")));
 
             Assert.Same(failure, error);
-            Assert.Equal(new[] { false }, attempts);
+            Assert.Equal(new[] { "Standard" }, attempts);
         }
 
         [Fact]
@@ -215,21 +270,21 @@ namespace Sussudio.Tests
         {
             var nativeFailure = new InvalidOperationException("native unavailable");
             var softwareFailure = new InvalidOperationException("software unavailable");
-            var attempts = new List<bool>();
+            var attempts = new List<string>();
             Exception? reportedNativeFailure = null;
 
             var error = await Assert.ThrowsAsync<InvalidOperationException>(
                 () => InvokeMjpegInitializationAsync(
-                    preferGpuNative: true,
-                    useExternalDecode =>
+                    "ConvertedMjpegNv12",
+                    mode =>
                     {
-                        attempts.Add(useExternalDecode);
-                        return Task.FromException(useExternalDecode ? softwareFailure : nativeFailure);
+                        attempts.Add(mode);
+                        return Task.FromException(mode == "RawMjpgPassthrough" ? softwareFailure : nativeFailure);
                     },
                     failure => reportedNativeFailure = failure));
 
             Assert.Same(softwareFailure, error);
-            Assert.Equal(new[] { false, true }, attempts);
+            Assert.Equal(new[] { "ConvertedMjpegNv12", "RawMjpgPassthrough" }, attempts);
             Assert.Same(nativeFailure, reportedNativeFailure);
         }
 
@@ -300,8 +355,8 @@ namespace Sussudio.Tests
             => global::Program.MjpegPreviewJitter_DropsExpiredFramesBelowTargetDepth();
 
         [Fact]
-        public Task MjpegPreviewJitterSkipsMissingPreviewSequenceAfterDeadline()
-            => global::Program.MjpegPreviewJitter_SkipsMissingPreviewSequenceAfterDeadline();
+        public Task MjpegPreviewJitterDropsExpiredMissingSequenceBeforeSelection()
+            => global::Program.MjpegPreviewJitter_DropsExpiredMissingSequenceBeforeSelection();
 
         [Fact]
         public Task MjpegPreviewJitterLateSequenceDoesNotCountAsQueued()
@@ -421,26 +476,20 @@ namespace Sussudio.Tests
             var rootText = ReadRepoFile("Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.cs");
             var decoderType = RequireType("Sussudio.Services.Capture.Mjpeg.SoftwareMjpegDecoder");
 
-            AssertContains(rootText, "internal sealed unsafe class SoftwareMjpegDecoder : IDisposable");
-            AssertContains(rootText, "public void Initialize(int width, int height)");
-            AssertContains(rootText, "public void Dispose()");
-            AssertContains(rootText, "public bool DecodeToNv12(ReadOnlySpan<byte> jpegData, Span<byte> nv12Destination)");
-            AssertContains(rootText, "SW_MJPEG_DECODE_DIAG");
-            AssertContains(rootText, "Buffer.MemoryCopy(");
-            Assert.False(
-                File.Exists(Path.Combine(RuntimeContractSource.GetRepoRoot(), "Sussudio", "Services", "Capture", "Mjpeg", "SoftwareMjpegDecoder.Decode.cs")),
-                "Software MJPEG decode path folded into decoder state/lifetime owner");
-            Assert.False(
-                File.Exists(Path.Combine(RuntimeContractSource.GetRepoRoot(), "Sussudio", "Services", "Capture", "Mjpeg", "SoftwareMjpegDecoder.cs")),
-                "Software MJPEG decoder folded into the pipeline worker owner");
+            Assert.Contains("internal sealed unsafe class SoftwareMjpegDecoder : IDisposable", rootText, StringComparison.Ordinal);
+            Assert.Contains("public void Initialize(int width, int height)", rootText, StringComparison.Ordinal);
+            Assert.Contains("public void Dispose()", rootText, StringComparison.Ordinal);
+            Assert.Contains("public bool DecodeToNv12(ReadOnlySpan<byte> jpegData, Span<byte> nv12Destination)", rootText, StringComparison.Ordinal);
+            Assert.Contains("SW_MJPEG_DECODE_DIAG", rootText, StringComparison.Ordinal);
+            Assert.Contains("Buffer.MemoryCopy(", rootText, StringComparison.Ordinal);
 
             // The policy in Sussudio-Defragmentation-Goal.md requires a written rationale
             // for any file left above 1200 lines; keep the pipeline's entry honest.
             var cleanupPlanText = RuntimeContractSource.ReadRepoFile("docs/architecture/cleanup-plan.md");
-            AssertContains(cleanupPlanText, "## Retained Large Files");
-            AssertContains(cleanupPlanText, "`Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.cs` (");
-            AssertContains(cleanupPlanText, "one _reorderLock-guarded sequencing invariant");
-            AssertContains(cleanupPlanText, "SoftwareMjpegDecoder is the per-worker leaf");
+            Assert.Contains("## Retained Large Files", cleanupPlanText, StringComparison.Ordinal);
+            Assert.Contains("`Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.cs` (", cleanupPlanText, StringComparison.Ordinal);
+            Assert.Contains("one _reorderLock-guarded sequencing invariant", cleanupPlanText, StringComparison.Ordinal);
+            Assert.Contains("SoftwareMjpegDecoder is the per-worker leaf", cleanupPlanText, StringComparison.Ordinal);
 
             var widthProp = decoderType.GetProperty("Width", BindingFlags.Public | BindingFlags.Instance);
             var heightProp = decoderType.GetProperty("Height", BindingFlags.Public | BindingFlags.Instance);
@@ -521,28 +570,31 @@ namespace Sussudio.Tests
             field!.SetValue(instance, value);
         }
 
-        private static bool IsMjpegHighFrameRateDecode(
-            bool useMjpegHighFrameRateMode,
+        private static string ResolveSourceNegotiationMode(
+            string requestedModeName,
             bool requireP010,
-            string? requestedPixelFormat)
-            => InvokeUnifiedVideoCapturePolicy(
-                "IsMjpegHighFrameRateDecode",
-                useMjpegHighFrameRateMode,
+            string? requestedPixelFormat,
+            double fps)
+        {
+            var modeType = RequireType("Sussudio.Services.Capture.SourceNegotiationMode");
+            var requestedMode = Enum.Parse(modeType, requestedModeName);
+            return InvokeUnifiedVideoCapturePolicy(
+                "ResolveSourceNegotiationMode",
+                requestedMode,
                 requireP010,
-                requestedPixelFormat);
+                requestedPixelFormat,
+                fps)!.ToString()!;
+        }
 
-        private static bool ShouldPreferGpuNativeMjpegDecode(bool isMjpegHighFrameRateDecode, double fps = 120)
-            => InvokeUnifiedVideoCapturePolicy(
-                "ShouldPreferGpuNativeMjpegDecode",
-                isMjpegHighFrameRateDecode,
-                fps);
+        private static bool ShouldPreferGpuNativeMjpegDecode(double fps = 120)
+            => (bool)InvokeUnifiedVideoCapturePolicy("ShouldPreferGpuNativeMjpegDecode", fps)!;
 
-        private static bool InvokeUnifiedVideoCapturePolicy(string methodName, params object?[] arguments)
+        private static object? InvokeUnifiedVideoCapturePolicy(string methodName, params object?[] arguments)
         {
             var captureType = RequireType("Sussudio.Services.Capture.UnifiedVideoCapture");
             var method = captureType.GetMethod(methodName, BindingFlags.Static | BindingFlags.NonPublic)
                 ?? throw new InvalidOperationException($"UnifiedVideoCapture.{methodName} was not found.");
-            return (bool)method.Invoke(null, arguments)!;
+            return method.Invoke(null, arguments);
         }
 
         private static async Task<MjpegInitializationProbe> RunMjpegInitializationAsync(
@@ -552,24 +604,27 @@ namespace Sussudio.Tests
             var attempts = new List<bool>();
             Exception? reportedNativeFailure = null;
 
-            var usesExternalDecode = await InvokeMjpegInitializationAsync(
-                preferGpuNative,
-                useExternalDecode =>
+            var selectedMode = await InvokeMjpegInitializationAsync(
+                preferGpuNative ? "ConvertedMjpegNv12" : "RawMjpgPassthrough",
+                modeName =>
                 {
+                    var useExternalDecode = modeName == "RawMjpgPassthrough";
                     attempts.Add(useExternalDecode);
                     var failure = failureFactory(useExternalDecode, attempts.Count);
                     return failure == null ? Task.CompletedTask : Task.FromException(failure);
                 },
                 failure => reportedNativeFailure = failure);
 
-            return new MjpegInitializationProbe(usesExternalDecode, attempts, reportedNativeFailure);
+            return new MjpegInitializationProbe(
+                selectedMode == "RawMjpgPassthrough",
+                attempts,
+                reportedNativeFailure);
         }
 
-        private static async Task<bool> InvokeMjpegInitializationAsync(
-            bool preferGpuNative,
-            Func<bool, Task> initializeAsync,
-            Action<Exception> reportNativeFailure,
-            bool isMjpegHighFrameRateDecode = true)
+        private static async Task<string> InvokeMjpegInitializationAsync(
+            string initialModeName,
+            Func<string, Task> initializeAsync,
+            Action<Exception> reportNativeFailure)
         {
             var captureType = RequireType("Sussudio.Services.Capture.UnifiedVideoCapture");
             var method = captureType.GetMethod(
@@ -577,13 +632,34 @@ namespace Sussudio.Tests
                 BindingFlags.Static | BindingFlags.NonPublic)
                 ?? throw new InvalidOperationException(
                     "UnifiedVideoCapture.InitializeMjpegSourceReaderWithFallbackAsync was not found.");
+            var modeType = RequireType("Sussudio.Services.Capture.SourceNegotiationMode");
+            var initialMode = Enum.Parse(modeType, initialModeName);
+            var initializeModeAsync = CreateSourceNegotiationModeCallback(modeType, initializeAsync);
             var task = method.Invoke(
                     null,
-                    new object[] { isMjpegHighFrameRateDecode, preferGpuNative, initializeAsync, reportNativeFailure }) as Task<bool>
+                    new[] { initialMode, initializeModeAsync, reportNativeFailure }) as Task
                 ?? throw new InvalidOperationException(
-                    "InitializeMjpegSourceReaderWithFallbackAsync did not return Task<bool>.");
-            return await task.ConfigureAwait(false);
+                    "InitializeMjpegSourceReaderWithFallbackAsync did not return a task.");
+            await task.ConfigureAwait(false);
+            return task.GetType().GetProperty("Result")?.GetValue(task)?.ToString()
+                ?? throw new InvalidOperationException("InitializeMjpegSourceReaderWithFallbackAsync returned no source mode.");
         }
+
+        private static Delegate CreateSourceNegotiationModeCallback(
+            Type modeType,
+            Func<string, Task> initializeAsync)
+        {
+            var factory = typeof(MjpegPipelineContractsTests).GetMethod(
+                nameof(CreateSourceNegotiationModeCallbackGeneric),
+                BindingFlags.Static | BindingFlags.NonPublic)!
+                .MakeGenericMethod(modeType);
+            return (Delegate)factory.Invoke(null, new object[] { initializeAsync })!;
+        }
+
+        private static Func<TMode, Task> CreateSourceNegotiationModeCallbackGeneric<TMode>(
+            Func<string, Task> initializeAsync)
+            where TMode : struct, Enum
+            => mode => initializeAsync(mode.ToString());
 
         private static void WithGpuNativeMjpegDecodeEnvironment(string? value, Action assertion)
         {
@@ -612,9 +688,6 @@ namespace Sussudio.Tests
 
         private static string ReadRepoFile(string relativePath)
             => RuntimeContractSource.ReadRepoFile(relativePath).Replace("\r\n", "\n");
-
-        private static void AssertContains(string actual, string expectedSubstring)
-            => Assert.Contains(expectedSubstring, actual, StringComparison.Ordinal);
     }
 }
 
@@ -1602,7 +1675,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task MjpegPreviewJitter_SkipsMissingPreviewSequenceAfterDeadline()
+    internal static Task MjpegPreviewJitter_DropsExpiredMissingSequenceBeforeSelection()
     {
         var jitterType = RequireType("Sussudio.Services.Capture.MjpegPreviewJitterBuffer");
         var frameType = RequireType("Sussudio.Services.Contracts.PooledVideoFrame");
@@ -1616,25 +1689,36 @@ static partial class Program
             ?? throw new InvalidOperationException("Jitter frame list missing."));
         var bufferedFrameType = RequireNestedType(jitterType, "BufferedFrame");
         var nv12 = Enum.Parse(formatType, "Nv12");
-        var pool = new TrackingArrayPool();
-        var owner = CreatePooledVideoFrame(frameType, nv12, 12L, 100L, 200L, 16, 16, 384, pool);
-        var lease = addLeaseMethod.Invoke(owner, Array.Empty<object>())
+        var stalePool = new TrackingArrayPool();
+        var staleOwner = CreatePooledVideoFrame(frameType, nv12, 12L, 100L, 200L, 16, 16, 384, stalePool);
+        var staleLease = addLeaseMethod.Invoke(staleOwner, Array.Empty<object>())
             ?? throw new InvalidOperationException("AddLease returned null.");
-        ((IDisposable)owner).Dispose();
+        ((IDisposable)staleOwner).Dispose();
 
-        frames.Add(CreateLeaseBufferedFrame(bufferedFrameType, lease, Stopwatch.GetTimestamp() - Stopwatch.Frequency));
+        var now = Stopwatch.GetTimestamp();
+        var nextPool = new TrackingArrayPool();
+        var nextOwner = CreatePooledVideoFrame(frameType, nv12, 13L, 300L, 400L, 16, 16, 384, nextPool);
+        var nextLease = addLeaseMethod.Invoke(nextOwner, Array.Empty<object>())
+            ?? throw new InvalidOperationException("AddLease returned null.");
+        ((IDisposable)nextOwner).Dispose();
 
+        frames.Add(CreateLeaseBufferedFrame(bufferedFrameType, staleLease, now - Stopwatch.Frequency));
+        frames.Add(CreateLeaseBufferedFrame(bufferedFrameType, nextLease, now));
+
+        InvokeNonPublicInstanceMethod(jitter, "DropDeadlineExpiredFrames", new object?[] { now });
         var dequeued = InvokeNonPublicInstanceMethod(jitter, "TryDequeue", null)
-            ?? throw new InvalidOperationException("Expected jitter buffer to dequeue the first available frame after deadline.");
+            ?? throw new InvalidOperationException("Expected jitter buffer to dequeue the fresh frame after the deadline drop pass.");
 
         AssertEqual(0, frames.Count, "remaining preview frame count");
-        AssertEqual(13L, GetLongPrivateField(jitter, "_nextPreviewSequence"), "next preview sequence");
-        AssertEqual(2L, GetLongPrivateField(jitter, "_deadlineDropCount"), "virtual deadline skips");
-        AssertEqual(2L, GetLongPrivateField(jitter, "_totalDropped"), "total preview skips");
-        AssertEqual(1L, GetLongPrivateField(jitter, "_targetIncreaseCount"), "target increase count after missing sequence");
+        AssertEqual(14L, GetLongPrivateField(jitter, "_nextPreviewSequence"), "next preview sequence");
+        AssertEqual(1L, GetLongPrivateField(jitter, "_deadlineDropCount"), "deadline drops before selection");
+        AssertEqual(1L, GetLongPrivateField(jitter, "_totalDropped"), "total preview drops");
+        AssertEqual(1L, GetLongPrivateField(jitter, "_targetIncreaseCount"), "target increase count after deadline drop");
+        AssertEqual(1, stalePool.ReturnCount, "expired missing-sequence lease return count");
+        AssertEqual(0, nextPool.ReturnCount, "fresh lease retained for selection");
 
         ((IDisposable)dequeued).Dispose();
-        AssertEqual(1, pool.ReturnCount, "dequeued preview lease return count");
+        AssertEqual(1, nextPool.ReturnCount, "selected preview lease returned after dequeue");
 
         return Task.CompletedTask;
     }

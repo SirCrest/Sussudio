@@ -100,7 +100,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private CaptureSettings? _currentSettings;
     private SourceSignalTelemetrySnapshot _latestSourceTelemetry = SourceSignalTelemetrySnapshot.CreateUnavailable("telemetry-not-started");
     private readonly CaptureRecordingBackendResources _recordingBackend = new();
-    private readonly FlashbackBackendResources _flashbackBackend = new();
+    private readonly FlashbackBackendResources _flashbackBackend;
 
     // Flashback uses a preview-owned continuous encoder when the user is not
     // recording, but can also become the recording backend. These flags track
@@ -389,6 +389,10 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         ISourceSignalTelemetryProvider? sourceSignalTelemetryProvider = null,
         Func<CancellationToken, Task>? rebuildRecordingSettingsBackendAsync = null)
     {
+        _flashbackBackend = new FlashbackBackendResources(
+            _flashbackExportOperationLock,
+            OnFlashbackBackendFatalError,
+            OnFlashbackFrameEncoded);
         _processSupervisor = processSupervisor;
         _sourceTelemetryProvider = sourceSignalTelemetryProvider ?? CreateDefaultTelemetryProvider();
         _rebuildRecordingSettingsBackendAsync = rebuildRecordingSettingsBackendAsync ?? RebuildFlashbackPreviewBackendForSettingsChangeAsync;
@@ -841,13 +845,40 @@ private readonly object _recordingFailureTelemetryLock = new();
                     }
 
                     var preserveDedicatedRecordingMic = _isRecording && !IsFlashbackRecordingBackendActive();
-                    await DisposeFlashbackPreviewBackendAsync(
-                        CancellationToken.None,
-                        purgeSegments: false,
-                        detachMicrophoneWriter: !preserveDedicatedRecordingMic).ConfigureAwait(false);
+                    try
+                    {
+                        await DisposeFlashbackPreviewBackendAsync(
+                            CancellationToken.None,
+                            purgeSegments: false,
+                            detachMicrophoneWriter: !preserveDedicatedRecordingMic).ConfigureAwait(false);
+                    }
+                    finally
+                    {
+                        try
+                        {
+                            StatusChanged?.Invoke(this, $"Flashback error: {ex.Message}");
+                        }
+                        catch (Exception statusEx)
+                        {
+                            try
+                            {
+                                Logger.Log($"FLASHBACK_FATAL_STATUS_PUBLISH_WARN type={statusEx.GetType().Name} msg={statusEx.Message}");
+                            }
+                            catch
+                            {
+                                // A logging failure must not prevent the restart attempt below.
+                            }
+                        }
 
-                    StatusChanged?.Invoke(this, $"Flashback error: {ex.Message}");
-                    TryScheduleFlashbackAutoRestart(ex, generationAtFault);
+                        try
+                        {
+                            TryScheduleFlashbackAutoRestart(ex, generationAtFault);
+                        }
+                        catch (Exception restartEx)
+                        {
+                            Logger.Log($"FLASHBACK_AUTO_RESTART_SCHEDULE_WARN cause={ex.GetType().Name} type={restartEx.GetType().Name} msg={restartEx.Message}");
+                        }
+                    }
                 }
                 finally
                 {
@@ -1056,8 +1087,8 @@ internal sealed class PreviewAudioGraphResources
     }
 
     public async Task StartPlaybackAsync(
-        CancellationToken cancellationToken,
-        FlashbackPlaybackController? flashbackPlaybackController)
+        FlashbackPlaybackController? flashbackPlaybackController,
+        CancellationToken cancellationToken = default)
     {
         var capture = ProgramCapture;
         if (capture == null)

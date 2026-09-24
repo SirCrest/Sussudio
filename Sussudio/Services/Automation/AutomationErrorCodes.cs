@@ -12,6 +12,7 @@ internal static class AutomationErrorCodes
     // Dispatch and preflight
     internal const string Canceled = "canceled";
     internal const string CommandFailed = "command-failed";
+    internal const string InvalidState = "invalid-state";
     internal const string ManifestMismatch = "manifest-mismatch";
     internal const string NotReady = "not-ready";
     internal const string Unauthorized = "unauthorized";
@@ -40,6 +41,7 @@ internal static class AutomationErrorCodes
     {
         Canceled,
         CommandFailed,
+        InvalidState,
         ManifestMismatch,
         NotReady,
         Unauthorized,

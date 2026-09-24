@@ -8,6 +8,61 @@ using Xunit;
 public sealed class CaptureObservationTests
 {
     [Fact]
+    public async Task AudioInputInitializationRejectionPreservesPreviousCaptureAndMetadata()
+    {
+        await using var session = new CaptureObservationTestSession();
+        CaptureObservationTestSession.SetField(session.Service, "_audioDeviceId", "previous-device");
+        CaptureObservationTestSession.SetField(session.Service, "_audioDeviceName", "Previous device");
+
+        // Whitespace reaches the candidate's managed validation before endpoint activation.
+        var update = (Task)CaptureObservationTestSession.Invoke(
+            session.Service, "UpdateAudioInputAsync", " ", "Rejected device", CancellationToken.None);
+        var error = await Assert.ThrowsAsync<ArgumentException>(() => update.WaitAsync(TimeSpan.FromSeconds(5)));
+
+        Assert.Equal("audioDeviceId", error.ParamName);
+        Assert.StartsWith("Audio device id is required.", error.Message);
+        Assert.Equal("previous-device", CaptureObservationTestSession.GetField(session.Service, "_audioDeviceId"));
+        Assert.Equal("Previous device", CaptureObservationTestSession.GetField(session.Service, "_audioDeviceName"));
+        Assert.Same(session.Audio, CaptureObservationTestSession.GetField(
+            CaptureObservationTestSession.GetField(session.Service, "_previewAudioGraph")!, "ProgramCapture"));
+        Assert.Equal(0, CaptureObservationTestSession.GetField(session.Audio, "_disposed"));
+    }
+
+    [Theory]
+    [InlineData(true, false, "PREVIOUS-DEVICE", "Updated name", "previous-device", "Updated name")]
+    [InlineData(false, false, " ", "Selected name", " ", "Selected name")]
+    [InlineData(true, true, " ", "Rejected name", "previous-device", "Previous device")]
+    public async Task AudioInputGuardsPreserveCaptureOwnership(
+        bool hasCapture, bool canceled, string requestedId, string requestedName,
+        string expectedId, string expectedName)
+    {
+        await using var session = new CaptureObservationTestSession();
+        CaptureObservationTestSession.SetField(session.Service, "_audioDeviceId", "previous-device");
+        CaptureObservationTestSession.SetField(session.Service, "_audioDeviceName", "Previous device");
+        session.SetAudioPresent(hasCapture);
+        using var cancellation = new CancellationTokenSource();
+        if (canceled) cancellation.Cancel();
+
+        var update = (Task)CaptureObservationTestSession.Invoke(
+            session.Service, "UpdateAudioInputAsync", requestedId, requestedName, cancellation.Token);
+        if (canceled)
+        {
+            var error = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => update.WaitAsync(TimeSpan.FromSeconds(5)));
+            Assert.Equal(cancellation.Token, error.CancellationToken);
+        }
+        else
+        {
+            await update.WaitAsync(TimeSpan.FromSeconds(5));
+        }
+
+        Assert.Equal(expectedId, CaptureObservationTestSession.GetField(session.Service, "_audioDeviceId"));
+        Assert.Equal(expectedName, CaptureObservationTestSession.GetField(session.Service, "_audioDeviceName"));
+        Assert.Same(hasCapture ? session.Audio : null, CaptureObservationTestSession.GetField(
+            CaptureObservationTestSession.GetField(session.Service, "_previewAudioGraph")!, "ProgramCapture"));
+        Assert.Equal(0, CaptureObservationTestSession.GetField(session.Audio, "_disposed"));
+    }
+
+    [Fact]
     public async Task SnapshotReads_DoNotChooseBaselineOrAdvanceDerivativeWindow()
     {
         await using var frequent = new CaptureObservationTestSession();
@@ -282,16 +337,16 @@ internal sealed class CaptureObservationTestSession : IAsyncDisposable
 
     public static object Create(string typeName)
         => Activator.CreateInstance(Sussudio.Tests.SussudioAssembly.Load().GetType(typeName, true)!, nonPublic: true)!;
-    public static object Invoke(object target, string method, params object?[] arguments)
-        => target.GetType().GetMethod(method, InstanceFlags)!.Invoke(target, arguments)!;
-    public static object? GetField(object target, string name)
-        => target.GetType().GetField(name, InstanceFlags)!.GetValue(target);
-    public static void SetField(object target, string name, object? value)
-        => target.GetType().GetField(name, InstanceFlags)!.SetValue(target, value);
-    public static object? GetProperty(object target, string name)
-        => target.GetType().GetProperty(name, InstanceFlags)!.GetValue(target);
-    public static void SetProperty(object target, string name, object? value)
-        => target.GetType().GetProperty(name, InstanceFlags)!.SetValue(target, value);
+    public static object Invoke(object instance, string method, params object?[] arguments)
+        => instance.GetType().GetMethod(method, InstanceFlags)!.Invoke(instance, arguments)!;
+    public static object? GetField(object instance, string name)
+        => instance.GetType().GetField(name, InstanceFlags)!.GetValue(instance);
+    public static void SetField(object instance, string name, object? value)
+        => instance.GetType().GetField(name, InstanceFlags)!.SetValue(instance, value);
+    public static object? GetProperty(object instance, string name)
+        => instance.GetType().GetProperty(name, InstanceFlags)!.GetValue(instance);
+    public static void SetProperty(object instance, string name, object? value)
+        => instance.GetType().GetProperty(name, InstanceFlags)!.SetValue(instance, value);
 
     public static void EmitMjpegFrame(object source)
     {

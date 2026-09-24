@@ -11,6 +11,14 @@ using Sussudio.Models;
 
 namespace Sussudio.Services.Contracts
 {
+    public sealed class AutomationStateConflictException : InvalidOperationException
+    {
+        public AutomationStateConflictException(string message)
+            : base(message)
+        {
+        }
+    }
+
     // Window operations that automation can request without reaching into WinUI
     // implementation details.
     public interface IAutomationWindowControl
@@ -193,9 +201,6 @@ namespace Sussudio.Services.Contracts
         public IntPtr CudaHwFramesCtxPtr => GpuHandles.CudaHwFramesCtxPtr;
     }
 
-    // Requested track names follow the recording settings. Shared by the recording
-    // lifecycle, the LibAv sink, and the in-process structure verifier so failure
-    // evidence cannot drift between them.
     // Shared P010 boundary check so the HDR pipeline's "is this stream P010" test
     // cannot drift between the sites that decide, log, and verify it.
     internal static class PixelFormatIds
@@ -204,6 +209,9 @@ namespace Sussudio.Services.Contracts
             string.Equals(pixelFormat, "p010le", StringComparison.OrdinalIgnoreCase);
     }
 
+    // Requested track names follow the recording settings. Shared by the recording
+    // lifecycle, the LibAv sink, and the in-process structure verifier so failure
+    // evidence cannot drift between them.
     public static class RecordingTracks
     {
         public static IReadOnlyList<string> BuildRequestedTracks(RecordingContext? context)
@@ -241,7 +249,7 @@ namespace Sussudio.Services.Contracts
     {
         private static readonly IReadOnlyList<string> EmptyArtifacts = Array.Empty<string>();
 
-        public bool Succeeded { get; init; }
+        public bool Succeeded => Outcome == RecordingFinalizeOutcome.Saved;
         public RecordingFinalizeOutcome Outcome { get; init; }
         public string OutputPath { get; init; } = string.Empty;
         public string StatusMessage { get; init; } = "Stopped";
@@ -260,7 +268,6 @@ namespace Sussudio.Services.Contracts
         {
             return new FinalizeResult
             {
-                Succeeded = Succeeded,
                 Outcome = Outcome,
                 OutputPath = OutputPath,
                 StatusMessage = StatusMessage,
@@ -283,8 +290,7 @@ namespace Sussudio.Services.Contracts
 
         // Re-derives this result as a failure with replacement preserved artifacts and
         // recovery path, preserving every other field including track evidence. Routed
-        // through Failure() so Outcome is normalized to Failed even for results that
-        // were constructed directly (e.g. by FlashbackEncoderSink) without an Outcome.
+        // through Failure() so Outcome becomes Failed.
         public FinalizeResult AsFailureWithArtifacts(IEnumerable<string>? preservedArtifacts, string? recoveryPath)
             => Failure(OutputPath, StatusMessage, preservedArtifacts, FailureCode, CleanupPending, recoveryPath, VerificationCompleted, FinalizationElapsedMs)
                 .WithTrackEvidence(RequestedTracks, ObservedTracks);
@@ -309,7 +315,6 @@ namespace Sussudio.Services.Contracts
         {
             return new FinalizeResult
             {
-                Succeeded = true,
                 Outcome = RecordingFinalizeOutcome.Saved,
                 OutputPath = outputPath,
                 StatusMessage = statusMessage,
@@ -347,7 +352,6 @@ namespace Sussudio.Services.Contracts
 
             return new FinalizeResult
             {
-                Succeeded = false,
                 Outcome = RecordingFinalizeOutcome.Failed,
                 OutputPath = outputPath,
                 StatusMessage = statusMessage,
@@ -362,27 +366,13 @@ namespace Sussudio.Services.Contracts
     }
 
     /// <summary>
-    /// Accepts D3D11 texture references for GPU-resident NVENC encoding.
-    /// Callee does AddRef on the texture; caller may release after return.
-    /// </summary>
-    public interface IGpuVideoFrameEncoder
-    {
-        void EnqueueGpuVideoFrame(IntPtr d3d11Texture2D, int subresourceIndex);
-    }
-
-    /// <summary>
-    /// On either normal return the callee has taken and released any reference it
-    /// needed, including when admission is rejected; the caller may release its
-    /// texture after return.
+    /// Accepted work retains the callee's own AddRef until consumption or cleanup.
+    /// Rejected admission releases any reference the callee acquired. The caller
+    /// keeps its own reference until return and may release it after either normal return.
     /// </summary>
     public interface IGpuVideoFrameTryEncoder
     {
         bool TryEnqueueGpuVideoFrame(IntPtr d3d11Texture2D, int subresourceIndex);
-    }
-
-    public interface IRawVideoFrameEncoder
-    {
-        void EnqueueRawVideoFrame(ReadOnlySpan<byte> data, int expectedSize);
     }
 
     public interface IRawVideoFrameTryEncoder
@@ -411,14 +401,6 @@ namespace Sussudio.Services.Contracts
         Task WriteAudioAsync(ReadOnlyMemory<byte> samples, CancellationToken cancellationToken = default);
 
         Task<FinalizeResult> StopAsync(CancellationToken cancellationToken = default);
-    }
-
-    public interface IRecordingVerifier
-    {
-        Task<RecordingVerificationResult> VerifyAsync(
-            string? outputPath,
-            CaptureRuntimeSnapshot runtimeSnapshot,
-            CancellationToken cancellationToken = default);
     }
 
     // Pixel formats carried by pooled decoded frames. The enum is deliberately

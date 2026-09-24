@@ -76,7 +76,8 @@
     <PackageReference Include="Microsoft.Win32.SystemEvents" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
     <PackageReference Include="Microsoft.WindowsAppSDK" />
-    <PackageReference Include="System.Management" />
+    <PackageReference Include="SharpGen.Runtime" ExcludeAssets="build;analyzers" />
+    <PackageReference Include="SharpGen.Runtime.COM" ExcludeAssets="build;analyzers" />
     <PackageReference Include="System.Text.Json" />
     <PackageReference Include="Vortice.Direct3D11" />
     <PackageReference Include="Vortice.DXGI" />

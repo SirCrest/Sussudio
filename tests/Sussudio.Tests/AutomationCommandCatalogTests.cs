@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using Sussudio.Models;
 using Sussudio.Tools;
 using Xunit;
@@ -155,6 +156,51 @@ public sealed class AutomationCommandCatalogTests
             Assert.True(AutomationPipeProtocol.TryGetCommandName((int)kind, out var name));
             Assert.Equal(kind.ToString(), name);
         }
+    }
+
+    [Fact]
+    public void PayloadKeyConstantsPreserveLegacyWireSpellings()
+    {
+        var expectedKeys = new[]
+        {
+            "action", "actionId", "armed", "assertions", "authToken", "bitrateMbps", "condition",
+            "decoderCount", "deviceId", "deviceName", "enabled", "field", "filePath", "force", "format",
+            "frameRate", "gain", "height", "maxEntries", "maxEvents", "microphoneVolumePercent",
+            "minutes", "mode", "op", "outputPath", "pollMs", "positionMs", "preset", "previewVolumePercent",
+            "quality", "resolution", "seconds", "section", "splitEncodeMode", "timeoutMs", "useSelectionRange",
+            "value", "verificationProfile", "videoFormat", "visible", "width", "x", "y"
+        };
+        var fields = typeof(AutomationPayloadKeys)
+            .GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly)
+            .Where(field => field.IsLiteral && field.FieldType == typeof(string))
+            .ToDictionary(field => field.Name, field => (string)field.GetRawConstantValue()!, StringComparer.Ordinal);
+
+        Assert.Equal(expectedKeys.Length, fields.Count);
+        foreach (var key in expectedKeys)
+        {
+            var memberName = char.ToUpperInvariant(key[0]) + key[1..];
+            Assert.True(fields.TryGetValue(memberName, out var actual), $"Missing payload key constant {memberName}.");
+            Assert.Equal(key, actual);
+        }
+    }
+
+    [Fact]
+    public void CatalogPayloadFieldsUseTheSharedVocabulary()
+    {
+        var catalogKeys = AutomationCommandCatalog.Entries
+            .SelectMany(entry => entry.PayloadFields)
+            .Select(field => field.Name)
+            .Distinct(StringComparer.Ordinal)
+            .OrderBy(key => key, StringComparer.Ordinal);
+        var nestedAssertionKeys = new[] { AutomationPayloadKeys.Field, AutomationPayloadKeys.Op, AutomationPayloadKeys.Value };
+        var topLevelKeys = typeof(AutomationPayloadKeys)
+            .GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly)
+            .Where(field => field.IsLiteral && field.FieldType == typeof(string))
+            .Select(field => (string)field.GetRawConstantValue()!)
+            .Except(nestedAssertionKeys, StringComparer.Ordinal)
+            .OrderBy(key => key, StringComparer.Ordinal);
+
+        Assert.Equal(topLevelKeys, catalogKeys);
     }
 
     // ── Name resolution ──────────────────────────────────────────────────────

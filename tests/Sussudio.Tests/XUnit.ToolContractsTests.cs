@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -8,6 +9,7 @@ using System.Runtime.Loader;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Sussudio.Models;
 using Sussudio.Tools;
@@ -56,17 +58,17 @@ public sealed class SsctlFormatterContractsTests
     [InlineData("== Preview ==")]
     [InlineData("== Source ==")]
     public void SnapshotFormatter_EmitsSection(string section)
-        => AssertContains(FormatRepresentativeSnapshot(), section);
+        => Assert.Contains(section, FormatRepresentativeSnapshot(), StringComparison.Ordinal);
 
     [Theory]
     [InlineData("Capture Commands:")]
     [InlineData("Process CPU:")]
-    [InlineData("Legacy Score:")]
+    [InlineData("Performance Score:")]
     [InlineData("Frame Time:")]
     [InlineData("Pipeline Latency: 1ms (app receive -> estimated visible)")]
     [InlineData("Average Rate:")]
     public void SnapshotFormatter_EmitsCoreField(string field)
-        => AssertContains(FormatRepresentativeSnapshot(), field);
+        => Assert.Contains(field, FormatRepresentativeSnapshot(), StringComparison.Ordinal);
 
     [Fact]
     public void SnapshotFormatter_OrdersSections()
@@ -102,12 +104,12 @@ public sealed class SsctlFormatterContractsTests
     {
         var output = FormatRepresentativeSnapshot();
 
-        AssertContains(output, "D3D CPU timing: input/upload avg=0.1ms P95=0.2ms P99=0.3ms max=0.4ms | render-submit avg=0.5ms P95=0.6ms P99=0.7ms max=0.8ms | present-call avg=0.9ms P95=1.0ms P99=1.1ms max=1.2ms | total-frame avg=1.3ms P95=1.4ms P99=1.5ms max=1.6ms samples=120");
-        AssertContains(output, "D3D pipeline latency: avg=7.8ms P95=8.9ms P99=9.9ms max=12.3ms last=8.4ms samples=120");
-        AssertContains(output, "D3D frame-latency wait: enabled=true handle=true calls=118 signaled=110 timeouts=8 unexpected=0 lastResult=0 last=0.05ms avg=0.2ms P95=0.8ms max=2.0ms samples=118");
-        AssertContains(output, "D3D DXGI stats: ok=119/120 failures=1 recentFailures=1 missedRefresh=4 recentMissed=2 lastError=DXGI_ERROR_WAS_STILL_DRAWING");
-        AssertContains(output, "D3D Ownership: submitted present=41 sourceSeq=9000 pts=123456 | rendered present=42 sourceSeq=9001 pts=123789 schedulerToPresent=7.7ms pipeline=8.4ms | lastDrop=none dropPts=0");
-        AssertContains(output, "D3D Slow Frames: present=42 srcSeq=9001 reason=present_interval target=8.33ms over=0.87ms interval=9.20ms");
+        Assert.Contains("D3D CPU timing: input/upload avg=0.1ms P95=0.2ms P99=0.3ms max=0.4ms | render-submit avg=0.5ms P95=0.6ms P99=0.7ms max=0.8ms | present-call avg=0.9ms P95=1.0ms P99=1.1ms max=1.2ms | total-frame avg=1.3ms P95=1.4ms P99=1.5ms max=1.6ms samples=120", output, StringComparison.Ordinal);
+        Assert.Contains("D3D pipeline latency: avg=7.8ms P95=8.9ms P99=9.9ms max=12.3ms last=8.4ms samples=120", output, StringComparison.Ordinal);
+        Assert.Contains("D3D frame-latency wait: enabled=true handle=true calls=118 signaled=110 timeouts=8 unexpected=0 lastResult=0 last=0.05ms avg=0.2ms P95=0.8ms max=2.0ms samples=118", output, StringComparison.Ordinal);
+        Assert.Contains("D3D DXGI stats: ok=119/120 failures=1 recentFailures=1 missedRefresh=4 recentMissed=2 lastError=DXGI_ERROR_WAS_STILL_DRAWING", output, StringComparison.Ordinal);
+        Assert.Contains("D3D Ownership: submitted present=41 sourceSeq=9000 pts=123456 | rendered present=42 sourceSeq=9001 pts=123789 schedulerToPresent=7.7ms pipeline=8.4ms | lastDrop=none dropPts=0", output, StringComparison.Ordinal);
+        Assert.Contains("D3D Slow Frames: present=42 srcSeq=9001 reason=present_interval target=8.33ms over=0.87ms interval=9.20ms", output, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -124,17 +126,18 @@ public sealed class SsctlFormatterContractsTests
 
     [Fact]
     public void SnapshotFormatter_FormatsAudioBufferHealth()
-        => AssertContains(
+        => Assert.Contains(
+            "Audio Buffer: status=Healthy underrun=false overrun=false underrunEvents=0 overrunEvents=0 reason=No audio buffer underrun or overrun counters have moved for the active audio path.",
             FormatRepresentativeSnapshot(),
-            "Audio Buffer: status=Healthy underrun=false overrun=false underrunEvents=0 overrunEvents=0 reason=No audio buffer underrun or overrun counters have moved for the active audio path.");
+            StringComparison.Ordinal);
 
     [Fact]
     public void SnapshotFormatter_FormatsAvSync()
     {
         var output = FormatRepresentativeSnapshot();
 
-        AssertContains(output, "Capture Drift: 1.5ms | Rate: 0.1ms/s");
-        AssertContains(output, "Encoder Drift: -0.5ms | Correction Samples: 2");
+        Assert.Contains("Capture Drift: 1.5ms | Rate: 0.1ms/s", output, StringComparison.Ordinal);
+        Assert.Contains("Encoder Drift: -0.5ms | Correction Samples: 2", output, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -142,8 +145,8 @@ public sealed class SsctlFormatterContractsTests
     {
         var output = FormatRepresentativeSnapshot();
 
-        AssertContains(output, "Encoder: hevc_nvenc 3840x2160 @ 120 fps (120/1) | Target: 12.3 Mbps");
-        AssertContains(output, "Buffer: 45.0s | Disk: 100.0 MB | Written: 150 MB");
+        Assert.Contains("Encoder: hevc_nvenc 3840x2160 @ 120 fps (120/1) | Target: 12.3 Mbps", output, StringComparison.Ordinal);
+        Assert.Contains("Buffer: 45.0s | Disk: 100.0 MB | Written: 150 MB", output, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -151,8 +154,8 @@ public sealed class SsctlFormatterContractsTests
     {
         var output = FormatRepresentativeSnapshot();
 
-        AssertContains(output, "submitFailures=1");
-        AssertContains(output, "A/V Drift: -1.5ms");
+        Assert.Contains("submitFailures=1", output, StringComparison.Ordinal);
+        Assert.Contains("A/V Drift: -1.5ms", output, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -167,9 +170,10 @@ public sealed class SsctlFormatterContractsTests
 
     [Fact]
     public void SnapshotFormatter_FormatsFlashbackFailure()
-        => AssertContains(
+        => Assert.Contains(
+            "Flashback Failure: active=true type=InvalidOperationException msg=Flashback queue overloaded",
             FormatFailedFlashbackSnapshot(),
-            "Flashback Failure: active=true type=InvalidOperationException msg=Flashback queue overloaded");
+            StringComparison.Ordinal);
 
     private static string FormatRepresentativeSnapshot()
     {
@@ -295,14 +299,14 @@ public sealed class SsctlFormatterContractsTests
     [InlineData("Microphone Enabled: true | Volume: 68.5%")]
     [InlineData("Flashback: Enabled=true | Buffer=15m | GPU Decode=false")]
     public void OptionsFormatter_EmitsSelectedValue(string selectedValue)
-        => AssertContains(FormatRepresentativeOptions(), selectedValue);
+        => Assert.Contains(selectedValue, FormatRepresentativeOptions(), StringComparison.Ordinal);
 
     [Theory]
     [InlineData("== Capture Options ==")]
     [InlineData("== Microphone Devices ==")]
     [InlineData("== Flashback Buffer Minutes ==")]
     public void OptionsFormatter_EmitsGroup(string group)
-        => AssertContains(FormatRepresentativeOptions(), group);
+        => Assert.Contains(group, FormatRepresentativeOptions(), StringComparison.Ordinal);
 
     [Theory]
     [InlineData("- Desk Mic (mic-desk)")]
@@ -311,7 +315,7 @@ public sealed class SsctlFormatterContractsTests
     [InlineData("* 15")]
     [InlineData("- 30 [disabled: Requires restart]")]
     public void OptionsFormatter_EmitsChoice(string choice)
-        => AssertContains(FormatRepresentativeOptions(), choice);
+        => Assert.Contains(choice, FormatRepresentativeOptions(), StringComparison.Ordinal);
 
     [Fact]
     public void OptionsFormatter_OrdersOptionGroups()
@@ -408,7 +412,7 @@ public sealed class SsctlFormatterContractsTests
     [InlineData("Timestamp                | CapAvg | CapP95")]
     [InlineData("2026-05-15T00:00:00Z")]
     public void TimelineFormatter_EmitsSampleTable(string tableValue)
-        => AssertContains(FormatRepresentativeTimeline(), tableValue);
+        => Assert.Contains(tableValue, FormatRepresentativeTimeline(), StringComparison.Ordinal);
 
     [Theory]
     [InlineData("== Trend Summary (first vs last sample) ==")]
@@ -416,7 +420,7 @@ public sealed class SsctlFormatterContractsTests
     [InlineData("Video Drops:    2 -> 5 (delta: +3)")]
     [InlineData("Working Set:    200.0MB -> 205.0MB (delta: +5.0MB)")]
     public void TimelineFormatter_EmitsTrendSummary(string summaryValue)
-        => AssertContains(FormatRepresentativeTimeline(), summaryValue);
+        => Assert.Contains(summaryValue, FormatRepresentativeTimeline(), StringComparison.Ordinal);
 
     private static string FormatRepresentativeTimeline()
     {
@@ -528,43 +532,18 @@ public sealed class SsctlFormatterContractsTests
     public Task SourceOwnershipIsUnified()
     {
         var source = RuntimeContractSource.ReadSsctlSnapshotFormatterSource();
-        AssertContains(source, "AutomationSnapshotFormatter.FormatCliSnapshot(snapshotResponse)");
-        AssertDoesNotContain(source, "AppendSnapshot");
-        AssertDoesNotContain(source, "== Sussudio State ==");
+        Assert.Contains("AutomationSnapshotFormatter.FormatCliSnapshot(snapshotResponse)", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("AppendSnapshot", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("== Sussudio State ==", source, StringComparison.Ordinal);
         foreach (var entryPoint in new[]
         {
             "FormatDiagnostics", "FormatOptions", "FormatDeviceList", "FormatTimeline", "FormatMemory", "FormatResult"
         })
         {
-            AssertContains(source, $"public static string {entryPoint}");
+            Assert.Contains($"public static string {entryPoint}", source, StringComparison.Ordinal);
         }
 
         return Task.CompletedTask;
-    }
-
-    private static void AssertContains(string value, string token)
-    {
-        var normalizedValue = NormalizeLineEndings(value);
-        var normalizedToken = NormalizeLineEndings(token);
-        Assert.True(
-            normalizedValue.IndexOf(normalizedToken, StringComparison.OrdinalIgnoreCase) >= 0,
-            $"Expected value to contain '{token}'.");
-    }
-
-    private static void AssertDoesNotContain(string value, string token)
-    {
-        var normalizedValue = NormalizeLineEndings(value);
-        var normalizedToken = NormalizeLineEndings(token);
-        Assert.True(
-            normalizedValue.IndexOf(normalizedToken, StringComparison.OrdinalIgnoreCase) < 0,
-            $"Expected value not to contain '{token}'.");
-    }
-
-    private static void AssertEqual<T>(T expected, T actual, string fieldName)
-    {
-        Assert.True(
-            EqualityComparer<T>.Default.Equals(expected, actual),
-            $"Assertion failed for {fieldName}: expected '{expected}', actual '{actual}'.");
     }
 
     private static void AssertOccursBefore(string value, string earlierToken, string laterToken)
@@ -585,6 +564,21 @@ public sealed class SsctlFormatterContractsTests
 
 public sealed class ToolFormatterContractsTests
 {
+    [Theory]
+    [InlineData(-1L, "N/A")]
+    [InlineData(0L, "0 B")]
+    public void SnapshotFormatter_DistinguishesUnknownAndExhaustedFreeSpace(long freeBytes, string expected)
+    {
+        var formatterType = RequireSharedToolType("Sussudio.Tools.AutomationSnapshotFormatter");
+        var formatSnapshot = RequireStaticMethod(formatterType, "FormatCliSnapshot");
+        using var document = JsonDocument.Parse(
+            JsonSerializer.Serialize(new { Snapshot = new { FlashbackActive = true, FlashbackTempDriveFreeBytes = freeBytes } }));
+
+        var output = (string)formatSnapshot.Invoke(null, new object[] { document.RootElement })!;
+
+        Assert.Contains($"free={expected} sessions=", output, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void ResponseFormatter_IsSuccess_ParsesSuccessAndFailureJson()
     {
@@ -665,7 +659,8 @@ public sealed class ToolFormatterContractsTests
         Assert.Contains("Reorder: avg=0.4ms", output);
         Assert.Contains("Pipeline: avg=5.1ms", output);
         Assert.Contains("== Diagnostics ==", output);
-        Assert.Contains("Legacy Score:", output);
+        Assert.Contains("Performance Score:", output);
+        Assert.Contains("Performance Summary:", output);
         Assert.Contains("Pacing Classifier: stage=MjpegDecode confidence=Medium evidence=decode p95 over budget", output);
         Assert.Contains("Frame Time:", output);
         Assert.Contains("Average Rate:", output);
@@ -673,15 +668,53 @@ public sealed class ToolFormatterContractsTests
         Assert.Contains("Decoder[1]: avg=2.2ms", output);
     }
 
-    // The formatters read the snapshot through Get(snapshot, "FieldName") with a silent
-    // string default, so a renamed AutomationSnapshot property degrades to a placeholder
-    // in ssctl and MCP output with no error anywhere. This turns that silent field loss
-    // into a build failure naming the exact field.
+    [Fact]
+    public void SnapshotFieldExtractor_CollectsSnapshotReceiversAndReadChannelFields()
+    {
+        var fields = ExtractSnapshotFields("""
+            Get(snapshot, "SessionState");
+            GetString(lastSnapshot.Value, "StatusText");
+            GetNullableLong(finalRecordingSample, "FlashbackVideoFramesSubmittedToEncoder");
+            ReadChannel(snapshot,
+                "CaptureCadenceObservedFps",
+                "CaptureCadenceSampleCount");
+            Get(segment, "SequenceNumber");
+            GetDouble(slowFrame, "WorstOverBudgetMs");
+            GetString(request.Verification.Value, "Message");
+            GetString(response, "ErrorCode");
+            ReadChannel(segment, "SequenceNumber");
+            """);
+
+        Assert.Equal(
+            new[]
+            {
+                "CaptureCadenceObservedFps",
+                "CaptureCadenceSampleCount",
+                "FlashbackVideoFramesSubmittedToEncoder",
+                "SessionState",
+                "StatusText"
+            },
+            fields.OrderBy(field => field, StringComparer.Ordinal));
+    }
+
+    // Snapshot consumers use accessors with silent defaults, so a renamed
+    // AutomationSnapshot property can degrade output without an error. Keep every shared
+    // formatter and diagnostic consumer inside this guard.
     [Fact]
     public void SnapshotFormatters_ReferenceOnlyRealAutomationSnapshotFields()
     {
         var referenced = ExtractSnapshotFields(RuntimeContractSource.ReadAutomationSnapshotFormatterSource());
         referenced.UnionWith(ExtractSnapshotFields(RuntimeContractSource.ReadSsctlSnapshotFormatterSource()));
+
+        var diagnosticSessionDirectory = System.IO.Path.Combine(RuntimeContractSource.GetRepoRoot(), "tools", "DiagnosticSession");
+        foreach (var sourcePath in System.IO.Directory
+                     .EnumerateFiles(diagnosticSessionDirectory, "*.cs")
+                     .OrderBy(path => path, StringComparer.Ordinal))
+        {
+            referenced.UnionWith(ExtractSnapshotFields(System.IO.File.ReadAllText(sourcePath)));
+        }
+
+        referenced.UnionWith(ExtractSnapshotFields(RuntimeContractSource.ReadRepoFile("tools/McpServer/Tools/FramePacingVerdictTools.cs")));
         Assert.NotEmpty(referenced);
 
         var snapshotType = global::Program.RequireSnapshotType();
@@ -736,64 +769,63 @@ public sealed class ToolFormatterContractsTests
     private static HashSet<string> ExtractSnapshotFields(string sourceText)
     {
         var fields = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var callPrefix in new[]
+        const string invocationPattern =
+            @"\b(?<method>Get(?:Int|Double|Long|NullableLong|Bool|String)?|FormatFrameBudgetMs|FormatIntervalMs|ReadChannel)\s*\(\s*(?<receiver>[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)\s*,(?<arguments>[^)]*)\)";
+        foreach (System.Text.RegularExpressions.Match call in
+                 System.Text.RegularExpressions.Regex.Matches(sourceText, invocationPattern))
         {
-            "Get(snapshot,",
-            "GetInt(snapshot,",
-            "GetDouble(snapshot,",
-            "GetLong(snapshot,",
-            "GetNullableLong(snapshot,",
-            "GetBool(snapshot,",
-            "GetString(snapshot,",
-            "FormatFrameBudgetMs(snapshot,",
-            "FormatIntervalMs(snapshot,"
-        })
-        {
-            ExtractSnapshotFieldsFromCalls(sourceText, callPrefix, fields);
+            if (!IsSnapshotReceiver(call.Groups["receiver"].Value))
+            {
+                continue;
+            }
+
+            var arguments = call.Groups["arguments"].Value;
+            if (call.Groups["method"].Value == "ReadChannel")
+            {
+                foreach (System.Text.RegularExpressions.Match property in
+                         System.Text.RegularExpressions.Regex.Matches(arguments, "\\\"(?<field>[^\\\"]+)\\\""))
+                {
+                    fields.Add(property.Groups["field"].Value);
+                }
+            }
+            else
+            {
+                var property = System.Text.RegularExpressions.Regex.Match(arguments, "^\\s*\\\"(?<field>[^\\\"]+)\\\"");
+                if (property.Success)
+                {
+                    fields.Add(property.Groups["field"].Value);
+                }
+            }
         }
 
         return fields;
     }
 
-    private static void ExtractSnapshotFieldsFromCalls(string sourceText, string callPrefix, HashSet<string> fields)
+    private static bool IsSnapshotReceiver(string expression)
     {
-        var index = 0;
-        while (index < sourceText.Length)
+        var receiver = expression.Trim();
+        if (receiver.EndsWith(".Value", StringComparison.Ordinal))
         {
-            var callIdx = sourceText.IndexOf(callPrefix, index, StringComparison.Ordinal);
-            if (callIdx < 0)
-            {
-                break;
-            }
-
-            var afterComma = callIdx + callPrefix.Length;
-            var quoteIdx = sourceText.IndexOf('"', afterComma);
-            if (quoteIdx < 0 || quoteIdx - afterComma > 10)
-            {
-                index = afterComma;
-                continue;
-            }
-
-            var endQuoteIdx = sourceText.IndexOf('"', quoteIdx + 1);
-            if (endQuoteIdx < 0)
-            {
-                index = quoteIdx + 1;
-                continue;
-            }
-
-            var fieldName = sourceText.Substring(quoteIdx + 1, endQuoteIdx - quoteIdx - 1);
-            if (fieldName.Length > 0)
-            {
-                fields.Add(fieldName);
-            }
-
-            index = endQuoteIdx + 1;
+            receiver = receiver[..^6];
         }
+
+        var segmentStart = receiver.LastIndexOf('.') + 1;
+        var finalIdentifier = receiver[segmentStart..];
+        return string.Equals(finalIdentifier, "snapshot", StringComparison.Ordinal) ||
+               finalIdentifier.EndsWith("Snapshot", StringComparison.Ordinal) ||
+               string.Equals(finalIdentifier, "finalRecordingSample", StringComparison.Ordinal) ||
+               string.Equals(finalIdentifier, "firstRecordingSample", StringComparison.Ordinal);
     }
 }
 
 public sealed class SsctlCommandHandlerContractsTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public Task DiagnosticCancellationRestoresPreviewThroughTheCliTransport(bool loseStartupReply)
+        => global::Program.SsctlCommandHandlers_DiagnosticCancellationRestoresPreview(loseStartupReply);
+
     [Fact]
     public Task RoutesDeviceCommands()
         => global::Program.SsctlCommandHandlers_RouteDeviceCommands();
@@ -985,6 +1017,10 @@ public sealed class McpToolSurfaceContractsTests
         => global::Program.McpPipeClient_HonorsSussudioAutomationPipeEnvironment();
 
     [Fact]
+    public Task AutomationPipeProtocolResolvesExplicitAndEnvironmentPipeNames()
+        => global::Program.AutomationPipeProtocol_ResolvesExplicitAndEnvironmentPipeNames();
+
+    [Fact]
     public Task HostToolInvocationReturnsPipeFailures()
         => global::Program.McpHostToolInvocation_ReturnsPipeFailureInsteadOfClosingTransport();
 
@@ -1003,6 +1039,29 @@ public sealed class McpToolSurfaceContractsTests
     [Fact]
     public Task ToolCommandFormatterBatchesPendingCommands()
         => global::Program.McpToolCommandFormatter_BatchesPendingCommands();
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public Task ToolResultsPreserveFailureCodeExactlyOnce(bool batch, bool codeAlreadyInMessage)
+        => global::Program.McpToolResults_PreserveFailureCodeExactlyOnce(batch, codeAlreadyInMessage);
+
+    [Theory]
+    [InlineData("AutomationWindowAction", "WindowTools", "window_action", "action", true)]
+    [InlineData("AutomationFlashbackAction", "FlashbackTools", "flashback_action", "action", true)]
+    [InlineData("AutomationWaitCondition", "WaitTools", "wait_for_condition", null, false)]
+    public void AdvertisedActionsMatchAppEnums(string enumName, string toolName, string methodName, string? parameterName, bool snakeCase)
+        => global::Program.McpToolDescriptions_MatchAppEnums(enumName, toolName, methodName, parameterName, snakeCase);
+
+    [Theory]
+    [InlineData("mcp", false)]
+    [InlineData("mcp", true)]
+    [InlineData("ssctl", false)]
+    [InlineData("ssctl", true)]
+    public Task ExportClientsPreserveRelativePathsWithoutCreatingDirectories(string client, bool explicitPath)
+        => global::Program.AutomationExportClients_PreserveRelativePathsWithoutCreatingDirectories(client, explicitPath);
 
     [Fact]
     public Task DeviceToolsRouteRefreshSelectionsAndCustomAudio()
@@ -1034,6 +1093,10 @@ public sealed class McpPerformanceToolContractsTests
     [Fact]
     public Task PresentMonToolsRouteSnapshotCorrelation()
         => global::Program.McpPresentMonTools_RouteSnapshotCorrelation();
+
+    [Fact]
+    public Task PresentMonProbeReportsSyntheticSnapshotFailures()
+        => global::Program.PresentMonProbe_ReportsSyntheticSnapshotFailures();
 
     [Fact]
     public Task PerformanceTimelineToolExposesD3DP99StageTiming()
@@ -1589,8 +1652,8 @@ static partial class Program
         AssertDoesNotContain(videoSourceProbeToolsText, "SendCommandAsync(\"ProbeVideoSource\"");
         AssertContains(windowToolsText, "SendCommandAsync(AutomationCommandKind.ArmClose, armPayload, cancellationToken: cancellationToken)");
         AssertContains(windowToolsText, "var actionId = Guid.NewGuid().ToString(\"N\");");
-        AssertContains(windowToolsText, "[\"actionId\"] = actionId");
-        AssertContains(windowToolsText, "actionPayload[\"actionId\"] = actionId;");
+        AssertContains(windowToolsText, "[AutomationPayloadKeys.ActionId] = actionId");
+        AssertContains(windowToolsText, "actionPayload[AutomationPayloadKeys.ActionId] = actionId;");
         AssertContains(windowToolsText, "SendCommandAsync(AutomationCommandKind.WindowAction, actionPayload, cancellationToken: cancellationToken)");
         AssertContains(windowToolsText, "AutomationCommandKind.SetFullScreenEnabled");
         AssertContains(windowToolsText, "AutomationCommandKind.OpenRecordingsFolder");
@@ -1771,6 +1834,16 @@ static partial class Program
         AssertCommandRequest(requests[6], "SetOutputPath", ("outputPath", @"C:\captures"));
         AssertCommandRequest(requests[7], "SetDeviceAudioMode", ("mode", "analog"));
         AssertCommandRequest(requests[8], "SetAnalogAudioGain", ("gain", 42.5d));
+
+        var invalidModeResult = await InvokeMcpToolResultAsync(
+                pipelineTools,
+                "configure_audio_mode",
+                null,
+                null,
+                CancellationToken.None)
+            .ConfigureAwait(false);
+        AssertEqual(true, GetMcpToolResultIsError(invalidModeResult), "configure_audio_mode missing value is an MCP tool error");
+        AssertEqual("Audio mode is required. Expected hdmi or analog.", GetMcpToolResultText(invalidModeResult), "configure_audio_mode missing value message");
     }
 
     internal static async Task McpRecordingTools_RouteRecordingToggle()
@@ -1927,7 +2000,7 @@ static partial class Program
         var automationCommandKindType = optional.GetParameters()[0].ParameterType;
         var pendingType = optional.ReturnType;
         var executeBatch = formatterType.GetMethod(
-                "ExecuteBatchAsync",
+                "ExecuteBatchResultAsync",
                 BindingFlags.Static | BindingFlags.NonPublic,
                 binder: null,
                 types:
@@ -1937,10 +2010,11 @@ static partial class Program
                     pendingType.MakeArrayType()
                 ],
                 modifiers: null)
-            ?? throw new InvalidOperationException("ToolCommandFormatter.ExecuteBatchAsync was not found.");
+            ?? throw new InvalidOperationException("ToolCommandFormatter.ExecuteBatchResultAsync was not found.");
         var emptyCommands = Array.CreateInstance(pendingType, 0);
-        var emptyResult = await InvokeFormatterBatchAsync(executeBatch, pipeClient, "nothing to do", emptyCommands).ConfigureAwait(false);
-        AssertEqual("nothing to do", emptyResult, "ToolCommandFormatter empty batch result");
+        var emptyResult = await InvokeBatch(emptyCommands).ConfigureAwait(false);
+        AssertEqual("nothing to do", GetMcpToolResultText(emptyResult), "ToolCommandFormatter empty batch result");
+        AssertEqual(false, GetMcpToolResultIsError(emptyResult), "empty batch is not an error");
 
         var firstPending = optional.Invoke(
             null,
@@ -1960,37 +2034,44 @@ static partial class Program
                 new Dictionary<string, object?> { ["visible"] = false },
                 null
             });
-        var commands = Array.CreateInstance(pendingType, 2);
+        var omittedPending = optional.Invoke(null, new object?[]
+        {
+            Enum.Parse(automationCommandKindType, "SetPreviewVolume"), false,
+            new Dictionary<string, object?> { ["previewVolumePercent"] = 50d }, null
+        });
+        var commands = Array.CreateInstance(pendingType, 3);
         commands.SetValue(firstPending, 0);
-        commands.SetValue(secondPending, 1);
+        commands.SetValue(omittedPending, 1);
+        commands.SetValue(secondPending, 2);
 
-        string result = string.Empty;
+        object? result = null;
         var requests = await CapturePipeRequestsAsync(
                 pipeName,
                 expectedCount: 2,
                 async () =>
                 {
-                    result = await InvokeFormatterBatchAsync(executeBatch, pipeClient, "nothing to do", commands).ConfigureAwait(false);
+                    result = await InvokeBatch(commands).ConfigureAwait(false);
                 },
                 i => i == 0
-                    ? "{\"Success\":true,\"Message\":\"stats updated\"}"
-                    : "{\"Success\":false,\"Message\":\"settings blocked\"}")
+                    ? "{\"Success\":true,\"Message\":\"stats updated\",\"ErrorCode\":\"ignored-success-code\"}"
+                    : "{\"Success\":false,\"Message\":\"settings blocked\",\"ErrorCode\":\"settings-blocked\"}")
             .ConfigureAwait(false);
 
         AssertCommandRequest(requests[0], "SetStatsVisible", ("visible", true));
         AssertCommandRequest(requests[1], "SetSettingsVisible", ("visible", false));
         AssertEqual(
-            "[OK] SetStatsVisible: stats updated" + Environment.NewLine + "[ERROR] SetSettingsVisible: settings blocked",
-            result,
+            "[OK] SetStatsVisible: stats updated" + Environment.NewLine + "[ERROR] SetSettingsVisible: settings blocked" + Environment.NewLine + "ErrorCode: settings-blocked",
+            GetMcpToolResultText(result),
             "ToolCommandFormatter ordered joined batch result");
+        AssertEqual(true, GetMcpToolResultIsError(result), "partially applied failed batch is an error");
 
-        string failFastResult = string.Empty;
+        object? failFastResult = null;
         var failFastRequests = await CapturePipeRequestsAsync(
                 pipeName,
                 expectedCount: 1,
                 async () =>
                 {
-                    failFastResult = await InvokeFormatterBatchAsync(executeBatch, pipeClient, "nothing to do", commands).ConfigureAwait(false);
+                    failFastResult = await InvokeBatch(commands).ConfigureAwait(false);
                 },
                 _ => "{\"Success\":false,\"Message\":\"stats blocked\"}")
             .ConfigureAwait(false);
@@ -1998,8 +2079,344 @@ static partial class Program
         AssertCommandRequest(failFastRequests[0], "SetStatsVisible", ("visible", true));
         AssertEqual(
             "[ERROR] SetStatsVisible: stats blocked",
-            failFastResult,
+            GetMcpToolResultText(failFastResult),
             "ToolCommandFormatter stops batch after first failed mutation");
+        AssertEqual(true, GetMcpToolResultIsError(failFastResult), "first failed mutation makes the batch an error");
+
+        async Task<object> InvokeBatch(Array pendingCommands)
+        {
+            var task = (Task)executeBatch.Invoke(null, new object?[] { pipeClient, "nothing to do", pendingCommands })!;
+            await task.ConfigureAwait(false);
+            return task.GetType().GetProperty("Result")!.GetValue(task)!;
+        }
+    }
+
+    internal static async Task McpToolResults_PreserveFailureCodeExactlyOnce(bool batch, bool codeAlreadyInMessage)
+    {
+        const string ErrorCode = "settings-blocked";
+        var message = codeAlreadyInMessage ? "settings blocked (settings-blocked)" : "settings blocked";
+        var pipeName = NewMcpToolPipeName("failure-code");
+        var pipeClient = CreateMcpPipeClient(pipeName);
+        var toolType = RequireMcpType("McpServer.Tools.UiSettingsTools");
+        object? result = null;
+        var requests = await CapturePipeRequestsAsync(pipeName, 1, async () =>
+        {
+            result = batch
+                ? await InvokeMcpToolResultAsync(toolType, "configure_ui", pipeClient, true, 50d, true).ConfigureAwait(false)
+                : await InvokeMcpToolResultAsync(toolType, "configure_settings_panel", pipeClient, true).ConfigureAwait(false);
+        }, _ => JsonSerializer.Serialize(new { Success = false, Message = message, ErrorCode })).ConfigureAwait(false);
+
+        AssertCommandRequest(requests[0], batch ? "SetShowAllCaptureOptions" : "SetSettingsVisible",
+            (batch ? "enabled" : "visible", true));
+        AssertEqual(true, GetMcpToolResultIsError(result), "failed tool result isError");
+        var text = GetMcpToolResultText(result);
+        var command = batch ? "SetShowAllCaptureOptions" : "SetSettingsVisible";
+        AssertEqual($"[ERROR] {command}: {message}" +
+            (codeAlreadyInMessage ? string.Empty : Environment.NewLine + "ErrorCode: " + ErrorCode), text,
+            "single and batch results preserve error identity exactly once");
+        AssertEqual(1, Regex.Matches(text, Regex.Escape(ErrorCode), RegexOptions.CultureInvariant).Count,
+            "failed tool code occurrence count");
+    }
+
+    internal static void McpToolDescriptions_MatchAppEnums(
+        string enumName, string toolName, string methodName, string? parameterName, bool snakeCase)
+    {
+        var enumType = RequireType("Sussudio.Models." + enumName);
+        var method = RequireMcpType("McpServer.Tools." + toolName).GetMethod(methodName, BindingFlags.Public | BindingFlags.Static)!;
+        var names = Enum.GetNames(enumType);
+        var descriptions = new List<string> { method.GetCustomAttribute<DescriptionAttribute>()!.Description };
+        if (parameterName != null)
+            descriptions.Add(method.GetParameters().Single(parameter => parameter.Name == parameterName)
+                .GetCustomAttribute<DescriptionAttribute>()!.Description);
+
+        foreach (var description in descriptions)
+        {
+            foreach (var name in names)
+            {
+                var advertised = snakeCase ? JsonNamingPolicy.SnakeCaseLower.ConvertName(name) : name;
+                AssertEqual(true, Regex.IsMatch(description, $"(?<![A-Za-z0-9_]){Regex.Escape(advertised)}(?![A-Za-z0-9_])",
+                    RegexOptions.CultureInvariant), $"{methodName} description advertises whole token {advertised}");
+            }
+        }
+
+        if (enumName == "AutomationFlashbackAction")
+        {
+            var expected = names.Select(JsonNamingPolicy.KebabCaseLower.ConvertName).OrderBy(name => name, StringComparer.Ordinal).ToArray();
+            var actual = AutomationFlashbackValidation.ValidActionNames.OrderBy(name => name, StringComparer.Ordinal).ToArray();
+            AssertEqual(string.Join(",", expected), string.Join(",", actual), "shared Flashback actions match the app enum");
+        }
+    }
+
+    internal static async Task AutomationExportClients_PreserveRelativePathsWithoutCreatingDirectories(string client, bool explicitPath)
+    {
+        var workingDirectory = Path.Combine(Path.GetTempPath(), "Sussudio.Tests", "export-client-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workingDirectory);
+        try
+        {
+            const string ExplicitPath = "uncreated/nested/export with spaces.mp4";
+            var outputPath = explicitPath ? ExplicitPath : null;
+            var pipeName = NewMcpToolPipeName("export-path-" + client);
+            var requests = await CapturePipeRequestsAsync(pipeName, 1, async () =>
+            {
+                if (client == "mcp")
+                    await InvokeMcpExportInDirectoryAsync(pipeName, workingDirectory, outputPath).ConfigureAwait(false);
+                else
+                    await InvokeSsctlExportInDirectoryAsync(pipeName, workingDirectory, outputPath).ConfigureAwait(false);
+            }).ConfigureAwait(false);
+
+            var transmittedPath = requests[0].GetProperty("payload").GetProperty("outputPath").GetString()!;
+            AssertEqual(false, Path.IsPathRooted(transmittedPath), "export output path stays relative");
+            if (explicitPath)
+                AssertEqual(ExplicitPath, transmittedPath, "explicit relative export path is unchanged");
+            else
+                AssertEqual(true, Regex.IsMatch(transmittedPath, @"\Atemp/flashback_export_[0-9]{8}_[0-9]{6}\.mp4\z",
+                    RegexOptions.CultureInvariant), "omitted export path keeps its existing relative generated form");
+            AssertCommandRequest(requests[0], "FlashbackExport", ("seconds", 300d), ("outputPath", transmittedPath),
+                ("useSelectionRange", false), ("force", false));
+            AssertEqual(false, Directory.Exists(Path.GetDirectoryName(Path.Combine(workingDirectory, transmittedPath))),
+                "client does not prepare the export destination directory");
+            AssertEqual(false, Directory.EnumerateFileSystemEntries(workingDirectory).Any(),
+                "synthetic export leaves the client working directory untouched");
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    private static async Task InvokeMcpExportInDirectoryAsync(string pipeName, string workingDirectory, string? outputPath)
+    {
+        var arguments = new Dictionary<string, object?>();
+        if (outputPath != null)
+            arguments["outputPath"] = outputPath;
+        await InvokeMcpToolInDirectoryAsync(pipeName, workingDirectory, "flashback_export", arguments).ConfigureAwait(false);
+    }
+
+    private static async Task InvokeMcpToolInDirectoryAsync(
+        string pipeName,
+        string workingDirectory,
+        string toolName,
+        Dictionary<string, object?> arguments,
+        IReadOnlyList<string>? startupArguments = null,
+        IReadOnlyDictionary<string, string?>? environmentVariables = null)
+    {
+        using var process = StartMcpServerProcess(global::Program.McpServerAssemblyRelativePath, pipeName,
+            workingDirectory, startupArguments, environmentVariables);
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        var stderr = process.StandardError.ReadToEndAsync();
+        try
+        {
+            await WriteJsonRpcLineAsync(process,
+                """{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"Sussudio.Tests","version":"1.0"}}}""", cts.Token).ConfigureAwait(false);
+            using var initialized = await ReadJsonRpcResponseAsync(process, 1, cts.Token).ConfigureAwait(false);
+            await WriteJsonRpcLineAsync(process,
+                """{"jsonrpc":"2.0","method":"notifications/initialized","params":{}}""", cts.Token).ConfigureAwait(false);
+            await WriteJsonRpcLineAsync(process, JsonSerializer.Serialize(new
+            {
+                jsonrpc = "2.0", id = 2, method = "tools/call",
+                @params = new { name = toolName, arguments }
+            }), cts.Token).ConfigureAwait(false);
+            using var response = await ReadJsonRpcResponseAsync(process, 2, cts.Token).ConfigureAwait(false);
+            var result = response.RootElement.GetProperty("result");
+            AssertEqual(false, result.TryGetProperty("isError", out var error) && error.GetBoolean(), "MCP synthetic tool result");
+        }
+        finally
+        {
+            await StopMcpServerProcessAsync(process).ConfigureAwait(false);
+            await stderr.ConfigureAwait(false);
+        }
+    }
+
+    private static async Task InvokeSsctlExportInDirectoryAsync(string pipeName, string workingDirectory, string? outputPath)
+    {
+        var arguments = new List<string> { "--pipe", pipeName, "flashback", "export" };
+        if (outputPath != null)
+        {
+            arguments.Add("300");
+            arguments.Add(outputPath);
+        }
+        var result = await RunSsctlProcessAsync(arguments, workingDirectory).ConfigureAwait(false);
+        AssertEqual(0, result.ExitCode, "ssctl synthetic export exit code: " + result.Error);
+    }
+
+    private static async Task<(int ExitCode, string Output, string Error)> RunSsctlProcessAsync(
+        IReadOnlyList<string> arguments,
+        string? workingDirectory = null,
+        IReadOnlyDictionary<string, string?>? environmentVariables = null)
+    {
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = "dotnet",
+            WorkingDirectory = workingDirectory ?? GetRepoRoot(),
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            CreateNoWindow = true
+        };
+        startInfo.ArgumentList.Add(Path.GetFullPath(Path.Combine(GetRepoRoot(), global::Program.SsctlAssemblyRelativePath)));
+        foreach (var argument in arguments)
+            startInfo.ArgumentList.Add(argument);
+        if (environmentVariables != null)
+            foreach (var (name, value) in environmentVariables)
+            {
+                if (value == null)
+                    startInfo.Environment.Remove(name);
+                else
+                    startInfo.Environment[name] = value;
+            }
+        using var process = new Process { StartInfo = startInfo };
+        AssertEqual(true, process.Start(), "start ssctl client");
+        var stdout = process.StandardOutput.ReadToEndAsync();
+        var stderr = process.StandardError.ReadToEndAsync();
+        try
+        {
+            await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(15)).ConfigureAwait(false);
+            return (process.ExitCode, await stdout.ConfigureAwait(false), await stderr.ConfigureAwait(false));
+        }
+        finally
+        {
+            if (!process.HasExited)
+            {
+                process.Kill(entireProcessTree: true);
+                await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(3)).ConfigureAwait(false);
+            }
+        }
+    }
+
+    private static async Task<(int ExitCode, string Output, string Error)> RunAutomationClientProcessAsync(
+        IReadOnlyList<string> arguments,
+        IReadOnlyDictionary<string, string?>? environmentVariables = null)
+    {
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = "dotnet",
+            WorkingDirectory = GetRepoRoot(),
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            CreateNoWindow = true
+        };
+        startInfo.ArgumentList.Add(Path.GetFullPath(Path.Combine(GetRepoRoot(), global::Program.AutomationClientAssemblyRelativePath)));
+        foreach (var argument in arguments)
+            startInfo.ArgumentList.Add(argument);
+        if (environmentVariables != null)
+            foreach (var (name, value) in environmentVariables)
+            {
+                if (value == null)
+                    startInfo.Environment.Remove(name);
+                else
+                    startInfo.Environment[name] = value;
+            }
+        using var process = new Process { StartInfo = startInfo };
+        AssertEqual(true, process.Start(), "start AutomationClient");
+        var stdout = process.StandardOutput.ReadToEndAsync();
+        var stderr = process.StandardError.ReadToEndAsync();
+        try
+        {
+            await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(15)).ConfigureAwait(false);
+            return (process.ExitCode, await stdout.ConfigureAwait(false), await stderr.ConfigureAwait(false));
+        }
+        finally
+        {
+            if (!process.HasExited)
+            {
+                process.Kill(entireProcessTree: true);
+                await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(3)).ConfigureAwait(false);
+            }
+        }
+    }
+
+    internal static async Task AutomationToolAdapters_ForwardExplicitToken(string client, bool typedCommand)
+    {
+        const string AuthToken = "adapter-auth-test-token";
+        var pipeName = NewMcpToolPipeName("adapter-auth-" + client);
+        var type = client == "mcp"
+            ? RequireMcpType("McpServer.PipeClient")
+            : LoadToolAssemblyIsolated(global::Program.SsctlAssemblyRelativePath).GetType("Sussudio.Tools.Ssctl.PipeTransport", throwOnError: true)!;
+        var constructorArguments = client == "mcp"
+            ? new object?[] { pipeName, AuthToken }
+            : new object?[] { pipeName, null, AuthToken };
+        var transport = Activator.CreateInstance(type, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+            binder: null, args: constructorArguments, culture: null)!;
+        var send = type.GetMethods(BindingFlags.Instance | BindingFlags.Public).Single(method =>
+            method.Name == "SendCommandAsync" && method.GetParameters()[0].ParameterType.IsEnum == typedCommand);
+        var command = typedCommand
+            ? Enum.Parse(send.GetParameters()[0].ParameterType, "SetSettingsVisible")
+            : (object)"SetSettingsVisible";
+        var request = await CapturePipeRequestAsync(pipeName, async () =>
+        {
+            var task = (Task)send.Invoke(transport,
+                new object?[] { command, new Dictionary<string, object?> { ["visible"] = true }, null, CancellationToken.None })!;
+            await task.ConfigureAwait(false);
+        }).ConfigureAwait(false);
+
+        AssertCommandRequest(request, "SetSettingsVisible", ("visible", true));
+        AssertEqual(AuthToken, request.GetProperty("authToken").GetString(), "adapter forwards explicit top-level credential");
+        AssertEqual(false, request.GetProperty("payload").TryGetProperty("authToken", out _), "credential does not enter payload");
+    }
+
+    internal static async Task AutomationToolStartup_UsesExplicitTokenOrChildEnvironment(
+        string client, string? tokenFlag, string? tokenValue)
+    {
+        const string EnvironmentToken = "child-environment-auth-test-token";
+        var environment = new Dictionary<string, string?>
+        {
+            ["SUSSUDIO_AUTOMATION_TOKEN"] = EnvironmentToken,
+            ["token"] = null
+        };
+        var pipeName = NewMcpToolPipeName("startup-auth-" + client);
+        var tokenArguments = tokenFlag == null ? Array.Empty<string>() : new[] { tokenFlag, tokenValue! };
+        var requests = await CapturePipeRequestsAsync(pipeName, 1, async () =>
+        {
+            if (client == "mcp")
+            {
+                await InvokeMcpToolInDirectoryAsync(pipeName, GetRepoRoot(), "configure_settings_panel",
+                    new Dictionary<string, object?> { ["visible"] = true }, tokenArguments, environment).ConfigureAwait(false);
+            }
+            else
+            {
+                var arguments = new List<string> { "--pipe", pipeName };
+                arguments.AddRange(tokenArguments);
+                arguments.AddRange(new[] { "settings", "show" });
+                var result = await RunSsctlProcessAsync(arguments, environmentVariables: environment).ConfigureAwait(false);
+                AssertEqual(0, result.ExitCode, "ssctl token startup exit code: " + result.Error);
+                AssertDoesNotContain(result.Output + result.Error, EnvironmentToken);
+                if (!string.IsNullOrWhiteSpace(tokenValue))
+                    AssertDoesNotContain(result.Output + result.Error, tokenValue);
+            }
+        }).ConfigureAwait(false);
+
+        AssertCommandRequest(requests[0], "SetSettingsVisible", ("visible", true));
+        AssertEqual(tokenFlag is "--token" or "-t" ? tokenValue : EnvironmentToken, requests[0].GetProperty("authToken").GetString(),
+            "startup explicit token overrides child environment; omitted token uses environment");
+        AssertEqual(false, requests[0].GetProperty("payload").TryGetProperty("authToken", out _), "startup token stays out of payload");
+    }
+
+    internal static async Task AutomationToolStartup_RejectsMissingTokenValue(string client, string tokenFlag)
+    {
+        if (client == "ssctl")
+        {
+            var result = await RunSsctlProcessAsync(new[] { tokenFlag }).ConfigureAwait(false);
+            AssertEqual(2, result.ExitCode, "missing ssctl token is a usage error");
+            AssertContains(result.Error, $"Missing value for {tokenFlag}.");
+            return;
+        }
+
+        using var process = StartMcpServerProcess(global::Program.McpServerAssemblyRelativePath,
+            arguments: new[] { tokenFlag });
+        var stdout = process.StandardOutput.ReadToEndAsync();
+        var stderr = process.StandardError.ReadToEndAsync();
+        try
+        {
+            await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(15)).ConfigureAwait(false);
+            AssertEqual(2, process.ExitCode, "missing MCP token is a usage error");
+            AssertContains(await stderr.ConfigureAwait(false), $"Missing value for {tokenFlag}.");
+            await stdout.ConfigureAwait(false);
+        }
+        finally
+        {
+            await StopMcpServerProcessAsync(process).ConfigureAwait(false);
+        }
     }
 
     private const string StructuredQueryTestPayload = """
@@ -2226,6 +2643,27 @@ static partial class Program
         {
             Environment.SetEnvironmentVariable("SUSSUDIO_AUTOMATION_PIPE", previousPipeName);
         }
+    }
+
+    internal static Task AutomationPipeProtocol_ResolvesExplicitAndEnvironmentPipeNames()
+    {
+        var previousPipeName = Environment.GetEnvironmentVariable(AutomationPipeProtocol.AutomationPipeEnvVar);
+        try
+        {
+            Environment.SetEnvironmentVariable(AutomationPipeProtocol.AutomationPipeEnvVar, "environment-pipe");
+            AssertEqual("explicit-pipe", AutomationPipeProtocol.ResolvePipeName("explicit-pipe"), "explicit pipe name precedence");
+            AssertEqual("environment-pipe", AutomationPipeProtocol.ResolvePipeName(null), "configured pipe name fallback");
+            AssertEqual("environment-pipe", AutomationPipeProtocol.ResolvePipeName("  "), "blank explicit pipe name fallback");
+
+            Environment.SetEnvironmentVariable(AutomationPipeProtocol.AutomationPipeEnvVar, "  ");
+            AssertEqual(AutomationPipeProtocol.DefaultPipeName, AutomationPipeProtocol.ResolvePipeName(null), "default pipe name fallback");
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(AutomationPipeProtocol.AutomationPipeEnvVar, previousPipeName);
+        }
+
+        return Task.CompletedTask;
     }
 
     internal static async Task McpHostToolInvocation_ReturnsPipeFailureInsteadOfClosingTransport()
@@ -3068,6 +3506,13 @@ static partial class Program
         AssertContains(healthText, "diagnostic health {tolerance.WarningReason}:");
         AssertContains(healthText, "snapshot epoch consistency warning tolerated");
         AssertContains(healthText, "flashback force-rotate drain warning tolerated for flashback scenario");
+        AssertContains(healthText, "scenarioPlan.IsPreviewCycleScenario");
+        AssertContains(healthText, "preview scheduler warning tolerated for sparse deadline-drop run");
+        Assert.True(
+            System.Text.RegularExpressions.Regex.IsMatch(
+                healthText,
+                @"IsPreviewSchedulerDiagnosticHealthObservation\(diagnosticHealthObservation\)\s*\?\s*scenarioPlan\.IsPreviewCycleScenario\s*\?\s*""preview scheduler transition warning tolerated for preview-cycle scenario""\s*:\s*""preview scheduler warning tolerated for sparse deadline-drop run"""),
+            "Preview-scheduler warning labels must follow the preview-cycle scenario flag.");
         AssertContains(healthText, "present/display warning tolerated for strict artifact verification scenario");
         AssertContains(healthText, "present/display warning tolerated for flashback control scenario");
         AssertContains(
@@ -3548,50 +3993,9 @@ static partial class Program
                  })
         {
             AssertNotNull(entryType.GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance), $"PerformanceTimelineEntry.{propertyName}");
-            if (propertyName.StartsWith("FlashbackPlayback", StringComparison.Ordinal))
-            {
-                var projectionName = propertyName["FlashbackPlayback".Length..];
-                AssertContains(diagnosticsHubSource, $"{propertyName} = flashbackPlayback.{projectionName}");
-                AssertContains(diagnosticsHubSource, $"{projectionName}: snapshot.{propertyName}");
-            }
-            else if (propertyName.StartsWith("FlashbackExport", StringComparison.Ordinal))
-            {
-                var projectionName = propertyName["FlashbackExport".Length..];
-                AssertContains(diagnosticsHubSource, $"{propertyName} = flashbackExport.{projectionName}");
-                AssertContains(diagnosticsHubSource, $"{projectionName}: snapshot.{propertyName}");
-            }
-            else if (propertyName is "ProcessCpuPercent" or "ThreadPoolWorkerAvailable")
-            {
-                AssertContains(diagnosticsHubSource, $"{propertyName} = system.{propertyName}");
-                AssertContains(diagnosticsHubSource, $"{propertyName}: snapshot.{propertyName}");
-            }
-            else if (propertyName.StartsWith("PreviewCadence", StringComparison.Ordinal))
-            {
-                var projectionName = propertyName["Preview".Length..];
-                AssertContains(diagnosticsHubSource, $"{propertyName} = preview.{projectionName}");
-                AssertContains(diagnosticsHubSource, $"{projectionName}: snapshot.{propertyName.Replace("Ms", "IntervalMs", StringComparison.Ordinal)}");
-            }
-            else if (propertyName.StartsWith("CaptureCadence", StringComparison.Ordinal))
-            {
-                AssertContains(diagnosticsHubSource, $"{propertyName} = core.{propertyName}");
-                AssertContains(diagnosticsHubSource, $"{propertyName}: snapshot.{propertyName}");
-            }
-            else if (propertyName.StartsWith("PreviewPacing", StringComparison.Ordinal))
-            {
-                var projectionName = propertyName["Preview".Length..];
-                AssertContains(diagnosticsHubSource, $"{propertyName} = preview.{projectionName}");
-                AssertContains(diagnosticsHubSource, $"{projectionName}: snapshot.{propertyName}");
-            }
-            else if (propertyName.StartsWith("VisualCadence", StringComparison.Ordinal) ||
-                     propertyName.StartsWith("MjpegPacketHash", StringComparison.Ordinal))
-            {
-                AssertContains(diagnosticsHubSource, $"{propertyName} = preview.{propertyName}");
-                AssertContains(diagnosticsHubSource, $"{propertyName}: snapshot.{propertyName}");
-            }
-            else
-            {
-                AssertContains(diagnosticsHubSource, $"{propertyName} = snapshot.{propertyName}");
-            }
+            // The timeline builder maps every field straight from the snapshot; the
+            // full 159-field behavior is pinned by TimelinePreservesEveryCapturedField.
+            AssertContains(diagnosticsHubSource, $"{propertyName} = snapshot.{propertyName},");
         }
     }
 
@@ -3614,7 +4018,7 @@ static partial class Program
                             118d)
                         .ConfigureAwait(false);
 
-                    AssertContains(output, "Flashback Cmd Counters: enqueued 1 -> 9, processed 0 -> 8, dropped 0 -> 2, skippedNotReady 0 -> 1, scrubCoalesced 0 -> 4, seekCoalesced 0 -> 3, lastQueued=Seek, lastProcessed=Pause");
+                    AssertContains(output, "Flashback Cmd Counters: enqueued 1 -> 9, processed 0 -> 8, dropped 0 -> 2, rejected 0 -> 1, scrubCoalesced 0 -> 4, seekCoalesced 0 -> 3, lastQueued=Seek, lastProcessed=Pause");
                     AssertContains(output, "cmdDropsDelta=2");
                     AssertContains(output, "Preview Slow Stage: Unknown/None -> CompositorMiss/High evidence=dxgiRecentMissed=4");
                 },
@@ -3749,9 +4153,10 @@ static partial class Program
         AssertContains(rootText, "correlation: resolved");
         AssertContains(rootText, "private static async Task<PresentMonProbeCorrelation> TryResolvePreviewPresentCorrelationAsync(");
         AssertContains(rootText, "SendCommandAsync(AutomationCommandKind.GetSnapshot, cancellationToken: cancellationToken)");
-        AssertContains(rootText, "return PresentMonProbe.ReadPreviewCorrelation(snapshot);");
-        AssertContains(rootText, "catch (JsonException ex)");
-        AssertContains(rootText, "catch (IOException ex)");
+        AssertContains(rootText, "return PresentMonProbe.ResolvePreviewCorrelation(");
+        AssertContains(rootText, "PresentMon correlation unavailable: {message}");
+        AssertDoesNotContain(rootText, "catch (JsonException ex)");
+        AssertDoesNotContain(rootText, "catch (IOException ex)");
         AssertDoesNotContain(rootText, "new PresentMonProbeOptions");
         AssertDoesNotContain(rootText, "ExpectedSwapChainAddress =");
         AssertDoesNotContain(rootText, "AppPresentId = appPresentId");
@@ -3762,6 +4167,68 @@ static partial class Program
         AssertContains(probeText, "public readonly record struct PresentMonProbeCorrelation(");
         AssertContains(probeText, "public static PresentMonProbeOptions CreateOptions(");
         AssertContains(probeText, "public static PresentMonProbeCorrelation ReadPreviewCorrelation(JsonElement snapshot)");
+        AssertContains(probeText, "internal static PresentMonProbeCorrelation ResolvePreviewCorrelation(");
+        AssertContains(probeText, "GetSnapshot failed ({errorCode}): {message}");
+    }
+
+    internal static Task PresentMonProbe_ReportsSyntheticSnapshotFailures()
+    {
+        var probeType = RequireMcpType("Sussudio.Tools.PresentMonProbe");
+        var resolvePreviewCorrelation = probeType.GetMethod(
+                "ResolvePreviewCorrelation",
+                BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("PresentMonProbe.ResolvePreviewCorrelation was not found.");
+        var jsonDocumentType = resolvePreviewCorrelation.GetParameters()[0].ParameterType.Assembly.GetType("System.Text.Json.JsonDocument")
+            ?? throw new InvalidOperationException("The MCP System.Text.Json.JsonDocument type was not found.");
+        var parseJson = jsonDocumentType.GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .SingleOrDefault(method =>
+            {
+                var parameters = method.GetParameters();
+                return method.Name == "Parse" &&
+                       parameters.Length >= 1 &&
+                       parameters[0].ParameterType == typeof(string);
+            })
+            ?? throw new InvalidOperationException("The MCP JsonDocument.Parse(string) method was not found.");
+        var parseParameters = parseJson.GetParameters();
+        object ParseDocument(string json)
+        {
+            var arguments = parseParameters.Length == 1
+                ? new object?[] { json }
+                : new object?[] { json, Activator.CreateInstance(parseParameters[1].ParameterType) };
+            return parseJson.Invoke(null, arguments)
+                ?? throw new InvalidOperationException("The MCP JSON document was null.");
+        }
+
+        var successDocument = ParseDocument(PresentMonSnapshotJson("0xABCDEF", 42, 17, 1700000000000));
+        var successResponse = GetPublicProperty(successDocument, "RootElement")
+            ?? throw new InvalidOperationException("The MCP snapshot response root was null.");
+        var successCorrelation = resolvePreviewCorrelation.Invoke(
+                null,
+                new object?[] { successResponse, (Action<string>)(_ => { }) })
+            ?? throw new InvalidOperationException("PresentMon correlation result was null.");
+        ((IDisposable)successDocument).Dispose();
+        AssertEqual("0xABCDEF", GetPublicProperty(successCorrelation, "SwapChainAddress"), "PresentMon response swap-chain address");
+        AssertEqual(42L, GetPublicProperty(successCorrelation, "PresentId"), "PresentMon response present id");
+        AssertEqual(17L, GetPublicProperty(successCorrelation, "SourceSequenceNumber"), "PresentMon response source sequence");
+
+        var warnings = new List<string>();
+        var failureDocument = ParseDocument(
+            "{\"Success\":false,\"ErrorCode\":\"pipe-connect-failed\",\"Message\":\"automation pipe unavailable\"}");
+        var failureResponse = GetPublicProperty(failureDocument, "RootElement")
+            ?? throw new InvalidOperationException("The MCP failure response root was null.");
+        var failedCorrelation = resolvePreviewCorrelation.Invoke(
+                null,
+                new object?[] { failureResponse, (Action<string>)warnings.Add })
+            ?? throw new InvalidOperationException("PresentMon failure correlation result was null.");
+        ((IDisposable)failureDocument).Dispose();
+
+        AssertEqual(null, GetPublicProperty(failedCorrelation, "PresentId"), "failed PresentMon response has no present id");
+        AssertEqual(1, warnings.Count, "failed PresentMon response reports one warning");
+        AssertEqual(
+            "GetSnapshot failed (pipe-connect-failed): automation pipe unavailable",
+            warnings[0],
+            "failed PresentMon response includes error code and message");
+        return Task.CompletedTask;
     }
 
     private static void AssertPresentMonOptionsFallbackAndPrecedence()
@@ -3874,7 +4341,7 @@ static partial class Program
                             pipeClient,
                             240,
                             30d,
-                            120d)
+                            0d)
                         .ConfigureAwait(false);
 
                     AssertContains(output, "Verdict: HalfRatePreviewAndPlaybackSuspected");
@@ -3926,7 +4393,8 @@ static partial class Program
                       {
                         "Success": true,
                         "Snapshot": {
-                          "ExpectedCaptureFrameRate": 120,
+                          "ExpectedCaptureFrameRate": 0,
+                          "DetectedSourceFrameRate": 120,
                           "CaptureCadenceObservedFps": 120,
                           "CaptureCadenceFivePercentLowFps": 120,
                           "CaptureCadenceOnePercentLowFps": 119,
@@ -3938,7 +4406,7 @@ static partial class Program
                           "PreviewCadenceSampleCount": 1800,
                           "PreviewCadenceSampleDurationMs": 30000,
                           "PreviewCadenceRecentIntervalsMs": [16.67, 16.67, 16.67, 16.67, 16.67, 16.67],
-                          "FlashbackPlaybackTargetFps": 120,
+                          "FlashbackPlaybackTargetFps": 0,
                           "FlashbackPlaybackObservedFps": 60,
                           "FlashbackPlaybackFivePercentLowFps": 60,
                           "FlashbackPlaybackOnePercentLowFps": 58,
@@ -4393,6 +4861,77 @@ static partial class Program
         var pipeClient = CreateMcpPipeClient(pipeName);
         var flashbackTools = RequireMcpType("McpServer.Tools.FlashbackTools");
 
+        var emptyActionResult = await InvokeMcpToolResultAsync(
+                flashbackTools,
+                "flashback_action",
+                null,
+                "",
+                null,
+                CancellationToken.None)
+            .ConfigureAwait(false);
+        AssertEqual(true, GetMcpToolResultIsError(emptyActionResult), "flashback_action missing value is an MCP tool error");
+        AssertEqual(
+            "Flashback action is required. Expected play, pause, go_live, seek, begin_scrub, update_scrub, end_scrub, set_in_point, set_out_point, or clear_in_out_points.",
+            GetMcpToolResultText(emptyActionResult),
+            "flashback_action missing value message");
+
+        var invalidActionResult = await InvokeMcpToolResultAsync(
+                flashbackTools,
+                "flashback_action",
+                null,
+                "invalid-action",
+                null,
+                CancellationToken.None)
+            .ConfigureAwait(false);
+        AssertEqual(true, GetMcpToolResultIsError(invalidActionResult), "flashback_action invalid value is an MCP tool error");
+        AssertEqual(
+            "Flashback action must be one of: play, pause, go_live, seek, begin_scrub, update_scrub, end_scrub, set_in_point, set_out_point, clear_in_out_points.",
+            GetMcpToolResultText(invalidActionResult),
+            "flashback_action invalid value message");
+
+        var missingPositionResult = await InvokeMcpToolResultAsync(
+                flashbackTools,
+                "flashback_action",
+                null,
+                "seek",
+                null,
+                CancellationToken.None)
+            .ConfigureAwait(false);
+        AssertEqual(true, GetMcpToolResultIsError(missingPositionResult), "flashback_action missing position is an MCP tool error");
+        AssertEqual(
+            "Flashback seek, begin_scrub, and update_scrub require positionMs.",
+            GetMcpToolResultText(missingPositionResult),
+            "flashback_action missing position message");
+
+        var invalidPositionResult = await InvokeMcpToolResultAsync(
+                flashbackTools,
+                "flashback_action",
+                null,
+                "seek",
+                double.NaN,
+                CancellationToken.None)
+            .ConfigureAwait(false);
+        AssertEqual(true, GetMcpToolResultIsError(invalidPositionResult), "flashback_action invalid position is an MCP tool error");
+        AssertContains(
+            GetMcpToolResultText(invalidPositionResult),
+            "Flashback positionMs must be finite, non-negative, and within TimeSpan range.");
+
+        var invalidExportSecondsResult = await InvokeMcpToolResultAsync(
+                flashbackTools,
+                "flashback_export",
+                null,
+                0d,
+                null,
+                false,
+                false,
+                CancellationToken.None)
+            .ConfigureAwait(false);
+        AssertEqual(true, GetMcpToolResultIsError(invalidExportSecondsResult), "flashback_export invalid seconds is an MCP tool error");
+        AssertEqual(
+            "Flashback export seconds must be finite, greater than zero, and within TimeSpan range.",
+            GetMcpToolResultText(invalidExportSecondsResult),
+            "flashback_export invalid seconds message");
+
         string result = string.Empty;
         var requests = await CapturePipeRequestsAsync(
                 pipeName,
@@ -4500,6 +5039,8 @@ static partial class Program
         AssertContains(flashbackToolsActionText, "!AutomationFlashbackValidation.ValidActionNames.Contains(normalizedAction)");
         AssertContains(flashbackToolsActionText, "Flashback action must be one of: play, pause, go_live, seek, begin_scrub, update_scrub, end_scrub, set_in_point, set_out_point, clear_in_out_points.");
         AssertContains(flashbackToolsActionText, "AutomationFlashbackValidation.RequiresPositionMs(normalizedAction) && !positionMs.HasValue");
+        AssertContains(flashbackToolsActionText, "return McpToolResultFactory.FromText(");
+        AssertContains(flashbackToolsActionText, "isError: true");
         AssertContains(flashbackToolsActionText, "Flashback seek, begin_scrub, and update_scrub require positionMs.");
         AssertContains(flashbackToolsActionText, "AutomationFlashbackValidation.ValidatePositionMs(positionMs.Value);");
         AssertContains(flashbackValidationText, "public static class AutomationFlashbackValidation");
@@ -4509,6 +5050,7 @@ static partial class Program
         AssertContains(flashbackValidationText, "Flashback positionMs must be finite, non-negative, and within TimeSpan range.");
         AssertContains(flashbackToolsExportText, "public static async Task<CallToolResult> flashback_export");
         AssertContains(flashbackToolsExportText, "if (!double.IsFinite(seconds) || seconds <= 0 || seconds > TimeSpan.MaxValue.TotalSeconds)");
+        AssertContains(flashbackToolsExportText, "return McpToolResultFactory.FromText(");
         AssertContains(flashbackToolsExportText, "Flashback export seconds must be finite, greater than zero, and within TimeSpan range.");
         AssertContains(flashbackToolsExportText, "AutomationSnapshotFormatter.Get(data, \"FailureKind\", string.Empty)");
         AssertContains(flashbackToolsExportText, "FailureKind: {failureKind}");
@@ -4638,6 +5180,12 @@ static partial class Program
         AssertContains(activeText, "Diagnosis: Data uses FULL range (0-255). 10.0% super-white, 5.0% super-black.");
         AssertContains(activeText, "== Raw MF Properties ==");
         AssertContains(activeText, "MF_MT_SUBTYPE = P010");
+
+        var previewInspectionSource = ReadRepoFile("tools/McpServer/Tools/PreviewInspectionTools.cs")
+            .Replace("\r\n", "\n");
+        AssertDoesNotContain(previewInspectionSource, "private static string Get(JsonElement el, string prop, string fallback = \"N/A\")");
+        AssertContains(previewInspectionSource, "AutomationSnapshotFormatter.Get(data, \"SessionActive\")");
+        AssertContains(previewInspectionSource, "AutomationSnapshotFormatter.Get(fmt, \"Summary\")");
     }
 
     internal static async Task McpVideoSourceProbeTool_FormatsProbeResponses()
@@ -5158,7 +5706,7 @@ static partial class Program
         AssertSsctlCommandRequest(flashbackRequest, "SetFlashbackEnabled", ("enabled", false));
 
         var flashbackExportPipeName = $"ssctl-flashback-export-{Guid.NewGuid():N}";
-        var flashbackExportOutputPath = Path.Combine("temp", "ssctl flashback export", "export with spaces.mp4");
+        var flashbackExportOutputPath = Path.Combine("temp", "ssctl-flashback-export-" + Guid.NewGuid().ToString("N"), "export with spaces.mp4");
         var flashbackExportArguments = new List<string>
         {
             "flashback",
@@ -5183,9 +5731,9 @@ static partial class Program
             ("useSelectionRange", true),
             ("force", true));
         AssertEqual(
-            true,
+            false,
             Directory.Exists(Path.GetDirectoryName(flashbackExportOutputPath) ?? "."),
-            "flashback export parent directory created");
+            "flashback export does not create its parent directory in the client");
 
         var flashbackSeekPipeName = $"ssctl-flashback-seek-{Guid.NewGuid():N}";
         var (flashbackSeekExitCode, flashbackSeekRequest) = await CaptureSsctlRequestAsync(
@@ -5410,6 +5958,8 @@ static partial class Program
         AssertContains(commandHandlersRootSource, "HandleDiagnosticSessionAsync");
         AssertContains(commandHandlersRootSource, "HandlePresentMonAsync");
         AssertContains(commandHandlersRootSource, "TryResolvePreviewPresentCorrelationAsync");
+        AssertContains(commandHandlersRootSource, "PresentMonProbe.ResolvePreviewCorrelation(");
+        AssertContains(commandHandlersRootSource, "PresentMon correlation unavailable: {message}");
         AssertContains(commandHandlersRootSource, "PresentMonProbe.CreateOptions(");
         AssertContains(commandHandlersRootSource, "DiagnosticSessionRunner.RunAsync(");
 
@@ -5454,7 +6004,7 @@ static partial class Program
         AssertContains(commandHandlersRootSource, "ConsumeFlag(context.Rest, \"--json\")");
         AssertContains(commandHandlersRootSource, "ParseOptionalStringFlag(context.Rest, \"--verification-profile\")");
         AssertContains(commandHandlersRootSource, "var actionId = Guid.NewGuid().ToString(\"N\");");
-        AssertContains(commandHandlersRootSource, "[\"actionId\"] = actionId");
+        AssertContains(commandHandlersRootSource, "[AutomationPayloadKeys.ActionId] = actionId");
 
         AssertContains(commandHandlersRootSource, "// Flashback command family.");
         AssertContains(commandHandlersRootSource, "HandleFlashbackAsync");
@@ -5464,16 +6014,18 @@ static partial class Program
         AssertContains(commandHandlersRootSource, "AutomationCommandKind.SetFlashbackGpuDecode");
         AssertContains(commandHandlersRootSource, "private static Task<int> HandleFlashbackActionAsync(CommandContext context, string subcommand)");
         AssertContains(commandHandlersRootSource, "AutomationCommandKind.FlashbackAction");
-        AssertContains(commandHandlersRootSource, "playPayload[\"positionMs\"] = ParseFlashbackPositionMs(context.Rest[1]);");
-        AssertContains(commandHandlersRootSource, "[\"action\"] = \"begin-scrub\"");
-        AssertContains(commandHandlersRootSource, "[\"action\"] = \"clear-in-out-points\"");
+        AssertContains(commandHandlersRootSource, "playPayload[AutomationPayloadKeys.PositionMs] = ParseFlashbackPositionMs(context.Rest[1]);");
+        AssertContains(commandHandlersRootSource, "[AutomationPayloadKeys.Action] = \"begin-scrub\"");
+        AssertContains(commandHandlersRootSource, "[AutomationPayloadKeys.Action] = \"clear-in-out-points\"");
         AssertContains(commandHandlersRootSource, "private static double ParseFlashbackPositionMs(string value)");
         AssertContains(commandHandlersRootSource, "Flashback position must be finite, non-negative, and within TimeSpan range.");
         AssertContains(commandHandlersRootSource, "private static Task<int> HandleFlashbackExportAsync(CommandContext context)");
         AssertContains(commandHandlersRootSource, "ConsumeFlag(context.Rest, \"--range\")");
         AssertContains(commandHandlersRootSource, "ConsumeFlag(context.Rest, \"--force\")");
         AssertContains(commandHandlersRootSource, "? ParseFlashbackExportSeconds(context.Rest[1])");
-        AssertContains(commandHandlersRootSource, "Directory.CreateDirectory(Path.GetDirectoryName(outputPath) ?? \".\")");
+        var exportHandlerSource = ExtractDeclaredMemberCode(commandHandlersRootSource,
+            "private static Task<int> HandleFlashbackExportAsync(CommandContext context)");
+        AssertDoesNotContain(exportHandlerSource, "Directory.CreateDirectory(");
 
         AssertContains(commandHandlersSource, "\"manifest\" => HandleManifestAsync(context)");
         AssertContains(commandHandlersSource, "\"audio-ramp-trace\" => HandleAudioRampTraceAsync(context)");
@@ -5481,43 +6033,16 @@ static partial class Program
         AssertSsctlFixedAutomationRoutesUseAutomationCommandKinds(commandHandlersSource);
         AssertContains(commandHandlersSource, "return HandleSimpleCommandAsync(context, Sussudio.Models.AutomationCommandKind.FlashbackAction, playPayload, includeData: true);");
         AssertContains(commandHandlersSource, "ParseOptionalStringFlag(context.Rest, \"--profile\")");
-        AssertContains(commandHandlersSource, "payload[\"verificationProfile\"] = verificationProfile;");
-        AssertContains(commandHandlersSource, "[\"positionMs\"] = ParseFlashbackPositionMs(RequireWord(context.Rest, 1, \"flashback seek <ms>\"))");
-        AssertContains(commandHandlersSource, "[\"positionMs\"] = ParseFlashbackPositionMs(RequireWord(context.Rest, 1, \"flashback begin-scrub <ms>\"))");
-        AssertContains(commandHandlersSource, "[\"positionMs\"] = ParseFlashbackPositionMs(RequireWord(context.Rest, 1, \"flashback update-scrub <ms>\"))");
-        AssertContains(commandHandlersSource, "var payload = new Dictionary<string, object?> { [\"action\"] = \"end-scrub\" };");
-        AssertContains(commandHandlersSource, "payload[\"positionMs\"] = ParseFlashbackPositionMs(context.Rest[1]);");
+        AssertContains(commandHandlersSource, "payload[AutomationPayloadKeys.VerificationProfile] = verificationProfile;");
+        AssertContains(commandHandlersSource, "[AutomationPayloadKeys.PositionMs] = ParseFlashbackPositionMs(RequireWord(context.Rest, 1, \"flashback seek <ms>\"))");
+        AssertContains(commandHandlersSource, "[AutomationPayloadKeys.PositionMs] = ParseFlashbackPositionMs(RequireWord(context.Rest, 1, \"flashback begin-scrub <ms>\"))");
+        AssertContains(commandHandlersSource, "[AutomationPayloadKeys.PositionMs] = ParseFlashbackPositionMs(RequireWord(context.Rest, 1, \"flashback update-scrub <ms>\"))");
+        AssertContains(commandHandlersSource, "var payload = new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = \"end-scrub\" };");
+        AssertContains(commandHandlersSource, "payload[AutomationPayloadKeys.PositionMs] = ParseFlashbackPositionMs(context.Rest[1]);");
         AssertContains(commandHandlersSource, "private static double ParseFlashbackExportSeconds(string value)");
         AssertContains(commandHandlersSource, "Flashback export seconds must be finite, greater than zero, and within TimeSpan range.");
         AssertContains(commandHandlersSource, "assert <json> OR assert <field> <op> <value>");
 
-        foreach (var removedFile in new[]
-        {
-            "CommandHandlers.Observability.cs",
-            "CommandHandlers.CaptureControls.cs",
-            "CommandHandlers.Window.cs",
-            "CommandHandlers.Flashback.cs",
-            "CommandHandlers.DiagnosticSession.cs",
-            "CommandHandlers.PresentMon.cs",
-            "CommandHandlers.Device.cs",
-            "CommandHandlers.AutomationFlow.cs",
-            "CommandHandlers.UiVisibility.cs",
-            "CommandHandlers.Flashback.Actions.cs",
-            "CommandHandlers.Parsing.cs",
-            "CommandHandlers.Flags.cs",
-            "CommandHandlers.Json.cs",
-            "CommandHandlers.DeviceWindow.cs",
-            "CommandHandlers.Context.cs",
-            "CommandHandlers.Arguments.cs",
-            "CommandHandlers.Values.cs",
-            "CommandHandlers.Flashback.Export.cs"
-        })
-        {
-            AssertEqual(
-                false,
-                File.Exists(Path.Combine(GetRepoRoot(), "tools", "ssctl", removedFile)),
-                $"ssctl command-handler implementation stays consolidated in CommandHandlers.cs, not {removedFile}");
-        }
 
         return Task.CompletedTask;
     }
@@ -5526,7 +6051,7 @@ static partial class Program
     {
         AssertContains(
             commandHandlersSource,
-            "(command, payload, responseTimeoutMs) => context.SendCommandAsync(command, payload, responseTimeoutMs)");
+            "(command, payload, responseTimeoutMs, commandToken) =>");
         AssertDoesNotContain(
             ReadRepoFile("tools/ssctl/CommandHandlers.cs"),
             "private static async Task<int> HandleSimpleCommandAsync(\n        CommandContext context,\n        string commandName,");
@@ -5700,7 +6225,7 @@ static partial class Program
         {
             "ssctl",
             "Usage:",
-            "  ssctl [--json] [--pipe NAME] [--timeout MS] <command>",
+            "  ssctl [--json] [--pipe NAME] [--timeout MS] [--token TOKEN] <command>",
             "",
             "Query:",
             HelpLine(AutomationCommandKind.GetSnapshot, "[--json]"),
@@ -5788,12 +6313,118 @@ static partial class Program
             "  --json            Print raw JSON responses where supported",
             "  --pipe NAME       Named pipe (default: SussudioAutomation)",
             "  --timeout MS      Response timeout override for pipe calls",
+            "  --token, -t TOKEN Auth token override (default: SUSSUDIO_AUTOMATION_TOKEN)",
             "  --verbose         On error, print full stack trace + InnerException chain to stderr",
             "  --help            Show this help",
             "",
         };
 
         return string.Join('\n', lines);
+    }
+
+    internal static async Task SsctlCommandHandlers_DiagnosticCancellationRestoresPreview(bool loseStartupReply)
+    {
+        var context = CreateSsctlCommandRoutingContext();
+        var pipeName = $"ssctl-diagnostic-cancellation-{Guid.NewGuid():N}";
+        var outputDirectory = Path.Combine(GetRepoRoot(), "temp", $"ssctl-diagnostic-cancellation-{Guid.NewGuid():N}");
+        using var requestCancellation = new CancellationTokenSource();
+        using var serverLifetime = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        var requests = new List<(AutomationCommandKind Command, bool? Enabled)>();
+        var preview = false;
+        var canceledRequestObserved = false;
+        var canceledConnectionClosed = false;
+
+        async Task ServeAsync()
+        {
+            while (true)
+            {
+                await using var pipe = new System.IO.Pipes.NamedPipeServerStream(
+                    pipeName, System.IO.Pipes.PipeDirection.InOut, 1,
+                    System.IO.Pipes.PipeTransmissionMode.Byte, System.IO.Pipes.PipeOptions.Asynchronous);
+                await pipe.WaitForConnectionAsync(serverLifetime.Token).ConfigureAwait(false);
+                using var reader = new StreamReader(pipe, leaveOpen: true);
+                var line = await reader.ReadLineAsync(serverLifetime.Token).ConfigureAwait(false)
+                    ?? throw new InvalidOperationException("Diagnostic handler disconnected before sending its request.");
+                using var request = JsonDocument.Parse(line);
+                var command = (AutomationCommandKind)request.RootElement.GetProperty("command").GetInt32();
+                var enabled = command == AutomationCommandKind.SetPreviewEnabled
+                    ? request.RootElement.GetProperty("payload").GetProperty("enabled").GetBoolean()
+                    : (bool?)null;
+                requests.Add((command, enabled));
+                if (enabled.HasValue) preview = enabled.Value;
+
+                var interrupt = !requestCancellation.IsCancellationRequested &&
+                    (loseStartupReply ? command == AutomationCommandKind.SetPreviewEnabled && enabled == true
+                        : command == AutomationCommandKind.WaitForCondition);
+                if (interrupt)
+                {
+                    canceledRequestObserved = true;
+                    requestCancellation.Cancel();
+                    // Leave the response pending: the real client must close this pipe on cancellation.
+                    Assert.Null(await reader.ReadLineAsync(serverLifetime.Token).ConfigureAwait(false));
+                    canceledConnectionClosed = true;
+                    continue;
+                }
+
+                var response = command == AutomationCommandKind.GetSnapshot
+                    ? DiagnosticCancellationSnapshot(preview, false, false, "Live").GetRawText()
+                    : "{\"Success\":true,\"Message\":\"ok\",\"Data\":[]}";
+                using var writer = new StreamWriter(pipe, leaveOpen: true) { AutoFlush = true };
+                await writer.WriteLineAsync(response.AsMemory(), serverLifetime.Token).ConfigureAwait(false);
+            }
+        }
+
+        var serverTask = ServeAsync();
+        Task<int>? commandTask = null;
+        try
+        {
+            var transport = CreateSsctlTransport(context, pipeName);
+            commandTask = (Task<int>)context.ExecuteAsync.Invoke(null, new object?[]
+            {
+                transport,
+                new List<string> { "diagnostic-session", "--scenario", "preview-only", "--seconds", "1",
+                    "--sample-ms", "100", "--output", outputDirectory },
+                false,
+                requestCancellation.Token
+            })!;
+            var exitCode = await commandTask.WaitAsync(serverLifetime.Token).ConfigureAwait(false);
+            serverLifetime.Cancel();
+            try { await serverTask.ConfigureAwait(false); }
+            catch (OperationCanceledException) when (serverLifetime.IsCancellationRequested) { }
+
+            Assert.Equal(3, exitCode);
+            Assert.True(canceledRequestObserved);
+            Assert.True(canceledConnectionClosed);
+            Assert.False(preview, "The diagnostic handler must restore preview using a token independent of the canceled request.");
+            Assert.Equal(new bool?[] { true, false }, requests
+                .Where(request => request.Command == AutomationCommandKind.SetPreviewEnabled)
+                .Select(request => request.Enabled));
+            Assert.Equal(new[] { AutomationCommandKind.GetPerformanceTimeline, AutomationCommandKind.GetSnapshot },
+                requests.TakeLast(2).Select(request => request.Command));
+            using var summary = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(outputDirectory, "summary.json"))
+                .ConfigureAwait(false));
+            Assert.Equal("canceled", summary.RootElement.GetProperty("TerminalState").GetString());
+            Assert.Contains("preview stopped", summary.RootElement.GetProperty("Actions").EnumerateArray()
+                .Select(action => action.GetString()));
+            if (loseStartupReply)
+            {
+                Assert.Contains("unconfirmed startup effects reconciled from app snapshot", summary.RootElement.GetProperty("Actions")
+                    .EnumerateArray().Select(action => action.GetString()));
+            }
+        }
+        finally
+        {
+            requestCancellation.Cancel();
+            serverLifetime.Cancel();
+            if (commandTask is not null)
+            {
+                try { await commandTask.WaitAsync(TimeSpan.FromSeconds(5)).ConfigureAwait(false); }
+                catch (OperationCanceledException) when (requestCancellation.IsCancellationRequested) { }
+            }
+            try { await serverTask.ConfigureAwait(false); }
+            catch (OperationCanceledException) when (serverLifetime.IsCancellationRequested) { }
+            if (Directory.Exists(outputDirectory)) Directory.Delete(outputDirectory, recursive: true);
+        }
     }
 
     private readonly record struct SsctlCommandRoutingContext(Type TransportType, MethodInfo ExecuteAsync);
@@ -6201,7 +6832,7 @@ static partial class Program
         AssertContains(tasksText, "private readonly List<DiagnosticSessionBackgroundTaskRegistration> _scenarioTasks = [];");
         AssertContains(tasksText, "private Task<PresentMonProbeResult>? _presentMonTask;");
         AssertContains(tasksText, "private Task<FlashbackRecordingSettingsDeferredPresetState>? _recordingSettingsDeferredTask;");
-        AssertContains(tasksText, "internal void AddScenario(int awaitOrder, string stage, Task task)");
+        AssertContains(tasksText, "internal void AddScenario(int awaitOrder, string stage, Task task, bool ownsBoundedCleanup = false)");
         AssertContains(tasksText, "internal void SetPresentMon(Task<PresentMonProbeResult> task)");
         AssertContains(tasksText, "internal void SetRecordingSettingsDeferred(Task<FlashbackRecordingSettingsDeferredPresetState> task)");
         AssertContains(tasksText, "internal async Task<FlashbackRecordingSettingsDeferredPresetState> CompleteRegisteredScenarioWorkAsync(");
@@ -6281,7 +6912,7 @@ static partial class Program
 
         AssertContains(presentMonStartupText, "private static async Task StartPresentMonAsync(");
         AssertContains(presentMonStartupText, "if (!options.IncludePresentMon)");
-        AssertContains(presentMonStartupText, "var correlationSnapshotResponse = await sendAsync(\"GetSnapshot\", null, null)");
+        AssertContains(presentMonStartupText, "var correlationSnapshotResponse = await commandChannel.SendAsync(\"GetSnapshot\", null, null)");
         AssertContains(presentMonStartupText, "TryGetSnapshot(correlationSnapshotResponse, out var correlationSnapshot)");
         AssertContains(presentMonStartupText, "backgroundTasks.SetPresentMon(PresentMonProbe.RunAsync(PresentMonProbe.CreateOptions(");
         AssertContains(presentMonStartupText, "processName: \"Sussudio\"");
@@ -6388,7 +7019,7 @@ static partial class Program
         AssertContains(recordingVerificationText, "var verificationCommand = \"VerifyLastRecording\";");
         AssertContains(recordingVerificationText, "verificationCommand = \"VerifyFile\";");
         AssertContains(recordingVerificationText, "[\"strict\"] = true");
-        AssertContains(recordingVerificationText, "[\"verificationProfile\"] = \"flashback-export\"");
+        AssertContains(recordingVerificationText, "[AutomationPayloadKeys.VerificationProfile] = \"flashback-export\"");
         AssertContains(recordingVerificationText, "sendAsync(verificationCommand, verificationPayload, 60_000)");
         AssertContains(recordingVerificationText, "return verificationElement.Clone();");
         AssertContains(recordingVerificationText, "recording verification skipped: scenario does not produce a recording or export artifact");
@@ -6397,7 +7028,7 @@ static partial class Program
         AssertDoesNotContain(completionText, "SetStage(\"settings-deferred-restore\")");
         AssertContains(recordingChecksText, "var verificationCommand = \"VerifyLastRecording\"");
         AssertDoesNotContain(completionText, "DiagnosticSessionScenarioCatalog.TryGetFlashbackExportVerificationPath(");
-        AssertContains(recordingChecksText, "[\"verificationProfile\"] = \"flashback-export\"");
+        AssertContains(recordingChecksText, "[AutomationPayloadKeys.VerificationProfile] = \"flashback-export\"");
         AssertDoesNotContain(completionText, "ValidateFlashbackRecordingSession(initialSnapshot, samples, warnings)");
 
         return Task.CompletedTask;
@@ -6413,7 +7044,7 @@ static partial class Program
         AssertContains(postRunText, "JsonElement HealthSnapshot,");
         AssertContains(postRunText, "setStage(\"timeline\")");
         AssertContains(postRunText, "\"GetPerformanceTimeline\"");
-        AssertContains(postRunText, "new Dictionary<string, object?> { [\"maxEntries\"] = 240 }");
+        AssertContains(postRunText, "new Dictionary<string, object?> { [AutomationPayloadKeys.MaxEntries] = 240 }");
         AssertContains(postRunText, "recordTerminalException(ex, \"timeline\")");
         AssertContains(postRunText, "setStage(\"final-snapshot\")");
         AssertContains(postRunText, "sendAsync(\"GetSnapshot\", null, null)");
@@ -6535,9 +7166,9 @@ static partial class Program
 
         AssertContains(retryText, "internal static class DiagnosticSessionPipeRetryPolicy");
         AssertContains(retryText, "BuildLocalFailureResponse(command, ex.Message)");
-        AssertContains(retryText, "\"pipe-connect-failed\"");
-        AssertContains(retryText, "\"pipe-connect-timeout\"");
-        AssertContains(retryText, "\"pipe-access-denied\"");
+        AssertContains(retryText, "AutomationPipeErrorCodes.ConnectFailed");
+        AssertContains(retryText, "AutomationPipeErrorCodes.ConnectTimeout");
+        AssertContains(retryText, "AutomationPipeErrorCodes.AccessDenied");
         AssertContains(channelText, "using static Sussudio.Tools.DiagnosticSessionPipeRetryPolicy;");
         AssertContains(channelText, "SendCommandWithConnectRetryAsync(");
         AssertDoesNotContain(executionText, "using static Sussudio.Tools.DiagnosticSessionPipeRetryPolicy;");
@@ -6579,9 +7210,9 @@ static partial class Program
         AssertContains(channelText, "internal async Task TryWaitWithTokenAsync(");
         AssertContains(channelText, "SendWithTokenAsync(\n                AutomationCommandKind.WaitForCondition,");
         AssertContains(channelText, "AutomationCommandKind.WaitForCondition");
-        AssertContains(channelText, "[\"condition\"] = condition");
-        AssertContains(channelText, "[\"timeoutMs\"] = timeoutMs");
-        AssertContains(channelText, "[\"pollMs\"] = 250");
+        AssertContains(channelText, "[AutomationPayloadKeys.Condition] = condition");
+        AssertContains(channelText, "[AutomationPayloadKeys.TimeoutMs] = timeoutMs");
+        AssertContains(channelText, "[AutomationPayloadKeys.PollMs] = 250");
         AssertContains(channelText, "timeoutMs + 2_000");
         AssertContains(channelText, "$\"wait {condition}: {Get(response, \"Message\", \"not met\")}\"");
         AssertDoesNotContain(channelText, "\"WaitForCondition\"");
@@ -8013,12 +8644,12 @@ static partial class Program
         AssertContains(stressText, "GetString(lastSnapshot, \"FlashbackPlaybackState\")");
         AssertContains(stressText, "internal static async Task RunFlashbackScrubStressAsync(");
         AssertContains(stressText, "WaitForFlashbackStressBufferReadyAsync(");
-        AssertContains(stressText, "new Dictionary<string, object?> { [\"action\"] = \"begin-scrub\", [\"positionMs\"] = 500 }");
+        AssertContains(stressText, "new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = \"begin-scrub\", [AutomationPayloadKeys.PositionMs] = 500 }");
         AssertContains(stressText, "private static async Task<int> RunFlashbackScrubStressUpdateBurstAsync(");
-        AssertContains(stressText, "new Dictionary<string, object?> { [\"action\"] = \"update-scrub\", [\"positionMs\"] = positions[i] }");
+        AssertContains(stressText, "new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = \"update-scrub\", [AutomationPayloadKeys.PositionMs] = positions[i] }");
         AssertContains(stressText, "return positions[^1];");
         AssertContains(stressText, "flashback scrub stress: {failedUpdates} update-scrub command(s) failed");
-        AssertContains(stressText, "new Dictionary<string, object?> { [\"action\"] = \"end-scrub\", [\"positionMs\"] = finalScrubPositionMs }");
+        AssertContains(stressText, "new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = \"end-scrub\", [AutomationPayloadKeys.PositionMs] = finalScrubPositionMs }");
         AssertContains(stressText, "private static async Task ValidateFlashbackScrubStressDrainAsync(");
         AssertContains(stressText, "\"flashback scrub stress: playback did not settle live with an empty queue within 10s \"");
         AssertContains(stressText, "FlashbackScrubStressMaxPlaybackPendingCommands");
@@ -8030,7 +8661,7 @@ static partial class Program
         AssertContains(stressText, "3,\n                \"flashback-scrub-stress-task\",");
         AssertContains(stressText, "RunFlashbackStressAsync(");
         AssertContains(stressText, "RunFlashbackScrubStressAsync(");
-        AssertContains(stressText, "sendRawWithConnectRetryAsync");
+        AssertContains(stressText, "sendCommandAsync: commandChannel.SendRawWithConnectRetryAsync");
         AssertContains(stressText, "actions.Add(\"flashback stress started\")");
         AssertContains(stressText, "actions.Add(\"flashback scrub stress started\")");
         AssertContains(startupText, "DiagnosticSessionFlashbackStressScenario.RegisterSelectedFlashbackStressScenarioTasks(");
@@ -8110,11 +8741,11 @@ static partial class Program
         AssertContains(disableDuringExportText, "ValidateFlashbackDisableDuringExportFileAsync(");
         AssertContains(disableDuringExportText, "ValidateFlashbackDisabledAfterExportAsync(");
         AssertContains(disableDuringExportText, "ValidateFlashbackReenabledAfterDisableDuringExportAsync(");
-        AssertContains(disableDuringExportText, "private static async Task ValidateFlashbackDisableDuringExportFileAsync(");
+        AssertContains(disableDuringExportText, "private static async Task<bool> ValidateFlashbackDisableDuringExportFileAsync(");
         AssertContains(disableDuringExportText, "CreateFlashbackExportVerifyPayload(exportPath)");
         AssertContains(disableDuringExportText, "private static async Task ValidateFlashbackDisabledAfterExportAsync(");
         AssertContains(disableDuringExportText, "flashback disable during export: pending playback commands remained after disable");
-        AssertContains(disableDuringExportText, "private static async Task ValidateFlashbackReenabledAfterDisableDuringExportAsync(");
+        AssertContains(disableDuringExportText, "private static async Task<bool> ValidateFlashbackReenabledAfterDisableDuringExportAsync(");
         AssertContains(scenariosText, "internal static async Task RunFlashbackRotatedExportAsync(");
         AssertContains(scenariosText, "TryParseFlashbackExportSegmentCount(exportMessage)");
         AssertContains(scenariosText, "flashback rotated export requested via live-edge force rotation");
@@ -8132,15 +8763,14 @@ static partial class Program
         AssertContains(playbackText, "BuildPlaybackCommandHealth(finalSnapshot, baselineSnapshot)");
         AssertContains(playbackText, "flashback export playback: pending commands remained after go-live");
         AssertContains(scenariosText, "internal static async Task RunFlashbackRangeExportAsync(");
-        AssertContains(rangeText, "private static async Task<FlashbackSelectionRange?> PrepareFlashbackSelectionRangeAsync(");
-        AssertContains(rangeText, "private readonly record struct FlashbackSelectionRange(");
+        AssertContains(rangeText, "private static async Task<JsonElement?> PrepareFlashbackSelectionRangeAsync(");
         AssertContains(rangeText, "WaitForFlashbackStressBufferReadyAsync(");
         AssertContains(rangeText, "private static async Task MarkFlashbackSelectionPointAsync(");
         AssertContains(rangeText, "WaitForFlashbackPlaybackPositionAsync(");
         AssertContains(scenariosText, "\"clear-in-out-points\"");
         AssertContains(scenariosText, "\"set-in-point\"");
         AssertContains(scenariosText, "\"set-out-point\"");
-        AssertContains(scenariosText, "[\"useSelectionRange\"] = true");
+        AssertContains(scenariosText, "[AutomationPayloadKeys.UseSelectionRange] = true");
         AssertContains(scenariosText, "private static void ValidateFlashbackRangeExportResult(");
         AssertContains(scenariosText, "private static async Task ValidateFlashbackRangeExportCleanupAsync(");
         AssertContains(rootText, "internal static void RegisterSelectedFlashbackExportScenarioTasks(");
@@ -8193,15 +8823,17 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(exportHelpersText, "internal static class DiagnosticSessionFlashbackExports");
+        AssertContains(exportHelpersText, "internal static async Task VerifyCycleExportAsync(");
         AssertDoesNotContain(exportHelpersText, "internal static partial class DiagnosticSessionFlashbackExports");
         AssertContains(exportHelpersText, "internal static int? TryParseFlashbackExportSegmentCount(");
         AssertContains(exportHelpersText, "const string marker = \" from \";");
         AssertContains(exportHelpersText, "suffix.Contains(\"segment\", StringComparison.OrdinalIgnoreCase)");
         AssertContains(exportHelpersText, "internal static Dictionary<string, object?> CreateFlashbackExportVerifyPayload(string filePath)");
-        AssertContains(exportHelpersText, "[\"verificationProfile\"] = \"flashback-export\"");
-        AssertContains(exportHelpersText, "internal static async Task CleanupFlashbackSelectionAsync(");
-        AssertContains(exportHelpersText, "\"clear-in-out-points\"");
-        AssertContains(exportHelpersText, "\"go-live\"");
+        AssertContains(exportHelpersText, "[AutomationPayloadKeys.VerificationProfile] = \"flashback-export\"");
+        AssertDoesNotContain(exportHelpersText, "CleanupFlashbackSelectionAsync(");
+        AssertContains(exportScenariosText, "private static async Task<bool> CleanupFlashbackRangeSelectionAsync(");
+        AssertContains(exportScenariosText, "\"clear-in-out-points\"");
+        AssertContains(exportScenariosText, "\"go-live\"");
         AssertContains(exportHelpersText, "internal static async Task ToggleAudioEnabledDuringFlashbackExportAsync(");
         AssertContains(exportHelpersText, "\"SetAudioEnabled\"");
         AssertContains(exportScenariosText, "using static Sussudio.Tools.DiagnosticSessionFlashbackExports;");
@@ -8253,24 +8885,25 @@ static partial class Program
         var cyclesText = ReadDiagnosticSessionFlashbackCycleScenariosSource();
 
         AssertContains(cyclesText, "internal static class DiagnosticSessionFlashbackCycleScenarios");
+        AssertContains(cyclesText, "VerifyCycleExportAsync(");
         AssertDoesNotContain(cyclesText, "internal static partial class DiagnosticSessionFlashbackCycleScenarios");
         AssertContains(cyclesText, "internal static async Task RunFlashbackRestartCycleAsync(");
         AssertContains(cyclesText, "\"RestartFlashback\"");
         AssertContains(cyclesText, "private static async Task<bool> ValidateFlashbackRestartCycleActiveStateAsync(");
         AssertContains(cyclesText, "FlashbackPlaybackThreadAlive");
         AssertContains(cyclesText, "pending playback commands remained after restart");
-        AssertContains(cyclesText, "private static async Task VerifyFlashbackRestartCycleExportAsync(");
+        AssertDoesNotContain(cyclesText, "VerifyFlashbackRestartCycleExportAsync(");
         AssertContains(cyclesText, "\"flashback-restart-cycle-export.mp4\"");
-        AssertContains(cyclesText, "flashback restart cycle export verified");
+        AssertContains(cyclesText, "\"flashback restart cycle\"");
         AssertContains(cyclesText, "internal static async Task RunFlashbackEncoderCycleAsync(");
         AssertContains(cyclesText, "var cycledPreset = string.Equals(originalPreset, \"P1\", StringComparison.OrdinalIgnoreCase) ? \"P2\" : \"P1\";");
         AssertContains(cyclesText, "ValidateFlashbackEncoderCycleSnapshot(afterSnapshot, originalFilePath, warnings);");
         AssertContains(cyclesText, "private static void ValidateFlashbackEncoderCycleSnapshot(");
         AssertContains(cyclesText, "post-cycle encoder did not reach readiness frame count");
         AssertContains(cyclesText, "playback state not clean after preset cycle");
-        AssertContains(cyclesText, "private static async Task VerifyFlashbackEncoderCycleExportAsync(");
+        AssertDoesNotContain(cyclesText, "VerifyFlashbackEncoderCycleExportAsync(");
         AssertContains(cyclesText, "\"flashback-encoder-cycle-export.mp4\"");
-        AssertContains(cyclesText, "flashback encoder cycle export verified");
+        AssertContains(cyclesText, "\"flashback encoder cycle\"");
         AssertContains(cyclesText, "private static async Task RestoreFlashbackEncoderCyclePresetAsync(");
         AssertContains(cyclesText, "flashback encoder preset restored to");
         AssertContains(cyclesText, "Flashback buffer did not become ready after preset restore");
@@ -8306,13 +8939,13 @@ static partial class Program
         AssertContains(flashbackCycleText, "private static async Task<long> CaptureFlashbackPreviewCycleEncodedFramesBeforeStopAsync(");
         AssertContains(flashbackCycleText, "private static async Task<bool> ValidateFlashbackPreviewCycleStoppedAsync(");
         AssertContains(flashbackCycleText, "flashback preview cycle: Flashback frames did not advance while preview was off");
-        AssertContains(flashbackCycleText, "private static async Task ValidateFlashbackPreviewCycleRestartedAsync(");
+        AssertContains(flashbackCycleText, "private static async Task<bool> ValidateFlashbackPreviewCycleRestartedAsync(");
         AssertContains(flashbackCycleText, "VideoFramesFlowing");
-        AssertContains(flashbackCycleText, "VerifyFlashbackPreviewCycleExportAsync(");
-        AssertContains(flashbackCycleText, "private static async Task VerifyFlashbackPreviewCycleExportAsync(");
+        AssertContains(flashbackCycleText, "VerifyCycleExportAsync(");
+        AssertDoesNotContain(flashbackCycleText, "VerifyFlashbackPreviewCycleExportAsync(");
         AssertContains(flashbackCycleText, "\"flashback-preview-off-export.mp4\"");
-        AssertContains(flashbackCycleText, "CreateFlashbackExportVerifyPayload(exportPath)");
-        AssertContains(flashbackCycleText, "flashback preview cycle export verified");
+        AssertContains(flashbackCycleText, "previewStopped: true");
+        AssertContains(flashbackCycleText, "\"flashback preview cycle\"");
         AssertContains(cyclesText, "internal static async Task RunFlashbackPlaybackPreviewCycleAsync(");
         AssertContains(playbackCycleText, "flashback playback preview cycle preview stopped during playback");
         AssertContains(playbackCycleText, "CapturePlaybackPreviewCycleFrameCountBeforeStopAsync(");
@@ -8322,13 +8955,13 @@ static partial class Program
         AssertContains(playbackCycleText, "WaitForFlashbackPlaybackWarmSampleAsync(");
         AssertContains(playbackCycleText, "private static async Task<bool> ValidatePlaybackPreviewCycleStoppedAsync(");
         AssertContains(playbackCycleText, "flashback playback preview cycle: playback did not return live after preview stop");
-        AssertContains(playbackCycleText, "private static async Task ValidatePlaybackPreviewCycleRestartedAsync(");
+        AssertContains(playbackCycleText, "private static async Task<(bool PreviewActive, bool PlaybackLive)> ValidatePlaybackPreviewCycleRestartedAsync(");
         AssertContains(playbackCycleText, "VideoFramesFlowing");
-        AssertContains(playbackCycleText, "VerifyFlashbackPlaybackPreviewCycleExportAsync(");
-        AssertContains(playbackCycleText, "private static async Task VerifyFlashbackPlaybackPreviewCycleExportAsync(");
+        AssertContains(playbackCycleText, "VerifyCycleExportAsync(");
+        AssertDoesNotContain(playbackCycleText, "VerifyFlashbackPlaybackPreviewCycleExportAsync(");
         AssertContains(playbackCycleText, "\"flashback-playback-preview-cycle.mp4\"");
-        AssertContains(playbackCycleText, "CreateFlashbackExportVerifyPayload(exportPath)");
-        AssertContains(playbackCycleText, "flashback playback preview cycle export verified");
+        AssertContains(playbackCycleText, "previewStopped: true");
+        AssertContains(playbackCycleText, "\"flashback playback preview cycle\"");
         AssertContains(cyclesText, "internal static async Task RunFlashbackRecordingPreviewCycleAsync(");
         AssertContains(cyclesText, "flashback recording preview cycle preview stopped");
         AssertContains(recordingCycleText, "CaptureRecordingPreviewCycleCountersBeforeStopAsync(");
@@ -8340,7 +8973,7 @@ static partial class Program
         AssertContains(recordingCycleText, "WaitForPreviewActiveAsync(");
         AssertContains(recordingCycleText, "private static async Task<bool> ValidateRecordingPreviewCycleStoppedAsync(");
         AssertContains(recordingCycleText, "flashback recording preview cycle: recording counters did not advance while preview was off");
-        AssertContains(recordingCycleText, "private static async Task ValidateRecordingPreviewCycleRestartedAsync(");
+        AssertContains(recordingCycleText, "private static async Task<bool> ValidateRecordingPreviewCycleRestartedAsync(");
         AssertContains(recordingCycleText, "VideoFramesFlowing");
         AssertContains(recordingCycleText, "flashback recording preview cycle: preview frames did not resume");
         AssertDoesNotContain(cyclesText, "internal static bool IsPreviewCycleScenario(");
@@ -8447,6 +9080,9 @@ static partial class Program
         AssertContains(recordingSettingsText, "VerifyFlashbackDisableRejectedDuringRecordingAsync(");
         AssertContains(recordingSettingsText, "VerifyFlashbackRecordingSettingsDeferredStillRecordingAsync(");
         AssertContains(recordingSettingsText, "private static async Task VerifyFlashbackRecordingSettingsCommandRejectedDuringRecordingAsync(");
+        AssertContains(recordingSettingsText, "AutomationSnapshotFormatter.Get(response, \"ErrorCode\", string.Empty)");
+        AssertContains(recordingSettingsText, "string.Equals(errorCode, \"invalid-state\", StringComparison.OrdinalIgnoreCase)");
+        AssertDoesNotContain(recordingSettingsText, "message.Contains(\"recording\"");
         AssertContains(recordingSettingsText, "RestartFlashback unexpectedly succeeded during recording");
         AssertContains(recordingSettingsText, "SetFlashbackEnabled(false) unexpectedly succeeded during recording");
         AssertContains(recordingSettingsText, "Flashback recording backend did not remain active after mutations");
@@ -8493,7 +9129,7 @@ static partial class Program
         AssertContains(lifecycleText, "private static async Task ValidateFlashbackLifecycleDisabledAsync(");
         AssertContains(lifecycleText, "flashback lifecycle: playback worker still alive after disable");
         AssertContains(lifecycleText, "flashback lifecycle: pending commands remained after disable");
-        AssertContains(lifecycleText, "private static async Task ValidateFlashbackLifecycleReenabledAsync(");
+        AssertContains(lifecycleText, "private static async Task<bool> ValidateFlashbackLifecycleReenabledAsync(");
         AssertContains(startupText, "DiagnosticSessionFlashbackLifecycleScenarios.RegisterSelectedFlashbackLifecycleScenarioTask(");
         AssertDoesNotContain(startupText, "using static Sussudio.Tools.DiagnosticSessionFlashbackLifecycleScenarios;");
         AssertDoesNotContain(startupText, "RunFlashbackLifecycleAsync(");
@@ -9126,6 +9762,13 @@ static partial class Program
             ?? throw new InvalidOperationException("AutomationCommandCatalog.CreateManifest returned null.");
 
         AssertEqual(1, (int)GetMetadataProperty(manifest, "SchemaVersion")!, "Automation manifest schema version");
+        var authentication = GetMetadataProperty(manifest, "Authentication")!;
+        AssertEqual("SUSSUDIO_AUTOMATION_TOKEN", (string)GetMetadataProperty(authentication, "ConfigurationEnvironmentVariable")!, "manifest token configuration source");
+        AssertEqual("server-token-configured", (string)GetMetadataProperty(authentication, "RequiredWhen")!, "manifest authentication requirement");
+        AssertEqual("authToken", (string)GetMetadataProperty(authentication, "PreferredTokenPath")!, "manifest preferred credential path");
+        AssertEqual("payload.authToken", (string)GetMetadataProperty(authentication, "LegacyTokenPath")!, "manifest legacy credential path");
+        AssertEqual("top-level-token-null-empty-or-whitespace", (string)GetMetadataProperty(authentication, "LegacyFallbackWhen")!, "manifest legacy credential precedence");
+        AssertEqual(true, (bool)GetMetadataProperty(authentication, "LegacyFallbackAppliesToAllCommands")!, "manifest legacy fallback command scope");
         var commands = GetMetadataCollection(manifest, "Commands");
         AssertEqual(entries.Length, commands.Length, "Automation manifest command count");
 
@@ -9199,7 +9842,7 @@ static partial class Program
             AssertEqual("String", GetMetadataProperty(pathField, "Type")!.ToString(), $"{commandName} path field type");
             AssertRegex(
                 dispatcherText,
-                $"ValidatePathPayload\\(\\n\\s*AutomationCommandKind\\.{commandName},\\n\\s*\"{expected.FieldName}\"",
+                $"ValidatePathPayload\\(\\n\\s*AutomationCommandKind\\.{commandName},\\n\\s*AutomationPayloadKeys\\.{char.ToUpperInvariant(expected.FieldName[0])}{expected.FieldName[1..]}",
                 $"{commandName} dispatcher path validation");
 
             var enumValue = Enum.Parse(enumType, commandName);
@@ -9213,7 +9856,7 @@ static partial class Program
 
     internal static Task AutomationManifest_SerializationIsStable()
     {
-        const string ExpectedManifestSha256 = "B8D65718E363691C2AED2DDEAD87F3AE7B22DF56946B0D0590F8566F6175A3D6";
+        const string ExpectedManifestSha256 = "54C31AFC222765BAA96AEAF28B5E9A6E233583EE23F55828DB4C629D47C82DE0";
         var catalogType = RequireAutomationContractType("Sussudio.Tools.AutomationCommandCatalog");
         var createManifestJson = RequireNonPublicStaticMethod(catalogType, "CreateManifestJson");
         var first = (string)createManifestJson.Invoke(null, Array.Empty<object>())!;
@@ -9225,6 +9868,13 @@ static partial class Program
         AssertContains(first, "\"SchemaVersion\":1");
         AssertContains(first, "\"Name\":\"GetAutomationManifest\"");
         AssertContains(first, "\"PayloadFields\"");
+        using var document = JsonDocument.Parse(first);
+        var authentication = document.RootElement.GetProperty("Authentication");
+        AssertJsonObjectPropertyNames(authentication, "ConfigurationEnvironmentVariable", "RequiredWhen", "PreferredTokenPath",
+            "LegacyTokenPath", "LegacyFallbackWhen", "LegacyFallbackAppliesToAllCommands");
+        AssertEqual(
+            "{\"ConfigurationEnvironmentVariable\":\"SUSSUDIO_AUTOMATION_TOKEN\",\"RequiredWhen\":\"server-token-configured\",\"PreferredTokenPath\":\"authToken\",\"LegacyTokenPath\":\"payload.authToken\",\"LegacyFallbackWhen\":\"top-level-token-null-empty-or-whitespace\",\"LegacyFallbackAppliesToAllCommands\":true}",
+            authentication.GetRawText(), "manifest authentication metadata is static and contains no credential values");
 
         var actualSha256 = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(first)));
         AssertEqual(ExpectedManifestSha256, actualSha256, "Automation manifest serialized SHA-256");
@@ -9259,8 +9909,8 @@ static partial class Program
 
         AssertContains(diagnosticSessionCleanupActionsText, "var cleanupTimeoutMs = AutomationPipeProtocol.GetDefaultResponseTimeout(AutomationCommandKind.SetFlashbackEnabled);");
         AssertContains(diagnosticSessionCleanupActionsText, "CreateCleanupCts(TimeSpan.FromMilliseconds(cleanupTimeoutMs))");
-        AssertContains(diagnosticSessionCleanupActionsText, "new Dictionary<string, object?> { [\"enabled\"] = false }");
-        AssertContains(diagnosticSessionCleanupActionsText, "new Dictionary<string, object?> { [\"enabled\"] = true }");
+        AssertContains(diagnosticSessionCleanupActionsText, "new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = false }");
+        AssertContains(diagnosticSessionCleanupActionsText, "new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = true }");
         return Task.CompletedTask;
     }
 
@@ -9844,7 +10494,8 @@ static partial class Program
         AssertContains(formatted, "WASAPI Playback:");
         AssertContains(formatted, "Audio Buffer: status=Healthy underrun=false overrun=false underrunEvents=0 overrunEvents=0 reason=No audio buffer underrun or overrun counters have moved for the active audio path.");
         AssertContains(formatted, "== Diagnostics ==");
-        AssertContains(formatted, "Legacy Score:");
+        AssertContains(formatted, "Performance Score:");
+        AssertContains(formatted, "Performance Summary:");
         AssertContains(formatted, "Pipeline Latency: 1ms (app receive -> estimated visible)");
         AssertContains(formatted, "Process CPU: 1.5%");
         AssertContains(formatted, "== MJPEG Pipeline Timing ==");
@@ -10430,6 +11081,52 @@ static partial class Program
             "AutomationClient shared protocol manifest revision");
     }
 
+    internal static async Task AutomationCommandTransport_MapsOnlyUnknownNamesToUnknownCommand()
+    {
+        var transportType = typeof(AutomationPipeProtocol).Assembly.GetType(
+            "Sussudio.Tools.AutomationCommandTransport",
+            throwOnError: true)!;
+        var overloads = transportType.GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .Where(method => method.Name == "SendCommandAsync")
+            .ToArray();
+        var nameOverload = overloads.Single(method => method.GetParameters()[1].ParameterType == typeof(string));
+        var typedOverload = overloads.Single(method => method.GetParameters()[1].ParameterType == typeof(AutomationCommandKind));
+
+        var unknownNameTask = (Task<JsonElement>)nameOverload.Invoke(
+            null,
+            new object?[]
+            {
+                string.Empty,
+                "not-a-command",
+                null,
+                null,
+                null,
+                AutomationUnknownCommandHandling.ReturnSyntheticError,
+                null,
+                CancellationToken.None
+            })!;
+        var unknownNameResponse = await unknownNameTask.ConfigureAwait(false);
+        AssertEqual(
+            AutomationPipeErrorCodes.UnknownCommand,
+            unknownNameResponse.GetProperty("ErrorCode").GetString(),
+            "only command-name resolution maps to unknown-command");
+
+        var invalidPipeTask = (Task<JsonElement>)typedOverload.Invoke(
+            null,
+            new object?[]
+            {
+                string.Empty,
+                AutomationCommandKind.GetSnapshot,
+                null,
+                null,
+                null,
+                null,
+                CancellationToken.None
+            })!;
+        await Assert.ThrowsAnyAsync<ArgumentException>(async () =>
+            await invalidPipeTask.ConfigureAwait(false)).ConfigureAwait(false);
+    }
+
     internal static async Task McpPipeClient_SendsSharedEnvelopeForTypedRecordingCommand()
     {
         var pipeName = NewMcpToolPipeName("mcp-shared-envelope");
@@ -10513,6 +11210,48 @@ static partial class Program
             request.GetProperty("manifestRevision").GetInt32(),
             "ssctl shared protocol manifest revision");
     }
+
+    internal static async Task SsctlPipeClient_HonorsAutomationPipeEnvironment()
+    {
+        var pipeName = NewMcpToolPipeName("ssctl-pipe-env");
+        var environment = new Dictionary<string, string?>
+        {
+            [AutomationPipeProtocol.AutomationPipeEnvVar] = pipeName,
+            [AutomationPipeProtocol.AutomationKeyEnvVar] = null
+        };
+
+        var request = await CapturePipeRequestAsync(pipeName, async () =>
+        {
+            var result = await RunSsctlProcessAsync(
+                    new[] { "settings", "show" },
+                    environmentVariables: environment)
+                .ConfigureAwait(false);
+            AssertEqual(0, result.ExitCode, "ssctl uses configured pipe when --pipe is omitted: " + result.Error);
+        }).ConfigureAwait(false);
+
+        AssertCommandRequest(request, "SetSettingsVisible", ("visible", true));
+    }
+
+    internal static async Task AutomationClient_HonorsAutomationPipeEnvironment()
+    {
+        var pipeName = NewMcpToolPipeName("automation-client-pipe-env");
+        var environment = new Dictionary<string, string?>
+        {
+            [AutomationPipeProtocol.AutomationPipeEnvVar] = pipeName,
+            [AutomationPipeProtocol.AutomationKeyEnvVar] = null
+        };
+
+        var request = await CapturePipeRequestAsync(pipeName, async () =>
+        {
+            var result = await RunAutomationClientProcessAsync(
+                    new[] { "--command", "SetRecordingEnabled", "--payload", "{\"enabled\":true}" },
+                    environment)
+                .ConfigureAwait(false);
+            AssertEqual(0, result.ExitCode, "AutomationClient uses configured pipe when -p is omitted: " + result.Error);
+        }).ConfigureAwait(false);
+
+        AssertCommandRequest(request, "SetRecordingEnabled", ("enabled", true));
+    }
 }
 
 namespace Sussudio.Tests
@@ -10530,6 +11269,50 @@ public sealed class AutomationToolContractsProtocolXunitTests
     [Fact]
     public Task SsctlPipeTransport_SendsSharedEnvelopeForTypedRecordingCommand()
         => global::Program.SsctlPipeTransport_SendsSharedEnvelopeForTypedRecordingCommand();
+
+    [Fact]
+    public Task SsctlUsesAutomationPipeEnvironmentWhenPipeOptionIsOmitted()
+        => global::Program.SsctlPipeClient_HonorsAutomationPipeEnvironment();
+
+    [Fact]
+    public Task AutomationClientUsesAutomationPipeEnvironmentWhenPipeOptionIsOmitted()
+        => global::Program.AutomationClient_HonorsAutomationPipeEnvironment();
+
+    [Fact]
+    public Task AutomationCommandTransportMapsOnlyUnknownNamesToUnknownCommand()
+        => global::Program.AutomationCommandTransport_MapsOnlyUnknownNamesToUnknownCommand();
+
+    [Theory]
+    [InlineData("mcp", false)]
+    [InlineData("mcp", true)]
+    [InlineData("ssctl", false)]
+    [InlineData("ssctl", true)]
+    public Task AdaptersForwardExplicitTokens(string client, bool typedCommand)
+        => global::Program.AutomationToolAdapters_ForwardExplicitToken(client, typedCommand);
+
+    [Theory]
+    [InlineData("mcp", null, null)]
+    [InlineData("mcp", "--token", "explicit-auth-test-token")]
+    [InlineData("mcp", "--token", "")]
+    [InlineData("mcp", "--token", "   ")]
+    [InlineData("mcp", "--token", "--token")]
+    [InlineData("mcp", "--unused", "--token")]
+    [InlineData("mcp", "/unused", "--token")]
+    [InlineData("ssctl", null, null)]
+    [InlineData("ssctl", "--token", "explicit-auth-test-token")]
+    [InlineData("ssctl", "-t", "short-auth-test-token")]
+    [InlineData("ssctl", "--token", "")]
+    [InlineData("ssctl", "--token", "   ")]
+    public Task StartupUsesExplicitTokenOrChildEnvironment(string client, string? tokenFlag, string? tokenValue)
+        => global::Program.AutomationToolStartup_UsesExplicitTokenOrChildEnvironment(client, tokenFlag, tokenValue);
+
+    [Theory]
+    [InlineData("mcp", "--token")]
+    [InlineData("mcp", "--TOKEN")]
+    [InlineData("ssctl", "--token")]
+    [InlineData("ssctl", "-t")]
+    public Task StartupRejectsMissingTokenValue(string client, string tokenFlag)
+        => global::Program.AutomationToolStartup_RejectsMissingTokenValue(client, tokenFlag);
 
     [Fact]
     public void SendAutomationCommand_HelperTracksAutomationContractsInputs()
@@ -10561,6 +11344,28 @@ public sealed class AutomationToolContractsProtocolXunitTests
     }
 
     [Fact]
+    public void AutomationPipeClientsSharePipeNameResolution()
+    {
+        var protocolText = RuntimeContractSource.ReadRepoFile("Sussudio.Automation.Contracts/AutomationPipeProtocol.cs")
+            .Replace("\r\n", "\n", StringComparison.Ordinal);
+        var mcpText = RuntimeContractSource.ReadRepoFile("tools/McpServer/Program.cs")
+            .Replace("\r\n", "\n", StringComparison.Ordinal);
+        var ssctlText = RuntimeContractSource.ReadRepoFile("tools/ssctl/Program.cs")
+            .Replace("\r\n", "\n", StringComparison.Ordinal);
+        var automationClientText = RuntimeContractSource.ReadRepoFile("tools/AutomationClient/Program.cs")
+            .Replace("\r\n", "\n", StringComparison.Ordinal);
+
+        Assert.Contains("public const string AutomationPipeEnvVar = \"SUSSUDIO_AUTOMATION_PIPE\";", protocolText);
+        Assert.Contains("public static string ResolvePipeName(string? explicitName)", protocolText);
+        Assert.Contains("_pipeName = AutomationPipeProtocol.ResolvePipeName(pipeName);", mcpText);
+        Assert.DoesNotContain("Environment.GetEnvironmentVariable(\"SUSSUDIO_AUTOMATION_PIPE\")", mcpText);
+        Assert.Contains("PipeName { get; private set; } = AutomationPipeProtocol.ResolvePipeName(null);", ssctlText);
+        Assert.Contains("options.PipeName = NextValue(args, ref i, arg);", ssctlText);
+        Assert.Contains("PipeName { get; set; } = AutomationPipeProtocol.ResolvePipeName(null);", automationClientText);
+        Assert.Contains("options.PipeName = NextValue(args, ref i, arg);", automationClientText);
+    }
+
+    [Fact]
     public void McpTypedPipeClient_SourceDelegatesTimeoutSelectionToSharedTransport()
     {
         var typedSend = global::Program.ExtractDeclaredMemberCode(
@@ -10570,7 +11375,7 @@ public sealed class AutomationToolContractsProtocolXunitTests
 
         Assert.Contains("AutomationCommandTransport.SendCommandAsync(", typedSend);
         Assert.Contains("callResponseTimeoutMs: responseTimeoutMs", typedSend);
-        Assert.Contains("unknownCommandHandling: AutomationUnknownCommandHandling.ReturnSyntheticError", typedSend);
+        Assert.DoesNotContain("unknownCommandHandling:", typedSend);
         Assert.Contains("cancellationToken: cancellationToken", typedSend);
         Assert.Equal(2, typedSend.Split("cancellationToken.ThrowIfCancellationRequested();").Length - 1);
     }
@@ -10739,7 +11544,8 @@ public sealed class AutomationToolContractsProtocolXunitTests
         Assert.Contains("=> Transport.SendCommandAsync(commandName, payload, responseTimeoutMs, RequestCancellationToken);", ssctlCommandHandlersText);
         Assert.Contains("=> Transport.SendCommandAsync(kind, payload, responseTimeoutMs, RequestCancellationToken);", ssctlCommandHandlersText);
         Assert.Contains("cancellationToken: cancellationToken", ssctlCommandHandlersText);
-        Assert.DoesNotContain("context.Transport.SendCommandAsync", ssctlCommandHandlersText);
+        Assert.Contains("(command, payload, responseTimeoutMs, commandToken) =>\n                    context.Transport.SendCommandAsync(command, payload, responseTimeoutMs, commandToken),\n                context.RequestCancellationToken)", ssctlCommandHandlersText);
+        Assert.Single(Regex.Matches(ssctlCommandHandlersText, Regex.Escape("context.Transport.SendCommandAsync")));
         Assert.Contains("options.AuthToken,\n                    cancellationToken: cts.Token)", automationClientText);
         Assert.Contains("CancellationToken cancellationToken = default", sharedClientText);
         Assert.Contains("cancellationToken: cancellationToken", sharedClientText);
@@ -10791,12 +11597,6 @@ public sealed class AutomationToolContractsProtocolXunitTests
     {
         var sharedClientText = RuntimeContractSource.ReadAutomationPipeClientSource();
         var pipeClientText = sharedClientText;
-        Assert.False(
-            File.Exists(Path.Combine(RuntimeContractSource.GetRepoRoot(), "tools", "ssctl", "PipeTransport.cs")),
-            "ssctl PipeTransport should stay with the command-handler surface instead of returning as a tiny adapter file.");
-        Assert.False(
-            File.Exists(Path.Combine(RuntimeContractSource.GetRepoRoot(), "tools", "Common", "AutomationPipeClient", "AutomationPipeClient.cs")),
-            "AutomationPipeClient transport is folded into Sussudio.Automation.Contracts/AutomationPipeProtocol.cs");
         var ssctlPipeText = RuntimeContractSource.ReadRepoFile("tools/ssctl/CommandHandlers.cs")
             .Replace("\r\n", "\n", StringComparison.Ordinal);
         var mcpPipeText = RuntimeContractSource.ReadRepoFile("tools/McpServer/Program.cs")
@@ -10808,6 +11608,12 @@ public sealed class AutomationToolContractsProtocolXunitTests
         var diagnosticSessionPipeRetryText = diagnosticSessionCommandChannelText;
         var automationPipeProtocolText = RuntimeContractSource.ReadRepoFile("Sussudio.Automation.Contracts/AutomationPipeProtocol.cs")
             .Replace("\r\n", "\n", StringComparison.Ordinal);
+        var commandNameTransportText = global::Program.ExtractDeclaredMemberCode(
+            automationPipeProtocolText,
+            "public static Task<JsonElement> SendCommandAsync(\n        string pipeName,\n        string commandName,");
+        var transportUnwrapText = global::Program.ExtractDeclaredMemberCode(
+            automationPipeProtocolText,
+            "private static async Task<JsonElement> SendAndUnwrapAsync(");
 
         Assert.Contains("internal static class AutomationPipeClient", sharedClientText);
         Assert.DoesNotContain("internal static partial class AutomationPipeClient", sharedClientText);
@@ -10825,7 +11631,7 @@ public sealed class AutomationToolContractsProtocolXunitTests
         Assert.Contains("public class AutomationPipeException : Exception", automationPipeProtocolText);
         Assert.Contains("public sealed class AutomationPipeConnectException : AutomationPipeException", automationPipeProtocolText);
         Assert.Contains("ConnectWithClassifiedErrorsAsync(", pipeClientText);
-        Assert.Contains("await writer.WriteLineAsync(requestJson.AsMemory(), cancellationToken)", pipeClientText);
+        Assert.Contains("await client.WriteAsync(Encoding.UTF8.GetBytes(requestJson + Environment.NewLine), cancellationToken)", pipeClientText);
         Assert.Contains("private static async Task ConnectWithClassifiedErrorsAsync(", pipeClientText);
         Assert.Contains("await client.ConnectAsync(connectTimeoutMs, cancellationToken).ConfigureAwait(false);", pipeClientText);
         Assert.Contains("catch (TimeoutException ex)", pipeClientText);
@@ -10862,7 +11668,15 @@ public sealed class AutomationToolContractsProtocolXunitTests
         Assert.Contains("ReturnSyntheticError", automationPipeProtocolText);
         Assert.Contains("ThrowArgumentException", automationPipeProtocolText);
         Assert.Contains("AutomationPipeProtocol.GetDefaultResponseTimeout(kind)", sharedClientText);
-        Assert.Contains("AutomationSyntheticErrorResponse.Create(ex.Message, \"unknown-command\")", sharedClientText);
+        Assert.Contains("AutomationSyntheticErrorResponse.Create(ex.Message, AutomationPipeErrorCodes.UnknownCommand)", sharedClientText);
+        Assert.Contains("commandValue = AutomationPipeProtocol.ResolveCommand(commandName);", commandNameTransportText);
+        Assert.Contains("catch (ArgumentException ex) when (unknownCommandHandling == AutomationUnknownCommandHandling.ReturnSyntheticError)", commandNameTransportText);
+        Assert.Contains("AutomationPipeProtocol.GetDefaultResponseTimeout(commandName)", commandNameTransportText);
+        Assert.True(
+            commandNameTransportText.IndexOf("ResolveCommand(commandName)", StringComparison.Ordinal) <
+            commandNameTransportText.IndexOf("return SendCommandAsync(", StringComparison.Ordinal),
+            "resolve the command name before entering the send path");
+        Assert.DoesNotContain("catch (ArgumentException ex)", transportUnwrapText);
         Assert.Contains("catch (Exception ex) when (AutomationSyntheticErrorResponse.CanCreateFromException(ex))", sharedClientText);
         Assert.Contains("AutomationSyntheticErrorResponse.Create(ex)", sharedClientText);
         Assert.DoesNotContain("internal static class AutomationSyntheticErrorResponse", sharedClientText);
@@ -10872,8 +11686,8 @@ public sealed class AutomationToolContractsProtocolXunitTests
         Assert.Contains("public static bool CanCreateFromException(Exception exception)", automationPipeProtocolText);
         Assert.Contains("public static JsonElement Create(Exception exception)", automationPipeProtocolText);
         Assert.Contains("AutomationPipeConnectException ex => Create(ex.Message, ex.ErrorCode)", automationPipeProtocolText);
-        Assert.Contains("AutomationPipeResponseTimeoutException ex => Create(ex.Message, \"pipe-response-timeout\")", automationPipeProtocolText);
-        Assert.Contains("AutomationPipeProtocolException ex => Create(ex.Message, \"pipe-protocol-error\")", automationPipeProtocolText);
+        Assert.Contains("AutomationPipeResponseTimeoutException ex => Create(ex.Message, AutomationPipeErrorCodes.ResponseTimeout)", automationPipeProtocolText);
+        Assert.Contains("AutomationPipeProtocolException ex => Create(ex.Message, AutomationPipeErrorCodes.ProtocolError)", automationPipeProtocolText);
         Assert.Contains("\"pipe-invalid-json\"", automationPipeProtocolText);
         Assert.Contains("\"pipe-io-error\"", automationPipeProtocolText);
         Assert.Contains("\"pipe-canceled\"", automationPipeProtocolText);
@@ -10881,18 +11695,12 @@ public sealed class AutomationToolContractsProtocolXunitTests
         Assert.Contains("using static Sussudio.Tools.DiagnosticSessionPipeRetryPolicy;", diagnosticSessionCommandChannelText);
         Assert.Contains("SendCommandWithConnectRetryAsync(", diagnosticSessionCommandChannelText);
         Assert.DoesNotContain("using static Sussudio.Tools.DiagnosticSessionPipeRetryPolicy;", diagnosticSessionText);
-        Assert.False(
-            File.Exists(Path.Combine(RuntimeContractSource.GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionCommandChannel.cs")),
-            "diagnostic-session command channel should stay with the run-context infrastructure owner.");
         Assert.Contains("internal static class DiagnosticSessionPipeRetryPolicy", diagnosticSessionPipeRetryText);
         Assert.Contains("internal static async Task<JsonElement?> SendCommandWithConnectRetryAsync(", diagnosticSessionPipeRetryText);
-        Assert.Contains("\"pipe-connect-failed\"", diagnosticSessionPipeRetryText);
-        Assert.Contains("\"pipe-connect-timeout\"", diagnosticSessionPipeRetryText);
+        Assert.Contains("AutomationPipeErrorCodes.ConnectFailed", diagnosticSessionPipeRetryText);
+        Assert.Contains("AutomationPipeErrorCodes.ConnectTimeout", diagnosticSessionPipeRetryText);
         Assert.Contains("IsPermanentPipeConnectFailure(ex.ErrorCode)", diagnosticSessionPipeRetryText);
-        Assert.Contains("\"pipe-access-denied\"", diagnosticSessionPipeRetryText);
-        Assert.False(
-            File.Exists(Path.Combine(RuntimeContractSource.GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionPipeRetryPolicy.cs")),
-            "diagnostic-session pipe retry policy should stay with the command channel transport owner.");
+        Assert.Contains("AutomationPipeErrorCodes.AccessDenied", diagnosticSessionPipeRetryText);
         Assert.DoesNotContain("private static async Task<JsonElement?> SendCommandWithConnectRetryAsync(", diagnosticSessionText);
     }
 
@@ -10937,14 +11745,6 @@ public sealed class AutomationToolContractsProtocolXunitTests
             expectedStatus,
             expectedRetryAfterMs);
     }
-
-    private static string ReadDiagnosticSessionRunnerSource()
-        => string.Join(
-            "\n",
-            Directory.GetFiles(Path.Combine(FindRepoRoot(), "tools", "DiagnosticSession"), "DiagnosticSessionRunner*.cs")
-                .Concat(Directory.GetFiles(Path.Combine(FindRepoRoot(), "tools", "DiagnosticSession"), "DiagnosticSessionRun*.cs"))
-                .OrderBy(path => path, StringComparer.Ordinal)
-                .Select(path => File.ReadAllText(path).Replace("\r\n", "\n", StringComparison.Ordinal)));
 
     private static Type RequireSharedToolType(string typeName)
     {
@@ -10995,23 +11795,6 @@ public sealed class AutomationToolContractsProtocolXunitTests
         Assert.Equal(expectedStatus, (string?)args[2]);
         var actualRetryAfterMs = args[3] is null ? (int?)null : Convert.ToInt32(args[3]);
         Assert.Equal(expectedRetryAfterMs, actualRetryAfterMs);
-    }
-
-    private static string FindRepoRoot()
-    {
-        var directory = new DirectoryInfo(Environment.CurrentDirectory);
-        while (directory != null)
-        {
-            var gitPath = Path.Combine(directory.FullName, ".git");
-            if (Directory.Exists(gitPath) || File.Exists(gitPath))
-            {
-                return directory.FullName;
-            }
-
-            directory = directory.Parent;
-        }
-
-        return Environment.CurrentDirectory;
     }
 }
 }

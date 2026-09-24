@@ -75,7 +75,7 @@ public sealed class FlashbackFailureTests
         var endResult = CreateFailure("recording-finalization-failed", "Retained recording segments.");
         Set(endResult, "PreservedArtifacts", new[] { "segment.ts" });
         var preserved = InvokeStatic(
-            TypeOf("Sussudio.Services.Flashback.FlashbackBackendResources"),
+            TypeOf("Sussudio.Services.Capture.FlashbackBackendResources"),
             "PreserveEndArtifactsOnFailure",
             result,
             endResult);
@@ -95,7 +95,7 @@ public sealed class FlashbackFailureTests
     public void SuccessfulResultDoesNotExposeStaleFailureCode()
     {
         var result = CreateFailure("flashback-export-cancelled", "Export complete.");
-        Set(result, "Succeeded", true);
+        SetOutcome(result, "Saved");
 
         Assert.Equal(string.Empty, GetKind(result));
         Assert.False(IsCancelled(result));
@@ -139,9 +139,10 @@ public sealed class FlashbackFailureTests
             File.WriteAllBytes(fixture.OutputPath, new byte[] { 7, 8 });
         }
 
-        var publishArguments = new object?[] { fixture.OutputPath, 0L, null, null };
+        var publishArguments = new object?[] { fixture.OutputPath, 0L, null, null, false };
         Assert.False((bool)InvokeInstance(transaction, "TryPublish", publishArguments));
         Assert.Equal(expectedCode, publishArguments[3]);
+        Assert.False((bool)publishArguments[4]!);
         Assert.False(File.Exists(temporaryPath));
         if (destinationAppears)
         {
@@ -171,11 +172,11 @@ public sealed class FlashbackFailureTests
         stateType.GetField("_flashbackExportDiagnosticsLock", BindingFlags.Instance | BindingFlags.NonPublic)!
             .SetValue(state, new object());
 
-        InvokeInstance(state, "RecordRejectedFlashbackExportDiagnostics", "output.mp4", result, null, null);
+        InvokeInstance(state, "RecordRejectedDiagnostics", "output.mp4", result, null, null);
         AssertFields();
 
-        var exportId = InvokeInstance(state, "BeginFlashbackExportDiagnostics", TimeSpan.Zero, TimeSpan.FromSeconds(1), "output.mp4");
-        InvokeInstance(state, "CompleteFlashbackExportDiagnostics", exportId, result);
+        var exportId = InvokeInstance(state, "BeginDiagnostics", TimeSpan.Zero, TimeSpan.FromSeconds(1), "output.mp4");
+        InvokeInstance(state, "CompleteDiagnostics", exportId, result);
         AssertFields();
 
         void AssertFields()
@@ -198,6 +199,12 @@ public sealed class FlashbackFailureTests
 
     private static object CreateFailure(string code, string message)
         => InvokeStatic(FailureType, "Create", "output.mp4", message, code, null);
+
+    private static void SetOutcome(object value, string outcome)
+    {
+        var property = value.GetType().GetProperty("Outcome")!;
+        property.SetValue(value, Enum.Parse(property.PropertyType, outcome));
+    }
 
     private static string GetKind(object result) => (string)InvokeStatic(FailureType, "Classify", result);
     private static bool IsCancelled(object result) => (bool)InvokeStatic(FailureType, "IsCancelled", result);

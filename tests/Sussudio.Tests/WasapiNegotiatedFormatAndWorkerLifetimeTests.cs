@@ -269,7 +269,7 @@ public sealed class WasapiNegotiatedFormatAndWorkerLifetimeTests
 
     private static uint ReadUIntProperty(object instance, string name) => (uint)ReadProperty(instance, name);
 
-    private static void SetField(object instance, string name, object value) =>
+    private static void SetField(object instance, string name, object? value) =>
         instance.GetType().GetField(name, InstanceFlags)!.SetValue(instance, value);
 
     private static string Normalize(string value) => value.Replace("\r\n", "\n", StringComparison.Ordinal);

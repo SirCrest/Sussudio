@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
+using Sussudio.Services.Capture.Mjpeg;
 using Sussudio.Services.Contracts;
 using Sussudio.Services.Preview;
 using Sussudio.Services.Runtime;
@@ -126,7 +127,14 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
         double LastUnderflowOutputAgeMs,
         double LastScheduleLateMs,
         double MaxScheduleLateMs,
-        long ScheduleLateCount);
+        long ScheduleLateCount)
+    {
+        public static readonly Metrics Empty = new()
+        {
+            LastDropReason = string.Empty,
+            LastUnderflowReason = string.Empty
+        };
+    }
 
     private readonly object _sync = new();
     private readonly List<BufferedFrame> _frames = new();
@@ -539,7 +547,7 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
                 return null;
             }
 
-            var index = SelectNextPreviewFrameIndexWithDeadlineRecovery(Stopwatch.GetTimestamp(), allowDeadlineSkip: true);
+            var index = SelectNextPreviewFrameIndexWithDeadlineRecovery(Stopwatch.GetTimestamp());
             if (index < 0)
             {
                 missReason = DequeueMissReason.WaitingForSequence;
@@ -610,7 +618,7 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
         return frame;
     }
 
-    private int SelectNextPreviewFrameIndexWithDeadlineRecovery(long nowTick, bool allowDeadlineSkip)
+    private int SelectNextPreviewFrameIndexWithDeadlineRecovery(long nowTick)
     {
         if (_frames.Count == 0)
         {
@@ -627,11 +635,6 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
         if (exact >= 0)
         {
             return exact;
-        }
-
-        if (!allowDeadlineSkip)
-        {
-            return -1;
         }
 
         var oldestIndex = GetOldestFrameIndex();
@@ -737,9 +740,9 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
             latency = RingBufferHelpers.Copy(_queueLatencyMs, _queueLatencyCount, _queueLatencyIndex);
         }
 
-        var inputMetrics = ComputeTimingMetrics(input);
-        var outputMetrics = ComputeTimingMetrics(output);
-        var latencyMetrics = ComputeTimingMetrics(latency);
+        var inputMetrics = ParallelMjpegDecodePipeline.ComputeTimingMetrics(input);
+        var outputMetrics = ParallelMjpegDecodePipeline.ComputeTimingMetrics(output);
+        var latencyMetrics = ParallelMjpegDecodePipeline.ComputeTimingMetrics(latency);
         return new Metrics(
             Enabled: true,
             TargetDepth: Volatile.Read(ref _targetDepth),
@@ -873,29 +876,6 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
         {
             RingBufferHelpers.Add(window, ref count, ref index, valueMs);
         }
-    }
-
-    private static (int SampleCount, double AverageMs, double P95Ms, double MaxMs) ComputeTimingMetrics(double[] samples)
-    {
-        if (samples.Length == 0)
-        {
-            return (0, 0, 0, 0);
-        }
-
-        var sorted = (double[])samples.Clone();
-        var sum = 0.0;
-        var max = 0.0;
-        for (var i = 0; i < sorted.Length; i++)
-        {
-            sum += sorted[i];
-            if (sorted[i] > max)
-            {
-                max = sorted[i];
-            }
-        }
-
-        Array.Sort(sorted);
-        return (sorted.Length, sum / sorted.Length, PercentileHelpers.FromSorted(sorted, 0.95), max);
     }
 
     private static double ElapsedMs(long startTick, long endTick)

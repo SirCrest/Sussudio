@@ -986,7 +986,7 @@ public sealed class DeviceDiscoveryTests
 
         public Task RefreshAsync(CancellationToken cancellationToken = default, bool throwOnScanFailure = false)
             => (Task)_controller.GetType().GetMethod("RefreshDevicesAsync")!.Invoke(
-                _controller, [cancellationToken, throwOnScanFailure])!;
+                _controller, [throwOnScanFailure, cancellationToken])!;
 
         public void AssertOriginalState()
         {
@@ -1044,8 +1044,9 @@ public sealed class DeviceDiscoveryTests
             SetDelegate(context, "TryEnqueueOnUiThread", args => { ((Action)args[0]!)(); return true; });
             SetDelegate(context, "ReadDeviceScanGeneration", _ => 41L);
             SetDelegate(context, "FindDeviceById", args => (string)args[0]! == Get<string>(Device, "Id") ? Device : null);
-            SetDelegate(context, "SetPendingSdrAutoSelectionForDeviceChange", args => { PendingAutoSelection = (bool)args[0]!; return null; });
-            SetDelegate(context, "SetPendingSdrAutoFriendlyFrameRateBucket", args => { PendingFrameRateBucket = (int?)args[0]; return null; });
+            Set(ModeSelection, "PendingSdrAutoSelectionForDeviceChange", true);
+            Set(ModeSelection, "PendingSdrAutoFriendlyFrameRateBucket", 60);
+            Set(context, "ModeSelection", ModeSelection);
             SetDelegate(context, "GetSelectedDevice", _ => SelectedDevice);
             SetDelegate(context, "RebuildSelectedDeviceCapabilities", _ =>
             {
@@ -1067,8 +1068,9 @@ public sealed class DeviceDiscoveryTests
         public object? SelectedFormat { get; private set; }
         public string? SelectedResolution { get; private set; } = "3840x2160";
         public double SelectedFrameRate { get; private set; } = 60;
-        public bool PendingAutoSelection { get; private set; } = true;
-        public int? PendingFrameRateBucket { get; private set; } = 60;
+        public object ModeSelection { get; } = Activator.CreateInstance(RequireType("Sussudio.Controllers.CaptureModeSelectionState"))!;
+        public bool PendingAutoSelection => Get<bool>(ModeSelection, "PendingSdrAutoSelectionForDeviceChange");
+        public int? PendingFrameRateBucket => Get<int?>(ModeSelection, "PendingSdrAutoFriendlyFrameRateBucket");
         public int CapabilityRebuilds { get; private set; }
 
         public void Apply(object result)

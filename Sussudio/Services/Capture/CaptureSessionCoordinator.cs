@@ -138,9 +138,17 @@ internal readonly record struct FlashbackBufferStatus(
         false);
 }
 
-// Serializes all capture lifecycle mutations onto one worker. Public callers
-// may enqueue from UI, automation, and background diagnostics, but CaptureService
-// itself should only see one transition at a time.
+/// <summary>
+/// Serializes all capture lifecycle mutations onto one worker. Public callers may enqueue
+/// from UI, automation, and background diagnostics, while CaptureService sees one transition
+/// at a time.
+/// </summary>
+/// <remarks>
+/// A caller cancellation token cancels the returned task immediately and prevents queued work
+/// from starting. Once an operation has started, caller cancellation only reaches the operation
+/// when that enqueue explicitly opts into propagation; coordinator disposal uses its separate
+/// worker token after the drain timeout.
+/// </remarks>
 public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
 {
     private const int DefaultDisposeDrainTimeoutMs = 15_000;
@@ -376,9 +384,9 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
         TimeSpan? outPoint,
         string outputPath,
         IProgress<ExportProgress>? progress,
-        CancellationToken cancellationToken,
         TimeSpan? inPointFilePts = null,
-        TimeSpan? outPointFilePts = null)
+        TimeSpan? outPointFilePts = null,
+        CancellationToken cancellationToken = default)
     {
         ThrowIfDisposed();
         return _captureService.ExportFlashbackRangeAsync(
@@ -386,9 +394,9 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
             outPoint,
             outputPath,
             progress,
-            cancellationToken,
-            inPointFilePts,
-            outPointFilePts);
+            inPointFilePts: inPointFilePts,
+            outPointFilePts: outPointFilePts,
+            cancellationToken: cancellationToken);
     }
 
     internal Task<FinalizeResult> ExportFlashbackLastNSecondsAsync(

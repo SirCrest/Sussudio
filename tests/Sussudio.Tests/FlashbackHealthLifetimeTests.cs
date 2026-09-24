@@ -8,15 +8,27 @@ namespace Sussudio.Tests;
 public sealed class FlashbackHealthLifetimeTests
 {
     [Fact]
+    public async Task CaptureServiceBackendBorrowsTheServiceExportOperationLock()
+    {
+        await using var service = (IAsyncDisposable)Activator.CreateInstance(
+            TypeOf("Sussudio.Services.Capture.CaptureService"))!;
+        var exportOperationLock = Assert.IsType<SemaphoreSlim>(ReadField(service, "_flashbackExportOperationLock"));
+        var backend = ReadField(service, "_flashbackBackend");
+        Assert.NotNull(backend);
+        Assert.Same(exportOperationLock, ReadField(backend, "_exportOperationLock"));
+    }
+
+    [Fact]
     public void BackendReplacementForwardsNewController_AndRejectsRetiredCallbacks()
     {
         using var fixture = new BackendFixture();
         var first = fixture.CreateController();
         fixture.Install(first);
         fixture.ChangeState(first, "Paused", "user");
-        fixture.ChangeState(first, "Live", "decode_error");
+        fixture.ChangeState(first, "Live", "decode_error", isInvoluntaryLiveReturn: true);
         var queuedChange = Assert.Single(fixture.Changes, change => Read<string>(change, "Reason") == "decode_error");
         Assert.True(fixture.IsCurrent(queuedChange));
+        Assert.True(Read<bool>(queuedChange, "IsInvoluntaryLiveReturn"));
 
         // A playback thread may already hold its invocation list while teardown
         // unsubscribes. Exercise that callback after the controller is replaced.
@@ -26,7 +38,7 @@ public sealed class FlashbackHealthLifetimeTests
         Assert.False(fixture.IsCurrent(queuedChange));
         var countBeforeRetiredEvents = fixture.Changes.Count;
         fixture.ChangeState(first, "Paused", "user");
-        retiredCallback.DynamicInvoke(fixture.State("Paused"), fixture.State("Live"), "thread_fatal");
+        retiredCallback.DynamicInvoke(fixture.State("Paused"), fixture.State("Live"), "thread_fatal", true);
         Assert.Equal(countBeforeRetiredEvents, fixture.Changes.Count);
 
         fixture.ChangeState(second, "Paused", "user");
@@ -50,11 +62,12 @@ public sealed class FlashbackHealthLifetimeTests
         fixture.Install(controller);
         fixture.ChangeState(controller, "Paused", "user");
         var queuedChange = Assert.Single(fixture.Changes);
+        Assert.False(Read<bool>(queuedChange, "IsInvoluntaryLiveReturn"));
         var callback = Assert.IsAssignableFrom<Delegate>(ReadField(controller, "StateChanged"));
 
         Invoke(fixture.Backend, "Clear");
         Assert.False(fixture.IsCurrent(queuedChange));
-        callback.DynamicInvoke(fixture.State("Paused"), fixture.State("Live"), "decode_error");
+        callback.DynamicInvoke(fixture.State("Paused"), fixture.State("Live"), "decode_error", true);
         Assert.Single(fixture.Changes);
         Assert.Null(ReadField(controller, "StateChanged"));
     }
@@ -161,11 +174,16 @@ public sealed class FlashbackHealthLifetimeTests
     private sealed class BackendFixture : IDisposable
     {
         private readonly object _bufferManager;
+        private readonly SemaphoreSlim _exportOperationLock = new(1, 1);
         private readonly List<object> _controllers = [];
 
         public BackendFixture()
         {
-            Backend = Activator.CreateInstance(TypeOf("Sussudio.Services.Flashback.FlashbackBackendResources"))!;
+            Backend = Activator.CreateInstance(
+                TypeOf("Sussudio.Services.Capture.FlashbackBackendResources"),
+                _exportOperationLock,
+                new Action<Exception>(_ => { }),
+                new EventHandler<long>((_, _) => { }))!;
             _bufferManager = Activator.CreateInstance(TypeOf("Sussudio.Services.Flashback.FlashbackBufferManager"), new object?[] { null })!;
             var stateChanged = Backend.GetType().GetEvent("PlaybackStateChanged")!;
             var change = Expression.Parameter(stateChanged.EventHandlerType!.GetMethod("Invoke")!.GetParameters()[0].ParameterType, "change");
@@ -185,7 +203,8 @@ public sealed class FlashbackHealthLifetimeTests
         public void Install(object controller) => Invoke(Backend, "Install", _bufferManager, null, null, controller, null);
         public bool IsCurrent(object change) => (bool)Invoke(Backend, "IsCurrentPlaybackStateChange", change)!;
         public object State(string name) => Enum.Parse(TypeOf("Sussudio.Models.FlashbackPlaybackState"), name);
-        public void ChangeState(object controller, string state, string reason) => Invoke(controller, "SetState", State(state), reason);
+        public void ChangeState(object controller, string state, string reason, bool isInvoluntaryLiveReturn = false)
+            => Invoke(controller, "SetState", State(state), reason, isInvoluntaryLiveReturn);
         public void Dispose()
         {
             Invoke(Backend, "Clear");
@@ -194,6 +213,7 @@ public sealed class FlashbackHealthLifetimeTests
                 ((IDisposable)controller).Dispose();
             }
             ((IDisposable)_bufferManager).Dispose();
+            _exportOperationLock.Dispose();
         }
     }
 }

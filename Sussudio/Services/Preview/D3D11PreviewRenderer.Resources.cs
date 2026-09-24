@@ -1335,7 +1335,7 @@ internal sealed partial class D3D11PreviewRenderer
             return _device3.CreateShaderResourceView1(inputTexture, srvDesc);
         }
 
-        Logger.Log("D3D11_RENDERER_WARN Device3 not available for P010 plane views â€” HDR shader path disabled, falling back to VideoProcessor");
+        Logger.Log("D3D11_RENDERER_WARN Device3 not available for P010 plane views — HDR shader path disabled, falling back to VideoProcessor");
         return null;
     }
 

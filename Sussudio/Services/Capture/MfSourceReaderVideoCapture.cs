@@ -6,7 +6,6 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using Sussudio.Services.Audio;
 using Sussudio.Services.Runtime;
 
 namespace Sussudio.Services.Capture;
@@ -20,16 +19,17 @@ public sealed record VideoCaptureNegotiationOptions(
     double Fps,
     bool RequireP010,
     string? RequestedPixelFormat = null,
-    bool UseMjpegHighFrameRateMode = false,
     IntPtr DxgiDeviceManager = default,
-    bool UseExternalMjpegDecode = false);
+    SourceNegotiationMode Mode = SourceNegotiationMode.Standard);
 
-// Which of the three mutually-exclusive negotiation shapes InitializeAsync
-// selected for a session: unmodified native negotiation, the GPU MJPG->NV12
-// hardware-transform path, or raw MJPG passed through for external decode.
-internal enum SourceNegotiationMode
+/// <summary>
+/// Requested or resolved source-reader negotiation mode. UnifiedVideoCapture
+/// resolves high-frame-rate MJPEG requests to a concrete reader mode.
+/// </summary>
+public enum SourceNegotiationMode
 {
     Standard,
+    HighFrameRateMjpegRequested,
     ConvertedMjpegNv12,
     RawMjpgPassthrough,
 }
@@ -37,6 +37,10 @@ internal enum SourceNegotiationMode
 public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
 {
     private const int CadenceWindowSeconds = 20;
+    private const int DeviceOpenMaxAttempts = 4;
+    private const int HrDeviceBusyDirect = unchecked((int)0x80070001);
+    private const int HrDeviceBusyActivate = unchecked((int)0xC00D36E6);
+    private static readonly int[] DeviceOpenRetryDelaysMs = [150, 300, 600];
     public delegate void RawFrameCallback(ReadOnlySpan<byte> frameData, int width, int height, long arrivalTick);
     public delegate void DualFrameCallback(IntPtr gpuTexture, int gpuSubresource, ReadOnlySpan<byte> cpuData, int width, int height, long arrivalTick);
 
@@ -124,6 +128,13 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
     }
     public long LastFrameDeliveredTickMs => Interlocked.Read(ref _lastFrameDeliveredTickMs);
 
+    /// <summary>Initializes the source reader and negotiates the capture mode.</summary>
+    /// <remarks>
+    /// Media Foundation device activation, device-busy retries, and format negotiation run synchronously
+    /// on the calling thread. This method does not support cancellation and cannot interrupt an in-flight
+    /// native operation. The Task return preserves the existing lifecycle contract; successful initialization
+    /// returns <see cref="Task.CompletedTask"/>.
+    /// </remarks>
     public Task InitializeAsync(string deviceSymbolicLink, VideoCaptureNegotiationOptions options)
     {
         if (string.IsNullOrWhiteSpace(deviceSymbolicLink))
@@ -146,9 +157,30 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         var fps = options.Fps;
         var requireP010 = options.RequireP010;
         var requestedPixelFormat = options.RequestedPixelFormat;
-        var useMjpegHighFrameRateMode = options.UseMjpegHighFrameRateMode;
         var dxgiDeviceManager = options.DxgiDeviceManager;
-        var useExternalMjpegDecode = options.UseExternalMjpegDecode;
+        var negotiationMode = options.Mode;
+
+        if (negotiationMode == SourceNegotiationMode.HighFrameRateMjpegRequested)
+        {
+            throw new ArgumentException(
+                "UnifiedVideoCapture must resolve high-frame-rate MJPEG mode before initializing the source reader.",
+                nameof(options));
+        }
+
+        if (negotiationMode is not (SourceNegotiationMode.Standard or
+            SourceNegotiationMode.ConvertedMjpegNv12 or
+            SourceNegotiationMode.RawMjpgPassthrough))
+        {
+            throw new ArgumentOutOfRangeException(nameof(options), "Source negotiation mode is not supported.");
+        }
+
+        if (negotiationMode != SourceNegotiationMode.Standard &&
+            (requireP010 || !string.Equals(requestedPixelFormat, "MJPG", StringComparison.OrdinalIgnoreCase)))
+        {
+            throw new ArgumentException(
+                "High-frame-rate MJPEG reader modes require an MJPG source and NV12 output.",
+                nameof(options));
+        }
 
         lock (_sync)
         {
@@ -166,61 +198,13 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         var sourceReaderD3DEnabled = false;
         var disableConverters = true;
         var requestedSourceSubtypeName = requestedPixelFormat;
-        // useConvertedMjpegNv12 and useRawMjpgOutput were the same three-condition
-        // gate (high-frame-rate MJPG mode, non-P010, requested subtype "MJPG"),
-        // split only by the mutually-exclusive useExternalMjpegDecode flag -
-        // collapsed here into one three-way mode instead of two derived bools.
-        var negotiationMode = useMjpegHighFrameRateMode &&
-                               !requireP010 &&
-                               string.Equals(requestedPixelFormat, "MJPG", StringComparison.OrdinalIgnoreCase)
-            ? (useExternalMjpegDecode
-                ? SourceNegotiationMode.RawMjpgPassthrough
-                : SourceNegotiationMode.ConvertedMjpegNv12)
-            : SourceNegotiationMode.Standard;
 
         try
         {
             MfInteropHelpers.AddStartupReference();
             startupHeld = true;
 
-            // Device open may transiently fail with busy HRESULTs right after a prior holder releases.
-            const int deviceOpenMaxAttempts = 4;
-            const int hrDeviceBusyDirect = unchecked((int)0x80070001);
-            const int hrDeviceBusyActivate = unchecked((int)0xC00D36E6);
-            var deviceOpenDelaysMs = new[] { 150, 300, 600 };
-            Exception? deviceOpenLastEx = null;
-            for (var deviceOpenAttempt = 1; deviceOpenAttempt <= deviceOpenMaxAttempts; deviceOpenAttempt++)
-            {
-                try
-                {
-                    mediaSource = CreateMediaSource(deviceSymbolicLink);
-                    if (deviceOpenAttempt > 1)
-                    {
-                        Logger.Log($"MF_SOURCE_OPEN_BUSY_RECOVERED attempt={deviceOpenAttempt}");
-                    }
-
-                    deviceOpenLastEx = null;
-                    break;
-                }
-                catch (Exception ex) when (IsDeviceBusyHResult(ex, hrDeviceBusyDirect, hrDeviceBusyActivate) &&
-                                            deviceOpenAttempt < deviceOpenMaxAttempts)
-                {
-                    deviceOpenLastEx = ex;
-                    var hr = GetDeviceBusyHResult(ex, hrDeviceBusyDirect, hrDeviceBusyActivate);
-                    Logger.Log($"MF_SOURCE_OPEN_BUSY_RETRY attempt={deviceOpenAttempt} hr=0x{hr:X8} device='{deviceSymbolicLink}'");
-                    Thread.Sleep(deviceOpenDelaysMs[deviceOpenAttempt - 1]);
-                }
-            }
-
-            if (deviceOpenLastEx != null)
-            {
-                System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(deviceOpenLastEx).Throw();
-            }
-
-            if (mediaSource == null)
-            {
-                throw new InvalidOperationException("Media Foundation device activation completed without returning a media source.");
-            }
+            mediaSource = OpenMediaSourceWithBusyRetry(deviceSymbolicLink);
 
             disableConverters = negotiationMode == SourceNegotiationMode.Standard;
             MfInteropHelpers.ThrowIfFailed(
@@ -263,8 +247,8 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                     $"stage=CreateSourceReader hr=0x{createSourceReaderHr:X8} " +
                     "fallback=cpu_only");
 
-                WasapiComInterop.ReleaseComObject(ref sourceReader);
-                WasapiComInterop.ReleaseComObject(ref readerAttributes);
+                MfInteropHelpers.ReleaseComObject(ref sourceReader);
+                MfInteropHelpers.ReleaseComObject(ref readerAttributes);
 
                 MfInteropHelpers.ThrowIfFailed(
                     MfInterop.MFCreateAttributes(out readerAttributes, 1),
@@ -286,11 +270,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                 ? MfGuids.MFVideoFormat_P010
                 : MfGuids.MFVideoFormat_NV12;
 
-            Guid negotiatedSubtype;
-            int negotiatedWidth;
-            int negotiatedHeight;
-            double negotiatedFps;
-            string negotiatedDescription;
+            SourceReaderNegotiatedMode selectedMode;
             switch (negotiationMode)
             {
                 case SourceNegotiationMode.ConvertedMjpegNv12:
@@ -302,11 +282,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                         fps,
                         MfGuids.MFVideoFormat_MJPG,
                         requestedSubtype,
-                        out negotiatedSubtype,
-                        out negotiatedWidth,
-                        out negotiatedHeight,
-                        out negotiatedFps,
-                        out negotiatedDescription);
+                        out selectedMode);
                     break;
                 case SourceNegotiationMode.RawMjpgPassthrough:
                     requestedSourceSubtypeName = "MJPG";
@@ -316,11 +292,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                         height,
                         fps,
                         MfGuids.MFVideoFormat_MJPG,
-                        out negotiatedSubtype,
-                        out negotiatedWidth,
-                        out negotiatedHeight,
-                        out negotiatedFps,
-                        out negotiatedDescription);
+                        out selectedMode);
                     break;
                 default:
                     selectedMediaType = SelectMediaType(
@@ -329,27 +301,19 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                         height,
                         fps,
                         requestedSubtype,
-                        out negotiatedSubtype,
-                        out negotiatedWidth,
-                        out negotiatedHeight,
-                        out negotiatedFps,
-                        out negotiatedDescription);
+                        out selectedMode);
                     break;
             }
 
             var negotiatedMode = ApplyCurrentMediaTypeAndReconcileActualOutput(
                 sourceReader,
                 selectedMediaType,
-                new SourceReaderNegotiatedMode(
-                    negotiatedSubtype,
-                    negotiatedWidth,
-                    negotiatedHeight,
-                    negotiatedFps,
-                    negotiatedDescription),
+                selectedMode,
                 negotiationMode);
             ValidateNegotiatedOutputMode(
                 negotiatedMode,
                 negotiationMode,
+                requireP010,
                 sourceReaderD3DEnabled);
             CommitInitializedRuntimeState(
                 deviceSymbolicLink,
@@ -385,10 +349,10 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         }
         finally
         {
-            WasapiComInterop.ReleaseComObject(ref selectedMediaType);
-            WasapiComInterop.ReleaseComObject(ref readerAttributes);
-            WasapiComInterop.ReleaseComObject(ref sourceReader);
-            WasapiComInterop.ReleaseComObject(ref mediaSource);
+            MfInteropHelpers.ReleaseComObject(ref selectedMediaType);
+            MfInteropHelpers.ReleaseComObject(ref readerAttributes);
+            MfInteropHelpers.ReleaseComObject(ref sourceReader);
+            MfInteropHelpers.ReleaseComObject(ref mediaSource);
 
             if (startupHeld)
             {
@@ -434,7 +398,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         }
         finally
         {
-            WasapiComInterop.ReleaseComObject(ref actualMediaType);
+            MfInteropHelpers.ReleaseComObject(ref actualMediaType);
         }
     }
 
@@ -477,6 +441,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
     private void ValidateNegotiatedOutputMode(
         SourceReaderNegotiatedMode mode,
         SourceNegotiationMode negotiationMode,
+        bool requireP010,
         bool sourceReaderD3DEnabled)
     {
         if (negotiationMode == SourceNegotiationMode.ConvertedMjpegNv12)
@@ -496,6 +461,13 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         {
             throw new InvalidOperationException(
                 $"External MJPG decode requires native MJPG output, but negotiated {SubtypeGuidToName(mode.Subtype)}.");
+        }
+        else if (negotiationMode == SourceNegotiationMode.Standard &&
+            requireP010 &&
+            mode.Subtype != MfGuids.MFVideoFormat_P010)
+        {
+            throw new InvalidOperationException(
+                $"Standard capture requires P010 output, but negotiated {SubtypeGuidToName(mode.Subtype)}.");
         }
     }
 
@@ -634,7 +606,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         }
         finally
         {
-            WasapiComInterop.ReleaseComObject(ref attrs);
+            MfInteropHelpers.ReleaseComObject(ref attrs);
         }
     }
 
@@ -730,7 +702,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                         }
                     }
 
-                    WasapiComInterop.ReleaseComObject(ref activate);
+                    MfInteropHelpers.ReleaseComObject(ref activate);
                 }
             }
 
@@ -749,7 +721,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                 Marshal.FreeCoTaskMem(activateArrayPtr);
             }
 
-            WasapiComInterop.ReleaseComObject(ref attrs);
+            MfInteropHelpers.ReleaseComObject(ref attrs);
         }
     }
 
@@ -784,19 +756,16 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         int requestedHeight,
         double requestedFps,
         Guid requestedSubtype,
-        out Guid selectedSubtype,
-        out int selectedWidth,
-        out int selectedHeight,
-        out double selectedFps,
-        out string negotiatedDescription)
+        out SourceReaderNegotiatedMode selectedMode)
     {
         IMFMediaType? bestType = null;
         var bestFpsDelta = double.MaxValue;
-        selectedSubtype = requestedSubtype;
-        selectedWidth = requestedWidth;
-        selectedHeight = requestedHeight;
-        selectedFps = requestedFps;
-        negotiatedDescription = "unknown";
+        selectedMode = new SourceReaderNegotiatedMode(
+            requestedSubtype,
+            requestedWidth,
+            requestedHeight,
+            requestedFps,
+            "unknown");
 
         var totalNativeTypes = 0;
         var requestedSubtypeCount = 0;
@@ -857,22 +826,23 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
 
                 if (delta < bestFpsDelta)
                 {
-                    WasapiComInterop.ReleaseComObject(ref bestType);
+                    MfInteropHelpers.ReleaseComObject(ref bestType);
                     bestType = nativeType;
                     nativeType = null;
                     bestFpsDelta = delta;
-                    selectedWidth = width;
-                    selectedHeight = height;
-                    selectedFps = nFps > 0 ? nFps : requestedFps;
-                    selectedSubtype = subtype;
-                    negotiatedDescription = nFps > 0
-                        ? $"{requestedSubtypeName} {width}x{height}@{nFps:0.###}"
-                        : $"{requestedSubtypeName} {width}x{height}";
+                    selectedMode = new SourceReaderNegotiatedMode(
+                        subtype,
+                        width,
+                        height,
+                        nFps > 0 ? nFps : requestedFps,
+                        nFps > 0
+                            ? $"{requestedSubtypeName} {width}x{height}@{nFps:0.###}"
+                            : $"{requestedSubtypeName} {width}x{height}");
                 }
             }
             finally
             {
-                WasapiComInterop.ReleaseComObject(ref nativeType);
+                MfInteropHelpers.ReleaseComObject(ref nativeType);
             }
         }
 
@@ -891,7 +861,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
 
         if (bestFpsDelta > 0.5)
         {
-            WasapiComInterop.ReleaseComObject(ref bestType);
+            MfInteropHelpers.ReleaseComObject(ref bestType);
             throw new InvalidOperationException(
                 $"No {requestedSubtypeName} media type matched requested frame rate {requestedFps:0.###}fps " +
                 $"for {requestedWidth}x{requestedHeight}.");
@@ -907,11 +877,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         double requestedFps,
         Guid requestedSourceSubtype,
         Guid requestedOutputSubtype,
-        out Guid selectedSubtype,
-        out int selectedWidth,
-        out int selectedHeight,
-        out double selectedFps,
-        out string negotiatedDescription)
+        out SourceReaderNegotiatedMode selectedMode)
     {
         var nativeType = SelectMediaType(
             reader,
@@ -919,11 +885,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             requestedHeight,
             requestedFps,
             requestedSourceSubtype,
-            out var nativeSubtype,
-            out selectedWidth,
-            out selectedHeight,
-            out selectedFps,
-            out _);
+            out selectedMode);
 
         IMFMediaType? convertedType = null;
         try
@@ -957,9 +919,13 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             CopyOptionalUInt32(nativeType, convertedType, ref MfGuids.MF_MT_INTERLACE_MODE);
             CopyOptionalUInt32(nativeType, convertedType, ref MfGuids.MF_MT_ALL_SAMPLES_INDEPENDENT);
 
-            selectedSubtype = requestedOutputSubtype;
-            negotiatedDescription =
-                $"{SubtypeGuidToName(requestedOutputSubtype)} <= {SubtypeGuidToName(nativeSubtype)} {selectedWidth}x{selectedHeight}@{selectedFps:0.###}";
+            selectedMode = selectedMode with
+            {
+                Subtype = requestedOutputSubtype,
+                Description =
+                    $"{SubtypeGuidToName(requestedOutputSubtype)} <= {SubtypeGuidToName(selectedMode.Subtype)} " +
+                    $"{selectedMode.Width}x{selectedMode.Height}@{selectedMode.Fps:0.###}"
+            };
 
             var result = convertedType;
             convertedType = null;
@@ -967,8 +933,8 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         }
         finally
         {
-            WasapiComInterop.ReleaseComObject(ref nativeType);
-            WasapiComInterop.ReleaseComObject(ref convertedType);
+            MfInteropHelpers.ReleaseComObject(ref nativeType);
+            MfInteropHelpers.ReleaseComObject(ref convertedType);
         }
     }
 
@@ -1184,12 +1150,6 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                     break;
                 }
 
-                if ((hr == MfHResults.MF_E_SHUTDOWN || hr == MfHResults.MF_E_INVALIDREQUEST)
-                    && ct.IsCancellationRequested)
-                {
-                    break;
-                }
-
                 MfInteropHelpers.ThrowIfFailed(hr, "IMFSourceReader.ReadSample");
                 readSampleSucceeded = true;
 
@@ -1238,7 +1198,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             }
             finally
             {
-                WasapiComInterop.ReleaseComObject(ref sample);
+                MfInteropHelpers.ReleaseComObject(ref sample);
             }
         }
     }
@@ -1258,7 +1218,13 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         double JitterStdDevMs,
         long SevereGapCount,
         long EstimatedDroppedFrames,
-        double EstimatedDropPercent);
+        double EstimatedDropPercent)
+    {
+        public static readonly SourceCadenceMetrics Empty = new()
+        {
+            RecentIntervalsMs = Array.Empty<double>()
+        };
+    }
 
     public void SetExpectedFrameRate(double fps)
     {
@@ -1316,74 +1282,35 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                     EstimatedDropPercent: 0);
             }
 
-            samples = new double[_sourceIntervalCount];
-            for (var i = 0; i < _sourceIntervalCount; i++)
-            {
-                var ringIndex = (_sourceIntervalIndex - _sourceIntervalCount + i + _sourceIntervalWindowMs.Length)
-                    % _sourceIntervalWindowMs.Length;
-                samples[i] = _sourceIntervalWindowMs[ringIndex];
-            }
+            samples = RingBufferHelpers.Copy(_sourceIntervalWindowMs, _sourceIntervalCount, _sourceIntervalIndex);
         }
 
-        var sampleCount = samples.Length;
-        var sum = 0.0;
-        var max = 0.0;
-        for (var i = 0; i < sampleCount; i++)
-        {
-            sum += samples[i];
-            if (samples[i] > max)
-            {
-                max = samples[i];
-            }
-        }
-
-        var average = sum / sampleCount;
-        var observedFps = average > double.Epsilon ? 1000.0 / average : 0;
-        var targetIntervalMs = expectedIntervalMs > 0 ? expectedIntervalMs : average;
-        var severeGapThresholdMs = targetIntervalMs * 1.6;
-
-        long severeGapCount = 0;
+        var stats = IntervalCadenceStatistics.Compute(samples, expectedIntervalMs);
         long estimatedDroppedFrames = 0;
-        var varianceSum = 0.0;
-        for (var i = 0; i < sampleCount; i++)
+        if (stats.TargetIntervalMs > double.Epsilon)
         {
-            var interval = samples[i];
-            var delta = interval - average;
-            varianceSum += delta * delta;
-            if (interval >= severeGapThresholdMs)
+            for (var i = 0; i < samples.Length; i++)
             {
-                severeGapCount++;
-            }
-
-            if (targetIntervalMs > double.Epsilon)
-            {
-                estimatedDroppedFrames += Math.Max(0, (int)Math.Round(interval / targetIntervalMs) - 1);
+                estimatedDroppedFrames += Math.Max(0, (int)Math.Round(samples[i] / stats.TargetIntervalMs) - 1);
             }
         }
 
-        var jitterStdDevMs = Math.Sqrt(varianceSum / sampleCount);
-        var sorted = (double[])samples.Clone();
-        Array.Sort(sorted);
-        var p95IntervalMs = PercentileHelpers.FromSorted(sorted, 0.95);
-        var p99IntervalMs = PercentileHelpers.FromSorted(sorted, 0.99);
-        var onePercentLowFps = p99IntervalMs > double.Epsilon ? 1000.0 / p99IntervalMs : 0;
-        var fivePercentLowFps = p95IntervalMs > double.Epsilon ? 1000.0 / p95IntervalMs : 0;
-        var estimatedDropPercent = estimatedDroppedFrames * 100.0 / Math.Max(1, sampleCount + estimatedDroppedFrames);
+        var estimatedDropPercent = estimatedDroppedFrames * 100.0 / Math.Max(1, stats.SampleCount + estimatedDroppedFrames);
 
         return new SourceCadenceMetrics(
-            SampleCount: sampleCount,
-            ObservedFps: observedFps,
-            ExpectedIntervalMs: targetIntervalMs,
-            AverageIntervalMs: average,
-            P95IntervalMs: p95IntervalMs,
-            P99IntervalMs: p99IntervalMs,
-            MaxIntervalMs: max,
-            OnePercentLowFps: onePercentLowFps,
-            FivePercentLowFps: fivePercentLowFps,
-            SampleDurationMs: sum,
+            SampleCount: stats.SampleCount,
+            ObservedFps: stats.ObservedFps,
+            ExpectedIntervalMs: stats.TargetIntervalMs,
+            AverageIntervalMs: stats.AverageIntervalMs,
+            P95IntervalMs: stats.P95IntervalMs,
+            P99IntervalMs: stats.P99IntervalMs,
+            MaxIntervalMs: stats.MaxIntervalMs,
+            OnePercentLowFps: stats.OnePercentLowFps,
+            FivePercentLowFps: stats.FivePercentLowFps,
+            SampleDurationMs: stats.SampleDurationMs,
             RecentIntervalsMs: samples,
-            JitterStdDevMs: jitterStdDevMs,
-            SevereGapCount: severeGapCount,
+            JitterStdDevMs: stats.JitterStdDevMs,
+            SevereGapCount: stats.SlowIntervalCount,
             EstimatedDroppedFrames: estimatedDroppedFrames,
             EstimatedDropPercent: estimatedDropPercent);
     }
@@ -1444,7 +1371,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             _dxgiDeviceManagerPtr = IntPtr.Zero;
         }
 
-        WasapiComInterop.ReleaseComObject(ref sourceReader);
+        MfInteropHelpers.ReleaseComObject(ref sourceReader);
 
         if (mediaSource != null)
         {
@@ -1458,17 +1385,44 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             }
         }
 
-        WasapiComInterop.ReleaseComObject(ref mediaSource);
+        MfInteropHelpers.ReleaseComObject(ref mediaSource);
     }
 
-    private static bool IsDeviceBusyHResult(Exception ex, int hrDirect, int hrActivate)
-        => GetDeviceBusyHResult(ex, hrDirect, hrActivate) != 0;
+    private IMFMediaSource OpenMediaSourceWithBusyRetry(string deviceSymbolicLink)
+    {
+        for (var attempt = 1; attempt < DeviceOpenMaxAttempts; attempt++)
+        {
+            try
+            {
+                var mediaSource = CreateMediaSource(deviceSymbolicLink);
+                if (attempt > 1)
+                {
+                    Logger.Log($"MF_SOURCE_OPEN_BUSY_RECOVERED attempt={attempt}");
+                }
 
-    private static int GetDeviceBusyHResult(Exception ex, int hrDirect, int hrActivate)
+                return mediaSource;
+            }
+            catch (Exception ex) when (IsDeviceBusyHResult(ex))
+            {
+                var hr = GetDeviceBusyHResult(ex);
+                Logger.Log($"MF_SOURCE_OPEN_BUSY_RETRY attempt={attempt} hr=0x{hr:X8} device='{deviceSymbolicLink}'");
+                Thread.Sleep(DeviceOpenRetryDelaysMs[attempt - 1]);
+            }
+        }
+
+        var finalMediaSource = CreateMediaSource(deviceSymbolicLink);
+        Logger.Log($"MF_SOURCE_OPEN_BUSY_RECOVERED attempt={DeviceOpenMaxAttempts}");
+        return finalMediaSource;
+    }
+
+    private static bool IsDeviceBusyHResult(Exception ex)
+        => GetDeviceBusyHResult(ex) != 0;
+
+    private static int GetDeviceBusyHResult(Exception ex)
     {
         for (var e = ex; e != null; e = e.InnerException)
         {
-            if (e.HResult == hrDirect || e.HResult == hrActivate)
+            if (e.HResult == HrDeviceBusyDirect || e.HResult == HrDeviceBusyActivate)
             {
                 return e.HResult;
             }
@@ -1514,8 +1468,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             throw new ArgumentException("Destination span is too small for packed frame.");
         }
 
-        var strideAbs = Math.Abs(stride);
-        if (strideAbs < rowBytes)
+        if (stride < rowBytes)
         {
             throw new InvalidOperationException(
                 $"Source stride ({stride}) is smaller than packed row width ({rowBytes}).");
@@ -1523,29 +1476,18 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
 
         var yDest = destination[..yBytes];
         var uvDest = destination.Slice(yBytes, uvBytes);
-        var yStart = sourceStart;
         var uvStart = sourceStart + (stride * height);
-
-        if (stride < 0)
-        {
-            yStart = sourceStart + (stride * (height - 1));
-            uvStart = sourceStart + (stride * (height + uvHeight - 1));
-        }
 
         for (var row = 0; row < height; row++)
         {
-            var src = stride >= 0
-                ? yStart + (row * stride)
-                : yStart - (row * strideAbs);
+            var src = sourceStart + (row * stride);
             var dst = yDest.Slice(row * rowBytes, rowBytes);
             new ReadOnlySpan<byte>(src, rowBytes).CopyTo(dst);
         }
 
         for (var row = 0; row < uvHeight; row++)
         {
-            var src = stride >= 0
-                ? uvStart + (row * stride)
-                : uvStart - (row * strideAbs);
+            var src = uvStart + (row * stride);
             var dst = uvDest.Slice(row * rowBytes, rowBytes);
             new ReadOnlySpan<byte>(src, rowBytes).CopyTo(dst);
         }
@@ -1563,27 +1505,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
     }
 
     private static string SubtypeGuidToName(Guid subtype)
-    {
-        if (subtype == MfGuids.MFVideoFormat_P010) return "P010";
-        if (subtype == MfGuids.MFVideoFormat_NV12) return "NV12";
-        if (subtype == new Guid(0x32595559, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71)) return "YUY2";
-        if (subtype == new Guid(0x47504A4D, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71)) return "MJPG";
-        if (subtype == new Guid(0x00000014, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71)) return "RGB24";
-        // FourCC-style: first 4 bytes of GUID are the FourCC.
-        var bytes = subtype.ToByteArray();
-        if (bytes[4] == 0 && bytes[5] == 0 && bytes[6] == 0x10 && bytes[7] == 0)
-        {
-            var fourcc = new char[4];
-            for (var i = 0; i < 4; i++)
-            {
-                fourcc[i] = bytes[i] >= 0x20 && bytes[i] <= 0x7E ? (char)bytes[i] : '?';
-            }
-
-            return new string(fourcc);
-        }
-
-        return subtype.ToString("B");
-    }
+        => MfInteropHelpers.SubtypeGuidToName(subtype);
 
     private static readonly Guid ID3D11Texture2DIid = new(
         0x6F15AAF2, 0xD208, 0x4E89, 0x9A, 0xB4, 0x48, 0x95, 0x35, 0xD3, 0x4F, 0x9C);
@@ -1645,7 +1567,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         }
         finally
         {
-            WasapiComInterop.ReleaseComObject(ref buffer);
+            MfInteropHelpers.ReleaseComObject(ref buffer);
         }
     }
 

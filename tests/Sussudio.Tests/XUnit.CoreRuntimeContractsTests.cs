@@ -1,5 +1,7 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
+using System.Globalization;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
@@ -72,6 +74,14 @@ public sealed class CoreRuntimeContractsTests
     [Fact]
     public Task NativeXuHdrMetadataDecodesEotfFromDataByte()
         => global::Program.NativeXuAtCommandProvider_HdrMetadataDecodesEotfFromDataByte();
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public Task NativeXuSnapshotFormattingPreservesDiagnosticsAndDetailRows(bool flashAudioOverride, bool unavailableCommands)
+        => global::Program.NativeXuAtCommandProvider_SnapshotFormattingPreservesDiagnosticsAndDetailRows(flashAudioOverride, unavailableCommands);
 
     [Fact]
     public Task NativeXuTelemetryDetailsLiveInFocusedPartials()
@@ -260,9 +270,6 @@ public sealed class RuntimeContractsTests
         Assert.Contains("internal sealed class MmcssThreadRegistration", source);
         Assert.Contains("EntryPoint = \"AvSetMmThreadCharacteristicsW\"", source);
         Assert.Contains("MMCSS registered task=", source);
-        Assert.False(
-            File.Exists(Path.Combine(RuntimeContractSource.GetRepoRoot(), "Sussudio", "Services", "Runtime", "MmcssThreadRegistration.cs")),
-            "MMCSS registration lives with shared runtime helpers");
     }
 
     [Fact]
@@ -303,9 +310,6 @@ public sealed class RuntimeContractsTests
     {
         var sourceText = RuntimeContractSource.ReadRepoFile("Sussudio/Services/Runtime/RuntimeHelpers.cs");
         Assert.Contains("process.PriorityClass = priorityClass;", sourceText);
-        Assert.False(
-            File.Exists(Path.Combine(RuntimeContractSource.GetRepoRoot(), "Sussudio", "Services", "Runtime", "ProcessSupervisor.cs")),
-            "bounded process supervision lives with shared runtime helpers");
     }
 
     [Fact]
@@ -656,6 +660,7 @@ public class RuntimeHelpersTests
     private const string EnvironmentHelpersType = "Sussudio.Services.Runtime.EnvironmentHelpers";
     private const string RingBufferHelpersType = "Sussudio.Services.Runtime.RingBufferHelpers";
     private const string PercentileHelpersType = "Sussudio.Services.Runtime.PercentileHelpers";
+    private const string IntervalCadenceStatisticsType = "Sussudio.Services.Runtime.IntervalCadenceStatistics";
 
     [Fact]
     public void AtomicMax_Int_UpdatesWhenCandidateIsGreater()
@@ -869,6 +874,56 @@ public class RuntimeHelpersTests
             method.Invoke(null, new object[] { 10, 0.0 }));
         Assert.IsType<ArgumentOutOfRangeException>(invalidPercentile.InnerException);
     }
+
+    [Fact]
+    public void IntervalCadenceStatistics_SummarizesWindowAgainstExpectedInterval()
+    {
+        // One 20 ms hitch in a 10 ms cadence: average 12, deviations -2,-2,-2,+8,-2 (stddev 4),
+        // and only the hitch crosses the 1.6x slow threshold (16 ms).
+        var samples = new[] { 10.0, 10.0, 10.0, 20.0, 10.0 };
+        var stats = InvokeIntervalCadenceStatistics(samples, 10.0);
+
+        // Callers hand the same array back as RecentIntervalsMs, so percentiles must sort a copy.
+        Assert.Equal(new[] { 10.0, 10.0, 10.0, 20.0, 10.0 }, samples);
+
+        Assert.Equal(5, GetStat<int>(stats, "SampleCount"));
+        Assert.Equal(10.0, GetStat<double>(stats, "TargetIntervalMs"), 6);
+        Assert.Equal(12.0, GetStat<double>(stats, "AverageIntervalMs"), 6);
+        Assert.Equal(1000.0 / 12.0, GetStat<double>(stats, "ObservedFps"), 6);
+        Assert.Equal(20.0, GetStat<double>(stats, "MaxIntervalMs"), 6);
+        Assert.Equal(20.0, GetStat<double>(stats, "P99IntervalMs"), 6);
+        Assert.Equal(50.0, GetStat<double>(stats, "OnePercentLowFps"), 6);
+        Assert.Equal(60.0, GetStat<double>(stats, "SampleDurationMs"), 6);
+        Assert.Equal(4.0, GetStat<double>(stats, "JitterStdDevMs"), 6);
+        Assert.Equal(1L, GetStat<long>(stats, "SlowIntervalCount"));
+    }
+
+    [Fact]
+    public void IntervalCadenceStatistics_FallsBackToObservedAverageWithoutExpectedRate()
+    {
+        var stats = InvokeIntervalCadenceStatistics(new[] { 8.0, 12.0 }, 0);
+
+        Assert.Equal(10.0, GetStat<double>(stats, "TargetIntervalMs"), 6);
+        Assert.Equal(0L, GetStat<long>(stats, "SlowIntervalCount"));
+    }
+
+    [Fact]
+    public void IntervalCadenceStatistics_RejectsEmptyWindow()
+    {
+        var invocation = Assert.Throws<TargetInvocationException>(() =>
+            InvokeIntervalCadenceStatistics(Array.Empty<double>(), 10.0));
+        Assert.IsType<ArgumentException>(invocation.InnerException);
+    }
+
+    private static object InvokeIntervalCadenceStatistics(double[] samples, double expectedIntervalMs)
+    {
+        var type = SussudioAssembly.Load().GetType(IntervalCadenceStatisticsType, throwOnError: true)!;
+        var compute = type.GetMethod("Compute", BindingFlags.Public | BindingFlags.Static, new[] { typeof(double[]), typeof(double) })!;
+        return compute.Invoke(null, new object[] { samples, expectedIntervalMs })!;
+    }
+
+    private static T GetStat<T>(object stats, string propertyName)
+        => (T)stats.GetType().GetProperty(propertyName)!.GetValue(stats)!;
 
     private static MethodInfo ResolveStatic(string typeName, string methodName, Type[] signature)
     {
@@ -1155,7 +1210,7 @@ static partial class Program
         AssertContains(rootText, "KsExtensionUnitNative.TryReadTopologyNodes(");
         AssertContains(rootText, "var attempt = TryReadRolling(handle, node.NodeId, ksInterface.Path, cancellationToken);");
         AssertContains(rootText, "private static NodeReadAttempt CreateUnavailableNodeResult(");
-        AssertContains(rootText, "private static NodeReadAttempt HandleFailedCommand(");
+        AssertContains(rootText, "private static NodeReadAttempt CreateFailedCommandResult(");
         AssertContains(rootText, "private static bool IsUnsupportedNodeFailure(");
         AssertContains(rootText, "private static string DescribeCommandFailure(");
         AssertContains(rootText, "private static string DescribeWin32Detail(");
@@ -1183,15 +1238,17 @@ static partial class Program
         AssertContains(rollingCommandGroupsText, "private void PopulateInitialRollingCache(");
         AssertContains(rollingCommandGroupsText, "private void RefreshRollingGroup(");
         AssertContains(rollingCommandGroupsText, "case 5: // Diagnostics");
+        AssertContains(rollingCommandGroupsText, "private NativeXuSnapshotCommandResults _cache;");
+        AssertContains(rollingCommandGroupsText, "for (var group = 0; group < RollingGroupCount; group++)");
+        AssertContains(rollingCommandGroupsText, "_cache = _cache with");
+        AssertDoesNotContain(rollingCommandGroupsText, "private AtCommandResult _cVic");
+        AssertDoesNotContain(snapshotAssemblyText, "TryReadSnapshot");
         AssertContains(rootText, "private static bool IsUnsupportedNodeFailure(");
         AssertContains(snapshotAssemblyText, "private static readonly IReadOnlyDictionary<int, VicTiming> VicTimingMap");
         AssertContains(snapshotAssemblyText, "private static readonly double[] CanonicalFrameRates");
         AssertContains(snapshotAssemblyText, "private readonly record struct VicTiming(");
         AssertContains(snapshotAssemblyText, "private readonly record struct NativeXuSnapshotCommandResults(");
         AssertContains(snapshotAssemblyText, "AtCommandResult RawTiming");
-        AssertContains(snapshotAssemblyText, "private static NodeReadAttempt TryReadSnapshot(");
-        AssertContains(snapshotAssemblyText, "SendAtCommand(handle, nodeId, \"CableConnect\", CmdCableConnect)");
-        AssertContains(snapshotAssemblyText, "SendAtCommand(handle, nodeId, \"RawTiming\", CmdRawTiming)");
         AssertContains(snapshotAssemblyText, "private static NodeReadAttempt BuildSnapshotFromCommandResults(");
         AssertContains(snapshotAssemblyText, "private static string BuildDiagnosticSummary(");
         AssertContains(snapshotAssemblyText, "private static string AppendExtendedDiagnostics(");
@@ -1231,14 +1288,16 @@ static partial class Program
         var probeProjectText = ReadRepoFile("tools/NativeXuAudioProbe/NativeXuAudioProbe.csproj");
 
         AssertContains(deviceCommandsText, "public static async Task<bool> SendAtSetCommandAsync(");
+        AssertContains(deviceCommandsText, "public static async Task<bool> SendNamedSetCommandAsync(");
         AssertContains(deviceCommandsText, "public static Task<bool> SetInputSourceAsync(");
         AssertContains(deviceCommandsText, "public static async Task<byte[]?> ReadAtCommandAsync(");
+        AssertDoesNotContain(deviceCommandsText, "SendNamedSetCommandPublicAsync");
         AssertContains(deviceCommandsText, "SendAtCommand(handle, node.NodeId, label, cmdCode)");
         AssertContains(deviceCommandsText, "NATIVEXU_GET_EXCEPTION");
         AssertContains(deviceCommandsText, "public static async Task<bool> SwitchAudioInputAsync(");
         AssertContains(deviceCommandsText, "public static async Task<bool> SetAnalogGainAsync(");
-        AssertContains(deviceCommandsText, "NativeXuDeviceSupport.TryGetSupported4kXIds(device, out var vendorId, out var productId)");
-        AssertContains(deviceCommandsText, "NativeXuDeviceSupport.EnumerateSelectedInterfaces(vendorId, productId, device)");
+        AssertContains(deviceCommandsText, "NativeXuDeviceSupport.TryGetSupported4kXIds(device, out _, out _)");
+        AssertContains(deviceCommandsText, "NativeXuDeviceSupport.EnumerateSelectedInterfacePath(device.NativeXuInterfacePath)");
         AssertContains(deviceCommandsText, "ExecuteAudioSwitch(handle, node.NodeId, analog, gainByte, sourceLabel, ct)");
         AssertContains(deviceCommandsText, "ExecuteGainChange(handle, node.NodeId, gainByte, persistFlash, ct)");
         AssertContains(deviceCommandsText, "private static bool ExecuteAudioSwitch(");
@@ -1407,6 +1466,165 @@ static partial class Program
         => decodeHdrMetadata.Invoke(null, new object[] { payload })
             ?? throw new InvalidOperationException("DecodeHdrMetadata returned null.");
 
+    internal static Task NativeXuAtCommandProvider_SnapshotFormattingPreservesDiagnosticsAndDetailRows(
+        bool flashAudioOverride,
+        bool unavailableCommands)
+    {
+        var originalCulture = CultureInfo.CurrentCulture;
+        try
+        {
+            CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+            var providerType = RequireType("Sussudio.Services.Telemetry.NativeXuAtCommandProvider");
+            var snapshot = CreateNativeXuFormattingSnapshot(providerType, flashAudioOverride, unavailableCommands);
+            var expectedSummary =
+                "nativexu:vic=97:3840x2160p:59.94:hdr:vfreq=5994:" +
+                "YCbCr420:BT.2020:quant=Full:hdr2sdr=on:eotf=2:fw=test-fw:" +
+                "audiofmt=6:audiosrate=7:inputsrc=0:usbproto=2:usbcdc=18:usblinkst=19:" +
+                "usbspeed=20:txhpd=21:txvrr=22:uvctiming=2442:uvcfmt=25:uvcerr=26:" +
+                "hdcpmode=27:hdcpver=2882:rxtxhdcp=29:hdr2sdrext=30:hdr2sdrcolor=33:colorrangesetting=34:" +
+                "vtem=35:biterr=36000000000:rawtiming=37733883";
+            var expectedRows = """
+                Signal Details|Video Format|YCbCr420|
+                Signal Details|Colorimetry|BT.2020|
+                Signal Details|Quantization|Full|
+                Signal Details|HDR Transfer|HDR10 / PQ (2)|2
+                Signal Details|HDR to SDR|On (1)|1
+                Signal Details|VIC|97|
+                Signal Details|Vert Freq|59.94 Hz (5994)|5994
+                Audio / Input|Input Source|HDMI (0)|0
+                Audio / Input|Audio Format|Unknown (6)|6
+                Audio / Input|Audio Sample Rate|Unknown (7)|7
+                Audio / Input|ADC (Analog)|On (1)|1
+                Audio / Input|ADC Gain|-12|-12
+                Audio / USB|UAC Volume|-13|-13
+                Audio / USB|UAC Out1 Mute|Unmuted (0)|0
+                Audio / USB|UAC Out2 Mute|Muted (1)|1
+                Audio / USB|UAC Out2 Mixer|16|16
+                Link / Protection|USB Protocol|Isochronous (2)|2
+                Link / Protection|USB CDC|Code 18 (18)|18
+                Link / Protection|USB Link State|Code 19 (19)|19
+                Link / Protection|USB Speed|Code 20 (20)|20
+                Link / Protection|TX Hot Plug|Mode 21 (21)|21
+                Link / Protection|TX VRR|Mode 22 (22)|22
+                Link / Protection|TX EDID Valid|Valid (1)|1
+                Link / Protection|HDCP Mode|Unknown (27)|27
+                Link / Protection|HDCP Version|2882|2882
+                Link / Protection|RX/TX HDCP|Unknown (29)|29
+                Capture Card / UVC|UVC Timing|2442|2442
+                Capture Card / UVC|UVC Format|19|19
+                Capture Card / UVC|UVC Error|Code 26 (26)|26
+                Raw / Firmware|HDR2SDR Status|Mode 30 (30)|30
+                Raw / Firmware|Customer Version|customer-31 (637573746F6D65722D333100)|637573746F6D65722D333100
+                Raw / Firmware|Rescue Version|32|32
+                Raw / Firmware|HDR2SDR Color|21000000|21000000
+                Raw / Firmware|Color Range|Code 34 (34)|34
+                Raw / Firmware|Raw Timing|37733883|37733883
+                """.Replace("\r\n", "\n", StringComparison.Ordinal);
+            if (unavailableCommands)
+            {
+                expectedSummary = expectedSummary
+                    .Replace(":inputsrc=0:", ":inputsrc=n/a:", StringComparison.Ordinal)
+                    .Replace(":usbcdc=18:", ":usbcdc=n/a:", StringComparison.Ordinal)
+                    .Replace(":uvcerr=26:", ":uvcerr=n/a:", StringComparison.Ordinal)
+                    .Replace(":hdcpver=2882:", ":hdcpver=n/a:", StringComparison.Ordinal);
+                expectedRows = expectedRows
+                    .Replace("Link / Protection|USB CDC|Code 18 (18)|18", "Link / Protection|USB CDC|Unavailable|getresponse", StringComparison.Ordinal)
+                    .Replace("Capture Card / UVC|UVC Error|Code 26 (26)|26", "Capture Card / UVC|UVC Error|Unavailable|getresponse", StringComparison.Ordinal)
+                    .Replace("Link / Protection|HDCP Version|2882|2882", "Link / Protection|HDCP Version|Unavailable|", StringComparison.Ordinal);
+            }
+
+            var expectedInputDetail = flashAudioOverride
+                ? "Analog (1)|1"
+                : unavailableCommands ? "Unavailable|getresponse" : "HDMI (0)|0";
+            expectedRows = expectedRows.Replace("Input Source|HDMI (0)|0", $"Input Source|{expectedInputDetail}", StringComparison.Ordinal);
+            if (flashAudioOverride)
+            {
+                expectedRows = expectedRows.Replace(
+                    "Audio / Input|ADC Gain|-12|-12",
+                    "Audio / Input|ADC Gain|-12|-12\nAudio / Input|Analog Gain|0xC8 (41%)|200",
+                    StringComparison.Ordinal);
+            }
+
+            var detailEntries = (IEnumerable)GetPropertyValue(snapshot, "DetailEntries")!;
+            var actualRows = string.Join("\n", detailEntries.Cast<object>().Select(row => string.Join("|",
+                GetPropertyValue(row, "Group"), GetPropertyValue(row, "Label"),
+                GetPropertyValue(row, "DisplayValue"), GetPropertyValue(row, "RawValue"))));
+            AssertEqual(expectedSummary, GetPropertyValue(snapshot, "DiagnosticSummary"), "Native XU original-command diagnostic summary");
+            AssertEqual(expectedRows, actualRows, "Native XU complete ordered detail rows including FlashAudio override");
+            AssertEqual(flashAudioOverride ? "Analog" : unavailableCommands ? null : "HDMI (0)",
+                GetPropertyValue(snapshot, "InputSource"), "Native XU resolved snapshot input source");
+            AssertEqual(flashAudioOverride ? (int?)200 : null,
+                GetPropertyValue(snapshot, "AnalogGainByte"), "Native XU FlashAudio gain byte");
+            return Task.CompletedTask;
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = originalCulture;
+        }
+    }
+
+    private static object CreateNativeXuFormattingSnapshot(Type providerType, bool flashAudioOverride, bool unavailableCommands)
+    {
+        var commandType = providerType.GetNestedType("AtCommandResult", BindingFlags.NonPublic)!;
+        var resultsType = providerType.GetNestedType("NativeXuSnapshotCommandResults", BindingFlags.NonPublic)!;
+        var constructor = resultsType.GetConstructors().Single();
+        var payloads = new Dictionary<string, byte[]>
+        {
+            ["Vic"] = BitConverter.GetBytes(97),
+            ["Vfreq"] = BitConverter.GetBytes(5994),
+            ["AviInfo"] = new byte[] { 0x82, 0x02, 0x0D, 0x00, 0x60, 0xC0, 0x68, 0x00 },
+            ["HdrMetadata"] = new byte[] { 0x87, 0x01, 0x1A, 0x00, 0x02 },
+            ["SystemInfo"] = "test-fw\0"u8.ToArray(),
+            ["Hdr2Sdr"] = BitConverter.GetBytes(1),
+            ["AudioFormat"] = new byte[] { 6 },
+            ["AudioSamplingRate"] = new byte[] { 7 },
+            ["InputSource"] = new byte[] { 0 },
+            ["FlashAudio"] = flashAudioOverride ? new byte[] { 1, 0x80, 0xC8, 0xAA, 0x55 } : Array.Empty<byte>(),
+            ["AdcOnOff"] = new byte[] { 1 },
+            ["AdcVolumeGain"] = BitConverter.GetBytes((short)-12),
+            ["UacVolumeGain"] = BitConverter.GetBytes((short)-13),
+            ["UacOut1Mute"] = new byte[] { 0 },
+            ["UacOut2Mute"] = new byte[] { 1 },
+            ["UacOut2MixerSource"] = BitConverter.GetBytes((short)16),
+            ["UsbHostProtocol"] = BitConverter.GetBytes(2),
+            ["UsbCdc"] = new byte[] { 18 },
+            ["UsbLinkState"] = new byte[] { 19 },
+            ["UsbForceSpeed"] = new byte[] { 20 },
+            ["TxHpd"] = BitConverter.GetBytes(21),
+            ["TxVrr"] = BitConverter.GetBytes(22),
+            ["TxEdidValid"] = new byte[] { 1 },
+            ["UvcOutputTiming"] = new byte[] { 0x24, 0x42 },
+            ["UvcVideoFormat"] = new byte[] { 25 },
+            ["UvcErrStatus"] = new byte[] { 26 },
+            ["HdcpMode"] = new byte[] { 27 },
+            ["HdcpVersion"] = new byte[] { 0x28, 0x82 },
+            ["RxTxHdcpVersion"] = BitConverter.GetBytes((short)29),
+            ["Hdr2SdrExtended"] = BitConverter.GetBytes(30),
+            ["CustomerVersion"] = "customer-31\0"u8.ToArray(),
+            ["RescueVersion"] = BitConverter.GetBytes(32),
+            ["Hdr2SdrColorParam"] = BitConverter.GetBytes(33),
+            ["ColorRangeSetting"] = new byte[] { 34 },
+            ["Vtem"] = BitConverter.GetBytes((short)35),
+            ["BitError"] = BitConverter.GetBytes(36000000000L),
+            ["RawTiming"] = new byte[] { 0x37, 0x73, 0x38, 0x83 }
+        };
+        var commands = constructor.GetParameters().Select(parameter =>
+        {
+            var name = parameter.Name!;
+            var payload = payloads[name];
+            var failed = unavailableCommands && name is "InputSource" or "UsbCdc" or "UvcErrStatus";
+            if (unavailableCommands && name == "HdcpVersion") payload = Array.Empty<byte>();
+            return Activator.CreateInstance(commandType, new object?[]
+            {
+                name, 0, !failed, payload, failed ? 5 : null, failed ? "getresponse" : null
+            });
+        }).ToArray();
+        var results = constructor.Invoke(commands);
+        var attempt = providerType.GetMethod("BuildSnapshotFromCommandResults", BindingFlags.NonPublic | BindingFlags.Static)!
+            .Invoke(null, new object[] { results, "synthetic-interface", 3, false, false, true })!;
+        return attempt.GetType().GetProperty("Snapshot")!.GetValue(attempt)!;
+    }
+
     internal static Task NativeXuAtCommandProvider_TelemetryDetailsLiveInFocusedPartials()
     {
         var telemetryDetailsText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs")
@@ -1516,19 +1734,19 @@ static partial class Program
         AssertContains(snapshotsText, "ObservedNv12FrameCount: isNv12 ? 1 : 0");
         AssertContains(snapshotsText, "ObservedOtherFrameCount: observedFormat != null");
         AssertContains(healthSnapshotText, "private static string ResolveFlashbackBackendSettingsStaleReason(");
-        AssertContains(flashbackExportText, "public static long ComputeFlashbackExportElapsedMs(");
-        AssertContains(flashbackExportText, "public static long ComputeFlashbackExportLastProgressAgeMs(");
+        AssertContains(flashbackExportText, "public static long ComputeElapsedMs(");
+        AssertContains(flashbackExportText, "public static long ComputeLastProgressAgeMs(");
         AssertContains(flashbackExportText, "public static long GetFileLengthOrZero(string? path)");
 
         AssertDoesNotContain(snapshotsText, "private static string ResolveFlashbackBackendSettingsStaleReason(");
-        AssertDoesNotContain(snapshotsText, "private static long ComputeFlashbackExportElapsedMs(");
-        AssertDoesNotContain(snapshotsText, "private static long ComputeFlashbackExportLastProgressAgeMs(");
+        AssertDoesNotContain(snapshotsText, "private static long ComputeElapsedMs(");
+        AssertDoesNotContain(snapshotsText, "private static long ComputeLastProgressAgeMs(");
         AssertDoesNotContain(snapshotsText, "private static long GetFileLengthOrZero(string? path)");
 
         return Task.CompletedTask;
     }
 
-    // Ã¢â€â‚¬Ã¢â€â‚¬ CaptureService.Snapshots: ResolveEncoderCodecName Ã¢â€â‚¬Ã¢â€â‚¬
+    // ── CaptureService.Snapshots: ResolveEncoderCodecName ──
 
     internal static Task CaptureService_ResolveEncoderCodecName_MapsFormats()
     {
@@ -1540,25 +1758,25 @@ static partial class Program
         var settingsType = RequireType("Sussudio.Models.CaptureSettings");
         var formatType = RequireType("Sussudio.Models.RecordingFormat");
 
-        // HEVC Ã¢â€ â€™ hevc_nvenc
+        // HEVC → hevc_nvenc
         var hevcSettings = Activator.CreateInstance(settingsType)!;
         settingsType.GetProperty("Format")!.SetValue(hevcSettings, Enum.Parse(formatType, "HevcMp4"));
         var hevcResult = method.Invoke(null, new[] { hevcSettings })?.ToString();
         AssertContains(hevcResult ?? "", "hevc");
 
-        // H264 Ã¢â€ â€™ h264_nvenc (default Format is H264Mp4)
+        // H264 → h264_nvenc (default Format is H264Mp4)
         var h264Settings = Activator.CreateInstance(settingsType)!;
         var h264Result = method.Invoke(null, new[] { h264Settings })?.ToString();
         AssertContains(h264Result ?? "", "264");
 
-        // null Ã¢â€ â€™ null
+        // null → null
         var nullResult = method.Invoke(null, new object?[] { null });
-        AssertEqual(true, nullResult == null, "null settings Ã¢â€ â€™ null codec");
+        AssertEqual(true, nullResult == null, "null settings → null codec");
 
         return Task.CompletedTask;
     }
 
-    // Ã¢â€â‚¬Ã¢â€â‚¬ CaptureService.Snapshots: ResolveEncoderOutputPixelFormat Ã¢â€â‚¬Ã¢â€â‚¬
+    // ── CaptureService.Snapshots: ResolveEncoderOutputPixelFormat ──
 
     internal static Task CaptureService_ResolveEncoderOutputPixelFormat_DistinguishesHdr()
     {
@@ -1570,25 +1788,25 @@ static partial class Program
         var contextType = RequireType("Sussudio.Services.Contracts.RecordingContext");
         var settingsType = RequireType("Sussudio.Models.CaptureSettings");
 
-        // HDR active context Ã¢â€ â€™ yuv420p10le
+        // HDR active context → yuv420p10le
         var hdrContext = RuntimeHelpers.GetUninitializedObject(contextType);
         SetPropertyBackingField(hdrContext, "HdrPipelineActive", true);
         var hdrSettings = RuntimeHelpers.GetUninitializedObject(settingsType);
         var hdrResult = method.Invoke(null, new[] { hdrContext, hdrSettings })?.ToString();
         AssertContains(hdrResult ?? "", "10");
 
-        // SDR context Ã¢â€ â€™ yuv420p
+        // SDR context → yuv420p
         var sdrContext = RuntimeHelpers.GetUninitializedObject(contextType);
         SetPropertyBackingField(sdrContext, "HdrPipelineActive", false);
         var sdrResult = method.Invoke(null, new[] { sdrContext, hdrSettings })?.ToString();
-        AssertEqual(true, sdrResult != null && !sdrResult.Contains("10"), "SDR Ã¢â€ â€™ 8-bit pixel format");
+        AssertEqual(true, sdrResult != null && !sdrResult.Contains("10"), "SDR → 8-bit pixel format");
 
         return Task.CompletedTask;
     }
 
-    // Ã¢â€â‚¬Ã¢â€â‚¬ TelemetryAgeHelper: shared compute-age logic used by capture/automation/view-model Ã¢â€â‚¬Ã¢â€â‚¬
+    // ── TelemetryAgeHelper: shared compute-age logic used by capture/automation/view-model ──
 
-    // Ã¢â€â‚¬Ã¢â€â‚¬ CaptureService.Snapshots: ResolveHdrWarmupState Ã¢â€â‚¬Ã¢â€â‚¬
+    // ── CaptureService.Snapshots: ResolveHdrWarmupState ──
 
     internal static Task CaptureService_ResolveHdrWarmupState_ReturnsCorrectStates()
     {
@@ -1600,18 +1818,18 @@ static partial class Program
             .Replace("\r\n", "\n");
         AssertContains(hdrPipelineText, "private static string ResolveHdrWarmupState(");
 
-        // HDR not requested Ã¢â€ â€™ NotRequested
+        // HDR not requested → NotRequested
         var notRequested = method.Invoke(null, new object[] { false, false, false, 0L })?.ToString();
         AssertEqual("NotRequested", notRequested, "HDR not requested");
 
-        // HDR requested and active with P010 frames while recording Ã¢â€ â€™ Satisfied
+        // HDR requested and active with P010 frames while recording → Satisfied
         var satisfied = method.Invoke(null, new object[] { true, true, true, 100L })?.ToString();
         AssertEqual("Satisfied", satisfied, "HDR active with P010 frames");
 
-        // HDR requested but not active Ã¢â€ â€™ Pending or Degraded
+        // HDR requested but not active → Pending or Degraded
         var pending = method.Invoke(null, new object[] { true, false, false, 0L })?.ToString();
         AssertEqual(true, pending != "Satisfied" && pending != "NotRequested",
-            $"HDR requested but not active Ã¢â€ â€™ {pending}");
+            $"HDR requested but not active → {pending}");
 
         return Task.CompletedTask;
     }
@@ -2161,7 +2379,13 @@ static partial class Program
         })
         {
             var snapshotType = RequireType(typeName);
-            AssertProperty(snapshotType, "RecordingIntegrityStatus", typeof(string));
+            var runtimeStatusType = typeName == "Sussudio.Models.CaptureRuntimeSnapshot"
+                ? RequireType("Sussudio.Models.RecordingIntegrityStatus")
+                : typeof(string);
+            var runtimeAudioStatusType = typeName == "Sussudio.Models.CaptureRuntimeSnapshot"
+                ? RequireType("Sussudio.Models.RecordingIntegrityAudioStatus")
+                : typeof(string);
+            AssertProperty(snapshotType, "RecordingIntegrityStatus", runtimeStatusType);
             AssertProperty(snapshotType, "RecordingIntegrityComplete", typeof(bool));
             AssertProperty(snapshotType, "RecordingIntegrityBackend", typeof(string));
             AssertProperty(snapshotType, "RecordingIntegrityCompletedUtc", typeof(DateTimeOffset?));
@@ -2179,7 +2403,7 @@ static partial class Program
             AssertProperty(snapshotType, "RecordingIntegrityBackpressureWaitMs", typeof(long));
             AssertProperty(snapshotType, "RecordingIntegrityBackpressureEvents", typeof(long));
             AssertProperty(snapshotType, "RecordingIntegrityBackpressureMaxWaitMs", typeof(long));
-            AssertProperty(snapshotType, "RecordingIntegrityAudioStatus", typeof(string));
+            AssertProperty(snapshotType, "RecordingIntegrityAudioStatus", runtimeAudioStatusType);
             AssertProperty(snapshotType, "RecordingIntegrityAudioEnabled", typeof(bool));
             AssertProperty(snapshotType, "RecordingIntegrityAudioCaptureActive", typeof(bool));
             AssertProperty(snapshotType, "RecordingIntegrityAudioFramesArrived", typeof(long));
@@ -2233,7 +2457,7 @@ static partial class Program
 
         AssertContains(runtimeText, "return CaptureRuntimeSnapshotAssembler.Build(new CaptureRuntimeSnapshotAssemblyFields");
         AssertContains(runtimeText, "var requestedSettings = _recordingBackend.SettingsSnapshot ?? _currentSettings;");
-        AssertContains(runtimeText, "FlashbackExportVerificationFormat = ResolveFlashbackExportVerificationFormat(requestedSettings, unifiedVideoCapture),");
+        AssertContains(runtimeText, "FlashbackExportVerificationFormat = ResolveFlashbackExportVerificationFormat(requestedSettings),");
         AssertContains(runtimeText, "RuntimeAvSyncDriftMs = runtimeAvSyncDriftMs,");
         AssertContains(runtimeText, "HdrWarmup = hdrWarmup,");
         AssertContains(runtimeText, "return new CaptureRuntimeSnapshot");
@@ -2273,7 +2497,7 @@ static partial class Program
         AssertContains(captureRuntimeModelText, "public string TelemetryAlignmentStatus { get; init; } = \"Unknown\";");
         AssertContains(captureRuntimeModelText, "public IReadOnlyList<SourceTelemetryDetailEntry> SourceTelemetryDetails { get; init; } = Array.Empty<SourceTelemetryDetailEntry>();");
         AssertContains(captureRuntimeModelText, "public double? AvSyncCaptureDriftMs { get; init; }");
-        AssertContains(captureRuntimeModelText, "public string RecordingIntegrityStatus { get; init; } = \"NotStarted\";");
+        AssertContains(captureRuntimeModelText, "public RecordingIntegrityStatus RecordingIntegrityStatus { get; init; } = RecordingIntegrityStatus.NotStarted;");
         AssertContains(captureRuntimeModelText, "public string? FlashbackCodecDowngradeReason { get; init; }");
         AssertDoesNotContain(captureRuntimeModelText, "partial class CaptureRuntimeSnapshot");
 

@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Threading;
+using Sussudio.Services.Interop;
 
 namespace Sussudio.Services.Audio;
 
@@ -483,48 +484,10 @@ internal static class WasapiComInterop
 
     internal static void ReleaseComObject<T>(ref T? comObject)
         where T : class
-    {
-        if (comObject == null)
-        {
-            return;
-        }
-
-        try
-        {
-            if (Marshal.IsComObject(comObject))
-            {
-                Marshal.ReleaseComObject(comObject);
-            }
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"Suppressed exception in WasapiComInterop.ReleaseComObject<T>: {ex.Message}");
-        }
-        finally
-        {
-            comObject = null;
-        }
-    }
+        => ComObjectReleaser.ReleaseComObject(ref comObject, "WasapiComInterop.ReleaseComObject<T>");
 
     internal static void ReleaseComObjectSafe(object? obj)
-    {
-        if (obj == null)
-        {
-            return;
-        }
-
-        try
-        {
-            if (Marshal.IsComObject(obj))
-            {
-                Marshal.ReleaseComObject(obj);
-            }
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"Suppressed exception in WasapiComInterop.SafeReleaseComObject: {ex.Message}");
-        }
-    }
+        => ComObjectReleaser.ReleaseComObjectSafe(obj, $"{nameof(WasapiComInterop)}.{nameof(ReleaseComObjectSafe)}");
 
 
     internal static IntPtr AllocFloatStereo48kFormat()

@@ -1,3 +1,4 @@
+using System.Runtime.ExceptionServices;
 using System.Text.Json;
 using static Sussudio.Tools.AutomationSnapshotFormatter;
 using static Sussudio.Tools.DiagnosticSessionAutomationResponseJson;
@@ -14,7 +15,7 @@ internal static class DiagnosticSessionFlashbackCycleScenarios
         DiagnosticSessionBackgroundTasks backgroundTasks,
         List<string> actions,
         List<string> warnings,
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendAsync,
+        DiagnosticSessionCommandChannel commandChannel,
         CancellationToken cancellationToken)
     {
         if (scenarioPlan.Kind == DiagnosticSessionScenarioKind.FlashbackRestartCycle)
@@ -24,10 +25,13 @@ internal static class DiagnosticSessionFlashbackCycleScenarios
                 "flashback-restart-cycle-task",
                 RunFlashbackRestartCycleAsync(
                     outputDirectory,
-                    actions,
-                    warnings,
-                    sendAsync,
-                    cancellationToken));
+                    actions: actions,
+                    warnings: warnings,
+                    sendCommandAsync: commandChannel.SendAsync,
+                    sendCleanupCommandAsync: (command, payload, timeout, token) =>
+                        commandChannel.SendWithTokenAsync(command, payload, timeout, true, token),
+                    cancellationToken: cancellationToken),
+                ownsBoundedCleanup: true);
             actions.Add("flashback restart cycle started");
         }
 
@@ -38,10 +42,13 @@ internal static class DiagnosticSessionFlashbackCycleScenarios
                 "flashback-encoder-cycle-task",
                 RunFlashbackEncoderCycleAsync(
                     outputDirectory,
-                    actions,
-                    warnings,
-                    sendAsync,
-                    cancellationToken));
+                    actions: actions,
+                    warnings: warnings,
+                    sendCommandAsync: commandChannel.SendAsync,
+                    sendCleanupCommandAsync: (command, payload, timeout, token) =>
+                        commandChannel.SendWithTokenAsync(command, payload, timeout, true, token),
+                    cancellationToken: cancellationToken),
+                ownsBoundedCleanup: true);
             actions.Add("flashback encoder cycle started");
         }
     }
@@ -51,6 +58,7 @@ internal static class DiagnosticSessionFlashbackCycleScenarios
         List<string> actions,
         List<string> warnings,
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
+        Func<string, Dictionary<string, object?>?, int?, CancellationToken, Task<JsonElement>> sendCleanupCommandAsync,
         CancellationToken cancellationToken)
     {
         if (!await WaitForFlashbackStressBufferReadyAsync(sendCommandAsync, cancellationToken).ConfigureAwait(false))
@@ -59,47 +67,83 @@ internal static class DiagnosticSessionFlashbackCycleScenarios
             return;
         }
 
-        await sendCommandAsync(
-                "FlashbackAction",
-                new Dictionary<string, object?> { ["action"] = "pause" },
-                null)
-            .ConfigureAwait(false);
-        await sendCommandAsync(
-                "FlashbackAction",
-                new Dictionary<string, object?> { ["action"] = "seek", ["positionMs"] = 750 },
-                null)
-            .ConfigureAwait(false);
-        actions.Add("flashback restart cycle playback primed");
-
-        var restartResponse = await sendCommandAsync("RestartFlashback", null, 305_000).ConfigureAwait(false);
-        actions.Add("flashback restart requested");
-        if (!AutomationSnapshotFormatter.IsSuccess(restartResponse))
+        var playbackNeedsCleanup = true;
+        var operationFailed = false;
+        try
         {
-            warnings.Add($"flashback restart cycle: restart failed - {AutomationSnapshotFormatter.Get(restartResponse, "Message", "unknown error")}");
-            return;
-        }
+            await sendCommandAsync(
+                    "FlashbackAction",
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "pause" },
+                    null)
+                .ConfigureAwait(false);
+            await sendCommandAsync(
+                    "FlashbackAction",
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "seek", [AutomationPayloadKeys.PositionMs] = 750 },
+                    null)
+                .ConfigureAwait(false);
+            actions.Add("flashback restart cycle playback primed");
 
-        if (!await ValidateFlashbackRestartCycleActiveStateAsync(
+            var restartResponse = await sendCommandAsync("RestartFlashback", null, 305_000).ConfigureAwait(false);
+            actions.Add("flashback restart requested");
+            if (!AutomationSnapshotFormatter.IsSuccess(restartResponse))
+            {
+                warnings.Add($"flashback restart cycle: restart failed - {AutomationSnapshotFormatter.Get(restartResponse, "Message", "unknown error")}");
+                operationFailed = true;
+                return;
+            }
+
+            if (!await ValidateFlashbackRestartCycleActiveStateAsync(
+                        warnings,
+                        sendCommandAsync,
+                        cancellationToken)
+                    .ConfigureAwait(false))
+            {
+                operationFailed = true;
+                return;
+            }
+
+            playbackNeedsCleanup = false;
+
+            if (!await WaitForFlashbackStressBufferReadyAsync(sendCommandAsync, cancellationToken).ConfigureAwait(false))
+            {
+                warnings.Add("flashback restart cycle: Flashback buffer did not refill after restart");
+                operationFailed = true;
+                return;
+            }
+
+            await VerifyCycleExportAsync(
+                    Path.Combine(outputDirectory, "flashback-restart-cycle-export.mp4"),
+                    "flashback restart cycle",
+                    actions,
                     warnings,
-                    sendCommandAsync,
-                    cancellationToken)
-                .ConfigureAwait(false))
-        {
-            return;
+                    sendCommandAsync)
+                .ConfigureAwait(false);
         }
-
-        if (!await WaitForFlashbackStressBufferReadyAsync(sendCommandAsync, cancellationToken).ConfigureAwait(false))
+        catch
         {
-            warnings.Add("flashback restart cycle: Flashback buffer did not refill after restart");
-            return;
+            operationFailed = true;
+            throw;
         }
-
-        await VerifyFlashbackRestartCycleExportAsync(
-                outputDirectory,
-                actions,
-                warnings,
-                sendCommandAsync)
-            .ConfigureAwait(false);
+        finally
+        {
+            if (playbackNeedsCleanup)
+            {
+                using var cleanupCancellation = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+                Task<JsonElement> SendCleanupAsync(string command, Dictionary<string, object?>? payload, int? timeout)
+                    => sendCleanupCommandAsync(command, payload, timeout, cleanupCancellation.Token);
+                try
+                {
+                    await RestoreLivePlaybackAfterCycleAsync("flashback restart cycle", actions, warnings,
+                            SendCleanupAsync, cleanupCancellation.Token)
+                        .ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    warnings.Add($"flashback restart cycle: Live restoration failed - {ex.Message}");
+                    if (!operationFailed) throw;
+                }
+            }
+        }
     }
 
     internal static async Task RunFlashbackEncoderCycleAsync(
@@ -107,6 +151,7 @@ internal static class DiagnosticSessionFlashbackCycleScenarios
         List<string> actions,
         List<string> warnings,
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
+        Func<string, Dictionary<string, object?>?, int?, CancellationToken, Task<JsonElement>> sendCleanupCommandAsync,
         CancellationToken cancellationToken)
     {
         if (!await WaitForFlashbackStressBufferReadyAsync(sendCommandAsync, cancellationToken).ConfigureAwait(false))
@@ -126,23 +171,26 @@ internal static class DiagnosticSessionFlashbackCycleScenarios
         var cycledPreset = string.Equals(originalPreset, "P1", StringComparison.OrdinalIgnoreCase) ? "P2" : "P1";
         var originalFilePath = GetString(beforeSnapshot, "FlashbackFilePath") ?? string.Empty;
 
+        var operationFailed = false;
         try
         {
             var setResponse = await sendCommandAsync(
                     "SetPreset",
-                    new Dictionary<string, object?> { ["preset"] = cycledPreset },
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.Preset] = cycledPreset },
                     null)
                 .ConfigureAwait(false);
             actions.Add($"flashback encoder preset changed to {cycledPreset}");
             if (!AutomationSnapshotFormatter.IsSuccess(setResponse))
             {
                 warnings.Add($"flashback encoder cycle: preset change failed - {AutomationSnapshotFormatter.Get(setResponse, "Message", "unknown error")}");
+                operationFailed = true;
                 return;
             }
 
             if (!await WaitForFlashbackStressBufferReadyAsync(sendCommandAsync, cancellationToken).ConfigureAwait(false))
             {
                 warnings.Add("flashback encoder cycle: Flashback buffer did not become ready after preset change");
+                operationFailed = true;
                 return;
             }
 
@@ -150,27 +198,41 @@ internal static class DiagnosticSessionFlashbackCycleScenarios
             if (!TryGetSnapshot(afterResponse, out var afterSnapshot))
             {
                 warnings.Add("flashback encoder cycle: no post-cycle snapshot returned");
+                operationFailed = true;
                 return;
             }
 
             ValidateFlashbackEncoderCycleSnapshot(afterSnapshot, originalFilePath, warnings);
 
-            await VerifyFlashbackEncoderCycleExportAsync(
-                    outputDirectory,
+            await VerifyCycleExportAsync(
+                    Path.Combine(outputDirectory, "flashback-encoder-cycle-export.mp4"),
+                    "flashback encoder cycle",
                     actions,
                     warnings,
                     sendCommandAsync)
                 .ConfigureAwait(false);
         }
+        catch
+        {
+            operationFailed = true;
+            throw;
+        }
         finally
         {
-            await RestoreFlashbackEncoderCyclePresetAsync(
-                    actions,
-                    warnings,
-                    originalPreset,
-                    sendCommandAsync,
-                    cancellationToken)
-                .ConfigureAwait(false);
+            using var cleanupCancellation = new CancellationTokenSource(TimeSpan.FromSeconds(45));
+            Task<JsonElement> SendCleanupAsync(string command, Dictionary<string, object?>? payload, int? timeout)
+                => sendCleanupCommandAsync(command, payload, timeout, cleanupCancellation.Token);
+            try
+            {
+                await RestoreFlashbackEncoderCyclePresetAsync(
+                        actions, warnings, originalPreset, SendCleanupAsync, cleanupCancellation.Token)
+                    .ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                warnings.Add($"flashback encoder cycle: preset restoration failed - {ex.Message}");
+                if (!operationFailed) throw;
+            }
         }
     }
 
@@ -203,41 +265,13 @@ internal static class DiagnosticSessionFlashbackCycleScenarios
                 $"pending={GetInt(activeSnapshot.Value, "FlashbackPlaybackPendingCommands")}");
         }
 
+        if (!string.Equals(GetString(activeSnapshot.Value, "FlashbackPlaybackState"), "Live", StringComparison.OrdinalIgnoreCase))
+        {
+            warnings.Add("flashback restart cycle: playback did not return live after restart");
+            return false;
+        }
+
         return true;
-    }
-
-    private static async Task VerifyFlashbackRestartCycleExportAsync(
-        string outputDirectory,
-        List<string> actions,
-        List<string> warnings,
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync)
-    {
-        var exportPath = Path.Combine(outputDirectory, "flashback-restart-cycle-export.mp4");
-        var exportResponse = await sendCommandAsync(
-                "FlashbackExport",
-                new Dictionary<string, object?> { ["seconds"] = 1, ["outputPath"] = exportPath },
-                60_000)
-            .ConfigureAwait(false);
-        actions.Add("flashback restart cycle export requested");
-        if (!AutomationSnapshotFormatter.IsSuccess(exportResponse))
-        {
-            warnings.Add($"flashback restart cycle: export failed - {AutomationSnapshotFormatter.Get(exportResponse, "Message", "unknown error")}");
-            return;
-        }
-
-        var verifyResponse = await sendCommandAsync(
-                "VerifyFile",
-                CreateFlashbackExportVerifyPayload(exportPath),
-                60_000)
-            .ConfigureAwait(false);
-        if (!AutomationSnapshotFormatter.IsSuccess(verifyResponse))
-        {
-            warnings.Add(
-                $"flashback restart cycle export verification: {AutomationSnapshotFormatter.Get(verifyResponse, "Message", "verification failed")}");
-            return;
-        }
-
-        actions.Add("flashback restart cycle export verified");
     }
 
     private static void ValidateFlashbackEncoderCycleSnapshot(
@@ -267,40 +301,6 @@ internal static class DiagnosticSessionFlashbackCycleScenarios
         }
     }
 
-    private static async Task VerifyFlashbackEncoderCycleExportAsync(
-        string outputDirectory,
-        List<string> actions,
-        List<string> warnings,
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync)
-    {
-        var exportPath = Path.Combine(outputDirectory, "flashback-encoder-cycle-export.mp4");
-        var exportResponse = await sendCommandAsync(
-                "FlashbackExport",
-                new Dictionary<string, object?> { ["seconds"] = 1, ["outputPath"] = exportPath },
-                60_000)
-            .ConfigureAwait(false);
-        actions.Add("flashback encoder cycle export requested");
-        if (!AutomationSnapshotFormatter.IsSuccess(exportResponse))
-        {
-            warnings.Add($"flashback encoder cycle: export failed - {AutomationSnapshotFormatter.Get(exportResponse, "Message", "unknown error")}");
-            return;
-        }
-
-        var verifyResponse = await sendCommandAsync(
-                "VerifyFile",
-                CreateFlashbackExportVerifyPayload(exportPath),
-                60_000)
-            .ConfigureAwait(false);
-        if (!AutomationSnapshotFormatter.IsSuccess(verifyResponse))
-        {
-            warnings.Add(
-                $"flashback encoder cycle export verification: {AutomationSnapshotFormatter.Get(verifyResponse, "Message", "verification failed")}");
-            return;
-        }
-
-        actions.Add("flashback encoder cycle export verified");
-    }
-
     private static async Task RestoreFlashbackEncoderCyclePresetAsync(
         List<string> actions,
         List<string> warnings,
@@ -310,10 +310,9 @@ internal static class DiagnosticSessionFlashbackCycleScenarios
     {
         var restoreResponse = await sendCommandAsync(
                 "SetPreset",
-                new Dictionary<string, object?> { ["preset"] = originalPreset },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Preset] = originalPreset },
                 null)
             .ConfigureAwait(false);
-        actions.Add($"flashback encoder preset restored to {originalPreset}");
         if (!AutomationSnapshotFormatter.IsSuccess(restoreResponse))
         {
             warnings.Add($"flashback encoder cycle: preset restore failed - {AutomationSnapshotFormatter.Get(restoreResponse, "Message", "unknown error")}");
@@ -322,6 +321,38 @@ internal static class DiagnosticSessionFlashbackCycleScenarios
         {
             warnings.Add("flashback encoder cycle: Flashback buffer did not become ready after preset restore");
         }
+        else
+        {
+            actions.Add($"flashback encoder preset restored to {originalPreset}");
+        }
+    }
+
+    internal static async Task RestoreLivePlaybackAfterCycleAsync(
+        string scenario,
+        List<string> actions,
+        List<string> warnings,
+        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
+        CancellationToken cancellationToken)
+    {
+        var response = await sendCommandAsync("FlashbackAction",
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "go-live" }, null)
+            .ConfigureAwait(false);
+        if (!IsSuccess(response))
+        {
+            warnings.Add($"{scenario}: go-live failed - {Get(response, "Message", "unknown error")}");
+            return;
+        }
+
+        var snapshot = await WaitForFlashbackPlaybackStateAsync(
+                sendCommandAsync, "Live", TimeSpan.FromSeconds(15), cancellationToken)
+            .ConfigureAwait(false);
+        if (snapshot?.ValueKind != JsonValueKind.Object)
+        {
+            warnings.Add($"{scenario}: playback did not report Live after restoration");
+            return;
+        }
+
+        actions.Add($"{scenario} returned live");
     }
 }
 
@@ -332,7 +363,7 @@ internal static class DiagnosticSessionFlashbackLifecycleScenarios
         DiagnosticSessionBackgroundTasks backgroundTasks,
         List<string> actions,
         List<string> warnings,
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
+        DiagnosticSessionCommandChannel commandChannel,
         CancellationToken cancellationToken)
     {
         if (scenarioPlan.Kind != DiagnosticSessionScenarioKind.FlashbackLifecycle)
@@ -344,10 +375,13 @@ internal static class DiagnosticSessionFlashbackLifecycleScenarios
             2,
             "flashback-lifecycle-task",
             RunFlashbackLifecycleAsync(
-                actions,
-                warnings,
-                sendCommandAsync,
-                cancellationToken));
+                actions: actions,
+                warnings: warnings,
+                sendCommandAsync: commandChannel.SendAsync,
+                sendCleanupCommandAsync: (command, payload, timeout, token) =>
+                    commandChannel.SendWithTokenAsync(command, payload, timeout, true, token),
+                cancellationToken: cancellationToken),
+            ownsBoundedCleanup: true);
         actions.Add("flashback lifecycle started");
     }
 
@@ -355,6 +389,7 @@ internal static class DiagnosticSessionFlashbackLifecycleScenarios
         List<string> actions,
         List<string> warnings,
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
+        Func<string, Dictionary<string, object?>?, int?, CancellationToken, Task<JsonElement>> sendCleanupCommandAsync,
         CancellationToken cancellationToken)
     {
         if (!await WaitForFlashbackStressBufferReadyAsync(sendCommandAsync, cancellationToken).ConfigureAwait(false))
@@ -363,55 +398,104 @@ internal static class DiagnosticSessionFlashbackLifecycleScenarios
             return;
         }
 
-        await sendCommandAsync(
-                "FlashbackAction",
-                new Dictionary<string, object?> { ["action"] = "pause" },
-                null)
-            .ConfigureAwait(false);
-        actions.Add("flashback lifecycle pause requested");
+        var flashbackNeedsEnable = false;
+        var playbackNeedsCleanup = true;
+        var operationFailed = false;
+        try
+        {
+            await sendCommandAsync(
+                    "FlashbackAction",
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "pause" },
+                    null)
+                .ConfigureAwait(false);
+            actions.Add("flashback lifecycle pause requested");
 
-        await Task.Delay(250, cancellationToken).ConfigureAwait(false);
-        await sendCommandAsync(
-                "FlashbackAction",
-                new Dictionary<string, object?> { ["action"] = "seek", ["positionMs"] = 1_000 },
-                null)
-            .ConfigureAwait(false);
-        actions.Add("flashback lifecycle seek requested");
+            await Task.Delay(250, cancellationToken).ConfigureAwait(false);
+            await sendCommandAsync(
+                    "FlashbackAction",
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "seek", [AutomationPayloadKeys.PositionMs] = 1_000 },
+                    null)
+                .ConfigureAwait(false);
+            actions.Add("flashback lifecycle seek requested");
 
-        await Task.Delay(250, cancellationToken).ConfigureAwait(false);
-        await sendCommandAsync(
-                "FlashbackAction",
-                new Dictionary<string, object?> { ["action"] = "play" },
-                null)
-            .ConfigureAwait(false);
-        actions.Add("flashback lifecycle play requested");
+            await Task.Delay(250, cancellationToken).ConfigureAwait(false);
+            await sendCommandAsync(
+                    "FlashbackAction",
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "play" },
+                    null)
+                .ConfigureAwait(false);
+            actions.Add("flashback lifecycle play requested");
 
-        await Task.Delay(250, cancellationToken).ConfigureAwait(false);
-        await sendCommandAsync(
-                "SetFlashbackEnabled",
-                new Dictionary<string, object?> { ["enabled"] = false },
-                null)
-            .ConfigureAwait(false);
-        actions.Add("flashback lifecycle disabled during playback");
+            await Task.Delay(250, cancellationToken).ConfigureAwait(false);
+            flashbackNeedsEnable = true;
+            await sendCommandAsync(
+                    "SetFlashbackEnabled",
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = false },
+                    null)
+                .ConfigureAwait(false);
+            actions.Add("flashback lifecycle disabled during playback");
 
-        await ValidateFlashbackLifecycleDisabledAsync(
-                warnings,
-                sendCommandAsync,
-                cancellationToken)
-            .ConfigureAwait(false);
+            await ValidateFlashbackLifecycleDisabledAsync(
+                    warnings,
+                    sendCommandAsync,
+                    cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch
+        {
+            operationFailed = true;
+            throw;
+        }
+        finally
+        {
+            using var cleanupCancellation = new CancellationTokenSource(TimeSpan.FromSeconds(335));
+            Task<JsonElement> SendCleanupAsync(string command, Dictionary<string, object?>? payload, int? timeout)
+                => sendCleanupCommandAsync(command, payload, timeout, cleanupCancellation.Token);
+            Exception? cleanupFailure = null;
+            if (flashbackNeedsEnable)
+            {
+                try
+                {
+                    var response = await SendCleanupAsync("SetFlashbackEnabled",
+                            new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = true }, null)
+                        .ConfigureAwait(false);
+                    if (!IsSuccess(response))
+                    {
+                        warnings.Add($"flashback lifecycle: re-enable failed - {Get(response, "Message", "unknown error")}");
+                    }
+                    else
+                    {
+                        playbackNeedsCleanup = !await ValidateFlashbackLifecycleReenabledAsync(
+                                warnings, SendCleanupAsync, cleanupCancellation.Token)
+                            .ConfigureAwait(false);
+                        if (!playbackNeedsCleanup) actions.Add("flashback lifecycle re-enabled");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    cleanupFailure = ex;
+                    warnings.Add($"flashback lifecycle: re-enable failed - {ex.Message}");
+                }
+            }
 
-        await sendCommandAsync(
-                "SetFlashbackEnabled",
-                new Dictionary<string, object?> { ["enabled"] = true },
-                null)
-            .ConfigureAwait(false);
-        actions.Add("flashback lifecycle re-enabled");
+            if (playbackNeedsCleanup)
+            {
+                try
+                {
+                    await DiagnosticSessionFlashbackCycleScenarios.RestoreLivePlaybackAfterCycleAsync(
+                            "flashback lifecycle", actions, warnings, SendCleanupAsync, cleanupCancellation.Token)
+                        .ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    cleanupFailure ??= ex;
+                    warnings.Add($"flashback lifecycle: Live restoration failed - {ex.Message}");
+                }
+            }
 
-        await ValidateFlashbackLifecycleReenabledAsync(
-                warnings,
-                sendCommandAsync,
-                cancellationToken)
-            .ConfigureAwait(false);
+            if (cleanupFailure is not null && !operationFailed)
+                ExceptionDispatchInfo.Capture(cleanupFailure).Throw();
+        }
     }
 
     private static async Task ValidateFlashbackLifecycleDisabledAsync(
@@ -444,7 +528,7 @@ internal static class DiagnosticSessionFlashbackLifecycleScenarios
         }
     }
 
-    private static async Task ValidateFlashbackLifecycleReenabledAsync(
+    private static async Task<bool> ValidateFlashbackLifecycleReenabledAsync(
         List<string> warnings,
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
         CancellationToken cancellationToken)
@@ -458,7 +542,10 @@ internal static class DiagnosticSessionFlashbackLifecycleScenarios
         if (enabledSnapshot?.ValueKind != JsonValueKind.Object)
         {
             warnings.Add("flashback lifecycle: Flashback did not report active after re-enable");
+            return false;
         }
+
+        return string.Equals(GetString(enabledSnapshot.Value, "FlashbackPlaybackState"), "Live", StringComparison.OrdinalIgnoreCase);
     }
 }
 
@@ -470,7 +557,7 @@ internal static class DiagnosticSessionFlashbackPreviewCycleScenarios
         DiagnosticSessionBackgroundTasks backgroundTasks,
         List<string> actions,
         List<string> warnings,
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendAsync,
+        DiagnosticSessionCommandChannel commandChannel,
         CancellationToken cancellationToken)
     {
         if (scenarioPlan.Kind == DiagnosticSessionScenarioKind.FlashbackPreviewCycle)
@@ -480,10 +567,13 @@ internal static class DiagnosticSessionFlashbackPreviewCycleScenarios
                 "flashback-preview-cycle-task",
                 RunFlashbackPreviewCycleAsync(
                     outputDirectory,
-                    actions,
-                    warnings,
-                    sendAsync,
-                    cancellationToken));
+                    actions: actions,
+                    warnings: warnings,
+                    sendCommandAsync: commandChannel.SendAsync,
+                    sendCleanupCommandAsync: (command, payload, timeout, token) =>
+                        commandChannel.SendWithTokenAsync(command, payload, timeout, true, token),
+                    cancellationToken: cancellationToken),
+                ownsBoundedCleanup: true);
             actions.Add("flashback preview cycle started");
         }
 
@@ -494,10 +584,13 @@ internal static class DiagnosticSessionFlashbackPreviewCycleScenarios
                 "flashback-playback-preview-cycle-task",
                 RunFlashbackPlaybackPreviewCycleAsync(
                     outputDirectory,
-                    actions,
-                    warnings,
-                    sendAsync,
-                    cancellationToken));
+                    actions: actions,
+                    warnings: warnings,
+                    sendCommandAsync: commandChannel.SendAsync,
+                    sendCleanupCommandAsync: (command, payload, timeout, token) =>
+                        commandChannel.SendWithTokenAsync(command, payload, timeout, true, token),
+                    cancellationToken: cancellationToken),
+                ownsBoundedCleanup: true);
             actions.Add("flashback playback preview cycle started");
         }
 
@@ -507,10 +600,13 @@ internal static class DiagnosticSessionFlashbackPreviewCycleScenarios
                 15,
                 "flashback-recording-preview-cycle-task",
                 RunFlashbackRecordingPreviewCycleAsync(
-                    actions,
-                    warnings,
-                    sendAsync,
-                    cancellationToken));
+                    actions: actions,
+                    warnings: warnings,
+                    sendCommandAsync: commandChannel.SendAsync,
+                    sendCleanupCommandAsync: (command, payload, timeout, token) =>
+                        commandChannel.SendWithTokenAsync(command, payload, timeout, true, token),
+                    cancellationToken: cancellationToken),
+                ownsBoundedCleanup: true);
             actions.Add("flashback recording preview cycle started");
         }
     }
@@ -520,6 +616,7 @@ internal static class DiagnosticSessionFlashbackPreviewCycleScenarios
         List<string> actions,
         List<string> warnings,
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
+        Func<string, Dictionary<string, object?>?, int?, CancellationToken, Task<JsonElement>> sendCleanupCommandAsync,
         CancellationToken cancellationToken)
     {
         if (!await WaitForFlashbackStressBufferReadyAsync(sendCommandAsync, cancellationToken).ConfigureAwait(false))
@@ -531,51 +628,81 @@ internal static class DiagnosticSessionFlashbackPreviewCycleScenarios
         var encodedBeforeStop = await CaptureFlashbackPreviewCycleEncodedFramesBeforeStopAsync(sendCommandAsync)
             .ConfigureAwait(false);
 
-        var stopPreviewResponse = await sendCommandAsync(
-                "SetPreviewEnabled",
-                new Dictionary<string, object?> { ["enabled"] = false },
-                60_000)
-            .ConfigureAwait(false);
-        actions.Add("flashback preview cycle preview stopped");
-        if (!AutomationSnapshotFormatter.IsSuccess(stopPreviewResponse))
+        var operationFailed = false;
+        try
         {
-            warnings.Add(
-                $"flashback preview cycle: preview stop failed - {AutomationSnapshotFormatter.Get(stopPreviewResponse, "Message", "unknown error")}");
-            return;
-        }
+            var stopPreviewResponse = await sendCommandAsync(
+                    "SetPreviewEnabled",
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = false },
+                    60_000)
+                .ConfigureAwait(false);
+            actions.Add("flashback preview cycle preview stopped");
+            if (!AutomationSnapshotFormatter.IsSuccess(stopPreviewResponse))
+            {
+                warnings.Add(
+                    $"flashback preview cycle: preview stop failed - {AutomationSnapshotFormatter.Get(stopPreviewResponse, "Message", "unknown error")}");
+                operationFailed = true;
+                return;
+            }
 
-        if (!await ValidateFlashbackPreviewCycleStoppedAsync(
-                    encodedBeforeStop,
+            if (!await ValidateFlashbackPreviewCycleStoppedAsync(
+                        encodedBeforeStop,
+                        warnings,
+                        sendCommandAsync,
+                        cancellationToken)
+                    .ConfigureAwait(false))
+            {
+                operationFailed = true;
+                return;
+            }
+
+            await VerifyCycleExportAsync(
+                    Path.Combine(outputDirectory, "flashback-preview-off-export.mp4"),
+                    "flashback preview cycle",
+                    actions,
                     warnings,
                     sendCommandAsync,
-                    cancellationToken)
-                .ConfigureAwait(false))
-        {
-            return;
+                    previewStopped: true)
+                .ConfigureAwait(false);
         }
-
-        await VerifyFlashbackPreviewCycleExportAsync(
-                outputDirectory,
-                actions,
-                warnings,
-                sendCommandAsync)
-            .ConfigureAwait(false);
-
-        var startPreviewResponse = await sendCommandAsync(
-                "SetPreviewEnabled",
-                new Dictionary<string, object?> { ["enabled"] = true },
-                60_000)
-            .ConfigureAwait(false);
-        actions.Add("flashback preview cycle preview restarted");
-        if (!AutomationSnapshotFormatter.IsSuccess(startPreviewResponse))
+        catch
         {
-            warnings.Add(
-                $"flashback preview cycle: preview restart failed - {AutomationSnapshotFormatter.Get(startPreviewResponse, "Message", "unknown error")}");
-            return;
+            operationFailed = true;
+            throw;
         }
+        finally
+        {
+            using var cleanupCancellation = new CancellationTokenSource(TimeSpan.FromSeconds(92));
+            Task<JsonElement> SendCleanupAsync(string command, Dictionary<string, object?>? payload, int? timeout)
+                => sendCleanupCommandAsync(command, payload, timeout, cleanupCancellation.Token);
+            Exception? cleanupFailure = null;
+            try
+            {
+                var response = await SendCleanupAsync("SetPreviewEnabled",
+                        new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = true }, 60_000)
+                    .ConfigureAwait(false);
+                if (!IsSuccess(response))
+                {
+                    warnings.Add($"flashback preview cycle: preview restart failed - {Get(response, "Message", "unknown error")}");
+                }
+                else
+                {
+                    if (await ValidateFlashbackPreviewCycleRestartedAsync(warnings, SendCleanupAsync, cleanupCancellation.Token)
+                            .ConfigureAwait(false))
+                    {
+                        actions.Add("flashback preview cycle preview restarted");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                cleanupFailure = ex;
+                warnings.Add($"flashback preview cycle: preview restoration failed - {ex.Message}");
+            }
 
-        await ValidateFlashbackPreviewCycleRestartedAsync(warnings, sendCommandAsync, cancellationToken)
-            .ConfigureAwait(false);
+            if (cleanupFailure is not null && !operationFailed)
+                ExceptionDispatchInfo.Capture(cleanupFailure).Throw();
+        }
     }
 
     private static async Task<long> CaptureFlashbackPreviewCycleEncodedFramesBeforeStopAsync(
@@ -634,43 +761,7 @@ internal static class DiagnosticSessionFlashbackPreviewCycleScenarios
         return true;
     }
 
-    private static async Task VerifyFlashbackPreviewCycleExportAsync(
-        string outputDirectory,
-        List<string> actions,
-        List<string> warnings,
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync)
-    {
-        var exportPath = Path.Combine(outputDirectory, "flashback-preview-off-export.mp4");
-        var exportResponse = await sendCommandAsync(
-                "FlashbackExport",
-                new Dictionary<string, object?> { ["seconds"] = 1, ["outputPath"] = exportPath },
-                60_000)
-            .ConfigureAwait(false);
-        actions.Add("flashback preview cycle export while preview off requested");
-        if (!AutomationSnapshotFormatter.IsSuccess(exportResponse))
-        {
-            warnings.Add(
-                $"flashback preview cycle: export while preview off failed - {AutomationSnapshotFormatter.Get(exportResponse, "Message", "unknown error")}");
-            return;
-        }
-
-        var verifyResponse = await sendCommandAsync(
-                "VerifyFile",
-                CreateFlashbackExportVerifyPayload(exportPath),
-                60_000)
-            .ConfigureAwait(false);
-        if (!AutomationSnapshotFormatter.IsSuccess(verifyResponse))
-        {
-            warnings.Add(
-                $"flashback preview cycle export verification: {AutomationSnapshotFormatter.Get(verifyResponse, "Message", "verification failed")}");
-        }
-        else
-        {
-            actions.Add("flashback preview cycle export verified");
-        }
-    }
-
-    private static async Task ValidateFlashbackPreviewCycleRestartedAsync(
+    private static async Task<bool> ValidateFlashbackPreviewCycleRestartedAsync(
         List<string> warnings,
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
         CancellationToken cancellationToken)
@@ -684,7 +775,7 @@ internal static class DiagnosticSessionFlashbackPreviewCycleScenarios
         if (previewStartedSnapshot?.ValueKind != JsonValueKind.Object)
         {
             warnings.Add("flashback preview cycle: preview did not report active after restart");
-            return;
+            return false;
         }
 
         if (!GetBool(previewStartedSnapshot.Value, "FlashbackActive"))
@@ -696,9 +787,9 @@ internal static class DiagnosticSessionFlashbackPreviewCycleScenarios
                 "WaitForCondition",
                 new Dictionary<string, object?>
                 {
-                    ["condition"] = "VideoFramesFlowing",
-                    ["timeoutMs"] = 15_000,
-                    ["pollMs"] = 250
+                    [AutomationPayloadKeys.Condition] = "VideoFramesFlowing",
+                    [AutomationPayloadKeys.TimeoutMs] = 15_000,
+                    [AutomationPayloadKeys.PollMs] = 250
                 },
                 17_000)
             .ConfigureAwait(false);
@@ -707,6 +798,8 @@ internal static class DiagnosticSessionFlashbackPreviewCycleScenarios
             warnings.Add(
                 $"flashback preview cycle: preview frames did not resume - {AutomationSnapshotFormatter.Get(framesFlowingResponse, "Message", "not met")}");
         }
+
+        return true;
     }
 
 
@@ -715,6 +808,7 @@ internal static class DiagnosticSessionFlashbackPreviewCycleScenarios
         List<string> actions,
         List<string> warnings,
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
+        Func<string, Dictionary<string, object?>?, int?, CancellationToken, Task<JsonElement>> sendCleanupCommandAsync,
         CancellationToken cancellationToken)
     {
         if (!await WaitForFlashbackStressBufferReadyAsync(sendCommandAsync, cancellationToken).ConfigureAwait(false))
@@ -723,72 +817,124 @@ internal static class DiagnosticSessionFlashbackPreviewCycleScenarios
             return;
         }
 
-        var playResponse = await sendCommandAsync(
-                "FlashbackAction",
-                new Dictionary<string, object?> { ["action"] = "play", ["positionMs"] = 1000 },
-                null)
-            .ConfigureAwait(false);
-        actions.Add("flashback playback preview cycle playback started");
-        if (!AutomationSnapshotFormatter.IsSuccess(playResponse))
+        var previewNeedsRestart = false;
+        var playbackNeedsCleanup = true;
+        var operationFailed = false;
+        try
         {
-            warnings.Add(
-                $"flashback playback preview cycle: play command failed - {AutomationSnapshotFormatter.Get(playResponse, "Message", "unknown error")}");
-            return;
+            var playResponse = await sendCommandAsync(
+                    "FlashbackAction",
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "play", [AutomationPayloadKeys.PositionMs] = 1000 },
+                    null)
+                .ConfigureAwait(false);
+            actions.Add("flashback playback preview cycle playback started");
+            if (!AutomationSnapshotFormatter.IsSuccess(playResponse))
+            {
+                warnings.Add(
+                    $"flashback playback preview cycle: play command failed - {AutomationSnapshotFormatter.Get(playResponse, "Message", "unknown error")}");
+                operationFailed = true;
+                return;
+            }
+
+            var playbackFrameCountBeforeStop = await CapturePlaybackPreviewCycleFrameCountBeforeStopAsync(
+                    warnings,
+                    sendCommandAsync,
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+            if (playbackFrameCountBeforeStop <= 0)
+            {
+                warnings.Add("flashback playback preview cycle: playback did not render frames before preview stop");
+                operationFailed = true;
+                return;
+            }
+
+            previewNeedsRestart = true;
+            var stopPreviewResponse = await sendCommandAsync(
+                    "SetPreviewEnabled",
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = false },
+                    60_000)
+                .ConfigureAwait(false);
+            actions.Add("flashback playback preview cycle preview stopped during playback");
+            if (!AutomationSnapshotFormatter.IsSuccess(stopPreviewResponse))
+            {
+                warnings.Add(
+                    $"flashback playback preview cycle: preview stop failed - {AutomationSnapshotFormatter.Get(stopPreviewResponse, "Message", "unknown error")}");
+                operationFailed = true;
+                return;
+            }
+
+            if (!await ValidatePlaybackPreviewCycleStoppedAsync(warnings, sendCommandAsync, cancellationToken)
+                    .ConfigureAwait(false))
+            {
+                operationFailed = true;
+                return;
+            }
+
+            await VerifyCycleExportAsync(
+                    Path.Combine(outputDirectory, "flashback-playback-preview-cycle.mp4"),
+                    "flashback playback preview cycle",
+                    actions,
+                    warnings,
+                    sendCommandAsync,
+                    previewStopped: true)
+                .ConfigureAwait(false);
         }
-
-        var playbackFrameCountBeforeStop = await CapturePlaybackPreviewCycleFrameCountBeforeStopAsync(
-                warnings,
-                sendCommandAsync,
-                cancellationToken)
-            .ConfigureAwait(false);
-
-        if (playbackFrameCountBeforeStop <= 0)
+        catch
         {
-            warnings.Add("flashback playback preview cycle: playback did not render frames before preview stop");
-            return;
+            operationFailed = true;
+            throw;
         }
-
-        var stopPreviewResponse = await sendCommandAsync(
-                "SetPreviewEnabled",
-                new Dictionary<string, object?> { ["enabled"] = false },
-                60_000)
-            .ConfigureAwait(false);
-        actions.Add("flashback playback preview cycle preview stopped during playback");
-        if (!AutomationSnapshotFormatter.IsSuccess(stopPreviewResponse))
+        finally
         {
-            warnings.Add(
-                $"flashback playback preview cycle: preview stop failed - {AutomationSnapshotFormatter.Get(stopPreviewResponse, "Message", "unknown error")}");
-            return;
+            using var cleanupCancellation = new CancellationTokenSource(TimeSpan.FromSeconds(92));
+            Task<JsonElement> SendCleanupAsync(string command, Dictionary<string, object?>? payload, int? timeout)
+                => sendCleanupCommandAsync(command, payload, timeout, cleanupCancellation.Token);
+            Exception? cleanupFailure = null;
+            if (previewNeedsRestart)
+            {
+                try
+                {
+                    var response = await SendCleanupAsync("SetPreviewEnabled",
+                            new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = true }, 60_000)
+                        .ConfigureAwait(false);
+                    if (!IsSuccess(response))
+                    {
+                        warnings.Add($"flashback playback preview cycle: preview restart failed - {Get(response, "Message", "unknown error")}");
+                    }
+                    else
+                    {
+                        var restored = await ValidatePlaybackPreviewCycleRestartedAsync(warnings, SendCleanupAsync, cleanupCancellation.Token)
+                            .ConfigureAwait(false);
+                        playbackNeedsCleanup = !restored.PlaybackLive;
+                        if (restored.PreviewActive) actions.Add("flashback playback preview cycle preview restarted");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    cleanupFailure = ex;
+                    warnings.Add($"flashback playback preview cycle: preview restoration failed - {ex.Message}");
+                }
+            }
+
+            if (playbackNeedsCleanup)
+            {
+                try
+                {
+                    await DiagnosticSessionFlashbackCycleScenarios.RestoreLivePlaybackAfterCycleAsync(
+                            "flashback playback preview cycle", actions, warnings, SendCleanupAsync, cleanupCancellation.Token)
+                        .ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    cleanupFailure ??= ex;
+                    warnings.Add($"flashback playback preview cycle: Live restoration failed - {ex.Message}");
+                }
+            }
+
+            if (cleanupFailure is not null && !operationFailed)
+                ExceptionDispatchInfo.Capture(cleanupFailure).Throw();
         }
-
-        if (!await ValidatePlaybackPreviewCycleStoppedAsync(warnings, sendCommandAsync, cancellationToken)
-                .ConfigureAwait(false))
-        {
-            return;
-        }
-
-        await VerifyFlashbackPlaybackPreviewCycleExportAsync(
-                outputDirectory,
-                actions,
-                warnings,
-                sendCommandAsync)
-            .ConfigureAwait(false);
-
-        var startPreviewResponse = await sendCommandAsync(
-                "SetPreviewEnabled",
-                new Dictionary<string, object?> { ["enabled"] = true },
-                60_000)
-            .ConfigureAwait(false);
-        actions.Add("flashback playback preview cycle preview restarted");
-        if (!AutomationSnapshotFormatter.IsSuccess(startPreviewResponse))
-        {
-            warnings.Add(
-                $"flashback playback preview cycle: preview restart failed - {AutomationSnapshotFormatter.Get(startPreviewResponse, "Message", "unknown error")}");
-            return;
-        }
-
-        await ValidatePlaybackPreviewCycleRestartedAsync(warnings, sendCommandAsync, cancellationToken)
-            .ConfigureAwait(false);
     }
 
     private static async Task<long> CapturePlaybackPreviewCycleFrameCountBeforeStopAsync(
@@ -859,43 +1005,7 @@ internal static class DiagnosticSessionFlashbackPreviewCycleScenarios
         return true;
     }
 
-    private static async Task VerifyFlashbackPlaybackPreviewCycleExportAsync(
-        string outputDirectory,
-        List<string> actions,
-        List<string> warnings,
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync)
-    {
-        var exportPath = Path.Combine(outputDirectory, "flashback-playback-preview-cycle.mp4");
-        var exportResponse = await sendCommandAsync(
-                "FlashbackExport",
-                new Dictionary<string, object?> { ["seconds"] = 1, ["outputPath"] = exportPath },
-                60_000)
-            .ConfigureAwait(false);
-        actions.Add("flashback playback preview cycle export while preview off requested");
-        if (!AutomationSnapshotFormatter.IsSuccess(exportResponse))
-        {
-            warnings.Add(
-                $"flashback playback preview cycle: export while preview off failed - {AutomationSnapshotFormatter.Get(exportResponse, "Message", "unknown error")}");
-            return;
-        }
-
-        var verifyResponse = await sendCommandAsync(
-                "VerifyFile",
-                CreateFlashbackExportVerifyPayload(exportPath),
-                60_000)
-            .ConfigureAwait(false);
-        if (!AutomationSnapshotFormatter.IsSuccess(verifyResponse))
-        {
-            warnings.Add(
-                $"flashback playback preview cycle export verification: {AutomationSnapshotFormatter.Get(verifyResponse, "Message", "verification failed")}");
-        }
-        else
-        {
-            actions.Add("flashback playback preview cycle export verified");
-        }
-    }
-
-    private static async Task ValidatePlaybackPreviewCycleRestartedAsync(
+    private static async Task<(bool PreviewActive, bool PlaybackLive)> ValidatePlaybackPreviewCycleRestartedAsync(
         List<string> warnings,
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
         CancellationToken cancellationToken)
@@ -909,16 +1019,16 @@ internal static class DiagnosticSessionFlashbackPreviewCycleScenarios
         if (previewStartedSnapshot?.ValueKind != JsonValueKind.Object)
         {
             warnings.Add("flashback playback preview cycle: preview did not report active after restart");
-            return;
+            return (false, false);
         }
 
         var framesFlowingResponse = await sendCommandAsync(
                 "WaitForCondition",
                 new Dictionary<string, object?>
                 {
-                    ["condition"] = "VideoFramesFlowing",
-                    ["timeoutMs"] = 15_000,
-                    ["pollMs"] = 250
+                    [AutomationPayloadKeys.Condition] = "VideoFramesFlowing",
+                    [AutomationPayloadKeys.TimeoutMs] = 15_000,
+                    [AutomationPayloadKeys.PollMs] = 250
                 },
                 17_000)
             .ConfigureAwait(false);
@@ -927,6 +1037,8 @@ internal static class DiagnosticSessionFlashbackPreviewCycleScenarios
             warnings.Add(
                 $"flashback playback preview cycle: preview frames did not resume - {AutomationSnapshotFormatter.Get(framesFlowingResponse, "Message", "not met")}");
         }
+
+        return (true, string.Equals(GetString(previewStartedSnapshot.Value, "FlashbackPlaybackState"), "Live", StringComparison.OrdinalIgnoreCase));
     }
 
 
@@ -934,6 +1046,7 @@ internal static class DiagnosticSessionFlashbackPreviewCycleScenarios
         List<string> actions,
         List<string> warnings,
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
+        Func<string, Dictionary<string, object?>?, int?, CancellationToken, Task<JsonElement>> sendCleanupCommandAsync,
         CancellationToken cancellationToken)
     {
         var countersBeforeStop = await CaptureRecordingPreviewCycleCountersBeforeStopAsync(
@@ -946,44 +1059,72 @@ internal static class DiagnosticSessionFlashbackPreviewCycleScenarios
             return;
         }
 
-        var stopPreviewResponse = await sendCommandAsync(
-                "SetPreviewEnabled",
-                new Dictionary<string, object?> { ["enabled"] = false },
-                60_000)
-            .ConfigureAwait(false);
-        actions.Add("flashback recording preview cycle preview stopped");
-        if (!AutomationSnapshotFormatter.IsSuccess(stopPreviewResponse))
+        var operationFailed = false;
+        try
         {
-            warnings.Add(
-                $"flashback recording preview cycle: preview stop failed - {AutomationSnapshotFormatter.Get(stopPreviewResponse, "Message", "unknown error")}");
-            return;
-        }
+            var stopPreviewResponse = await sendCommandAsync(
+                    "SetPreviewEnabled",
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = false },
+                    60_000)
+                .ConfigureAwait(false);
+            actions.Add("flashback recording preview cycle preview stopped");
+            if (!AutomationSnapshotFormatter.IsSuccess(stopPreviewResponse))
+            {
+                warnings.Add(
+                    $"flashback recording preview cycle: preview stop failed - {AutomationSnapshotFormatter.Get(stopPreviewResponse, "Message", "unknown error")}");
+                operationFailed = true;
+                return;
+            }
 
-        if (!await ValidateRecordingPreviewCycleStoppedAsync(
-                    countersBeforeStop.Value,
-                    warnings,
-                    sendCommandAsync,
-                    cancellationToken)
-                .ConfigureAwait(false))
+            if (!await ValidateRecordingPreviewCycleStoppedAsync(
+                        countersBeforeStop.Value,
+                        warnings,
+                        sendCommandAsync,
+                        cancellationToken)
+                    .ConfigureAwait(false))
+            {
+                operationFailed = true;
+                return;
+            }
+        }
+        catch
         {
-            return;
+            operationFailed = true;
+            throw;
         }
-
-        var startPreviewResponse = await sendCommandAsync(
-                "SetPreviewEnabled",
-                new Dictionary<string, object?> { ["enabled"] = true },
-                60_000)
-            .ConfigureAwait(false);
-        actions.Add("flashback recording preview cycle preview restarted");
-        if (!AutomationSnapshotFormatter.IsSuccess(startPreviewResponse))
+        finally
         {
-            warnings.Add(
-                $"flashback recording preview cycle: preview restart failed - {AutomationSnapshotFormatter.Get(startPreviewResponse, "Message", "unknown error")}");
-            return;
-        }
+            using var cleanupCancellation = new CancellationTokenSource(TimeSpan.FromSeconds(92));
+            Task<JsonElement> SendCleanupAsync(string command, Dictionary<string, object?>? payload, int? timeout)
+                => sendCleanupCommandAsync(command, payload, timeout, cleanupCancellation.Token);
+            Exception? cleanupFailure = null;
+            try
+            {
+                var response = await SendCleanupAsync("SetPreviewEnabled",
+                        new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = true }, 60_000)
+                    .ConfigureAwait(false);
+                if (!IsSuccess(response))
+                {
+                    warnings.Add($"flashback recording preview cycle: preview restart failed - {Get(response, "Message", "unknown error")}");
+                }
+                else
+                {
+                    if (await ValidateRecordingPreviewCycleRestartedAsync(warnings, SendCleanupAsync, cleanupCancellation.Token)
+                            .ConfigureAwait(false))
+                    {
+                        actions.Add("flashback recording preview cycle preview restarted");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                cleanupFailure = ex;
+                warnings.Add($"flashback recording preview cycle: preview restoration failed - {ex.Message}");
+            }
 
-        await ValidateRecordingPreviewCycleRestartedAsync(warnings, sendCommandAsync, cancellationToken)
-            .ConfigureAwait(false);
+            if (cleanupFailure is not null && !operationFailed)
+                ExceptionDispatchInfo.Capture(cleanupFailure).Throw();
+        }
     }
 
     private readonly record struct RecordingPreviewCycleCounters(
@@ -1063,7 +1204,7 @@ internal static class DiagnosticSessionFlashbackPreviewCycleScenarios
         return true;
     }
 
-    private static async Task ValidateRecordingPreviewCycleRestartedAsync(
+    private static async Task<bool> ValidateRecordingPreviewCycleRestartedAsync(
         List<string> warnings,
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
         CancellationToken cancellationToken)
@@ -1077,7 +1218,7 @@ internal static class DiagnosticSessionFlashbackPreviewCycleScenarios
         if (previewStartedSnapshot?.ValueKind != JsonValueKind.Object)
         {
             warnings.Add("flashback recording preview cycle: preview did not report active after restart");
-            return;
+            return false;
         }
 
         if (!GetBool(previewStartedSnapshot.Value, "IsRecording") ||
@@ -1090,9 +1231,9 @@ internal static class DiagnosticSessionFlashbackPreviewCycleScenarios
                 "WaitForCondition",
                 new Dictionary<string, object?>
                 {
-                    ["condition"] = "VideoFramesFlowing",
-                    ["timeoutMs"] = 15_000,
-                    ["pollMs"] = 250
+                    [AutomationPayloadKeys.Condition] = "VideoFramesFlowing",
+                    [AutomationPayloadKeys.TimeoutMs] = 15_000,
+                    [AutomationPayloadKeys.PollMs] = 250
                 },
                 17_000)
             .ConfigureAwait(false);
@@ -1101,5 +1242,7 @@ internal static class DiagnosticSessionFlashbackPreviewCycleScenarios
             warnings.Add(
                 $"flashback recording preview cycle: preview frames did not resume - {AutomationSnapshotFormatter.Get(framesFlowingResponse, "Message", "not met")}");
         }
+
+        return true;
     }
 }

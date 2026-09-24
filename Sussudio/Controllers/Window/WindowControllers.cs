@@ -751,7 +751,7 @@ internal sealed class WindowCloseRecordingFinalizationController
         ArgumentNullException.ThrowIfNull(isAllowedAfterRecordingStop);
 
         Logger.Log("WINDOW_CLOSE_RECORDING_STOP: recording active, awaiting graceful stop...");
-        viewModel.StatusText = "Stopping recording â€” please waitâ€¦";
+        viewModel.StatusText = "Stopping recording — please wait…";
 
         if (shutdownContent != null)
         {

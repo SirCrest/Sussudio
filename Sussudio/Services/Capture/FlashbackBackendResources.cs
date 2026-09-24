@@ -4,9 +4,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
 using Sussudio.Services.Audio;
-using Sussudio.Services.Capture;
+using Sussudio.Services.Flashback;
 
-namespace Sussudio.Services.Flashback;
+namespace Sussudio.Services.Capture;
 
 internal readonly record struct FlashbackProducerDetachRequest(
     UnifiedVideoCapture? VideoCapture,
@@ -30,10 +30,6 @@ internal readonly record struct FlashbackBufferCycleRequest(
     CaptureSettings Settings,
     CaptureSettings SettingsSnapshot,
     Func<FlashbackSessionContext> CreateSessionContext,
-    Action<Exception> FatalErrorCallback,
-    EventHandler<long> FrameEncodedHandler,
-    Action ClearLastFailure,
-    Action<Task, FlashbackBackendArtifactCleanupRequest> ScheduleDeferredCleanup,
     bool PurgeSegments,
     CancellationToken CancellationToken);
 
@@ -45,8 +41,6 @@ internal enum FlashbackBufferCycleOutcome
     FallbackFullRebuild
 }
 
-internal readonly record struct FlashbackBufferCycleResult(FlashbackBufferCycleOutcome Outcome);
-
 internal readonly record struct FlashbackBufferCyclePlaybackState(
     TimeSpan? InPoint,
     TimeSpan? OutPoint,
@@ -57,18 +51,15 @@ internal readonly record struct FlashbackPlaybackStateChange(
     long BackendGeneration,
     FlashbackPlaybackState OldState,
     FlashbackPlaybackState NewState,
-    string Reason);
+    string Reason,
+    bool IsInvoluntaryLiveReturn);
 
 internal readonly record struct FlashbackPreviewBackendDisposalRequest(
     UnifiedVideoCapture? VideoCapture,
     WasapiAudioCapture? AudioCapture,
     WasapiAudioCapture? MicrophoneCapture,
-    EventHandler<long> FrameEncodedHandler,
-    Func<Task<bool>> AcquireExportOperationLockAsync,
-    Action<string> ReleaseExportOperationLock,
     bool PurgeSegments,
     bool DetachMicrophoneWriter,
-    bool ExportOperationLockAlreadyHeld,
     CancellationToken CancellationToken);
 
 internal readonly record struct FlashbackBackendArtifactCleanupRequest(
@@ -86,9 +77,6 @@ internal readonly record struct FlashbackPreviewBackendStartRequest(
     CaptureSettings Settings,
     CaptureSettings SettingsSnapshot,
     Func<FlashbackSessionContext> CreateSessionContext,
-    Action<Exception> FatalErrorCallback,
-    EventHandler<long> FrameEncodedHandler,
-    Action<Task, FlashbackBufferManager?, FlashbackExporter?, string, bool> ScheduleDeferredCleanup,
     CancellationToken CancellationToken);
 
 /// <summary>
@@ -98,21 +86,41 @@ internal readonly record struct FlashbackPreviewBackendStartRequest(
 /// </summary>
 internal sealed class FlashbackBackendResources
 {
+    // CaptureService owns and disposes this shared gate.
+    private readonly SemaphoreSlim _exportOperationLock;
+    private readonly Action<Exception> _onFatalError;
+    private readonly EventHandler<long> _onFrameEncodedHandler;
     private FlashbackPlaybackController? _playbackController;
     private FlashbackPlaybackController? _preWarmedPlaybackController;
-    private Action<FlashbackPlaybackState, FlashbackPlaybackState, string>? _playbackStateChangedHandler;
+    private Action<FlashbackPlaybackState, FlashbackPlaybackState, string, bool>? _playbackStateChangedHandler;
     private long _playbackControllerGeneration;
 
-    public FlashbackBufferManager? BufferManager { get; set; }
+    public FlashbackBackendResources(
+        SemaphoreSlim exportOperationLock,
+        Action<Exception> onFatalError,
+        EventHandler<long> onFrameEncoded)
+    {
+        ArgumentNullException.ThrowIfNull(exportOperationLock);
+        ArgumentNullException.ThrowIfNull(onFatalError);
+        ArgumentNullException.ThrowIfNull(onFrameEncoded);
+        _exportOperationLock = exportOperationLock;
+        _onFatalError = onFatalError;
+        _onFrameEncodedHandler = onFrameEncoded;
+    }
 
-    public FlashbackEncoderSink? Sink { get; set; }
+    public FlashbackBufferManager? BufferManager { get; private set; }
 
-    public FlashbackExporter? Exporter { get; set; }
+    public FlashbackEncoderSink? Sink { get; private set; }
+
+    public FlashbackExporter? Exporter { get; private set; }
+
+    public FlashbackExporter GetOrCreateExporter()
+        => Exporter ??= new FlashbackExporter();
 
     public FlashbackPlaybackController? PlaybackController
     {
         get => Volatile.Read(ref _playbackController);
-        set => ReplacePlaybackController(value);
+        private set => ReplacePlaybackController(value);
     }
 
     public event Action<FlashbackPlaybackStateChange>? PlaybackStateChanged;
@@ -145,9 +153,9 @@ internal sealed class FlashbackBackendResources
             return;
         }
 
-        _playbackStateChangedHandler = (oldState, newState, reason) =>
+        _playbackStateChangedHandler = (oldState, newState, reason, isInvoluntaryLiveReturn) =>
         {
-            var change = new FlashbackPlaybackStateChange(generation, oldState, newState, reason);
+            var change = new FlashbackPlaybackStateChange(generation, oldState, newState, reason, isInvoluntaryLiveReturn);
             if (IsCurrentPlaybackStateChange(change))
             {
                 PlaybackStateChanged?.Invoke(change);
@@ -177,7 +185,7 @@ internal sealed class FlashbackBackendResources
         controller.PreWarm();
     }
 
-    public CaptureSettings? SettingsSnapshot { get; set; }
+    public CaptureSettings? SettingsSnapshot { get; private set; }
 
     public bool PreserveSegmentsAfterFailedRecordingFinalize { get; private set; }
 
@@ -187,7 +195,7 @@ internal sealed class FlashbackBackendResources
         Exporter != null ||
         PlaybackController != null;
 
-    public void Install(
+    private void Install(
         FlashbackBufferManager bufferManager,
         FlashbackEncoderSink sink,
         FlashbackExporter exporter,
@@ -201,20 +209,20 @@ internal sealed class FlashbackBackendResources
         SettingsSnapshot = settingsSnapshot;
     }
 
-    public FlashbackPlaybackController? TakePlaybackController()
+    private FlashbackPlaybackController? TakePlaybackController()
     {
         var playbackController = PlaybackController;
         PlaybackController = null;
         return playbackController;
     }
 
-    public void ClearSinkAndSettings()
+    private void ClearSinkAndSettings()
     {
         Sink = null;
         SettingsSnapshot = null;
     }
 
-    public void Clear()
+    private void Clear()
     {
         BufferManager = null;
         Sink = null;
@@ -223,7 +231,7 @@ internal sealed class FlashbackBackendResources
         SettingsSnapshot = null;
     }
 
-    public void ClearRecoveryPreserve()
+    private void ClearRecoveryPreserve()
     {
         PreserveSegmentsAfterFailedRecordingFinalize = false;
     }
@@ -258,9 +266,6 @@ internal sealed class FlashbackBackendResources
         Action<FlashbackBufferManager?, string> resumeEvictionBestEffort,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(exportRecordingAsync);
-        ArgumentNullException.ThrowIfNull(resumeEvictionBestEffort);
-
         var flashbackSink = Sink
             ?? throw new InvalidOperationException("Flashback recording backend is not active.");
         var bufferManager = BufferManager;
@@ -317,7 +322,7 @@ internal sealed class FlashbackBackendResources
             exportResult.RecoveryPath);
     }
 
-    public void AttachProducers(FlashbackProducerAttachRequest request)
+    private void AttachProducers(FlashbackProducerAttachRequest request)
     {
         var flashbackSink = Sink;
         if (flashbackSink == null)
@@ -330,7 +335,7 @@ internal sealed class FlashbackBackendResources
         AttachMicrophoneProducer(request.MicrophoneCapture, flashbackSink, request.Reason);
     }
 
-    public void DetachProducers(FlashbackProducerDetachRequest request)
+    private void DetachProducers(FlashbackProducerDetachRequest request)
     {
         if (request.DetachMicrophoneWriter)
         {
@@ -379,17 +384,9 @@ internal sealed class FlashbackBackendResources
         Logger.Log($"FLASHBACK_MIC_ATTACH_OK reason='{reason}'");
     }
 
-    public async Task<FlashbackBufferCycleResult> CycleSinkOnlyAsync(
+    public async Task<FlashbackBufferCycleOutcome> CycleSinkOnlyAsync(
         FlashbackBufferCycleRequest request)
     {
-        ArgumentNullException.ThrowIfNull(request.VideoCapture);
-        ArgumentNullException.ThrowIfNull(request.Settings);
-        ArgumentNullException.ThrowIfNull(request.CreateSessionContext);
-        ArgumentNullException.ThrowIfNull(request.FatalErrorCallback);
-        ArgumentNullException.ThrowIfNull(request.FrameEncodedHandler);
-        ArgumentNullException.ThrowIfNull(request.ClearLastFailure);
-        ArgumentNullException.ThrowIfNull(request.ScheduleDeferredCleanup);
-
         var bufferManager = BufferManager
             ?? throw new InvalidOperationException("Flashback buffer manager is not active.");
         var oldSink = Sink
@@ -417,7 +414,7 @@ internal sealed class FlashbackBackendResources
 
             Clear();
 
-            request.ScheduleDeferredCleanup(
+            ScheduleDeferredArtifactCleanup(
                 oldSinkCompletionTask,
                 new FlashbackBackendArtifactCleanupRequest(
                     bufferManager,
@@ -425,7 +422,7 @@ internal sealed class FlashbackBackendResources
                     "buffer_cycle_deferred_cleanup",
                     request.PurgeSegments));
 
-            return new FlashbackBufferCycleResult(FlashbackBufferCycleOutcome.DeferredFullRebuild);
+            return FlashbackBufferCycleOutcome.DeferredFullRebuild;
         }
 
         // When the codec/format changed, purge stale segments (incompatible with
@@ -442,7 +439,7 @@ internal sealed class FlashbackBackendResources
             if (bufferManager.SegmentCount > 0)
             {
                 Logger.Log($"FLASHBACK_CYCLE_PURGE_INCOMPLETE remaining={bufferManager.SegmentCount} - falling back to full teardown");
-                return new FlashbackBufferCycleResult(FlashbackBufferCycleOutcome.PurgeFallbackRebuild);
+                return FlashbackBufferCycleOutcome.PurgeFallbackRebuild;
             }
         }
 
@@ -455,7 +452,7 @@ internal sealed class FlashbackBackendResources
             preservedPlaybackState,
             committedCycleToken).ConfigureAwait(false))
         {
-            return new FlashbackBufferCycleResult(FlashbackBufferCycleOutcome.FallbackFullRebuild);
+            return FlashbackBufferCycleOutcome.FallbackFullRebuild;
         }
 
         if (request.CancellationToken.IsCancellationRequested)
@@ -464,7 +461,7 @@ internal sealed class FlashbackBackendResources
             request.CancellationToken.ThrowIfCancellationRequested();
         }
 
-        return new FlashbackBufferCycleResult(FlashbackBufferCycleOutcome.SinkOnly);
+        return FlashbackBufferCycleOutcome.SinkOnly;
     }
 
     private FlashbackBufferCyclePlaybackState DisposePlaybackForBufferCycle(bool preserveSegments)
@@ -503,7 +500,7 @@ internal sealed class FlashbackBackendResources
                 request.MicrophoneCapture,
                 "FLASHBACK_CYCLE_DETACH_WARN",
                 DetachMicrophoneWriter: true));
-        oldSink.FrameEncoded -= request.FrameEncodedHandler;
+        oldSink.FrameEncoded -= _onFrameEncodedHandler;
     }
 
     private static async Task StopAndDisposeOldSinkForBufferCycleAsync(
@@ -541,7 +538,7 @@ internal sealed class FlashbackBackendResources
         CancellationToken committedCycleToken)
     {
         var newSink = new FlashbackEncoderSink(bufferManager);
-        newSink.SetFatalErrorCallback(request.FatalErrorCallback);
+        newSink.SetFatalErrorCallback(_onFatalError);
         try
         {
             // When preserving DVR history (no purge), continue PTS from where
@@ -549,13 +546,12 @@ internal sealed class FlashbackBackendResources
             var ptsOffset = request.PurgeSegments ? TimeSpan.Zero : bufferManager.LatestPts;
             await newSink.StartAsync(
                 request.CreateSessionContext(),
-                committedCycleToken,
-                ptsBaseOffset: ptsOffset).ConfigureAwait(false);
+                ptsBaseOffset: ptsOffset,
+                cancellationToken: committedCycleToken).ConfigureAwait(false);
 
-            newSink.FrameEncoded += request.FrameEncodedHandler;
+            newSink.FrameEncoded += _onFrameEncodedHandler;
             Sink = newSink;
             SettingsSnapshot = request.SettingsSnapshot;
-            request.ClearLastFailure();
             AttachProducers(
                 new FlashbackProducerAttachRequest(
                     request.VideoCapture,
@@ -595,11 +591,11 @@ internal sealed class FlashbackBackendResources
         }
     }
 
-    private static async Task CleanupFailedReplacementSinkForBufferCycleAsync(
+    private async Task CleanupFailedReplacementSinkForBufferCycleAsync(
         FlashbackEncoderSink newSink,
         FlashbackBufferCycleRequest request)
     {
-        try { newSink.FrameEncoded -= request.FrameEncodedHandler; }
+        try { newSink.FrameEncoded -= _onFrameEncodedHandler; }
         catch (Exception detachEx) { Logger.Log($"FLASHBACK_CYCLE_NEW_SINK_EVENT_DETACH_WARN type={detachEx.GetType().Name} msg={detachEx.Message}"); }
         try { request.VideoCapture.SetFlashbackSink(null); }
         catch (Exception detachEx) { Logger.Log($"FLASHBACK_CYCLE_NEW_SINK_DETACH_WARN type={detachEx.GetType().Name} msg={detachEx.Message}"); }
@@ -611,13 +607,10 @@ internal sealed class FlashbackBackendResources
         catch (Exception disposeEx) { Logger.Log($"FLASHBACK_CYCLE_NEW_SINK_DISPOSE_WARN type={disposeEx.GetType().Name} msg={disposeEx.Message}"); }
     }
 
-    public async Task DisposePreviewBackendAsync(
+    // Caller holds the backend lease and export gate, in that order.
+    public async Task DisposePreviewBackendUnderExportLockAsync(
         FlashbackPreviewBackendDisposalRequest request)
     {
-        ArgumentNullException.ThrowIfNull(request.FrameEncodedHandler);
-        ArgumentNullException.ThrowIfNull(request.AcquireExportOperationLockAsync);
-        ArgumentNullException.ThrowIfNull(request.ReleaseExportOperationLock);
-
         var flashbackSink = Sink;
         var flashbackBufferManager = BufferManager;
         var flashbackExporter = Exporter;
@@ -651,7 +644,7 @@ internal sealed class FlashbackBackendResources
         Task sinkCompletionTask = Task.CompletedTask;
         if (flashbackSink != null)
         {
-            flashbackSink.FrameEncoded -= request.FrameEncodedHandler;
+            flashbackSink.FrameEncoded -= _onFrameEncodedHandler;
             try
             {
                 // Once feeds are detached, finish the bounded sink drain even if the
@@ -680,66 +673,54 @@ internal sealed class FlashbackBackendResources
         // a half-disposed backend.
         Clear();
 
+        var cleanupRequest = new FlashbackBackendArtifactCleanupRequest(
+            flashbackBufferManager,
+            flashbackExporter,
+            request.PurgeSegments ? "preview_backend_dispose_purge" : "preview_backend_dispose",
+            request.PurgeSegments);
         if (!sinkCompletionTask.IsCompleted)
         {
             ScheduleDeferredArtifactCleanup(
                 sinkCompletionTask,
-                new FlashbackBackendArtifactCleanupRequest(
-                    flashbackBufferManager,
-                    flashbackExporter,
-                    request.PurgeSegments ? "preview_backend_dispose_purge" : "preview_backend_dispose",
-                    request.PurgeSegments),
-                request.AcquireExportOperationLockAsync,
-                request.ReleaseExportOperationLock);
-            flashbackBufferManager = null;
-            flashbackExporter = null;
+                cleanupRequest);
+            cleanupRequest = cleanupRequest with { BufferManager = null, FlashbackExporter = null };
             request.CancellationToken.ThrowIfCancellationRequested();
         }
 
-        if (request.PurgeSegments)
+        if (request.PurgeSegments && request.CancellationToken.IsCancellationRequested)
         {
+            // Cancellation still prevents the requested purge, but the detached
+            // resources need an owner until they can be retired and disposed.
+            ScheduleDeferredArtifactCleanup(
+                Task.CompletedTask,
+                cleanupRequest with { Reason = "preview_backend_dispose_cancelled", PurgeSegments = false });
             request.CancellationToken.ThrowIfCancellationRequested();
         }
 
-        var cleanupCompleted = await CleanupArtifactsAfterExportAsync(
-                new FlashbackBackendArtifactCleanupRequest(
-                    flashbackBufferManager,
-                    flashbackExporter,
-                    request.PurgeSegments ? "preview_backend_dispose_purge" : "preview_backend_dispose",
-                    request.PurgeSegments),
-                "preview_backend_dispose",
-                request.AcquireExportOperationLockAsync,
-                request.ReleaseExportOperationLock,
-                request.ExportOperationLockAlreadyHeld)
-            .ConfigureAwait(false);
+        if (cleanupRequest.BufferManager != null || cleanupRequest.FlashbackExporter != null)
+        {
+            Logger.Log($"FLASHBACK_BACKEND_CLEANUP_LOCK_REUSED mode=preview_backend_dispose reason='{cleanupRequest.Reason}'");
+        }
+        var cleanupCompleted = CleanupArtifactsUnderExportLock(cleanupRequest, "preview_backend_dispose");
 
         if (!cleanupCompleted)
         {
             ScheduleDeferredArtifactCleanup(
                 Task.Delay(TimeSpan.FromSeconds(1)),
-                new FlashbackBackendArtifactCleanupRequest(
-                    flashbackBufferManager,
-                    flashbackExporter,
-                    request.PurgeSegments ? "preview_backend_dispose_purge_retry" : "preview_backend_dispose_retry",
-                    request.PurgeSegments),
-                request.AcquireExportOperationLockAsync,
-                request.ReleaseExportOperationLock);
+                cleanupRequest with
+                {
+                    Reason = request.PurgeSegments ? "preview_backend_dispose_purge_retry" : "preview_backend_dispose_retry"
+                });
         }
 
         Logger.Log($"FLASHBACK_PREVIEW_DISPOSE_OK purge={request.PurgeSegments}");
     }
 
-    public void ScheduleDeferredArtifactCleanup(
+    private void ScheduleDeferredArtifactCleanup(
         Task sinkCompletionTask,
         FlashbackBackendArtifactCleanupRequest request,
-        Func<Task<bool>> acquireExportOperationLockAsync,
-        Action<string> releaseExportOperationLock,
         int attempt = 0)
     {
-        ArgumentNullException.ThrowIfNull(sinkCompletionTask);
-        ArgumentNullException.ThrowIfNull(acquireExportOperationLockAsync);
-        ArgumentNullException.ThrowIfNull(releaseExportOperationLock);
-
         _ = Task.Run(async () =>
         {
             try
@@ -754,9 +735,7 @@ internal sealed class FlashbackBackendResources
             {
                 var cleanupCompleted = await CleanupArtifactsAfterExportAsync(
                         request,
-                        "deferred",
-                        acquireExportOperationLockAsync,
-                        releaseExportOperationLock)
+                        "deferred")
                     .ConfigureAwait(false);
 
                 if (cleanupCompleted)
@@ -770,8 +749,6 @@ internal sealed class FlashbackBackendResources
                     ScheduleDeferredArtifactCleanup(
                         Task.Delay(TimeSpan.FromSeconds(5)),
                         request,
-                        acquireExportOperationLockAsync,
-                        releaseExportOperationLock,
                         nextAttempt);
                 }
                 else
@@ -782,46 +759,55 @@ internal sealed class FlashbackBackendResources
         });
     }
 
-    public async Task<bool> CleanupArtifactsAfterExportAsync(
+    private async Task<bool> CleanupArtifactsAfterExportAsync(
         FlashbackBackendArtifactCleanupRequest request,
-        string mode,
-        Func<Task<bool>> acquireExportOperationLockAsync,
-        Action<string> releaseExportOperationLock,
-        bool exportOperationLockAlreadyHeld = false)
+        string mode)
     {
-        ArgumentNullException.ThrowIfNull(acquireExportOperationLockAsync);
-        ArgumentNullException.ThrowIfNull(releaseExportOperationLock);
-
         if (request.BufferManager == null && request.FlashbackExporter == null)
         {
             return true;
         }
 
-        var lockAcquired = exportOperationLockAlreadyHeld;
-        var releaseLockOnExit = false;
+        var lockAcquired = false;
         try
         {
-            if (!exportOperationLockAlreadyHeld)
-            {
-                Logger.Log($"FLASHBACK_BACKEND_CLEANUP_AWAITING_EXPORT_LOCK mode={mode} reason='{request.Reason}'");
-                var lockSw = System.Diagnostics.Stopwatch.StartNew();
-                lockAcquired = await acquireExportOperationLockAsync().ConfigureAwait(false);
-                lockSw.Stop();
+            Logger.Log($"FLASHBACK_BACKEND_CLEANUP_AWAITING_EXPORT_LOCK mode={mode} reason='{request.Reason}'");
+            var lockSw = System.Diagnostics.Stopwatch.StartNew();
+            lockAcquired = await _exportOperationLock.WaitAsync(
+                TimeSpan.FromSeconds(30),
+                CancellationToken.None).ConfigureAwait(false);
+            lockSw.Stop();
 
-                if (!lockAcquired)
-                {
-                    Logger.Log($"FLASHBACK_BACKEND_CLEANUP_EXPORT_LOCK_TIMEOUT mode={mode} reason='{request.Reason}' preserve_segments=true");
-                    return false;
-                }
-
-                releaseLockOnExit = true;
-                Logger.Log($"FLASHBACK_BACKEND_CLEANUP_LOCK_ACQUIRED mode={mode} elapsed_ms={lockSw.ElapsedMilliseconds} reason='{request.Reason}'");
-            }
-            else
+            if (!lockAcquired)
             {
-                Logger.Log($"FLASHBACK_BACKEND_CLEANUP_LOCK_REUSED mode={mode} reason='{request.Reason}'");
+                Logger.Log($"FLASHBACK_BACKEND_CLEANUP_EXPORT_LOCK_TIMEOUT mode={mode} reason='{request.Reason}' preserve_segments=true");
+                return false;
             }
 
+            Logger.Log($"FLASHBACK_BACKEND_CLEANUP_LOCK_ACQUIRED mode={mode} elapsed_ms={lockSw.ElapsedMilliseconds} reason='{request.Reason}'");
+            return CleanupArtifactsUnderExportLock(request, mode);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_BACKEND_CLEANUP_WARN mode={mode} reason='{request.Reason}' type={ex.GetType().Name} msg={ex.Message}");
+            return false;
+        }
+        finally
+        {
+            if (lockAcquired)
+            {
+                try { _exportOperationLock.Release(); }
+                catch (Exception ex) { Logger.Log($"CAPTURE_SERVICE_SEMAPHORE_RELEASE_WARN op=flashback_backend_cleanup_{mode} type={ex.GetType().Name} msg='{ex.Message}'"); }
+            }
+        }
+    }
+
+    private static bool CleanupArtifactsUnderExportLock(
+        FlashbackBackendArtifactCleanupRequest request,
+        string mode)
+    {
+        try
+        {
             if (request.FlashbackExporter != null)
             {
                 try { request.FlashbackExporter.Dispose(); }
@@ -859,25 +845,11 @@ internal sealed class FlashbackBackendResources
             Logger.Log($"FLASHBACK_BACKEND_CLEANUP_WARN mode={mode} reason='{request.Reason}' type={ex.GetType().Name} msg={ex.Message}");
             return false;
         }
-        finally
-        {
-            if (lockAcquired && releaseLockOnExit)
-            {
-                releaseExportOperationLock(mode);
-            }
-        }
     }
 
-    public async Task<FlashbackPlaybackController> StartPreviewBackendAsync(
+    public async Task StartPreviewBackendAsync(
         FlashbackPreviewBackendStartRequest request)
     {
-        ArgumentNullException.ThrowIfNull(request.VideoCapture);
-        ArgumentNullException.ThrowIfNull(request.Settings);
-        ArgumentNullException.ThrowIfNull(request.CreateSessionContext);
-        ArgumentNullException.ThrowIfNull(request.FatalErrorCallback);
-        ArgumentNullException.ThrowIfNull(request.FrameEncodedHandler);
-        ArgumentNullException.ThrowIfNull(request.ScheduleDeferredCleanup);
-
         var bufferMinutes = request.Settings.FlashbackBufferMinutes > 0
             ? request.Settings.FlashbackBufferMinutes
             : 5;
@@ -896,7 +868,7 @@ internal sealed class FlashbackBackendResources
         });
         bufferManager.Initialize(Guid.NewGuid().ToString("N"));
         var flashbackSink = new FlashbackEncoderSink(bufferManager);
-        flashbackSink.SetFatalErrorCallback(request.FatalErrorCallback);
+        flashbackSink.SetFatalErrorCallback(_onFatalError);
         var flashbackExporter = new FlashbackExporter();
         FlashbackPlaybackController? playbackController = null;
 
@@ -904,8 +876,8 @@ internal sealed class FlashbackBackendResources
         {
             await flashbackSink.StartAsync(
                 request.CreateSessionContext(),
-                request.CancellationToken).ConfigureAwait(false);
-            flashbackSink.FrameEncoded += request.FrameEncodedHandler;
+                cancellationToken: request.CancellationToken).ConfigureAwait(false);
+            flashbackSink.FrameEncoded += _onFrameEncodedHandler;
 
             playbackController = new FlashbackPlaybackController(bufferManager)
             {
@@ -936,7 +908,6 @@ internal sealed class FlashbackBackendResources
 
             ClearRecoveryPreserve();
             Logger.Log($"FLASHBACK_PREVIEW_INIT_OK session='{bufferManager.SessionId}' controller_initialized={playbackController.IsInitialized}");
-            return playbackController;
         }
         catch
         {
@@ -958,7 +929,7 @@ internal sealed class FlashbackBackendResources
         FlashbackExporter flashbackExporter,
         FlashbackPlaybackController? playbackController)
     {
-        flashbackSink.FrameEncoded -= request.FrameEncodedHandler;
+        flashbackSink.FrameEncoded -= _onFrameEncodedHandler;
         DetachProducers(
             new FlashbackProducerDetachRequest(
                 request.VideoCapture,
@@ -976,12 +947,13 @@ internal sealed class FlashbackBackendResources
         var cleanupExporter = flashbackExporter;
         if (!sinkCompletionTask.IsCompleted)
         {
-            request.ScheduleDeferredCleanup(
+            ScheduleDeferredArtifactCleanup(
                 sinkCompletionTask,
-                cleanupBufferManager,
-                cleanupExporter,
-                "preview_init_rollback",
-                true);
+                new FlashbackBackendArtifactCleanupRequest(
+                    cleanupBufferManager,
+                    cleanupExporter,
+                    "preview_init_rollback",
+                    true));
             cleanupBufferManager = null;
             cleanupExporter = null;
         }

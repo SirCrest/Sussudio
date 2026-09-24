@@ -293,6 +293,16 @@ public enum PreviewStartupStrategy
     D3D11VideoProcessor
 }
 
+public enum PreviewStartupState
+{
+    Idle,
+    StartingSession,
+    RendererAttaching,
+    WaitingForFirstVisual,
+    Rendering,
+    Failed
+}
+
 [Flags]
 public enum PreviewStartupSignalFlags
 {
@@ -738,9 +748,7 @@ public sealed class CaptureRuntimeSnapshot
     // Recording diagnostics
     public string RecordingBackend { get; init; } = "None";
     public string AudioPathMode { get; init; } = "None";
-    public bool MuxAttempted { get; init; }
-    public bool? MuxSucceeded { get; init; }
-    public string RecordingIntegrityStatus { get; init; } = "NotStarted";
+    public RecordingIntegrityStatus RecordingIntegrityStatus { get; init; } = RecordingIntegrityStatus.NotStarted;
     public bool RecordingIntegrityComplete { get; init; }
     public string RecordingIntegrityBackend { get; init; } = "None";
     public DateTimeOffset? RecordingIntegrityCompletedUtc { get; init; }
@@ -758,7 +766,7 @@ public sealed class CaptureRuntimeSnapshot
     public long RecordingIntegrityBackpressureWaitMs { get; init; }
     public long RecordingIntegrityBackpressureEvents { get; init; }
     public long RecordingIntegrityBackpressureMaxWaitMs { get; init; }
-    public string RecordingIntegrityAudioStatus { get; init; } = "Disabled";
+    public RecordingIntegrityAudioStatus RecordingIntegrityAudioStatus { get; init; } = RecordingIntegrityAudioStatus.Disabled;
     public bool RecordingIntegrityAudioEnabled { get; init; }
     public bool RecordingIntegrityAudioCaptureActive { get; init; }
     public long RecordingIntegrityAudioFramesArrived { get; init; }
@@ -810,7 +818,7 @@ public sealed class PreviewRuntimeSnapshot
     public bool StallSuspected { get; init; }
 
     // Startup diagnostics
-    public string StartupState { get; init; } = "Idle";
+    public PreviewStartupState? StartupState { get; init; } = PreviewStartupState.Idle;
     public string? StartupAttemptId { get; init; }
     public double? StartupElapsedMs { get; init; }
     public int StartupTimeoutMs { get; init; }
@@ -1028,6 +1036,7 @@ public sealed class PerformanceTimelineEntry
     public long FlashbackPlaybackCommandsEnqueued { get; init; }
     public long FlashbackPlaybackCommandsProcessed { get; init; }
     public long FlashbackPlaybackCommandsDropped { get; init; }
+    // Legacy name for readiness, thread, and disposal rejections; mailbox rejection/drop accounting is separate.
     public long FlashbackPlaybackCommandsSkippedNotReady { get; init; }
     public long FlashbackPlaybackScrubUpdatesCoalesced { get; init; }
     public long FlashbackPlaybackSeekCommandsCoalesced { get; init; }

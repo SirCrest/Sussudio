@@ -103,7 +103,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
             return SourceSignalTelemetrySnapshot.CreateUnavailable("device-unavailable");
         }
 
-        if (!NativeXuDeviceSupport.TryGetSupported4kXIds(device, out var vendorId, out var productId))
+        if (!NativeXuDeviceSupport.TryGetSupported4kXIds(device, out _, out _))
         {
             return SourceSignalTelemetrySnapshot.CreateUnavailable("nativexu-device-unsupported");
         }
@@ -132,7 +132,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
             IReadOnlyList<KsExtensionUnitNative.KsInterfacePath> interfaces;
             try
             {
-                interfaces = NativeXuDeviceSupport.EnumerateSelectedInterfaces(vendorId, productId, device);
+                interfaces = NativeXuDeviceSupport.EnumerateSelectedInterfacePath(device.NativeXuInterfacePath);
             }
             catch (Exception ex)
             {
@@ -265,7 +265,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
     private static NodeReadAttempt CreateUnavailableNodeResult(string interfacePath, string reason)
         => new(null, false, reason, interfacePath);
 
-    private static NodeReadAttempt HandleFailedCommand(string reason, string interfacePath, AtCommandResult result)
+    private static NodeReadAttempt CreateFailedCommandResult(string reason, string interfacePath, AtCommandResult result)
     {
         if (IsUnsupportedNodeFailure(result.Win32Code))
         {
@@ -325,18 +325,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
     private const int RollingGroupCount = 6;
     private bool _hasCompletedFullCycle;
 
-    // Cached AT command results updated as each group rotates through.
-    private AtCommandResult _cVic, _cVfreq, _cAviInfo, _cHdrMetadata;
-    private AtCommandResult _cSystemInfo, _cHdr2Sdr, _cAudioFormat, _cAudioSamplingRate;
-    private AtCommandResult _cInputSource, _cFlashAudio, _cAdcOnOff, _cAdcVolumeGain;
-    private AtCommandResult _cUacVolumeGain, _cUacOut1Mute, _cUacOut2Mute, _cUacOut2MixerSource;
-    private AtCommandResult _cUsbHostProtocol, _cUsbCdc, _cUsbLinkState, _cUsbForceSpeed;
-    private AtCommandResult _cTxHpd, _cTxVrr, _cTxEdidValid;
-    private AtCommandResult _cUvcOutputTiming, _cUvcVideoFormat, _cUvcErrStatus;
-    private AtCommandResult _cHdcpMode, _cHdcpVersion, _cRxTxHdcpVersion;
-    private AtCommandResult _cHdr2SdrExtended, _cCustomerVersion, _cRescueVersion;
-    private AtCommandResult _cHdr2SdrColorParam, _cColorRangeSetting;
-    private AtCommandResult _cVtem, _cBitError, _cRawTiming;
+    private NativeXuSnapshotCommandResults _cache;
     private string? _rollingInterfacePath;
     private int? _rollingNodeId;
 
@@ -363,7 +352,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
         var cable = SendRollingCommand(handle, nodeId, "CableConnect", CmdCableConnect, cancellationToken);
         if (!cable.Success)
         {
-            return HandleFailedCommand("nativexu-read-failed", interfacePath, cable);
+            return CreateFailedCommandResult("nativexu-read-failed", interfacePath, cable);
         }
 
         if (TryReadInt32(cable.Response, out var cableState) && cableState == 0)
@@ -376,7 +365,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
         var videoStable = SendRollingCommand(handle, nodeId, "VideoStable", CmdVideoStable, cancellationToken);
         if (!videoStable.Success)
         {
-            return HandleFailedCommand("nativexu-read-failed", interfacePath, videoStable);
+            return CreateFailedCommandResult("nativexu-read-failed", interfacePath, videoStable);
         }
 
         if (TryReadInt32(videoStable.Response, out var stableValue) && stableValue == 0)
@@ -417,43 +406,10 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
         int nodeId,
         CancellationToken cancellationToken)
     {
-        _cVic = SendRollingCommand(handle, nodeId, "VIC", CmdVic, cancellationToken);
-        _cVfreq = SendRollingCommand(handle, nodeId, "Vfreq", CmdVfreq, cancellationToken);
-        _cAviInfo = SendRollingCommand(handle, nodeId, "AviInfoFrame", CmdAviInfoFrame, cancellationToken);
-        _cHdrMetadata = SendRollingCommand(handle, nodeId, "HdrMetadata", CmdHdrMetadata, cancellationToken);
-        _cSystemInfo = SendRollingCommand(handle, nodeId, "SystemInfo", CmdSystemInfo, cancellationToken);
-        _cHdr2Sdr = SendRollingCommand(handle, nodeId, "Hdr2Sdr", CmdHdr2Sdr, cancellationToken);
-        _cAudioFormat = SendRollingCommand(handle, nodeId, "AudioFormat", CmdAudioFormat, cancellationToken);
-        _cAudioSamplingRate = SendRollingCommand(handle, nodeId, "AudioSamplingRate", CmdAudioSamplingRate, cancellationToken);
-        _cInputSource = SendRollingCommand(handle, nodeId, "InputSource", CmdInputSource, cancellationToken);
-        _cFlashAudio = SendRollingCommand(handle, nodeId, "FlashAudioInput", CmdFlashGetCustomerProprietary, cancellationToken);
-        _cAdcOnOff = SendRollingCommand(handle, nodeId, "AdcOnOff", CmdAdcOnOff, cancellationToken);
-        _cAdcVolumeGain = SendRollingCommand(handle, nodeId, "AdcVolumeGain", CmdAdcVolumeGain, cancellationToken);
-        _cUacVolumeGain = SendRollingCommand(handle, nodeId, "UacVolumeGain", CmdUacVolumeGain, cancellationToken);
-        _cUacOut1Mute = SendRollingCommand(handle, nodeId, "UacOut1Mute", CmdUacOut1Mute, cancellationToken);
-        _cUacOut2Mute = SendRollingCommand(handle, nodeId, "UacOut2Mute", CmdUacOut2Mute, cancellationToken);
-        _cUacOut2MixerSource = SendRollingCommand(handle, nodeId, "UacOut2MixerSource", CmdUacOut2MixerSource, cancellationToken);
-        _cUsbHostProtocol = SendRollingCommand(handle, nodeId, "UsbHostProtocol", CmdUsbHostProtocol, cancellationToken);
-        _cUsbCdc = SendRollingCommand(handle, nodeId, "UsbCdc", CmdUsbCdcOnOff, cancellationToken);
-        _cUsbLinkState = SendRollingCommand(handle, nodeId, "UsbLinkState", CmdUsbLinkState, cancellationToken);
-        _cUsbForceSpeed = SendRollingCommand(handle, nodeId, "UsbForceSpeed", CmdUsbForceSpeed, cancellationToken);
-        _cTxHpd = SendRollingCommand(handle, nodeId, "TxHpd", CmdTxHpdStatus, cancellationToken);
-        _cTxVrr = SendRollingCommand(handle, nodeId, "TxVrr", CmdTxVrr, cancellationToken);
-        _cTxEdidValid = SendRollingCommand(handle, nodeId, "TxEdidValid", CmdTxEdidValid, cancellationToken);
-        _cUvcOutputTiming = SendRollingCommand(handle, nodeId, "UvcOutputTiming", CmdUvcOutputTiming, cancellationToken);
-        _cUvcVideoFormat = SendRollingCommand(handle, nodeId, "UvcVideoFormat", CmdUvcVideoFormat, cancellationToken);
-        _cUvcErrStatus = SendRollingCommand(handle, nodeId, "UvcErrStatus", CmdUvcErrStatus, cancellationToken);
-        _cHdcpMode = SendRollingCommand(handle, nodeId, "HdcpMode", CmdHdcpMode, cancellationToken);
-        _cHdcpVersion = SendRollingCommand(handle, nodeId, "HdcpVersion", CmdHdcpVersion, cancellationToken);
-        _cRxTxHdcpVersion = SendRollingCommand(handle, nodeId, "RxTxHdcpVersion", CmdRxTxHdcpVersion, cancellationToken);
-        _cHdr2SdrExtended = SendRollingCommand(handle, nodeId, "Hdr2SdrExtended", CmdHdr2SdrExtended, cancellationToken);
-        _cCustomerVersion = SendRollingCommand(handle, nodeId, "CustomerVersion", CmdCustomerVersion, cancellationToken);
-        _cRescueVersion = SendRollingCommand(handle, nodeId, "RescueVersion", CmdRescueVersion, cancellationToken);
-        _cHdr2SdrColorParam = SendRollingCommand(handle, nodeId, "Hdr2SdrColorParam", CmdHdr2SdrColorParam, cancellationToken);
-        _cColorRangeSetting = SendRollingCommand(handle, nodeId, "ColorRangeSetting", CmdColorRangeSetting, cancellationToken);
-        _cVtem = SendRollingCommand(handle, nodeId, "Vtem", CmdVtem, cancellationToken);
-        _cBitError = SendRollingCommand(handle, nodeId, "BitError", CmdBitError, cancellationToken);
-        _cRawTiming = SendRollingCommand(handle, nodeId, "RawTiming", CmdRawTiming, cancellationToken);
+        for (var group = 0; group < RollingGroupCount; group++)
+        {
+            RefreshRollingGroup(handle, nodeId, group, cancellationToken);
+        }
     }
 
     private void RefreshRollingGroup(
@@ -465,105 +421,84 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
         switch (rollingGroup)
         {
             case 0: // Signal (most important - cycles every pass)
-                _cVic = SendRollingCommand(handle, nodeId, "VIC", CmdVic, cancellationToken);
-                _cVfreq = SendRollingCommand(handle, nodeId, "Vfreq", CmdVfreq, cancellationToken);
-                _cAviInfo = SendRollingCommand(handle, nodeId, "AviInfoFrame", CmdAviInfoFrame, cancellationToken);
-                _cHdrMetadata = SendRollingCommand(handle, nodeId, "HdrMetadata", CmdHdrMetadata, cancellationToken);
+                _cache = _cache with
+                {
+                    Vic = SendRollingCommand(handle, nodeId, "VIC", CmdVic, cancellationToken),
+                    Vfreq = SendRollingCommand(handle, nodeId, "Vfreq", CmdVfreq, cancellationToken),
+                    AviInfo = SendRollingCommand(handle, nodeId, "AviInfoFrame", CmdAviInfoFrame, cancellationToken),
+                    HdrMetadata = SendRollingCommand(handle, nodeId, "HdrMetadata", CmdHdrMetadata, cancellationToken)
+                };
                 break;
             case 1: // Audio
-                _cAudioFormat = SendRollingCommand(handle, nodeId, "AudioFormat", CmdAudioFormat, cancellationToken);
-                _cAudioSamplingRate = SendRollingCommand(handle, nodeId, "AudioSamplingRate", CmdAudioSamplingRate, cancellationToken);
-                _cInputSource = SendRollingCommand(handle, nodeId, "InputSource", CmdInputSource, cancellationToken);
-                _cFlashAudio = SendRollingCommand(handle, nodeId, "FlashAudioInput", CmdFlashGetCustomerProprietary, cancellationToken);
+                _cache = _cache with
+                {
+                    AudioFormat = SendRollingCommand(handle, nodeId, "AudioFormat", CmdAudioFormat, cancellationToken),
+                    AudioSamplingRate = SendRollingCommand(handle, nodeId, "AudioSamplingRate", CmdAudioSamplingRate, cancellationToken),
+                    InputSource = SendRollingCommand(handle, nodeId, "InputSource", CmdInputSource, cancellationToken),
+                    FlashAudio = SendRollingCommand(handle, nodeId, "FlashAudioInput", CmdFlashGetCustomerProprietary, cancellationToken)
+                };
                 break;
             case 2: // Audio routing
-                _cAdcOnOff = SendRollingCommand(handle, nodeId, "AdcOnOff", CmdAdcOnOff, cancellationToken);
-                _cAdcVolumeGain = SendRollingCommand(handle, nodeId, "AdcVolumeGain", CmdAdcVolumeGain, cancellationToken);
-                _cUacVolumeGain = SendRollingCommand(handle, nodeId, "UacVolumeGain", CmdUacVolumeGain, cancellationToken);
-                _cUacOut1Mute = SendRollingCommand(handle, nodeId, "UacOut1Mute", CmdUacOut1Mute, cancellationToken);
-                _cUacOut2Mute = SendRollingCommand(handle, nodeId, "UacOut2Mute", CmdUacOut2Mute, cancellationToken);
-                _cUacOut2MixerSource = SendRollingCommand(handle, nodeId, "UacOut2MixerSource", CmdUacOut2MixerSource, cancellationToken);
+                _cache = _cache with
+                {
+                    AdcOnOff = SendRollingCommand(handle, nodeId, "AdcOnOff", CmdAdcOnOff, cancellationToken),
+                    AdcVolumeGain = SendRollingCommand(handle, nodeId, "AdcVolumeGain", CmdAdcVolumeGain, cancellationToken),
+                    UacVolumeGain = SendRollingCommand(handle, nodeId, "UacVolumeGain", CmdUacVolumeGain, cancellationToken),
+                    UacOut1Mute = SendRollingCommand(handle, nodeId, "UacOut1Mute", CmdUacOut1Mute, cancellationToken),
+                    UacOut2Mute = SendRollingCommand(handle, nodeId, "UacOut2Mute", CmdUacOut2Mute, cancellationToken),
+                    UacOut2MixerSource = SendRollingCommand(handle, nodeId, "UacOut2MixerSource", CmdUacOut2MixerSource, cancellationToken)
+                };
                 break;
             case 3: // HDR/color
-                _cSystemInfo = SendRollingCommand(handle, nodeId, "SystemInfo", CmdSystemInfo, cancellationToken);
-                _cHdr2Sdr = SendRollingCommand(handle, nodeId, "Hdr2Sdr", CmdHdr2Sdr, cancellationToken);
-                _cHdr2SdrExtended = SendRollingCommand(handle, nodeId, "Hdr2SdrExtended", CmdHdr2SdrExtended, cancellationToken);
-                _cHdr2SdrColorParam = SendRollingCommand(handle, nodeId, "Hdr2SdrColorParam", CmdHdr2SdrColorParam, cancellationToken);
-                _cColorRangeSetting = SendRollingCommand(handle, nodeId, "ColorRangeSetting", CmdColorRangeSetting, cancellationToken);
+                _cache = _cache with
+                {
+                    SystemInfo = SendRollingCommand(handle, nodeId, "SystemInfo", CmdSystemInfo, cancellationToken),
+                    Hdr2Sdr = SendRollingCommand(handle, nodeId, "Hdr2Sdr", CmdHdr2Sdr, cancellationToken),
+                    Hdr2SdrExtended = SendRollingCommand(handle, nodeId, "Hdr2SdrExtended", CmdHdr2SdrExtended, cancellationToken),
+                    Hdr2SdrColorParam = SendRollingCommand(handle, nodeId, "Hdr2SdrColorParam", CmdHdr2SdrColorParam, cancellationToken),
+                    ColorRangeSetting = SendRollingCommand(handle, nodeId, "ColorRangeSetting", CmdColorRangeSetting, cancellationToken)
+                };
                 break;
             case 4: // USB/HDMI status
-                _cUsbHostProtocol = SendRollingCommand(handle, nodeId, "UsbHostProtocol", CmdUsbHostProtocol, cancellationToken);
-                _cUsbCdc = SendRollingCommand(handle, nodeId, "UsbCdc", CmdUsbCdcOnOff, cancellationToken);
-                _cUsbLinkState = SendRollingCommand(handle, nodeId, "UsbLinkState", CmdUsbLinkState, cancellationToken);
-                _cUsbForceSpeed = SendRollingCommand(handle, nodeId, "UsbForceSpeed", CmdUsbForceSpeed, cancellationToken);
-                _cTxHpd = SendRollingCommand(handle, nodeId, "TxHpd", CmdTxHpdStatus, cancellationToken);
-                _cTxVrr = SendRollingCommand(handle, nodeId, "TxVrr", CmdTxVrr, cancellationToken);
-                _cTxEdidValid = SendRollingCommand(handle, nodeId, "TxEdidValid", CmdTxEdidValid, cancellationToken);
+                _cache = _cache with
+                {
+                    UsbHostProtocol = SendRollingCommand(handle, nodeId, "UsbHostProtocol", CmdUsbHostProtocol, cancellationToken),
+                    UsbCdc = SendRollingCommand(handle, nodeId, "UsbCdc", CmdUsbCdcOnOff, cancellationToken),
+                    UsbLinkState = SendRollingCommand(handle, nodeId, "UsbLinkState", CmdUsbLinkState, cancellationToken),
+                    UsbForceSpeed = SendRollingCommand(handle, nodeId, "UsbForceSpeed", CmdUsbForceSpeed, cancellationToken),
+                    TxHpd = SendRollingCommand(handle, nodeId, "TxHpd", CmdTxHpdStatus, cancellationToken),
+                    TxVrr = SendRollingCommand(handle, nodeId, "TxVrr", CmdTxVrr, cancellationToken),
+                    TxEdidValid = SendRollingCommand(handle, nodeId, "TxEdidValid", CmdTxEdidValid, cancellationToken)
+                };
                 break;
             case 5: // Diagnostics (least critical)
-                _cUvcOutputTiming = SendRollingCommand(handle, nodeId, "UvcOutputTiming", CmdUvcOutputTiming, cancellationToken);
-                _cUvcVideoFormat = SendRollingCommand(handle, nodeId, "UvcVideoFormat", CmdUvcVideoFormat, cancellationToken);
-                _cUvcErrStatus = SendRollingCommand(handle, nodeId, "UvcErrStatus", CmdUvcErrStatus, cancellationToken);
-                _cHdcpMode = SendRollingCommand(handle, nodeId, "HdcpMode", CmdHdcpMode, cancellationToken);
-                _cHdcpVersion = SendRollingCommand(handle, nodeId, "HdcpVersion", CmdHdcpVersion, cancellationToken);
-                _cRxTxHdcpVersion = SendRollingCommand(handle, nodeId, "RxTxHdcpVersion", CmdRxTxHdcpVersion, cancellationToken);
-                _cCustomerVersion = SendRollingCommand(handle, nodeId, "CustomerVersion", CmdCustomerVersion, cancellationToken);
-                _cRescueVersion = SendRollingCommand(handle, nodeId, "RescueVersion", CmdRescueVersion, cancellationToken);
-                _cVtem = SendRollingCommand(handle, nodeId, "Vtem", CmdVtem, cancellationToken);
-                _cBitError = SendRollingCommand(handle, nodeId, "BitError", CmdBitError, cancellationToken);
-                _cRawTiming = SendRollingCommand(handle, nodeId, "RawTiming", CmdRawTiming, cancellationToken);
+                _cache = _cache with
+                {
+                    UvcOutputTiming = SendRollingCommand(handle, nodeId, "UvcOutputTiming", CmdUvcOutputTiming, cancellationToken),
+                    UvcVideoFormat = SendRollingCommand(handle, nodeId, "UvcVideoFormat", CmdUvcVideoFormat, cancellationToken),
+                    UvcErrStatus = SendRollingCommand(handle, nodeId, "UvcErrStatus", CmdUvcErrStatus, cancellationToken),
+                    HdcpMode = SendRollingCommand(handle, nodeId, "HdcpMode", CmdHdcpMode, cancellationToken),
+                    HdcpVersion = SendRollingCommand(handle, nodeId, "HdcpVersion", CmdHdcpVersion, cancellationToken),
+                    RxTxHdcpVersion = SendRollingCommand(handle, nodeId, "RxTxHdcpVersion", CmdRxTxHdcpVersion, cancellationToken),
+                    CustomerVersion = SendRollingCommand(handle, nodeId, "CustomerVersion", CmdCustomerVersion, cancellationToken),
+                    RescueVersion = SendRollingCommand(handle, nodeId, "RescueVersion", CmdRescueVersion, cancellationToken),
+                    Vtem = SendRollingCommand(handle, nodeId, "Vtem", CmdVtem, cancellationToken),
+                    BitError = SendRollingCommand(handle, nodeId, "BitError", CmdBitError, cancellationToken),
+                    RawTiming = SendRollingCommand(handle, nodeId, "RawTiming", CmdRawTiming, cancellationToken)
+                };
                 break;
         }
     }
 
     private NodeReadAttempt BuildSnapshotFromCachedResults(string interfacePath, int nodeId)
     {
-        if (_cVic.Name == null && _cVfreq.Name == null)
+        if (_cache.Vic.Name == null && _cache.Vfreq.Name == null)
         {
             return new NodeReadAttempt(null, false, "nativexu-cache-incomplete", interfacePath);
         }
 
-        var results = new NativeXuSnapshotCommandResults(
-            _cVic,
-            _cVfreq,
-            _cAviInfo,
-            _cHdrMetadata,
-            _cSystemInfo,
-            _cHdr2Sdr,
-            _cAudioFormat,
-            _cAudioSamplingRate,
-            _cInputSource,
-            _cFlashAudio,
-            _cAdcOnOff,
-            _cAdcVolumeGain,
-            _cUacVolumeGain,
-            _cUacOut1Mute,
-            _cUacOut2Mute,
-            _cUacOut2MixerSource,
-            _cUsbHostProtocol,
-            _cUsbCdc,
-            _cUsbLinkState,
-            _cUsbForceSpeed,
-            _cTxHpd,
-            _cTxVrr,
-            _cTxEdidValid,
-            _cUvcOutputTiming,
-            _cUvcVideoFormat,
-            _cUvcErrStatus,
-            _cHdcpMode,
-            _cHdcpVersion,
-            _cRxTxHdcpVersion,
-            _cHdr2SdrExtended,
-            _cCustomerVersion,
-            _cRescueVersion,
-            _cHdr2SdrColorParam,
-            _cColorRangeSetting,
-            _cVtem,
-            _cBitError,
-            _cRawTiming);
-
         return BuildSnapshotFromCommandResults(
-            results,
+            _cache,
             interfacePath,
             nodeId,
             logDecodeSummary: false,
@@ -939,87 +874,6 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
         AtCommandResult BitError,
         AtCommandResult RawTiming);
 
-    /// <summary>
-    /// Original monolithic read - fires all commands. Kept for callers that
-    /// need a guaranteed-complete snapshot, while rolling poll handles periodic reads.
-    /// </summary>
-    private static NodeReadAttempt TryReadSnapshot(
-        SafeFileHandle handle,
-        int nodeId,
-        string interfacePath)
-    {
-        var cable = SendAtCommand(handle, nodeId, "CableConnect", CmdCableConnect);
-        if (!cable.Success)
-        {
-            return HandleFailedCommand("nativexu-read-failed", interfacePath, cable);
-        }
-
-        if (TryReadInt32(cable.Response, out var cableState) && cableState == 0)
-        {
-            Logger.Log($"NATIVEXU_SIGNAL_UNAVAILABLE path='{interfacePath}' node={nodeId} reason=no-cable");
-            return CreateUnavailableNodeResult(interfacePath, "nativexu-no-cable");
-        }
-
-        var videoStable = SendAtCommand(handle, nodeId, "VideoStable", CmdVideoStable);
-        if (!videoStable.Success)
-        {
-            return HandleFailedCommand("nativexu-read-failed", interfacePath, videoStable);
-        }
-
-        if (TryReadInt32(videoStable.Response, out var stableValue) && stableValue == 0)
-        {
-            Logger.Log($"NATIVEXU_SIGNAL_UNAVAILABLE path='{interfacePath}' node={nodeId} reason=signal-unstable");
-            return CreateUnavailableNodeResult(interfacePath, "nativexu-signal-unstable");
-        }
-
-        var results = new NativeXuSnapshotCommandResults(
-            SendAtCommand(handle, nodeId, "VIC", CmdVic),
-            SendAtCommand(handle, nodeId, "Vfreq", CmdVfreq),
-            SendAtCommand(handle, nodeId, "AviInfoFrame", CmdAviInfoFrame),
-            SendAtCommand(handle, nodeId, "HdrMetadata", CmdHdrMetadata),
-            SendAtCommand(handle, nodeId, "SystemInfo", CmdSystemInfo),
-            SendAtCommand(handle, nodeId, "Hdr2Sdr", CmdHdr2Sdr),
-            SendAtCommand(handle, nodeId, "AudioFormat", CmdAudioFormat),
-            SendAtCommand(handle, nodeId, "AudioSamplingRate", CmdAudioSamplingRate),
-            SendAtCommand(handle, nodeId, "InputSource", CmdInputSource),
-            SendAtCommand(handle, nodeId, "FlashAudioInput", CmdFlashGetCustomerProprietary),
-            SendAtCommand(handle, nodeId, "AdcOnOff", CmdAdcOnOff),
-            SendAtCommand(handle, nodeId, "AdcVolumeGain", CmdAdcVolumeGain),
-            SendAtCommand(handle, nodeId, "UacVolumeGain", CmdUacVolumeGain),
-            SendAtCommand(handle, nodeId, "UacOut1Mute", CmdUacOut1Mute),
-            SendAtCommand(handle, nodeId, "UacOut2Mute", CmdUacOut2Mute),
-            SendAtCommand(handle, nodeId, "UacOut2MixerSource", CmdUacOut2MixerSource),
-            SendAtCommand(handle, nodeId, "UsbHostProtocol", CmdUsbHostProtocol),
-            SendAtCommand(handle, nodeId, "UsbCdc", CmdUsbCdcOnOff),
-            SendAtCommand(handle, nodeId, "UsbLinkState", CmdUsbLinkState),
-            SendAtCommand(handle, nodeId, "UsbForceSpeed", CmdUsbForceSpeed),
-            SendAtCommand(handle, nodeId, "TxHpd", CmdTxHpdStatus),
-            SendAtCommand(handle, nodeId, "TxVrr", CmdTxVrr),
-            SendAtCommand(handle, nodeId, "TxEdidValid", CmdTxEdidValid),
-            SendAtCommand(handle, nodeId, "UvcOutputTiming", CmdUvcOutputTiming),
-            SendAtCommand(handle, nodeId, "UvcVideoFormat", CmdUvcVideoFormat),
-            SendAtCommand(handle, nodeId, "UvcErrStatus", CmdUvcErrStatus),
-            SendAtCommand(handle, nodeId, "HdcpMode", CmdHdcpMode),
-            SendAtCommand(handle, nodeId, "HdcpVersion", CmdHdcpVersion),
-            SendAtCommand(handle, nodeId, "RxTxHdcpVersion", CmdRxTxHdcpVersion),
-            SendAtCommand(handle, nodeId, "Hdr2SdrExtended", CmdHdr2SdrExtended),
-            SendAtCommand(handle, nodeId, "CustomerVersion", CmdCustomerVersion),
-            SendAtCommand(handle, nodeId, "RescueVersion", CmdRescueVersion),
-            SendAtCommand(handle, nodeId, "Hdr2SdrColorParam", CmdHdr2SdrColorParam),
-            SendAtCommand(handle, nodeId, "ColorRangeSetting", CmdColorRangeSetting),
-            SendAtCommand(handle, nodeId, "Vtem", CmdVtem),
-            SendAtCommand(handle, nodeId, "BitError", CmdBitError),
-            SendAtCommand(handle, nodeId, "RawTiming", CmdRawTiming));
-
-        return BuildSnapshotFromCommandResults(
-            results,
-            interfacePath,
-            nodeId,
-            logDecodeSummary: true,
-            logNoDecodableSourceData: true,
-            useDetailedAudioInputOrigin: true);
-    }
-
     private static NodeReadAttempt BuildSnapshotFromCommandResults(
         NativeXuSnapshotCommandResults results,
         string interfacePath,
@@ -1102,15 +956,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
         }
 
         var baseDiagnosticSummary = BuildDiagnosticSummary(vicCode, timing, frameRateExact, hdrInfo, aviInfo, vfreqHz100, hdr2SdrState, systemInfo);
-        var fullDiagnosticSummary = AppendExtendedDiagnostics(
-            baseDiagnosticSummary,
-            results.AudioFormat, results.AudioSamplingRate, results.InputSource,
-            results.UsbHostProtocol, results.UsbCdc, results.UsbLinkState, results.UsbForceSpeed,
-            results.TxHpd, results.TxVrr,
-            results.UvcOutputTiming, results.UvcVideoFormat, results.UvcErrStatus,
-            results.HdcpMode, results.HdcpVersion, results.RxTxHdcpVersion,
-            results.Hdr2SdrExtended, results.Hdr2SdrColorParam, results.ColorRangeSetting,
-            results.Vtem, results.BitError, results.RawTiming);
+        var fullDiagnosticSummary = AppendExtendedDiagnostics(baseDiagnosticSummary, in results);
 
         var effectiveInputSource = results.InputSource;
         if (IsValidFlashAudioData(results.FlashAudio))
@@ -1122,16 +968,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
 
         var detailEntries = BuildDetailEntries(
             aviInfo, hdrInfo, hdr2SdrState, systemInfo,
-            results.AudioFormat, results.AudioSamplingRate, effectiveInputSource,
-            results.AdcOnOff, results.AdcVolumeGain, results.UacVolumeGain,
-            results.UacOut1Mute, results.UacOut2Mute, results.UacOut2MixerSource,
-            results.UsbHostProtocol, results.UsbCdc, results.UsbLinkState, results.UsbForceSpeed,
-            results.TxHpd, results.TxVrr, results.TxEdidValid,
-            results.UvcOutputTiming, results.UvcVideoFormat, results.UvcErrStatus,
-            results.HdcpMode, results.HdcpVersion, results.RxTxHdcpVersion,
-            results.Hdr2SdrExtended, results.CustomerVersion, results.RescueVersion,
-            results.Hdr2SdrColorParam, results.ColorRangeSetting,
-            results.RawTiming, vicCode, vfreqHz100);
+            in results, effectiveInputSource, vicCode, vfreqHz100);
 
         detailEntries = AppendFlashAudioAnalogGainDetail(detailEntries, results.FlashAudio);
         var analogGainByte = ResolveAnalogGainByte(results.FlashAudio);
@@ -1226,51 +1063,31 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
 
     private static string AppendExtendedDiagnostics(
         string baseSummary,
-        AtCommandResult audioFormat,
-        AtCommandResult audioSamplingRate,
-        AtCommandResult inputSource,
-        AtCommandResult usbHostProtocol,
-        AtCommandResult usbCdc,
-        AtCommandResult usbLinkState,
-        AtCommandResult usbForceSpeed,
-        AtCommandResult txHpd,
-        AtCommandResult txVrr,
-        AtCommandResult uvcOutputTiming,
-        AtCommandResult uvcVideoFormat,
-        AtCommandResult uvcErrStatus,
-        AtCommandResult hdcpMode,
-        AtCommandResult hdcpVersion,
-        AtCommandResult rxTxHdcpVersion,
-        AtCommandResult hdr2SdrExtended,
-        AtCommandResult hdr2SdrColorParam,
-        AtCommandResult colorRangeSetting,
-        AtCommandResult vtem,
-        AtCommandResult bitError,
-        AtCommandResult rawTiming)
+        in NativeXuSnapshotCommandResults results)
     {
         var sb = new StringBuilder(baseSummary);
 
-        AppendResultField(sb, "audiofmt", audioFormat, FormatByte);
-        AppendResultField(sb, "audiosrate", audioSamplingRate, FormatByte);
-        AppendResultField(sb, "inputsrc", inputSource, FormatByte);
-        AppendResultField(sb, "usbproto", usbHostProtocol, FormatInt32);
-        AppendResultField(sb, "usbcdc", usbCdc, FormatByte);
-        AppendResultField(sb, "usblinkst", usbLinkState, FormatByte);
-        AppendResultField(sb, "usbspeed", usbForceSpeed, FormatByte);
-        AppendResultField(sb, "txhpd", txHpd, FormatInt32);
-        AppendResultField(sb, "txvrr", txVrr, FormatInt32);
-        AppendResultField(sb, "uvctiming", uvcOutputTiming, FormatHex);
-        AppendResultField(sb, "uvcfmt", uvcVideoFormat, FormatByte);
-        AppendResultField(sb, "uvcerr", uvcErrStatus, FormatByte);
-        AppendResultField(sb, "hdcpmode", hdcpMode, FormatByte);
-        AppendResultField(sb, "hdcpver", hdcpVersion, FormatHex);
-        AppendResultField(sb, "rxtxhdcp", rxTxHdcpVersion, FormatInt16);
-        AppendResultField(sb, "hdr2sdrext", hdr2SdrExtended, FormatInt32);
-        AppendResultField(sb, "hdr2sdrcolor", hdr2SdrColorParam, FormatInt32);
-        AppendResultField(sb, "colorrangesetting", colorRangeSetting, FormatByte);
-        AppendResultField(sb, "vtem", vtem, FormatInt16);
-        AppendResultField(sb, "biterr", bitError, FormatInt64);
-        AppendResultField(sb, "rawtiming", rawTiming, FormatHex);
+        AppendResultField(sb, "audiofmt", results.AudioFormat, FormatByte);
+        AppendResultField(sb, "audiosrate", results.AudioSamplingRate, FormatByte);
+        AppendResultField(sb, "inputsrc", results.InputSource, FormatByte);
+        AppendResultField(sb, "usbproto", results.UsbHostProtocol, FormatInt32);
+        AppendResultField(sb, "usbcdc", results.UsbCdc, FormatByte);
+        AppendResultField(sb, "usblinkst", results.UsbLinkState, FormatByte);
+        AppendResultField(sb, "usbspeed", results.UsbForceSpeed, FormatByte);
+        AppendResultField(sb, "txhpd", results.TxHpd, FormatInt32);
+        AppendResultField(sb, "txvrr", results.TxVrr, FormatInt32);
+        AppendResultField(sb, "uvctiming", results.UvcOutputTiming, FormatHex);
+        AppendResultField(sb, "uvcfmt", results.UvcVideoFormat, FormatByte);
+        AppendResultField(sb, "uvcerr", results.UvcErrStatus, FormatByte);
+        AppendResultField(sb, "hdcpmode", results.HdcpMode, FormatByte);
+        AppendResultField(sb, "hdcpver", results.HdcpVersion, FormatHex);
+        AppendResultField(sb, "rxtxhdcp", results.RxTxHdcpVersion, FormatInt16);
+        AppendResultField(sb, "hdr2sdrext", results.Hdr2SdrExtended, FormatInt32);
+        AppendResultField(sb, "hdr2sdrcolor", results.Hdr2SdrColorParam, FormatInt32);
+        AppendResultField(sb, "colorrangesetting", results.ColorRangeSetting, FormatByte);
+        AppendResultField(sb, "vtem", results.Vtem, FormatInt16);
+        AppendResultField(sb, "biterr", results.BitError, FormatInt64);
+        AppendResultField(sb, "rawtiming", results.RawTiming, FormatHex);
 
         return sb.ToString();
     }
@@ -1315,34 +1132,8 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
         HdrMetadataInfo hdrInfo,
         byte? hdr2SdrState,
         string? systemInfo,
-        AtCommandResult audioFormat,
-        AtCommandResult audioSamplingRate,
-        AtCommandResult inputSource,
-        AtCommandResult adcOnOff,
-        AtCommandResult adcVolumeGain,
-        AtCommandResult uacVolumeGain,
-        AtCommandResult uacOut1Mute,
-        AtCommandResult uacOut2Mute,
-        AtCommandResult uacOut2MixerSource,
-        AtCommandResult usbHostProtocol,
-        AtCommandResult usbCdc,
-        AtCommandResult usbLinkState,
-        AtCommandResult usbForceSpeed,
-        AtCommandResult txHpd,
-        AtCommandResult txVrr,
-        AtCommandResult txEdidValid,
-        AtCommandResult uvcOutputTiming,
-        AtCommandResult uvcVideoFormat,
-        AtCommandResult uvcErrStatus,
-        AtCommandResult hdcpMode,
-        AtCommandResult hdcpVersion,
-        AtCommandResult rxTxHdcpVersion,
-        AtCommandResult hdr2SdrExtended,
-        AtCommandResult customerVersion,
-        AtCommandResult rescueVersion,
-        AtCommandResult hdr2SdrColorParam,
-        AtCommandResult colorRangeSetting,
-        AtCommandResult rawTiming,
+        in NativeXuSnapshotCommandResults results,
+        AtCommandResult effectiveInputSource,
         int? vicCode,
         int? vfreqHz100)
     {
@@ -1371,38 +1162,38 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
         AddDetail(details, "Signal Details", "VIC", vicCode?.ToString(CultureInfo.InvariantCulture));
         AddDetail(details, "Signal Details", "Vert Freq", vfreqHz100.HasValue ? $"{vfreqHz100.Value / 100.0:0.##} Hz" : null, vfreqHz100?.ToString(CultureInfo.InvariantCulture));
 
-        AddAtDetail(details, TelemetryLabels.GroupAudioInput, "Input Source", inputSource, FormatInputSourceDetail);
-        AddAtDetail(details, TelemetryLabels.GroupAudioInput, "Audio Format", audioFormat, FormatAudioFormatDetail);
-        AddAtDetail(details, TelemetryLabels.GroupAudioInput, "Audio Sample Rate", audioSamplingRate, FormatAudioSampleRateDetail);
-        AddAtDetail(details, TelemetryLabels.GroupAudioInput, TelemetryLabels.AdcAnalog, adcOnOff, FormatOnOffByteDetail);
-        AddAtDetail(details, TelemetryLabels.GroupAudioInput, "ADC Gain", adcVolumeGain, FormatDecimalInt16Detail);
+        AddAtDetail(details, TelemetryLabels.GroupAudioInput, "Input Source", effectiveInputSource, FormatInputSourceDetail);
+        AddAtDetail(details, TelemetryLabels.GroupAudioInput, "Audio Format", results.AudioFormat, FormatAudioFormatDetail);
+        AddAtDetail(details, TelemetryLabels.GroupAudioInput, "Audio Sample Rate", results.AudioSamplingRate, FormatAudioSampleRateDetail);
+        AddAtDetail(details, TelemetryLabels.GroupAudioInput, TelemetryLabels.AdcAnalog, results.AdcOnOff, FormatOnOffByteDetail);
+        AddAtDetail(details, TelemetryLabels.GroupAudioInput, "ADC Gain", results.AdcVolumeGain, FormatDecimalInt16Detail);
 
-        AddAtDetail(details, "Audio / USB", "UAC Volume", uacVolumeGain, FormatDecimalInt16Detail);
-        AddAtDetail(details, "Audio / USB", "UAC Out1 Mute", uacOut1Mute, FormatMuteByteDetail);
-        AddAtDetail(details, "Audio / USB", "UAC Out2 Mute", uacOut2Mute, FormatMuteByteDetail);
-        AddAtDetail(details, "Audio / USB", "UAC Out2 Mixer", uacOut2MixerSource, FormatDecimalInt16Detail);
+        AddAtDetail(details, "Audio / USB", "UAC Volume", results.UacVolumeGain, FormatDecimalInt16Detail);
+        AddAtDetail(details, "Audio / USB", "UAC Out1 Mute", results.UacOut1Mute, FormatMuteByteDetail);
+        AddAtDetail(details, "Audio / USB", "UAC Out2 Mute", results.UacOut2Mute, FormatMuteByteDetail);
+        AddAtDetail(details, "Audio / USB", "UAC Out2 Mixer", results.UacOut2MixerSource, FormatDecimalInt16Detail);
 
-        AddAtDetail(details, "Link / Protection", "USB Protocol", usbHostProtocol, FormatUsbHostProtocolDetail);
-        AddAtDetail(details, "Link / Protection", "USB CDC", usbCdc, FormatCodeByteDetail);
-        AddAtDetail(details, "Link / Protection", "USB Link State", usbLinkState, FormatCodeByteDetail);
-        AddAtDetail(details, "Link / Protection", "USB Speed", usbForceSpeed, FormatCodeByteDetail);
-        AddAtDetail(details, "Link / Protection", "TX Hot Plug", txHpd, FormatModeInt32Detail);
-        AddAtDetail(details, "Link / Protection", "TX VRR", txVrr, FormatModeInt32Detail);
-        AddAtDetail(details, "Link / Protection", "TX EDID Valid", txEdidValid, FormatValidByteDetail);
-        AddAtDetail(details, "Link / Protection", "HDCP Mode", hdcpMode, FormatHdcpModeDetail);
-        AddAtDetail(details, "Link / Protection", "HDCP Version", hdcpVersion, FormatHdcpVersionDetail);
-        AddAtDetail(details, "Link / Protection", "RX/TX HDCP", rxTxHdcpVersion, FormatRxTxHdcpVersionDetail);
+        AddAtDetail(details, "Link / Protection", "USB Protocol", results.UsbHostProtocol, FormatUsbHostProtocolDetail);
+        AddAtDetail(details, "Link / Protection", "USB CDC", results.UsbCdc, FormatCodeByteDetail);
+        AddAtDetail(details, "Link / Protection", "USB Link State", results.UsbLinkState, FormatCodeByteDetail);
+        AddAtDetail(details, "Link / Protection", "USB Speed", results.UsbForceSpeed, FormatCodeByteDetail);
+        AddAtDetail(details, "Link / Protection", "TX Hot Plug", results.TxHpd, FormatModeInt32Detail);
+        AddAtDetail(details, "Link / Protection", "TX VRR", results.TxVrr, FormatModeInt32Detail);
+        AddAtDetail(details, "Link / Protection", "TX EDID Valid", results.TxEdidValid, FormatValidByteDetail);
+        AddAtDetail(details, "Link / Protection", "HDCP Mode", results.HdcpMode, FormatHdcpModeDetail);
+        AddAtDetail(details, "Link / Protection", "HDCP Version", results.HdcpVersion, FormatHdcpVersionDetail);
+        AddAtDetail(details, "Link / Protection", "RX/TX HDCP", results.RxTxHdcpVersion, FormatRxTxHdcpVersionDetail);
 
-        AddAtDetail(details, "Capture Card / UVC", "UVC Timing", uvcOutputTiming, FormatHexDetail);
-        AddAtDetail(details, "Capture Card / UVC", "UVC Format", uvcVideoFormat, FormatHexDetail);
-        AddAtDetail(details, "Capture Card / UVC", "UVC Error", uvcErrStatus, FormatCodeByteDetail);
+        AddAtDetail(details, "Capture Card / UVC", "UVC Timing", results.UvcOutputTiming, FormatHexDetail);
+        AddAtDetail(details, "Capture Card / UVC", "UVC Format", results.UvcVideoFormat, FormatHexDetail);
+        AddAtDetail(details, "Capture Card / UVC", "UVC Error", results.UvcErrStatus, FormatCodeByteDetail);
 
-        AddAtDetail(details, "Raw / Firmware", "HDR2SDR Status", hdr2SdrExtended, FormatModeInt32Detail);
-        AddAtDetail(details, "Raw / Firmware", "Customer Version", customerVersion, FormatAsciiOrHexDetail);
-        AddAtDetail(details, "Raw / Firmware", "Rescue Version", rescueVersion, FormatDecimalInt32Detail);
-        AddAtDetail(details, "Raw / Firmware", "HDR2SDR Color", hdr2SdrColorParam, FormatHexDetail);
-        AddAtDetail(details, "Raw / Firmware", "Color Range", colorRangeSetting, FormatCodeByteDetail);
-        AddAtDetail(details, "Raw / Firmware", "Raw Timing", rawTiming, FormatHexDetail);
+        AddAtDetail(details, "Raw / Firmware", "HDR2SDR Status", results.Hdr2SdrExtended, FormatModeInt32Detail);
+        AddAtDetail(details, "Raw / Firmware", "Customer Version", results.CustomerVersion, FormatAsciiOrHexDetail);
+        AddAtDetail(details, "Raw / Firmware", "Rescue Version", results.RescueVersion, FormatDecimalInt32Detail);
+        AddAtDetail(details, "Raw / Firmware", "HDR2SDR Color", results.Hdr2SdrColorParam, FormatHexDetail);
+        AddAtDetail(details, "Raw / Firmware", "Color Range", results.ColorRangeSetting, FormatCodeByteDetail);
+        AddAtDetail(details, "Raw / Firmware", "Raw Timing", results.RawTiming, FormatHexDetail);
 
         return details;
     }
@@ -1752,7 +1543,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
             return false;
         }
 
-        if (!NativeXuDeviceSupport.TryGetSupported4kXIds(device, out var vendorId, out var productId))
+        if (!NativeXuDeviceSupport.TryGetSupported4kXIds(device, out _, out _))
         {
             return false;
         }
@@ -1771,18 +1562,20 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
                 return false;
             }
 
-            var interfaces = NativeXuDeviceSupport.EnumerateSelectedInterfaces(vendorId, productId, device);
+            var interfaces = NativeXuDeviceSupport.EnumerateSelectedInterfacePath(device.NativeXuInterfacePath);
             foreach (var ksInterface in interfaces)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                using var handle = KsExtensionUnitNative.TryOpen(ksInterface.Path, out _);
+                using var handle = KsExtensionUnitNative.TryOpen(ksInterface.Path, out var openErrorCode);
                 if (handle is null)
                 {
+                    Logger.Log($"NATIVEXU_OPEN_FAILED path='{ksInterface.Path}' detail='{DescribeWin32Detail(ksInterface.Path, openErrorCode)}'");
                     continue;
                 }
 
-                if (!KsExtensionUnitNative.TryReadTopologyNodes(handle, out var nodes, out _))
+                if (!KsExtensionUnitNative.TryReadTopologyNodes(handle, out var nodes, out var topologyError))
                 {
+                    Logger.Log($"NATIVEXU_TOPOLOGY_FAILED path='{ksInterface.Path}' error='{topologyError}'");
                     continue;
                 }
 
@@ -1834,7 +1627,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
             return null;
         }
 
-        if (!NativeXuDeviceSupport.TryGetSupported4kXIds(device, out var vendorId, out var productId))
+        if (!NativeXuDeviceSupport.TryGetSupported4kXIds(device, out _, out _))
         {
             return null;
         }
@@ -1853,18 +1646,20 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
                 return null;
             }
 
-            var interfaces = NativeXuDeviceSupport.EnumerateSelectedInterfaces(vendorId, productId, device);
+            var interfaces = NativeXuDeviceSupport.EnumerateSelectedInterfacePath(device.NativeXuInterfacePath);
             foreach (var ksInterface in interfaces)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                using var handle = KsExtensionUnitNative.TryOpen(ksInterface.Path, out _);
+                using var handle = KsExtensionUnitNative.TryOpen(ksInterface.Path, out var openErrorCode);
                 if (handle is null)
                 {
+                    Logger.Log($"NATIVEXU_OPEN_FAILED path='{ksInterface.Path}' detail='{DescribeWin32Detail(ksInterface.Path, openErrorCode)}'");
                     continue;
                 }
 
-                if (!KsExtensionUnitNative.TryReadTopologyNodes(handle, out var nodes, out _))
+                if (!KsExtensionUnitNative.TryReadTopologyNodes(handle, out var nodes, out var topologyError))
                 {
+                    Logger.Log($"NATIVEXU_TOPOLOGY_FAILED path='{ksInterface.Path}' error='{topologyError}'");
                     continue;
                 }
 
@@ -1992,21 +1787,12 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
             $"HpOutGain gain={gain}",
             ct);
 
-    // Public wrapper for probe tools
-    public static Task<bool> SendNamedSetCommandPublicAsync(
+    public static async Task<bool> SendNamedSetCommandAsync(
         CaptureDevice? device,
         int cmdCode,
         byte[] inputData,
         string operation,
         CancellationToken cancellationToken = default)
-        => SendNamedSetCommandAsync(device, cmdCode, inputData, operation, cancellationToken);
-
-    private static async Task<bool> SendNamedSetCommandAsync(
-        CaptureDevice? device,
-        int cmdCode,
-        byte[] inputData,
-        string operation,
-        CancellationToken cancellationToken)
     {
         Logger.Log(
             $"NATIVEXU_SET_REQUEST op='{operation}' cmd=0x{cmdCode:X2} " +
@@ -2037,7 +1823,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
             return false;
         }
 
-        if (!NativeXuDeviceSupport.TryGetSupported4kXIds(device, out var vendorId, out var productId))
+        if (!NativeXuDeviceSupport.TryGetSupported4kXIds(device, out _, out _))
         {
             return false;
         }
@@ -2059,18 +1845,20 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
                 return false;
             }
 
-            var interfaces = NativeXuDeviceSupport.EnumerateSelectedInterfaces(vendorId, productId, device);
+            var interfaces = NativeXuDeviceSupport.EnumerateSelectedInterfacePath(device.NativeXuInterfacePath);
             foreach (var ksInterface in interfaces)
             {
                 ct.ThrowIfCancellationRequested();
-                using var handle = KsExtensionUnitNative.TryOpen(ksInterface.Path, out _);
+                using var handle = KsExtensionUnitNative.TryOpen(ksInterface.Path, out var openErrorCode);
                 if (handle is null)
                 {
+                    Logger.Log($"NATIVEXU_OPEN_FAILED path='{ksInterface.Path}' detail='{DescribeWin32Detail(ksInterface.Path, openErrorCode)}'");
                     continue;
                 }
 
-                if (!KsExtensionUnitNative.TryReadTopologyNodes(handle, out var nodes, out _))
+                if (!KsExtensionUnitNative.TryReadTopologyNodes(handle, out var nodes, out var topologyError))
                 {
+                    Logger.Log($"NATIVEXU_TOPOLOGY_FAILED path='{ksInterface.Path}' error='{topologyError}'");
                     continue;
                 }
 
@@ -2134,7 +1922,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
             return false;
         }
 
-        if (!NativeXuDeviceSupport.TryGetSupported4kXIds(device, out var vendorId, out var productId))
+        if (!NativeXuDeviceSupport.TryGetSupported4kXIds(device, out _, out _))
         {
             return false;
         }
@@ -2156,18 +1944,20 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
                 return false;
             }
 
-            var interfaces = NativeXuDeviceSupport.EnumerateSelectedInterfaces(vendorId, productId, device);
+            var interfaces = NativeXuDeviceSupport.EnumerateSelectedInterfacePath(device.NativeXuInterfacePath);
             foreach (var ksInterface in interfaces)
             {
                 ct.ThrowIfCancellationRequested();
-                using var handle = KsExtensionUnitNative.TryOpen(ksInterface.Path, out _);
+                using var handle = KsExtensionUnitNative.TryOpen(ksInterface.Path, out var openErrorCode);
                 if (handle is null)
                 {
+                    Logger.Log($"NATIVEXU_OPEN_FAILED path='{ksInterface.Path}' detail='{DescribeWin32Detail(ksInterface.Path, openErrorCode)}'");
                     continue;
                 }
 
-                if (!KsExtensionUnitNative.TryReadTopologyNodes(handle, out var nodes, out _))
+                if (!KsExtensionUnitNative.TryReadTopologyNodes(handle, out var nodes, out var topologyError))
                 {
+                    Logger.Log($"NATIVEXU_TOPOLOGY_FAILED path='{ksInterface.Path}' error='{topologyError}'");
                     continue;
                 }
 

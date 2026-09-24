@@ -151,7 +151,7 @@ public partial class CaptureService
 
     private sealed class RuntimeRecordingIntegritySnapshotFields
     {
-        public string Status { get; init; } = "NotStarted";
+        public RecordingIntegrityStatus Status { get; init; } = RecordingIntegrityStatus.NotStarted;
         public bool Complete { get; init; }
         public string Backend { get; init; } = "None";
         public DateTimeOffset? CompletedUtc { get; init; }
@@ -169,7 +169,7 @@ public partial class CaptureService
         public long BackpressureWaitMs { get; init; }
         public long BackpressureEvents { get; init; }
         public long BackpressureMaxWaitMs { get; init; }
-        public string AudioStatus { get; init; } = "Disabled";
+        public RecordingIntegrityAudioStatus AudioStatus { get; init; } = RecordingIntegrityAudioStatus.Disabled;
         public bool AudioEnabled { get; init; }
         public bool AudioCaptureActive { get; init; }
         public long AudioFramesArrived { get; init; }
@@ -283,8 +283,7 @@ public partial class CaptureService
             RecordingFinalizationProgressStage = recordingOutcome.ProgressStage,
             LastRecordingFinalizationProgressUtc = recordingOutcome.LastProgressUtc,
             FlashbackExportOutputPath = _flashbackExport.OutputPath,
-            FlashbackExportVerificationFormat = ResolveFlashbackExportVerificationFormat(requestedSettings, unifiedVideoCapture),
-            FlashbackCodecDowngradeReason = ResolveFlashbackCodecDowngradeReason(requestedSettings, unifiedVideoCapture),
+            FlashbackExportVerificationFormat = ResolveFlashbackExportVerificationFormat(requestedSettings),
             RuntimeAvSyncDriftMs = runtimeAvSyncDriftMs,
             RuntimeAvSyncDriftRateMsPerSec = runtimeAvSyncDriftRate,
             RuntimeAvSyncEncoderDriftMs = runtimeAvSyncEncoderDriftMs,
@@ -1028,8 +1027,6 @@ public partial class CaptureService
                 // Retained wire label; recording backends mux audio in process.
                 // It is no longer a selectable recording mode.
                 AudioPathMode = requestedSettings is null ? "None" : "PostMuxDefault",
-                MuxAttempted = false,
-                MuxSucceeded = null,
                 RecordingIntegrityStatus = recordingIntegrity.Status,
                 RecordingIntegrityComplete = recordingIntegrity.Complete,
                 RecordingIntegrityBackend = recordingIntegrity.Backend,
@@ -1218,7 +1215,9 @@ public partial class CaptureService
         return new PreviewFrameCaptureResult
         {
             Succeeded = false,
-            Message = "No active preview renderer."
+            Message = cancellationToken.IsCancellationRequested
+                ? "Preview frame capture canceled."
+                : "No active preview renderer."
         };
     }
 

@@ -151,11 +151,6 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
         }
     }
 
-
-    /// <summary>Forwards to <see cref="FfmpegRuntimeInit.EnsureInitialized"/>.</summary>
-    public static void InitializeFFmpeg(bool requireNativeRuntime)
-        => FfmpegRuntimeInit.EnsureInitialized(requireNativeRuntime);
-
     private static void ValidateOptions(LibAvEncoderOptions options)
     {
         ValidateRequiredVideoOptions(options);
@@ -1219,19 +1214,7 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
             _hwFrame = null;
         }
 
-        if (_hwFramesCtx != null)
-        {
-            var hwFramesCtx = _hwFramesCtx;
-            ffmpeg.av_buffer_unref(&hwFramesCtx);
-            _hwFramesCtx = null;
-        }
-
-        if (_hwDeviceCtx != null)
-        {
-            var hwDeviceCtx = _hwDeviceCtx;
-            ffmpeg.av_buffer_unref(&hwDeviceCtx);
-            _hwDeviceCtx = null;
-        }
+        ReleaseRetainedHardwareContexts();
 
         _useHardwareFrames = false;
         _useCudaHardwareFrames = false;
@@ -1306,10 +1289,10 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
             _videoCodecCtx = null;
         }
 
-        if (_audio.ResampleBuffer != null)
+        if (_audio.InputAccumulatorBuffer != null)
         {
-            ffmpeg.av_free(_audio.ResampleBuffer);
-            _audio.ResampleBuffer = null;
+            ffmpeg.av_free(_audio.InputAccumulatorBuffer);
+            _audio.InputAccumulatorBuffer = null;
         }
 
         if (_audio.SampleQueueBuffer != null)
@@ -1318,10 +1301,10 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
             _audio.SampleQueueBuffer = null;
         }
 
-        if (_mic.ResampleBuffer != null)
+        if (_mic.InputAccumulatorBuffer != null)
         {
-            ffmpeg.av_free(_mic.ResampleBuffer);
-            _mic.ResampleBuffer = null;
+            ffmpeg.av_free(_mic.InputAccumulatorBuffer);
+            _mic.InputAccumulatorBuffer = null;
         }
 
         if (_mic.SampleQueueBuffer != null)
@@ -1361,6 +1344,23 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
         _flushSent = false;
 
         return finalMicSamplesReceived;
+    }
+
+    private void ReleaseRetainedHardwareContexts()
+    {
+        if (_hwFramesCtx != null)
+        {
+            var hwFramesCtx = _hwFramesCtx;
+            ffmpeg.av_buffer_unref(&hwFramesCtx);
+            _hwFramesCtx = null;
+        }
+
+        if (_hwDeviceCtx != null)
+        {
+            var hwDeviceCtx = _hwDeviceCtx;
+            ffmpeg.av_buffer_unref(&hwDeviceCtx);
+            _hwDeviceCtx = null;
+        }
     }
 }
 

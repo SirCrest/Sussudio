@@ -117,7 +117,7 @@ internal static class Program
     private sealed class Options
     {
         public string? Command { get; set; }
-        public string PipeName { get; set; } = AutomationPipeProtocol.DefaultPipeName;
+        public string PipeName { get; set; } = AutomationPipeProtocol.ResolvePipeName(null);
         public string? AuthToken { get; set; }
         public string PayloadJson { get; set; } = "{}";
         public string PayloadBase64 { get; set; } = string.Empty;

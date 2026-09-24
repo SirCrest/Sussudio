@@ -7,6 +7,11 @@ name is:
 SussudioAutomation
 ```
 
+Clients use `SUSSUDIO_AUTOMATION_PIPE` when no pipe name is supplied, then fall
+back to `SussudioAutomation`. Set the variable for both the app and client
+processes when connecting through a custom pipe. `ssctl --pipe` and
+AutomationClient `--pipe`/`-p` values override the environment for that client.
+
 The shared command IDs, protocol constants, manifest/catalog, and pipe security
 policy live in `Sussudio.Automation.Contracts/`.
 `tools/Common/` remains helper-only for shared clients, formatters, diagnostic
@@ -26,8 +31,42 @@ Then keep these consumers in sync:
 - `tools/send-automation-command.ps1`
 - `tests/Sussudio.Tests/`
 
-If `SUSSUDIO_AUTOMATION_TOKEN` is set, automation clients must provide the same
-token.
+The app reads `SUSSUDIO_AUTOMATION_TOKEN` at startup. When a nonblank server token
+is configured, every command requires the same token, including
+`GetAutomationManifest`. Clients should send it in the request's top-level
+`authToken` field; comparison is exact and case-sensitive.
+
+ssctl accepts the global `--token` or `-t` option **before** the command. MCP
+accepts `--token` when its server process starts; credentials are configured once
+for the server, not exposed as arguments on individual MCP tools:
+
+```powershell
+ssctl --token "<token>" manifest
+ssctl -t "<token>" state
+McpServer --token "<token>"
+```
+
+Both clients pass an explicitly supplied token unchanged. When that value is
+omitted or null, the shared request builder reads the client's
+`SUSSUDIO_AUTOMATION_TOKEN` environment variable. A non-null empty or whitespace
+value remains explicit and does not trigger that environment fallback. These
+options do not modify the process environment. AutomationClient and
+`tools/send-automation-command.ps1` retain their existing explicit-token route.
+
+For compatibility, the server accepts `payload.authToken` on **all commands**
+when the top-level `authToken` is null, empty, or whitespace. A wrong nonblank
+top-level token takes precedence and cannot be rescued by a matching payload
+token. Missing or incorrect effective credentials produce `unauthorized`.
+New clients should use the top-level field.
+
+- `invalid-state` means the request was valid but cannot be applied in the current
+  app state, such as changing Flashback settings during a Flashback recording.
+
+The manifest's `Authentication` object describes these locations, precedence,
+and the server-token configuration rule. It is static contract metadata: it
+contains no credential and does not report whether a particular running server
+has configured a token. Retrieve the manifest with valid credentials when the
+server requires authentication.
 
 Ownership for each consumer is mapped in `docs/architecture/AGENT_MAP.md`; the
 architecture guardrail tests cross-check this checklist against that map.

@@ -27,7 +27,9 @@ internal sealed class MainViewModelDeviceAudioRequestControllerContext
     public required Func<CaptureDevice?, bool, CancellationToken, Task> RefreshDeviceAudioControlsAsync { get; init; }
     public required Func<string, CaptureDevice?, CancellationToken, Task<bool>> ApplyDeviceAudioModeAsync { get; init; }
     public required Func<string, CaptureDevice?, CancellationToken, Task<bool>> ApplyAnalogAudioGainAsync { get; init; }
+    public required Func<CaptureDevice, byte, CancellationToken, Task<bool>> PersistAnalogAudioGainAsync { get; init; }
     public required Func<CaptureDevice, bool> IsCurrentSelectedDevice { get; init; }
+    public required Action<string> SetStatusText { get; init; }
 }
 
 /// <summary>
@@ -40,6 +42,7 @@ internal sealed class MainViewModelDeviceAudioRequestController
     private CancellationTokenSource? _gainXuDebounceCts;
     private CancellationTokenSource? _deviceAudioModeCts;
     private CancellationTokenSource? _deviceAudioRefreshCts;
+    private long _gainFlashGeneration;
 
     public MainViewModelDeviceAudioRequestController(MainViewModelDeviceAudioRequestControllerContext context)
     {
@@ -227,10 +230,11 @@ internal sealed class MainViewModelDeviceAudioRequestController
     public void ScheduleAnalogGainFlashPersist(CaptureDevice device, byte gainByte)
     {
         var oldCts = _gainFlashDebounceCts;
-        oldCts?.Cancel();
         var cts = new CancellationTokenSource();
         var token = cts.Token;
+        var generation = Interlocked.Increment(ref _gainFlashGeneration);
         _gainFlashDebounceCts = cts;
+        oldCts?.Cancel();
         _ = Task.Run(async () =>
         {
             try
@@ -238,7 +242,12 @@ internal sealed class MainViewModelDeviceAudioRequestController
                 await Task.Delay(300, token).ConfigureAwait(false);
                 if (!token.IsCancellationRequested && _context.IsCurrentSelectedDevice(device))
                 {
-                    await NativeXuAtCommandProvider.SetAnalogGainAsync(device, gainByte, persistFlash: true, token).ConfigureAwait(false);
+                    var persisted = await _context.PersistAnalogAudioGainAsync(device, gainByte, token).ConfigureAwait(false);
+                    if (!persisted)
+                    {
+                        Logger.Log($"NATIVEXU_ANALOG_GAIN_FLASH_PERSIST_FAILED device='{device.Name}' gain=0x{gainByte:X2}");
+                        QueueAnalogGainFlashPersistFailure(device, generation, token);
+                    }
                 }
             }
             catch (OperationCanceledException)
@@ -259,6 +268,7 @@ internal sealed class MainViewModelDeviceAudioRequestController
 
     public void CancelPendingAudioControlWork()
     {
+        Interlocked.Increment(ref _gainFlashGeneration);
         var flashCts = _gainFlashDebounceCts;
         _gainFlashDebounceCts = null;
         flashCts?.Cancel();
@@ -274,6 +284,36 @@ internal sealed class MainViewModelDeviceAudioRequestController
         var refreshCts = _deviceAudioRefreshCts;
         _deviceAudioRefreshCts = null;
         refreshCts?.Cancel();
+    }
+
+    private void QueueAnalogGainFlashPersistFailure(
+        CaptureDevice device,
+        long generation,
+        CancellationToken cancellationToken)
+    {
+        if (cancellationToken.IsCancellationRequested ||
+            generation != Interlocked.Read(ref _gainFlashGeneration) ||
+            !_context.IsCurrentSelectedDevice(device))
+        {
+            return;
+        }
+
+        var enqueued = _context.EnqueueUiOperation(() =>
+        {
+            if (!cancellationToken.IsCancellationRequested &&
+                generation == Interlocked.Read(ref _gainFlashGeneration) &&
+                !_context.IsDisposing() &&
+                _context.IsCurrentSelectedDevice(device))
+            {
+                _context.SetStatusText("Analog gain applied but could not be saved to the device; it may revert after power cycle.");
+            }
+
+            return Task.CompletedTask;
+        }, "analog gain flash persist failed", true);
+        if (!enqueued)
+        {
+            Logger.Log("NATIVEXU_ANALOG_GAIN_FLASH_PERSIST_STATUS_ENQUEUE_FAILED");
+        }
     }
 }
 
@@ -317,8 +357,8 @@ internal sealed class MainViewModelDeviceRefreshController
     }
 
     public async Task RefreshDevicesAsync(
-        CancellationToken cancellationToken = default,
-        bool throwOnScanFailure = false)
+        bool throwOnScanFailure = false,
+        CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         var requestGeneration = Interlocked.Increment(ref _refreshRequestGeneration);
@@ -460,8 +500,7 @@ internal sealed class MainViewModelDeviceFormatProbeControllerContext
     public required Func<Action, bool> TryEnqueueOnUiThread { get; init; }
     public required Func<long> ReadDeviceScanGeneration { get; init; }
     public required Func<string, CaptureDevice?> FindDeviceById { get; init; }
-    public required Action<bool> SetPendingSdrAutoSelectionForDeviceChange { get; init; }
-    public required Action<int?> SetPendingSdrAutoFriendlyFrameRateBucket { get; init; }
+    public required CaptureModeSelectionState ModeSelection { get; init; }
     public required Func<CaptureDevice?> GetSelectedDevice { get; init; }
     public required Func<bool> IsPreviewing { get; init; }
     public required Func<bool> IsInitialized { get; init; }
@@ -507,8 +546,7 @@ internal sealed class MainViewModelDeviceFormatProbeController
             {
                 if (string.Equals(_context.GetSelectedDevice()?.Id, target.Id, StringComparison.OrdinalIgnoreCase))
                 {
-                    _context.SetPendingSdrAutoSelectionForDeviceChange(false);
-                    _context.SetPendingSdrAutoFriendlyFrameRateBucket(null);
+                    _context.ModeSelection.ClearPendingSdrAutoSelection();
                 }
 
                 Logger.Log($"Format probe failed for {e.DeviceName}: {e.Error}");
@@ -599,8 +637,7 @@ internal sealed class MainViewModelDeviceFormatProbeRetargetApplierContext
     public required Action<double> SetSelectedFrameRate { get; init; }
     public required Func<MediaFormat?> GetSelectedFormat { get; init; }
     public required Func<string, bool> AvailableResolutionsContains { get; init; }
-    public required Action<bool> SetIsRebuildingModeOptions { get; init; }
-    public required Action<bool> SetIsApplyingAutomaticResolutionSelection { get; init; }
+    public required Action<Action> ApplyCaptureModeOptions { get; init; }
     public required Action<Action> ApplyCaptureSelectionWithoutReinitialize { get; init; }
     public required Action RebuildFrameRateOptions { get; init; }
     public required Func<string, Task> ReinitializeDeviceAsync { get; init; }
@@ -664,17 +701,10 @@ internal sealed class MainViewModelDeviceFormatProbeRetargetApplier
                 $"Format probe detected MJPG-only mode at {_context.GetSelectedResolution()}@{_context.GetSelectedFrameRate():0.###}; " +
                 $"retargeting SDR to NV12-capable mode {retargetDecision.TargetResolution}@{retargetDecision.TargetFrameRate:0.###}.");
 
-            _context.SetIsRebuildingModeOptions(true);
-            _context.SetIsApplyingAutomaticResolutionSelection(true);
-            try
+            _context.ApplyCaptureModeOptions(() =>
             {
                 _context.SetSelectedResolution(retargetDecision.TargetResolution);
-            }
-            finally
-            {
-                _context.SetIsApplyingAutomaticResolutionSelection(false);
-                _context.SetIsRebuildingModeOptions(false);
-            }
+            });
 
             _context.ApplyCaptureSelectionWithoutReinitialize(_context.RebuildFrameRateOptions);
 
@@ -719,20 +749,13 @@ internal sealed class MainViewModelDeviceFormatProbeRetargetApplier
 
         if (retargetDecision.Kind == DeviceFormatProbeRetargetDecisionKind.RestoreActiveSelection)
         {
-            _context.SetIsRebuildingModeOptions(true);
-            _context.SetIsApplyingAutomaticResolutionSelection(true);
-            try
+            _context.ApplyCaptureModeOptions(() =>
             {
                 _context.SetSelectedResolution(previousResolution);
                 _context.SetSelectedFrameRate(previousFrameRate);
                 _context.UpdateSelectedFormat();
                 _context.UpdateTargetSummary();
-            }
-            finally
-            {
-                _context.SetIsApplyingAutomaticResolutionSelection(false);
-                _context.SetIsRebuildingModeOptions(false);
-            }
+            });
         }
 
         return false;
@@ -798,19 +821,8 @@ internal sealed class MainViewModelCaptureModeOptionRebuildControllerContext
     public required Func<bool> IsPreviewing { get; init; }
     public required Func<bool> IsAutoFrameRateSelected { get; init; }
     public required Action<bool> SetIsAutoFrameRateSelected { get; init; }
-    public required Func<bool> HasUserOverriddenResolutionForCurrentMode { get; init; }
-    public required Func<bool> HasUserOverriddenFrameRateForCurrentMode { get; init; }
-    public required Func<bool> IsPendingSdrAutoSelectionForDeviceChange { get; init; }
-    public required Action<bool> SetPendingSdrAutoSelectionForDeviceChange { get; init; }
-    public required Func<int?> GetPendingSdrAutoFriendlyFrameRateBucket { get; init; }
-    public required Action<int?> SetPendingSdrAutoFriendlyFrameRateBucket { get; init; }
-    public required Func<bool> IsForceSourceAutoRetarget { get; init; }
-    public required Action<bool> SetForceSourceAutoRetarget { get; init; }
-    public required Func<string?> GetLastKnownResolutionKey { get; init; }
-    public required Action<string?> SetLastKnownResolutionKey { get; init; }
-    public required Action<bool> SetIsRebuildingModeOptions { get; init; }
-    public required Action<bool> SetIsApplyingAutomaticResolutionSelection { get; init; }
-    public required Action<bool> SetIsApplyingAutomaticFrameRateSelection { get; init; }
+    public required CaptureModeSelectionState ModeSelection { get; init; }
+    public required Action<Action> ApplyCaptureModeOptions { get; init; }
     public required Action<Action> ApplyCaptureSelectionWithoutReinitialize { get; init; }
     public required Action<double?> SetDetectedSourceFrameRate { get; init; }
     public required Action<string?> SetDetectedSourceFrameRateArg { get; init; }
@@ -994,8 +1006,7 @@ internal sealed class MainViewModelCaptureModeOptionRebuildController
         _context.SetDetectedSourceFrameRateArg(sourceRate.Arg);
         _context.SetSourceFrameRateOrigin(sourceRate.Origin);
 
-        _context.SetIsRebuildingModeOptions(true);
-        try
+        _context.ApplyCaptureModeOptions(() =>
         {
             _context.AvailableFrameRates.Clear();
             foreach (var option in availableOptions)
@@ -1008,10 +1019,10 @@ internal sealed class MainViewModelCaptureModeOptionRebuildController
                 AutoFrameRateOptionAvailable: autoFrameRateOption != null,
                 ForceAutoSelection: false,
                 IsAutoFrameRateSelected: _context.IsAutoFrameRateSelected(),
-                HasUserOverriddenFrameRateForCurrentMode: _context.HasUserOverriddenFrameRateForCurrentMode(),
+                HasUserOverriddenFrameRateForCurrentMode: _context.ModeSelection.HasUserOverriddenFrameRateForCurrentMode,
                 IsHdrEnabled: _context.IsHdrEnabled(),
-                PendingSdrAutoSelectionForDeviceChange: _context.IsPendingSdrAutoSelectionForDeviceChange(),
-                PendingSdrAutoFriendlyFrameRateBucket: _context.GetPendingSdrAutoFriendlyFrameRateBucket(),
+                PendingSdrAutoSelectionForDeviceChange: _context.ModeSelection.PendingSdrAutoSelectionForDeviceChange,
+                PendingSdrAutoFriendlyFrameRateBucket: _context.ModeSelection.PendingSdrAutoFriendlyFrameRateBucket,
                 Source: new FrameRateAutoSelectionSource(sourceRate.Rate, sourceTimingFamilyKnown, sourceTimingFamily),
                 PreviousRate: previousRate));
 
@@ -1029,31 +1040,24 @@ internal sealed class MainViewModelCaptureModeOptionRebuildController
                 _context.SetStatusText($"No HDR-capable frame rate is available for {_context.GetSelectedResolutionDisplayText()}.");
             }
 
-            if (!_context.IsHdrEnabled() && _context.IsPendingSdrAutoSelectionForDeviceChange() && selection.Selected != null)
+            if (!_context.IsHdrEnabled() && _context.ModeSelection.PendingSdrAutoSelectionForDeviceChange && selection.Selected != null)
             {
-                _context.SetPendingSdrAutoSelectionForDeviceChange(false);
-                _context.SetPendingSdrAutoFriendlyFrameRateBucket(null);
+                _context.ModeSelection.ClearPendingSdrAutoSelection();
             }
-        }
-        finally
-        {
-            _context.SetIsApplyingAutomaticFrameRateSelection(false);
-            _context.SetIsRebuildingModeOptions(false);
-        }
+        });
 
         RebuildVideoFormatOptions();
         UpdateSelectedFormat();
         _context.UpdateTargetSummary();
-        _context.SetForceSourceAutoRetarget(false);
     }
 
-    public void RebuildResolutionOptions()
+    public void RebuildResolutionOptions(bool forceSourceAutoRetarget)
     {
         var previousSelection = _context.GetSelectedResolution();
         var previousRate = _context.GetSelectedFrameRate();
         var desiredSelection = !string.IsNullOrWhiteSpace(previousSelection)
             ? previousSelection
-            : _context.GetLastKnownResolutionKey();
+            : _context.ModeSelection.LastKnownResolutionKey;
         var options = CaptureModeOptionsBuilder.BuildResolutionOptions(
                 _context.GetResolutionToFormats(),
                 _context.IsHdrEnabled(),
@@ -1076,9 +1080,7 @@ internal sealed class MainViewModelCaptureModeOptionRebuildController
                     ?? _context.AvailableResolutions.FirstOrDefault();
                 if (retainedSelection != null)
                 {
-                    _context.SetIsRebuildingModeOptions(true);
-                    _context.SetIsApplyingAutomaticResolutionSelection(true);
-                    try
+                    _context.ApplyCaptureModeOptions(() =>
                     {
                         var previousSelectedResolution = _context.GetSelectedResolution();
                         _context.SetSelectedResolution(retainedSelection.Value);
@@ -1089,14 +1091,9 @@ internal sealed class MainViewModelCaptureModeOptionRebuildController
 
                         if (_context.TryResolveResolutionKey(retainedSelection.Value, out var retainedResolutionKey))
                         {
-                            _context.SetLastKnownResolutionKey(retainedResolutionKey);
+                            _context.ModeSelection.LastKnownResolutionKey = retainedResolutionKey;
                         }
-                    }
-                    finally
-                    {
-                        _context.SetIsApplyingAutomaticResolutionSelection(false);
-                        _context.SetIsRebuildingModeOptions(false);
-                    }
+                    });
                 }
 
                 RebuildDependentOptions();
@@ -1104,22 +1101,14 @@ internal sealed class MainViewModelCaptureModeOptionRebuildController
                 return;
             }
 
-            _context.SetIsRebuildingModeOptions(true);
-            try
+            _context.ApplyCaptureModeOptions(() =>
             {
                 _context.AvailableResolutions.Clear();
-                _context.SetIsApplyingAutomaticResolutionSelection(true);
                 _context.SetSelectedResolution(null);
-                _context.SetIsApplyingAutomaticResolutionSelection(false);
                 ClearAutoResolutionState();
                 _context.SetHdrResolutionSupportHint(string.Empty);
                 _context.SetDisabledResolutionReason(string.Empty);
-            }
-            finally
-            {
-                _context.SetIsApplyingAutomaticResolutionSelection(false);
-                _context.SetIsRebuildingModeOptions(false);
-            }
+            });
 
             RebuildDependentOptions();
             _context.UpdateTargetSummary();
@@ -1128,7 +1117,7 @@ internal sealed class MainViewModelCaptureModeOptionRebuildController
 
         var allowSourceAutoSelect =
             string.Equals(previousSelection, _context.AutoResolutionValue, StringComparison.OrdinalIgnoreCase) ||
-            (_context.IsHdrEnabled() && (_context.IsForceSourceAutoRetarget() || !_context.HasUserOverriddenResolutionForCurrentMode()));
+            (_context.IsHdrEnabled() && (forceSourceAutoRetarget || !_context.ModeSelection.HasUserOverriddenResolutionForCurrentMode));
         var selection = CaptureResolutionSelectionPolicy.Select(new CaptureResolutionSelectionRequest(
             options,
             _context.GetResolutionToFormats(),
@@ -1137,12 +1126,12 @@ internal sealed class MainViewModelCaptureModeOptionRebuildController
             previousRate,
             _context.IsHdrEnabled(),
             allowSourceAutoSelect,
-            _context.IsPendingSdrAutoSelectionForDeviceChange()));
+            _context.ModeSelection.PendingSdrAutoSelectionForDeviceChange));
         var selected = selection.Selected;
         var hdrHint = selection.HdrHint;
         if (!_context.IsHdrEnabled() && selection.SdrAutoFriendlyFrameRateBucket.HasValue)
         {
-            _context.SetPendingSdrAutoFriendlyFrameRateBucket(selection.SdrAutoFriendlyFrameRateBucket.Value);
+            _context.ModeSelection.PendingSdrAutoFriendlyFrameRateBucket = selection.SdrAutoFriendlyFrameRateBucket.Value;
         }
 
         var selectAutoOption = autoOption != null && ShouldSelectAutoResolutionOption(previousSelection);
@@ -1153,8 +1142,7 @@ internal sealed class MainViewModelCaptureModeOptionRebuildController
             ? options
             : new[] { autoOption }.Concat(options).ToList();
 
-        _context.SetIsRebuildingModeOptions(true);
-        try
+        _context.ApplyCaptureModeOptions(() =>
         {
             UpdateAutoResolutionState(autoSelection);
             _context.AvailableResolutions.Clear();
@@ -1163,7 +1151,6 @@ internal sealed class MainViewModelCaptureModeOptionRebuildController
                 _context.AvailableResolutions.Add(option);
             }
 
-            _context.SetIsApplyingAutomaticResolutionSelection(true);
             if (selectedDropdownOption != null)
             {
                 var previousSelectedResolution = _context.GetSelectedResolution();
@@ -1174,10 +1161,9 @@ internal sealed class MainViewModelCaptureModeOptionRebuildController
                 }
             }
 
-            _context.SetIsApplyingAutomaticResolutionSelection(false);
             if (selected != null)
             {
-                _context.SetLastKnownResolutionKey(selected.Value);
+                _context.ModeSelection.LastKnownResolutionKey = selected.Value;
             }
 
             if (_context.IsHdrEnabled())
@@ -1197,12 +1183,7 @@ internal sealed class MainViewModelCaptureModeOptionRebuildController
             _context.SetDisabledResolutionReason(selected is { IsEnabled: false }
                 ? selected.DisableReason
                 : string.Empty);
-        }
-        finally
-        {
-            _context.SetIsApplyingAutomaticResolutionSelection(false);
-            _context.SetIsRebuildingModeOptions(false);
-        }
+        });
 
         RebuildDependentOptions();
     }
@@ -1220,7 +1201,7 @@ internal sealed class MainViewModelCaptureModeOptionRebuildController
     private bool ShouldSelectAutoResolutionOption(string? previousSelection)
         => string.Equals(previousSelection, _context.AutoResolutionValue, StringComparison.OrdinalIgnoreCase) ||
            string.IsNullOrWhiteSpace(previousSelection) ||
-           !_context.HasUserOverriddenResolutionForCurrentMode();
+           !_context.ModeSelection.HasUserOverriddenResolutionForCurrentMode;
 
     private ResolutionOption CreateAutoResolutionOption()
         => new()
@@ -1619,20 +1600,13 @@ internal sealed class MainViewModelSourceTelemetryControllerContext
     public required Action<string> SetSourceFrameRateOrigin { get; init; }
     public required Func<string> GetSourceTelemetrySummaryText { get; init; }
     public required Action<string> SetSourceTelemetrySummaryText { get; init; }
-    public required Func<string?> GetLastSourceModeKey { get; init; }
-    public required Action<string?> SetLastSourceModeKey { get; init; }
+    public required CaptureModeSelectionState ModeSelection { get; init; }
     public required Func<string?> GetSelectedResolution { get; init; }
     public required Func<string?, bool> IsAutoResolutionValue { get; init; }
-    public required Func<bool> HasUserOverriddenResolutionForCurrentMode { get; init; }
-    public required Action<bool> SetHasUserOverriddenResolutionForCurrentMode { get; init; }
     public required Func<bool> IsAutoFrameRateSelected { get; init; }
-    public required Func<bool> HasUserOverriddenFrameRateForCurrentMode { get; init; }
-    public required Action<bool> SetHasUserOverriddenFrameRateForCurrentMode { get; init; }
-    public required Func<bool> ForceSourceAutoRetarget { get; init; }
-    public required Action<bool> SetForceSourceAutoRetarget { get; init; }
     public required Func<int> AvailableResolutionCount { get; init; }
     public required Action<bool> SetPendingModeOptionsRefresh { get; init; }
-    public required Action RebuildResolutionOptions { get; init; }
+    public required Action<bool> RebuildResolutionOptions { get; init; }
     public required Action UpdateTargetSummary { get; init; }
 }
 
@@ -1728,43 +1702,44 @@ internal sealed class MainViewModelSourceTelemetryController
         _context.SetSourceTelemetrySummaryText(_context.BuildSourceTelemetrySummary(snapshot, DateTimeOffset.UtcNow));
 
         var modeKey = snapshot.GetModeKey();
+        var forceSourceAutoRetarget = false;
         if (!string.IsNullOrWhiteSpace(modeKey) &&
-            !string.Equals(modeKey, _context.GetLastSourceModeKey(), StringComparison.Ordinal))
+            !string.Equals(modeKey, _context.ModeSelection.LastSourceModeKey, StringComparison.Ordinal))
         {
             if (allowAutoRetarget)
             {
                 var shouldAutoRetargetResolution =
                     _context.IsAutoResolutionValue(_context.GetSelectedResolution()) ||
-                    !_context.HasUserOverriddenResolutionForCurrentMode();
+                    !_context.ModeSelection.HasUserOverriddenResolutionForCurrentMode;
                 var shouldAutoRetargetFrameRate =
                     _context.IsAutoFrameRateSelected() ||
-                    !_context.HasUserOverriddenFrameRateForCurrentMode();
-                _context.SetLastSourceModeKey(modeKey);
-                _context.SetForceSourceAutoRetarget(shouldAutoRetargetResolution || shouldAutoRetargetFrameRate);
+                    !_context.ModeSelection.HasUserOverriddenFrameRateForCurrentMode;
+                _context.ModeSelection.LastSourceModeKey = modeKey;
+                forceSourceAutoRetarget = shouldAutoRetargetResolution || shouldAutoRetargetFrameRate;
                 if (shouldAutoRetargetResolution)
                 {
-                    _context.SetHasUserOverriddenResolutionForCurrentMode(false);
+                    _context.ModeSelection.HasUserOverriddenResolutionForCurrentMode = false;
                 }
 
                 if (shouldAutoRetargetFrameRate)
                 {
-                    _context.SetHasUserOverriddenFrameRateForCurrentMode(false);
+                    _context.ModeSelection.HasUserOverriddenFrameRateForCurrentMode = false;
                 }
             }
         }
 
         var shouldRebuildModeOptions = allowAutoRetarget &&
-                                       (_context.ForceSourceAutoRetarget() ||
+                                       (forceSourceAutoRetarget ||
                                         (snapshot.HasSignalData && _context.AvailableResolutionCount() == 0));
         if (shouldRebuildModeOptions)
         {
             if (_context.IsRecording())
             {
-                _context.SetPendingModeOptionsRefresh(true);
+                _context.SetPendingModeOptionsRefresh(forceSourceAutoRetarget);
             }
             else
             {
-                _context.RebuildResolutionOptions();
+                _context.RebuildResolutionOptions(forceSourceAutoRetarget);
             }
         }
         else

@@ -12,6 +12,7 @@ using Sussudio.Controllers;
 using Sussudio.Models;
 using Sussudio.Services.Audio;
 using Sussudio.Services.Automation;
+using Sussudio.Services.Contracts;
 using Sussudio.Services.Capture;
 using Sussudio.Services.Capture.Mjpeg;
 using Sussudio.Services.Gpu;
@@ -519,10 +520,10 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     }
 
     public Task RefreshDevicesAsync(CancellationToken cancellationToken = default)
-        => _deviceRefreshController.RefreshDevicesAsync(cancellationToken);
+        => _deviceRefreshController.RefreshDevicesAsync(cancellationToken: cancellationToken);
 
     internal Task RefreshDevicesForStartupAsync(CancellationToken cancellationToken = default)
-        => _deviceRefreshController.RefreshDevicesAsync(cancellationToken, throwOnScanFailure: true);
+        => _deviceRefreshController.RefreshDevicesAsync(throwOnScanFailure: true, cancellationToken: cancellationToken);
 
     internal void SetPreviewFrameSink(IPreviewFrameSink? sink)
     {
@@ -602,15 +603,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         new(StringComparer.OrdinalIgnoreCase);
     private bool _isRebuildingModeOptions;
     private bool _isApplyingAutomaticFrameRateSelection;
-    private bool _isApplyingAutomaticResolutionSelection;
     private bool _isAutoFrameRateSelected = true;
-    private bool _hasUserOverriddenFrameRateForCurrentMode;
-    private bool _hasUserOverriddenResolutionForCurrentMode;
-    private bool _forceSourceAutoRetarget;
-    private string? _lastSourceModeKey;
-    private string? _lastKnownResolutionKey;
-    private bool _pendingSdrAutoSelectionForDeviceChange;
-    private int? _pendingSdrAutoFriendlyFrameRateBucket;
+    private readonly CaptureModeSelectionState _captureModeSelection = new();
     private long _deviceScanGeneration;
 
     // Flag to prevent reinitialization during initial device setup.
@@ -619,10 +613,24 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private string? _pendingSavedDeviceId;
     private string? _pendingSavedVideoFormat;
     private SourceSignalTelemetrySnapshot _latestSourceTelemetry = SourceSignalTelemetrySnapshot.CreateUnavailable("telemetry-not-started");
-    private bool _pendingModeOptionsRefresh;
+    private bool? _pendingModeOptionsRefreshForceRetarget;
     private bool _suppressFormatChangeReinitialize;
     private bool _suppressHdrToggleReinitialize;
     private bool _isRevertingHdrToggle;
+
+    private void ApplyCaptureModeOptions(Action apply)
+    {
+        var previousRebuilding = _isRebuildingModeOptions;
+        _isRebuildingModeOptions = true;
+        try
+        {
+            apply();
+        }
+        finally
+        {
+            _isRebuildingModeOptions = previousRebuilding;
+        }
+    }
 
     private void ApplyCaptureSelectionWithoutReinitialize(Action apply)
     {
@@ -644,8 +652,11 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     /// Capture-mode transactions that coordinate option rebuilds, HDR/SDR changes,
     /// and active-preview reinitialization without duplicate property-change cascades.
     /// </summary>
-    private void RebuildResolutionOptions()
-        => _captureModeOptionRebuildController.RebuildResolutionOptions();
+    private void RebuildResolutionOptions(bool forceSourceAutoRetarget = false)
+        => _captureModeOptionRebuildController.RebuildResolutionOptions(forceSourceAutoRetarget);
+
+    private void SetPendingModeOptionsRefresh(bool forceSourceAutoRetarget)
+        => _pendingModeOptionsRefreshForceRetarget = _pendingModeOptionsRefreshForceRetarget == true || forceSourceAutoRetarget;
 
     private void RebuildFrameRateOptions()
         => _captureModeOptionRebuildController.RebuildFrameRateOptions();
@@ -699,14 +710,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             SourceFrameRateOrigin,
             SourceTelemetrySummaryText,
             SourceTargetSummaryText,
-            _hasUserOverriddenResolutionForCurrentMode,
-            _hasUserOverriddenFrameRateForCurrentMode,
-            _pendingSdrAutoSelectionForDeviceChange,
-            _pendingSdrAutoFriendlyFrameRateBucket,
-            _forceSourceAutoRetarget,
-            _lastKnownResolutionKey,
-            _lastSourceModeKey,
-            _pendingModeOptionsRefresh);
+            _captureModeSelection.Capture(),
+            _pendingModeOptionsRefreshForceRetarget);
 
     private bool RestoreCaptureSelectionSnapshotIfUnchanged(
         MainViewModelCaptureSelectionSnapshot snapshot,
@@ -728,7 +733,6 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         var previousRevertingHdrToggle = _isRevertingHdrToggle;
         var previousChangingDevice = _isChangingDevice;
         var previousRebuildingModeOptions = _isRebuildingModeOptions;
-        var previousApplyingAutomaticResolutionSelection = _isApplyingAutomaticResolutionSelection;
         var previousApplyingAutomaticFrameRateSelection = _isApplyingAutomaticFrameRateSelection;
         using var recordingSettingsSuppression = _recordingSettingsController.SuppressPropertyReactions();
         _suppressFormatChangeReinitialize = true;
@@ -736,7 +740,6 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         _isRevertingHdrToggle = true;
         _isChangingDevice = true;
         _isRebuildingModeOptions = true;
-        _isApplyingAutomaticResolutionSelection = true;
         _isApplyingAutomaticFrameRateSelection = true;
         try
         {
@@ -790,21 +793,14 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             SourceFrameRateOrigin = snapshot.SourceFrameRateOrigin;
             SourceTelemetrySummaryText = snapshot.SourceTelemetrySummaryText;
             SourceTargetSummaryText = snapshot.SourceTargetSummaryText;
-            _hasUserOverriddenResolutionForCurrentMode = snapshot.HasUserOverriddenResolutionForCurrentMode;
-            _hasUserOverriddenFrameRateForCurrentMode = snapshot.HasUserOverriddenFrameRateForCurrentMode;
-            _pendingSdrAutoSelectionForDeviceChange = snapshot.PendingSdrAutoSelectionForDeviceChange;
-            _pendingSdrAutoFriendlyFrameRateBucket = snapshot.PendingSdrAutoFriendlyFrameRateBucket;
-            _forceSourceAutoRetarget = snapshot.ForceSourceAutoRetarget;
-            _lastKnownResolutionKey = snapshot.LastKnownResolutionKey;
-            _lastSourceModeKey = snapshot.LastSourceModeKey;
-            _pendingModeOptionsRefresh = snapshot.PendingModeOptionsRefresh;
+            _captureModeSelection.Restore(snapshot.ModeSelection);
+            _pendingModeOptionsRefreshForceRetarget = snapshot.PendingModeOptionsRefreshForceRetarget;
             UpdateTargetSummary();
             SaveSettings();
         }
         finally
         {
             _isApplyingAutomaticFrameRateSelection = previousApplyingAutomaticFrameRateSelection;
-            _isApplyingAutomaticResolutionSelection = previousApplyingAutomaticResolutionSelection;
             _isRebuildingModeOptions = previousRebuildingModeOptions;
             _isChangingDevice = previousChangingDevice;
             _isRevertingHdrToggle = previousRevertingHdrToggle;
@@ -849,8 +845,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             _resolutionToFormats.Clear();
             if (resetTelemetryState)
             {
-                _pendingSdrAutoSelectionForDeviceChange = device != null && !IsHdrEnabled;
-                _pendingSdrAutoFriendlyFrameRateBucket = null;
+                _captureModeSelection.PendingSdrAutoSelectionForDeviceChange = device != null && !IsHdrEnabled;
+                _captureModeSelection.PendingSdrAutoFriendlyFrameRateBucket = null;
                 if (!preserveSourceTelemetryForActiveSourceSelection)
                 {
                     _sourceTelemetryController.ApplySourceTelemetrySnapshot(
@@ -896,7 +892,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
             if (IsRecording)
             {
-                _pendingModeOptionsRefresh = true;
+                SetPendingModeOptionsRefresh(forceSourceAutoRetarget: false);
             }
             else
             {
@@ -1031,14 +1027,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         if (!IsAutoResolutionValue(value) &&
             TryResolveResolutionKey(value, out var resolvedResolutionKey))
         {
-            _lastKnownResolutionKey = resolvedResolutionKey;
-        }
-
-        if (!_isRebuildingModeOptions && !_isApplyingAutomaticResolutionSelection)
-        {
-            _hasUserOverriddenResolutionForCurrentMode = !IsAutoResolutionValue(value);
-            _pendingSdrAutoSelectionForDeviceChange = false;
-            _pendingSdrAutoFriendlyFrameRateBucket = null;
+            _captureModeSelection.LastKnownResolutionKey = resolvedResolutionKey;
         }
 
         if (_isRebuildingModeOptions)
@@ -1046,7 +1035,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             return;
         }
 
-        _forceSourceAutoRetarget = false;
+        _captureModeSelection.HasUserOverriddenResolutionForCurrentMode = !IsAutoResolutionValue(value);
+        _captureModeSelection.ClearPendingSdrAutoSelection();
         ResetFrameRateSelectionState();
         RebuildFrameRateOptions();
         UpdateTargetSummary();
@@ -1086,9 +1076,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         if (!_isRebuildingModeOptions && !_isApplyingAutomaticFrameRateSelection)
         {
             IsAutoFrameRateSelected = false;
-            _hasUserOverriddenFrameRateForCurrentMode = true;
-            _pendingSdrAutoSelectionForDeviceChange = false;
-            _pendingSdrAutoFriendlyFrameRateBucket = null;
+            _captureModeSelection.HasUserOverriddenFrameRateForCurrentMode = true;
+            _captureModeSelection.ClearPendingSdrAutoSelection();
         }
 
         var selected = AvailableFrameRates
@@ -1113,9 +1102,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private void SelectAutoFrameRate(bool rebuildOptions)
     {
         IsAutoFrameRateSelected = true;
-        _hasUserOverriddenFrameRateForCurrentMode = false;
-        _pendingSdrAutoSelectionForDeviceChange = false;
-        _pendingSdrAutoFriendlyFrameRateBucket = null;
+        _captureModeSelection.HasUserOverriddenFrameRateForCurrentMode = false;
+        _captureModeSelection.ClearPendingSdrAutoSelection();
 
         if (rebuildOptions)
         {
@@ -1134,10 +1122,10 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             AutoFrameRateOptionAvailable: false,
             ForceAutoSelection: true,
             IsAutoFrameRateSelected: IsAutoFrameRateSelected,
-            HasUserOverriddenFrameRateForCurrentMode: _hasUserOverriddenFrameRateForCurrentMode,
+            HasUserOverriddenFrameRateForCurrentMode: _captureModeSelection.HasUserOverriddenFrameRateForCurrentMode,
             IsHdrEnabled: IsHdrEnabled,
-            PendingSdrAutoSelectionForDeviceChange: _pendingSdrAutoSelectionForDeviceChange,
-            PendingSdrAutoFriendlyFrameRateBucket: _pendingSdrAutoFriendlyFrameRateBucket,
+            PendingSdrAutoSelectionForDeviceChange: _captureModeSelection.PendingSdrAutoSelectionForDeviceChange,
+            PendingSdrAutoFriendlyFrameRateBucket: _captureModeSelection.PendingSdrAutoFriendlyFrameRateBucket,
             Source: new FrameRateAutoSelectionSource(sourceRate.Rate, sourceTimingFamilyKnown, sourceTimingFamily),
             PreviousRate: SelectedFrameRate));
 
@@ -1171,7 +1159,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         {
             if (IsRecording)
             {
-                throw new InvalidOperationException(HdrToggleBlockedWhileRecordingMessage);
+                throw new AutomationStateConflictException(HdrToggleBlockedWhileRecordingMessage);
             }
 
             if (enabled && !IsHdrAvailable)
@@ -1220,7 +1208,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         {
             if (IsRecording)
             {
-                throw new InvalidOperationException("True HDR preview cannot be changed while recording.");
+                throw new AutomationStateConflictException("True HDR preview cannot be changed while recording.");
             }
 
             IsTrueHdrPreviewEnabled = enabled;
@@ -1237,8 +1225,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
         if (value)
         {
-            _pendingSdrAutoSelectionForDeviceChange = false;
-            _pendingSdrAutoFriendlyFrameRateBucket = null;
+            _captureModeSelection.ClearPendingSdrAutoSelection();
         }
 
         if (IsRecording)
@@ -1531,11 +1518,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         return Task.FromResult(snapshotFactory());
     }
 
-
-    public CaptureSettings BuildCurrentSettings() => BuildCaptureSettings();
-
     public Task RefreshDevicesForAutomationAsync(CancellationToken cancellationToken = default)
-        => InvokeOnUiThreadAsync(() => _deviceRefreshController.RefreshDevicesAsync(cancellationToken, throwOnScanFailure: true), cancellationToken);
+        => InvokeOnUiThreadAsync(() => _deviceRefreshController.RefreshDevicesAsync(throwOnScanFailure: true, cancellationToken: cancellationToken), cancellationToken);
 
     public Task SelectDeviceAsync(string? deviceId, string? deviceName, CancellationToken cancellationToken = default)
     {
@@ -1595,7 +1579,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         if (request.IsRecording &&
             !string.Equals(request.CurrentDeviceId, request.Target.Id, StringComparison.OrdinalIgnoreCase))
         {
-            throw new InvalidOperationException("Cannot change microphone device while recording. Stop the recording first.");
+            throw new AutomationStateConflictException("Cannot change microphone device while recording. Stop the recording first.");
         }
 
         if (!request.IsRecording)
@@ -1632,7 +1616,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         {
             if (IsRecording)
             {
-                throw new InvalidOperationException("Custom audio input cannot be changed while recording.");
+                throw new AutomationStateConflictException("Custom audio input cannot be changed while recording.");
             }
 
             IsCustomAudioInputEnabled = enabled;
@@ -1881,7 +1865,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             // cannot rewire the device mid-recording, so setting IsMicrophoneEnabled
             // here would leave UI state lying about the actual device wiring.
             Logger.Log($"MIC_TOGGLE_REFUSED reason=recording_active requested={enabled} current={request.CurrentMicEnabled}");
-            throw new InvalidOperationException(
+            throw new AutomationStateConflictException(
                 "Cannot change microphone enable state while recording. Stop the recording first.");
         }
 
@@ -2186,12 +2170,13 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
     private void ResetFrameRateSelectionState()
     {
-        _hasUserOverriddenFrameRateForCurrentMode = false;
+        _captureModeSelection.HasUserOverriddenFrameRateForCurrentMode = false;
         IsAutoFrameRateSelected = true;
     }
 
     private void ApplyResolvedFrameRateSelection(FrameRateOption? selected, double fallbackRate)
     {
+        var previousAutomaticSelection = _isApplyingAutomaticFrameRateSelection;
         _isApplyingAutomaticFrameRateSelection = true;
         try
         {
@@ -2199,7 +2184,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         }
         finally
         {
-            _isApplyingAutomaticFrameRateSelection = false;
+            _isApplyingAutomaticFrameRateSelection = previousAutomaticSelection;
         }
 
         SelectedFriendlyFrameRate = selected?.FriendlyValue ?? Math.Round(SelectedFrameRate);
@@ -2218,14 +2203,12 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private void ResetModeSelectionState()
     {
         ResetFrameRateSelectionState();
-        _hasUserOverriddenResolutionForCurrentMode = false;
-        _forceSourceAutoRetarget = false;
-        _lastSourceModeKey = null;
-        _pendingSdrAutoSelectionForDeviceChange = false;
-        _pendingSdrAutoFriendlyFrameRateBucket = null;
+        _captureModeSelection.HasUserOverriddenResolutionForCurrentMode = false;
+        _captureModeSelection.LastSourceModeKey = null;
+        _captureModeSelection.ClearPendingSdrAutoSelection();
     }
 
-    private CaptureSettings BuildCaptureSettings()
+    internal CaptureSettings BuildCaptureSettings()
     {
         var effectiveResolutionKnown = TryGetEffectiveResolutionSelection(out _, out var effectiveWidth, out var effectiveHeight);
         var runtime = _captureService.GetRuntimeSnapshot();
@@ -2280,10 +2263,10 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             RecordingBitrateInfo = "--";
             _recordingBitrateSamples.Clear();
 
-            if (_pendingModeOptionsRefresh)
+            if (_pendingModeOptionsRefreshForceRetarget is bool forceSourceAutoRetarget)
             {
-                _pendingModeOptionsRefresh = false;
-                RebuildResolutionOptions();
+                _pendingModeOptionsRefreshForceRetarget = null;
+                RebuildResolutionOptions(forceSourceAutoRetarget);
             }
         }
     }
@@ -2488,7 +2471,10 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                         viewModel.ApplyDeviceAudioModeAsync(reason, targetDevice: targetDevice, cancellationToken: cancellationToken),
                     ApplyAnalogAudioGainAsync = (reason, targetDevice, cancellationToken) =>
                         viewModel.ApplyAnalogAudioGainAsync(reason, targetDevice: targetDevice, cancellationToken: cancellationToken),
+                    PersistAnalogAudioGainAsync = (device, gainByte, cancellationToken) =>
+                        viewModel._deviceAudioControlService.SetAnalogGainAsync(device, gainByte, persistFlash: true, cancellationToken),
                     IsCurrentSelectedDevice = viewModel.IsCurrentSelectedDevice,
+                    SetStatusText = value => viewModel.StatusText = value,
                 });
         }
 
@@ -2575,19 +2561,12 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                     SetSourceFrameRateOrigin = value => viewModel.SourceFrameRateOrigin = value,
                     GetSourceTelemetrySummaryText = () => viewModel.SourceTelemetrySummaryText,
                     SetSourceTelemetrySummaryText = value => viewModel.SourceTelemetrySummaryText = value,
-                    GetLastSourceModeKey = () => viewModel._lastSourceModeKey,
-                    SetLastSourceModeKey = value => viewModel._lastSourceModeKey = value,
+                    ModeSelection = viewModel._captureModeSelection,
                     GetSelectedResolution = () => viewModel.SelectedResolution,
                     IsAutoResolutionValue = MainViewModel.IsAutoResolutionValue,
-                    HasUserOverriddenResolutionForCurrentMode = () => viewModel._hasUserOverriddenResolutionForCurrentMode,
-                    SetHasUserOverriddenResolutionForCurrentMode = value => viewModel._hasUserOverriddenResolutionForCurrentMode = value,
                     IsAutoFrameRateSelected = () => viewModel.IsAutoFrameRateSelected,
-                    HasUserOverriddenFrameRateForCurrentMode = () => viewModel._hasUserOverriddenFrameRateForCurrentMode,
-                    SetHasUserOverriddenFrameRateForCurrentMode = value => viewModel._hasUserOverriddenFrameRateForCurrentMode = value,
-                    ForceSourceAutoRetarget = () => viewModel._forceSourceAutoRetarget,
-                    SetForceSourceAutoRetarget = value => viewModel._forceSourceAutoRetarget = value,
                     AvailableResolutionCount = () => viewModel.AvailableResolutions.Count,
-                    SetPendingModeOptionsRefresh = value => viewModel._pendingModeOptionsRefresh = value,
+                    SetPendingModeOptionsRefresh = viewModel.SetPendingModeOptionsRefresh,
                     RebuildResolutionOptions = viewModel.RebuildResolutionOptions,
                     UpdateTargetSummary = viewModel.UpdateTargetSummary,
                 });
@@ -2822,19 +2801,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                     IsPreviewing = () => viewModel.IsPreviewing,
                     IsAutoFrameRateSelected = () => viewModel.IsAutoFrameRateSelected,
                     SetIsAutoFrameRateSelected = value => viewModel.IsAutoFrameRateSelected = value,
-                    HasUserOverriddenResolutionForCurrentMode = () => viewModel._hasUserOverriddenResolutionForCurrentMode,
-                    HasUserOverriddenFrameRateForCurrentMode = () => viewModel._hasUserOverriddenFrameRateForCurrentMode,
-                    IsPendingSdrAutoSelectionForDeviceChange = () => viewModel._pendingSdrAutoSelectionForDeviceChange,
-                    SetPendingSdrAutoSelectionForDeviceChange = value => viewModel._pendingSdrAutoSelectionForDeviceChange = value,
-                    GetPendingSdrAutoFriendlyFrameRateBucket = () => viewModel._pendingSdrAutoFriendlyFrameRateBucket,
-                    SetPendingSdrAutoFriendlyFrameRateBucket = value => viewModel._pendingSdrAutoFriendlyFrameRateBucket = value,
-                    IsForceSourceAutoRetarget = () => viewModel._forceSourceAutoRetarget,
-                    SetForceSourceAutoRetarget = value => viewModel._forceSourceAutoRetarget = value,
-                    GetLastKnownResolutionKey = () => viewModel._lastKnownResolutionKey,
-                    SetLastKnownResolutionKey = value => viewModel._lastKnownResolutionKey = value,
-                    SetIsRebuildingModeOptions = value => viewModel._isRebuildingModeOptions = value,
-                    SetIsApplyingAutomaticResolutionSelection = value => viewModel._isApplyingAutomaticResolutionSelection = value,
-                    SetIsApplyingAutomaticFrameRateSelection = value => viewModel._isApplyingAutomaticFrameRateSelection = value,
+                    ModeSelection = viewModel._captureModeSelection,
+                    ApplyCaptureModeOptions = viewModel.ApplyCaptureModeOptions,
                     ApplyCaptureSelectionWithoutReinitialize = viewModel.ApplyCaptureSelectionWithoutReinitialize,
                     SetDetectedSourceFrameRate = value => viewModel.DetectedSourceFrameRate = value,
                     SetDetectedSourceFrameRateArg = value => viewModel.DetectedSourceFrameRateArg = value,
@@ -2860,8 +2828,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                     ReadDeviceScanGeneration = () => Interlocked.Read(ref viewModel._deviceScanGeneration),
                     FindDeviceById = deviceId => viewModel.Devices.FirstOrDefault(
                         device => string.Equals(device.Id, deviceId, StringComparison.OrdinalIgnoreCase)),
-                    SetPendingSdrAutoSelectionForDeviceChange = value => viewModel._pendingSdrAutoSelectionForDeviceChange = value,
-                    SetPendingSdrAutoFriendlyFrameRateBucket = value => viewModel._pendingSdrAutoFriendlyFrameRateBucket = value,
+                    ModeSelection = viewModel._captureModeSelection,
                     GetSelectedDevice = () => viewModel.SelectedDevice,
                     IsPreviewing = () => viewModel.IsPreviewing,
                     IsInitialized = () => viewModel.IsInitialized,
@@ -2883,8 +2850,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                             GetSelectedFormat = () => viewModel.SelectedFormat,
                             AvailableResolutionsContains = value => viewModel.AvailableResolutions.Any(
                                 option => string.Equals(option.Value, value, StringComparison.OrdinalIgnoreCase)),
-                            SetIsRebuildingModeOptions = value => viewModel._isRebuildingModeOptions = value,
-                            SetIsApplyingAutomaticResolutionSelection = value => viewModel._isApplyingAutomaticResolutionSelection = value,
+                            ApplyCaptureModeOptions = viewModel.ApplyCaptureModeOptions,
                             ApplyCaptureSelectionWithoutReinitialize = viewModel.ApplyCaptureSelectionWithoutReinitialize,
                             RebuildFrameRateOptions = viewModel.RebuildFrameRateOptions,
                             ReinitializeDeviceAsync = viewModel.ReinitializeDeviceAsync,

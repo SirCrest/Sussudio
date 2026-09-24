@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using FFmpeg.AutoGen;
 using Sussudio.Models;
 using Sussudio.Services.Recording;
+using Sussudio.Services.Runtime;
 
 namespace Sussudio.Services.Flashback;
 
@@ -806,7 +807,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                     return FlashbackExportFailureCodes.Create(outputPath, message, FlashbackExportFailureCodes.InvalidOutputPath);
                 }
 
-                LibAvEncoder.InitializeFFmpeg(requireNativeRuntime: true);
+                FfmpegRuntimeInit.EnsureInitialized(requireNativeRuntime: true);
 
                 Logger.Log($"FLASHBACK_EXPORT_START input='{inputPath}' in_ms={(long)inPoint.TotalMilliseconds} out_ms={(long)(outPoint == TimeSpan.MaxValue ? -1 : outPoint.TotalMilliseconds)} output='{outputPath}'");
                 ReportProgress(progress, new ExportProgress(0, 1, 0), "single_start");
@@ -848,9 +849,13 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                 }
 
                 var totalPackets = packetWriteResult.TotalPackets;
-                if (!TryFinalizeActiveOutputFile(outputTransaction, outputPath, out var outputBytes, out var outputFailure, out var outputFailureCode))
+                if (!TryFinalizeActiveOutputFile(outputTransaction, outputPath, out var outputBytes, out var outputFailure, out var outputFailureCode, out var outputPreserved))
                 {
-                    return FlashbackExportFailureCodes.Create(outputPath, outputFailure, outputFailureCode);
+                    return FlashbackExportFailureCodes.Create(
+                        outputPath,
+                        outputFailure,
+                        outputFailureCode,
+                        outputPreserved ? new[] { outputPath } : null);
                 }
 
                 Logger.Log(
@@ -1424,12 +1429,14 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         string outputPath,
         out long outputBytes,
         out string failureMessage,
-        out string failureCode)
+        out string failureCode,
+        out bool outputPreserved)
     {
+        outputPreserved = false;
         ThrowIfError(ffmpeg.av_write_trailer(_activeOutputContext), "av_write_trailer", FlashbackExportFailureCodes.OutputWriteFailed);
         ThrowIfError(CloseOutputIo(), "avio_closep", FlashbackExportFailureCodes.OutputWriteFailed);
 
-        if (!outputTransaction.TryPublish(outputPath, out outputBytes, out failureMessage, out failureCode))
+        if (!outputTransaction.TryPublish(outputPath, out outputBytes, out failureMessage, out failureCode, out outputPreserved))
         {
             Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{failureMessage}'");
             return false;
@@ -1744,7 +1751,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                     return FlashbackExportFailureCodes.Create(outputPath, message, FlashbackExportFailureCodes.InvalidOutputPath);
                 }
 
-                LibAvEncoder.InitializeFFmpeg(requireNativeRuntime: true);
+                FfmpegRuntimeInit.EnsureInitialized(requireNativeRuntime: true);
 
                 Logger.Log($"FLASHBACK_EXPORT_SEGMENTS_START segments={segments.Count} in_ms={(long)inPoint.TotalMilliseconds} out_ms={(long)(outPoint == TimeSpan.MaxValue ? -1 : outPoint.TotalMilliseconds)} output='{outputPath}'");
                 ReportProgress(progress, new ExportProgress(0, segments.Count, 0), "segments_start");
@@ -1765,9 +1772,13 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                 }
 
                 var totalPackets = packetWriteResult.TotalPackets;
-                if (!TryFinalizeActiveOutputFile(outputTransaction, outputPath, out var outputBytes, out var outputFailure, out var outputFailureCode))
+                if (!TryFinalizeActiveOutputFile(outputTransaction, outputPath, out var outputBytes, out var outputFailure, out var outputFailureCode, out var outputPreserved))
                 {
-                    return FlashbackExportFailureCodes.Create(outputPath, outputFailure, outputFailureCode);
+                    return FlashbackExportFailureCodes.Create(
+                        outputPath,
+                        outputFailure,
+                        outputFailureCode,
+                        outputPreserved ? new[] { outputPath } : null);
                 }
 
                 Logger.Log($"FLASHBACK_EXPORT_SEGMENTS_OK output='{outputPath}' segments={segments.Count} packets={totalPackets} bytes={outputBytes}");
@@ -2163,10 +2174,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                     totalEstimatedBytes,
                     bytesProcessed,
                     ResolveSegmentOutputOffsetUs(segment.StartPts, inPoint, outputPtsOffsetUs),
-                    useSegmentTimeline,
-                    segmentExportWindow.SegmentTimelineStartUs,
-                    segmentInOffsetUs,
-                    segmentOutOffsetUs,
+                    in segmentExportWindow,
                     packet,
                     progress,
                     ct,
@@ -2353,10 +2361,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         long totalEstimatedBytes,
         long bytesProcessed,
         long outputPtsOffsetUs,
-        bool useSegmentTimeline,
-        long segmentTimelineStartUs,
-        long segmentInOffsetUs,
-        long segmentOutOffsetUs,
+        in SegmentExportWindow window,
         AVPacket* packet,
         IProgress<ExportProgress>? progress,
         CancellationToken ct,
@@ -2365,7 +2370,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
     {
         var lastProgressHeartbeatTick = 0L;
         var segmentVideoFrameDurUs = 33333L;
-        if (useSegmentTimeline &&
+        if (window.UseSegmentTimeline &&
             videoStreamIndex >= 0 &&
             videoStreamIndex < currentStreamCount)
         {
@@ -2374,10 +2379,10 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         segmentPacketState = CreateSegmentPacketWriteState(
             segIdx,
             streamCount,
-            useSegmentTimeline,
-            segmentTimelineStartUs,
-            segmentInOffsetUs,
-            segmentOutOffsetUs,
+            window.UseSegmentTimeline,
+            window.SegmentTimelineStartUs,
+            window.SegmentInOffsetUs,
+            window.SegmentOutOffsetUs,
             outputPtsOffsetUs,
             videoStreamIndex,
             segmentVideoFrameDurUs);

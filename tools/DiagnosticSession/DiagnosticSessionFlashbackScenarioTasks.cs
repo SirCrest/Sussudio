@@ -39,7 +39,7 @@ internal static class DiagnosticSessionFlashbackRecordingSettingsScenarios
 
         var presetResponse = await sendCommandAsync(
                 "SetPreset",
-                new Dictionary<string, object?> { ["preset"] = cycledPreset },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Preset] = cycledPreset },
                 null,
                 false)
             .ConfigureAwait(false);
@@ -162,7 +162,7 @@ internal static class DiagnosticSessionFlashbackRecordingSettingsScenarios
 
         var enableResponse = await sendCommandAsync(
                 "SetFlashbackEnabled",
-                new Dictionary<string, object?> { ["enabled"] = true },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = true },
                 305_000)
             .ConfigureAwait(false);
         actions.Add("flashback recording settings deferred post-stop flashback re-enabled");
@@ -184,7 +184,7 @@ internal static class DiagnosticSessionFlashbackRecordingSettingsScenarios
     {
         var disableResponse = await sendCommandAsync(
                 "SetFlashbackEnabled",
-                new Dictionary<string, object?> { ["enabled"] = false },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = false },
                 305_000)
             .ConfigureAwait(false);
         actions.Add("flashback recording settings deferred post-stop flashback restored off");
@@ -208,7 +208,7 @@ internal static class DiagnosticSessionFlashbackRecordingSettingsScenarios
                 null,
                 "flashback recording settings deferred restart rejection requested",
                 "flashback recording settings deferred: RestartFlashback unexpectedly succeeded during recording",
-                "flashback recording settings deferred: restart rejection message did not mention recording",
+                "flashback recording settings deferred: RestartFlashback rejection did not return invalid-state",
                 sendCommandAsync)
             .ConfigureAwait(false);
     }
@@ -222,11 +222,11 @@ internal static class DiagnosticSessionFlashbackRecordingSettingsScenarios
                 actions,
                 warnings,
                 "SetFlashbackEnabled",
-                new Dictionary<string, object?> { ["enabled"] = false },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = false },
                 305_000,
                 "flashback recording settings deferred disable rejection requested",
                 "flashback recording settings deferred: SetFlashbackEnabled(false) unexpectedly succeeded during recording",
-                "flashback recording settings deferred: disable rejection message did not mention recording",
+                "flashback recording settings deferred: SetFlashbackEnabled rejection did not return invalid-state",
                 sendCommandAsync)
             .ConfigureAwait(false);
     }
@@ -239,7 +239,7 @@ internal static class DiagnosticSessionFlashbackRecordingSettingsScenarios
         int? timeoutMs,
         string requestedAction,
         string unexpectedSuccessWarning,
-        string messageWarningPrefix,
+        string invalidStateWarningPrefix,
         Func<string, Dictionary<string, object?>?, int?, bool, Task<JsonElement>> sendCommandAsync)
     {
         var response = await sendCommandAsync(
@@ -256,10 +256,10 @@ internal static class DiagnosticSessionFlashbackRecordingSettingsScenarios
             return;
         }
 
-        var message = AutomationSnapshotFormatter.Get(response, "Message", string.Empty);
-        if (!message.Contains("recording", StringComparison.OrdinalIgnoreCase))
+        var errorCode = AutomationSnapshotFormatter.Get(response, "ErrorCode", string.Empty);
+        if (!string.Equals(errorCode, "invalid-state", StringComparison.OrdinalIgnoreCase))
         {
-            warnings.Add($"{messageWarningPrefix} - {message}");
+            warnings.Add($"{invalidStateWarningPrefix} - {errorCode}");
         }
     }
 
@@ -316,7 +316,7 @@ internal static class DiagnosticSessionFlashbackRecordingSettingsScenarios
 
         var restoreResponse = await sendCommandAsync(
                 "SetPreset",
-                new Dictionary<string, object?> { ["preset"] = presetState.OriginalPreset },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Preset] = presetState.OriginalPreset },
                 null)
             .ConfigureAwait(false);
         actions.Add($"flashback recording settings deferred preset restored to {presetState.OriginalPreset}");
@@ -356,7 +356,7 @@ internal static class DiagnosticSessionFlashbackSegmentPlaybackScenarios
         DiagnosticSessionBackgroundTasks backgroundTasks,
         List<string> actions,
         List<string> warnings,
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
+        DiagnosticSessionCommandChannel commandChannel,
         CancellationToken cancellationToken)
     {
         if (scenarioPlan.Kind != DiagnosticSessionScenarioKind.FlashbackSegmentPlayback)
@@ -368,10 +368,10 @@ internal static class DiagnosticSessionFlashbackSegmentPlaybackScenarios
             7,
             "flashback-segment-playback-task",
             RunFlashbackSegmentPlaybackAsync(
-                actions,
-                warnings,
-                sendCommandAsync,
-                cancellationToken));
+                actions: actions,
+                warnings: warnings,
+                sendCommandAsync: commandChannel.SendAsync,
+                cancellationToken: cancellationToken));
         actions.Add("flashback segment playback started");
     }
 
@@ -412,17 +412,17 @@ internal static class DiagnosticSessionFlashbackSegmentPlaybackScenarios
         var seekPositionMs = Math.Max(0, target.BoundaryPositionMs - 500);
         await sendCommandAsync(
                 "FlashbackAction",
-                new Dictionary<string, object?> { ["action"] = "pause" },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "pause" },
                 null)
             .ConfigureAwait(false);
         await sendCommandAsync(
                 "FlashbackAction",
-                new Dictionary<string, object?> { ["action"] = "seek", ["positionMs"] = seekPositionMs },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "seek", [AutomationPayloadKeys.PositionMs] = seekPositionMs },
                 null)
             .ConfigureAwait(false);
         await sendCommandAsync(
                 "FlashbackAction",
-                new Dictionary<string, object?> { ["action"] = "play" },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "play" },
                 null)
             .ConfigureAwait(false);
         actions.Add(
@@ -505,7 +505,7 @@ internal static class DiagnosticSessionFlashbackSegmentPlaybackScenarios
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
         CancellationToken cancellationToken)
     {
-        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "go-live" }, null)
+        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = "go-live" }, null)
             .ConfigureAwait(false);
         actions.Add("flashback segment playback go-live requested");
 
@@ -600,7 +600,7 @@ internal static class DiagnosticSessionFlashbackSegmentPlaybackScenarios
     {
         var startResponse = await sendCommandAsync(
                 "SetRecordingEnabled",
-                new Dictionary<string, object?> { ["enabled"] = true },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = true },
                 null)
             .ConfigureAwait(false);
         actions.Add("flashback segment playback recording-assisted rotation started");
@@ -627,7 +627,7 @@ internal static class DiagnosticSessionFlashbackSegmentPlaybackScenarios
 
         var stopResponse = await sendCommandAsync(
                 "SetRecordingEnabled",
-                new Dictionary<string, object?> { ["enabled"] = false },
+                new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = false },
                 null)
             .ConfigureAwait(false);
         actions.Add("flashback segment playback recording-assisted rotation stopped");
@@ -642,9 +642,9 @@ internal static class DiagnosticSessionFlashbackSegmentPlaybackScenarios
                 "WaitForCondition",
                 new Dictionary<string, object?>
                 {
-                    ["condition"] = "RecordingStopped",
-                    ["timeoutMs"] = 30_000,
-                    ["pollMs"] = 250
+                    [AutomationPayloadKeys.Condition] = "RecordingStopped",
+                    [AutomationPayloadKeys.TimeoutMs] = 30_000,
+                    [AutomationPayloadKeys.PollMs] = 250
                 },
                 32_000)
             .ConfigureAwait(false);
@@ -666,7 +666,7 @@ internal static class DiagnosticSessionFlashbackSegmentPlaybackScenarios
         {
             await sendCommandAsync(
                     "SetRecordingEnabled",
-                    new Dictionary<string, object?> { ["enabled"] = false },
+                    new Dictionary<string, object?> { [AutomationPayloadKeys.Enabled] = false },
                     null)
                 .ConfigureAwait(false);
         }

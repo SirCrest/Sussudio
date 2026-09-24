@@ -1,6 +1,5 @@
 using System.ComponentModel;
 using System.Globalization;
-using System.IO;
 using System.Text;
 using System.Text.Json;
 using Sussudio.Models;
@@ -25,13 +24,13 @@ public static class PerformanceTimelineTools
         cancellationToken.ThrowIfCancellationRequested();
         var payload = new Dictionary<string, object?>
         {
-            ["maxEntries"] = maxEntries
+            [AutomationPayloadKeys.MaxEntries] = maxEntries
         };
 
         var response = await pipeClient.SendCommandAsync(AutomationCommandKind.GetPerformanceTimeline, payload, cancellationToken: cancellationToken).ConfigureAwait(false);
         if (!AutomationSnapshotFormatter.IsSuccess(response))
         {
-            return McpToolResultFactory.FromResponse(response, GetMessage(response));
+            return McpToolResultFactory.FromResponse(response, McpToolResultFactory.GetMessage(response));
         }
 
         if (!response.TryGetProperty("Data", out var data) || data.ValueKind != JsonValueKind.Array)
@@ -160,7 +159,7 @@ public static class PerformanceTimelineTools
         row.FlashbackPlaybackCommandsEnqueued = AutomationSnapshotFormatter.GetLong(item, "FlashbackPlaybackCommandsEnqueued");
         row.FlashbackPlaybackCommandsProcessed = AutomationSnapshotFormatter.GetLong(item, "FlashbackPlaybackCommandsProcessed");
         row.FlashbackPlaybackCommandsDropped = AutomationSnapshotFormatter.GetLong(item, "FlashbackPlaybackCommandsDropped");
-        row.FlashbackPlaybackCommandsSkippedNotReady = AutomationSnapshotFormatter.GetLong(item, "FlashbackPlaybackCommandsSkippedNotReady");
+        row.FlashbackPlaybackCommandsRejected = AutomationSnapshotFormatter.GetLong(item, "FlashbackPlaybackCommandsSkippedNotReady");
         row.FlashbackPlaybackScrubUpdatesCoalesced = AutomationSnapshotFormatter.GetLong(item, "FlashbackPlaybackScrubUpdatesCoalesced");
         row.FlashbackPlaybackSeekCommandsCoalesced = AutomationSnapshotFormatter.GetLong(item, "FlashbackPlaybackSeekCommandsCoalesced");
         row.FlashbackPlaybackLastCommandQueued = AutomationSnapshotFormatter.Get(item, "FlashbackPlaybackLastCommandQueued");
@@ -373,7 +372,7 @@ public static class PerformanceTimelineTools
         builder.AppendLine($"Flashback AudioMaster: unavailable={first.FlashbackPlaybackAudioMasterUnavailableFallbacks}->{last.FlashbackPlaybackAudioMasterUnavailableFallbacks} stale={first.FlashbackPlaybackAudioMasterStaleFallbacks}->{last.FlashbackPlaybackAudioMasterStaleFallbacks} driftOutlier={first.FlashbackPlaybackAudioMasterDriftOutlierFallbacks}->{last.FlashbackPlaybackAudioMasterDriftOutlierFallbacks} last={FormatOptional(last.FlashbackPlaybackAudioMasterLastFallbackReason)} age={last.FlashbackPlaybackAudioMasterLastFallbackClockAgeMs:F1}ms");
         builder.AppendLine($"Flashback Slow%:{first.FlashbackPlaybackSlowFramePercent:F1}% -> {last.FlashbackPlaybackSlowFramePercent:F1}%");
         builder.AppendLine($"Flashback Cmds: pending {first.FlashbackPlaybackPendingCommands} -> {last.FlashbackPlaybackPendingCommands}, maxPending latest={last.FlashbackPlaybackMaxPendingCommands}, maxLatency latest={last.FlashbackPlaybackMaxCommandQueueLatencyMs}ms maxLatencyCommand={FormatOptional(last.FlashbackPlaybackMaxCommandQueueLatencyCommand)}, failureUtc latest={last.FlashbackPlaybackLastCommandFailureUtcUnixMs}");
-        builder.AppendLine($"Flashback Cmd Counters: enqueued {first.FlashbackPlaybackCommandsEnqueued} -> {last.FlashbackPlaybackCommandsEnqueued}, processed {first.FlashbackPlaybackCommandsProcessed} -> {last.FlashbackPlaybackCommandsProcessed}, dropped {first.FlashbackPlaybackCommandsDropped} -> {last.FlashbackPlaybackCommandsDropped}, skippedNotReady {first.FlashbackPlaybackCommandsSkippedNotReady} -> {last.FlashbackPlaybackCommandsSkippedNotReady}, scrubCoalesced {first.FlashbackPlaybackScrubUpdatesCoalesced} -> {last.FlashbackPlaybackScrubUpdatesCoalesced}, seekCoalesced {first.FlashbackPlaybackSeekCommandsCoalesced} -> {last.FlashbackPlaybackSeekCommandsCoalesced}, lastQueued={FormatOptional(last.FlashbackPlaybackLastCommandQueued)}, lastProcessed={FormatOptional(last.FlashbackPlaybackLastCommandProcessed)}");
+        builder.AppendLine($"Flashback Cmd Counters: enqueued {first.FlashbackPlaybackCommandsEnqueued} -> {last.FlashbackPlaybackCommandsEnqueued}, processed {first.FlashbackPlaybackCommandsProcessed} -> {last.FlashbackPlaybackCommandsProcessed}, dropped {first.FlashbackPlaybackCommandsDropped} -> {last.FlashbackPlaybackCommandsDropped}, rejected {first.FlashbackPlaybackCommandsRejected} -> {last.FlashbackPlaybackCommandsRejected}, scrubCoalesced {first.FlashbackPlaybackScrubUpdatesCoalesced} -> {last.FlashbackPlaybackScrubUpdatesCoalesced}, seekCoalesced {first.FlashbackPlaybackSeekCommandsCoalesced} -> {last.FlashbackPlaybackSeekCommandsCoalesced}, lastQueued={FormatOptional(last.FlashbackPlaybackLastCommandQueued)}, lastProcessed={FormatOptional(last.FlashbackPlaybackLastCommandProcessed)}");
         builder.AppendLine($"Flashback Failure: latest={FormatOptional(last.FlashbackPlaybackLastCommandFailure)}");
         builder.AppendLine($"Flashback Drops: submitFailures {first.FlashbackPlaybackSubmitFailures} -> {last.FlashbackPlaybackSubmitFailures}, lastSubmitFailure={FormatOptional(last.FlashbackPlaybackLastSubmitFailure)} failureUtc latest={last.FlashbackPlaybackLastSubmitFailureUtcUnixMs}, droppedFrames {first.FlashbackPlaybackDroppedFrames} -> {last.FlashbackPlaybackDroppedFrames}, lastDrop={FormatOptional(last.FlashbackPlaybackLastDropReason)} dropUtc latest={last.FlashbackPlaybackLastDropUtcUnixMs}, decodeSnaps {first.FlashbackPlaybackDecodeErrorSnaps} -> {last.FlashbackPlaybackDecodeErrorSnaps}");
         builder.AppendLine($"Flashback Enqueue Rejects: video {first.FlashbackVideoQueueRejectedFrames} -> {last.FlashbackVideoQueueRejectedFrames} last={FormatOptional(last.FlashbackVideoQueueLastRejectReason)}, gpu {first.FlashbackGpuQueueRejectedFrames} -> {last.FlashbackGpuQueueRejectedFrames} last={FormatOptional(last.FlashbackGpuQueueLastRejectReason)}");
@@ -389,11 +388,6 @@ public static class PerformanceTimelineTools
         builder.AppendLine($"Export Progress: {first.FlashbackExportPercent:F1}% -> {last.FlashbackExportPercent:F1}% segments={last.FlashbackExportSegmentsProcessed}/{last.FlashbackExportTotalSegments}");
         builder.AppendLine($"Export Range:    in={last.FlashbackExportInPointMs}ms out={FormatExportOutPoint(last.FlashbackExportOutPointMs)}");
         builder.AppendLine($"Export Output:   {FormatBytes(first.FlashbackExportOutputBytes)} -> {FormatBytes(last.FlashbackExportOutputBytes)} throughput={FormatBytesPerSecond(last.FlashbackExportThroughputBytesPerSec)} elapsed={last.FlashbackExportElapsedMs}ms lastProgressAge={last.FlashbackExportLastProgressAgeMs}ms");
-    }
-
-    private static string GetMessage(JsonElement response)
-    {
-        return AutomationSnapshotFormatter.Get(response, "Message", "Command failed.");
     }
 
     private static string FormatOptional(string value)
@@ -707,7 +701,7 @@ public static class PerformanceTimelineTools
         public long FlashbackPlaybackCommandsEnqueued { get; set; }
         public long FlashbackPlaybackCommandsProcessed { get; set; }
         public long FlashbackPlaybackCommandsDropped { get; set; }
-        public long FlashbackPlaybackCommandsSkippedNotReady { get; set; }
+        public long FlashbackPlaybackCommandsRejected { get; set; }
         public long FlashbackPlaybackScrubUpdatesCoalesced { get; set; }
         public long FlashbackPlaybackSeekCommandsCoalesced { get; set; }
         public string FlashbackPlaybackLastCommandQueued { get; set; } = string.Empty;
@@ -847,26 +841,9 @@ public static class PresentMonTools
         PipeClient pipeClient,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var response = await pipeClient.SendCommandAsync(AutomationCommandKind.GetSnapshot, cancellationToken: cancellationToken).ConfigureAwait(false);
-            if (!AutomationSnapshotFormatter.IsSuccess(response) ||
-                !response.TryGetProperty("Snapshot", out var snapshot))
-            {
-                return default;
-            }
-
-            return PresentMonProbe.ReadPreviewCorrelation(snapshot);
-        }
-        catch (JsonException ex)
-        {
-            System.Diagnostics.Trace.TraceWarning($"GetExpectedSwapChainAsync: malformed snapshot JSON: {ex.Message}");
-            return default;
-        }
-        catch (IOException ex)
-        {
-            System.Diagnostics.Trace.TraceWarning($"GetExpectedSwapChainAsync: pipe IO failure: {ex.Message}");
-            return default;
-        }
+        var response = await pipeClient.SendCommandAsync(AutomationCommandKind.GetSnapshot, cancellationToken: cancellationToken).ConfigureAwait(false);
+        return PresentMonProbe.ResolvePreviewCorrelation(
+            response,
+            message => System.Diagnostics.Trace.TraceWarning($"PresentMon correlation unavailable: {message}"));
     }
 }

@@ -1699,69 +1699,28 @@ public readonly record struct PresentCadenceMetrics(
                     SlowFramePercent: 0);
             }
 
-            samples = new double[_presentIntervalCount];
-            for (var i = 0; i < _presentIntervalCount; i++)
-            {
-                var ringIndex = (_presentIntervalIndex - _presentIntervalCount + i + _presentIntervalWindowMs.Length)
-                    % _presentIntervalWindowMs.Length;
-                samples[i] = _presentIntervalWindowMs[ringIndex];
-            }
+            samples = RingBufferHelpers.Copy(_presentIntervalWindowMs, _presentIntervalCount, _presentIntervalIndex);
         }
 
-        var sampleCount = samples.Length;
-        var sum = 0.0;
-        var max = 0.0;
-        for (var i = 0; i < sampleCount; i++)
-        {
-            sum += samples[i];
-            if (samples[i] > max)
-            {
-                max = samples[i];
-            }
-        }
-
-        var average = sum / sampleCount;
-        var observedFps = average > double.Epsilon ? 1000.0 / average : 0;
-        var targetIntervalMs = expectedIntervalMs > 0 ? expectedIntervalMs : average;
-        var slowThresholdMs = targetIntervalMs * 1.6;
-
-        long slowFrameCount = 0;
-        var varianceSum = 0.0;
-        for (var i = 0; i < sampleCount; i++)
-        {
-            var delta = samples[i] - average;
-            varianceSum += delta * delta;
-            if (samples[i] >= slowThresholdMs)
-            {
-                slowFrameCount++;
-            }
-        }
-
-        var jitterStdDevMs = Math.Sqrt(varianceSum / sampleCount);
-        var sorted = (double[])samples.Clone();
-        Array.Sort(sorted);
-        var p95IntervalMs = PercentileHelpers.FromSorted(sorted, 0.95);
-        var p99IntervalMs = PercentileHelpers.FromSorted(sorted, 0.99);
-        var onePercentLowFps = p99IntervalMs > double.Epsilon ? 1000.0 / p99IntervalMs : 0;
-        var fivePercentLowFps = p95IntervalMs > double.Epsilon ? 1000.0 / p95IntervalMs : 0;
-        var slowPercent = slowFrameCount <= 0
+        var stats = IntervalCadenceStatistics.Compute(samples, expectedIntervalMs);
+        var slowPercent = stats.SlowIntervalCount <= 0
             ? 0
-            : (double)slowFrameCount / Math.Max(1, sampleCount) * 100.0;
+            : (double)stats.SlowIntervalCount / Math.Max(1, stats.SampleCount) * 100.0;
 
         return new PresentCadenceMetrics(
-            SampleCount: sampleCount,
-            ObservedFps: observedFps,
-            ExpectedIntervalMs: targetIntervalMs,
-            AverageIntervalMs: average,
-            P95IntervalMs: p95IntervalMs,
-            P99IntervalMs: p99IntervalMs,
-            MaxIntervalMs: max,
-            OnePercentLowFps: onePercentLowFps,
-            FivePercentLowFps: fivePercentLowFps,
-            SampleDurationMs: sum,
+            SampleCount: stats.SampleCount,
+            ObservedFps: stats.ObservedFps,
+            ExpectedIntervalMs: stats.TargetIntervalMs,
+            AverageIntervalMs: stats.AverageIntervalMs,
+            P95IntervalMs: stats.P95IntervalMs,
+            P99IntervalMs: stats.P99IntervalMs,
+            MaxIntervalMs: stats.MaxIntervalMs,
+            OnePercentLowFps: stats.OnePercentLowFps,
+            FivePercentLowFps: stats.FivePercentLowFps,
+            SampleDurationMs: stats.SampleDurationMs,
             RecentIntervalsMs: samples,
-            JitterStdDevMs: jitterStdDevMs,
-            SlowFrameCount: slowFrameCount,
+            JitterStdDevMs: stats.JitterStdDevMs,
+            SlowFrameCount: stats.SlowIntervalCount,
             SlowFramePercent: slowPercent);
     }
 

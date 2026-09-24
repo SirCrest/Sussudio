@@ -12,6 +12,57 @@ using Sussudio.Services.Runtime;
 
 namespace Sussudio.Controllers;
 
+// Capture-mode selection intent that MainViewModel shares with the source-telemetry,
+// mode-option rebuild and format-probe controllers: whether the user overrode the
+// resolution or frame rate for the current source mode, a pending SDR auto-selection
+// after a device change, and the keys used to detect source-mode changes. The view
+// model owns the single instance; controllers mutate it directly instead of through
+// per-field Get/Set delegates, and rollback copies it as one value.
+internal sealed class CaptureModeSelectionState
+{
+    public bool HasUserOverriddenResolutionForCurrentMode { get; set; }
+    public bool HasUserOverriddenFrameRateForCurrentMode { get; set; }
+    public string? LastSourceModeKey { get; set; }
+    public string? LastKnownResolutionKey { get; set; }
+    public bool PendingSdrAutoSelectionForDeviceChange { get; set; }
+    public int? PendingSdrAutoFriendlyFrameRateBucket { get; set; }
+
+    public void ClearPendingSdrAutoSelection()
+    {
+        PendingSdrAutoSelectionForDeviceChange = false;
+        PendingSdrAutoFriendlyFrameRateBucket = null;
+    }
+
+    public CaptureModeSelectionValues Capture()
+        => new(
+            HasUserOverriddenResolutionForCurrentMode,
+            HasUserOverriddenFrameRateForCurrentMode,
+            PendingSdrAutoSelectionForDeviceChange,
+            PendingSdrAutoFriendlyFrameRateBucket,
+            LastKnownResolutionKey,
+            LastSourceModeKey);
+
+    public void Restore(CaptureModeSelectionValues values)
+    {
+        HasUserOverriddenResolutionForCurrentMode = values.HasUserOverriddenResolutionForCurrentMode;
+        HasUserOverriddenFrameRateForCurrentMode = values.HasUserOverriddenFrameRateForCurrentMode;
+        PendingSdrAutoSelectionForDeviceChange = values.PendingSdrAutoSelectionForDeviceChange;
+        PendingSdrAutoFriendlyFrameRateBucket = values.PendingSdrAutoFriendlyFrameRateBucket;
+        LastKnownResolutionKey = values.LastKnownResolutionKey;
+        LastSourceModeKey = values.LastSourceModeKey;
+    }
+}
+
+// Value copy of CaptureModeSelectionState for capture-selection rollback; record
+// equality compares the keys ordinally.
+internal readonly record struct CaptureModeSelectionValues(
+    bool HasUserOverriddenResolutionForCurrentMode,
+    bool HasUserOverriddenFrameRateForCurrentMode,
+    bool PendingSdrAutoSelectionForDeviceChange,
+    int? PendingSdrAutoFriendlyFrameRateBucket,
+    string? LastKnownResolutionKey,
+    string? LastSourceModeKey);
+
 internal readonly record struct MainViewModelCaptureSelectionSnapshot(
     CaptureDevice? SelectedDevice,
     MediaFormat[] AvailableFormats,
@@ -52,14 +103,8 @@ internal readonly record struct MainViewModelCaptureSelectionSnapshot(
     string SourceFrameRateOrigin,
     string SourceTelemetrySummaryText,
     string SourceTargetSummaryText,
-    bool HasUserOverriddenResolutionForCurrentMode,
-    bool HasUserOverriddenFrameRateForCurrentMode,
-    bool PendingSdrAutoSelectionForDeviceChange,
-    int? PendingSdrAutoFriendlyFrameRateBucket,
-    bool ForceSourceAutoRetarget,
-    string? LastKnownResolutionKey,
-    string? LastSourceModeKey,
-    bool PendingModeOptionsRefresh)
+    CaptureModeSelectionValues ModeSelection,
+    bool? PendingModeOptionsRefreshForceRetarget)
 {
     public bool MatchesSelectionState(MainViewModelCaptureSelectionSnapshot other)
         => ReferenceEquals(SelectedDevice, other.SelectedDevice) &&
@@ -81,14 +126,8 @@ internal readonly record struct MainViewModelCaptureSelectionSnapshot(
            string.Equals(DisabledFrameRateReason, other.DisabledFrameRateReason, StringComparison.Ordinal) &&
            string.Equals(HdrResolutionSupportHint, other.HdrResolutionSupportHint, StringComparison.Ordinal) &&
            string.Equals(SelectedRecordingFormat, other.SelectedRecordingFormat, StringComparison.Ordinal) &&
-           HasUserOverriddenResolutionForCurrentMode == other.HasUserOverriddenResolutionForCurrentMode &&
-           HasUserOverriddenFrameRateForCurrentMode == other.HasUserOverriddenFrameRateForCurrentMode &&
-           PendingSdrAutoSelectionForDeviceChange == other.PendingSdrAutoSelectionForDeviceChange &&
-           PendingSdrAutoFriendlyFrameRateBucket == other.PendingSdrAutoFriendlyFrameRateBucket &&
-           ForceSourceAutoRetarget == other.ForceSourceAutoRetarget &&
-           string.Equals(LastKnownResolutionKey, other.LastKnownResolutionKey, StringComparison.Ordinal) &&
-           string.Equals(LastSourceModeKey, other.LastSourceModeKey, StringComparison.Ordinal) &&
-           PendingModeOptionsRefresh == other.PendingModeOptionsRefresh;
+           ModeSelection == other.ModeSelection &&
+           PendingModeOptionsRefreshForceRetarget == other.PendingModeOptionsRefreshForceRetarget;
 
     private static bool AreNullableEqual(double? left, double? right)
         => left.HasValue == right.HasValue && (!left.HasValue || AreEqual(left.Value, right!.Value));

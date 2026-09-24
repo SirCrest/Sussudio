@@ -169,6 +169,7 @@ public sealed partial class AutomationDiagnosticsHub
         var viewModelSnapshot = viewModelFragment.Value;
         var captureRuntime = captureRuntimeFragment.Value;
         var health = healthFragment.Value;
+        var playbackActive = health.FlashbackPlaybackState == FlashbackPlaybackState.Playing;
         var recordingStats = recordingStatsFragment.Value;
         var previewRuntime = previewRuntimeFragment.Value;
 
@@ -192,24 +193,12 @@ public sealed partial class AutomationDiagnosticsHub
                 health.VisualCadenceRepeatFramePercent,
                 health.VisualCadenceLongestRepeatRun);
         var performance = EvaluatePerformance(
-            isPreviewing: viewModelSnapshot.IsPreviewing,
-            isRecording: viewModelSnapshot.IsRecording,
-            recordingFileGrowing: recordingFileGrowing,
-            previewGpuActive: previewRuntime.GpuActive,
-            previewBlankSuspected: previewRuntime.BlankSuspected,
-            previewStalled: previewRuntime.StallSuspected,
-            previewCadenceSampleCount: previewRuntime.DisplayCadenceSampleCount,
-            previewCadenceSlowFramePercent: previewRuntime.DisplayCadenceSlowFramePercent,
-            captureCadenceSampleCount: health.CaptureCadenceSampleCount,
-            captureCadenceExpectedIntervalMs: health.CaptureCadenceExpectedIntervalMs,
-            captureCadenceP95IntervalMs: health.CaptureCadenceP95IntervalMs,
-            captureCadenceExpectedFrameRate: health.ExpectedFrameRate,
-            captureCadenceOnePercentLowFps: health.CaptureCadenceOnePercentLowFps,
-            previewCadenceExpectedIntervalMs: previewRuntime.DisplayCadenceExpectedIntervalMs,
-            previewCadenceOnePercentLowFps: previewRuntime.DisplayCadenceOnePercentLowFps,
-            visualCadenceHealthy: visualCadenceHealthy,
-            captureCadenceDropPercent: health.CaptureCadenceEstimatedDropPercent,
-            lastVerification: lastVerification);
+            viewModelSnapshot,
+            health,
+            previewRuntime,
+            recordingFileGrowing,
+            visualCadenceHealthy,
+            lastVerification);
         var recentPreviewJitter = UpdatePreviewJitterRecentCounters(health, nowTick);
         var recentMjpeg = UpdateMjpegRecentCounters(health, nowTick);
         var recentRenderer = UpdateD3DRendererRecentCounters(previewRuntime, nowTick);
@@ -286,7 +275,7 @@ public sealed partial class AutomationDiagnosticsHub
 
         var shouldAutoVerify = ShouldAutoVerifySnapshot(snapshot);
 
-        UpdateAlerts(snapshot, recentFlashbackRecording);
+        UpdateAlerts(snapshot, recentFlashbackRecording, playbackActive, previewRuntime.StartupState);
 
         lock (_stateLock)
         {
@@ -1257,7 +1246,11 @@ public sealed partial class AutomationDiagnosticsHub
         });
     }
 
-    private void UpdateAlerts(AutomationSnapshot snapshot, FlashbackRecordingRecentCounters flashbackRecordingRecent)
+    private void UpdateAlerts(
+        AutomationSnapshot snapshot,
+        FlashbackRecordingRecentCounters flashbackRecordingRecent,
+        bool playbackActive,
+        PreviewStartupState? previewStartupState)
     {
         ObserveFlashbackExportCompletion(snapshot);
         var captureOnePercentLowDegraded =
@@ -1284,11 +1277,12 @@ public sealed partial class AutomationDiagnosticsHub
             captureOnePercentLowDegraded,
             previewOnePercentLowDegraded,
             visualCadenceHealthy,
-            previewSlowFrameDetail);
+            previewSlowFrameDetail,
+            previewStartupState);
 
         var nowUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         UpdateFlashbackRecordingAlerts(snapshot, flashbackRecordingRecent);
-        UpdateFlashbackPlaybackAlerts(snapshot, nowUnixMs);
+        UpdateFlashbackPlaybackAlerts(snapshot, nowUnixMs, playbackActive);
 
         SetAlertState(
             "hdr-parity-mismatch",
@@ -1463,10 +1457,10 @@ public sealed partial class AutomationDiagnosticsHub
         }
     }
 
-    private void UpdateFlashbackPlaybackAlerts(AutomationSnapshot snapshot, long nowUnixMs)
+    private void UpdateFlashbackPlaybackAlerts(AutomationSnapshot snapshot, long nowUnixMs, bool playbackActive)
     {
         UpdateFlashbackPlaybackCommandAlerts(snapshot, nowUnixMs);
-        UpdateFlashbackPlaybackPerformanceAlerts(snapshot);
+        UpdateFlashbackPlaybackPerformanceAlerts(snapshot, playbackActive);
     }
 
     private void UpdateFlashbackRecordingAlerts(
@@ -1648,9 +1642,15 @@ public sealed partial class AutomationDiagnosticsHub
         bool captureOnePercentLowDegraded,
         bool previewOnePercentLowDegraded,
         bool visualCadenceHealthy,
-        string previewSlowFrameDetail)
+        string previewSlowFrameDetail,
+        PreviewStartupState? previewStartupState)
     {
-        UpdatePreviewSignalAlerts(snapshot, previewOnePercentLowDegraded, visualCadenceHealthy, previewSlowFrameDetail);
+        UpdatePreviewSignalAlerts(
+            snapshot,
+            previewOnePercentLowDegraded,
+            visualCadenceHealthy,
+            previewSlowFrameDetail,
+            previewStartupState);
         UpdateAudioSignalAlerts(snapshot);
         UpdateRecordingGrowthAlerts(snapshot);
         UpdateCaptureSignalAlerts(snapshot, captureOnePercentLowDegraded);
@@ -1660,7 +1660,8 @@ public sealed partial class AutomationDiagnosticsHub
         AutomationSnapshot snapshot,
         bool previewOnePercentLowDegraded,
         bool visualCadenceHealthy,
-        string previewSlowFrameDetail)
+        string previewSlowFrameDetail,
+        PreviewStartupState? previewStartupState)
     {
         SetAlertState(
             "preview-blank",
@@ -1683,7 +1684,7 @@ public sealed partial class AutomationDiagnosticsHub
             "preview-startup-timeout",
             snapshot.IsPreviewing &&
             !snapshot.PreviewFirstVisualConfirmed &&
-            string.Equals(snapshot.PreviewStartupState, "WaitingForFirstVisual", StringComparison.OrdinalIgnoreCase) &&
+            previewStartupState == PreviewStartupState.WaitingForFirstVisual &&
             snapshot.PreviewStartupElapsedMs.GetValueOrDefault() >= startupTimeoutMs,
             DiagnosticsSeverity.Warning,
             DiagnosticsCategory.Preview,
@@ -1694,7 +1695,7 @@ public sealed partial class AutomationDiagnosticsHub
 
         SetAlertState(
             "preview-startup-failed",
-            string.Equals(snapshot.PreviewStartupState, "Failed", StringComparison.OrdinalIgnoreCase),
+            previewStartupState == PreviewStartupState.Failed,
             DiagnosticsSeverity.Error,
             DiagnosticsCategory.Preview,
             string.IsNullOrWhiteSpace(snapshot.PreviewLastFailureReason)
@@ -1773,15 +1774,12 @@ public sealed partial class AutomationDiagnosticsHub
             "Recording output growth resumed.");
     }
 
-    private void UpdateFlashbackPlaybackPerformanceAlerts(AutomationSnapshot snapshot)
+    private void UpdateFlashbackPlaybackPerformanceAlerts(AutomationSnapshot snapshot, bool playbackActive)
     {
         var playbackTargetFps = ResolveFlashbackPlaybackTargetFps(
             snapshot.FlashbackPlaybackTargetFps,
             snapshot.SelectedExactFrameRate.GetValueOrDefault(snapshot.SelectedFrameRate));
         var selectedCaptureFps = snapshot.SelectedExactFrameRate.GetValueOrDefault(snapshot.SelectedFrameRate);
-        var playbackActive =
-            string.Equals(snapshot.FlashbackPlaybackState, "Playing", StringComparison.OrdinalIgnoreCase);
-
         UpdateFlashbackPlaybackCadenceAlerts(
             snapshot,
             playbackTargetFps,
@@ -1818,7 +1816,7 @@ public sealed partial class AutomationDiagnosticsHub
             snapshot.FlashbackPlaybackObservedFps < playbackTargetFps * FlashbackPlaybackSlowFpsRatio;
         var playbackFrametimeDegraded =
             IsFlashbackPlaybackFrametimeDegraded(
-                snapshot.FlashbackPlaybackState,
+                playbackActive,
                 playbackTargetFps,
                 snapshot.FlashbackPlaybackFrameCount,
                 snapshot.FlashbackPlaybackCadenceSampleCount,

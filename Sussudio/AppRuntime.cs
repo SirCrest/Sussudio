@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Management;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -12,7 +11,9 @@ using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using Microsoft.Win32;
 using Sussudio.Models;
+using Vortice.DXGI;
 
 namespace Sussudio;
 
@@ -263,7 +264,7 @@ public static class Logger
     // path that is already failing. Everywhere else in the app, diagnostics
     // go to Logger.Log so they reach the log file operators actually read.
     private const int MaxDrainBatchEntries = 256;
-    private static readonly string LogFilePath;
+    private static string _logFilePath = string.Empty;
 
     private static readonly object LockObject = new();
     private static readonly Channel<string> LogChannel = Channel.CreateBounded<string>(new BoundedChannelOptions(8192)
@@ -272,7 +273,9 @@ public static class Logger
         SingleWriter = false,
         FullMode = BoundedChannelFullMode.Wait
     });
-    private static readonly Task LogWriterTask;
+    private static Task _logWriterTask = Task.CompletedTask;
+    private static readonly object InitializationLock = new();
+    private static int _initialized;
     public static bool VerboseEnabled { get; set; }
     private static int _systemInfoLogged;
     private static long _droppedLogMessages;
@@ -280,7 +283,7 @@ public static class Logger
 
     // Categorized init outcome so callers can distinguish "log file isn't being
     // written" from "log file rotation failed but writer started anyway".
-    // Keeps the static-ctor-must-not-throw invariant by *recording* failure
+    // Keeps initialization non-throwing by recording failure
     // rather than rethrowing. AccessViolationException remains uncatchable per
     // CLAUDE.md — this enum only covers ordinary I/O.
     public enum LoggerInitState
@@ -291,7 +294,8 @@ public static class Logger
         WriterStartFailed,
     }
 
-    public static LoggerInitState InitState { get; private set; } = LoggerInitState.NotInitialized;
+    private static volatile LoggerInitState _initState;
+    public static LoggerInitState InitState => _initState;
     private static long DroppedMessageCount => Interlocked.Read(ref _droppedLogMessages);
 
     static Logger()
@@ -301,33 +305,54 @@ public static class Logger
 #else
         VerboseEnabled = false;
 #endif
-        LogFilePath = TryResolveLogFilePath(() => RuntimePaths.GetRepoLogFile("Sussudio_Debug.log"));
-        var fileIoOk = !string.IsNullOrEmpty(LogFilePath);
-        if (fileIoOk)
+    }
+
+    // The admitted app or private probe selects one root for this process.
+    // Repeated calls, including calls after shutdown or failure, never rotate
+    // again or redirect an already selected log to another directory.
+    public static void Initialize(string logRoot)
+    {
+        lock (InitializationLock)
         {
+            if (_initialized != 0)
+            {
+                return;
+            }
+
+            _logFilePath = TryResolveLogFilePath(() =>
+            {
+                var directory = Path.GetFullPath(logRoot);
+                Directory.CreateDirectory(directory);
+                return Path.Combine(directory, "Sussudio_Debug.log");
+            });
+            var fileIoOk = !string.IsNullOrEmpty(_logFilePath);
+            if (fileIoOk)
+            {
+                try
+                {
+                    RotatePriorLog();
+                    var header = $"=== Sussudio Debug Log ===\nStarted: {DateTime.Now:yyyy-MM-dd HH:mm:ss}\nPID: {Environment.ProcessId}\n\n";
+                    File.WriteAllText(_logFilePath, header);
+                }
+                catch
+                {
+                    // Keep the resolved path so later writes can recover from a
+                    // transient file lock. InitState still records the startup failure.
+                    fileIoOk = false;
+                }
+            }
+
             try
             {
-                RotatePriorLog();
-                var header = $"=== Sussudio Debug Log ===\nStarted: {DateTime.Now:yyyy-MM-dd HH:mm:ss}\nPID: {Environment.ProcessId}\n\n";
-                File.WriteAllText(LogFilePath, header);
+                _logWriterTask = Task.Run(RunLogWriterAsync);
+                _initState = fileIoOk ? LoggerInitState.Healthy : LoggerInitState.FileIoFailed;
             }
             catch
             {
-                // Keep the resolved path so later writes can recover from a
-                // transient file lock. InitState still records the startup failure.
-                fileIoOk = false;
+                _logWriterTask = Task.CompletedTask;
+                _initState = LoggerInitState.WriterStartFailed;
             }
-        }
-
-        try
-        {
-            LogWriterTask = Task.Run(RunLogWriterAsync);
-            InitState = fileIoOk ? LoggerInitState.Healthy : LoggerInitState.FileIoFailed;
-        }
-        catch
-        {
-            LogWriterTask = Task.CompletedTask;
-            InitState = LoggerInitState.WriterStartFailed;
+            Volatile.Write(ref _initialized, 1);
         }
     }
 
@@ -361,8 +386,21 @@ public static class Logger
         var timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
         var logMessage = $"[{timestamp}] [{caller}] {message}\n";
 
+        if (Volatile.Read(ref _initialized) == 0 || InitState == LoggerInitState.WriterStartFailed)
+        {
+            TraceFallback(logMessage);
+            return;
+        }
+
         // Write to debug output
-        System.Diagnostics.Debug.WriteLine(logMessage.TrimEnd());
+        try
+        {
+            System.Diagnostics.Debug.WriteLine(logMessage.TrimEnd());
+        }
+        catch
+        {
+            // A diagnostic listener must not interrupt the caller or queued file logging.
+        }
 
         if (LogChannel.Writer.TryWrite(logMessage))
         {
@@ -385,14 +423,22 @@ public static class Logger
 
     public static async Task ShutdownAsync(TimeSpan timeout)
     {
-        LogChannel.Writer.TryComplete();
+        lock (InitializationLock)
+        {
+            if (_initialized == 0)
+            {
+                return;
+            }
+
+            LogChannel.Writer.TryComplete();
+        }
         try
         {
-            await LogWriterTask.WaitAsync(timeout).ConfigureAwait(false);
+            await _logWriterTask.WaitAsync(timeout).ConfigureAwait(false);
         }
         catch (TimeoutException)
         {
-            Trace.TraceWarning($"Logger shutdown drain timed out after {timeout.TotalMilliseconds:0} ms.");
+            TraceFallback($"Logger shutdown drain timed out after {timeout.TotalMilliseconds:0} ms.");
         }
     }
 
@@ -430,13 +476,13 @@ public static class Logger
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Trace.TraceWarning($"Suppressed exception in Logger.LogWriterLoop: {ex.Message}");
+            TraceFallback($"Suppressed exception in Logger.{nameof(RunLogWriterAsync)} type={ex.GetType().Name}: {ex.Message}");
         }
     }
 
     private static void WriteDirect(string entry)
     {
-        if (string.IsNullOrEmpty(LogFilePath))
+        if (Volatile.Read(ref _initialized) == 0 || string.IsNullOrEmpty(_logFilePath))
         {
             TraceFallback(entry);
             return;
@@ -446,38 +492,38 @@ public static class Logger
         {
             try
             {
-                File.AppendAllText(LogFilePath, entry);
+                File.AppendAllText(_logFilePath, entry);
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Trace.TraceWarning($"Suppressed exception in Logger.WriteDirect: {ex.Message}");
+                TraceFallback($"Suppressed exception in Logger.WriteDirect: {ex.Message}");
             }
         }
     }
 
     private static void RotatePriorLog()
     {
-        if (!File.Exists(LogFilePath))
+        if (!File.Exists(_logFilePath))
         {
             return;
         }
 
-        var mtime = File.GetLastWriteTime(LogFilePath);
-        var rotated = Path.Combine(Path.GetDirectoryName(LogFilePath)!, $"Sussudio_Debug_{mtime:yyyyMMdd_HHmmss}.log");
+        var mtime = File.GetLastWriteTime(_logFilePath);
+        var rotated = Path.Combine(Path.GetDirectoryName(_logFilePath)!, $"Sussudio_Debug_{mtime:yyyyMMdd_HHmmss}.log");
         try
         {
             if (File.Exists(rotated))
             {
-                File.Delete(LogFilePath);
+                File.Delete(_logFilePath);
             }
             else
             {
-                File.Move(LogFilePath, rotated);
+                File.Move(_logFilePath, rotated);
             }
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Trace.TraceWarning($"Suppressed exception in Logger.RotatePriorLog: {ex.Message}");
+            TraceFallback($"Suppressed exception in Logger.RotatePriorLog: {ex.Message}");
         }
     }
 
@@ -488,6 +534,12 @@ public static class Logger
 
     public static void LogSystemInfo()
     {
+        if (Volatile.Read(ref _initialized) == 0)
+        {
+            TraceFallback("System diagnostics deferred until Logger.Initialize.");
+            return;
+        }
+
         if (!VerboseEnabled || Interlocked.Exchange(ref _systemInfoLogged, 1) == 1)
         {
             return;
@@ -502,11 +554,9 @@ public static class Logger
 
         try
         {
-            using var cpuSearcher = new ManagementObjectSearcher("SELECT Name, NumberOfCores, NumberOfLogicalProcessors, MaxClockSpeed FROM Win32_Processor");
-            foreach (var obj in cpuSearcher.Get())
-            {
-                Log($"CPU: {obj["Name"]} | Cores={obj["NumberOfCores"]} | Logical={obj["NumberOfLogicalProcessors"]} | MaxMHz={obj["MaxClockSpeed"]}");
-            }
+            using var cpuKey = Registry.LocalMachine.OpenSubKey(@"HARDWARE\DESCRIPTION\System\CentralProcessor\0");
+            var name = (cpuKey?.GetValue("ProcessorNameString") as string)?.Trim();
+            Log(string.IsNullOrEmpty(name) ? "CPU info unavailable: processor name missing" : $"CPU: {name}");
         }
         catch (Exception ex)
         {
@@ -515,13 +565,14 @@ public static class Logger
 
         try
         {
-            using var memSearcher = new ManagementObjectSearcher("SELECT TotalPhysicalMemory FROM Win32_ComputerSystem");
-            foreach (var obj in memSearcher.Get())
+            if (GetPhysicallyInstalledSystemMemory(out var totalKilobytes))
             {
-                if (obj["TotalPhysicalMemory"] is ulong bytes)
-                {
-                    Log($"RAM: {DisplayFormatters.FormatBytes((long)Math.Min(bytes, long.MaxValue))}");
-                }
+                var bytes = (long)Math.Min(totalKilobytes, (ulong)long.MaxValue / 1024) * 1024;
+                Log($"RAM: {DisplayFormatters.FormatBytes(bytes)} installed");
+            }
+            else
+            {
+                Log($"RAM info unavailable: Win32 error {Marshal.GetLastWin32Error()}");
             }
         }
         catch (Exception ex)
@@ -531,14 +582,31 @@ public static class Logger
 
         try
         {
-            using var gpuSearcher = new ManagementObjectSearcher("SELECT Name, DriverVersion, DriverDate, AdapterRAM FROM Win32_VideoController");
-            foreach (var obj in gpuSearcher.Get())
+            var result = DXGI.CreateDXGIFactory1<IDXGIFactory1>(out var factory);
+            using (factory)
             {
-                var name = obj["Name"];
-                var driverVersion = obj["DriverVersion"];
-                var driverDate = obj["DriverDate"];
-                var ram = obj["AdapterRAM"] is uint adapterRam ? DisplayFormatters.FormatBytes(adapterRam) : "unknown";
-                Log($"GPU: {name} | Driver={driverVersion} | DriverDate={driverDate} | VRAM={ram}");
+                result.CheckError();
+                if (factory is null)
+                {
+                    throw new InvalidOperationException("DXGI factory returned no interface.");
+                }
+
+                for (uint index = 0; ; index++)
+                {
+                    result = factory.EnumAdapters1(index, out var adapter);
+                    using (adapter)
+                    {
+                        if (result == ResultCode.NotFound)
+                        {
+                            break;
+                        }
+
+                        result.CheckError();
+                        var description = adapter.Description1;
+                        var bytes = (long)Math.Min((ulong)description.DedicatedVideoMemory, (ulong)long.MaxValue);
+                        Log($"GPU: {description.Description} | Vendor=0x{description.VendorId:X4} | Device=0x{description.DeviceId:X4} | Flags={description.Flags} | VRAM={DisplayFormatters.FormatBytes(bytes)}");
+                    }
+                }
             }
         }
         catch (Exception ex)
@@ -546,6 +614,10 @@ public static class Logger
             Log($"GPU info unavailable: {ex.Message}");
         }
     }
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetPhysicallyInstalledSystemMemory(out ulong totalKilobytes);
 
     public static void LogException(Exception ex, [CallerMemberName] string caller = "")
     {
@@ -597,12 +669,12 @@ public static class Logger
         }
         catch (Exception debugEx)
         {
-            System.Diagnostics.Trace.TraceWarning($"Suppressed exception in Logger.LogFatalBreadcrumb debug write: {debugEx.Message}");
+            TraceFallback($"Suppressed exception in Logger.LogFatalBreadcrumb debug write: {debugEx.Message}");
         }
     }
 
-    /// <summary>Returns the log path, or an empty string if its directory could not be resolved.</summary>
-    public static string GetLogFilePath() => LogFilePath;
+    /// <summary>Returns the selected log path, or empty before initialization or if directory resolution failed.</summary>
+    public static string GetLogFilePath() => Volatile.Read(ref _initialized) != 0 ? _logFilePath : string.Empty;
 }
 
 // Source-generated JSON metadata for diagnostic snapshots written to the log.

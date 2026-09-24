@@ -306,17 +306,8 @@ public sealed class SnapshotModelsTests
         => Activator.CreateInstance(RequireType(typeName))
            ?? throw new InvalidOperationException($"Failed to create {typeName}.");
 
-    private static void AssertEqual<T>(T expected, object? actual, string _)
-        => Assert.Equal(expected, actual);
-
     private static void AssertNotNull(object? value, string _)
         => Assert.NotNull(value);
-
-    private static void AssertContains(string text, string expectedSubstring)
-        => Assert.Contains(expectedSubstring, text, StringComparison.Ordinal);
-
-    private static void AssertDoesNotContain(string text, string unexpectedSubstring)
-        => Assert.DoesNotContain(unexpectedSubstring, text, StringComparison.Ordinal);
 
     private static object CreateGenericList(Type itemType, params object[] items)
     {
@@ -506,7 +497,7 @@ public sealed class SnapshotModelsTests
     {
         var property = type.GetProperty(expected.Name, BindingFlags.Instance | BindingFlags.Public);
         AssertNotNull(property, $"{type.Name}.{expected.Name}");
-        AssertEqual(expected.Type, property!.PropertyType, $"{type.Name}.{expected.Name} property type");
+        Assert.Equal(expected.Type, property!.PropertyType);
         if (property.GetMethod == null || !property.GetMethod.IsPublic)
         {
             throw new InvalidOperationException($"{type.Name}.{expected.Name} must expose a public getter.");
@@ -540,10 +531,10 @@ public sealed class SnapshotModelsTests
             var expectedState = expected.Nullability == SnapshotNullability.Nullable
                 ? NullabilityState.Nullable
                 : NullabilityState.NotNull;
-            AssertEqual(expectedState, nullability.ReadState, $"{type.Name}.{expected.Name} read nullability");
+            Assert.Equal(expectedState, nullability.ReadState);
             if (expected.Setter == SnapshotSetterExpectation.InitOnly)
             {
-                AssertEqual(expectedState, nullability.WriteState, $"{type.Name}.{expected.Name} write nullability");
+                Assert.Equal(expectedState, nullability.WriteState);
             }
 
             if (expected.ElementNullability != SnapshotNullability.NotApplicable)
@@ -559,8 +550,8 @@ public sealed class SnapshotModelsTests
                 var expectedElementState = expected.ElementNullability == SnapshotNullability.Nullable
                     ? NullabilityState.Nullable
                     : NullabilityState.NotNull;
-                AssertEqual(expectedElementState, elementNullability.ReadState, $"{type.Name}.{expected.Name} element read nullability");
-                AssertEqual(expectedElementState, elementNullability.WriteState, $"{type.Name}.{expected.Name} element write nullability");
+                Assert.Equal(expectedElementState, elementNullability.ReadState);
+                Assert.Equal(expectedElementState, elementNullability.WriteState);
             }
         }
 
@@ -579,7 +570,7 @@ public sealed class SnapshotModelsTests
     private static object GetSingleEnumerableItem(object value)
     {
         var items = ((IEnumerable)value).Cast<object>().ToArray();
-        AssertEqual(1, items.Length, "IEnumerable item count");
+        Assert.Single(items);
         return items[0];
     }
 
@@ -591,7 +582,7 @@ public sealed class SnapshotModelsTests
     {
         var value = GetPropertyValue(instance, propertyName)
             ?? throw new InvalidOperationException($"{fieldName}: expected non-null string value.");
-        AssertEqual(expectedValue, value, fieldName);
+        Assert.Equal(expectedValue, value);
     }
 
     private static readonly string[] AutomationSnapshotCpuMjpegMetricProperties =
@@ -633,10 +624,10 @@ public sealed class SnapshotModelsTests
     {
         var automationSnapshotText = ReadRepoFile("Sussudio/Models/Automation/AutomationSnapshot.cs");
 
-        AssertContains(automationSnapshotText, "public int MjpegDecodeSampleCount { get; init; }");
-        AssertContains(automationSnapshotText, "public int MjpegDecoderCount { get; init; }");
-        AssertContains(automationSnapshotText, "public MjpegDecoderAutomationSnapshot[] MjpegPerDecoder { get; init; } = Array.Empty<MjpegDecoderAutomationSnapshot>();");
-        AssertContains(automationSnapshotText, "public bool MjpegPreviewJitterEnabled { get; init; }");
+        Assert.Contains("public int MjpegDecodeSampleCount { get; init; }", automationSnapshotText, StringComparison.Ordinal);
+        Assert.Contains("public int MjpegDecoderCount { get; init; }", automationSnapshotText, StringComparison.Ordinal);
+        Assert.Contains("public MjpegDecoderAutomationSnapshot[] MjpegPerDecoder { get; init; } = Array.Empty<MjpegDecoderAutomationSnapshot>();", automationSnapshotText, StringComparison.Ordinal);
+        Assert.Contains("public bool MjpegPreviewJitterEnabled { get; init; }", automationSnapshotText, StringComparison.Ordinal);
 
         foreach (var propertyName in AutomationSnapshotCpuMjpegMetricProperties)
         {
@@ -648,7 +639,7 @@ public sealed class SnapshotModelsTests
             ?? throw new InvalidOperationException("AutomationSnapshot.MjpegPerDecoder missing.");
         var elementType = perDecoderProperty.PropertyType.GetElementType()
             ?? throw new InvalidOperationException("AutomationSnapshot.MjpegPerDecoder element type missing.");
-        AssertEqual(decoderType, elementType, "AutomationSnapshot.MjpegPerDecoder[] element type");
+        Assert.Equal(decoderType, elementType);
 
         foreach (var propertyName in MjpegDecoderAutomationSnapshotProperties)
         {
@@ -693,11 +684,11 @@ public sealed class SnapshotModelsTests
             "MjpegPacketHashDuplicateFramePercent",
             "MjpegPacketHashPattern",
             "MjpegPacketHashRecentDuplicateFlags");
-        AssertContains(automationSnapshotText, "public bool MjpegPreviewJitterEnabled { get; init; }");
-        AssertContains(automationSnapshotText, "public string MjpegPreviewJitterLastDropReason { get; init; } = string.Empty;");
-        AssertContains(automationSnapshotText, "public int MjpegPacketHashSampleCount { get; init; }");
-        AssertContains(automationSnapshotText, "public int[] MjpegPacketHashRecentDuplicateFlags { get; init; } = Array.Empty<int>();");
-        AssertContains(automationSnapshotText, "public int VisualCadenceSampleCount { get; init; }");
+        Assert.Contains("public bool MjpegPreviewJitterEnabled { get; init; }", automationSnapshotText, StringComparison.Ordinal);
+        Assert.Contains("public string MjpegPreviewJitterLastDropReason { get; init; } = string.Empty;", automationSnapshotText, StringComparison.Ordinal);
+        Assert.Contains("public int MjpegPacketHashSampleCount { get; init; }", automationSnapshotText, StringComparison.Ordinal);
+        Assert.Contains("public int[] MjpegPacketHashRecentDuplicateFlags { get; init; } = Array.Empty<int>();", automationSnapshotText, StringComparison.Ordinal);
+        Assert.Contains("public int VisualCadenceSampleCount { get; init; }", automationSnapshotText, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -774,9 +765,9 @@ public sealed class SnapshotModelsTests
             "CaptureCadenceRecentIntervalsMs",
             "CaptureCadenceEstimatedDroppedFrames",
             "CaptureCadenceEstimatedDropPercent");
-        AssertContains(automationSnapshotText, "public long EstimatedPipelineLatencyMs { get; init; }");
-        AssertContains(automationSnapshotText, "public double[] CaptureCadenceRecentIntervalsMs { get; init; } = Array.Empty<double>();");
-        AssertContains(automationSnapshotText, "public int MjpegDecodeSampleCount { get; init; }");
+        Assert.Contains("public long EstimatedPipelineLatencyMs { get; init; }", automationSnapshotText, StringComparison.Ordinal);
+        Assert.Contains("public double[] CaptureCadenceRecentIntervalsMs { get; init; } = Array.Empty<double>();", automationSnapshotText, StringComparison.Ordinal);
+        Assert.Contains("public int MjpegDecodeSampleCount { get; init; }", automationSnapshotText, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -836,12 +827,12 @@ public sealed class SnapshotModelsTests
             "FlashbackVideoQueueLastRejectReason",
             "FlashbackGpuQueueRejectedFrames",
             "FlashbackGpuQueueLastRejectReason");
-        AssertContains(automationSnapshotText, "public bool FlashbackActive { get; init; }");
-        AssertContains(automationSnapshotText, "public int FlashbackAudioQueueCapacity { get; init; }");
-        AssertContains(automationSnapshotText, "public string FlashbackPlaybackState { get; init; }");
-        AssertContains(automationSnapshotText, "public bool FlashbackExportActive { get; init; }");
-        AssertContains(automationSnapshotText, "public bool FlashbackForceRotateActive { get; init; }");
-        AssertContains(automationSnapshotText, "public long FlashbackVideoFramesSubmittedToEncoder { get; init; }");
+        Assert.Contains("public bool FlashbackActive { get; init; }", automationSnapshotText, StringComparison.Ordinal);
+        Assert.Contains("public int FlashbackAudioQueueCapacity { get; init; }", automationSnapshotText, StringComparison.Ordinal);
+        Assert.Contains("public string FlashbackPlaybackState { get; init; }", automationSnapshotText, StringComparison.Ordinal);
+        Assert.Contains("public bool FlashbackExportActive { get; init; }", automationSnapshotText, StringComparison.Ordinal);
+        Assert.Contains("public bool FlashbackForceRotateActive { get; init; }", automationSnapshotText, StringComparison.Ordinal);
+        Assert.Contains("public long FlashbackVideoFramesSubmittedToEncoder { get; init; }", automationSnapshotText, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -917,10 +908,10 @@ public sealed class SnapshotModelsTests
             "FlashbackPlaybackLastCommandProcessedUtcUnixMs",
             "FlashbackPlaybackLastCommandFailureUtcUnixMs",
             "FlashbackPlaybackLastCommandFailure");
-        AssertContains(automationSnapshotText, "public string FlashbackPlaybackState { get; init; } = \"N/A\";");
-        AssertContains(automationSnapshotText, "public double[] FlashbackPlaybackRecentFrameIntervalsMs { get; init; } = Array.Empty<double>();");
-        AssertContains(automationSnapshotText, "public string FlashbackPlaybackLastCommandFailure { get; init; } = string.Empty;");
-        AssertContains(automationSnapshotText, "public bool FlashbackExportActive { get; init; }");
+        Assert.Contains("public string FlashbackPlaybackState { get; init; } = \"N/A\";", automationSnapshotText, StringComparison.Ordinal);
+        Assert.Contains("public double[] FlashbackPlaybackRecentFrameIntervalsMs { get; init; } = Array.Empty<double>();", automationSnapshotText, StringComparison.Ordinal);
+        Assert.Contains("public string FlashbackPlaybackLastCommandFailure { get; init; } = string.Empty;", automationSnapshotText, StringComparison.Ordinal);
+        Assert.Contains("public bool FlashbackExportActive { get; init; }", automationSnapshotText, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -955,10 +946,10 @@ public sealed class SnapshotModelsTests
             "FlashbackExportLastForceRotateFallbackInPointMs",
             "FlashbackExportLastForceRotateFallbackOutPointMs",
             "LastExportId");
-        AssertContains(automationSnapshotText, "public bool FlashbackExportActive { get; init; }");
-        AssertContains(automationSnapshotText, "public string FlashbackExportStatus { get; init; } = \"NotStarted\";");
-        AssertContains(automationSnapshotText, "public string? LastExportMessage { get; init; }");
-        AssertContains(automationSnapshotText, "public string FlashbackPlaybackState { get; init; }");
+        Assert.Contains("public bool FlashbackExportActive { get; init; }", automationSnapshotText, StringComparison.Ordinal);
+        Assert.Contains("public string FlashbackExportStatus { get; init; } = \"NotStarted\";", automationSnapshotText, StringComparison.Ordinal);
+        Assert.Contains("public string? LastExportMessage { get; init; }", automationSnapshotText, StringComparison.Ordinal);
+        Assert.Contains("public string FlashbackPlaybackState { get; init; }", automationSnapshotText, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -979,9 +970,9 @@ public sealed class SnapshotModelsTests
             "VisualCenterCadenceRepeatFramePercent",
             "VisualCenterCadenceMotionConfidence",
             "VisualCenterCadenceRecentChangeIntervalsMs");
-        AssertContains(automationSnapshotText, "public int VisualCadenceSampleCount { get; init; }");
-        AssertContains(automationSnapshotText, "public double[] VisualCenterCadenceRecentChangeIntervalsMs { get; init; } = Array.Empty<double>();");
-        AssertContains(automationSnapshotText, "public MjpegDecoderAutomationSnapshot[] MjpegPerDecoder");
+        Assert.Contains("public int VisualCadenceSampleCount { get; init; }", automationSnapshotText, StringComparison.Ordinal);
+        Assert.Contains("public double[] VisualCenterCadenceRecentChangeIntervalsMs { get; init; } = Array.Empty<double>();", automationSnapshotText, StringComparison.Ordinal);
+        Assert.Contains("public MjpegDecoderAutomationSnapshot[] MjpegPerDecoder", automationSnapshotText, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -1011,15 +1002,15 @@ public sealed class SnapshotModelsTests
 
         var presetsProperty = optionsType.GetProperty("Presets")
             ?? throw new InvalidOperationException("AutomationOptionsSnapshot.Presets missing.");
-        AssertEqual(stringOptionType, presetsProperty.PropertyType.GetElementType(), "AutomationOptionsSnapshot.Presets[] element type");
+        Assert.Equal(stringOptionType, presetsProperty.PropertyType.GetElementType());
 
         var decoderCountsProperty = optionsType.GetProperty("MjpegDecoderCounts")
             ?? throw new InvalidOperationException("AutomationOptionsSnapshot.MjpegDecoderCounts missing.");
-        AssertEqual(intOptionType, decoderCountsProperty.PropertyType.GetElementType(), "AutomationOptionsSnapshot.MjpegDecoderCounts[] element type");
+        Assert.Equal(intOptionType, decoderCountsProperty.PropertyType.GetElementType());
 
         var flashbackBufferOptionsProperty = optionsType.GetProperty("FlashbackBufferMinuteOptions")
             ?? throw new InvalidOperationException("AutomationOptionsSnapshot.FlashbackBufferMinuteOptions missing.");
-        AssertEqual(intOptionType, flashbackBufferOptionsProperty.PropertyType.GetElementType(), "AutomationOptionsSnapshot.FlashbackBufferMinuteOptions[] element type");
+        Assert.Equal(intOptionType, flashbackBufferOptionsProperty.PropertyType.GetElementType());
 
         var snapshotType = RequireType("Sussudio.Models.AutomationSnapshot");
         AssertNotNull(snapshotType.GetProperty("SelectedVideoFormat"), "AutomationSnapshot.SelectedVideoFormat");
@@ -1031,19 +1022,19 @@ public sealed class SnapshotModelsTests
     public void CaptureDiagnosticsSnapshot_DefaultsAndRoundTripsCoreTelemetry()
     {
         var diagnosticsRootText = ReadRepoFile("Sussudio/Models/Capture/CaptureModels.cs");
-        AssertContains(diagnosticsRootText, "public class CaptureDiagnosticsSnapshot");
-        AssertContains(diagnosticsRootText, "public SourceTelemetryAvailability SourceTelemetryAvailability { get; init; } = SourceTelemetryAvailability.Unknown;");
-        AssertContains(diagnosticsRootText, "public bool? SourceIsHdr { get; init; }");
-        AssertContains(diagnosticsRootText, "public int CaptureCadenceSampleCount { get; init; }");
-        AssertContains(diagnosticsRootText, "public double[] CaptureCadenceRecentIntervalsMs { get; init; } = Array.Empty<double>();");
-        AssertContains(diagnosticsRootText, "public int RecordingVideoQueueCapacity { get; init; }");
-        AssertContains(diagnosticsRootText, "public long AudioChunksDropped { get; init; }");
-        AssertContains(diagnosticsRootText, "public bool FlashbackActive { get; init; }");
-        AssertContains(diagnosticsRootText, "public bool FlashbackForceRotateActive { get; init; }");
-        AssertContains(diagnosticsRootText, "public sealed record MjpegDecoderHealthSnapshot(");
-        AssertContains(diagnosticsRootText, "public int MjpegDecodeSampleCount { get; init; }");
-        AssertContains(diagnosticsRootText, "public double[] VisualCenterCadenceRecentChangeIntervalsMs { get; init; } = Array.Empty<double>();");
-        AssertDoesNotContain(diagnosticsRootText, "partial class CaptureDiagnosticsSnapshot");
+        Assert.Contains("public class CaptureDiagnosticsSnapshot", diagnosticsRootText, StringComparison.Ordinal);
+        Assert.Contains("public SourceTelemetryAvailability SourceTelemetryAvailability { get; init; } = SourceTelemetryAvailability.Unknown;", diagnosticsRootText, StringComparison.Ordinal);
+        Assert.Contains("public bool? SourceIsHdr { get; init; }", diagnosticsRootText, StringComparison.Ordinal);
+        Assert.Contains("public int CaptureCadenceSampleCount { get; init; }", diagnosticsRootText, StringComparison.Ordinal);
+        Assert.Contains("public double[] CaptureCadenceRecentIntervalsMs { get; init; } = Array.Empty<double>();", diagnosticsRootText, StringComparison.Ordinal);
+        Assert.Contains("public int RecordingVideoQueueCapacity { get; init; }", diagnosticsRootText, StringComparison.Ordinal);
+        Assert.Contains("public long AudioChunksDropped { get; init; }", diagnosticsRootText, StringComparison.Ordinal);
+        Assert.Contains("public bool FlashbackActive { get; init; }", diagnosticsRootText, StringComparison.Ordinal);
+        Assert.Contains("public bool FlashbackForceRotateActive { get; init; }", diagnosticsRootText, StringComparison.Ordinal);
+        Assert.Contains("public sealed record MjpegDecoderHealthSnapshot(", diagnosticsRootText, StringComparison.Ordinal);
+        Assert.Contains("public int MjpegDecodeSampleCount { get; init; }", diagnosticsRootText, StringComparison.Ordinal);
+        Assert.Contains("public double[] VisualCenterCadenceRecentChangeIntervalsMs { get; init; } = Array.Empty<double>();", diagnosticsRootText, StringComparison.Ordinal);
+        Assert.DoesNotContain("partial class CaptureDiagnosticsSnapshot", diagnosticsRootText, StringComparison.Ordinal);
 
         var snapshotType = RequireType("Sussudio.Models.CaptureDiagnosticsSnapshot");
         var decoderType = RequireType("Sussudio.Models.MjpegDecoderHealthSnapshot");
@@ -1069,32 +1060,32 @@ public sealed class SnapshotModelsTests
             throw new InvalidOperationException("CaptureDiagnosticsSnapshot.TimestampUtc should default to current UTC time.");
         }
 
-        AssertEqual(0L, GetLongProperty(snapshot, "CaptureSessionEpoch"), "CaptureDiagnosticsSnapshot.CaptureSessionEpoch default");
-        AssertEqual(0L, GetLongProperty(snapshot, "SourceTelemetryEpoch"), "CaptureDiagnosticsSnapshot.SourceTelemetryEpoch default");
-        AssertEqual(ParseEnum("Sussudio.Models.CaptureSessionState", "Uninitialized"), GetPropertyValue(snapshot, "SessionState"), "CaptureDiagnosticsSnapshot.SessionState default");
+        Assert.Equal(0L, GetLongProperty(snapshot, "CaptureSessionEpoch"));
+        Assert.Equal(0L, GetLongProperty(snapshot, "SourceTelemetryEpoch"));
+        Assert.Equal(ParseEnum("Sussudio.Models.CaptureSessionState", "Uninitialized"), GetPropertyValue(snapshot, "SessionState"));
         AssertNonNullStringValue(snapshot, "RecordingBackend", "None", "CaptureDiagnosticsSnapshot.RecordingBackend default");
         AssertNonNullStringValue(snapshot, "AudioPathMode", "None", "CaptureDiagnosticsSnapshot.AudioPathMode default");
         AssertNonNullStringValue(snapshot, "MuxResult", "NotAttempted", "CaptureDiagnosticsSnapshot.MuxResult default");
-        AssertEqual(ParseEnum("Sussudio.Models.SourceTelemetryAvailability", "Unknown"), GetPropertyValue(snapshot, "SourceTelemetryAvailability"), "CaptureDiagnosticsSnapshot.SourceTelemetryAvailability default");
-        AssertEqual(ParseEnum("Sussudio.Models.SourceTelemetryOrigin", "Unknown"), GetPropertyValue(snapshot, "SourceTelemetryOrigin"), "CaptureDiagnosticsSnapshot.SourceTelemetryOrigin default");
-        AssertEqual(ParseEnum("Sussudio.Models.SourceTelemetryConfidence", "Unknown"), GetPropertyValue(snapshot, "SourceTelemetryConfidence"), "CaptureDiagnosticsSnapshot.SourceTelemetryConfidence default");
+        Assert.Equal(ParseEnum("Sussudio.Models.SourceTelemetryAvailability", "Unknown"), GetPropertyValue(snapshot, "SourceTelemetryAvailability"));
+        Assert.Equal(ParseEnum("Sussudio.Models.SourceTelemetryOrigin", "Unknown"), GetPropertyValue(snapshot, "SourceTelemetryOrigin"));
+        Assert.Equal(ParseEnum("Sussudio.Models.SourceTelemetryConfidence", "Unknown"), GetPropertyValue(snapshot, "SourceTelemetryConfidence"));
         AssertNonNullStringValue(snapshot, "SourceTelemetryOriginDetail", "Unknown", "CaptureDiagnosticsSnapshot.SourceTelemetryOriginDetail default");
         AssertNonNullStringValue(snapshot, "SourceTelemetryBackend", "Unknown", "CaptureDiagnosticsSnapshot.SourceTelemetryBackend default");
         AssertNonNullStringValue(snapshot, "SourceTelemetryCircuitState", "Closed", "CaptureDiagnosticsSnapshot.SourceTelemetryCircuitState default");
         AssertNonNullStringValue(snapshot, "HdrAutoDowngradeReason", string.Empty, "CaptureDiagnosticsSnapshot.HdrAutoDowngradeReason default");
         AssertNonNullStringValue(snapshot, "MjpegPacketHashLastHash", string.Empty, "CaptureDiagnosticsSnapshot.MjpegPacketHashLastHash default");
         AssertNonNullStringValue(snapshot, "MjpegPacketHashPattern", "NoSamples", "CaptureDiagnosticsSnapshot.MjpegPacketHashPattern default");
-        AssertEqual(0, GetCountProperty(GetPropertyValue(snapshot, "MjpegPacketHashRecentInputIntervalsMs")!), "CaptureDiagnosticsSnapshot.MjpegPacketHashRecentInputIntervalsMs default count");
-        AssertEqual(0, GetCountProperty(GetPropertyValue(snapshot, "MjpegPacketHashRecentUniqueIntervalsMs")!), "CaptureDiagnosticsSnapshot.MjpegPacketHashRecentUniqueIntervalsMs default count");
-        AssertEqual(0, GetCountProperty(GetPropertyValue(snapshot, "MjpegPacketHashRecentDuplicateFlags")!), "CaptureDiagnosticsSnapshot.MjpegPacketHashRecentDuplicateFlags default count");
-        AssertEqual(0, GetCountProperty(GetPropertyValue(snapshot, "CaptureCadenceRecentIntervalsMs")!), "CaptureDiagnosticsSnapshot.CaptureCadenceRecentIntervalsMs default count");
+        Assert.Equal(0, GetCountProperty(GetPropertyValue(snapshot, "MjpegPacketHashRecentInputIntervalsMs")!));
+        Assert.Equal(0, GetCountProperty(GetPropertyValue(snapshot, "MjpegPacketHashRecentUniqueIntervalsMs")!));
+        Assert.Equal(0, GetCountProperty(GetPropertyValue(snapshot, "MjpegPacketHashRecentDuplicateFlags")!));
+        Assert.Equal(0, GetCountProperty(GetPropertyValue(snapshot, "CaptureCadenceRecentIntervalsMs")!));
         AssertNonNullStringValue(snapshot, "VisualCadenceMotionConfidence", "NoSamples", "CaptureDiagnosticsSnapshot.VisualCadenceMotionConfidence default");
-        AssertEqual(0, GetCountProperty(GetPropertyValue(snapshot, "VisualCadenceRecentOutputIntervalsMs")!), "CaptureDiagnosticsSnapshot.VisualCadenceRecentOutputIntervalsMs default count");
-        AssertEqual(0, GetCountProperty(GetPropertyValue(snapshot, "VisualCadenceRecentChangeIntervalsMs")!), "CaptureDiagnosticsSnapshot.VisualCadenceRecentChangeIntervalsMs default count");
+        Assert.Equal(0, GetCountProperty(GetPropertyValue(snapshot, "VisualCadenceRecentOutputIntervalsMs")!));
+        Assert.Equal(0, GetCountProperty(GetPropertyValue(snapshot, "VisualCadenceRecentChangeIntervalsMs")!));
         AssertNonNullStringValue(snapshot, "VisualCenterCadenceMotionConfidence", "NoSamples", "CaptureDiagnosticsSnapshot.VisualCenterCadenceMotionConfidence default");
-        AssertEqual(0, GetCountProperty(GetPropertyValue(snapshot, "VisualCenterCadenceRecentOutputIntervalsMs")!), "CaptureDiagnosticsSnapshot.VisualCenterCadenceRecentOutputIntervalsMs default count");
-        AssertEqual(0, GetCountProperty(GetPropertyValue(snapshot, "VisualCenterCadenceRecentChangeIntervalsMs")!), "CaptureDiagnosticsSnapshot.VisualCenterCadenceRecentChangeIntervalsMs default count");
-        AssertEqual(0, GetCountProperty(GetPropertyValue(snapshot, "MjpegPerDecoder")!), "CaptureDiagnosticsSnapshot.MjpegPerDecoder default count");
+        Assert.Equal(0, GetCountProperty(GetPropertyValue(snapshot, "VisualCenterCadenceRecentOutputIntervalsMs")!));
+        Assert.Equal(0, GetCountProperty(GetPropertyValue(snapshot, "VisualCenterCadenceRecentChangeIntervalsMs")!));
+        Assert.Equal(0, GetCountProperty(GetPropertyValue(snapshot, "MjpegPerDecoder")!));
 
         var decoder = CreateMjpegDecoderHealthSnapshot(decoderType, 1, 120, 2.1, 3.4, 5.6);
         var perDecoder = Array.CreateInstance(decoderType, 1);
@@ -1158,81 +1149,81 @@ public sealed class SnapshotModelsTests
         SetPropertyOrBackingField(snapshot, "AudioChunksDropped", 3L);
 
         var roundTripDecoder = ((Array)GetPropertyValue(snapshot, "MjpegPerDecoder")!).GetValue(0)!;
-        AssertEqual(42L, GetLongProperty(snapshot, "CaptureSessionEpoch"), "CaptureDiagnosticsSnapshot.CaptureSessionEpoch round-trip");
-        AssertEqual(99L, GetLongProperty(snapshot, "SourceTelemetryEpoch"), "CaptureDiagnosticsSnapshot.SourceTelemetryEpoch round-trip");
-        AssertEqual(ParseEnum("Sussudio.Models.CaptureSessionState", "Recording"), GetPropertyValue(snapshot, "SessionState"), "CaptureDiagnosticsSnapshot.SessionState round-trip");
-        AssertEqual(true, GetBoolProperty(snapshot, "IsRecording"), "CaptureDiagnosticsSnapshot.IsRecording round-trip");
-        AssertEqual("FFmpeg", GetStringProperty(snapshot, "RecordingBackend"), "CaptureDiagnosticsSnapshot.RecordingBackend round-trip");
-        AssertEqual(3840, Convert.ToInt32(GetPropertyValue(snapshot, "NegotiatedWidth")), "CaptureDiagnosticsSnapshot.NegotiatedWidth round-trip");
-        AssertEqual(ParseEnum("Sussudio.Models.SourceTelemetryOrigin", "NativeXu"), GetPropertyValue(snapshot, "SourceTelemetryOrigin"), "CaptureDiagnosticsSnapshot.SourceTelemetryOrigin round-trip");
-        AssertEqual(1, GetCountProperty(GetPropertyValue(snapshot, "MjpegPerDecoder")!), "CaptureDiagnosticsSnapshot.MjpegPerDecoder round-trip count");
-        AssertEqual(1, GetIntProperty(roundTripDecoder, "WorkerIndex"), "MjpegDecoderHealthSnapshot.WorkerIndex round-trip");
-        AssertEqual(120, GetIntProperty(roundTripDecoder, "SampleCount"), "MjpegDecoderHealthSnapshot.SampleCount round-trip");
-        AssertEqual(2.1, GetDoubleProperty(roundTripDecoder, "AvgMs"), "MjpegDecoderHealthSnapshot.AvgMs round-trip");
-        AssertEqual(3.4, GetDoubleProperty(roundTripDecoder, "P95Ms"), "MjpegDecoderHealthSnapshot.P95Ms round-trip");
-        AssertEqual(5.6, GetDoubleProperty(roundTripDecoder, "MaxMs"), "MjpegDecoderHealthSnapshot.MaxMs round-trip");
-        AssertEqual(2L, GetLongProperty(snapshot, "VideoDropsQueueSaturated"), "CaptureDiagnosticsSnapshot.VideoDropsQueueSaturated round-trip");
-        AssertEqual(true, GetBoolProperty(snapshot, "RecordingEncodingFailed"), "CaptureDiagnosticsSnapshot.RecordingEncodingFailed round-trip");
-        AssertEqual("InvalidOperationException", GetStringProperty(snapshot, "RecordingEncodingFailureType"), "CaptureDiagnosticsSnapshot.RecordingEncodingFailureType round-trip");
-        AssertEqual(360, GetIntProperty(snapshot, "RecordingVideoQueueCapacity"), "CaptureDiagnosticsSnapshot.RecordingVideoQueueCapacity round-trip");
-        AssertEqual(12, GetIntProperty(snapshot, "RecordingVideoQueueMaxDepth"), "CaptureDiagnosticsSnapshot.RecordingVideoQueueMaxDepth round-trip");
-        AssertEqual(11L, GetLongProperty(snapshot, "RecordingVideoFramesSubmittedToEncoder"), "CaptureDiagnosticsSnapshot.RecordingVideoFramesSubmittedToEncoder round-trip");
-        AssertEqual(10L, GetLongProperty(snapshot, "RecordingVideoEncoderPacketsWritten"), "CaptureDiagnosticsSnapshot.RecordingVideoEncoderPacketsWritten round-trip");
-        AssertEqual(12L, GetLongProperty(snapshot, "RecordingVideoEncoderPts"), "CaptureDiagnosticsSnapshot.RecordingVideoEncoderPts round-trip");
-        AssertEqual(1L, GetLongProperty(snapshot, "RecordingVideoEncoderDroppedFrames"), "CaptureDiagnosticsSnapshot.RecordingVideoEncoderDroppedFrames round-trip");
-        AssertEqual(2L, GetLongProperty(snapshot, "RecordingVideoSequenceGaps"), "CaptureDiagnosticsSnapshot.RecordingVideoSequenceGaps round-trip");
-        AssertEqual(8L, GetLongProperty(snapshot, "RecordingVideoQueueOldestFrameAgeMs"), "CaptureDiagnosticsSnapshot.RecordingVideoQueueOldestFrameAgeMs round-trip");
-        AssertEqual(4.5, GetDoubleProperty(snapshot, "RecordingVideoQueueLatencyP95Ms"), "CaptureDiagnosticsSnapshot.RecordingVideoQueueLatencyP95Ms round-trip");
-        AssertEqual(6.5, GetDoubleProperty(snapshot, "RecordingVideoQueueLatencyP99Ms"), "CaptureDiagnosticsSnapshot.RecordingVideoQueueLatencyP99Ms round-trip");
-        AssertEqual(20L, GetLongProperty(snapshot, "RecordingVideoBackpressureWaitMs"), "CaptureDiagnosticsSnapshot.RecordingVideoBackpressureWaitMs round-trip");
-        AssertEqual(2L, GetLongProperty(snapshot, "RecordingVideoBackpressureEvents"), "CaptureDiagnosticsSnapshot.RecordingVideoBackpressureEvents round-trip");
-        AssertEqual(6L, GetLongProperty(snapshot, "RecordingVideoBackpressureLastWaitMs"), "CaptureDiagnosticsSnapshot.RecordingVideoBackpressureLastWaitMs round-trip");
-        AssertEqual(14L, GetLongProperty(snapshot, "RecordingVideoBackpressureMaxWaitMs"), "CaptureDiagnosticsSnapshot.RecordingVideoBackpressureMaxWaitMs round-trip");
-        AssertEqual(4L, GetLongProperty(snapshot, "RecordingGpuFramesDropped"), "CaptureDiagnosticsSnapshot.RecordingGpuFramesDropped round-trip");
-        AssertEqual(true, GetBoolProperty(snapshot, "FlashbackEncodingFailed"), "CaptureDiagnosticsSnapshot.FlashbackEncodingFailed round-trip");
-        AssertEqual(2_000_000L, GetLongProperty(snapshot, "FlashbackTotalBytesWritten"), "CaptureDiagnosticsSnapshot.FlashbackTotalBytesWritten round-trip");
-        AssertEqual(1_000_000L, GetLongProperty(snapshot, "FlashbackTempDriveFreeBytes"), "CaptureDiagnosticsSnapshot.FlashbackTempDriveFreeBytes round-trip");
-        AssertEqual(100_000L, GetLongProperty(snapshot, "FlashbackStartupCacheBudgetBytes"), "CaptureDiagnosticsSnapshot.FlashbackStartupCacheBudgetBytes round-trip");
-        AssertEqual(120_000L, GetLongProperty(snapshot, "FlashbackStartupCacheBytes"), "CaptureDiagnosticsSnapshot.FlashbackStartupCacheBytes round-trip");
-        AssertEqual(3, GetIntProperty(snapshot, "FlashbackStartupCacheSessionCount"), "CaptureDiagnosticsSnapshot.FlashbackStartupCacheSessionCount round-trip");
-        AssertEqual(2, GetIntProperty(snapshot, "FlashbackStartupCacheDeletedSessionCount"), "CaptureDiagnosticsSnapshot.FlashbackStartupCacheDeletedSessionCount round-trip");
-        AssertEqual(80_000L, GetLongProperty(snapshot, "FlashbackStartupCacheFreedBytes"), "CaptureDiagnosticsSnapshot.FlashbackStartupCacheFreedBytes round-trip");
-        AssertEqual(true, GetBoolProperty(snapshot, "FlashbackStartupCacheOverBudget"), "CaptureDiagnosticsSnapshot.FlashbackStartupCacheOverBudget round-trip");
-        AssertEqual(true, GetBoolProperty(snapshot, "FatalCleanupInProgress"), "CaptureDiagnosticsSnapshot.FatalCleanupInProgress round-trip");
-        AssertEqual(true, GetBoolProperty(snapshot, "FlashbackCleanupInProgress"), "CaptureDiagnosticsSnapshot.FlashbackCleanupInProgress round-trip");
-        AssertEqual(true, GetBoolProperty(snapshot, "FlashbackForceRotateActive"), "CaptureDiagnosticsSnapshot.FlashbackForceRotateActive round-trip");
-        AssertEqual(true, GetBoolProperty(snapshot, "FlashbackForceRotateRequested"), "CaptureDiagnosticsSnapshot.FlashbackForceRotateRequested round-trip");
-        AssertEqual(true, GetBoolProperty(snapshot, "FlashbackForceRotateDraining"), "CaptureDiagnosticsSnapshot.FlashbackForceRotateDraining round-trip");
-        AssertEqual(180, GetIntProperty(snapshot, "FlashbackVideoQueueCapacity"), "CaptureDiagnosticsSnapshot.FlashbackVideoQueueCapacity round-trip");
-        AssertEqual(21L, GetLongProperty(snapshot, "FlashbackVideoFramesSubmittedToEncoder"), "CaptureDiagnosticsSnapshot.FlashbackVideoFramesSubmittedToEncoder round-trip");
-        AssertEqual(20L, GetLongProperty(snapshot, "FlashbackVideoEncoderPacketsWritten"), "CaptureDiagnosticsSnapshot.FlashbackVideoEncoderPacketsWritten round-trip");
-        AssertEqual(3L, GetLongProperty(snapshot, "FlashbackVideoSequenceGaps"), "CaptureDiagnosticsSnapshot.FlashbackVideoSequenceGaps round-trip");
-        AssertEqual(9L, GetLongProperty(snapshot, "FlashbackVideoQueueOldestFrameAgeMs"), "CaptureDiagnosticsSnapshot.FlashbackVideoQueueOldestFrameAgeMs round-trip");
-        AssertEqual(5.5, GetDoubleProperty(snapshot, "FlashbackVideoQueueLatencyP95Ms"), "CaptureDiagnosticsSnapshot.FlashbackVideoQueueLatencyP95Ms round-trip");
-        AssertEqual(7.5, GetDoubleProperty(snapshot, "FlashbackVideoQueueLatencyP99Ms"), "CaptureDiagnosticsSnapshot.FlashbackVideoQueueLatencyP99Ms round-trip");
-        AssertEqual(30L, GetLongProperty(snapshot, "FlashbackVideoBackpressureWaitMs"), "CaptureDiagnosticsSnapshot.FlashbackVideoBackpressureWaitMs round-trip");
-        AssertEqual(3L, GetLongProperty(snapshot, "FlashbackVideoBackpressureEvents"), "CaptureDiagnosticsSnapshot.FlashbackVideoBackpressureEvents round-trip");
-        AssertEqual(7L, GetLongProperty(snapshot, "FlashbackVideoBackpressureLastWaitMs"), "CaptureDiagnosticsSnapshot.FlashbackVideoBackpressureLastWaitMs round-trip");
-        AssertEqual(15L, GetLongProperty(snapshot, "FlashbackVideoBackpressureMaxWaitMs"), "CaptureDiagnosticsSnapshot.FlashbackVideoBackpressureMaxWaitMs round-trip");
-        AssertEqual(5L, GetLongProperty(snapshot, "FlashbackGpuFramesDropped"), "CaptureDiagnosticsSnapshot.FlashbackGpuFramesDropped round-trip");
-        AssertEqual(3L, GetLongProperty(snapshot, "AudioChunksDropped"), "CaptureDiagnosticsSnapshot.AudioChunksDropped round-trip");
+        Assert.Equal(42L, GetLongProperty(snapshot, "CaptureSessionEpoch"));
+        Assert.Equal(99L, GetLongProperty(snapshot, "SourceTelemetryEpoch"));
+        Assert.Equal(ParseEnum("Sussudio.Models.CaptureSessionState", "Recording"), GetPropertyValue(snapshot, "SessionState"));
+        Assert.True(GetBoolProperty(snapshot, "IsRecording"));
+        Assert.Equal("FFmpeg", GetStringProperty(snapshot, "RecordingBackend"));
+        Assert.Equal(3840, Convert.ToInt32(GetPropertyValue(snapshot, "NegotiatedWidth")));
+        Assert.Equal(ParseEnum("Sussudio.Models.SourceTelemetryOrigin", "NativeXu"), GetPropertyValue(snapshot, "SourceTelemetryOrigin"));
+        Assert.Equal(1, GetCountProperty(GetPropertyValue(snapshot, "MjpegPerDecoder")!));
+        Assert.Equal(1, GetIntProperty(roundTripDecoder, "WorkerIndex"));
+        Assert.Equal(120, GetIntProperty(roundTripDecoder, "SampleCount"));
+        Assert.Equal(2.1, GetDoubleProperty(roundTripDecoder, "AvgMs"));
+        Assert.Equal(3.4, GetDoubleProperty(roundTripDecoder, "P95Ms"));
+        Assert.Equal(5.6, GetDoubleProperty(roundTripDecoder, "MaxMs"));
+        Assert.Equal(2L, GetLongProperty(snapshot, "VideoDropsQueueSaturated"));
+        Assert.True(GetBoolProperty(snapshot, "RecordingEncodingFailed"));
+        Assert.Equal("InvalidOperationException", GetStringProperty(snapshot, "RecordingEncodingFailureType"));
+        Assert.Equal(360, GetIntProperty(snapshot, "RecordingVideoQueueCapacity"));
+        Assert.Equal(12, GetIntProperty(snapshot, "RecordingVideoQueueMaxDepth"));
+        Assert.Equal(11L, GetLongProperty(snapshot, "RecordingVideoFramesSubmittedToEncoder"));
+        Assert.Equal(10L, GetLongProperty(snapshot, "RecordingVideoEncoderPacketsWritten"));
+        Assert.Equal(12L, GetLongProperty(snapshot, "RecordingVideoEncoderPts"));
+        Assert.Equal(1L, GetLongProperty(snapshot, "RecordingVideoEncoderDroppedFrames"));
+        Assert.Equal(2L, GetLongProperty(snapshot, "RecordingVideoSequenceGaps"));
+        Assert.Equal(8L, GetLongProperty(snapshot, "RecordingVideoQueueOldestFrameAgeMs"));
+        Assert.Equal(4.5, GetDoubleProperty(snapshot, "RecordingVideoQueueLatencyP95Ms"));
+        Assert.Equal(6.5, GetDoubleProperty(snapshot, "RecordingVideoQueueLatencyP99Ms"));
+        Assert.Equal(20L, GetLongProperty(snapshot, "RecordingVideoBackpressureWaitMs"));
+        Assert.Equal(2L, GetLongProperty(snapshot, "RecordingVideoBackpressureEvents"));
+        Assert.Equal(6L, GetLongProperty(snapshot, "RecordingVideoBackpressureLastWaitMs"));
+        Assert.Equal(14L, GetLongProperty(snapshot, "RecordingVideoBackpressureMaxWaitMs"));
+        Assert.Equal(4L, GetLongProperty(snapshot, "RecordingGpuFramesDropped"));
+        Assert.True(GetBoolProperty(snapshot, "FlashbackEncodingFailed"));
+        Assert.Equal(2_000_000L, GetLongProperty(snapshot, "FlashbackTotalBytesWritten"));
+        Assert.Equal(1_000_000L, GetLongProperty(snapshot, "FlashbackTempDriveFreeBytes"));
+        Assert.Equal(100_000L, GetLongProperty(snapshot, "FlashbackStartupCacheBudgetBytes"));
+        Assert.Equal(120_000L, GetLongProperty(snapshot, "FlashbackStartupCacheBytes"));
+        Assert.Equal(3, GetIntProperty(snapshot, "FlashbackStartupCacheSessionCount"));
+        Assert.Equal(2, GetIntProperty(snapshot, "FlashbackStartupCacheDeletedSessionCount"));
+        Assert.Equal(80_000L, GetLongProperty(snapshot, "FlashbackStartupCacheFreedBytes"));
+        Assert.True(GetBoolProperty(snapshot, "FlashbackStartupCacheOverBudget"));
+        Assert.True(GetBoolProperty(snapshot, "FatalCleanupInProgress"));
+        Assert.True(GetBoolProperty(snapshot, "FlashbackCleanupInProgress"));
+        Assert.True(GetBoolProperty(snapshot, "FlashbackForceRotateActive"));
+        Assert.True(GetBoolProperty(snapshot, "FlashbackForceRotateRequested"));
+        Assert.True(GetBoolProperty(snapshot, "FlashbackForceRotateDraining"));
+        Assert.Equal(180, GetIntProperty(snapshot, "FlashbackVideoQueueCapacity"));
+        Assert.Equal(21L, GetLongProperty(snapshot, "FlashbackVideoFramesSubmittedToEncoder"));
+        Assert.Equal(20L, GetLongProperty(snapshot, "FlashbackVideoEncoderPacketsWritten"));
+        Assert.Equal(3L, GetLongProperty(snapshot, "FlashbackVideoSequenceGaps"));
+        Assert.Equal(9L, GetLongProperty(snapshot, "FlashbackVideoQueueOldestFrameAgeMs"));
+        Assert.Equal(5.5, GetDoubleProperty(snapshot, "FlashbackVideoQueueLatencyP95Ms"));
+        Assert.Equal(7.5, GetDoubleProperty(snapshot, "FlashbackVideoQueueLatencyP99Ms"));
+        Assert.Equal(30L, GetLongProperty(snapshot, "FlashbackVideoBackpressureWaitMs"));
+        Assert.Equal(3L, GetLongProperty(snapshot, "FlashbackVideoBackpressureEvents"));
+        Assert.Equal(7L, GetLongProperty(snapshot, "FlashbackVideoBackpressureLastWaitMs"));
+        Assert.Equal(15L, GetLongProperty(snapshot, "FlashbackVideoBackpressureMaxWaitMs"));
+        Assert.Equal(5L, GetLongProperty(snapshot, "FlashbackGpuFramesDropped"));
+        Assert.Equal(3L, GetLongProperty(snapshot, "AudioChunksDropped"));
         var decoderJsonRoundTrip = ReflectionJsonRoundTrip(decoderType, decoder);
-        AssertEqual(120, GetIntProperty(decoderJsonRoundTrip, "SampleCount"), "MjpegDecoderHealthSnapshot JSON SampleCount");
+        Assert.Equal(120, GetIntProperty(decoderJsonRoundTrip, "SampleCount"));
         var jsonRoundTrip = ReflectionJsonRoundTrip(snapshotType, snapshot);
-        AssertEqual(42L, GetLongProperty(jsonRoundTrip, "CaptureSessionEpoch"), "CaptureDiagnosticsSnapshot JSON CaptureSessionEpoch");
-        AssertEqual(99L, GetLongProperty(jsonRoundTrip, "SourceTelemetryEpoch"), "CaptureDiagnosticsSnapshot JSON SourceTelemetryEpoch");
-        AssertEqual("FFmpeg", GetStringProperty(jsonRoundTrip, "RecordingBackend"), "CaptureDiagnosticsSnapshot JSON RecordingBackend");
-        AssertEqual(true, GetBoolProperty(jsonRoundTrip, "RecordingEncodingFailed"), "CaptureDiagnosticsSnapshot JSON RecordingEncodingFailed");
-        AssertEqual(2_000_000L, GetLongProperty(jsonRoundTrip, "FlashbackTotalBytesWritten"), "CaptureDiagnosticsSnapshot JSON FlashbackTotalBytesWritten");
-        AssertEqual(120_000L, GetLongProperty(jsonRoundTrip, "FlashbackStartupCacheBytes"), "CaptureDiagnosticsSnapshot JSON FlashbackStartupCacheBytes");
-        AssertEqual(true, GetBoolProperty(jsonRoundTrip, "FatalCleanupInProgress"), "CaptureDiagnosticsSnapshot JSON FatalCleanupInProgress");
-        AssertEqual(true, GetBoolProperty(jsonRoundTrip, "FlashbackCleanupInProgress"), "CaptureDiagnosticsSnapshot JSON FlashbackCleanupInProgress");
-        AssertEqual(true, GetBoolProperty(jsonRoundTrip, "FlashbackForceRotateActive"), "CaptureDiagnosticsSnapshot JSON FlashbackForceRotateActive");
-        AssertEqual(true, GetBoolProperty(jsonRoundTrip, "FlashbackForceRotateRequested"), "CaptureDiagnosticsSnapshot JSON FlashbackForceRotateRequested");
-        AssertEqual(true, GetBoolProperty(jsonRoundTrip, "FlashbackForceRotateDraining"), "CaptureDiagnosticsSnapshot JSON FlashbackForceRotateDraining");
-        AssertEqual(180, GetIntProperty(jsonRoundTrip, "FlashbackVideoQueueCapacity"), "CaptureDiagnosticsSnapshot JSON FlashbackVideoQueueCapacity");
-        AssertEqual(1, GetCountProperty(GetPropertyValue(jsonRoundTrip, "MjpegPerDecoder")!), "CaptureDiagnosticsSnapshot JSON MjpegPerDecoder count");
-        AssertEqual(1, GetIntProperty(GetSingleEnumerableItem(GetPropertyValue(jsonRoundTrip, "MjpegPerDecoder")!), "WorkerIndex"), "CaptureDiagnosticsSnapshot JSON MjpegPerDecoder WorkerIndex");
+        Assert.Equal(42L, GetLongProperty(jsonRoundTrip, "CaptureSessionEpoch"));
+        Assert.Equal(99L, GetLongProperty(jsonRoundTrip, "SourceTelemetryEpoch"));
+        Assert.Equal("FFmpeg", GetStringProperty(jsonRoundTrip, "RecordingBackend"));
+        Assert.True(GetBoolProperty(jsonRoundTrip, "RecordingEncodingFailed"));
+        Assert.Equal(2_000_000L, GetLongProperty(jsonRoundTrip, "FlashbackTotalBytesWritten"));
+        Assert.Equal(120_000L, GetLongProperty(jsonRoundTrip, "FlashbackStartupCacheBytes"));
+        Assert.True(GetBoolProperty(jsonRoundTrip, "FatalCleanupInProgress"));
+        Assert.True(GetBoolProperty(jsonRoundTrip, "FlashbackCleanupInProgress"));
+        Assert.True(GetBoolProperty(jsonRoundTrip, "FlashbackForceRotateActive"));
+        Assert.True(GetBoolProperty(jsonRoundTrip, "FlashbackForceRotateRequested"));
+        Assert.True(GetBoolProperty(jsonRoundTrip, "FlashbackForceRotateDraining"));
+        Assert.Equal(180, GetIntProperty(jsonRoundTrip, "FlashbackVideoQueueCapacity"));
+        Assert.Equal(1, GetCountProperty(GetPropertyValue(jsonRoundTrip, "MjpegPerDecoder")!));
+        Assert.Equal(1, GetIntProperty(GetSingleEnumerableItem(GetPropertyValue(jsonRoundTrip, "MjpegPerDecoder")!), "WorkerIndex"));
 
     }
 
@@ -1559,7 +1550,7 @@ public sealed class SnapshotModelsTests
             new("FlashbackVideoQueueDepth", typeof(int)),
             new("FlashbackAudioQueueDepth", typeof(int)),
             new("FlashbackAudioQueueCapacity", typeof(int)),
-            NonNullString("FlashbackPlaybackState"),
+            new("FlashbackPlaybackState", typeof(Nullable<>).MakeGenericType(RequireType("Sussudio.Models.FlashbackPlaybackState"))),
             new("FlashbackPlaybackPositionMs", typeof(long)),
             NonNullString("FlashbackDecoderHwAccel"),
             new("FlashbackPlaybackFrameCount", typeof(long)),
@@ -1717,14 +1708,14 @@ public sealed class SnapshotModelsTests
         }
         var health = CreateInstance("Sussudio.Models.CaptureHealthSnapshot");
         AssertNonNullStringValue(health, "RecordingBackend", "None", "CaptureHealthSnapshot inherited RecordingBackend default");
-        AssertNonNullStringValue(health, "FlashbackPlaybackState", "N/A", "CaptureHealthSnapshot.FlashbackPlaybackState default");
+        Assert.Null(GetPropertyValue(health, "FlashbackPlaybackState"));
         AssertNonNullStringValue(health, "FlashbackDecoderHwAccel", "N/A", "CaptureHealthSnapshot.FlashbackDecoderHwAccel default");
         AssertNonNullStringValue(health, "FlashbackPlaybackMaxCommandQueueLatencyCommand", "None", "CaptureHealthSnapshot.FlashbackPlaybackMaxCommandQueueLatencyCommand default");
         AssertNonNullStringValue(health, "FlashbackPlaybackLastCommandQueued", "None", "CaptureHealthSnapshot.FlashbackPlaybackLastCommandQueued default");
         AssertNonNullStringValue(health, "FlashbackPlaybackLastCommandProcessed", "None", "CaptureHealthSnapshot.FlashbackPlaybackLastCommandProcessed default");
         AssertNonNullStringValue(health, "FlashbackExportStatus", "NotStarted", "CaptureHealthSnapshot.FlashbackExportStatus default");
         AssertNonNullStringValue(health, "FlashbackExportFailureKind", string.Empty, "CaptureHealthSnapshot.FlashbackExportFailureKind default");
-        AssertEqual(0, GetCountProperty(GetPropertyValue(health, "SourceTelemetryDetails")!), "CaptureHealthSnapshot.SourceTelemetryDetails default count");
+        Assert.Equal(0, GetCountProperty(GetPropertyValue(health, "SourceTelemetryDetails")!));
     }
 
     private static object CreateSourceTelemetryDetailEntry(Type detailType)
@@ -1736,16 +1727,16 @@ public sealed class SnapshotModelsTests
 
     private static void AssertSourceTelemetryDetailEntryValues(object detailEntry)
     {
-        AssertEqual("Signal", GetStringProperty(detailEntry, "Group"), "SourceTelemetryDetailEntry.Group");
-        AssertEqual("Colorimetry", GetStringProperty(detailEntry, "Label"), "SourceTelemetryDetailEntry.Label");
-        AssertEqual("BT.2020", GetStringProperty(detailEntry, "DisplayValue"), "SourceTelemetryDetailEntry.DisplayValue");
-        AssertEqual("bt2020", GetStringProperty(detailEntry, "RawValue"), "SourceTelemetryDetailEntry.RawValue");
+        Assert.Equal("Signal", GetStringProperty(detailEntry, "Group"));
+        Assert.Equal("Colorimetry", GetStringProperty(detailEntry, "Label"));
+        Assert.Equal("BT.2020", GetStringProperty(detailEntry, "DisplayValue"));
+        Assert.Equal("bt2020", GetStringProperty(detailEntry, "RawValue"));
     }
 
     private static void AssertSourceTelemetryDetailEntryJsonRoundTrip(Type detailType, object detailEntry)
     {
         var detailJsonRoundTrip = ReflectionJsonRoundTrip(detailType, detailEntry);
-        AssertEqual("BT.2020", GetStringProperty(detailJsonRoundTrip, "DisplayValue"), "SourceTelemetryDetailEntry JSON DisplayValue");
+        Assert.Equal("BT.2020", GetStringProperty(detailJsonRoundTrip, "DisplayValue"));
     }
 
     private static object CreatePopulatedCaptureHealthSnapshot(Type healthType, Type detailType, object detailEntry)
@@ -1756,7 +1747,7 @@ public sealed class SnapshotModelsTests
         SetPropertyOrBackingField(health, "RecordingBackend", "FFmpeg");
         SetPropertyOrBackingField(health, "FlashbackOutputBytes", 123456L);
         SetPropertyOrBackingField(health, "FlashbackFilePath", "flashback.ts");
-        SetPropertyOrBackingField(health, "FlashbackPlaybackState", "Paused");
+        SetPropertyOrBackingField(health, "FlashbackPlaybackState", Enum.Parse(RequireType("Sussudio.Models.FlashbackPlaybackState"), "Paused"));
         SetPropertyOrBackingField(health, "FlashbackDecoderHwAccel", "D3D11");
         SetPropertyOrBackingField(health, "FlashbackPlaybackDroppedFrames", 4L);
         SetPropertyOrBackingField(health, "FlashbackPlaybackSegmentSwitches", 2L);
@@ -1844,127 +1835,203 @@ public sealed class SnapshotModelsTests
     private static void AssertCaptureHealthSnapshotRoundTripValues(object health)
     {
         var roundTripDetail = GetSingleEnumerableItem(GetPropertyValue(health, "SourceTelemetryDetails")!);
-        AssertEqual("FFmpeg", GetStringProperty(health, "RecordingBackend"), "CaptureHealthSnapshot inherited RecordingBackend round-trip");
-        AssertEqual(123456L, GetLongProperty(health, "FlashbackOutputBytes"), "CaptureHealthSnapshot.FlashbackOutputBytes round-trip");
-        AssertEqual("flashback.ts", GetStringProperty(health, "FlashbackFilePath"), "CaptureHealthSnapshot.FlashbackFilePath round-trip");
-        AssertEqual("Paused", GetStringProperty(health, "FlashbackPlaybackState"), "CaptureHealthSnapshot.FlashbackPlaybackState round-trip");
-        AssertEqual("D3D11", GetStringProperty(health, "FlashbackDecoderHwAccel"), "CaptureHealthSnapshot.FlashbackDecoderHwAccel round-trip");
-        AssertEqual(4L, GetLongProperty(health, "FlashbackPlaybackDroppedFrames"), "CaptureHealthSnapshot.FlashbackPlaybackDroppedFrames round-trip");
-        AssertEqual(2L, GetLongProperty(health, "FlashbackPlaybackSegmentSwitches"), "CaptureHealthSnapshot.FlashbackPlaybackSegmentSwitches round-trip");
-        AssertEqual(3L, GetLongProperty(health, "FlashbackPlaybackFmp4Reopens"), "CaptureHealthSnapshot.FlashbackPlaybackFmp4Reopens round-trip");
-        AssertEqual(5L, GetLongProperty(health, "FlashbackPlaybackWriteHeadWaits"), "CaptureHealthSnapshot.FlashbackPlaybackWriteHeadWaits round-trip");
-        AssertEqual(1L, GetLongProperty(health, "FlashbackPlaybackNearLiveSnaps"), "CaptureHealthSnapshot.FlashbackPlaybackNearLiveSnaps round-trip");
-        AssertEqual(0L, GetLongProperty(health, "FlashbackPlaybackDecodeErrorSnaps"), "CaptureHealthSnapshot.FlashbackPlaybackDecodeErrorSnaps round-trip");
-        AssertEqual(6L, GetLongProperty(health, "FlashbackPlaybackSubmitFailures"), "CaptureHealthSnapshot.FlashbackPlaybackSubmitFailures round-trip");
-        AssertEqual(666L, GetLongProperty(health, "FlashbackPlaybackLastDropUtcUnixMs"), "CaptureHealthSnapshot.FlashbackPlaybackLastDropUtcUnixMs round-trip");
-        AssertEqual("av_sync_skip", GetStringProperty(health, "FlashbackPlaybackLastDropReason"), "CaptureHealthSnapshot.FlashbackPlaybackLastDropReason round-trip");
-        AssertEqual(777L, GetLongProperty(health, "FlashbackPlaybackLastSubmitFailureUtcUnixMs"), "CaptureHealthSnapshot.FlashbackPlaybackLastSubmitFailureUtcUnixMs round-trip");
-        AssertEqual("seek:null_texture", GetStringProperty(health, "FlashbackPlaybackLastSubmitFailure"), "CaptureHealthSnapshot.FlashbackPlaybackLastSubmitFailure round-trip");
-        AssertEqual(123L, GetLongProperty(health, "FlashbackPlaybackLastSegmentSwitchUtcUnixMs"), "CaptureHealthSnapshot.FlashbackPlaybackLastSegmentSwitchUtcUnixMs round-trip");
-        AssertEqual(456L, GetLongProperty(health, "FlashbackPlaybackLastFmp4ReopenUtcUnixMs"), "CaptureHealthSnapshot.FlashbackPlaybackLastFmp4ReopenUtcUnixMs round-trip");
-        AssertEqual(789L, GetLongProperty(health, "FlashbackPlaybackLastWriteHeadWaitGapMs"), "CaptureHealthSnapshot.FlashbackPlaybackLastWriteHeadWaitGapMs round-trip");
-        AssertEqual(120d, GetDoubleProperty(health, "FlashbackPlaybackTargetFps"), "CaptureHealthSnapshot.FlashbackPlaybackTargetFps round-trip");
-        AssertEqual(2L, GetLongProperty(health, "FlashbackPlaybackPtsCadenceMismatchCount"), "CaptureHealthSnapshot.FlashbackPlaybackPtsCadenceMismatchCount round-trip");
-        AssertEqual(123456700L, GetLongProperty(health, "FlashbackPlaybackLastPtsCadenceMismatchUtcUnixMs"), "CaptureHealthSnapshot.FlashbackPlaybackLastPtsCadenceMismatchUtcUnixMs round-trip");
-        AssertEqual(16.67d, GetDoubleProperty(health, "FlashbackPlaybackLastPtsCadenceDeltaMs"), "CaptureHealthSnapshot.FlashbackPlaybackLastPtsCadenceDeltaMs round-trip");
-        AssertEqual(8.33d, GetDoubleProperty(health, "FlashbackPlaybackLastPtsCadenceExpectedMs"), "CaptureHealthSnapshot.FlashbackPlaybackLastPtsCadenceExpectedMs round-trip");
-        AssertEqual(3L, GetLongProperty(health, "FlashbackPlaybackSeekForwardDecodeCapHits"), "CaptureHealthSnapshot.FlashbackPlaybackSeekForwardDecodeCapHits round-trip");
-        AssertEqual(true, GetBoolProperty(health, "FlashbackPlaybackLastSeekHitForwardDecodeCap"), "CaptureHealthSnapshot.FlashbackPlaybackLastSeekHitForwardDecodeCap round-trip");
-        AssertEqual(120, GetIntProperty(health, "FlashbackPlaybackDecodeSampleCount"), "CaptureHealthSnapshot.FlashbackPlaybackDecodeSampleCount round-trip");
-        AssertEqual(1.25d, GetDoubleProperty(health, "FlashbackPlaybackDecodeAvgMs"), "CaptureHealthSnapshot.FlashbackPlaybackDecodeAvgMs round-trip");
-        AssertEqual(2.5d, GetDoubleProperty(health, "FlashbackPlaybackDecodeP95Ms"), "CaptureHealthSnapshot.FlashbackPlaybackDecodeP95Ms round-trip");
-        AssertEqual(3.5d, GetDoubleProperty(health, "FlashbackPlaybackDecodeP99Ms"), "CaptureHealthSnapshot.FlashbackPlaybackDecodeP99Ms round-trip");
-        AssertEqual(4.5d, GetDoubleProperty(health, "FlashbackPlaybackDecodeMaxMs"), "CaptureHealthSnapshot.FlashbackPlaybackDecodeMaxMs round-trip");
-        AssertEqual("audio", GetStringProperty(health, "FlashbackPlaybackMaxDecodePhase"), "CaptureHealthSnapshot.FlashbackPlaybackMaxDecodePhase round-trip");
-        AssertEqual(0.5d, GetDoubleProperty(health, "FlashbackPlaybackMaxDecodeReceiveMs"), "CaptureHealthSnapshot.FlashbackPlaybackMaxDecodeReceiveMs round-trip");
-        AssertEqual(4.0d, GetDoubleProperty(health, "FlashbackPlaybackMaxDecodeFeedMs"), "CaptureHealthSnapshot.FlashbackPlaybackMaxDecodeFeedMs round-trip");
-        AssertEqual(0.75d, GetDoubleProperty(health, "FlashbackPlaybackMaxDecodeReadMs"), "CaptureHealthSnapshot.FlashbackPlaybackMaxDecodeReadMs round-trip");
-        AssertEqual(3.5d, GetDoubleProperty(health, "FlashbackPlaybackMaxDecodeSendMs"), "CaptureHealthSnapshot.FlashbackPlaybackMaxDecodeSendMs round-trip");
-        AssertEqual(3.25d, GetDoubleProperty(health, "FlashbackPlaybackMaxDecodeAudioMs"), "CaptureHealthSnapshot.FlashbackPlaybackMaxDecodeAudioMs round-trip");
-        AssertEqual(0.25d, GetDoubleProperty(health, "FlashbackPlaybackMaxDecodeConvertMs"), "CaptureHealthSnapshot.FlashbackPlaybackMaxDecodeConvertMs round-trip");
-        AssertEqual(123456789L, GetLongProperty(health, "FlashbackPlaybackMaxDecodeUtcUnixMs"), "CaptureHealthSnapshot.FlashbackPlaybackMaxDecodeUtcUnixMs round-trip");
-        AssertEqual(2345L, GetLongProperty(health, "FlashbackPlaybackMaxDecodePositionMs"), "CaptureHealthSnapshot.FlashbackPlaybackMaxDecodePositionMs round-trip");
-        AssertEqual(9L, GetLongProperty(health, "FlashbackPlaybackCommandsEnqueued"), "CaptureHealthSnapshot.FlashbackPlaybackCommandsEnqueued round-trip");
-        AssertEqual(7L, GetLongProperty(health, "FlashbackPlaybackScrubUpdatesCoalesced"), "CaptureHealthSnapshot.FlashbackPlaybackScrubUpdatesCoalesced round-trip");
-        AssertEqual(8L, GetLongProperty(health, "FlashbackPlaybackSeekCommandsCoalesced"), "CaptureHealthSnapshot.FlashbackPlaybackSeekCommandsCoalesced round-trip");
-        AssertEqual(256, GetIntProperty(health, "FlashbackPlaybackCommandQueueCapacity"), "CaptureHealthSnapshot.FlashbackPlaybackCommandQueueCapacity round-trip");
-        AssertEqual(2, GetIntProperty(health, "FlashbackPlaybackPendingCommands"), "CaptureHealthSnapshot.FlashbackPlaybackPendingCommands round-trip");
-        AssertEqual(5, GetIntProperty(health, "FlashbackPlaybackMaxPendingCommands"), "CaptureHealthSnapshot.FlashbackPlaybackMaxPendingCommands round-trip");
-        AssertEqual(14L, GetLongProperty(health, "FlashbackPlaybackLastCommandQueueLatencyMs"), "CaptureHealthSnapshot.FlashbackPlaybackLastCommandQueueLatencyMs round-trip");
-        AssertEqual(88L, GetLongProperty(health, "FlashbackPlaybackMaxCommandQueueLatencyMs"), "CaptureHealthSnapshot.FlashbackPlaybackMaxCommandQueueLatencyMs round-trip");
-        AssertEqual("Play", GetStringProperty(health, "FlashbackPlaybackMaxCommandQueueLatencyCommand"), "CaptureHealthSnapshot.FlashbackPlaybackMaxCommandQueueLatencyCommand round-trip");
-        AssertEqual("UpdateScrub", GetStringProperty(health, "FlashbackPlaybackLastCommandQueued"), "CaptureHealthSnapshot.FlashbackPlaybackLastCommandQueued round-trip");
-        AssertEqual(999L, GetLongProperty(health, "FlashbackPlaybackLastCommandFailureUtcUnixMs"), "CaptureHealthSnapshot.FlashbackPlaybackLastCommandFailureUtcUnixMs round-trip");
-        AssertEqual(11L, GetLongProperty(health, "FlashbackVideoQueueRejectedFrames"), "CaptureHealthSnapshot.FlashbackVideoQueueRejectedFrames round-trip");
-        AssertEqual("force_rotate_draining", GetStringProperty(health, "FlashbackVideoQueueLastRejectReason"), "CaptureHealthSnapshot.FlashbackVideoQueueLastRejectReason round-trip");
-        AssertEqual(13L, GetLongProperty(health, "FlashbackGpuQueueRejectedFrames"), "CaptureHealthSnapshot.FlashbackGpuQueueRejectedFrames round-trip");
-        AssertEqual("encoding_failed:InvalidOperationException", GetStringProperty(health, "FlashbackGpuQueueLastRejectReason"), "CaptureHealthSnapshot.FlashbackGpuQueueLastRejectReason round-trip");
-        AssertEqual(true, GetBoolProperty(health, "FlashbackBackendSettingsStale"), "CaptureHealthSnapshot.FlashbackBackendSettingsStale round-trip");
-        AssertEqual("preset:P1->P2", GetStringProperty(health, "FlashbackBackendSettingsStaleReason"), "CaptureHealthSnapshot.FlashbackBackendSettingsStaleReason round-trip");
-        AssertEqual("HevcMp4", GetStringProperty(health, "FlashbackBackendActiveFormat"), "CaptureHealthSnapshot.FlashbackBackendActiveFormat round-trip");
-        AssertEqual("P2", GetStringProperty(health, "FlashbackBackendRequestedPreset"), "CaptureHealthSnapshot.FlashbackBackendRequestedPreset round-trip");
-        AssertEqual(true, GetBoolProperty(health, "FlashbackExportActive"), "CaptureHealthSnapshot.FlashbackExportActive round-trip");
-        AssertEqual("Running", GetStringProperty(health, "FlashbackExportStatus"), "CaptureHealthSnapshot.FlashbackExportStatus round-trip");
-        AssertEqual("NoMediaWritten", GetStringProperty(health, "FlashbackExportFailureKind"), "CaptureHealthSnapshot.FlashbackExportFailureKind round-trip");
-        AssertEqual(2L, GetLongProperty(health, "FlashbackExportForceRotateFallbacks"), "CaptureHealthSnapshot.FlashbackExportForceRotateFallbacks round-trip");
-        AssertEqual(12345L, GetLongProperty(health, "FlashbackExportLastForceRotateFallbackUtcUnixMs"), "CaptureHealthSnapshot.FlashbackExportLastForceRotateFallbackUtcUnixMs round-trip");
-        AssertEqual(3, GetIntProperty(health, "FlashbackExportLastForceRotateFallbackSegments"), "CaptureHealthSnapshot.FlashbackExportLastForceRotateFallbackSegments round-trip");
-        AssertEqual(1000L, GetLongProperty(health, "FlashbackExportLastForceRotateFallbackInPointMs"), "CaptureHealthSnapshot.FlashbackExportLastForceRotateFallbackInPointMs round-trip");
-        AssertEqual(9000L, GetLongProperty(health, "FlashbackExportLastForceRotateFallbackOutPointMs"), "CaptureHealthSnapshot.FlashbackExportLastForceRotateFallbackOutPointMs round-trip");
-        AssertEqual("HevcMp4", GetStringProperty(health, "FlashbackExportVerificationFormat"), "CaptureHealthSnapshot.FlashbackExportVerificationFormat round-trip");
-        AssertEqual("AV1->HEVC", GetStringProperty(health, "FlashbackCodecDowngradeReason"), "CaptureHealthSnapshot.FlashbackCodecDowngradeReason round-trip");
-        AssertEqual(37.5d, GetDoubleProperty(health, "FlashbackExportPercent"), "CaptureHealthSnapshot.FlashbackExportPercent round-trip");
-        AssertEqual(2000L, GetLongProperty(health, "FlashbackExportElapsedMs"), "CaptureHealthSnapshot.FlashbackExportElapsedMs round-trip");
-        AssertEqual(100L, GetLongProperty(health, "FlashbackExportLastProgressAgeMs"), "CaptureHealthSnapshot.FlashbackExportLastProgressAgeMs round-trip");
-        AssertEqual(1048576L, GetLongProperty(health, "FlashbackExportOutputBytes"), "CaptureHealthSnapshot.FlashbackExportOutputBytes round-trip");
-        AssertEqual(524288d, GetDoubleProperty(health, "FlashbackExportThroughputBytesPerSec"), "CaptureHealthSnapshot.FlashbackExportThroughputBytesPerSec round-trip");
-        AssertEqual(3, GetIntProperty(health, "FlashbackExportSegmentsProcessed"), "CaptureHealthSnapshot.FlashbackExportSegmentsProcessed round-trip");
-        AssertEqual(42L, GetLongProperty(health, "LastExportId"), "CaptureHealthSnapshot.LastExportId round-trip");
-        AssertEqual("YCbCr422", GetStringProperty(health, "SourceVideoFormat"), "CaptureHealthSnapshot.SourceVideoFormat round-trip");
-        AssertEqual(2, Convert.ToInt32(GetPropertyValue(health, "SourceHdrTransferCode")), "CaptureHealthSnapshot.SourceHdrTransferCode round-trip");
-        AssertEqual(1, GetCountProperty(GetPropertyValue(health, "SourceTelemetryDetails")!), "CaptureHealthSnapshot.SourceTelemetryDetails round-trip count");
-        AssertEqual("Signal", GetStringProperty(roundTripDetail, "Group"), "SourceTelemetryDetailEntry.Group round-trip");
-        AssertEqual("Colorimetry", GetStringProperty(roundTripDetail, "Label"), "SourceTelemetryDetailEntry.Label round-trip");
-        AssertEqual("BT.2020", GetStringProperty(roundTripDetail, "DisplayValue"), "SourceTelemetryDetailEntry.DisplayValue round-trip");
-        AssertEqual("bt2020", GetStringProperty(roundTripDetail, "RawValue"), "SourceTelemetryDetailEntry.RawValue round-trip");
-        AssertEqual(17L, GetLongProperty(health, "LastVideoEnqueueAgeMs"), "CaptureHealthSnapshot.LastVideoEnqueueAgeMs round-trip");
-        AssertEqual(-1.5d, (double)GetPropertyValue(health, "AvSyncCaptureDriftMs")!, "CaptureHealthSnapshot.AvSyncCaptureDriftMs round-trip");
-        AssertEqual(48L, Convert.ToInt64(GetPropertyValue(health, "AvSyncEncoderCorrectionSamples")), "CaptureHealthSnapshot.AvSyncEncoderCorrectionSamples round-trip");
+        Assert.Equal("FFmpeg", GetStringProperty(health, "RecordingBackend"));
+        Assert.Equal(123456L, GetLongProperty(health, "FlashbackOutputBytes"));
+        Assert.Equal("flashback.ts", GetStringProperty(health, "FlashbackFilePath"));
+        Assert.Equal(Enum.Parse(RequireType("Sussudio.Models.FlashbackPlaybackState"), "Paused"), GetPropertyValue(health, "FlashbackPlaybackState"));
+        Assert.Equal("D3D11", GetStringProperty(health, "FlashbackDecoderHwAccel"));
+        Assert.Equal(4L, GetLongProperty(health, "FlashbackPlaybackDroppedFrames"));
+        Assert.Equal(2L, GetLongProperty(health, "FlashbackPlaybackSegmentSwitches"));
+        Assert.Equal(3L, GetLongProperty(health, "FlashbackPlaybackFmp4Reopens"));
+        Assert.Equal(5L, GetLongProperty(health, "FlashbackPlaybackWriteHeadWaits"));
+        Assert.Equal(1L, GetLongProperty(health, "FlashbackPlaybackNearLiveSnaps"));
+        Assert.Equal(0L, GetLongProperty(health, "FlashbackPlaybackDecodeErrorSnaps"));
+        Assert.Equal(6L, GetLongProperty(health, "FlashbackPlaybackSubmitFailures"));
+        Assert.Equal(666L, GetLongProperty(health, "FlashbackPlaybackLastDropUtcUnixMs"));
+        Assert.Equal("av_sync_skip", GetStringProperty(health, "FlashbackPlaybackLastDropReason"));
+        Assert.Equal(777L, GetLongProperty(health, "FlashbackPlaybackLastSubmitFailureUtcUnixMs"));
+        Assert.Equal("seek:null_texture", GetStringProperty(health, "FlashbackPlaybackLastSubmitFailure"));
+        Assert.Equal(123L, GetLongProperty(health, "FlashbackPlaybackLastSegmentSwitchUtcUnixMs"));
+        Assert.Equal(456L, GetLongProperty(health, "FlashbackPlaybackLastFmp4ReopenUtcUnixMs"));
+        Assert.Equal(789L, GetLongProperty(health, "FlashbackPlaybackLastWriteHeadWaitGapMs"));
+        Assert.Equal(120d, GetDoubleProperty(health, "FlashbackPlaybackTargetFps"));
+        Assert.Equal(2L, GetLongProperty(health, "FlashbackPlaybackPtsCadenceMismatchCount"));
+        Assert.Equal(123456700L, GetLongProperty(health, "FlashbackPlaybackLastPtsCadenceMismatchUtcUnixMs"));
+        Assert.Equal(16.67d, GetDoubleProperty(health, "FlashbackPlaybackLastPtsCadenceDeltaMs"));
+        Assert.Equal(8.33d, GetDoubleProperty(health, "FlashbackPlaybackLastPtsCadenceExpectedMs"));
+        Assert.Equal(3L, GetLongProperty(health, "FlashbackPlaybackSeekForwardDecodeCapHits"));
+        Assert.True(GetBoolProperty(health, "FlashbackPlaybackLastSeekHitForwardDecodeCap"));
+        Assert.Equal(120, GetIntProperty(health, "FlashbackPlaybackDecodeSampleCount"));
+        Assert.Equal(1.25d, GetDoubleProperty(health, "FlashbackPlaybackDecodeAvgMs"));
+        Assert.Equal(2.5d, GetDoubleProperty(health, "FlashbackPlaybackDecodeP95Ms"));
+        Assert.Equal(3.5d, GetDoubleProperty(health, "FlashbackPlaybackDecodeP99Ms"));
+        Assert.Equal(4.5d, GetDoubleProperty(health, "FlashbackPlaybackDecodeMaxMs"));
+        Assert.Equal("audio", GetStringProperty(health, "FlashbackPlaybackMaxDecodePhase"));
+        Assert.Equal(0.5d, GetDoubleProperty(health, "FlashbackPlaybackMaxDecodeReceiveMs"));
+        Assert.Equal(4.0d, GetDoubleProperty(health, "FlashbackPlaybackMaxDecodeFeedMs"));
+        Assert.Equal(0.75d, GetDoubleProperty(health, "FlashbackPlaybackMaxDecodeReadMs"));
+        Assert.Equal(3.5d, GetDoubleProperty(health, "FlashbackPlaybackMaxDecodeSendMs"));
+        Assert.Equal(3.25d, GetDoubleProperty(health, "FlashbackPlaybackMaxDecodeAudioMs"));
+        Assert.Equal(0.25d, GetDoubleProperty(health, "FlashbackPlaybackMaxDecodeConvertMs"));
+        Assert.Equal(123456789L, GetLongProperty(health, "FlashbackPlaybackMaxDecodeUtcUnixMs"));
+        Assert.Equal(2345L, GetLongProperty(health, "FlashbackPlaybackMaxDecodePositionMs"));
+        Assert.Equal(9L, GetLongProperty(health, "FlashbackPlaybackCommandsEnqueued"));
+        Assert.Equal(7L, GetLongProperty(health, "FlashbackPlaybackScrubUpdatesCoalesced"));
+        Assert.Equal(8L, GetLongProperty(health, "FlashbackPlaybackSeekCommandsCoalesced"));
+        Assert.Equal(256, GetIntProperty(health, "FlashbackPlaybackCommandQueueCapacity"));
+        Assert.Equal(2, GetIntProperty(health, "FlashbackPlaybackPendingCommands"));
+        Assert.Equal(5, GetIntProperty(health, "FlashbackPlaybackMaxPendingCommands"));
+        Assert.Equal(14L, GetLongProperty(health, "FlashbackPlaybackLastCommandQueueLatencyMs"));
+        Assert.Equal(88L, GetLongProperty(health, "FlashbackPlaybackMaxCommandQueueLatencyMs"));
+        Assert.Equal("Play", GetStringProperty(health, "FlashbackPlaybackMaxCommandQueueLatencyCommand"));
+        Assert.Equal("UpdateScrub", GetStringProperty(health, "FlashbackPlaybackLastCommandQueued"));
+        Assert.Equal(999L, GetLongProperty(health, "FlashbackPlaybackLastCommandFailureUtcUnixMs"));
+        Assert.Equal(11L, GetLongProperty(health, "FlashbackVideoQueueRejectedFrames"));
+        Assert.Equal("force_rotate_draining", GetStringProperty(health, "FlashbackVideoQueueLastRejectReason"));
+        Assert.Equal(13L, GetLongProperty(health, "FlashbackGpuQueueRejectedFrames"));
+        Assert.Equal("encoding_failed:InvalidOperationException", GetStringProperty(health, "FlashbackGpuQueueLastRejectReason"));
+        Assert.True(GetBoolProperty(health, "FlashbackBackendSettingsStale"));
+        Assert.Equal("preset:P1->P2", GetStringProperty(health, "FlashbackBackendSettingsStaleReason"));
+        Assert.Equal("HevcMp4", GetStringProperty(health, "FlashbackBackendActiveFormat"));
+        Assert.Equal("P2", GetStringProperty(health, "FlashbackBackendRequestedPreset"));
+        Assert.True(GetBoolProperty(health, "FlashbackExportActive"));
+        Assert.Equal("Running", GetStringProperty(health, "FlashbackExportStatus"));
+        Assert.Equal("NoMediaWritten", GetStringProperty(health, "FlashbackExportFailureKind"));
+        Assert.Equal(2L, GetLongProperty(health, "FlashbackExportForceRotateFallbacks"));
+        Assert.Equal(12345L, GetLongProperty(health, "FlashbackExportLastForceRotateFallbackUtcUnixMs"));
+        Assert.Equal(3, GetIntProperty(health, "FlashbackExportLastForceRotateFallbackSegments"));
+        Assert.Equal(1000L, GetLongProperty(health, "FlashbackExportLastForceRotateFallbackInPointMs"));
+        Assert.Equal(9000L, GetLongProperty(health, "FlashbackExportLastForceRotateFallbackOutPointMs"));
+        Assert.Equal("HevcMp4", GetStringProperty(health, "FlashbackExportVerificationFormat"));
+        Assert.Equal("AV1->HEVC", GetStringProperty(health, "FlashbackCodecDowngradeReason"));
+        Assert.Equal(37.5d, GetDoubleProperty(health, "FlashbackExportPercent"));
+        Assert.Equal(2000L, GetLongProperty(health, "FlashbackExportElapsedMs"));
+        Assert.Equal(100L, GetLongProperty(health, "FlashbackExportLastProgressAgeMs"));
+        Assert.Equal(1048576L, GetLongProperty(health, "FlashbackExportOutputBytes"));
+        Assert.Equal(524288d, GetDoubleProperty(health, "FlashbackExportThroughputBytesPerSec"));
+        Assert.Equal(3, GetIntProperty(health, "FlashbackExportSegmentsProcessed"));
+        Assert.Equal(42L, GetLongProperty(health, "LastExportId"));
+        Assert.Equal("YCbCr422", GetStringProperty(health, "SourceVideoFormat"));
+        Assert.Equal(2, Convert.ToInt32(GetPropertyValue(health, "SourceHdrTransferCode")));
+        Assert.Equal(1, GetCountProperty(GetPropertyValue(health, "SourceTelemetryDetails")!));
+        Assert.Equal("Signal", GetStringProperty(roundTripDetail, "Group"));
+        Assert.Equal("Colorimetry", GetStringProperty(roundTripDetail, "Label"));
+        Assert.Equal("BT.2020", GetStringProperty(roundTripDetail, "DisplayValue"));
+        Assert.Equal("bt2020", GetStringProperty(roundTripDetail, "RawValue"));
+        Assert.Equal(17L, GetLongProperty(health, "LastVideoEnqueueAgeMs"));
+        Assert.Equal(-1.5d, (double)GetPropertyValue(health, "AvSyncCaptureDriftMs")!);
+        Assert.Equal(48L, Convert.ToInt64(GetPropertyValue(health, "AvSyncEncoderCorrectionSamples")));
     }
 
     private static void AssertCaptureHealthSnapshotJsonRoundTrip(Type healthType, object health)
     {
         var jsonRoundTrip = ReflectionJsonRoundTrip(healthType, health);
-        AssertEqual("Paused", GetStringProperty(jsonRoundTrip, "FlashbackPlaybackState"), "CaptureHealthSnapshot JSON FlashbackPlaybackState");
-        AssertEqual(6L, GetLongProperty(jsonRoundTrip, "FlashbackPlaybackSubmitFailures"), "CaptureHealthSnapshot JSON FlashbackPlaybackSubmitFailures");
-        AssertEqual(666L, GetLongProperty(jsonRoundTrip, "FlashbackPlaybackLastDropUtcUnixMs"), "CaptureHealthSnapshot JSON FlashbackPlaybackLastDropUtcUnixMs");
-        AssertEqual("av_sync_skip", GetStringProperty(jsonRoundTrip, "FlashbackPlaybackLastDropReason"), "CaptureHealthSnapshot JSON FlashbackPlaybackLastDropReason");
-        AssertEqual(777L, GetLongProperty(jsonRoundTrip, "FlashbackPlaybackLastSubmitFailureUtcUnixMs"), "CaptureHealthSnapshot JSON FlashbackPlaybackLastSubmitFailureUtcUnixMs");
-        AssertEqual("seek:null_texture", GetStringProperty(jsonRoundTrip, "FlashbackPlaybackLastSubmitFailure"), "CaptureHealthSnapshot JSON FlashbackPlaybackLastSubmitFailure");
-        AssertEqual(9L, GetLongProperty(jsonRoundTrip, "FlashbackPlaybackCommandsEnqueued"), "CaptureHealthSnapshot JSON FlashbackPlaybackCommandsEnqueued");
-        AssertEqual(256, GetIntProperty(jsonRoundTrip, "FlashbackPlaybackCommandQueueCapacity"), "CaptureHealthSnapshot JSON FlashbackPlaybackCommandQueueCapacity");
-        AssertEqual(999L, GetLongProperty(jsonRoundTrip, "FlashbackPlaybackLastCommandFailureUtcUnixMs"), "CaptureHealthSnapshot JSON FlashbackPlaybackLastCommandFailureUtcUnixMs");
-        AssertEqual(11L, GetLongProperty(jsonRoundTrip, "FlashbackVideoQueueRejectedFrames"), "CaptureHealthSnapshot JSON FlashbackVideoQueueRejectedFrames");
-        AssertEqual("force_rotate_draining", GetStringProperty(jsonRoundTrip, "FlashbackVideoQueueLastRejectReason"), "CaptureHealthSnapshot JSON FlashbackVideoQueueLastRejectReason");
-        AssertEqual(13L, GetLongProperty(jsonRoundTrip, "FlashbackGpuQueueRejectedFrames"), "CaptureHealthSnapshot JSON FlashbackGpuQueueRejectedFrames");
-        AssertEqual("encoding_failed:InvalidOperationException", GetStringProperty(jsonRoundTrip, "FlashbackGpuQueueLastRejectReason"), "CaptureHealthSnapshot JSON FlashbackGpuQueueLastRejectReason");
-        AssertEqual(2L, GetLongProperty(jsonRoundTrip, "FlashbackPlaybackPtsCadenceMismatchCount"), "CaptureHealthSnapshot JSON FlashbackPlaybackPtsCadenceMismatchCount");
-        AssertEqual(16.67d, GetDoubleProperty(jsonRoundTrip, "FlashbackPlaybackLastPtsCadenceDeltaMs"), "CaptureHealthSnapshot JSON FlashbackPlaybackLastPtsCadenceDeltaMs");
-        AssertEqual(3L, GetLongProperty(jsonRoundTrip, "FlashbackPlaybackSeekForwardDecodeCapHits"), "CaptureHealthSnapshot JSON FlashbackPlaybackSeekForwardDecodeCapHits");
-        AssertEqual(true, GetBoolProperty(jsonRoundTrip, "FlashbackPlaybackLastSeekHitForwardDecodeCap"), "CaptureHealthSnapshot JSON FlashbackPlaybackLastSeekHitForwardDecodeCap");
-        AssertEqual(true, GetBoolProperty(jsonRoundTrip, "FlashbackBackendSettingsStale"), "CaptureHealthSnapshot JSON FlashbackBackendSettingsStale");
-        AssertEqual("preset:P1->P2", GetStringProperty(jsonRoundTrip, "FlashbackBackendSettingsStaleReason"), "CaptureHealthSnapshot JSON FlashbackBackendSettingsStaleReason");
-        AssertEqual("Running", GetStringProperty(jsonRoundTrip, "FlashbackExportStatus"), "CaptureHealthSnapshot JSON FlashbackExportStatus");
-        AssertEqual("NoMediaWritten", GetStringProperty(jsonRoundTrip, "FlashbackExportFailureKind"), "CaptureHealthSnapshot JSON FlashbackExportFailureKind");
-        AssertEqual(2L, GetLongProperty(jsonRoundTrip, "FlashbackExportForceRotateFallbacks"), "CaptureHealthSnapshot JSON FlashbackExportForceRotateFallbacks");
-        AssertEqual(3, GetIntProperty(jsonRoundTrip, "FlashbackExportLastForceRotateFallbackSegments"), "CaptureHealthSnapshot JSON FlashbackExportLastForceRotateFallbackSegments");
-        AssertEqual("HevcMp4", GetStringProperty(jsonRoundTrip, "FlashbackExportVerificationFormat"), "CaptureHealthSnapshot JSON FlashbackExportVerificationFormat");
-        AssertEqual("AV1->HEVC", GetStringProperty(jsonRoundTrip, "FlashbackCodecDowngradeReason"), "CaptureHealthSnapshot JSON FlashbackCodecDowngradeReason");
-        AssertEqual(1048576L, GetLongProperty(jsonRoundTrip, "FlashbackExportOutputBytes"), "CaptureHealthSnapshot JSON FlashbackExportOutputBytes");
-        AssertEqual(42L, GetLongProperty(jsonRoundTrip, "LastExportId"), "CaptureHealthSnapshot JSON LastExportId");
-        AssertEqual("YCbCr422", GetStringProperty(jsonRoundTrip, "SourceVideoFormat"), "CaptureHealthSnapshot JSON SourceVideoFormat");
-        AssertEqual(1, GetCountProperty(GetPropertyValue(jsonRoundTrip, "SourceTelemetryDetails")!), "CaptureHealthSnapshot JSON SourceTelemetryDetails count");
-        AssertEqual("BT.2020", GetStringProperty(GetSingleEnumerableItem(GetPropertyValue(jsonRoundTrip, "SourceTelemetryDetails")!), "DisplayValue"), "CaptureHealthSnapshot JSON SourceTelemetryDetails DisplayValue");
+        Assert.Equal(Enum.Parse(RequireType("Sussudio.Models.FlashbackPlaybackState"), "Paused"), GetPropertyValue(jsonRoundTrip, "FlashbackPlaybackState"));
+        Assert.Equal(6L, GetLongProperty(jsonRoundTrip, "FlashbackPlaybackSubmitFailures"));
+        Assert.Equal(666L, GetLongProperty(jsonRoundTrip, "FlashbackPlaybackLastDropUtcUnixMs"));
+        Assert.Equal("av_sync_skip", GetStringProperty(jsonRoundTrip, "FlashbackPlaybackLastDropReason"));
+        Assert.Equal(777L, GetLongProperty(jsonRoundTrip, "FlashbackPlaybackLastSubmitFailureUtcUnixMs"));
+        Assert.Equal("seek:null_texture", GetStringProperty(jsonRoundTrip, "FlashbackPlaybackLastSubmitFailure"));
+        Assert.Equal(9L, GetLongProperty(jsonRoundTrip, "FlashbackPlaybackCommandsEnqueued"));
+        Assert.Equal(256, GetIntProperty(jsonRoundTrip, "FlashbackPlaybackCommandQueueCapacity"));
+        Assert.Equal(999L, GetLongProperty(jsonRoundTrip, "FlashbackPlaybackLastCommandFailureUtcUnixMs"));
+        Assert.Equal(11L, GetLongProperty(jsonRoundTrip, "FlashbackVideoQueueRejectedFrames"));
+        Assert.Equal("force_rotate_draining", GetStringProperty(jsonRoundTrip, "FlashbackVideoQueueLastRejectReason"));
+        Assert.Equal(13L, GetLongProperty(jsonRoundTrip, "FlashbackGpuQueueRejectedFrames"));
+        Assert.Equal("encoding_failed:InvalidOperationException", GetStringProperty(jsonRoundTrip, "FlashbackGpuQueueLastRejectReason"));
+        Assert.Equal(2L, GetLongProperty(jsonRoundTrip, "FlashbackPlaybackPtsCadenceMismatchCount"));
+        Assert.Equal(16.67d, GetDoubleProperty(jsonRoundTrip, "FlashbackPlaybackLastPtsCadenceDeltaMs"));
+        Assert.Equal(3L, GetLongProperty(jsonRoundTrip, "FlashbackPlaybackSeekForwardDecodeCapHits"));
+        Assert.True(GetBoolProperty(jsonRoundTrip, "FlashbackPlaybackLastSeekHitForwardDecodeCap"));
+        Assert.True(GetBoolProperty(jsonRoundTrip, "FlashbackBackendSettingsStale"));
+        Assert.Equal("preset:P1->P2", GetStringProperty(jsonRoundTrip, "FlashbackBackendSettingsStaleReason"));
+        Assert.Equal("Running", GetStringProperty(jsonRoundTrip, "FlashbackExportStatus"));
+        Assert.Equal("NoMediaWritten", GetStringProperty(jsonRoundTrip, "FlashbackExportFailureKind"));
+        Assert.Equal(2L, GetLongProperty(jsonRoundTrip, "FlashbackExportForceRotateFallbacks"));
+        Assert.Equal(3, GetIntProperty(jsonRoundTrip, "FlashbackExportLastForceRotateFallbackSegments"));
+        Assert.Equal("HevcMp4", GetStringProperty(jsonRoundTrip, "FlashbackExportVerificationFormat"));
+        Assert.Equal("AV1->HEVC", GetStringProperty(jsonRoundTrip, "FlashbackCodecDowngradeReason"));
+        Assert.Equal(1048576L, GetLongProperty(jsonRoundTrip, "FlashbackExportOutputBytes"));
+        Assert.Equal(42L, GetLongProperty(jsonRoundTrip, "LastExportId"));
+        Assert.Equal("YCbCr422", GetStringProperty(jsonRoundTrip, "SourceVideoFormat"));
+        Assert.Equal(1, GetCountProperty(GetPropertyValue(jsonRoundTrip, "SourceTelemetryDetails")!));
+        Assert.Equal("BT.2020", GetStringProperty(GetSingleEnumerableItem(GetPropertyValue(jsonRoundTrip, "SourceTelemetryDetails")!), "DisplayValue"));
+    }
+
+    [Theory]
+    [InlineData("Disabled")]
+    [InlineData("Buffering")]
+    [InlineData("Live")]
+    [InlineData("Scrubbing")]
+    [InlineData("Playing")]
+    [InlineData("Paused")]
+    [InlineData(null)]
+    public void CaptureHealthPlaybackStatePreservesTypedAndTextBoundaries(string? stateName)
+    {
+        var healthType = RequireType("Sussudio.Models.CaptureHealthSnapshot");
+        var stateType = RequireType("Sussudio.Models.FlashbackPlaybackState");
+        var health = Activator.CreateInstance(healthType)!;
+        var state = stateName == null ? null : Enum.Parse(stateType, stateName);
+        SetPropertyOrBackingField(health, "FlashbackPlaybackState", state);
+        Assert.Equal(state, GetPropertyValue(health, "FlashbackPlaybackState"));
+        Assert.Equal(stateType, Nullable.GetUnderlyingType(healthType.GetProperty("FlashbackPlaybackState")!.PropertyType));
+
+        var expectedText = stateName ?? "N/A";
+        var json = JsonSerializer.Serialize(health, healthType);
+        using var document = JsonDocument.Parse(json);
+        Assert.Equal(expectedText, document.RootElement.GetProperty("FlashbackPlaybackState").GetString());
+        var restored = JsonSerializer.Deserialize(json, healthType)!;
+        Assert.Equal(state, GetPropertyValue(restored, "FlashbackPlaybackState"));
+
+        var automation = AutomationSnapshotRegressionFixture.BuildResult(healthType.Assembly, populated: false, healthOverride: health);
+        Assert.Equal(807, automation.EnumerateObject().Count());
+        Assert.Equal(expectedText, automation.GetProperty("FlashbackPlaybackState").GetString());
+        var hubType = healthType.Assembly.GetType("Sussudio.Services.Automation.AutomationDiagnosticsHub", throwOnError: true)!;
+        var laneMethod = hubType.GetMethod("BuildFlashbackPlaybackPerformanceLane", BindingFlags.Static | BindingFlags.NonPublic)!;
+        var preview = Activator.CreateInstance(laneMethod.GetParameters()[1].ParameterType)!;
+        var lane = (string)laneMethod.Invoke(null, new[] { health, preview, (object)120d })!;
+        Assert.StartsWith($"playback perf state={expectedText} fps=", lane, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("null")]
+    [InlineData("\"N/A\"")]
+    public void CaptureHealthPlaybackStateReadsAbsentAndLegacyNull(string valueJson)
+    {
+        var healthType = RequireType("Sussudio.Models.CaptureHealthSnapshot");
+        var restored = JsonSerializer.Deserialize($"{{\"FlashbackPlaybackState\":{valueJson}}}", healthType)!;
+        Assert.Null(GetPropertyValue(restored, "FlashbackPlaybackState"));
+        using var document = JsonDocument.Parse(JsonSerializer.Serialize(restored, healthType));
+        Assert.Equal("N/A", document.RootElement.GetProperty("FlashbackPlaybackState").GetString());
+    }
+
+    [Theory]
+    [InlineData("0")]
+    [InlineData("999")]
+    [InlineData("true")]
+    [InlineData("{}")]
+    [InlineData("[]")]
+    [InlineData("\"\"")]
+    [InlineData("\"Unknown\"")]
+    [InlineData("\"playing\"")]
+    [InlineData("\" Playing \"")]
+    [InlineData("\"0\"")]
+    [InlineData("\"999\"")]
+    public void CaptureHealthPlaybackStateRejectsUndefinedJson(string valueJson)
+    {
+        var healthType = RequireType("Sussudio.Models.CaptureHealthSnapshot");
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize($"{{\"FlashbackPlaybackState\":{valueJson}}}", healthType));
+    }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(999)]
+    public void CaptureHealthPlaybackStateRejectsUndefinedEnumWrites(int value)
+    {
+        var healthType = RequireType("Sussudio.Models.CaptureHealthSnapshot");
+        var health = Activator.CreateInstance(healthType)!;
+        SetPropertyOrBackingField(health, "FlashbackPlaybackState", Enum.ToObject(RequireType("Sussudio.Models.FlashbackPlaybackState"), value));
+        Assert.Throws<JsonException>(() => JsonSerializer.Serialize(health, healthType));
     }
 
     [Fact]
@@ -1975,19 +2042,33 @@ public sealed class SnapshotModelsTests
         var detailType = RequireType("Sussudio.Models.SourceTelemetryDetailEntry");
         var healthRootText = ReadRepoFile("Sussudio/Models/Capture/CaptureModels.cs");
 
+        var stateProperty = healthType.GetProperty("FlashbackPlaybackState")!;
+        var converterAttribute = stateProperty.GetCustomAttributes().Single(attribute =>
+            attribute.GetType().FullName == "System.Text.Json.Serialization.JsonConverterAttribute");
+        var converterType = (Type)converterAttribute.GetType().GetProperty("ConverterType")!.GetValue(converterAttribute)!;
+        Assert.Equal(RequireType("Sussudio.Models.CaptureHealthPlaybackStateJsonConverter"), converterType);
+        Assert.True(converterType.IsPublic && converterType.IsSealed);
+        var converterConstructor = converterType.GetConstructor(Type.EmptyTypes);
+        Assert.NotNull(converterConstructor);
+        var converter = converterConstructor.Invoke(Array.Empty<object>());
+        Assert.Equal(true, converterType.GetProperty("HandleNull")!.GetValue(converter));
+        Assert.DoesNotContain(RequireType("Sussudio.Models.FlashbackPlaybackState").GetCustomAttributes(),
+            attribute => attribute.GetType().FullName == "System.Text.Json.Serialization.JsonConverterAttribute");
+
         AssertCaptureHealthSnapshotDefaultsAndInheritance(diagnosticsType, healthType);
         RegisterCaptureDiagnosticsSnapshotProperties(diagnosticsType);
         AssertDeclaredProperties(healthType, CaptureHealthSnapshotPropertySpecs(detailType));
         AssertDeclaredProperties(detailType, CaptureHealthSourceTelemetryDetailPropertySpecs());
-        AssertContains(healthRootText, "public sealed class CaptureHealthSnapshot : CaptureDiagnosticsSnapshot");
-        AssertContains(healthRootText, "public IReadOnlyList<SourceTelemetryDetailEntry> SourceTelemetryDetails");
-        AssertContains(healthRootText, "public bool FlashbackBackendSettingsStale { get; init; }");
-        AssertContains(healthRootText, "public int FlashbackAudioQueueCapacity { get; init; }");
-        AssertContains(healthRootText, "public string FlashbackPlaybackState { get; init; } = \"N/A\";");
-        AssertContains(healthRootText, "public string FlashbackPlaybackLastCommandFailure { get; init; } = string.Empty;");
-        AssertContains(healthRootText, "public string FlashbackExportStatus { get; init; } = \"NotStarted\";");
-        AssertContains(healthRootText, "public string? FlashbackExportVerificationFormat { get; init; }");
-        AssertDoesNotContain(healthRootText, "partial class CaptureHealthSnapshot");
+        Assert.Contains("public sealed class CaptureHealthSnapshot : CaptureDiagnosticsSnapshot", healthRootText, StringComparison.Ordinal);
+        Assert.Contains("public IReadOnlyList<SourceTelemetryDetailEntry> SourceTelemetryDetails", healthRootText, StringComparison.Ordinal);
+        Assert.Contains("public bool FlashbackBackendSettingsStale { get; init; }", healthRootText, StringComparison.Ordinal);
+        Assert.Contains("public int FlashbackAudioQueueCapacity { get; init; }", healthRootText, StringComparison.Ordinal);
+        Assert.Contains("public FlashbackPlaybackState? FlashbackPlaybackState { get; init; }", healthRootText, StringComparison.Ordinal);
+        Assert.Contains("[JsonConverter(typeof(CaptureHealthPlaybackStateJsonConverter))]", healthRootText, StringComparison.Ordinal);
+        Assert.Contains("public string FlashbackPlaybackLastCommandFailure { get; init; } = string.Empty;", healthRootText, StringComparison.Ordinal);
+        Assert.Contains("public string FlashbackExportStatus { get; init; } = \"NotStarted\";", healthRootText, StringComparison.Ordinal);
+        Assert.Contains("public string? FlashbackExportVerificationFormat { get; init; }", healthRootText, StringComparison.Ordinal);
+        Assert.DoesNotContain("partial class CaptureHealthSnapshot", healthRootText, StringComparison.Ordinal);
 
         var detailEntry = CreateSourceTelemetryDetailEntry(detailType);
         AssertSourceTelemetryDetailEntryValues(detailEntry);
@@ -2271,46 +2352,40 @@ public sealed class ViewModelBuildersTests
         var buildMethod = builderType.GetMethod("Build", BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("LiveSignalTextPresentationBuilder.Build was not found.");
 
-        AssertContains(runtimeLifecycleControllerText, "_context.UpdateLiveCaptureInfo(runtimeSnapshot);");
-        AssertContains(runtimeLifecycleControllerText, "_context.ResetLiveCaptureInfo();");
-        AssertDoesNotContain(runtimeLifecycleControllerText, "IsAudioPreviewActive =");
-        AssertDoesNotContain(runtimeLifecycleControllerText, "private void UpdateLiveCaptureInfo(");
-        AssertDoesNotContain(runtimeLifecycleControllerText, "private void ResetLiveCaptureInfo()");
-        AssertContains(capturePresentationText, "private void UpdateLiveCaptureInfo(CaptureRuntimeSnapshot? runtimeSnapshot = null)");
-        AssertContains(capturePresentationText, "IsAudioPreviewActive = runtime.IsAudioPreviewActive;");
-        AssertContains(capturePresentationText, "var liveSignalText = LiveSignalTextPresentationBuilder.Build(");
-        AssertContains(capturePresentationText, "_captureService.EncoderCodecName,");
-        AssertContains(capturePresentationText, "LiveInfoUnavailable);");
-        AssertContains(capturePresentationText, "LiveResolution = liveSignalText.Resolution;");
-        AssertContains(capturePresentationText, "LiveFrameRate = liveSignalText.FrameRate;");
-        AssertContains(capturePresentationText, "LivePixelFormat = liveSignalText.PixelFormat;");
-        AssertContains(capturePresentationText, "private void ResetLiveCaptureInfo()");
-        AssertContains(capturePresentationText, "partial void OnIsPreviewingChanged(bool value)");
-        AssertContains(capturePresentationText, "if (!value && !IsRecording)");
-        AssertContains(capturePresentationText, "IsAudioPreviewActive = false;");
-        AssertContains(capturePresentationText, "LiveResolution = LiveInfoUnavailable;");
-        AssertContains(capturePresentationText, "LiveFrameRate = LiveInfoUnavailable;");
-        AssertContains(capturePresentationText, "LivePixelFormat = LiveInfoUnavailable;");
-        Assert.False(
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.CapturePresentation.cs")),
-            "MainViewModel.CapturePresentation.cs folded into capture state");
-        Assert.False(
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.LiveSignalPresentation.cs")),
-            "old live signal presentation file removed");
-        AssertDoesNotContain(runtimeLifecycleControllerText, "runtime.ReaderSourceSubtype ??");
-        AssertDoesNotContain(runtimeLifecycleControllerText, "runtime.LatestObservedFramePixelFormat ??");
-        AssertContains(liveSignalText, "internal static class LiveSignalTextPresentationBuilder");
-        AssertContains(liveSignalText, "internal static LiveSignalTextPresentation Build(");
-        AssertContains(liveSignalText, "runtime.ActualWidth ?? runtime.NegotiatedWidth ?? runtime.RequestedWidth");
-        AssertContains(liveSignalText, "runtime.ActualHeight ?? runtime.NegotiatedHeight ?? runtime.RequestedHeight");
-        AssertContains(liveSignalText, "runtime.ActualFrameRate ?? runtime.NegotiatedFrameRate ?? runtime.RequestedFrameRate");
-        AssertContains(liveSignalText, "frameRateValue.Value.ToString(\"0.00\")");
-        AssertContains(liveSignalText, "runtime.ReaderSourceSubtype ??");
-        AssertContains(liveSignalText, "runtime.LatestObservedFramePixelFormat ??");
-        AssertContains(liveSignalText, "\"hevc_nvenc\" => \" → HEVC\"");
-        AssertContains(liveSignalText, "\"h264_nvenc\" => \" → H264\"");
-        AssertContains(liveSignalText, "\"av1_nvenc\" => \" → AV1\"");
-        AssertContains(liveSignalText, "? unavailableText");
+        Assert.Contains("_context.UpdateLiveCaptureInfo(runtimeSnapshot);", runtimeLifecycleControllerText, StringComparison.Ordinal);
+        Assert.Contains("_context.ResetLiveCaptureInfo();", runtimeLifecycleControllerText, StringComparison.Ordinal);
+        Assert.DoesNotContain("IsAudioPreviewActive =", runtimeLifecycleControllerText, StringComparison.Ordinal);
+        Assert.DoesNotContain("private void UpdateLiveCaptureInfo(", runtimeLifecycleControllerText, StringComparison.Ordinal);
+        Assert.DoesNotContain("private void ResetLiveCaptureInfo()", runtimeLifecycleControllerText, StringComparison.Ordinal);
+        Assert.Contains("private void UpdateLiveCaptureInfo(CaptureRuntimeSnapshot? runtimeSnapshot = null)", capturePresentationText, StringComparison.Ordinal);
+        Assert.Contains("IsAudioPreviewActive = runtime.IsAudioPreviewActive;", capturePresentationText, StringComparison.Ordinal);
+        Assert.Contains("var liveSignalText = LiveSignalTextPresentationBuilder.Build(", capturePresentationText, StringComparison.Ordinal);
+        Assert.Contains("_captureService.EncoderCodecName,", capturePresentationText, StringComparison.Ordinal);
+        Assert.Contains("LiveInfoUnavailable);", capturePresentationText, StringComparison.Ordinal);
+        Assert.Contains("LiveResolution = liveSignalText.Resolution;", capturePresentationText, StringComparison.Ordinal);
+        Assert.Contains("LiveFrameRate = liveSignalText.FrameRate;", capturePresentationText, StringComparison.Ordinal);
+        Assert.Contains("LivePixelFormat = liveSignalText.PixelFormat;", capturePresentationText, StringComparison.Ordinal);
+        Assert.Contains("private void ResetLiveCaptureInfo()", capturePresentationText, StringComparison.Ordinal);
+        Assert.Contains("partial void OnIsPreviewingChanged(bool value)", capturePresentationText, StringComparison.Ordinal);
+        Assert.Contains("if (!value && !IsRecording)", capturePresentationText, StringComparison.Ordinal);
+        Assert.Contains("IsAudioPreviewActive = false;", capturePresentationText, StringComparison.Ordinal);
+        Assert.Contains("LiveResolution = LiveInfoUnavailable;", capturePresentationText, StringComparison.Ordinal);
+        Assert.Contains("LiveFrameRate = LiveInfoUnavailable;", capturePresentationText, StringComparison.Ordinal);
+        Assert.Contains("LivePixelFormat = LiveInfoUnavailable;", capturePresentationText, StringComparison.Ordinal);
+        Assert.DoesNotContain("runtime.ReaderSourceSubtype ??", runtimeLifecycleControllerText, StringComparison.Ordinal);
+        Assert.DoesNotContain("runtime.LatestObservedFramePixelFormat ??", runtimeLifecycleControllerText, StringComparison.Ordinal);
+        Assert.Contains("internal static class LiveSignalTextPresentationBuilder", liveSignalText, StringComparison.Ordinal);
+        Assert.Contains("internal static LiveSignalTextPresentation Build(", liveSignalText, StringComparison.Ordinal);
+        Assert.Contains("runtime.ActualWidth ?? runtime.NegotiatedWidth ?? runtime.RequestedWidth", liveSignalText, StringComparison.Ordinal);
+        Assert.Contains("runtime.ActualHeight ?? runtime.NegotiatedHeight ?? runtime.RequestedHeight", liveSignalText, StringComparison.Ordinal);
+        Assert.Contains("runtime.ActualFrameRate ?? runtime.NegotiatedFrameRate ?? runtime.RequestedFrameRate", liveSignalText, StringComparison.Ordinal);
+        Assert.Contains("frameRateValue.Value.ToString(\"0.00\")", liveSignalText, StringComparison.Ordinal);
+        Assert.Contains("runtime.ReaderSourceSubtype ??", liveSignalText, StringComparison.Ordinal);
+        Assert.Contains("runtime.LatestObservedFramePixelFormat ??", liveSignalText, StringComparison.Ordinal);
+        Assert.Contains("\"hevc_nvenc\" => \" → HEVC\"", liveSignalText, StringComparison.Ordinal);
+        Assert.Contains("\"h264_nvenc\" => \" → H264\"", liveSignalText, StringComparison.Ordinal);
+        Assert.Contains("\"av1_nvenc\" => \" → AV1\"", liveSignalText, StringComparison.Ordinal);
+        Assert.Contains("? unavailableText", liveSignalText, StringComparison.Ordinal);
         Assert.True(
             liveSignalText.IndexOf("runtime.ReaderSourceSubtype ??", StringComparison.Ordinal) <
             liveSignalText.IndexOf("runtime.LatestObservedFramePixelFormat ??", StringComparison.Ordinal),
@@ -2437,51 +2512,39 @@ public sealed class ViewModelBuildersTests
             "internal static class SourceTelemetryPresentationBuilder",
             "internal static class AutomationOptionsSnapshotBuilder");
 
-        AssertContains(telemetryText, "_context.BuildSourceTelemetrySummary(_context.GetLatestSourceTelemetry(), DateTimeOffset.UtcNow);");
-        AssertContains(telemetryText, "_context.SetSourceTelemetrySummaryText(_context.BuildSourceTelemetrySummary(snapshot, DateTimeOffset.UtcNow));");
-        AssertContains(controllerGraphText, "BuildSourceTelemetrySummary = SourceTelemetryPresentationBuilder.BuildSourceSummary,");
-        AssertContains(telemetryText, "_context.UpdateTargetSummary();");
-        AssertDoesNotContain(telemetryText, "private void UpdateHdrRuntimeStatusFromCapture(");
-        AssertContains(capturePresentationText, "private void UpdateHdrRuntimeStatusFromCapture(CaptureRuntimeSnapshot? runtimeSnapshot = null)");
-        AssertContains(capturePresentationText, "HdrRuntimeState = runtime.HdrRuntimeState;");
-        AssertContains(capturePresentationText, "HdrReadinessReason = runtime.HdrReadinessReason;");
-        AssertContains(capturePresentationText, "UpdateTargetSummary();");
-        AssertDoesNotContain(telemetryText, "private void UpdateTargetSummary()");
-        AssertDoesNotContain(telemetryText, "SourceTelemetryPresentationBuilder.BuildTargetSummary(");
-        AssertContains(capturePresentationText, "private void UpdateTargetSummary()");
-        AssertContains(capturePresentationText, "SourceTargetSummaryText = SourceTelemetryPresentationBuilder.BuildTargetSummary(");
-        AssertContains(capturePresentationText, "GetSelectedResolutionDisplayText(),");
-        AssertContains(capturePresentationText, "SelectedFriendlyFrameRate,");
-        AssertContains(capturePresentationText, "SelectedExactFrameRate,");
-        AssertContains(capturePresentationText, "SelectedExactFrameRateArg,");
-        Assert.False(
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.HdrRuntimePresentation.cs")),
-            "old HDR runtime presentation file removed");
-        Assert.False(
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.TargetSummaryPresentation.cs")),
-            "old target summary presentation file removed");
-        AssertContains(capturePresentationText, "private string GetSelectedResolutionDisplayText()");
-        Assert.False(
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.TargetPresentation.cs")),
-            "old target presentation file removed");
-        Assert.False(
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutoResolutionPresentation.cs")),
-            "old auto resolution presentation file removed");
-        AssertDoesNotContain(telemetryText, "private static string BuildSourceTelemetrySummaryText(");
-        AssertDoesNotContain(telemetryText, "private static string BuildTelemetryAgeText(");
-        AssertDoesNotContain(telemetryText, "Source: waiting for signal telemetry");
-        AssertDoesNotContain(telemetryText, "Target: {GetSelectedResolutionDisplayText()}");
-        AssertContains(sourceTelemetryBuilderText, "internal static class SourceTelemetryPresentationBuilder");
-        AssertContains(sourceTelemetryBuilderText, "internal static string BuildSourceSummary(SourceSignalTelemetrySnapshot snapshot, DateTimeOffset nowUtc)");
-        AssertContains(sourceTelemetryBuilderText, "internal static string BuildAgeText(DateTimeOffset? timestampUtc, DateTimeOffset nowUtc)");
-        AssertContains(sourceTelemetryBuilderText, "TelemetryAgeHelper.ComputeAgeSeconds(timestampUtc, nowUtc)");
-        AssertContains(sourceTelemetryBuilderText, "snapshot.FrameRateArg ??");
-        AssertContains(sourceTelemetryBuilderText, "snapshot.FrameRateExact?.ToString(\"0.###\")");
-        AssertContains(sourceTelemetryBuilderText, "snapshot.IsHdr.HasValue ? (snapshot.IsHdr.Value ? \"HDR\" : \"SDR\") : \"HDR?\"");
-        AssertContains(sourceTelemetryBuilderText, "internal static string BuildTargetSummary(");
-        AssertContains(sourceTelemetryBuilderText, "string.IsNullOrWhiteSpace(hdrRuntimeState) ? \"Unknown\" : hdrRuntimeState");
-        AssertDoesNotContain(sourceTelemetryBuilderText, "GetSelectedResolutionDisplayText()");
-        AssertDoesNotContain(sourceTelemetryBuilderText, "SourceTelemetrySummaryText =");
+        Assert.Contains("_context.BuildSourceTelemetrySummary(_context.GetLatestSourceTelemetry(), DateTimeOffset.UtcNow);", telemetryText, StringComparison.Ordinal);
+        Assert.Contains("_context.SetSourceTelemetrySummaryText(_context.BuildSourceTelemetrySummary(snapshot, DateTimeOffset.UtcNow));", telemetryText, StringComparison.Ordinal);
+        Assert.Contains("BuildSourceTelemetrySummary = SourceTelemetryPresentationBuilder.BuildSourceSummary,", controllerGraphText, StringComparison.Ordinal);
+        Assert.Contains("_context.UpdateTargetSummary();", telemetryText, StringComparison.Ordinal);
+        Assert.DoesNotContain("private void UpdateHdrRuntimeStatusFromCapture(", telemetryText, StringComparison.Ordinal);
+        Assert.Contains("private void UpdateHdrRuntimeStatusFromCapture(CaptureRuntimeSnapshot? runtimeSnapshot = null)", capturePresentationText, StringComparison.Ordinal);
+        Assert.Contains("HdrRuntimeState = runtime.HdrRuntimeState;", capturePresentationText, StringComparison.Ordinal);
+        Assert.Contains("HdrReadinessReason = runtime.HdrReadinessReason;", capturePresentationText, StringComparison.Ordinal);
+        Assert.Contains("UpdateTargetSummary();", capturePresentationText, StringComparison.Ordinal);
+        Assert.DoesNotContain("private void UpdateTargetSummary()", telemetryText, StringComparison.Ordinal);
+        Assert.DoesNotContain("SourceTelemetryPresentationBuilder.BuildTargetSummary(", telemetryText, StringComparison.Ordinal);
+        Assert.Contains("private void UpdateTargetSummary()", capturePresentationText, StringComparison.Ordinal);
+        Assert.Contains("SourceTargetSummaryText = SourceTelemetryPresentationBuilder.BuildTargetSummary(", capturePresentationText, StringComparison.Ordinal);
+        Assert.Contains("GetSelectedResolutionDisplayText(),", capturePresentationText, StringComparison.Ordinal);
+        Assert.Contains("SelectedFriendlyFrameRate,", capturePresentationText, StringComparison.Ordinal);
+        Assert.Contains("SelectedExactFrameRate,", capturePresentationText, StringComparison.Ordinal);
+        Assert.Contains("SelectedExactFrameRateArg,", capturePresentationText, StringComparison.Ordinal);
+        Assert.Contains("private string GetSelectedResolutionDisplayText()", capturePresentationText, StringComparison.Ordinal);
+        Assert.DoesNotContain("private static string BuildSourceTelemetrySummaryText(", telemetryText, StringComparison.Ordinal);
+        Assert.DoesNotContain("private static string BuildTelemetryAgeText(", telemetryText, StringComparison.Ordinal);
+        Assert.DoesNotContain("Source: waiting for signal telemetry", telemetryText, StringComparison.Ordinal);
+        Assert.DoesNotContain("Target: {GetSelectedResolutionDisplayText()}", telemetryText, StringComparison.Ordinal);
+        Assert.Contains("internal static class SourceTelemetryPresentationBuilder", sourceTelemetryBuilderText, StringComparison.Ordinal);
+        Assert.Contains("internal static string BuildSourceSummary(SourceSignalTelemetrySnapshot snapshot, DateTimeOffset nowUtc)", sourceTelemetryBuilderText, StringComparison.Ordinal);
+        Assert.Contains("internal static string BuildAgeText(DateTimeOffset? timestampUtc, DateTimeOffset nowUtc)", sourceTelemetryBuilderText, StringComparison.Ordinal);
+        Assert.Contains("TelemetryAgeHelper.ComputeAgeSeconds(timestampUtc, nowUtc)", sourceTelemetryBuilderText, StringComparison.Ordinal);
+        Assert.Contains("snapshot.FrameRateArg ??", sourceTelemetryBuilderText, StringComparison.Ordinal);
+        Assert.Contains("snapshot.FrameRateExact?.ToString(\"0.###\")", sourceTelemetryBuilderText, StringComparison.Ordinal);
+        Assert.Contains("snapshot.IsHdr.HasValue ? (snapshot.IsHdr.Value ? \"HDR\" : \"SDR\") : \"HDR?\"", sourceTelemetryBuilderText, StringComparison.Ordinal);
+        Assert.Contains("internal static string BuildTargetSummary(", sourceTelemetryBuilderText, StringComparison.Ordinal);
+        Assert.Contains("string.IsNullOrWhiteSpace(hdrRuntimeState) ? \"Unknown\" : hdrRuntimeState", sourceTelemetryBuilderText, StringComparison.Ordinal);
+        Assert.DoesNotContain("GetSelectedResolutionDisplayText()", sourceTelemetryBuilderText, StringComparison.Ordinal);
+        Assert.DoesNotContain("SourceTelemetrySummaryText =", sourceTelemetryBuilderText, StringComparison.Ordinal);
     }
 
     private static object CreateInput(Type type, params (string Property, object? Value)[] values)
@@ -2571,12 +2634,6 @@ public sealed class ViewModelBuildersTests
         Assert.True(end >= 0, $"End token '{endToken}' was not found after '{startToken}'.");
         return source.Substring(start, end - start);
     }
-
-    private static void AssertContains(string actual, string expectedSubstring)
-        => Assert.Contains(expectedSubstring, actual, StringComparison.Ordinal);
-
-    private static void AssertDoesNotContain(string actual, string unexpectedSubstring)
-        => Assert.DoesNotContain(unexpectedSubstring, actual, StringComparison.Ordinal);
 }
 
 public sealed class CaptureConfigurationModelsTests
@@ -3363,6 +3420,55 @@ public sealed class CaptureConfigurationModelsTests
         Assert.Equal("libaom-av1", Get<string>(softwareFallbacks, "PreferredAv1Encoder"));
     }
 
+    [Theory]
+    [InlineData(null, false, false)]
+    [InlineData("", false, false)]
+    [InlineData(" \t\r\n", false, false)]
+    [InlineData("\u2003\u00a0", false, false)]
+    [InlineData("p010", true, true)]
+    [InlineData("P016", true, true)]
+    [InlineData("i010", true, true)]
+    [InlineData("y210", true, true)]
+    [InlineData("Y410", true, true)]
+    [InlineData("y416", true, true)]
+    [InlineData("r10G10b10", true, true)]
+    [InlineData("xR10", true, true)]
+    [InlineData("prefix-p010-suffix", true, true)]
+    [InlineData(" \tXr10 texture\n", true, true)]
+    [InlineData("R10G10B10A2", true, true)]
+    [InlineData("BT2020", false, true)]
+    [InlineData("st2084", false, true)]
+    [InlineData("hdr", false, true)]
+    [InlineData("Nv12 (bT2020 sT2084 hDr)", false, true)]
+    [InlineData("HDR10", false, true)]
+    [InlineData("notHDR", false, true)]
+    [InlineData("HDR/P010", true, true)]
+    [InlineData("BT.2020", false, false)]
+    [InlineData("ST 2084", false, false)]
+    [InlineData("P 010", false, false)]
+    [InlineData("NV12", false, false)]
+    [InlineData("YUY2", false, false)]
+    [InlineData("MJPG", false, false)]
+    [InlineData("BGRA8", false, false)]
+    [InlineData("RGB32", false, false)]
+    [InlineData("I420", false, false)]
+    [InlineData("P012", false, false)]
+    [InlineData("Y216", false, false)]
+    [InlineData("P01", false, false)]
+    [InlineData("unknown", false, false)]
+    public void MediaFormat_PixelFormatPredicatesPreserveSubtypeAndHdrMarkerDistinctions(
+        string? pixelFormat, bool expectedTrue10Bit, bool expectedHdr)
+    {
+        var mediaFormatType = RequireType(SussudioAssembly.Load(), "Sussudio.Models.MediaFormat");
+        var isTrue10Bit = RequireMethod(mediaFormatType, "IsTrue10BitPixelFormat", ReflectionFlags.Static)
+            .CreateDelegate<Func<string?, bool>>();
+        var isHdr = RequireMethod(mediaFormatType, "IsHdrPixelFormat", ReflectionFlags.Static)
+            .CreateDelegate<Func<string?, bool>>();
+
+        Assert.Equal(expectedTrue10Bit, isTrue10Bit(pixelFormat));
+        Assert.Equal(expectedHdr, isHdr(pixelFormat));
+    }
+
     [Fact]
     public void MediaFormat_Equality_WithMatchingRationalFrameRates()
     {
@@ -3748,103 +3854,81 @@ public class StatsPresentationTests
         var statsWindowPresentationControllerText = statsWindowText;
         var statsWindowTelemetryDetailsControllerText = statsWindowPresentationControllerText;
 
-        AssertContains(statsPresentationText, "internal static class StatsPresentationBuilder");
-        AssertDoesNotContain(statsPresentationText, "internal static partial class StatsPresentationBuilder");
-        AssertContains(statsPresentationText, "public static StatsDockPresentation BuildDockPresentation(StatsSnapshot snapshot)");
-        AssertContains(statsPresentationText, "private static string ResolvePreviewResolutionText(StatsSnapshot snapshot)");
-        AssertContains(statsPresentationText, "private static string ResolveCaptureSummaryText(StatsSnapshot snapshot)");
-        AssertContains(statsPresentationText, "public static StatsFrameTimePresentation BuildFrameTimePresentation(StatsSnapshot snapshot)");
-        AssertContains(statsPresentationText, "private static string FormatVisualRepeatSummary(StatsSnapshot snapshot)");
-        AssertContains(statsPresentationText, "private static string FormatVisualCadenceSummary(StatsSnapshot snapshot)");
-        AssertContains(statsPresentationText, "private static string FormatVisualMotionSummary(StatsSnapshot snapshot)");
-        AssertContains(statsPresentationText, "private static string FormatHz(double value)");
-        AssertContains(statsPresentationText, "private const double VisualRepeatTolerancePercent = 0.25;");
-        AssertContains(statsPresentationText, "private static bool IsVisualRepeatWithinExpectedDrift(StatsSnapshot snapshot)");
-        AssertContains(statsPresentationText, "private static double GetExpectedVisualRepeatPercent(StatsSnapshot snapshot)");
-        AssertContains(statsPresentationText, "private static StatsEncoderPresentation BuildEncoderPresentation(StatsSnapshot snapshot)");
-        AssertContains(statsPresentationText, "private static string FormatEncoderCodecName(string codecName)");
-        AssertContains(statsPresentationText, "private static string FormatEncoderBitrate(uint targetBitRate)");
-        AssertContains(statsPresentationText, "private static string FormatEncoderDrift(StatsSnapshot snapshot)");
-        AssertContains(statsPresentationText, "public static StatsDiagnosticRowsPresentation BuildDiagnosticRows(");
-        AssertContains(statsPresentationText, "private static List<(string Label, string Value)> ParseDiagnosticSummary");
-        AssertContains(statsPresentationText, "public static IReadOnlyList<StatsHardwareRowPresentation> BuildHardwareDecodeRows(");
-        AssertContains(statsPresentationText, "StatsHardwareDecodeRowsInput mjpeg)");
-        AssertContains(statsPresentationText, "public static IReadOnlyList<StatsHardwareRowPresentation> BuildHardwareGpuRows(StatsHardwareGpuRowsInput? nvml)");
-        AssertDoesNotContain(statsPresentationText, "using Sussudio.Services.Gpu;");
-        AssertContains(statsPresentationText, "public static StatsDiagnosticSummary BuildStatsDiagnosticSummary(");
-        AssertContains(statsPresentationText, "DiagnosticThresholds.CalculatePercent(rendererDrops, rendererSubmitted)");
-        AssertContains(statsPresentationText, "private static StatsMetricStatus ResolveFrameLaneStatus(");
-        AssertContains(statsPresentationText, "private static StatsMetricStatus ResolveDecodedVisualStatus(StatsSnapshot snapshot)");
-        AssertContains(statsPresentationText, "public static StatsWindowPresentation BuildStatsWindowPresentation(StatsSnapshot snapshot)");
-        AssertContains(statsPresentationText, "private static StatsWindowTelemetryDetailsPresentation BuildStatsWindowTelemetryDetails(");
-        AssertContains(statsPresentationModelsText, "internal sealed record StatsDockPresentation(");
-        AssertContains(statsPresentationModelsText, "internal sealed record StatsWindowPresentation(");
-        AssertContains(statsPresentationModelsText, "internal sealed record StatsWindowTelemetryDetailsPresentation(");
-        AssertContains(statsPresentationModelsText, "internal sealed record StatsFrameTimePresentation(");
-        AssertContains(statsPresentationModelsText, "internal readonly record struct StatsHardwareRowPresentation(");
-        AssertContains(statsPresentationModelsText, "internal readonly record struct StatsHardwareDecodeRowsInput(");
-        AssertContains(statsPresentationModelsText, "internal readonly record struct StatsHardwareGpuRowsInput(");
-        AssertContains(statsPresentationModelsText, "internal enum StatsMetricStatus");
-        Assert.False(
-            File.Exists(Path.Combine(FindRepoRoot(), "Sussudio", "ViewModels", "StatsPresentationModels.cs")),
-            "stats presentation DTOs folded into StatsPresentationBuilder.cs");
-        Assert.False(
-            File.Exists(Path.Combine(FindRepoRoot(), "Sussudio", "ViewModels", "StatsSnapshot.cs")),
-            "stats snapshot DTO and builder folded into StatsPresentationBuilder.cs");
-        AssertContains(statsDockRefreshControllerText, "var presentation = StatsPresentationBuilder.BuildDockPresentation(snapshot);");
-        AssertContains(frameTimeOverlayText, "_frameTimeOverlayPresentationController.Apply(snapshot);");
-        AssertContains(frameTimeOverlayControllerText, "internal sealed class FrameTimeOverlayPresentationController");
-        Assert.False(
-            File.Exists(Path.Combine(
-                FindRepoRoot(),
-                "Sussudio",
-                "Controllers",
-                "Stats",
-                "FrameTimeOverlayPresentationController.cs")),
-            "frame-time overlay presentation lives with stats overlay composition ownership");
-        AssertContains(frameTimeOverlayControllerText, "public void Apply(StatsSnapshot snapshot)");
-        AssertContains(frameTimeOverlayControllerText, "var presentation = StatsPresentationBuilder.BuildFrameTimePresentation(snapshot);");
-        AssertContains(frameTimeOverlayControllerText, "SetTextIfChanged(_context.SourceValue, presentation.SourceText);");
-        AssertContains(frameTimeOverlayGeometryText, "internal static class FrameTimeGraphGeometry");
-        AssertContains(frameTimeOverlayGeometryText, "public static bool TryProjectSegment(");
-        AssertContains(frameTimeOverlayGeometryText, "PreviewFrameTimeSampleFlags.GapBefore");
-        AssertDoesNotContain(frameTimeOverlayControllerText, "UpdateLine(");
-        AssertContains(statsDockRefreshControllerText, "StatsPresentationBuilder.BuildDiagnosticRows(telemetryDetails, diagnosticSummary)");
-        AssertContains(statsWindowText, "var presentation = StatsPresentationBuilder.BuildStatsWindowPresentation(snapshot);");
-        AssertContains(statsWindowText, "_presentationController.Apply(presentation);");
-        AssertContains(statsWindowPresentationControllerText, "internal sealed class StatsWindowPresentationController");
-        AssertContains(statsWindowPresentationControllerText, "public void Apply(StatsWindowPresentation presentation)");
-        AssertContains(statsWindowPresentationControllerText, "private readonly StatsWindowTelemetryDetailsController _telemetryDetailsController;");
-        AssertContains(statsWindowPresentationControllerText, "_telemetryDetailsController.Apply(presentation.TelemetryDetails);");
-        AssertDoesNotContain(statsWindowPresentationControllerText, "private void UpdateTelemetryDetails(StatsWindowTelemetryDetailsPresentation presentation)");
-        Assert.False(
-            File.Exists(Path.Combine(
-                FindRepoRoot(),
-                "Sussudio",
-                "Controllers",
-                "Stats",
-                "StatsWindowPresentationController.cs")),
-            "detached stats-window presentation lives with StatsWindow.xaml.cs");
-        AssertContains(statsWindowTelemetryDetailsControllerText, "internal sealed class StatsWindowTelemetryDetailsController");
-        AssertContains(statsWindowTelemetryDetailsControllerText, "public void Apply(StatsWindowTelemetryDetailsPresentation presentation)");
-        AssertContains(statsWindowTelemetryDetailsControllerText, "_context.TelemetryDetailsContent.Children.Clear();");
-        AssertContains(statsWindowTelemetryDetailsControllerText, "Text = presentation.EmptyText,");
-        AssertContains(statsWindowTelemetryDetailsControllerText, "Margin = new Thickness(0, 8, 0, 2),");
-        AssertContains(statsWindowTelemetryDetailsControllerText, "grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });");
-        AssertContains(statsWindowTelemetryDetailsControllerText, "grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });");
-        AssertContains(statsWindowTelemetryDetailsControllerText, "HorizontalAlignment = HorizontalAlignment.Right,");
-        AssertContains(statsWindowTelemetryDetailsControllerText, "TextWrapping = TextWrapping.Wrap");
-        AssertContains(statsWindowText, "var telemetryDetailsController = new StatsWindowTelemetryDetailsController(new StatsWindowTelemetryDetailsControllerContext");
-        AssertDoesNotContain(statsWindowText, "private static string FormatFps(");
-        AssertDoesNotContain(statsWindowText, "private static string FormatMs(");
-        AssertDoesNotContain(statsWindowText, "private static string FormatPercent(");
-        AssertDoesNotContain(statsWindowText, "private static string FormatSourceHdr(");
-        AssertDoesNotContain(statsOverlayText, "BuildFrameTimePresentation(snapshot)");
-        AssertDoesNotContain(statsOverlayText, "private enum MetricStatus");
-        AssertDoesNotContain(statsOverlayText, "private static string ResolveCaptureSummaryText");
-        AssertDoesNotContain(statsOverlayText, "private static List<(string Label, string Value)> ParseDiagnosticSummary");
-        AssertDoesNotContain(statsOverlayText, "StatsPresentationBuilder.BuildDockPresentation(snapshot)");
-        AssertDoesNotContain(statsOverlayText, "StatsPresentationBuilder.BuildDiagnosticRows(telemetryDetails, diagnosticSummary)");
+        Assert.Contains("internal static class StatsPresentationBuilder", statsPresentationText, StringComparison.Ordinal);
+        Assert.DoesNotContain("internal static partial class StatsPresentationBuilder", statsPresentationText, StringComparison.Ordinal);
+        Assert.Contains("public static StatsDockPresentation BuildDockPresentation(StatsSnapshot snapshot)", statsPresentationText, StringComparison.Ordinal);
+        Assert.Contains("private static string ResolvePreviewResolutionText(StatsSnapshot snapshot)", statsPresentationText, StringComparison.Ordinal);
+        Assert.Contains("private static string ResolveCaptureSummaryText(StatsSnapshot snapshot)", statsPresentationText, StringComparison.Ordinal);
+        Assert.Contains("public static StatsFrameTimePresentation BuildFrameTimePresentation(StatsSnapshot snapshot)", statsPresentationText, StringComparison.Ordinal);
+        Assert.Contains("private static string FormatVisualRepeatSummary(StatsSnapshot snapshot)", statsPresentationText, StringComparison.Ordinal);
+        Assert.Contains("private static string FormatVisualCadenceSummary(StatsSnapshot snapshot)", statsPresentationText, StringComparison.Ordinal);
+        Assert.Contains("private static string FormatVisualMotionSummary(StatsSnapshot snapshot)", statsPresentationText, StringComparison.Ordinal);
+        Assert.Contains("private static string FormatHz(double value)", statsPresentationText, StringComparison.Ordinal);
+        Assert.Contains("private const double VisualRepeatTolerancePercent = 0.25;", statsPresentationText, StringComparison.Ordinal);
+        Assert.Contains("private static bool IsVisualRepeatWithinExpectedDrift(StatsSnapshot snapshot)", statsPresentationText, StringComparison.Ordinal);
+        Assert.Contains("private static double GetExpectedVisualRepeatPercent(StatsSnapshot snapshot)", statsPresentationText, StringComparison.Ordinal);
+        Assert.Contains("private static StatsEncoderPresentation BuildEncoderPresentation(StatsSnapshot snapshot)", statsPresentationText, StringComparison.Ordinal);
+        Assert.Contains("private static string FormatEncoderCodecName(string codecName)", statsPresentationText, StringComparison.Ordinal);
+        Assert.Contains("private static string FormatEncoderBitrate(uint targetBitRate)", statsPresentationText, StringComparison.Ordinal);
+        Assert.Contains("private static string FormatEncoderDrift(StatsSnapshot snapshot)", statsPresentationText, StringComparison.Ordinal);
+        Assert.Contains("public static StatsDiagnosticRowsPresentation BuildDiagnosticRows(", statsPresentationText, StringComparison.Ordinal);
+        Assert.Contains("private static List<(string Label, string Value)> ParseDiagnosticSummary", statsPresentationText, StringComparison.Ordinal);
+        Assert.Contains("public static IReadOnlyList<StatsHardwareRowPresentation> BuildHardwareDecodeRows(", statsPresentationText, StringComparison.Ordinal);
+        Assert.Contains("StatsHardwareDecodeRowsInput mjpeg)", statsPresentationText, StringComparison.Ordinal);
+        Assert.Contains("public static IReadOnlyList<StatsHardwareRowPresentation> BuildHardwareGpuRows(StatsHardwareGpuRowsInput? nvml)", statsPresentationText, StringComparison.Ordinal);
+        Assert.DoesNotContain("using Sussudio.Services.Gpu;", statsPresentationText, StringComparison.Ordinal);
+        Assert.Contains("public static StatsDiagnosticSummary BuildStatsDiagnosticSummary(", statsPresentationText, StringComparison.Ordinal);
+        Assert.Contains("DiagnosticThresholds.CalculatePercent(rendererDrops, rendererSubmitted)", statsPresentationText, StringComparison.Ordinal);
+        Assert.Contains("private static StatsMetricStatus ResolveFrameLaneStatus(", statsPresentationText, StringComparison.Ordinal);
+        Assert.Contains("private static StatsMetricStatus ResolveDecodedVisualStatus(StatsSnapshot snapshot)", statsPresentationText, StringComparison.Ordinal);
+        Assert.Contains("public static StatsWindowPresentation BuildStatsWindowPresentation(StatsSnapshot snapshot)", statsPresentationText, StringComparison.Ordinal);
+        Assert.Contains("private static StatsWindowTelemetryDetailsPresentation BuildStatsWindowTelemetryDetails(", statsPresentationText, StringComparison.Ordinal);
+        Assert.Contains("internal sealed record StatsDockPresentation(", statsPresentationModelsText, StringComparison.Ordinal);
+        Assert.Contains("internal sealed record StatsWindowPresentation(", statsPresentationModelsText, StringComparison.Ordinal);
+        Assert.Contains("internal sealed record StatsWindowTelemetryDetailsPresentation(", statsPresentationModelsText, StringComparison.Ordinal);
+        Assert.Contains("internal sealed record StatsFrameTimePresentation(", statsPresentationModelsText, StringComparison.Ordinal);
+        Assert.Contains("internal readonly record struct StatsHardwareRowPresentation(", statsPresentationModelsText, StringComparison.Ordinal);
+        Assert.Contains("internal readonly record struct StatsHardwareDecodeRowsInput(", statsPresentationModelsText, StringComparison.Ordinal);
+        Assert.Contains("internal readonly record struct StatsHardwareGpuRowsInput(", statsPresentationModelsText, StringComparison.Ordinal);
+        Assert.Contains("internal enum StatsMetricStatus", statsPresentationModelsText, StringComparison.Ordinal);
+        Assert.Contains("var presentation = StatsPresentationBuilder.BuildDockPresentation(snapshot);", statsDockRefreshControllerText, StringComparison.Ordinal);
+        Assert.Contains("_frameTimeOverlayPresentationController.Apply(snapshot);", frameTimeOverlayText, StringComparison.Ordinal);
+        Assert.Contains("internal sealed class FrameTimeOverlayPresentationController", frameTimeOverlayControllerText, StringComparison.Ordinal);
+        Assert.Contains("public void Apply(StatsSnapshot snapshot)", frameTimeOverlayControllerText, StringComparison.Ordinal);
+        Assert.Contains("var presentation = StatsPresentationBuilder.BuildFrameTimePresentation(snapshot);", frameTimeOverlayControllerText, StringComparison.Ordinal);
+        Assert.Contains("SetTextIfChanged(_context.SourceValue, presentation.SourceText);", frameTimeOverlayControllerText, StringComparison.Ordinal);
+        Assert.Contains("internal static class FrameTimeGraphGeometry", frameTimeOverlayGeometryText, StringComparison.Ordinal);
+        Assert.Contains("public static bool TryProjectSegment(", frameTimeOverlayGeometryText, StringComparison.Ordinal);
+        Assert.Contains("PreviewFrameTimeSampleFlags.GapBefore", frameTimeOverlayGeometryText, StringComparison.Ordinal);
+        Assert.DoesNotContain("UpdateLine(", frameTimeOverlayControllerText, StringComparison.Ordinal);
+        Assert.Contains("StatsPresentationBuilder.BuildDiagnosticRows(telemetryDetails, diagnosticSummary)", statsDockRefreshControllerText, StringComparison.Ordinal);
+        Assert.Contains("var presentation = StatsPresentationBuilder.BuildStatsWindowPresentation(snapshot);", statsWindowText, StringComparison.Ordinal);
+        Assert.Contains("_presentationController.Apply(presentation);", statsWindowText, StringComparison.Ordinal);
+        Assert.Contains("internal sealed class StatsWindowPresentationController", statsWindowPresentationControllerText, StringComparison.Ordinal);
+        Assert.Contains("public void Apply(StatsWindowPresentation presentation)", statsWindowPresentationControllerText, StringComparison.Ordinal);
+        Assert.Contains("private readonly StatsWindowTelemetryDetailsController _telemetryDetailsController;", statsWindowPresentationControllerText, StringComparison.Ordinal);
+        Assert.Contains("_telemetryDetailsController.Apply(presentation.TelemetryDetails);", statsWindowPresentationControllerText, StringComparison.Ordinal);
+        Assert.DoesNotContain("private void UpdateTelemetryDetails(StatsWindowTelemetryDetailsPresentation presentation)", statsWindowPresentationControllerText, StringComparison.Ordinal);
+        Assert.Contains("internal sealed class StatsWindowTelemetryDetailsController", statsWindowTelemetryDetailsControllerText, StringComparison.Ordinal);
+        Assert.Contains("public void Apply(StatsWindowTelemetryDetailsPresentation presentation)", statsWindowTelemetryDetailsControllerText, StringComparison.Ordinal);
+        Assert.Contains("_context.TelemetryDetailsContent.Children.Clear();", statsWindowTelemetryDetailsControllerText, StringComparison.Ordinal);
+        Assert.Contains("Text = presentation.EmptyText,", statsWindowTelemetryDetailsControllerText, StringComparison.Ordinal);
+        Assert.Contains("Margin = new Thickness(0, 8, 0, 2),", statsWindowTelemetryDetailsControllerText, StringComparison.Ordinal);
+        Assert.Contains("grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });", statsWindowTelemetryDetailsControllerText, StringComparison.Ordinal);
+        Assert.Contains("grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });", statsWindowTelemetryDetailsControllerText, StringComparison.Ordinal);
+        Assert.Contains("HorizontalAlignment = HorizontalAlignment.Right,", statsWindowTelemetryDetailsControllerText, StringComparison.Ordinal);
+        Assert.Contains("TextWrapping = TextWrapping.Wrap", statsWindowTelemetryDetailsControllerText, StringComparison.Ordinal);
+        Assert.Contains("var telemetryDetailsController = new StatsWindowTelemetryDetailsController(new StatsWindowTelemetryDetailsControllerContext", statsWindowText, StringComparison.Ordinal);
+        Assert.DoesNotContain("private static string FormatFps(", statsWindowText, StringComparison.Ordinal);
+        Assert.DoesNotContain("private static string FormatMs(", statsWindowText, StringComparison.Ordinal);
+        Assert.DoesNotContain("private static string FormatPercent(", statsWindowText, StringComparison.Ordinal);
+        Assert.DoesNotContain("private static string FormatSourceHdr(", statsWindowText, StringComparison.Ordinal);
+        Assert.DoesNotContain("BuildFrameTimePresentation(snapshot)", statsOverlayText, StringComparison.Ordinal);
+        Assert.DoesNotContain("private enum MetricStatus", statsOverlayText, StringComparison.Ordinal);
+        Assert.DoesNotContain("private static string ResolveCaptureSummaryText", statsOverlayText, StringComparison.Ordinal);
+        Assert.DoesNotContain("private static List<(string Label, string Value)> ParseDiagnosticSummary", statsOverlayText, StringComparison.Ordinal);
+        Assert.DoesNotContain("StatsPresentationBuilder.BuildDockPresentation(snapshot)", statsOverlayText, StringComparison.Ordinal);
+        Assert.DoesNotContain("StatsPresentationBuilder.BuildDiagnosticRows(telemetryDetails, diagnosticSummary)", statsOverlayText, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -3859,21 +3943,21 @@ public class StatsPresentationTests
         var nativeXuText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(statsPresentationText, "var sourceHdr = FormatSourceHdr(snapshot.SourceIsHdr, snapshot.SourceColorimetry);");
-        AssertContains(statsPresentationText, "var sourceFormat = snapshot.SourceVideoFormat ?? \"\\u2014\";");
-        AssertDoesNotContain(statsPresentationText, "var sourceFormat =\n            snapshot.ReaderSourceSubtype ??");
-        AssertContains(statsDockRefreshControllerText, "StatsPresentationBuilder.BuildDockPresentation(snapshot)");
-        AssertContains(statsWindowText, "StatsPresentationBuilder.BuildStatsWindowPresentation(snapshot)");
-        AssertContains(statsPresentationText, "SourceHdr: FormatSourceHdr(snapshot.SourceIsHdr, snapshot.SourceColorimetry),");
-        AssertContains(statsPresentationText, "SourceFormat: snapshot.SourceVideoFormat ?? \"\\u2014\",");
-        AssertContains(mainWindowXaml, "Text=\"Video Format\"");
-        AssertContains(mainWindowXaml, "x:Name=\"Diagnostics_Content\"");
-        AssertContains(statsWindowXaml, "x:Name=\"SourceFormatValue\"");
-        AssertContains(statsWindowXaml, "x:Name=\"TelemetryDetailsContent\"");
-        AssertContains(nativeXuText, "VideoFormat = aviInfo.ColorSpace,");
-        AssertContains(nativeXuText, "Colorimetry = aviInfo.Colorimetry,");
-        AssertContains(nativeXuText, "Quantization = aviInfo.Quantization,");
-        AssertContains(nativeXuText, "HdrTransferFunction = ResolveHdrTransferFunction(hdrInfo.Eotf),");
+        Assert.Contains("var sourceHdr = FormatSourceHdr(snapshot.SourceIsHdr, snapshot.SourceColorimetry);", statsPresentationText, StringComparison.Ordinal);
+        Assert.Contains("var sourceFormat = snapshot.SourceVideoFormat ?? \"\\u2014\";", statsPresentationText, StringComparison.Ordinal);
+        Assert.DoesNotContain("var sourceFormat =\n            snapshot.ReaderSourceSubtype ??", statsPresentationText, StringComparison.Ordinal);
+        Assert.Contains("StatsPresentationBuilder.BuildDockPresentation(snapshot)", statsDockRefreshControllerText, StringComparison.Ordinal);
+        Assert.Contains("StatsPresentationBuilder.BuildStatsWindowPresentation(snapshot)", statsWindowText, StringComparison.Ordinal);
+        Assert.Contains("SourceHdr: FormatSourceHdr(snapshot.SourceIsHdr, snapshot.SourceColorimetry),", statsPresentationText, StringComparison.Ordinal);
+        Assert.Contains("SourceFormat: snapshot.SourceVideoFormat ?? \"\\u2014\",", statsPresentationText, StringComparison.Ordinal);
+        Assert.Contains("Text=\"Video Format\"", mainWindowXaml, StringComparison.Ordinal);
+        Assert.Contains("x:Name=\"Diagnostics_Content\"", mainWindowXaml, StringComparison.Ordinal);
+        Assert.Contains("x:Name=\"SourceFormatValue\"", statsWindowXaml, StringComparison.Ordinal);
+        Assert.Contains("x:Name=\"TelemetryDetailsContent\"", statsWindowXaml, StringComparison.Ordinal);
+        Assert.Contains("VideoFormat = aviInfo.ColorSpace,", nativeXuText, StringComparison.Ordinal);
+        Assert.Contains("Colorimetry = aviInfo.Colorimetry,", nativeXuText, StringComparison.Ordinal);
+        Assert.Contains("Quantization = aviInfo.Quantization,", nativeXuText, StringComparison.Ordinal);
+        Assert.Contains("HdrTransferFunction = ResolveHdrTransferFunction(hdrInfo.Eotf),", nativeXuText, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -3888,64 +3972,52 @@ public class StatsPresentationTests
         var refreshControllerText = statsOverlayCompositionText;
         var controllerText = refreshControllerText;
 
-        AssertContains(statsOverlayCompositionText, "private readonly StatsDockRefreshController _statsDockRefreshController;");
-        AssertContains(statsOverlayCompositionText, "private StatsDockRefreshController CreateDockRefreshController(");
-        AssertDoesNotContain(statsOverlayCompositionText, "StatsDockControllerGraph");
-        AssertContains(statsDockCompositionText, "var statsDockPresentationController = new StatsDockPresentationController(context.DockTargets);");
-        AssertContains(statsDockCompositionText, "return CreateRefreshController(");
-        AssertDoesNotContain(statsDockCompositionText, "CreatePresentationController(");
-        AssertContains(statsDockCompositionText, "private StatsDockRefreshController CreateRefreshController(");
-        AssertDoesNotContain(statsDockCompositionText, "public void RefreshDock(");
-        AssertDoesNotContain(statsDockCompositionText, "public void RefreshDiagnosticsSection()");
+        Assert.Contains("private readonly StatsDockRefreshController _statsDockRefreshController;", statsOverlayCompositionText, StringComparison.Ordinal);
+        Assert.Contains("private StatsDockRefreshController CreateDockRefreshController(", statsOverlayCompositionText, StringComparison.Ordinal);
+        Assert.DoesNotContain("StatsDockControllerGraph", statsOverlayCompositionText, StringComparison.Ordinal);
+        Assert.Contains("var statsDockPresentationController = new StatsDockPresentationController(context.DockTargets);", statsDockCompositionText, StringComparison.Ordinal);
+        Assert.Contains("return CreateRefreshController(", statsDockCompositionText, StringComparison.Ordinal);
+        Assert.DoesNotContain("CreatePresentationController(", statsDockCompositionText, StringComparison.Ordinal);
+        Assert.Contains("private StatsDockRefreshController CreateRefreshController(", statsDockCompositionText, StringComparison.Ordinal);
+        Assert.DoesNotContain("public void RefreshDock(", statsDockCompositionText, StringComparison.Ordinal);
+        Assert.DoesNotContain("public void RefreshDiagnosticsSection()", statsDockCompositionText, StringComparison.Ordinal);
         AssertOccursBefore(statsOverlayCompositionText, "_frameTimeOverlayPresentationController = CreateFrameTimeOverlayPresentationController(context);", "_statsDockRefreshController = CreateDockRefreshController(context);");
         AssertOccursBefore(statsOverlayCompositionText, "_statsDockRefreshController = CreateDockRefreshController(context);", "_statsOverlayController = CreateOverlayController(context);");
         AssertOccursBefore(statsDockCompositionText, "var statsDockPresentationController = new StatsDockPresentationController(context.DockTargets);", "var statsDockRowChromeController = CreateRowChromeController(context);");
         AssertOccursBefore(statsDockCompositionText, "var statsDockRowChromeController = CreateRowChromeController(context);", "var statsDiagnosticRowsController = CreateDiagnosticRowsController(context);");
-        AssertOccursBefore(statsDockCompositionText, "var statsDiagnosticRowsController = CreateDiagnosticRowsController(context);", "var statsHardwareRowsInputProvider = CreateHardwareRowsInputProvider(context);");
-        AssertOccursBefore(statsDockCompositionText, "var statsHardwareRowsInputProvider = CreateHardwareRowsInputProvider(context);", "var statsHardwareRowsController = CreateHardwareRowsController(");
+        AssertOccursBefore(statsDockCompositionText, "var statsDiagnosticRowsController = CreateDiagnosticRowsController(context);", "var statsHardwareRowsInputProvider = new StatsHardwareRowsInputProvider(context.HardwareSources);");
+        AssertOccursBefore(statsDockCompositionText, "var statsHardwareRowsInputProvider = new StatsHardwareRowsInputProvider(context.HardwareSources);", "var statsHardwareRowsController = CreateHardwareRowsController(");
         AssertOccursBefore(statsDockCompositionText, "var statsHardwareRowsController = CreateHardwareRowsController(", "return CreateRefreshController(");
-        AssertContains(refreshControllerText, "internal sealed class StatsDockRefreshControllerContext");
-        AssertContains(refreshControllerText, "internal sealed class StatsDockRefreshController");
-        AssertContains(refreshControllerText, "public required Func<bool> IsStatsDockVisible { get; init; }");
-        AssertContains(refreshControllerText, "public required Func<bool> IsDiagnosticsSectionVisible { get; init; }");
-        AssertContains(refreshControllerText, "public void RefreshDock(StatsSnapshot snapshot, bool refreshDetails)");
-        AssertContains(refreshControllerText, "public void RefreshDiagnosticsSection()");
-        AssertContains(refreshControllerText, "_context.IsWindowClosing() || !_context.IsStatsDockVisible()");
-        AssertContains(refreshControllerText, "StatsPresentationBuilder.BuildDockPresentation(snapshot)");
-        AssertContains(refreshControllerText, "_context.DockPresentationController.Apply(presentation);");
-        AssertContains(refreshControllerText, "_context.HardwareRowsController.UpdateDecodeSection();");
-        AssertContains(refreshControllerText, "_context.HardwareRowsController.UpdateGpuSection();");
-        AssertContains(refreshControllerText, "StatsPresentationBuilder.BuildDiagnosticRows(telemetryDetails, diagnosticSummary)");
-        AssertContains(refreshControllerText, "if (!_context.IsDiagnosticsSectionVisible())");
-        AssertDoesNotContain(controllerText, "StatsDockPresentationControllerContext");
-        AssertContains(controllerText, "public StatsDockPresentationController(StatsOverlayDockTargetsContext context)");
-        AssertContains(controllerText, "internal sealed class StatsDockPresentationController");
-        AssertContains(controllerText, "public void Apply(StatsDockPresentation presentation)");
-        AssertContains(controllerText, "SetTextIfChanged(_context.SessionStateValue, presentation.SessionState);");
-        AssertContains(controllerText, "SetMetricBrush(_context.SummaryRendererFpsValue, presentation.SummaryRendererFpsStatus);");
-        AssertContains(controllerText, "SetVisibilityIfChanged(_context.AvSyncEncoderRow, presentation.EncoderDriftVisible ? Visibility.Visible : Visibility.Collapsed);");
-        AssertContains(controllerText, "SetVisibilityIfChanged(_context.EncoderSection, presentation.EncoderActive ? Visibility.Visible : Visibility.Collapsed);");
-        AssertContains(controllerText, "MetricGoodBrush = new(Windows.UI.Color.FromArgb(0xFF, 0x70, 0xF0, 0x8B))");
-        Assert.False(
-            File.Exists(Path.Combine(FindRepoRoot(), "Sussudio", "Controllers", "Stats", "StatsDockPresentationController.cs")),
-            "stats dock presentation application lives with stats overlay composition ownership");
-        Assert.False(
-            File.Exists(Path.Combine(FindRepoRoot(), "Sussudio", "Controllers", "Stats", "StatsDockRefreshController.cs")),
-            "stats dock refresh ownership folded into StatsOverlayCompositionController.cs");
-        AssertDoesNotContain(statsOverlayText, "SetMetricBrush(");
-        AssertDoesNotContain(statsOverlayText, "SetTextIfChanged(Stats_");
-        AssertDoesNotContain(statsOverlayText, "private static readonly SolidColorBrush MetricNeutralBrush");
-        AssertDoesNotContain(statsOverlayText, "StatsPresentationBuilder.BuildDockPresentation(snapshot)");
-        AssertDoesNotContain(statsOverlayText, "StatsPresentationBuilder.BuildDiagnosticRows(telemetryDetails, diagnosticSummary)");
-        AssertDoesNotContain(statsOverlayText, "private void UpdateStatsDock()");
-        AssertDoesNotContain(statsOverlayText, "private void RefreshDiagnosticsSection()");
-        AssertDoesNotContain(statsOverlayText, "private void UpdateDiagnosticsSection(");
-        Assert.False(
-            File.Exists(Path.Combine(FindRepoRoot(), "Sussudio", "Controllers", "Stats", "StatsDockControllerGraph.Contexts.cs")),
-            "stats dock factories use the existing overlay composition context");
-        Assert.False(
-            File.Exists(Path.Combine(FindRepoRoot(), "Sussudio", "Controllers", "Stats", "StatsDockControllerGraph.cs")),
-            "stats dock refresh has no runtime graph wrapper");
+        Assert.Contains("internal sealed class StatsDockRefreshControllerContext", refreshControllerText, StringComparison.Ordinal);
+        Assert.Contains("internal sealed class StatsDockRefreshController", refreshControllerText, StringComparison.Ordinal);
+        Assert.Contains("public required Func<bool> IsStatsDockVisible { get; init; }", refreshControllerText, StringComparison.Ordinal);
+        Assert.Contains("public required Func<bool> IsDiagnosticsSectionVisible { get; init; }", refreshControllerText, StringComparison.Ordinal);
+        Assert.Contains("public void RefreshDock(StatsSnapshot snapshot, bool refreshDetails)", refreshControllerText, StringComparison.Ordinal);
+        Assert.Contains("public void RefreshDiagnosticsSection()", refreshControllerText, StringComparison.Ordinal);
+        Assert.Contains("_context.IsWindowClosing() || !_context.IsStatsDockVisible()", refreshControllerText, StringComparison.Ordinal);
+        Assert.Contains("StatsPresentationBuilder.BuildDockPresentation(snapshot)", refreshControllerText, StringComparison.Ordinal);
+        Assert.Contains("_context.DockPresentationController.Apply(presentation);", refreshControllerText, StringComparison.Ordinal);
+        Assert.Contains("_context.HardwareRowsController.UpdateDecodeSection();", refreshControllerText, StringComparison.Ordinal);
+        Assert.Contains("_context.HardwareRowsController.UpdateGpuSection();", refreshControllerText, StringComparison.Ordinal);
+        Assert.Contains("StatsPresentationBuilder.BuildDiagnosticRows(telemetryDetails, diagnosticSummary)", refreshControllerText, StringComparison.Ordinal);
+        Assert.Contains("if (!_context.IsDiagnosticsSectionVisible())", refreshControllerText, StringComparison.Ordinal);
+        Assert.DoesNotContain("StatsDockPresentationControllerContext", controllerText, StringComparison.Ordinal);
+        Assert.Contains("public StatsDockPresentationController(StatsOverlayDockTargetsContext context)", controllerText, StringComparison.Ordinal);
+        Assert.Contains("internal sealed class StatsDockPresentationController", controllerText, StringComparison.Ordinal);
+        Assert.Contains("public void Apply(StatsDockPresentation presentation)", controllerText, StringComparison.Ordinal);
+        Assert.Contains("SetTextIfChanged(_context.SessionStateValue, presentation.SessionState);", controllerText, StringComparison.Ordinal);
+        Assert.Contains("SetMetricBrush(_context.SummaryRendererFpsValue, presentation.SummaryRendererFpsStatus);", controllerText, StringComparison.Ordinal);
+        Assert.Contains("SetVisibilityIfChanged(_context.AvSyncEncoderRow, presentation.EncoderDriftVisible ? Visibility.Visible : Visibility.Collapsed);", controllerText, StringComparison.Ordinal);
+        Assert.Contains("SetVisibilityIfChanged(_context.EncoderSection, presentation.EncoderActive ? Visibility.Visible : Visibility.Collapsed);", controllerText, StringComparison.Ordinal);
+        Assert.Contains("MetricGoodBrush = new(Windows.UI.Color.FromArgb(0xFF, 0x70, 0xF0, 0x8B))", controllerText, StringComparison.Ordinal);
+        Assert.DoesNotContain("SetMetricBrush(", statsOverlayText, StringComparison.Ordinal);
+        Assert.DoesNotContain("SetTextIfChanged(Stats_", statsOverlayText, StringComparison.Ordinal);
+        Assert.DoesNotContain("private static readonly SolidColorBrush MetricNeutralBrush", statsOverlayText, StringComparison.Ordinal);
+        Assert.DoesNotContain("StatsPresentationBuilder.BuildDockPresentation(snapshot)", statsOverlayText, StringComparison.Ordinal);
+        Assert.DoesNotContain("StatsPresentationBuilder.BuildDiagnosticRows(telemetryDetails, diagnosticSummary)", statsOverlayText, StringComparison.Ordinal);
+        Assert.DoesNotContain("private void UpdateStatsDock()", statsOverlayText, StringComparison.Ordinal);
+        Assert.DoesNotContain("private void RefreshDiagnosticsSection()", statsOverlayText, StringComparison.Ordinal);
+        Assert.DoesNotContain("private void UpdateDiagnosticsSection(", statsOverlayText, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -3968,146 +4040,138 @@ public class StatsPresentationTests
             StringComparison.Ordinal);
         var hardwareRowsControllerContextText = refreshControllerText.Substring(
             refreshControllerText.IndexOf("internal sealed class StatsHardwareRowsControllerContext", StringComparison.Ordinal),
-            refreshControllerText.IndexOf("internal sealed class StatsHardwareRowsInputProviderContext", StringComparison.Ordinal)
+            refreshControllerText.IndexOf("internal sealed class StatsHardwareRowsInputProvider", StringComparison.Ordinal)
                 - refreshControllerText.IndexOf("internal sealed class StatsHardwareRowsControllerContext", StringComparison.Ordinal));
         var hardwareRowsControllerText = hardwareRowsControllerContextText + refreshControllerText.Substring(hardwareRowsControllerStart);
         var hardwareRowsInputProviderText = refreshControllerText.Substring(
-            refreshControllerText.IndexOf("internal sealed class StatsHardwareRowsInputProviderContext", StringComparison.Ordinal),
+            refreshControllerText.IndexOf("internal sealed class StatsHardwareRowsInputProvider", StringComparison.Ordinal),
             hardwareRowsControllerStart
-                - refreshControllerText.IndexOf("internal sealed class StatsHardwareRowsInputProviderContext", StringComparison.Ordinal));
+                - refreshControllerText.IndexOf("internal sealed class StatsHardwareRowsInputProvider", StringComparison.Ordinal));
+        var hardwareSourcesText = ExtractTextBetween(
+            statsOverlayCompositionText,
+            "internal sealed class StatsOverlayHardwareSourceContext",
+            "internal sealed class StatsOverlayFrameTimeTargetsContext");
         var hardwareRowsInputBuilderText = hardwareRowsInputProviderText;
         var hardwareRowsBuilderText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.cs").Replace("\r\n", "\n");
 
-        AssertContains(statsDockCompositionText, "private static StatsDiagnosticRowsController CreateDiagnosticRowsController(");
-        AssertContains(statsDockCompositionText, "private static StatsDockRowChromeController CreateRowChromeController(");
-        AssertContains(statsDockCompositionText, "private static StatsHardwareRowsController CreateHardwareRowsController(");
-        AssertContains(statsDockCompositionText, "ResourceOwner = context.Shell.StatsDockPanel");
-        AssertContains(statsDockCompositionText, "DiagnosticsContent = context.DockTargets.DiagnosticsContent");
-        AssertContains(statsDockCompositionText, "RowChromeController = statsDockRowChromeController");
-        AssertContains(statsDockCompositionText, "private static StatsHardwareRowsInputProvider CreateHardwareRowsInputProvider(");
-        AssertContains(statsDockCompositionText, "GetMjpegPipelineTimingDetails = context.HardwareSources.GetMjpegPipelineTimingDetails,");
-        AssertContains(statsDockCompositionText, "GetPendingPreviewFrameCount = context.HardwareSources.GetPendingPreviewFrameCount,");
-        AssertContains(statsDockCompositionText, "GetNvmlSnapshot = context.HardwareSources.GetNvmlSnapshot");
-        AssertContains(statsDockCompositionText, "InputProvider = statsHardwareRowsInputProvider");
-        AssertOccursBefore(statsDockCompositionText, "var statsHardwareRowsInputProvider = CreateHardwareRowsInputProvider(context);", "var statsHardwareRowsController = CreateHardwareRowsController(");
-        AssertDoesNotContain(statsDockCompositionText, "GetDecodeRowsInput = () =>");
-        AssertDoesNotContain(statsDockCompositionText, "StatsHardwareRowsInputBuilder.BuildDecodeRowsInput(");
-        AssertDoesNotContain(statsDockCompositionText, "StatsHardwareRowsInputBuilder.BuildGpuRowsInput(");
-        AssertContains(refreshControllerText, "_context.DiagnosticRowsController.UpdateDiagnostics(presentation);");
-        AssertContains(refreshControllerText, "_context.HardwareRowsController.UpdateDecodeSection();");
-        AssertContains(refreshControllerText, "_context.HardwareRowsController.UpdateGpuSection();");
-        AssertContains(hardwareRowsControllerText, "internal sealed class StatsHardwareRowsControllerContext");
-        AssertContains(hardwareRowsControllerText, "internal sealed class StatsHardwareRowsController");
-        AssertContains(hardwareRowsControllerText, "private const int MaxExpectedDecodeRowCount = 14;");
-        AssertContains(hardwareRowsControllerText, "private const int FixedGpuRowCount = 10;");
-        AssertContains(hardwareRowsControllerText, "public void UpdateDecodeSection()");
-        AssertContains(hardwareRowsControllerText, "public void UpdateGpuSection()");
-        AssertContains(hardwareRowsControllerText, "StatsPresentationBuilder.BuildHardwareDecodeRows(");
-        AssertContains(hardwareRowsControllerText, "public required StatsHardwareRowsInputProvider InputProvider { get; init; }");
-        AssertContains(hardwareRowsControllerText, "var input = _context.InputProvider.GetDecodeRowsInput();");
-        AssertContains(hardwareRowsControllerText, "StatsPresentationBuilder.BuildHardwareDecodeRows(input.Value)");
-        AssertContains(hardwareRowsControllerText, "StatsPresentationBuilder.BuildHardwareGpuRows(_context.InputProvider.GetGpuRowsInput())");
-        AssertDoesNotContain(hardwareRowsControllerText, "public required Func<StatsHardwareDecodeRowsInput?> GetDecodeRowsInput { get; init; }");
-        AssertDoesNotContain(hardwareRowsControllerText, "public required Func<StatsHardwareGpuRowsInput?> GetGpuRowsInput { get; init; }");
-        AssertContains(hardwareRowsInputProviderText, "internal sealed class StatsHardwareRowsInputProviderContext");
-        AssertContains(hardwareRowsInputProviderText, "internal sealed class StatsHardwareRowsInputProvider");
-        AssertContains(hardwareRowsInputProviderText, "public required Func<ParallelMjpegDecodePipeline.PipelineTimingMetrics?> GetMjpegPipelineTimingDetails { get; init; }");
-        AssertContains(hardwareRowsInputProviderText, "public required Func<int?> GetPendingPreviewFrameCount { get; init; }");
-        AssertContains(hardwareRowsInputProviderText, "public required Func<NvmlSnapshot?> GetNvmlSnapshot { get; init; }");
-        AssertContains(hardwareRowsInputProviderText, "var mjpegMetrics = _context.GetMjpegPipelineTimingDetails();");
-        AssertContains(hardwareRowsInputProviderText, "if (!mjpegMetrics.HasValue || mjpegMetrics.Value.DecoderCount <= 0)");
-        AssertContains(hardwareRowsInputProviderText, "StatsHardwareRowsInputBuilder.BuildDecodeRowsInput(");
-        AssertContains(hardwareRowsInputProviderText, "_context.GetPendingPreviewFrameCount()");
-        AssertContains(hardwareRowsInputProviderText, "StatsHardwareRowsInputBuilder.BuildGpuRowsInput(_context.GetNvmlSnapshot())");
-        AssertContains(hardwareRowsInputBuilderText, "internal static class StatsHardwareRowsInputBuilder");
-        AssertContains(hardwareRowsInputBuilderText, "public static StatsHardwareDecodeRowsInput BuildDecodeRowsInput(");
-        AssertContains(hardwareRowsInputBuilderText, "ParallelMjpegDecodePipeline.PipelineTimingMetrics mjpeg,");
-        AssertContains(hardwareRowsInputBuilderText, "public static StatsHardwareGpuRowsInput? BuildGpuRowsInput(NvmlSnapshot? nvml)");
-        AssertContains(hardwareRowsInputBuilderText, "PcieTxMBps: nvml.PcieTxMBps,");
-        AssertContains(hardwareRowsInputBuilderText, "VramUsedMB: nvml.VramUsedMB,");
-        AssertContains(hardwareRowsInputBuilderText, "GpuPowerW: nvml.GpuPowerW,");
-        AssertContains(hardwareRowsBuilderText, "public static IReadOnlyList<StatsHardwareRowPresentation> BuildHardwareDecodeRows(");
-        AssertContains(hardwareRowsBuilderText, "StatsHardwareDecodeRowsInput mjpeg)");
-        AssertContains(hardwareRowsBuilderText, "public static IReadOnlyList<StatsHardwareRowPresentation> BuildHardwareGpuRows(StatsHardwareGpuRowsInput? nvml)");
-        AssertDoesNotContain(hardwareRowsBuilderText, "using Sussudio.Services.Gpu;");
-        AssertContains(refreshControllerText, "using Sussudio.Services.Gpu;");
-        AssertContains(hardwareRowsBuilderText, "internal readonly record struct StatsHardwareRowPresentation(string Label, string Value);");
-        AssertContains(hardwareRowsBuilderText, "internal readonly record struct StatsHardwareDecodeRowsInput(");
-        AssertContains(hardwareRowsBuilderText, "internal readonly record struct StatsHardwareGpuRowsInput(");
-        AssertContains(hardwareRowsControllerText, "_context.RowChromeController.CollapseSimpleRows(StatsDockSimpleRowPool.Decode);");
-        AssertContains(hardwareRowsControllerText, "_context.RowChromeController.UpdateSimpleRows(");
-        AssertContains(hardwareRowsControllerText, "StatsDockSimpleRowPool.Decode,");
-        AssertContains(hardwareRowsControllerText, "StatsDockSimpleRowPool.Gpu,");
-        AssertDoesNotContain(hardwareRowsControllerText, "private static StatsHardwareDecodeRowsInput CreateDecodeRowsInput(");
-        AssertDoesNotContain(hardwareRowsControllerText, "private static StatsHardwareGpuRowsInput? CreateGpuRowsInput(");
-        AssertDoesNotContain(hardwareRowsControllerText, "new StatsHardwareDecodeRowsInput(");
-        AssertDoesNotContain(hardwareRowsControllerText, "new StatsHardwareGpuRowsInput(");
-        AssertDoesNotContain(hardwareRowsControllerText, "using Sussudio.Services.Gpu;");
-        AssertDoesNotContain(hardwareRowsControllerText, "GetMjpegPipelineTimingDetails");
-        AssertDoesNotContain(hardwareRowsControllerText, "GetPendingPreviewFrameCount");
-        AssertDoesNotContain(hardwareRowsControllerText, "GetNvmlSnapshot");
-        AssertContains(refreshControllerText, "using Sussudio.Services.Gpu;");
-        AssertContains(controllerText, "internal sealed class StatsDiagnosticRowsControllerContext");
-        AssertContains(controllerText, "internal sealed class StatsDiagnosticRowsController");
-        AssertContains(controllerText, "public required FrameworkElement ResourceOwner { get; init; }");
-        AssertContains(controllerText, "public required StackPanel DiagnosticsContent { get; init; }");
-        AssertContains(controllerText, "private readonly List<DiagnosticsPoolSlot> _diagnosticsRowPool = new();");
-        AssertContains(controllerText, "private TextBlock? _diagnosticsEmptyStateTextBlock;");
-        AssertContains(controllerText, "private readonly StatsDockRowChromePresenter _rowChrome;");
-        AssertContains(controllerText, "public void UpdateDiagnostics(StatsDiagnosticRowsPresentation presentation)");
-        AssertContains(controllerText, "Text = \"No diagnostics available\",");
-        AssertContains(controllerText, "private void EnsureDiagnosticsPoolCapacity(int requiredCount)");
-        AssertContains(controllerText, "private void UpdateDiagnosticsPoolSlot(");
-        AssertContains(controllerText, "private TextBlock CreateDiagnosticGroupHeader(string title)");
-        AssertContains(controllerText, "var rowSlot = _rowChrome.CreateRowSlot();");
-        AssertContains(controllerText, "_rowChrome.UpdateRowSlot(slot.RowSlot, label, value, alt);");
-        AssertContains(controllerText, "StatsDockRowChromePresenter.SetVisibilityIfChanged(slot.RowSlot.Row, Visibility.Collapsed);");
-        AssertDoesNotContain(controllerText, "_context.RowChromeController.UpdateDiagnosticsRows(presentation);");
-        Assert.False(
-            File.Exists(Path.Combine(FindRepoRoot(), "Sussudio", "Controllers", "Stats", "StatsDiagnosticRowsController.cs")),
-            "diagnostic stats rows folded into StatsOverlayCompositionController.cs");
-        AssertContains(rowChromeControllerText, "internal sealed class StatsDockRowChromeControllerContext");
-        AssertContains(rowChromeControllerText, "internal sealed class StatsDockRowChromeController");
-        AssertContains(rowChromeControllerText, "internal enum StatsDockSimpleRowPool");
-        AssertContains(rowChromeControllerText, "private readonly StatsDockRowChromePresenter _rowChrome;");
-        AssertContains(rowChromeControllerText, "private readonly List<StatsDockRowChromeSlot> _decodeRowPool = new();");
-        AssertContains(rowChromeControllerText, "private readonly List<StatsDockRowChromeSlot> _gpuRowPool = new();");
-        AssertContains(rowChromeControllerText, "public void CollapseSimpleRows(StatsDockSimpleRowPool poolKind)");
-        AssertContains(rowChromeControllerText, "public void UpdateSimpleRows(");
-        AssertContains(rowChromeControllerText, "_rowChrome.UpdateRowSlot(pool[i], row.Label, row.Value, alt: (i % 2) != 0);");
-        AssertContains(rowChromeControllerText, "StatsDockRowChromePresenter.CollapseRows(pool, startIndex: rows.Count);");
-        AssertContains(rowChromePresenterText, "internal sealed record StatsDockRowChromeSlot(Border Row, TextBlock Label, TextBlock Value);");
-        AssertContains(rowChromePresenterText, "internal sealed class StatsDockRowChromePresenter");
-        AssertContains(rowChromePresenterText, "public StatsDockRowChromeSlot CreateRowSlot(string label = \"\", string value = \"\", bool alt = false)");
-        AssertContains(rowChromePresenterText, "public void UpdateRowSlot(StatsDockRowChromeSlot slot, string label, string value, bool alt)");
-        AssertContains(rowChromePresenterText, "Style = GetStyle(\"DockStatsLabelStyle\")");
-        AssertContains(rowChromePresenterText, "Style = GetStyle(\"DockStatsValueStyle\"),");
-        AssertContains(rowChromePresenterText, "=> GetStyle(alt ? \"DockStatsRowAltStyle\" : \"DockStatsRowStyle\");");
-        AssertContains(rowChromePresenterText, "public static void CollapseRows(IReadOnlyList<StatsDockRowChromeSlot> pool, int startIndex = 0)");
-        Assert.False(
-            File.Exists(Path.Combine(FindRepoRoot(), "Sussudio", "Controllers", "Stats", "StatsDockRowChromePresenter.cs")),
-            "stats dock row chrome folded into StatsOverlayCompositionController.cs");
-        Assert.False(
-            File.Exists(Path.Combine(FindRepoRoot(), "Sussudio", "Controllers", "Stats", "StatsDockRowsController.cs")),
-            "stats dock row chrome folded into StatsOverlayCompositionController.cs");
-        AssertDoesNotContain(rowChromeControllerText, "public void UpdateDiagnosticsRows(StatsDiagnosticRowsPresentation presentation)");
-        AssertDoesNotContain(rowChromeControllerText, "private Border CreateRow(");
-        AssertDoesNotContain(controllerText, "private Border CreateRow(");
-        AssertDoesNotContain(rowChromeControllerText, "Style = GetStyle(alt ? \"DockStatsRowAltStyle\" : \"DockStatsRowStyle\"),");
-        AssertDoesNotContain(controllerText, "Style = GetStyle(alt ? \"DockStatsRowAltStyle\" : \"DockStatsRowStyle\"),");
-        AssertDoesNotContain(hardwareRowsControllerText, "new List<StatsHardwareRowPresentation>");
-        AssertDoesNotContain(hardwareRowsControllerText, "public static IReadOnlyList<StatsHardwareRowPresentation> BuildHardwareGpuRows(");
-        AssertDoesNotContain(hardwareRowsControllerText, "StatsDiagnosticRowsController");
-        AssertDoesNotContain(controllerText, "private Border CreateDiagnosticRow(");
-        AssertDoesNotContain(mainWindowText, "_decodeRowPool");
-        AssertDoesNotContain(mainWindowText, "_diagnosticsRowPool");
-        AssertDoesNotContain(statsOverlayText, "private sealed record DiagnosticRowSlot(");
-        AssertDoesNotContain(statsOverlayText, "private void EnsureDiagnosticRowPool(");
-        AssertDoesNotContain(statsOverlayText, "private Border CreateDiagnosticRow(");
-        AssertDoesNotContain(statsOverlayText, "private void UpdateDecodeSection()");
-        AssertDoesNotContain(statsOverlayText, "private void UpdateGpuSection()");
-        AssertDoesNotContain(statsOverlayText, "_statsDiagnosticRowsController.UpdateDiagnostics(presentation);");
-        AssertDoesNotContain(statsOverlayText, "new List<StatsHardwareRowPresentation>");
+        Assert.Contains("private static StatsDiagnosticRowsController CreateDiagnosticRowsController(", statsDockCompositionText, StringComparison.Ordinal);
+        Assert.Contains("private static StatsDockRowChromeController CreateRowChromeController(", statsDockCompositionText, StringComparison.Ordinal);
+        Assert.Contains("private static StatsHardwareRowsController CreateHardwareRowsController(", statsDockCompositionText, StringComparison.Ordinal);
+        Assert.Contains("ResourceOwner = context.Shell.StatsDockPanel", statsDockCompositionText, StringComparison.Ordinal);
+        Assert.Contains("DiagnosticsContent = context.DockTargets.DiagnosticsContent", statsDockCompositionText, StringComparison.Ordinal);
+        Assert.Contains("RowChromeController = statsDockRowChromeController", statsDockCompositionText, StringComparison.Ordinal);
+        Assert.Contains("new StatsHardwareRowsInputProvider(context.HardwareSources)", statsDockCompositionText, StringComparison.Ordinal);
+        Assert.Contains("InputProvider = statsHardwareRowsInputProvider", statsDockCompositionText, StringComparison.Ordinal);
+        AssertOccursBefore(statsDockCompositionText, "var statsHardwareRowsInputProvider = new StatsHardwareRowsInputProvider(context.HardwareSources);", "var statsHardwareRowsController = CreateHardwareRowsController(");
+        Assert.DoesNotContain("GetDecodeRowsInput = () =>", statsDockCompositionText, StringComparison.Ordinal);
+        Assert.DoesNotContain("StatsHardwareRowsInputBuilder.BuildDecodeRowsInput(", statsDockCompositionText, StringComparison.Ordinal);
+        Assert.DoesNotContain("StatsHardwareRowsInputBuilder.BuildGpuRowsInput(", statsDockCompositionText, StringComparison.Ordinal);
+        Assert.Contains("_context.DiagnosticRowsController.UpdateDiagnostics(presentation);", refreshControllerText, StringComparison.Ordinal);
+        Assert.Contains("_context.HardwareRowsController.UpdateDecodeSection();", refreshControllerText, StringComparison.Ordinal);
+        Assert.Contains("_context.HardwareRowsController.UpdateGpuSection();", refreshControllerText, StringComparison.Ordinal);
+        Assert.Contains("internal sealed class StatsHardwareRowsControllerContext", hardwareRowsControllerText, StringComparison.Ordinal);
+        Assert.Contains("internal sealed class StatsHardwareRowsController", hardwareRowsControllerText, StringComparison.Ordinal);
+        Assert.Contains("private const int MaxExpectedDecodeRowCount = 14;", hardwareRowsControllerText, StringComparison.Ordinal);
+        Assert.Contains("private const int FixedGpuRowCount = 10;", hardwareRowsControllerText, StringComparison.Ordinal);
+        Assert.Contains("public void UpdateDecodeSection()", hardwareRowsControllerText, StringComparison.Ordinal);
+        Assert.Contains("public void UpdateGpuSection()", hardwareRowsControllerText, StringComparison.Ordinal);
+        Assert.Contains("StatsPresentationBuilder.BuildHardwareDecodeRows(", hardwareRowsControllerText, StringComparison.Ordinal);
+        Assert.Contains("public required StatsHardwareRowsInputProvider InputProvider { get; init; }", hardwareRowsControllerText, StringComparison.Ordinal);
+        Assert.Contains("var input = _context.InputProvider.GetDecodeRowsInput();", hardwareRowsControllerText, StringComparison.Ordinal);
+        Assert.Contains("StatsPresentationBuilder.BuildHardwareDecodeRows(input.Value)", hardwareRowsControllerText, StringComparison.Ordinal);
+        Assert.Contains("StatsPresentationBuilder.BuildHardwareGpuRows(_context.InputProvider.GetGpuRowsInput())", hardwareRowsControllerText, StringComparison.Ordinal);
+        Assert.DoesNotContain("public required Func<StatsHardwareDecodeRowsInput?> GetDecodeRowsInput { get; init; }", hardwareRowsControllerText, StringComparison.Ordinal);
+        Assert.DoesNotContain("public required Func<StatsHardwareGpuRowsInput?> GetGpuRowsInput { get; init; }", hardwareRowsControllerText, StringComparison.Ordinal);
+        Assert.Contains("internal sealed class StatsHardwareRowsInputProvider", hardwareRowsInputProviderText, StringComparison.Ordinal);
+        Assert.Contains("public StatsHardwareRowsInputProvider(StatsOverlayHardwareSourceContext context)", hardwareRowsInputProviderText, StringComparison.Ordinal);
+        Assert.Contains("public required Func<ParallelMjpegDecodePipeline.PipelineTimingMetrics?> GetMjpegPipelineTimingDetails { get; init; }", hardwareSourcesText, StringComparison.Ordinal);
+        Assert.Contains("public required Func<int?> GetPendingPreviewFrameCount { get; init; }", hardwareSourcesText, StringComparison.Ordinal);
+        Assert.Contains("public required Func<NvmlSnapshot?> GetNvmlSnapshot { get; init; }", hardwareSourcesText, StringComparison.Ordinal);
+        Assert.Contains("var mjpegMetrics = _context.GetMjpegPipelineTimingDetails();", hardwareRowsInputProviderText, StringComparison.Ordinal);
+        Assert.Contains("if (!mjpegMetrics.HasValue || mjpegMetrics.Value.DecoderCount <= 0)", hardwareRowsInputProviderText, StringComparison.Ordinal);
+        Assert.Contains("StatsHardwareRowsInputBuilder.BuildDecodeRowsInput(", hardwareRowsInputProviderText, StringComparison.Ordinal);
+        Assert.Contains("_context.GetPendingPreviewFrameCount()", hardwareRowsInputProviderText, StringComparison.Ordinal);
+        Assert.Contains("StatsHardwareRowsInputBuilder.BuildGpuRowsInput(_context.GetNvmlSnapshot())", hardwareRowsInputProviderText, StringComparison.Ordinal);
+        Assert.Contains("internal static class StatsHardwareRowsInputBuilder", hardwareRowsInputBuilderText, StringComparison.Ordinal);
+        Assert.Contains("public static StatsHardwareDecodeRowsInput BuildDecodeRowsInput(", hardwareRowsInputBuilderText, StringComparison.Ordinal);
+        Assert.Contains("ParallelMjpegDecodePipeline.PipelineTimingMetrics mjpeg,", hardwareRowsInputBuilderText, StringComparison.Ordinal);
+        Assert.Contains("public static StatsHardwareGpuRowsInput? BuildGpuRowsInput(NvmlSnapshot? nvml)", hardwareRowsInputBuilderText, StringComparison.Ordinal);
+        Assert.Contains("PcieTxMBps: nvml.PcieTxMBps,", hardwareRowsInputBuilderText, StringComparison.Ordinal);
+        Assert.Contains("VramUsedMB: nvml.VramUsedMB,", hardwareRowsInputBuilderText, StringComparison.Ordinal);
+        Assert.Contains("GpuPowerW: nvml.GpuPowerW,", hardwareRowsInputBuilderText, StringComparison.Ordinal);
+        Assert.Contains("public static IReadOnlyList<StatsHardwareRowPresentation> BuildHardwareDecodeRows(", hardwareRowsBuilderText, StringComparison.Ordinal);
+        Assert.Contains("StatsHardwareDecodeRowsInput mjpeg)", hardwareRowsBuilderText, StringComparison.Ordinal);
+        Assert.Contains("public static IReadOnlyList<StatsHardwareRowPresentation> BuildHardwareGpuRows(StatsHardwareGpuRowsInput? nvml)", hardwareRowsBuilderText, StringComparison.Ordinal);
+        Assert.DoesNotContain("using Sussudio.Services.Gpu;", hardwareRowsBuilderText, StringComparison.Ordinal);
+        Assert.Contains("using Sussudio.Services.Gpu;", refreshControllerText, StringComparison.Ordinal);
+        Assert.Contains("internal readonly record struct StatsHardwareRowPresentation(string Label, string Value);", hardwareRowsBuilderText, StringComparison.Ordinal);
+        Assert.Contains("internal readonly record struct StatsHardwareDecodeRowsInput(", hardwareRowsBuilderText, StringComparison.Ordinal);
+        Assert.Contains("internal readonly record struct StatsHardwareGpuRowsInput(", hardwareRowsBuilderText, StringComparison.Ordinal);
+        Assert.Contains("_context.RowChromeController.CollapseSimpleRows(StatsDockSimpleRowPool.Decode);", hardwareRowsControllerText, StringComparison.Ordinal);
+        Assert.Contains("_context.RowChromeController.UpdateSimpleRows(", hardwareRowsControllerText, StringComparison.Ordinal);
+        Assert.Contains("StatsDockSimpleRowPool.Decode,", hardwareRowsControllerText, StringComparison.Ordinal);
+        Assert.Contains("StatsDockSimpleRowPool.Gpu,", hardwareRowsControllerText, StringComparison.Ordinal);
+        Assert.DoesNotContain("private static StatsHardwareDecodeRowsInput CreateDecodeRowsInput(", hardwareRowsControllerText, StringComparison.Ordinal);
+        Assert.DoesNotContain("private static StatsHardwareGpuRowsInput? CreateGpuRowsInput(", hardwareRowsControllerText, StringComparison.Ordinal);
+        Assert.DoesNotContain("new StatsHardwareDecodeRowsInput(", hardwareRowsControllerText, StringComparison.Ordinal);
+        Assert.DoesNotContain("new StatsHardwareGpuRowsInput(", hardwareRowsControllerText, StringComparison.Ordinal);
+        Assert.DoesNotContain("using Sussudio.Services.Gpu;", hardwareRowsControllerText, StringComparison.Ordinal);
+        Assert.DoesNotContain("GetMjpegPipelineTimingDetails", hardwareRowsControllerText, StringComparison.Ordinal);
+        Assert.DoesNotContain("GetPendingPreviewFrameCount", hardwareRowsControllerText, StringComparison.Ordinal);
+        Assert.DoesNotContain("GetNvmlSnapshot", hardwareRowsControllerText, StringComparison.Ordinal);
+        Assert.Contains("using Sussudio.Services.Gpu;", refreshControllerText, StringComparison.Ordinal);
+        Assert.Contains("internal sealed class StatsDiagnosticRowsControllerContext", controllerText, StringComparison.Ordinal);
+        Assert.Contains("internal sealed class StatsDiagnosticRowsController", controllerText, StringComparison.Ordinal);
+        Assert.Contains("public required FrameworkElement ResourceOwner { get; init; }", controllerText, StringComparison.Ordinal);
+        Assert.Contains("public required StackPanel DiagnosticsContent { get; init; }", controllerText, StringComparison.Ordinal);
+        Assert.Contains("private readonly List<DiagnosticsPoolSlot> _diagnosticsRowPool = new();", controllerText, StringComparison.Ordinal);
+        Assert.Contains("private TextBlock? _diagnosticsEmptyStateTextBlock;", controllerText, StringComparison.Ordinal);
+        Assert.Contains("private readonly StatsDockRowChromePresenter _rowChrome;", controllerText, StringComparison.Ordinal);
+        Assert.Contains("public void UpdateDiagnostics(StatsDiagnosticRowsPresentation presentation)", controllerText, StringComparison.Ordinal);
+        Assert.Contains("Text = \"No diagnostics available\",", controllerText, StringComparison.Ordinal);
+        Assert.Contains("private void EnsureDiagnosticsPoolCapacity(int requiredCount)", controllerText, StringComparison.Ordinal);
+        Assert.Contains("private void UpdateDiagnosticsPoolSlot(", controllerText, StringComparison.Ordinal);
+        Assert.Contains("private TextBlock CreateDiagnosticGroupHeader(string title)", controllerText, StringComparison.Ordinal);
+        Assert.Contains("var rowSlot = _rowChrome.CreateRowSlot();", controllerText, StringComparison.Ordinal);
+        Assert.Contains("_rowChrome.UpdateRowSlot(slot.RowSlot, label, value, alt);", controllerText, StringComparison.Ordinal);
+        Assert.Contains("StatsDockRowChromePresenter.SetVisibilityIfChanged(slot.RowSlot.Row, Visibility.Collapsed);", controllerText, StringComparison.Ordinal);
+        Assert.DoesNotContain("_context.RowChromeController.UpdateDiagnosticsRows(presentation);", controllerText, StringComparison.Ordinal);
+        Assert.Contains("internal sealed class StatsDockRowChromeControllerContext", rowChromeControllerText, StringComparison.Ordinal);
+        Assert.Contains("internal sealed class StatsDockRowChromeController", rowChromeControllerText, StringComparison.Ordinal);
+        Assert.Contains("internal enum StatsDockSimpleRowPool", rowChromeControllerText, StringComparison.Ordinal);
+        Assert.Contains("private readonly StatsDockRowChromePresenter _rowChrome;", rowChromeControllerText, StringComparison.Ordinal);
+        Assert.Contains("private readonly List<StatsDockRowChromeSlot> _decodeRowPool = new();", rowChromeControllerText, StringComparison.Ordinal);
+        Assert.Contains("private readonly List<StatsDockRowChromeSlot> _gpuRowPool = new();", rowChromeControllerText, StringComparison.Ordinal);
+        Assert.Contains("public void CollapseSimpleRows(StatsDockSimpleRowPool poolKind)", rowChromeControllerText, StringComparison.Ordinal);
+        Assert.Contains("public void UpdateSimpleRows(", rowChromeControllerText, StringComparison.Ordinal);
+        Assert.Contains("_rowChrome.UpdateRowSlot(pool[i], row.Label, row.Value, alt: (i % 2) != 0);", rowChromeControllerText, StringComparison.Ordinal);
+        Assert.Contains("StatsDockRowChromePresenter.CollapseRows(pool, startIndex: rows.Count);", rowChromeControllerText, StringComparison.Ordinal);
+        Assert.Contains("internal sealed record StatsDockRowChromeSlot(Border Row, TextBlock Label, TextBlock Value);", rowChromePresenterText, StringComparison.Ordinal);
+        Assert.Contains("internal sealed class StatsDockRowChromePresenter", rowChromePresenterText, StringComparison.Ordinal);
+        Assert.Contains("public StatsDockRowChromeSlot CreateRowSlot(string label = \"\", string value = \"\", bool alt = false)", rowChromePresenterText, StringComparison.Ordinal);
+        Assert.Contains("public void UpdateRowSlot(StatsDockRowChromeSlot slot, string label, string value, bool alt)", rowChromePresenterText, StringComparison.Ordinal);
+        Assert.Contains("Style = GetStyle(\"DockStatsLabelStyle\")", rowChromePresenterText, StringComparison.Ordinal);
+        Assert.Contains("Style = GetStyle(\"DockStatsValueStyle\"),", rowChromePresenterText, StringComparison.Ordinal);
+        Assert.Contains("=> GetStyle(alt ? \"DockStatsRowAltStyle\" : \"DockStatsRowStyle\");", rowChromePresenterText, StringComparison.Ordinal);
+        Assert.Contains("public static void CollapseRows(IReadOnlyList<StatsDockRowChromeSlot> pool, int startIndex = 0)", rowChromePresenterText, StringComparison.Ordinal);
+        Assert.DoesNotContain("public void UpdateDiagnosticsRows(StatsDiagnosticRowsPresentation presentation)", rowChromeControllerText, StringComparison.Ordinal);
+        Assert.DoesNotContain("private Border CreateRow(", rowChromeControllerText, StringComparison.Ordinal);
+        Assert.DoesNotContain("private Border CreateRow(", controllerText, StringComparison.Ordinal);
+        Assert.DoesNotContain("Style = GetStyle(alt ? \"DockStatsRowAltStyle\" : \"DockStatsRowStyle\"),", rowChromeControllerText, StringComparison.Ordinal);
+        Assert.DoesNotContain("Style = GetStyle(alt ? \"DockStatsRowAltStyle\" : \"DockStatsRowStyle\"),", controllerText, StringComparison.Ordinal);
+        Assert.DoesNotContain("new List<StatsHardwareRowPresentation>", hardwareRowsControllerText, StringComparison.Ordinal);
+        Assert.DoesNotContain("public static IReadOnlyList<StatsHardwareRowPresentation> BuildHardwareGpuRows(", hardwareRowsControllerText, StringComparison.Ordinal);
+        Assert.DoesNotContain("StatsDiagnosticRowsController", hardwareRowsControllerText, StringComparison.Ordinal);
+        Assert.DoesNotContain("private Border CreateDiagnosticRow(", controllerText, StringComparison.Ordinal);
+        Assert.DoesNotContain("_decodeRowPool", mainWindowText, StringComparison.Ordinal);
+        Assert.DoesNotContain("_diagnosticsRowPool", mainWindowText, StringComparison.Ordinal);
+        Assert.DoesNotContain("private sealed record DiagnosticRowSlot(", statsOverlayText, StringComparison.Ordinal);
+        Assert.DoesNotContain("private void EnsureDiagnosticRowPool(", statsOverlayText, StringComparison.Ordinal);
+        Assert.DoesNotContain("private Border CreateDiagnosticRow(", statsOverlayText, StringComparison.Ordinal);
+        Assert.DoesNotContain("private void UpdateDecodeSection()", statsOverlayText, StringComparison.Ordinal);
+        Assert.DoesNotContain("private void UpdateGpuSection()", statsOverlayText, StringComparison.Ordinal);
+        Assert.DoesNotContain("_statsDiagnosticRowsController.UpdateDiagnostics(presentation);", statsOverlayText, StringComparison.Ordinal);
+        Assert.DoesNotContain("new List<StatsHardwareRowPresentation>", statsOverlayText, StringComparison.Ordinal);
     }
 
     private static void AssertStatsPresentationPreviewFormattingLivesInBuilder(
@@ -4200,12 +4264,6 @@ public class StatsPresentationTests
         => Assert.True(
             Math.Abs(expected - actual) <= tolerance,
             $"Expected {expected:0.####}, got {actual:0.####}; tolerance {tolerance:0.####}.");
-
-    private static void AssertContains(string actual, string expectedSubstring)
-        => Assert.Contains(expectedSubstring, actual, StringComparison.Ordinal);
-
-    private static void AssertDoesNotContain(string actual, string unexpectedSubstring)
-        => Assert.DoesNotContain(unexpectedSubstring, actual, StringComparison.Ordinal);
 
     private static void AssertOccursBefore(string actual, string first, string second)
     {
@@ -4485,10 +4543,10 @@ public class StatsHardwareRowsTests
         int? pendingPreviewFrameCount,
         object? nvmlSnapshot)
     {
-        var contextType = RequireType("Sussudio.Controllers.StatsHardwareRowsInputProviderContext");
+        var contextType = RequireType("Sussudio.Controllers.StatsOverlayHardwareSourceContext");
         var providerType = RequireType("Sussudio.Controllers.StatsHardwareRowsInputProvider");
         var context = Activator.CreateInstance(contextType)
-                      ?? throw new InvalidOperationException("Failed to create StatsHardwareRowsInputProviderContext.");
+                      ?? throw new InvalidOperationException("Failed to create StatsOverlayHardwareSourceContext.");
 
         SetPropertyOrBackingField(
             context,

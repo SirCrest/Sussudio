@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
 using Sussudio.Services.Audio;
+using Sussudio.Services.Contracts;
 using Sussudio.Services.Flashback;
 using Sussudio.Services.Recording;
 using Sussudio.Services.Runtime;
@@ -51,7 +52,7 @@ public partial class CaptureService
             if (_isRecording && IsFlashbackRecordingBackendActive() && !enabled)
             {
                 Logger.Log("FLASHBACK_DISABLE_BLOCKED reason=recording_active");
-                throw new InvalidOperationException("Cannot disable Flashback while Flashback recording is active.");
+                throw new AutomationStateConflictException("Cannot disable Flashback while Flashback recording is active.");
             }
 
             if (_flashbackEnabled == enabled)
@@ -130,7 +131,7 @@ public partial class CaptureService
             if (_isRecording && IsFlashbackRecordingBackendActive())
             {
                 Logger.Log("FLASHBACK_RESTART_BLOCKED reason=recording_active");
-                throw new InvalidOperationException("Cannot restart Flashback while Flashback recording is active.");
+                throw new AutomationStateConflictException("Cannot restart Flashback while Flashback recording is active.");
             }
 
             await RestartFlashbackCoreAsync(transitionToken).ConfigureAwait(false);
@@ -144,7 +145,7 @@ public partial class CaptureService
             if (_isRecording && IsFlashbackRecordingBackendActive())
             {
                 Logger.Log("FLASHBACK_RESTART_BLOCKED reason=recording_active");
-                throw new InvalidOperationException("Cannot restart Flashback while Flashback recording is active.");
+                throw new AutomationStateConflictException("Cannot restart Flashback while Flashback recording is active.");
             }
 
             UpdateEncodingSettings(settings);
@@ -296,9 +297,6 @@ public partial class CaptureService
                         settings,
                         CloneCaptureSettings(settings),
                         () => CreateFlashbackSessionContext(unifiedVideoCapture, settings),
-                        OnFlashbackBackendFatalError,
-                        OnFlashbackFrameEncoded,
-                        SchedulePreviewBackendStartDeferredCleanup,
                         cancellationToken))
                 .ConfigureAwait(false);
 
@@ -315,53 +313,6 @@ public partial class CaptureService
         }
     }
 
-    private void SchedulePreviewBackendStartDeferredCleanup(
-        Task sinkCompletionTask,
-        FlashbackBufferManager? bufferManager,
-        FlashbackExporter? flashbackExporter,
-        string reason,
-        bool purgeSegments)
-    {
-        ScheduleDeferredFlashbackBackendCleanup(
-            sinkCompletionTask,
-            new FlashbackBackendArtifactCleanupRequest(
-                bufferManager,
-                flashbackExporter,
-                reason,
-                purgeSegments));
-    }
-
-    private void ScheduleDeferredFlashbackBackendCleanup(
-        Task sinkCompletionTask,
-        FlashbackBackendArtifactCleanupRequest request,
-        int attempt = 0)
-        => _flashbackBackend.ScheduleDeferredArtifactCleanup(
-            sinkCompletionTask,
-            request,
-            WaitForFlashbackBackendCleanupExportLockAsync,
-            ReleaseFlashbackBackendCleanupExportLock,
-            attempt);
-
-    private async Task<bool> CleanupFlashbackBackendArtifactsAfterExportAsync(
-        FlashbackBackendArtifactCleanupRequest request,
-        string mode,
-        bool exportOperationLockAlreadyHeld = false)
-        => await _flashbackBackend.CleanupArtifactsAfterExportAsync(
-                request,
-                mode,
-                WaitForFlashbackBackendCleanupExportLockAsync,
-                ReleaseFlashbackBackendCleanupExportLock,
-                exportOperationLockAlreadyHeld)
-            .ConfigureAwait(false);
-
-    private Task<bool> WaitForFlashbackBackendCleanupExportLockAsync()
-        => _flashbackExportOperationLock.WaitAsync(
-            TimeSpan.FromSeconds(30),
-            CancellationToken.None);
-
-    private void ReleaseFlashbackBackendCleanupExportLock(string mode)
-        => ReleaseSemaphoreBestEffort(_flashbackExportOperationLock, $"flashback_backend_cleanup_{mode}");
-
     private async Task DisposeFlashbackPreviewBackendAsync(
         CancellationToken cancellationToken,
         bool purgeSegments = true,
@@ -377,12 +328,10 @@ public partial class CaptureService
             var effectivePurgeSegments = _flashbackBackend.ResolveSegmentPurge(
                 purgeSegments,
                 "preview_backend_dispose");
-            await DisposeFlashbackPreviewBackendCoreAsync(
-                    cancellationToken,
+            await _flashbackBackend.DisposePreviewBackendUnderExportLockAsync(
                     CreateFlashbackPreviewBackendDisposalRequest(
                         effectivePurgeSegments,
                         detachMicrophoneWriter,
-                        exportOperationLockAlreadyHeld: true,
                         cancellationToken))
                 .ConfigureAwait(false);
         }
@@ -393,28 +342,16 @@ public partial class CaptureService
         }
     }
 
-    private async Task DisposeFlashbackPreviewBackendCoreAsync(
-        CancellationToken cancellationToken,
-        FlashbackPreviewBackendDisposalRequest request)
-    {
-        await _flashbackBackend.DisposePreviewBackendAsync(request).ConfigureAwait(false);
-    }
-
     private FlashbackPreviewBackendDisposalRequest CreateFlashbackPreviewBackendDisposalRequest(
         bool purgeSegments,
         bool detachMicrophoneWriter,
-        bool exportOperationLockAlreadyHeld,
         CancellationToken cancellationToken)
         => new FlashbackPreviewBackendDisposalRequest(
             _videoPipeline.Capture,
             _previewAudioGraph.ProgramCapture,
             _previewAudioGraph.MicrophoneCapture,
-            OnFlashbackFrameEncoded,
-            WaitForFlashbackBackendCleanupExportLockAsync,
-            ReleaseFlashbackBackendCleanupExportLock,
             purgeSegments,
             detachMicrophoneWriter,
-            exportOperationLockAlreadyHeld,
             cancellationToken);
 
 
@@ -607,12 +544,10 @@ public partial class CaptureService
 
             if (purgeSegments && !effectivePurgeSegments)
             {
-                await DisposeFlashbackPreviewBackendCoreAsync(
-                        cancellationToken,
+                await _flashbackBackend.DisposePreviewBackendUnderExportLockAsync(
                         CreateFlashbackPreviewBackendDisposalRequest(
                             purgeSegments: false,
                             detachMicrophoneWriter: true,
-                            exportOperationLockAlreadyHeld: true,
                             cancellationToken))
                     .ConfigureAwait(false);
                 if (_flashbackEnabled && unifiedVideoCapture != null && currentSettings != null)
@@ -629,12 +564,10 @@ public partial class CaptureService
 
             if (!_flashbackEnabled || unifiedVideoCapture == null || currentSettings == null || _flashbackBackend.BufferManager == null || _flashbackBackend.Sink == null)
             {
-                await DisposeFlashbackPreviewBackendCoreAsync(
-                        cancellationToken,
+                await _flashbackBackend.DisposePreviewBackendUnderExportLockAsync(
                         CreateFlashbackPreviewBackendDisposalRequest(
                             effectivePurgeSegments,
                             detachMicrophoneWriter: true,
-                            exportOperationLockAlreadyHeld: true,
                             cancellationToken))
                     .ConfigureAwait(false);
                 if (_flashbackEnabled && unifiedVideoCapture != null && currentSettings != null)
@@ -650,7 +583,7 @@ public partial class CaptureService
             }
 
             var committedCycleToken = CancellationToken.None;
-            var cycleResult = await _flashbackBackend.CycleSinkOnlyAsync(
+            var cycleOutcome = await _flashbackBackend.CycleSinkOnlyAsync(
                     new FlashbackBufferCycleRequest(
                         unifiedVideoCapture,
                         _previewAudioGraph.ProgramCapture,
@@ -660,15 +593,16 @@ public partial class CaptureService
                         currentSettings,
                         CloneCaptureSettings(currentSettings),
                         () => CreateFlashbackSessionContext(unifiedVideoCapture, currentSettings),
-                        OnFlashbackBackendFatalError,
-                        OnFlashbackFrameEncoded,
-                        ClearLastFlashbackFailure,
-                        (task, request) => ScheduleDeferredFlashbackBackendCleanup(task, request),
                         effectivePurgeSegments,
                         cancellationToken))
                 .ConfigureAwait(false);
 
-            if (cycleResult.Outcome == FlashbackBufferCycleOutcome.DeferredFullRebuild)
+            if (cycleOutcome == FlashbackBufferCycleOutcome.SinkOnly)
+            {
+                ClearLastFlashbackFailure();
+            }
+
+            if (cycleOutcome == FlashbackBufferCycleOutcome.DeferredFullRebuild)
             {
                 await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, currentSettings, committedCycleToken).ConfigureAwait(false);
                 Logger.Log("FLASHBACK_BUFFER_CYCLE_OK mode=deferred_full_rebuild");
@@ -676,14 +610,12 @@ public partial class CaptureService
                 return;
             }
 
-            if (cycleResult.Outcome == FlashbackBufferCycleOutcome.PurgeFallbackRebuild)
+            if (cycleOutcome == FlashbackBufferCycleOutcome.PurgeFallbackRebuild)
             {
-                await DisposeFlashbackPreviewBackendCoreAsync(
-                        committedCycleToken,
+                await _flashbackBackend.DisposePreviewBackendUnderExportLockAsync(
                         CreateFlashbackPreviewBackendDisposalRequest(
                             effectivePurgeSegments,
                             detachMicrophoneWriter: true,
-                            exportOperationLockAlreadyHeld: true,
                             committedCycleToken))
                     .ConfigureAwait(false);
                 await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, currentSettings, committedCycleToken).ConfigureAwait(false);
@@ -692,14 +624,12 @@ public partial class CaptureService
                 return;
             }
 
-            if (cycleResult.Outcome == FlashbackBufferCycleOutcome.FallbackFullRebuild)
+            if (cycleOutcome == FlashbackBufferCycleOutcome.FallbackFullRebuild)
             {
-                await DisposeFlashbackPreviewBackendCoreAsync(
-                        committedCycleToken,
+                await _flashbackBackend.DisposePreviewBackendUnderExportLockAsync(
                         CreateFlashbackPreviewBackendDisposalRequest(
                             effectivePurgeSegments,
                             detachMicrophoneWriter: true,
-                            exportOperationLockAlreadyHeld: true,
                             committedCycleToken))
                     .ConfigureAwait(false);
                 await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, currentSettings, committedCycleToken).ConfigureAwait(false);
@@ -911,17 +841,8 @@ public partial class CaptureService
             ? (settings.UseCustomAudioInput ? settings.AudioDeviceId : (_audioDeviceId ?? _currentDevice?.AudioDeviceId))
             : null;
 
-        if (settings.AudioEnabled &&
-            _previewAudioGraph.ProgramCapture is { } staleProgramCapture &&
-            (!staleProgramCapture.IsReadyForRecording ||
-             !string.Equals(staleProgramCapture.AudioDeviceId, audioDeviceId, StringComparison.OrdinalIgnoreCase)))
+        if (await ReplaceStaleProgramCaptureAsync(settings, audioDeviceId).ConfigureAwait(false))
         {
-            _previewAudioGraph.ProgramCapture = null;
-            _previewAudioGraph.DetachCapture(
-                staleProgramCapture,
-                OnWasapiAudioLevelUpdated,
-                _flashbackBackend.PlaybackController);
-            await staleProgramCapture.DisposeAsync().ConfigureAwait(false);
             Logger.Log($"FLASHBACK_AUDIO_CAPTURE_REPLACED reason='{reason}' terminal_worker=true");
         }
 
@@ -1067,19 +988,8 @@ public partial class CaptureService
     }
 
     private static string? ResolveFlashbackExportVerificationFormat(
-        CaptureSettings? settings,
-        UnifiedVideoCapture? unifiedVideoCapture)
+        CaptureSettings? settings)
         => settings?.Format.ToString();
-
-    /// <summary>
-    /// Flashback recording honors the requested codec and preset directly. This legacy
-    /// snapshot field remains for compatibility and should stay null unless a future
-    /// explicit, user-visible substitution is introduced.
-    /// </summary>
-    private static string? ResolveFlashbackCodecDowngradeReason(
-        CaptureSettings? settings,
-        UnifiedVideoCapture? unifiedVideoCapture)
-        => null;
 
     private FlashbackSessionContext CreateFlashbackSessionContext(
         UnifiedVideoCapture unifiedVideoCapture,
@@ -1206,9 +1116,7 @@ public partial class CaptureService
         public long RecordingQueueRejectedFrames { get; set; }
         public RecordingIntegrityCounterSnapshot? Counters { get; set; }
         public RecordingAudioIntegrityCounterSnapshot? AudioCounters { get; set; }
-        public long MicrophoneSamplesReceived { get; set; }
-        public long MicrophoneDrops { get; set; }
-        public long MicrophoneDiscontinuities { get; set; }
+        public RecordingMicrophoneIntegrityEvidence MicrophoneIntegrity { get; set; }
     }
 
     private void CaptureFlashbackRecordingBoundarySnapshot(
@@ -1244,15 +1152,13 @@ public partial class CaptureService
         recordingBoundary.Counters = CaptureFlashbackRecordingIntegrityCountersSinceBaseline(flashbackSink, flashbackVideoCapture);
         recordingBoundary.AudioCounters = GetRecordingAudioCountersSinceBaseline(
             CaptureRecordingAudioCounters(_previewAudioGraph.ProgramCapture, flashbackSink, _recordingBackend.SettingsSnapshot));
-        recordingBoundary.MicrophoneSamplesReceived = flashbackSink.MicrophoneSamplesReceived;
-        recordingBoundary.MicrophoneDrops =
-            flashbackSink.MicrophoneDropsQueueSaturated +
-            flashbackSink.MicrophoneDropsBacklogEviction;
-        recordingBoundary.MicrophoneDiscontinuities = Math.Max(
-            0,
-            (_previewAudioGraph.MicrophoneCapture?.AudioDataDiscontinuityCount ??
-             _recordingMicrophoneDiscontinuitiesBaseline) -
-            _recordingMicrophoneDiscontinuitiesBaseline);
+        recordingBoundary.MicrophoneIntegrity = CaptureRecordingMicrophoneIntegrityEvidence(
+            flashbackSink.MicrophoneSamplesReceived,
+            SumNonNegative(
+                flashbackSink.MicrophoneDropsQueueSaturated,
+                flashbackSink.MicrophoneDropsBacklogEviction),
+            _previewAudioGraph.MicrophoneCapture?.AudioDataDiscontinuityCount ??
+                _recordingMicrophoneDiscontinuitiesBaseline);
         recordingBoundary.Captured = true;
     }
 
@@ -1323,29 +1229,18 @@ public partial class CaptureService
             }
         }
 
-        fbResult = FoldRecordingAudioFaultIntoFinalizeResult(
-            fbResult,
-            flashbackCancellationException,
-            fbRecordingContext?.Settings);
         var flashbackFinalAudioCounters = recordingBoundary.AudioCounters ??
             GetRecordingAudioCountersSinceBaseline(
                 CaptureRecordingAudioCounters(
                     _previewAudioGraph.ProgramCapture,
                     flashbackSink,
                     _recordingBackend.SettingsSnapshot));
-        fbResult = FoldRequestedProgramAudioIntegrityIntoFinalizeResult(
-            fbResult,
-            flashbackFinalAudioCounters);
-        fbResult = FoldRequestedMicrophoneIntegrityIntoFinalizeResult(
-            fbResult,
-            fbRecordingContext?.MicrophoneEnabled == true,
-            recordingBoundary.MicrophoneSamplesReceived,
-            recordingBoundary.MicrophoneDrops,
-            recordingBoundary.MicrophoneDiscontinuities);
-        fbResult = FoldRecordedRuntimeFailureIntoFinalizeResult(fbResult);
-        fbResult = VerifyFinalizedOutputBeforeSaved(
+        fbResult = ApplyRecordingFinalizePolicies(
             fbResult,
             fbRecordingContext,
+            flashbackCancellationException,
+            flashbackFinalAudioCounters,
+            recordingBoundary.MicrophoneIntegrity,
             expectedRecordingDuration);
         if (!fbResult.Succeeded)
         {
@@ -1372,7 +1267,7 @@ public partial class CaptureService
         _lastRecordingIntegrity = cleanupPending
             ? new RecordingIntegritySummary
             {
-                Status = "Failed",
+                Status = RecordingIntegrityStatus.Failed,
                 Complete = false,
                 Backend = "Flashback",
                 CompletedUtc = DateTimeOffset.UtcNow,
@@ -1632,7 +1527,7 @@ public partial class CaptureService
     {
         var result = FlashbackExportFailureCodes.Create(outputPath, statusMessage, failureCode);
         Logger.Log($"FLASHBACK_EXPORT_REJECTED status='{statusMessage}' output='{outputPath}'");
-        _flashbackExport.RecordRejectedFlashbackExportDiagnostics(outputPath, result, inPoint, outPoint);
+        _flashbackExport.RecordRejectedDiagnostics(outputPath, result, inPoint, outPoint);
         return result;
     }
 
@@ -1679,7 +1574,7 @@ public partial class CaptureService
             var exporter = snapshotExporter;
             if (exporter == null)
             {
-                exporter = _flashbackBackend.Exporter ??= new FlashbackExporter();
+                exporter = _flashbackBackend.GetOrCreateExporter();
             }
 
             // Pause eviction so segments aren't deleted while the exporter reads them.
@@ -1704,8 +1599,8 @@ public partial class CaptureService
                 }
             }
 
-            exportId = _flashbackExport.BeginFlashbackExportDiagnostics(inPoint, outPoint, outputPath);
-            var diagnosticProgress = _flashbackExport.CreateFlashbackExportProgressSink(exportId, progress);
+            exportId = _flashbackExport.BeginDiagnostics(inPoint, outPoint, outputPath);
+            var diagnosticProgress = _flashbackExport.CreateProgressSink(exportId, progress);
 
             var preparedExport = PrepareFlashbackExportRequest(
                 bufferManager,
@@ -1732,8 +1627,8 @@ public partial class CaptureService
                     $"{result.StatusMessage} (live-edge partial fallback: active segment was not closed before timeout; export may omit the newest frames)");
             }
 
-            _flashbackExport.RecordLastFlashbackExportResult(exportId, result);
-            _flashbackExport.CompleteFlashbackExportDiagnostics(exportId, result);
+            _flashbackExport.RecordLastResult(exportId, result);
+            _flashbackExport.CompleteDiagnostics(exportId, result);
             return result;
         }
         catch (Exception ex)
@@ -1751,12 +1646,12 @@ public partial class CaptureService
                 cancelled ? FlashbackExportFailureCodes.Cancelled : FlashbackExportFailureCodes.FromException(ex));
             if (exportId != 0)
             {
-                _flashbackExport.RecordLastFlashbackExportResult(exportId, failure);
-                _flashbackExport.CompleteFlashbackExportDiagnostics(exportId, failure);
+                _flashbackExport.RecordLastResult(exportId, failure);
+                _flashbackExport.CompleteDiagnostics(exportId, failure);
             }
             else
             {
-                _flashbackExport.RecordRejectedFlashbackExportDiagnostics(outputPath, failure, inPoint, outPoint);
+                _flashbackExport.RecordRejectedDiagnostics(outputPath, failure, inPoint, outPoint);
             }
             return failure;
         }
@@ -1806,8 +1701,8 @@ public partial class CaptureService
                     _ => FlashbackExportFailureCodes.Failed
                 },
                 liveEdgePlan.PreservedArtifacts);
-            _flashbackExport.RecordLastFlashbackExportResult(exportId, result);
-            _flashbackExport.CompleteFlashbackExportDiagnostics(exportId, result);
+            _flashbackExport.RecordLastResult(exportId, result);
+            _flashbackExport.CompleteDiagnostics(exportId, result);
             LogFlashbackExportLiveEdgeFailure(
                 liveEdgePlan.FailureKind,
                 liveEdgePlan.PreservedArtifacts,
@@ -1818,7 +1713,7 @@ public partial class CaptureService
 
         if (liveEdgePlan.ForceRotateFallbackUsed)
         {
-            _flashbackExport.RecordFlashbackExportForceRotateFallback(
+            _flashbackExport.RecordForceRotateFallback(
                 exportId,
                 liveEdgePlan.SegmentPaths?.Count ?? 0,
                 inPoint,
@@ -1843,8 +1738,8 @@ public partial class CaptureService
         if (requestPlan.FailureMessage is { } requestFailureMessage)
         {
             var result = FlashbackExportFailureCodes.Create(outputPath, requestFailureMessage, FlashbackExportFailureCodes.InputUnavailable);
-            _flashbackExport.RecordLastFlashbackExportResult(exportId, result);
-            _flashbackExport.CompleteFlashbackExportDiagnostics(exportId, result);
+            _flashbackExport.RecordLastResult(exportId, result);
+            _flashbackExport.CompleteDiagnostics(exportId, result);
             return FlashbackExportPreparationResult.Failure(result);
         }
 
@@ -2027,15 +1922,15 @@ public partial class CaptureService
     internal async Task<FinalizeResult> ExportFlashbackRangeAsync(
         TimeSpan? inPoint, TimeSpan? outPoint, string outputPath,
         IProgress<ExportProgress>? progress,
-        CancellationToken ct,
         TimeSpan? inPointFilePts = null,
-        TimeSpan? outPointFilePts = null)
+        TimeSpan? outPointFilePts = null,
+        CancellationToken cancellationToken = default)
     {
         var snapshotResult = await SnapshotFlashbackExportBackendAsync(
                 outputPath,
                 operationName: "range",
                 sessionReleaseOperation: "flashback_export_snapshot_session",
-                ct)
+                cancellationToken)
             .ConfigureAwait(false);
         if (snapshotResult.Failure != null)
         {
@@ -2048,7 +1943,7 @@ public partial class CaptureService
                 TimeSpan.MaxValue,
                 outputPath,
                 progress,
-                ct,
+                cancellationToken,
                 snapshotSink: snapshot.Sink,
                 snapshotBufferManager: snapshot.BufferManager,
                 snapshotExporter: snapshot.Exporter,
@@ -2141,7 +2036,7 @@ public partial class CaptureService
             var bufferManager = _flashbackBackend.BufferManager;
             var flashbackSink = _flashbackBackend.Sink;
             var flashbackExporter = bufferManager != null
-                ? _flashbackBackend.Exporter ??= new FlashbackExporter()
+                ? _flashbackBackend.GetOrCreateExporter()
                 : _flashbackBackend.Exporter;
 
             await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);
