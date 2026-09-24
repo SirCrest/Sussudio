@@ -176,7 +176,7 @@ public sealed class LoggerLifecycleTests
             if (scenario is "admitted" or "duplicate")
             {
                 var admitted = false;
-                var result = AppProcessStartup.RunNormal(() =>
+                var result = AppProcessStartup.RunAsSingleInstance(() =>
                 {
                     admitted = true;
                     Parallel.For(0, 16, _ => Call("Initialize", privateRoot));
@@ -233,7 +233,7 @@ public sealed class LoggerLifecycleTests
                 try
                 {
                     var initializationRoot = scenario == "failure-empty" ? string.Empty : Path.Combine(privateRoot, "child");
-                    Assert.Equal(0, AppProcessStartup.RunNormal(() => Call("Initialize", initializationRoot), mutexName));
+                    Assert.Equal(0, AppProcessStartup.RunAsSingleInstance(() => Call("Initialize", initializationRoot), mutexName));
                     Assert.Equal("FileIoFailed", State());
                     Assert.Equal(string.Empty, Call("GetLogFilePath"));
                     Call("Initialize", Path.Combine(root, "retarget"));

@@ -487,7 +487,7 @@ internal static class WasapiComInterop
         => ComObjectReleaser.ReleaseComObject(ref comObject, "WasapiComInterop.ReleaseComObject<T>");
 
     internal static void ReleaseComObjectSafe(object? obj)
-        => ComObjectReleaser.ReleaseComObjectSafe(obj, "WasapiComInterop.SafeReleaseComObject");
+        => ComObjectReleaser.ReleaseComObjectSafe(obj, $"{nameof(WasapiComInterop)}.{nameof(ReleaseComObjectSafe)}");
 
 
     internal static IntPtr AllocFloatStereo48kFormat()

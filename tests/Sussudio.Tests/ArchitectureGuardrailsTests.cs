@@ -2469,7 +2469,7 @@ static partial class Program
             "BitrateSampleWindow folded into MainViewModel.cs");
         AssertContains(outputDriveSpacePresentationBuilderText, "new DriveInfo(Path.GetPathRoot(outputPath) ?? \"C:\");");
         AssertContains(outputDriveSpacePresentationBuilderText, "return $\"Free: {freeGb:F1} GB\";");
-        AssertContains(outputDriveSpacePresentationBuilderText, "Suppressed exception in MainViewModel.RefreshDiskSpace");
+        AssertContains(outputDriveSpacePresentationBuilderText, "Suppressed exception in {nameof(OutputDriveSpacePresentationBuilder)}.{nameof(Build)} type={ex.GetType().Name}");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "private void OnSystemPowerModeChanged");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "e.Mode != PowerModes.Resume");
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "_eventIngressController = _context.CreateEventIngressController();");

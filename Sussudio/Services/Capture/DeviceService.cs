@@ -476,7 +476,7 @@ public class DeviceService
         }
         catch (Exception ex)
         {
-            Logger.Log($"Suppressed exception in DeviceService.TryDeleteCorruptCache: {ex.Message}");
+            Logger.Log($"Suppressed exception in {nameof(DeviceService)}.{nameof(TryDeleteFormatCache)} type={ex.GetType().Name}: {ex.Message}");
         }
     }
 

@@ -3501,7 +3501,7 @@ static partial class Program
         AssertContains(rootSource, "internal static void ThrowIfFailed(int hr, string operation)");
         AssertContains(rootSource, "internal static void ReleaseComObject<T>(ref T? comObject)");
         AssertContains(rootSource, "ComObjectReleaser.ReleaseComObject(ref comObject, \"WasapiComInterop.ReleaseComObject<T>\")");
-        AssertContains(rootSource, "ComObjectReleaser.ReleaseComObjectSafe(obj, \"WasapiComInterop.SafeReleaseComObject\")");
+        AssertContains(rootSource, "ComObjectReleaser.ReleaseComObjectSafe(obj, $\"{nameof(WasapiComInterop)}.{nameof(ReleaseComObjectSafe)}\")");
         AssertContains(releaserSource, "internal static class ComObjectReleaser");
         AssertContains(releaserSource, "internal static void ReleaseComObject<T>(ref T? comObject, string failureContext)");
         AssertContains(releaserSource, "internal static void ReleaseComObjectSafe(object? obj, string failureContext)");

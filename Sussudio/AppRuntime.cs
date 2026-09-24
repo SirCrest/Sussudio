@@ -264,7 +264,7 @@ public static class Logger
     // path that is already failing. Everywhere else in the app, diagnostics
     // go to Logger.Log so they reach the log file operators actually read.
     private const int MaxDrainBatchEntries = 256;
-    private static string LogFilePath = string.Empty;
+    private static string _logFilePath = string.Empty;
 
     private static readonly object LockObject = new();
     private static readonly Channel<string> LogChannel = Channel.CreateBounded<string>(new BoundedChannelOptions(8192)
@@ -273,7 +273,7 @@ public static class Logger
         SingleWriter = false,
         FullMode = BoundedChannelFullMode.Wait
     });
-    private static Task LogWriterTask = Task.CompletedTask;
+    private static Task _logWriterTask = Task.CompletedTask;
     private static readonly object InitializationLock = new();
     private static int _initialized;
     public static bool VerboseEnabled { get; set; }
@@ -319,20 +319,20 @@ public static class Logger
                 return;
             }
 
-            LogFilePath = TryResolveLogFilePath(() =>
+            _logFilePath = TryResolveLogFilePath(() =>
             {
                 var directory = Path.GetFullPath(logRoot);
                 Directory.CreateDirectory(directory);
                 return Path.Combine(directory, "Sussudio_Debug.log");
             });
-            var fileIoOk = !string.IsNullOrEmpty(LogFilePath);
+            var fileIoOk = !string.IsNullOrEmpty(_logFilePath);
             if (fileIoOk)
             {
                 try
                 {
                     RotatePriorLog();
                     var header = $"=== Sussudio Debug Log ===\nStarted: {DateTime.Now:yyyy-MM-dd HH:mm:ss}\nPID: {Environment.ProcessId}\n\n";
-                    File.WriteAllText(LogFilePath, header);
+                    File.WriteAllText(_logFilePath, header);
                 }
                 catch
                 {
@@ -344,12 +344,12 @@ public static class Logger
 
             try
             {
-                LogWriterTask = Task.Run(RunLogWriterAsync);
+                _logWriterTask = Task.Run(RunLogWriterAsync);
                 _initState = fileIoOk ? LoggerInitState.Healthy : LoggerInitState.FileIoFailed;
             }
             catch
             {
-                LogWriterTask = Task.CompletedTask;
+                _logWriterTask = Task.CompletedTask;
                 _initState = LoggerInitState.WriterStartFailed;
             }
             Volatile.Write(ref _initialized, 1);
@@ -434,7 +434,7 @@ public static class Logger
         }
         try
         {
-            await LogWriterTask.WaitAsync(timeout).ConfigureAwait(false);
+            await _logWriterTask.WaitAsync(timeout).ConfigureAwait(false);
         }
         catch (TimeoutException)
         {
@@ -476,13 +476,13 @@ public static class Logger
         }
         catch (Exception ex)
         {
-            TraceFallback($"Suppressed exception in Logger.LogWriterLoop: {ex.Message}");
+            TraceFallback($"Suppressed exception in Logger.{nameof(RunLogWriterAsync)} type={ex.GetType().Name}: {ex.Message}");
         }
     }
 
     private static void WriteDirect(string entry)
     {
-        if (Volatile.Read(ref _initialized) == 0 || string.IsNullOrEmpty(LogFilePath))
+        if (Volatile.Read(ref _initialized) == 0 || string.IsNullOrEmpty(_logFilePath))
         {
             TraceFallback(entry);
             return;
@@ -492,7 +492,7 @@ public static class Logger
         {
             try
             {
-                File.AppendAllText(LogFilePath, entry);
+                File.AppendAllText(_logFilePath, entry);
             }
             catch (Exception ex)
             {
@@ -503,22 +503,22 @@ public static class Logger
 
     private static void RotatePriorLog()
     {
-        if (!File.Exists(LogFilePath))
+        if (!File.Exists(_logFilePath))
         {
             return;
         }
 
-        var mtime = File.GetLastWriteTime(LogFilePath);
-        var rotated = Path.Combine(Path.GetDirectoryName(LogFilePath)!, $"Sussudio_Debug_{mtime:yyyyMMdd_HHmmss}.log");
+        var mtime = File.GetLastWriteTime(_logFilePath);
+        var rotated = Path.Combine(Path.GetDirectoryName(_logFilePath)!, $"Sussudio_Debug_{mtime:yyyyMMdd_HHmmss}.log");
         try
         {
             if (File.Exists(rotated))
             {
-                File.Delete(LogFilePath);
+                File.Delete(_logFilePath);
             }
             else
             {
-                File.Move(LogFilePath, rotated);
+                File.Move(_logFilePath, rotated);
             }
         }
         catch (Exception ex)
@@ -674,7 +674,7 @@ public static class Logger
     }
 
     /// <summary>Returns the selected log path, or empty before initialization or if directory resolution failed.</summary>
-    public static string GetLogFilePath() => Volatile.Read(ref _initialized) != 0 ? LogFilePath : string.Empty;
+    public static string GetLogFilePath() => Volatile.Read(ref _initialized) != 0 ? _logFilePath : string.Empty;
 }
 
 // Source-generated JSON metadata for diagnostic snapshots written to the log.

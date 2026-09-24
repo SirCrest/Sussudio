@@ -1105,7 +1105,7 @@ internal static Task ResponsiveShellLayout_LivesInController()
         AssertContains(builderText, "internal static string Build(string outputPath)");
         AssertContains(builderText, "new DriveInfo(Path.GetPathRoot(outputPath) ?? \"C:\");");
         AssertContains(builderText, "return $\"Free: {freeGb:F1} GB\";");
-        AssertContains(builderText, "Logger.Log($\"Suppressed exception in MainViewModel.RefreshDiskSpace: {ex.Message}\");");
+        AssertContains(builderText, "Logger.Log($\"Suppressed exception in {nameof(OutputDriveSpacePresentationBuilder)}.{nameof(Build)} type={ex.GetType().Name}: {ex.Message}\");");
         AssertContains(builderText, "return \"\";");
         AssertDoesNotContain(builderText, "DiskSpaceInfo =");
 

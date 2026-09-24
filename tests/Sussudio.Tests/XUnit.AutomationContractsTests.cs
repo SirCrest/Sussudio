@@ -3174,7 +3174,7 @@ static partial class Program
         AssertDoesNotContain(startupSource, "Logger.");
         var entrySource = ReadRepoFile("Sussudio/Program.cs");
         var childDispatch = entrySource.IndexOf("NativeFfmpegCapabilityProbe.TryRunChildProcess(", StringComparison.Ordinal);
-        var normalAdmission = entrySource.IndexOf("AppProcessStartup.RunNormal(StartApplication)", StringComparison.Ordinal);
+        var normalAdmission = entrySource.IndexOf("AppProcessStartup.RunAsSingleInstance(StartApplication)", StringComparison.Ordinal);
         AssertEqual(true, childDispatch >= 0 && normalAdmission > childDispatch, "private child dispatch precedes normal admission");
         var comInitialization = entrySource.IndexOf("ComWrappersSupport.InitializeComWrappers();", StringComparison.Ordinal);
         var applicationStart = entrySource.IndexOf("Application.Start(", StringComparison.Ordinal);
@@ -4038,7 +4038,7 @@ static partial class Program
         AssertContains(loggerText, "private static async Task RunLogWriterAsync()");
         AssertContains(loggerText, "public static async Task ShutdownAsync(TimeSpan timeout)");
         AssertContains(loggerText, "LogChannel.Writer.TryComplete();");
-        AssertContains(loggerText, "await LogWriterTask.WaitAsync(timeout).ConfigureAwait(false);");
+        AssertContains(loggerText, "await _logWriterTask.WaitAsync(timeout).ConfigureAwait(false);");
         AssertDoesNotContain(loggerText, "LogWriterCancellation");
         AssertContains(loggerText, "private static void WriteDirect(string entry)");
         var logMethod = ExtractTextBetween(loggerText, "public static void Log(string message", "public static void LogVerbose(");

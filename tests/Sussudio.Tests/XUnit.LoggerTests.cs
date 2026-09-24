@@ -153,7 +153,7 @@ public sealed class LoggerTests
         public async Task Shutdown()
         {
             await ((Task)Call("ShutdownAsync", TimeSpan.FromSeconds(10))!).WaitAsync(TimeSpan.FromSeconds(15));
-            var writer = (Task)Type.GetField("LogWriterTask", BindingFlags.NonPublic | BindingFlags.Static)!.GetValue(null)!;
+            var writer = (Task)Type.GetField("_logWriterTask", BindingFlags.NonPublic | BindingFlags.Static)!.GetValue(null)!;
             Assert.True(writer.IsCompletedSuccessfully, "Shutdown did not finish the isolated writer.");
         }
 

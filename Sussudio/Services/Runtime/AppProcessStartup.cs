@@ -10,7 +10,7 @@ internal static class AppProcessStartup
 {
     internal const string SingleInstanceMutexName = @"Local\Sussudio.SingleInstance.v1";
 
-    internal static int RunNormal(Action startApplication, string mutexName = SingleInstanceMutexName)
+    internal static int RunAsSingleInstance(Action startApplication, string mutexName = SingleInstanceMutexName)
     {
         ArgumentNullException.ThrowIfNull(startApplication);
 

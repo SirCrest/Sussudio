@@ -627,14 +627,14 @@ public sealed class ProcessSupervisor : IProcessSupervisor
                 var exitTask = process.WaitForExitAsync(cancellationToken);
                 try
                 {
-                    await exitTask.WaitAsync(TimeSpan.FromMilliseconds(spec.TimeoutMs), cancellationToken);
+                    await exitTask.WaitAsync(TimeSpan.FromMilliseconds(spec.TimeoutMs), cancellationToken).ConfigureAwait(false);
                 }
                 catch (TimeoutException)
                 {
                     timedOut = true;
                     Logger.LogEvent("CAP-PROC-TIMEOUT", $"{spec.FileName} timeoutMs={spec.TimeoutMs}");
                     var killWaitMs = Math.Clamp(spec.TimeoutMs / 2, 250, 5000);
-                    var exited = await TryTerminateAsync(process, spec.FileName, killWaitMs, "timeout");
+                    var exited = await TryTerminateAsync(process, spec.FileName, killWaitMs, "timeout").ConfigureAwait(false);
                     if (!exited)
                     {
                         Logger.LogEvent("CAP-PROC-STILL-ALIVE", $"{spec.FileName} reason=timeout pid={processId}");
@@ -645,7 +645,7 @@ public sealed class ProcessSupervisor : IProcessSupervisor
             {
                 Logger.LogEvent("CAP-PROC-CANCEL", $"{spec.FileName}");
                 var cancelKillWaitMs = Math.Clamp(spec.TimeoutMs, 1000, 10000);
-                var exited = await TryTerminateAsync(process, spec.FileName, cancelKillWaitMs, "canceled");
+                var exited = await TryTerminateAsync(process, spec.FileName, cancelKillWaitMs, "canceled").ConfigureAwait(false);
                 if (!exited)
                 {
                     Logger.LogEvent("CAP-PROC-STILL-ALIVE", $"{spec.FileName} reason=canceled pid={processId}");
@@ -655,10 +655,10 @@ public sealed class ProcessSupervisor : IProcessSupervisor
 
             var canReadOutputs = process.HasExited;
             var stdout = canReadOutputs
-                ? await TryReadWithTimeoutAsync(stdoutTask, outputReadTimeoutMs)
+                ? await TryReadWithTimeoutAsync(stdoutTask, outputReadTimeoutMs).ConfigureAwait(false)
                 : (Output: string.Empty, ReadException: (Exception?)null);
             var stderr = canReadOutputs
-                ? await TryReadWithTimeoutAsync(stderrTask, outputReadTimeoutMs)
+                ? await TryReadWithTimeoutAsync(stderrTask, outputReadTimeoutMs).ConfigureAwait(false)
                 : (Output: string.Empty, ReadException: (Exception?)null);
 
             if (!canReadOutputs)
@@ -732,7 +732,7 @@ public sealed class ProcessSupervisor : IProcessSupervisor
     {
         TryKill(process);
 
-        if (await WaitForExitWithTimeoutAsync(process, killWaitMs))
+        if (await WaitForExitWithTimeoutAsync(process, killWaitMs).ConfigureAwait(false))
         {
             return true;
         }
@@ -742,7 +742,7 @@ public sealed class ProcessSupervisor : IProcessSupervisor
         // Retry once with an additional bounded wait window.
         TryKill(process);
         var recoveryWaitMs = Math.Clamp(killWaitMs / 2, 250, 5000);
-        if (await WaitForExitWithTimeoutAsync(process, recoveryWaitMs))
+        if (await WaitForExitWithTimeoutAsync(process, recoveryWaitMs).ConfigureAwait(false))
         {
             Logger.LogEvent("CAP-PROC-KILL-RECOVERED", $"{fileName} reason={reason} recoveryWaitMs={recoveryWaitMs}");
             return true;
@@ -760,7 +760,7 @@ public sealed class ProcessSupervisor : IProcessSupervisor
 
         try
         {
-            await process.WaitForExitAsync().WaitAsync(TimeSpan.FromMilliseconds(timeoutMs));
+            await process.WaitForExitAsync().WaitAsync(TimeSpan.FromMilliseconds(timeoutMs)).ConfigureAwait(false);
             return true;
         }
         catch (TimeoutException)
@@ -773,7 +773,7 @@ public sealed class ProcessSupervisor : IProcessSupervisor
     {
         try
         {
-            return (await readTask.WaitAsync(TimeSpan.FromMilliseconds(timeoutMs)), null);
+            return (await readTask.WaitAsync(TimeSpan.FromMilliseconds(timeoutMs)).ConfigureAwait(false), null);
         }
         catch (Exception ex)
         {

@@ -108,7 +108,7 @@ public sealed class AppProcessStartupTests
         var expected = new InvalidOperationException("application-construction-failed");
 
         var actual = Assert.Throws<InvalidOperationException>(
-            () => AppProcessStartup.RunNormal(() => throw expected, mutexName));
+            () => AppProcessStartup.RunAsSingleInstance(() => throw expected, mutexName));
 
         Assert.Same(expected, actual);
         Assert.True(CanAcquireOnAnotherThread(mutexName));
@@ -121,7 +121,7 @@ public sealed class AppProcessStartupTests
         using var retainedHandle = new Mutex(initiallyOwned: false, name: mutexName);
         var entered = false;
 
-        Assert.Equal(0, AppProcessStartup.RunNormal(() => entered = true, mutexName));
+        Assert.Equal(0, AppProcessStartup.RunAsSingleInstance(() => entered = true, mutexName));
 
         Assert.True(entered);
         Assert.True(CanAcquireOnAnotherThread(mutexName));
@@ -134,7 +134,7 @@ public sealed class AppProcessStartupTests
         using var conflictingEvent = new EventWaitHandle(false, EventResetMode.ManualReset, mutexName);
         var entered = false;
 
-        var exitCode = AppProcessStartup.RunNormal(() => entered = true, mutexName);
+        var exitCode = AppProcessStartup.RunAsSingleInstance(() => entered = true, mutexName);
 
         Assert.Equal(1, exitCode);
         Assert.False(entered);
@@ -151,7 +151,7 @@ public sealed class AppProcessStartupTests
         Assert.Contains("STARTUP_TEST_ABANDONING", abandoned.Output);
         var entered = false;
 
-        Assert.Equal(0, AppProcessStartup.RunNormal(() => entered = true, mutexName));
+        Assert.Equal(0, AppProcessStartup.RunAsSingleInstance(() => entered = true, mutexName));
 
         Assert.True(entered);
         Assert.True(CanAcquireOnAnotherThread(mutexName));
@@ -194,7 +194,7 @@ public sealed class AppProcessStartupTests
         }
 
         Environment.SetEnvironmentVariable("SUSSUDIO_LOG_ROOT", args[2]);
-        exitCode = AppProcessStartup.RunNormal(() =>
+        exitCode = AppProcessStartup.RunAsSingleInstance(() =>
         {
             var assembly = Assembly.LoadFrom(args[3]);
             var logger = assembly.GetType("Sussudio.Logger", throwOnError: true)!;

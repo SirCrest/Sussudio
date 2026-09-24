@@ -22,7 +22,7 @@ internal static class ComObjectReleaser
         }
         catch (Exception ex)
         {
-            Logger.Log($"Suppressed exception in {failureContext}: {ex.Message}");
+            Logger.Log($"Suppressed exception in {failureContext} type={ex.GetType().Name}: {ex.Message}");
         }
         finally
         {
@@ -46,7 +46,7 @@ internal static class ComObjectReleaser
         }
         catch (Exception ex)
         {
-            Logger.Log($"Suppressed exception in {failureContext}: {ex.Message}");
+            Logger.Log($"Suppressed exception in {failureContext} type={ex.GetType().Name}: {ex.Message}");
         }
     }
 }
