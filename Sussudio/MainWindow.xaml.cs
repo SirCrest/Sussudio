@@ -281,20 +281,11 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         });
     }
 
-    private void StartFlashbackStatusPolling()
-        => _flashbackPollingController.StartStatusPolling();
-
     private void StopFlashbackStatusPolling()
     {
         _flashbackPollingController.StopStatusPolling();
         StopFlashbackPlayheadAnchorTimer();
     }
-
-    private void StartFlashbackPlaybackPolling()
-        => _flashbackPollingController.StartPlaybackPolling();
-
-    private void StopFlashbackPlaybackPolling()
-        => _flashbackPollingController.StopPlaybackPolling();
 
     // XAML-facing Flashback playhead motion adapter.
     private void InitializeFlashbackPlayheadMotionController()
@@ -312,15 +303,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         });
     }
 
-    private void RequestFlashbackPlayheadSnapOnNextUpdate()
-        => _flashbackPlayheadMotionController.RequestSnapOnNextUpdate();
-
-    private void PositionFlashbackMagneticPlayhead(double x, double trackWidth)
-        => _flashbackPlayheadMotionController.PositionMagneticPlayhead(x, trackWidth);
-
-    private void RefreshFlashbackPlayheadMotion(string reason)
-        => _flashbackPlayheadMotionController.RefreshPlayheadMotion(reason);
-
     private void StopFlashbackPlayheadAnchorTimer()
         => _flashbackPlayheadMotionController.StopPlayheadAnchorTimer();
 
@@ -331,8 +313,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         {
             ViewModel = ViewModel,
             ScrubArea = FlashbackScrubArea,
-            PositionMagneticPlayhead = PositionFlashbackMagneticPlayhead,
-            RefreshPlayheadMotion = RefreshFlashbackPlayheadMotion,
+            PositionMagneticPlayhead = (x, trackWidth) => _flashbackPlayheadMotionController.PositionMagneticPlayhead(x, trackWidth),
+            RefreshPlayheadMotion = reason => _flashbackPlayheadMotionController.RefreshPlayheadMotion(reason),
             GetTickCount64 = () => Environment.TickCount64,
         });
     }
@@ -352,9 +334,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private void FlashbackScrubArea_PointerCaptureLost(object sender, PointerRoutedEventArgs e)
         => _flashbackScrubInteractionController.PointerCaptureLost(sender as UIElement, e);
 
-    private void ClearFlashbackScrubInteractionForLockout()
-        => _flashbackScrubInteractionController.ClearForLockout();
-
     private void InitializeFlashbackSettingsBindingController()
     {
         _flashbackSettingsBindingController = new FlashbackSettingsBindingController(new FlashbackSettingsBindingControllerContext
@@ -363,7 +342,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             FlashbackEnabledToggle = FlashbackEnabledToggle,
             FlashbackGpuDecodeToggle = FlashbackGpuDecodeToggle,
             FlashbackBufferDurationCombo = FlashbackBufferDurationCombo,
-            ApplyFlashbackTimelineLockout = ApplyFlashbackTimelineLockout
+            ApplyFlashbackTimelineLockout = () => _flashbackTimelineController.ApplyLockout()
         });
     }
 
@@ -372,12 +351,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
     private void AttachFlashbackSettingsBindings()
         => _flashbackSettingsBindingController.AttachBindings();
-
-    private void SyncFlashbackGpuDecodeSetting()
-        => _flashbackSettingsBindingController.SyncGpuDecodeToggle();
-
-    private void SyncFlashbackBufferDurationSetting()
-        => _flashbackSettingsBindingController.SyncBufferDurationSelection();
 
     private void FlashbackBufferDurationCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
@@ -400,10 +373,10 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             FlashbackScrubArea = FlashbackScrubArea,
             FlashbackPlayhead = FlashbackPlayhead,
             FlashbackLiveEdge = FlashbackLiveEdge,
-            SnapPlayheadOnNextOpen = RequestFlashbackPlayheadSnapOnNextUpdate,
-            StartStatusPolling = StartFlashbackStatusPolling,
+            SnapPlayheadOnNextOpen = () => _flashbackPlayheadMotionController.RequestSnapOnNextUpdate(),
+            StartStatusPolling = () => _flashbackPollingController.StartStatusPolling(),
             StopStatusPolling = StopFlashbackStatusPolling,
-            ClearScrubInteraction = ClearFlashbackScrubInteractionForLockout,
+            ClearScrubInteraction = () => _flashbackScrubInteractionController.ClearForLockout(),
         });
     }
 
@@ -412,12 +385,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
     private void FlashbackToggle_Unchecked(object sender, RoutedEventArgs e)
         => _flashbackTimelineController.OnToggleUnchecked();
-
-    private void ApplyFlashbackTimelineVisibility(bool show)
-        => _flashbackTimelineController.ApplyVisibility(show);
-
-    private void ApplyFlashbackTimelineLockout()
-        => _flashbackTimelineController.ApplyLockout();
 
     private void InitializeFlashbackMarkerPresentationController()
     {
@@ -453,12 +420,12 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         {
             ViewModel = ViewModel,
             ApplyTrackSize = _flashbackTimelineController.ApplyTrackSize,
-            RequestPlayheadSnapOnNextUpdate = RequestFlashbackPlayheadSnapOnNextUpdate,
+            RequestPlayheadSnapOnNextUpdate = () => _flashbackPlayheadMotionController.RequestSnapOnNextUpdate(),
             UpdateMarkers = UpdateFlashbackMarkers,
-            RefreshPlayheadMotion = RefreshFlashbackPlayheadMotion,
+            RefreshPlayheadMotion = reason => _flashbackPlayheadMotionController.RefreshPlayheadMotion(reason),
             IsScrubbing = () => _flashbackScrubInteractionController.IsScrubbing,
-            StartPlaybackPolling = StartFlashbackPlaybackPolling,
-            StopPlaybackPolling = StopFlashbackPlaybackPolling,
+            StartPlaybackPolling = () => _flashbackPollingController.StartPlaybackPolling(),
+            StopPlaybackPolling = () => _flashbackPollingController.StopPlaybackPolling(),
             PlaybackPresentation = _flashbackPlaybackPresentationController,
         });
     }
@@ -484,12 +451,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             });
     }
 
-    private void UpdateFlashbackExportProgress(double progress)
-        => _flashbackExportProgressPresentationController.UpdateProgress(progress);
-
-    private void UpdateFlashbackExportingPresentation(bool isExporting)
-        => _flashbackExportProgressPresentationController.UpdateExporting(isExporting);
-
     private void InitializeFlashbackPropertyChangedController()
     {
         _flashbackPropertyChangedController = new FlashbackPropertyChangedController(new FlashbackPropertyChangedControllerContext
@@ -497,18 +458,18 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             IsTimelineVisible = () => ViewModel.IsFlashbackTimelineVisible,
             GetExportProgress = () => ViewModel.FlashbackExportProgress,
             IsExporting = () => ViewModel.IsFlashbackExporting,
-            ApplyTimelineVisibility = ApplyFlashbackTimelineVisibility,
-            ApplyTimelineLockout = ApplyFlashbackTimelineLockout,
+            ApplyTimelineVisibility = show => _flashbackTimelineController.ApplyVisibility(show),
+            ApplyTimelineLockout = () => _flashbackTimelineController.ApplyLockout(),
             IsFlashbackEnabled = () => ViewModel.IsFlashbackEnabled,
             UpdateFlashbackKeepAliveHint = UpdateFlashbackKeepAliveHint,
             UpdateState = UpdateFlashbackStateUI,
             UpdateBuffer = UpdateFlashbackBufferPresentation,
             UpdatePlaybackPosition = UpdateFlashbackPositionUI,
             UpdateRangeMarkers = UpdateFlashbackMarkers,
-            UpdateExportProgress = UpdateFlashbackExportProgress,
-            UpdateExportingPresentation = UpdateFlashbackExportingPresentation,
-            SyncGpuDecodeSetting = SyncFlashbackGpuDecodeSetting,
-            SyncBufferDurationSetting = SyncFlashbackBufferDurationSetting,
+            UpdateExportProgress = progress => _flashbackExportProgressPresentationController.UpdateProgress(progress),
+            UpdateExportingPresentation = isExporting => _flashbackExportProgressPresentationController.UpdateExporting(isExporting),
+            SyncGpuDecodeSetting = () => _flashbackSettingsBindingController.SyncGpuDecodeToggle(),
+            SyncBufferDurationSetting = () => _flashbackSettingsBindingController.SyncBufferDurationSelection(),
             UpdateHealthMessage = UpdateFlashbackHealthPresentation
         });
     }

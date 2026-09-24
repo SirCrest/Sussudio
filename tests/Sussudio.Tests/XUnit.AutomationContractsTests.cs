@@ -5814,21 +5814,18 @@ static partial class Program
         AssertContains(pollingAdapterText, "private FlashbackPollingController _flashbackPollingController = null!;");
         AssertContains(pollingAdapterText, "private void InitializeFlashbackPollingController()");
         AssertContains(pollingAdapterText, "IsWindowClosing = () => _isWindowClosing,");
-        AssertContains(pollingAdapterText, "=> _flashbackPollingController.StartStatusPolling();");
         AssertContains(pollingAdapterText, "_flashbackPollingController.StopStatusPolling();");
         AssertContains(pollingAdapterText, "StopFlashbackPlayheadAnchorTimer();");
-        AssertContains(pollingAdapterText, "=> _flashbackPollingController.StartPlaybackPolling();");
-        AssertContains(pollingAdapterText, "=> _flashbackPollingController.StopPlaybackPolling();");
         AssertContains(mainWindowText, "InitializeFlashbackPollingController();");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Flashback.Interactions.cs")),
             "Flashback polling adapter folded into the MainWindow root composition adapter");
-        AssertContains(timelineAdapterText, "StartStatusPolling = StartFlashbackStatusPolling,");
+        AssertContains(timelineAdapterText, "StartStatusPolling = () => _flashbackPollingController.StartStatusPolling(),");
         AssertContains(shutdownCleanupText, "StopFlashbackStatusPolling();");
         AssertContains(shutdownCleanupControllerText, "_context.StopTimers();");
-        AssertContains(flashbackText, "StartPlaybackPolling = StartFlashbackPlaybackPolling,");
-        AssertContains(flashbackText, "StopPlaybackPolling = StopFlashbackPlaybackPolling,");
+        AssertContains(flashbackText, "StartPlaybackPolling = () => _flashbackPollingController.StartPlaybackPolling(),");
+        AssertContains(flashbackText, "StopPlaybackPolling = () => _flashbackPollingController.StopPlaybackPolling(),");
         AssertContains(playbackCoordinatorText, "_context.StartPlaybackPolling();");
         AssertContains(playbackCoordinatorText, "_context.StopPlaybackPolling();");
         AssertContains(controllerText, "internal sealed class FlashbackPollingController");
@@ -5865,10 +5862,6 @@ static partial class Program
         AssertContains(playheadText, "private FlashbackPlayheadMotionController _flashbackPlayheadMotionController = null!;");
         AssertContains(playheadText, "private void InitializeFlashbackPlayheadMotionController()");
         AssertContains(playheadText, "IsScrubbing = () => _flashbackScrubInteractionController.IsScrubbing,");
-        AssertContains(playheadText, "private void RequestFlashbackPlayheadSnapOnNextUpdate()");
-        AssertContains(playheadText, "private void PositionFlashbackMagneticPlayhead(double x, double trackWidth)");
-        AssertContains(playheadText, "private void RefreshFlashbackPlayheadMotion(string reason)");
-        AssertContains(playheadText, "=> _flashbackPlayheadMotionController.RefreshPlayheadMotion(reason);");
         AssertContains(playheadText, "private void StopFlashbackPlayheadAnchorTimer()");
         AssertContains(playheadText, "=> _flashbackPlayheadMotionController.StopPlayheadAnchorTimer();");
         AssertContains(mainWindowText, "InitializeFlashbackPlayheadMotionController();");
@@ -5921,8 +5914,10 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Flashback", "FlashbackPlayheadMotionController.cs")),
             "Flashback playhead motion folded into Flashback UI controllers");
-        AssertContains(scrubText, "PositionMagneticPlayhead = PositionFlashbackMagneticPlayhead,");
+        AssertContains(scrubText, "PositionMagneticPlayhead = (x, trackWidth) => _flashbackPlayheadMotionController.PositionMagneticPlayhead(x, trackWidth),");
         AssertContains(scrubControllerText, "_context.PositionMagneticPlayhead(x, width);");
+        AssertContains(flashbackText, "RequestPlayheadSnapOnNextUpdate = () => _flashbackPlayheadMotionController.RequestSnapOnNextUpdate(),");
+        AssertContains(flashbackText, "RefreshPlayheadMotion = reason => _flashbackPlayheadMotionController.RefreshPlayheadMotion(reason),");
         AssertContains(playbackCoordinatorText, "_context.RefreshPlayheadMotion(\"state_change\");");
         AssertContains(pollingAdapterText, "StopFlashbackPlayheadAnchorTimer();");
         AssertContains(playbackCoordinatorText, "_context.RequestPlayheadSnapOnNextUpdate();");
@@ -6042,15 +6037,11 @@ static partial class Program
         AssertContains(adapterText, "FlashbackEnabledToggle = FlashbackEnabledToggle,");
         AssertContains(adapterText, "FlashbackGpuDecodeToggle = FlashbackGpuDecodeToggle,");
         AssertContains(adapterText, "FlashbackBufferDurationCombo = FlashbackBufferDurationCombo,");
-        AssertContains(adapterText, "ApplyFlashbackTimelineLockout = ApplyFlashbackTimelineLockout");
+        AssertContains(adapterText, "ApplyFlashbackTimelineLockout = () => _flashbackTimelineController.ApplyLockout()");
         AssertContains(adapterText, "private void ApplyInitialFlashbackSettings()");
         AssertContains(adapterText, "=> _flashbackSettingsBindingController.ApplyInitialSettings();");
         AssertContains(adapterText, "private void AttachFlashbackSettingsBindings()");
         AssertContains(adapterText, "=> _flashbackSettingsBindingController.AttachBindings();");
-        AssertContains(adapterText, "private void SyncFlashbackGpuDecodeSetting()");
-        AssertContains(adapterText, "=> _flashbackSettingsBindingController.SyncGpuDecodeToggle();");
-        AssertContains(adapterText, "private void SyncFlashbackBufferDurationSetting()");
-        AssertContains(adapterText, "=> _flashbackSettingsBindingController.SyncBufferDurationSelection();");
         AssertContains(adapterText, "private void FlashbackBufferDurationCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)");
         AssertContains(adapterText, "if (ViewModel == null || _flashbackSettingsBindingController == null)");
         AssertContains(adapterText, "_flashbackSettingsBindingController.HandleBufferDurationSelectionChanged();");
@@ -6082,8 +6073,8 @@ static partial class Program
         AssertContains(controllerText, "_context.ViewModel.FlashbackBufferMinutes = minutes;");
         AssertContains(controllerText, "FLASHBACK_UI_BUFFER_DURATION_CHANGED");
         AssertContains(propertyChangedText, "TryHandleFlashback = TryHandleFlashbackPropertyChanged");
-        AssertContains(flashbackPropertyChangedText, "SyncGpuDecodeSetting = SyncFlashbackGpuDecodeSetting,");
-        AssertContains(flashbackPropertyChangedText, "SyncBufferDurationSetting = SyncFlashbackBufferDurationSetting");
+        AssertContains(flashbackPropertyChangedText, "SyncGpuDecodeSetting = () => _flashbackSettingsBindingController.SyncGpuDecodeToggle(),");
+        AssertContains(flashbackPropertyChangedText, "SyncBufferDurationSetting = () => _flashbackSettingsBindingController.SyncBufferDurationSelection(),");
         AssertContains(flashbackPropertyChangedControllerText, "case nameof(MainViewModel.FlashbackGpuDecode):");
         AssertContains(flashbackPropertyChangedControllerText, "_context.SyncGpuDecodeSetting();");
         AssertContains(flashbackPropertyChangedControllerText, "case nameof(MainViewModel.FlashbackBufferMinutes):");
@@ -6242,13 +6233,11 @@ static partial class Program
         AssertContains(flashbackText, "private FlashbackExportProgressPresentationController _flashbackExportProgressPresentationController = null!;");
         AssertContains(flashbackText, "private void InitializeFlashbackExportProgressPresentationController()");
         AssertContains(flashbackText, "FlashbackExportProgressBar = FlashbackExportProgressBar,");
-        AssertContains(flashbackText, "=> _flashbackExportProgressPresentationController.UpdateProgress(progress);");
-        AssertContains(flashbackText, "=> _flashbackExportProgressPresentationController.UpdateExporting(isExporting);");
         AssertContains(mainWindowText, "InitializeFlashbackExportProgressPresentationController();");
         AssertContains(mainWindowText, "InitializeFlashbackPropertyChangedController();");
         AssertContains(propertyChangedText, "TryHandleFlashback = TryHandleFlashbackPropertyChanged");
-        AssertContains(flashbackPropertyChangedText, "UpdateExportProgress = UpdateFlashbackExportProgress,");
-        AssertContains(flashbackPropertyChangedText, "UpdateExportingPresentation = UpdateFlashbackExportingPresentation,");
+        AssertContains(flashbackPropertyChangedText, "UpdateExportProgress = progress => _flashbackExportProgressPresentationController.UpdateProgress(progress),");
+        AssertContains(flashbackPropertyChangedText, "UpdateExportingPresentation = isExporting => _flashbackExportProgressPresentationController.UpdateExporting(isExporting),");
         AssertContains(flashbackPropertyChangedControllerText, "case nameof(MainViewModel.FlashbackExportProgress):");
         AssertContains(flashbackPropertyChangedControllerText, "_context.UpdateExportProgress(_context.GetExportProgress());");
         AssertContains(flashbackPropertyChangedControllerText, "case nameof(MainViewModel.IsFlashbackExporting):");
@@ -6294,8 +6283,8 @@ static partial class Program
         AssertContains(flashbackScrubText, "XAML-facing Flashback pointer scrub adapter");
         AssertContains(flashbackScrubText, "private FlashbackScrubInteractionController _flashbackScrubInteractionController = null!;");
         AssertContains(flashbackScrubText, "private void InitializeFlashbackScrubInteractionController()");
-        AssertContains(flashbackScrubText, "PositionMagneticPlayhead = PositionFlashbackMagneticPlayhead,");
-        AssertContains(flashbackScrubText, "RefreshPlayheadMotion = RefreshFlashbackPlayheadMotion,");
+        AssertContains(flashbackScrubText, "PositionMagneticPlayhead = (x, trackWidth) => _flashbackPlayheadMotionController.PositionMagneticPlayhead(x, trackWidth),");
+        AssertContains(flashbackScrubText, "RefreshPlayheadMotion = reason => _flashbackPlayheadMotionController.RefreshPlayheadMotion(reason),");
         AssertContains(flashbackScrubText, "GetTickCount64 = () => Environment.TickCount64,");
         AssertContains(flashbackScrubControllerText, "internal sealed class FlashbackScrubInteractionController");
         AssertContains(flashbackScrubControllerText, "private bool _isScrubbing;");
@@ -6492,13 +6481,13 @@ static partial class Program
         AssertContains(viewModelText, "IsFlashbackTimelineVisible = false;");
         AssertContains(bindingsText, "ApplyInitialFlashbackSettings();");
         AssertContains(flashbackSettingsText, "private FlashbackSettingsBindingController _flashbackSettingsBindingController = null!;");
-        AssertContains(flashbackSettingsText, "ApplyFlashbackTimelineLockout = ApplyFlashbackTimelineLockout");
+        AssertContains(flashbackSettingsText, "ApplyFlashbackTimelineLockout = () => _flashbackTimelineController.ApplyLockout()");
         AssertContains(flashbackSettingsControllerText, "_context.FlashbackEnabledToggle.IsOn = _context.ViewModel.IsFlashbackEnabled;");
         AssertContains(flashbackSettingsControllerText, "_context.ApplyFlashbackTimelineLockout();");
         AssertContains(propertyChangedText, "TryHandleFlashback = TryHandleFlashbackPropertyChanged");
         AssertContains(flashbackPropertyChangedText, "private void InitializeFlashbackPropertyChangedController()");
-        AssertContains(flashbackPropertyChangedText, "ApplyTimelineLockout = ApplyFlashbackTimelineLockout,");
-        AssertContains(flashbackPropertyChangedText, "ApplyTimelineVisibility = ApplyFlashbackTimelineVisibility,");
+        AssertContains(flashbackPropertyChangedText, "ApplyTimelineLockout = () => _flashbackTimelineController.ApplyLockout(),");
+        AssertContains(flashbackPropertyChangedText, "ApplyTimelineVisibility = show => _flashbackTimelineController.ApplyVisibility(show),");
         AssertContains(flashbackPropertyChangedText, "IsFlashbackEnabled = () => ViewModel.IsFlashbackEnabled,");
         AssertContains(flashbackPropertyChangedText, "UpdateFlashbackKeepAliveHint = UpdateFlashbackKeepAliveHint,");
         AssertContains(flashbackPropertyChangedControllerText, "case nameof(MainViewModel.IsFlashbackEnabled):");
@@ -6509,14 +6498,12 @@ static partial class Program
         AssertContains(flashbackTimelineText, "private FlashbackTimelineController _flashbackTimelineController = null!;");
         AssertContains(flashbackTimelineText, "FlashbackToggle = FlashbackToggle,");
         AssertContains(flashbackTimelineText, "FlashbackTimelinePanel = FlashbackTimelinePanel,");
-        AssertContains(flashbackTimelineText, "SnapPlayheadOnNextOpen = RequestFlashbackPlayheadSnapOnNextUpdate,");
-        AssertContains(flashbackTimelineText, "ClearScrubInteraction = ClearFlashbackScrubInteractionForLockout,");
+        AssertContains(flashbackTimelineText, "SnapPlayheadOnNextOpen = () => _flashbackPlayheadMotionController.RequestSnapOnNextUpdate(),");
+        AssertContains(flashbackTimelineText, "ClearScrubInteraction = () => _flashbackScrubInteractionController.ClearForLockout(),");
         AssertContains(flashbackTimelineText, "=> _flashbackTimelineController.OnToggleChecked();");
-        AssertContains(flashbackTimelineText, "=> _flashbackTimelineController.ApplyLockout();");
         AssertContains(fullScreenText, "ResetFlashbackTimelineAnimation = _flashbackTimelineController.ResetAnimationForFullScreen,");
         AssertContains(flashbackTimelineControllerText, "public void ResetAnimationForFullScreen()");
         AssertDoesNotContain(flashbackTimelineText, "ResetFlashbackTimelineAnimationForFullScreen");
-        AssertContains(flashbackTimelineText, "=> _flashbackScrubInteractionController.ClearForLockout();");
         AssertContains(flashbackTimelineControllerText, "internal sealed class FlashbackTimelineController");
         AssertContains(flashbackTimelineControllerText, "private readonly FlashbackTimelineAnimationController _animationController;");
         AssertContains(flashbackTimelineAnimationControllerText, "private Storyboard? _timelineStoryboard;");
