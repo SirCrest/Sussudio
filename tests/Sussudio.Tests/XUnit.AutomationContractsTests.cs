@@ -298,6 +298,7 @@ public sealed class AutomationContractsProtocolXunitTests
     public void AutomationPipeProtocol_ExposesStableWireDefaults()
     {
         Assert.Equal("SussudioAutomation", AutomationPipeProtocol.DefaultPipeName);
+        Assert.Equal("SUSSUDIO_AUTOMATION_PIPE", AutomationPipeProtocol.AutomationPipeEnvVar);
         Assert.Equal("SUSSUDIO_AUTOMATION_TOKEN", AutomationPipeProtocol.AutomationKeyEnvVar);
         Assert.Equal(2, AutomationPipeProtocol.CommandManifestRevision);
         Assert.Equal(5000, AutomationPipeProtocol.DefaultConnectTimeoutMs);
@@ -339,7 +340,7 @@ public sealed class AutomationContractsProtocolXunitTests
     }
 
     [Fact]
-    public void AutomationPipeProtocol_ResolvesExplicitAndEnvironmentAuthTokens()
+    public void AutomationPipeProtocol_ResolvesEnvironmentAuthToken()
     {
         lock (AutomationTokenLock)
         {
@@ -347,7 +348,6 @@ public sealed class AutomationContractsProtocolXunitTests
             try
             {
                 Environment.SetEnvironmentVariable(AutomationPipeProtocol.AutomationKeyEnvVar, "env-token");
-                Assert.Equal("explicit-token", AutomationPipeProtocol.GetConfiguredAuthToken("explicit-token"));
                 Assert.Equal("env-token", AutomationPipeProtocol.GetConfiguredAuthToken());
 
                 Environment.SetEnvironmentVariable(AutomationPipeProtocol.AutomationKeyEnvVar, "   ");
@@ -1649,6 +1649,7 @@ static partial class Program
         AssertContains(dispatcherText, "providedToken = GetString(request.Payload, AutomationPayloadKeys.AuthToken);");
         AssertContains(dispatcherText, "CryptographicOperations.FixedTimeEquals(expected, actual)");
         AssertContains(dispatcherText, "Logger.LogEvent(\"AUTO-AUTH-FAILED\"");
+        AssertContains(dispatcherText, "Logger.LogEvent(\"AUTO-AUTH-LEGACY-PAYLOAD\"");
         AssertContains(dispatcherText, "errorCode: authorized ? null : AutomationErrorCodes.Unauthorized");
         AssertContains(dispatcherText, "errorCode: AutomationErrorCodes.Unauthorized");
         AssertContains(dispatcherText, "status: authorized ? AutomationResponseStatus.Ok : AutomationResponseStatus.Error");

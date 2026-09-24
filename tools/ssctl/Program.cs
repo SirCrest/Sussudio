@@ -110,7 +110,7 @@ internal static class Program
     {
         public bool Json { get; private set; }
         public bool ShowHelp { get; private set; }
-        public string PipeName { get; private set; } = AutomationPipeProtocol.DefaultPipeName;
+        public string PipeName { get; private set; } = AutomationPipeProtocol.ResolvePipeName(null);
         public int? ResponseTimeoutMs { get; private set; }
         public string? AuthToken { get; private set; }
         public IReadOnlyList<string> Arguments { get; private set; } = Array.Empty<string>();

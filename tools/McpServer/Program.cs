@@ -58,12 +58,7 @@ namespace McpServer
 
         internal PipeClient(string? pipeName, string? authToken)
         {
-            var configuredPipeName = string.IsNullOrWhiteSpace(pipeName)
-                ? Environment.GetEnvironmentVariable("SUSSUDIO_AUTOMATION_PIPE")
-                : pipeName;
-            _pipeName = string.IsNullOrWhiteSpace(configuredPipeName)
-                ? AutomationPipeProtocol.DefaultPipeName
-                : configuredPipeName;
+            _pipeName = AutomationPipeProtocol.ResolvePipeName(pipeName);
             _authToken = authToken;
         }
 
@@ -100,7 +95,6 @@ namespace McpServer
                 kind,
                 payload,
                 callResponseTimeoutMs: responseTimeoutMs,
-                unknownCommandHandling: AutomationUnknownCommandHandling.ReturnSyntheticError,
                 authToken: _authToken,
                 cancellationToken: cancellationToken).ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();

@@ -1,6 +1,6 @@
 # Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-09-23T23:31:58Z
+Generated UTC: 2026-09-24T00:23:01Z
 Root: C:\Users\crest\source\repos\Sussudio
 
 ## Summary
@@ -10,9 +10,9 @@ Root: C:\Users\crest\source\repos\Sussudio
 | Production .cs files | 153 |
 | Test .cs files | 106 |
 | Core app .cs files (Sussudio/) | 117 |
-| Core app nonblank LoC (Sussudio/) | 93160 |
+| Core app nonblank LoC (Sussudio/) | 93165 |
 | Sussudio.Tests .cs files | 106 |
-| Sussudio.Tests nonblank LoC | 82767 |
+| Sussudio.Tests nonblank LoC | 82953 |
 | Production .cs files under 60 lines | 5 (3.3%) |
 | Production .cs files under 80 lines | 9 (5.9%) |
 
@@ -56,7 +56,7 @@ Root: C:\Users\crest\source\repos\Sussudio
 | 1817 | Sussudio/Services/Capture/UnifiedVideoCapture.cs |
 | 1813 | Sussudio/Services/Flashback/FlashbackBufferManager.cs |
 | 1750 | Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs |
-| 1744 | Sussudio/Services/Automation/AutomationCommandDispatcher.cs |
+| 1749 | Sussudio/Services/Automation/AutomationCommandDispatcher.cs |
 | 1641 | Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.cs |
 | 1600 | Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs |
 | 1561 | Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs |

@@ -44,6 +44,7 @@ public static class AutomationPipeErrorCodes
 public static class AutomationPipeProtocol
 {
     public const string DefaultPipeName = "SussudioAutomation";
+    public const string AutomationPipeEnvVar = "SUSSUDIO_AUTOMATION_PIPE";
     public const string AutomationKeyEnvVar = "SUSSUDIO_AUTOMATION_TOKEN";
 
     // Wire-format revision for the AutomationCommandKind numeric ID table.
@@ -75,13 +76,19 @@ public static class AutomationPipeProtocol
             entry => entry.Value,
             entry => entry.Key);
 
-    public static string? GetConfiguredAuthToken(string? explicitAuthToken = null)
+    public static string ResolvePipeName(string? explicitName)
     {
-        if (!string.IsNullOrWhiteSpace(explicitAuthToken))
+        if (!string.IsNullOrWhiteSpace(explicitName))
         {
-            return explicitAuthToken;
+            return explicitName;
         }
 
+        var environmentPipeName = Environment.GetEnvironmentVariable(AutomationPipeEnvVar);
+        return string.IsNullOrWhiteSpace(environmentPipeName) ? DefaultPipeName : environmentPipeName;
+    }
+
+    public static string? GetConfiguredAuthToken()
+    {
         var envToken = Environment.GetEnvironmentVariable(AutomationKeyEnvVar);
         return string.IsNullOrWhiteSpace(envToken) ? null : envToken;
     }
@@ -615,21 +622,17 @@ internal static class AutomationPipeClient
 
 internal static class AutomationCommandTransport
 {
-    // The kind-typed and name-typed overloads differ only in which command key they
-    // resolve the default timeout from and hand to the client; the unwrap and the two
-    // synthetic-error arms are shared through SendAndUnwrapAsync so the error contract
-    // cannot drift between them.
+    // Command-name validation stays in the string overload; transport failures are
+    // unwrapped once for both the kind-typed and name-typed routes.
     public static Task<JsonElement> SendCommandAsync(
         string pipeName,
         AutomationCommandKind kind,
         object? payload = null,
         int? sessionResponseTimeoutMs = null,
         int? callResponseTimeoutMs = null,
-        AutomationUnknownCommandHandling unknownCommandHandling = AutomationUnknownCommandHandling.ReturnSyntheticError,
         string? authToken = null,
         CancellationToken cancellationToken = default)
         => SendAndUnwrapAsync(
-            unknownCommandHandling,
             () => AutomationPipeClient.SendCommandWithResultAsync(
                 pipeName,
                 kind,
@@ -651,22 +654,32 @@ internal static class AutomationCommandTransport
         AutomationUnknownCommandHandling unknownCommandHandling = AutomationUnknownCommandHandling.ReturnSyntheticError,
         string? authToken = null,
         CancellationToken cancellationToken = default)
-        => SendAndUnwrapAsync(
-            unknownCommandHandling,
-            () => AutomationPipeClient.SendCommandWithResultAsync(
+        {
+            int commandValue;
+            try
+            {
+                commandValue = AutomationPipeProtocol.ResolveCommand(commandName);
+            }
+            catch (ArgumentException ex) when (unknownCommandHandling == AutomationUnknownCommandHandling.ReturnSyntheticError)
+            {
+                return Task.FromResult(
+                    AutomationSyntheticErrorResponse.Create(ex.Message, AutomationPipeErrorCodes.UnknownCommand));
+            }
+
+            return SendCommandAsync(
                 pipeName,
-                commandName,
+                (AutomationCommandKind)commandValue,
                 payload,
-                AutomationPipeProtocol.DefaultConnectTimeoutMs,
-                callResponseTimeoutMs
-                    ?? sessionResponseTimeoutMs
-                    ?? AutomationPipeProtocol.GetDefaultResponseTimeout(commandName),
+                sessionResponseTimeoutMs: sessionResponseTimeoutMs ??
+                    (callResponseTimeoutMs is null
+                        ? AutomationPipeProtocol.GetDefaultResponseTimeout(commandName)
+                        : null),
+                callResponseTimeoutMs: callResponseTimeoutMs,
                 authToken: authToken,
-                includeResponseElement: true,
-                cancellationToken: cancellationToken));
+                cancellationToken: cancellationToken);
+        }
 
     private static async Task<JsonElement> SendAndUnwrapAsync(
-        AutomationUnknownCommandHandling unknownCommandHandling,
         Func<Task<AutomationPipeCommandResult>> send)
     {
         try
@@ -675,10 +688,6 @@ internal static class AutomationCommandTransport
 
             return result.ResponseElement
                 ?? throw new JsonException("Automation pipe returned invalid JSON.");
-        }
-        catch (ArgumentException ex) when (unknownCommandHandling == AutomationUnknownCommandHandling.ReturnSyntheticError)
-        {
-            return AutomationSyntheticErrorResponse.Create(ex.Message, AutomationPipeErrorCodes.UnknownCommand);
         }
         catch (Exception ex) when (AutomationSyntheticErrorResponse.CanCreateFromException(ex))
         {

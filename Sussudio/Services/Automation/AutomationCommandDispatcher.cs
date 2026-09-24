@@ -370,7 +370,8 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         }
 
         var providedToken = request.AuthToken;
-        if (string.IsNullOrWhiteSpace(providedToken))
+        var usedPayloadFallback = string.IsNullOrWhiteSpace(providedToken);
+        if (usedPayloadFallback)
         {
             providedToken = GetString(request.Payload, AutomationPayloadKeys.AuthToken);
         }
@@ -385,6 +386,10 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         if (!ok)
         {
             Logger.LogEvent("AUTO-AUTH-FAILED", $"command={request.Command} correlationId={request.CorrelationId ?? "<none>"}");
+        }
+        else if (usedPayloadFallback)
+        {
+            Logger.LogEvent("AUTO-AUTH-LEGACY-PAYLOAD", $"command={request.Command} correlationId={request.CorrelationId ?? "<none>"}");
         }
         return ok;
     }

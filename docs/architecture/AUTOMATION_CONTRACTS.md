@@ -7,6 +7,11 @@ name is:
 SussudioAutomation
 ```
 
+Clients use `SUSSUDIO_AUTOMATION_PIPE` when no pipe name is supplied, then fall
+back to `SussudioAutomation`. Set the variable for both the app and client
+processes when connecting through a custom pipe. `ssctl --pipe` and
+AutomationClient `--pipe`/`-p` values override the environment for that client.
+
 The shared command IDs, protocol constants, manifest/catalog, and pipe security
 policy live in `Sussudio.Automation.Contracts/`.
 `tools/Common/` remains helper-only for shared clients, formatters, diagnostic

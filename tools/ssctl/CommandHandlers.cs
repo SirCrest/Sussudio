@@ -1121,7 +1121,6 @@ internal sealed class PipeTransport
             payload,
             sessionResponseTimeoutMs: _sessionResponseTimeoutMs,
             callResponseTimeoutMs: responseTimeoutMs,
-            unknownCommandHandling: AutomationUnknownCommandHandling.ThrowArgumentException,
             authToken: _authToken,
             cancellationToken: cancellationToken);
 }

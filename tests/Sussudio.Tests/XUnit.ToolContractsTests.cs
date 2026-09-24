@@ -992,6 +992,10 @@ public sealed class McpToolSurfaceContractsTests
         => global::Program.McpPipeClient_HonorsSussudioAutomationPipeEnvironment();
 
     [Fact]
+    public Task AutomationPipeProtocolResolvesExplicitAndEnvironmentPipeNames()
+        => global::Program.AutomationPipeProtocol_ResolvesExplicitAndEnvironmentPipeNames();
+
+    [Fact]
     public Task HostToolInvocationReturnsPipeFailures()
         => global::Program.McpHostToolInvocation_ReturnsPipeFailureInsteadOfClosingTransport();
 
@@ -2243,6 +2247,49 @@ static partial class Program
         }
     }
 
+    private static async Task<(int ExitCode, string Output, string Error)> RunAutomationClientProcessAsync(
+        IReadOnlyList<string> arguments,
+        IReadOnlyDictionary<string, string?>? environmentVariables = null)
+    {
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = "dotnet",
+            WorkingDirectory = GetRepoRoot(),
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            CreateNoWindow = true
+        };
+        startInfo.ArgumentList.Add(Path.GetFullPath(Path.Combine(GetRepoRoot(), global::Program.AutomationClientAssemblyRelativePath)));
+        foreach (var argument in arguments)
+            startInfo.ArgumentList.Add(argument);
+        if (environmentVariables != null)
+            foreach (var (name, value) in environmentVariables)
+            {
+                if (value == null)
+                    startInfo.Environment.Remove(name);
+                else
+                    startInfo.Environment[name] = value;
+            }
+        using var process = new Process { StartInfo = startInfo };
+        AssertEqual(true, process.Start(), "start AutomationClient");
+        var stdout = process.StandardOutput.ReadToEndAsync();
+        var stderr = process.StandardError.ReadToEndAsync();
+        try
+        {
+            await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(15)).ConfigureAwait(false);
+            return (process.ExitCode, await stdout.ConfigureAwait(false), await stderr.ConfigureAwait(false));
+        }
+        finally
+        {
+            if (!process.HasExited)
+            {
+                process.Kill(entireProcessTree: true);
+                await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(3)).ConfigureAwait(false);
+            }
+        }
+    }
+
     internal static async Task AutomationToolAdapters_ForwardExplicitToken(string client, bool typedCommand)
     {
         const string AuthToken = "adapter-auth-test-token";
@@ -2560,6 +2607,27 @@ static partial class Program
         {
             Environment.SetEnvironmentVariable("SUSSUDIO_AUTOMATION_PIPE", previousPipeName);
         }
+    }
+
+    internal static Task AutomationPipeProtocol_ResolvesExplicitAndEnvironmentPipeNames()
+    {
+        var previousPipeName = Environment.GetEnvironmentVariable(AutomationPipeProtocol.AutomationPipeEnvVar);
+        try
+        {
+            Environment.SetEnvironmentVariable(AutomationPipeProtocol.AutomationPipeEnvVar, "environment-pipe");
+            AssertEqual("explicit-pipe", AutomationPipeProtocol.ResolvePipeName("explicit-pipe"), "explicit pipe name precedence");
+            AssertEqual("environment-pipe", AutomationPipeProtocol.ResolvePipeName(null), "configured pipe name fallback");
+            AssertEqual("environment-pipe", AutomationPipeProtocol.ResolvePipeName("  "), "blank explicit pipe name fallback");
+
+            Environment.SetEnvironmentVariable(AutomationPipeProtocol.AutomationPipeEnvVar, "  ");
+            AssertEqual(AutomationPipeProtocol.DefaultPipeName, AutomationPipeProtocol.ResolvePipeName(null), "default pipe name fallback");
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(AutomationPipeProtocol.AutomationPipeEnvVar, previousPipeName);
+        }
+
+        return Task.CompletedTask;
     }
 
     internal static async Task McpHostToolInvocation_ReturnsPipeFailureInsteadOfClosingTransport()
@@ -11139,6 +11207,52 @@ static partial class Program
             "AutomationClient shared protocol manifest revision");
     }
 
+    internal static async Task AutomationCommandTransport_MapsOnlyUnknownNamesToUnknownCommand()
+    {
+        var transportType = typeof(AutomationPipeProtocol).Assembly.GetType(
+            "Sussudio.Tools.AutomationCommandTransport",
+            throwOnError: true)!;
+        var overloads = transportType.GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .Where(method => method.Name == "SendCommandAsync")
+            .ToArray();
+        var nameOverload = overloads.Single(method => method.GetParameters()[1].ParameterType == typeof(string));
+        var typedOverload = overloads.Single(method => method.GetParameters()[1].ParameterType == typeof(AutomationCommandKind));
+
+        var unknownNameTask = (Task<JsonElement>)nameOverload.Invoke(
+            null,
+            new object?[]
+            {
+                string.Empty,
+                "not-a-command",
+                null,
+                null,
+                null,
+                AutomationUnknownCommandHandling.ReturnSyntheticError,
+                null,
+                CancellationToken.None
+            })!;
+        var unknownNameResponse = await unknownNameTask.ConfigureAwait(false);
+        AssertEqual(
+            AutomationPipeErrorCodes.UnknownCommand,
+            unknownNameResponse.GetProperty("ErrorCode").GetString(),
+            "only command-name resolution maps to unknown-command");
+
+        var invalidPipeTask = (Task<JsonElement>)typedOverload.Invoke(
+            null,
+            new object?[]
+            {
+                string.Empty,
+                AutomationCommandKind.GetSnapshot,
+                null,
+                null,
+                null,
+                null,
+                CancellationToken.None
+            })!;
+        await Assert.ThrowsAnyAsync<ArgumentException>(async () =>
+            await invalidPipeTask.ConfigureAwait(false)).ConfigureAwait(false);
+    }
+
     internal static async Task McpPipeClient_SendsSharedEnvelopeForTypedRecordingCommand()
     {
         var pipeName = NewMcpToolPipeName("mcp-shared-envelope");
@@ -11222,6 +11336,48 @@ static partial class Program
             request.GetProperty("manifestRevision").GetInt32(),
             "ssctl shared protocol manifest revision");
     }
+
+    internal static async Task SsctlPipeClient_HonorsAutomationPipeEnvironment()
+    {
+        var pipeName = NewMcpToolPipeName("ssctl-pipe-env");
+        var environment = new Dictionary<string, string?>
+        {
+            [AutomationPipeProtocol.AutomationPipeEnvVar] = pipeName,
+            [AutomationPipeProtocol.AutomationKeyEnvVar] = null
+        };
+
+        var request = await CapturePipeRequestAsync(pipeName, async () =>
+        {
+            var result = await RunSsctlProcessAsync(
+                    new[] { "settings", "show" },
+                    environmentVariables: environment)
+                .ConfigureAwait(false);
+            AssertEqual(0, result.ExitCode, "ssctl uses configured pipe when --pipe is omitted: " + result.Error);
+        }).ConfigureAwait(false);
+
+        AssertCommandRequest(request, "SetSettingsVisible", ("visible", true));
+    }
+
+    internal static async Task AutomationClient_HonorsAutomationPipeEnvironment()
+    {
+        var pipeName = NewMcpToolPipeName("automation-client-pipe-env");
+        var environment = new Dictionary<string, string?>
+        {
+            [AutomationPipeProtocol.AutomationPipeEnvVar] = pipeName,
+            [AutomationPipeProtocol.AutomationKeyEnvVar] = null
+        };
+
+        var request = await CapturePipeRequestAsync(pipeName, async () =>
+        {
+            var result = await RunAutomationClientProcessAsync(
+                    new[] { "--command", "SetRecordingEnabled", "--payload", "{\"enabled\":true}" },
+                    environment)
+                .ConfigureAwait(false);
+            AssertEqual(0, result.ExitCode, "AutomationClient uses configured pipe when -p is omitted: " + result.Error);
+        }).ConfigureAwait(false);
+
+        AssertCommandRequest(request, "SetRecordingEnabled", ("enabled", true));
+    }
 }
 
 namespace Sussudio.Tests
@@ -11239,6 +11395,18 @@ public sealed class AutomationToolContractsProtocolXunitTests
     [Fact]
     public Task SsctlPipeTransport_SendsSharedEnvelopeForTypedRecordingCommand()
         => global::Program.SsctlPipeTransport_SendsSharedEnvelopeForTypedRecordingCommand();
+
+    [Fact]
+    public Task SsctlUsesAutomationPipeEnvironmentWhenPipeOptionIsOmitted()
+        => global::Program.SsctlPipeClient_HonorsAutomationPipeEnvironment();
+
+    [Fact]
+    public Task AutomationClientUsesAutomationPipeEnvironmentWhenPipeOptionIsOmitted()
+        => global::Program.AutomationClient_HonorsAutomationPipeEnvironment();
+
+    [Fact]
+    public Task AutomationCommandTransportMapsOnlyUnknownNamesToUnknownCommand()
+        => global::Program.AutomationCommandTransport_MapsOnlyUnknownNamesToUnknownCommand();
 
     [Theory]
     [InlineData("mcp", false)]
@@ -11302,6 +11470,28 @@ public sealed class AutomationToolContractsProtocolXunitTests
     }
 
     [Fact]
+    public void AutomationPipeClientsSharePipeNameResolution()
+    {
+        var protocolText = RuntimeContractSource.ReadRepoFile("Sussudio.Automation.Contracts/AutomationPipeProtocol.cs")
+            .Replace("\r\n", "\n", StringComparison.Ordinal);
+        var mcpText = RuntimeContractSource.ReadRepoFile("tools/McpServer/Program.cs")
+            .Replace("\r\n", "\n", StringComparison.Ordinal);
+        var ssctlText = RuntimeContractSource.ReadRepoFile("tools/ssctl/Program.cs")
+            .Replace("\r\n", "\n", StringComparison.Ordinal);
+        var automationClientText = RuntimeContractSource.ReadRepoFile("tools/AutomationClient/Program.cs")
+            .Replace("\r\n", "\n", StringComparison.Ordinal);
+
+        Assert.Contains("public const string AutomationPipeEnvVar = \"SUSSUDIO_AUTOMATION_PIPE\";", protocolText);
+        Assert.Contains("public static string ResolvePipeName(string? explicitName)", protocolText);
+        Assert.Contains("_pipeName = AutomationPipeProtocol.ResolvePipeName(pipeName);", mcpText);
+        Assert.DoesNotContain("Environment.GetEnvironmentVariable(\"SUSSUDIO_AUTOMATION_PIPE\")", mcpText);
+        Assert.Contains("PipeName { get; private set; } = AutomationPipeProtocol.ResolvePipeName(null);", ssctlText);
+        Assert.Contains("options.PipeName = NextValue(args, ref i, arg);", ssctlText);
+        Assert.Contains("PipeName { get; set; } = AutomationPipeProtocol.ResolvePipeName(null);", automationClientText);
+        Assert.Contains("options.PipeName = NextValue(args, ref i, arg);", automationClientText);
+    }
+
+    [Fact]
     public void McpTypedPipeClient_SourceDelegatesTimeoutSelectionToSharedTransport()
     {
         var typedSend = global::Program.ExtractDeclaredMemberCode(
@@ -11311,7 +11501,7 @@ public sealed class AutomationToolContractsProtocolXunitTests
 
         Assert.Contains("AutomationCommandTransport.SendCommandAsync(", typedSend);
         Assert.Contains("callResponseTimeoutMs: responseTimeoutMs", typedSend);
-        Assert.Contains("unknownCommandHandling: AutomationUnknownCommandHandling.ReturnSyntheticError", typedSend);
+        Assert.DoesNotContain("unknownCommandHandling:", typedSend);
         Assert.Contains("cancellationToken: cancellationToken", typedSend);
         Assert.Equal(2, typedSend.Split("cancellationToken.ThrowIfCancellationRequested();").Length - 1);
     }
@@ -11550,6 +11740,12 @@ public sealed class AutomationToolContractsProtocolXunitTests
         var diagnosticSessionPipeRetryText = diagnosticSessionCommandChannelText;
         var automationPipeProtocolText = RuntimeContractSource.ReadRepoFile("Sussudio.Automation.Contracts/AutomationPipeProtocol.cs")
             .Replace("\r\n", "\n", StringComparison.Ordinal);
+        var commandNameTransportText = global::Program.ExtractDeclaredMemberCode(
+            automationPipeProtocolText,
+            "public static Task<JsonElement> SendCommandAsync(\n        string pipeName,\n        string commandName,");
+        var transportUnwrapText = global::Program.ExtractDeclaredMemberCode(
+            automationPipeProtocolText,
+            "private static async Task<JsonElement> SendAndUnwrapAsync(");
 
         Assert.Contains("internal static class AutomationPipeClient", sharedClientText);
         Assert.DoesNotContain("internal static partial class AutomationPipeClient", sharedClientText);
@@ -11605,6 +11801,14 @@ public sealed class AutomationToolContractsProtocolXunitTests
         Assert.Contains("ThrowArgumentException", automationPipeProtocolText);
         Assert.Contains("AutomationPipeProtocol.GetDefaultResponseTimeout(kind)", sharedClientText);
         Assert.Contains("AutomationSyntheticErrorResponse.Create(ex.Message, AutomationPipeErrorCodes.UnknownCommand)", sharedClientText);
+        Assert.Contains("commandValue = AutomationPipeProtocol.ResolveCommand(commandName);", commandNameTransportText);
+        Assert.Contains("catch (ArgumentException ex) when (unknownCommandHandling == AutomationUnknownCommandHandling.ReturnSyntheticError)", commandNameTransportText);
+        Assert.Contains("AutomationPipeProtocol.GetDefaultResponseTimeout(commandName)", commandNameTransportText);
+        Assert.True(
+            commandNameTransportText.IndexOf("ResolveCommand(commandName)", StringComparison.Ordinal) <
+            commandNameTransportText.IndexOf("return SendCommandAsync(", StringComparison.Ordinal),
+            "resolve the command name before entering the send path");
+        Assert.DoesNotContain("catch (ArgumentException ex)", transportUnwrapText);
         Assert.Contains("catch (Exception ex) when (AutomationSyntheticErrorResponse.CanCreateFromException(ex))", sharedClientText);
         Assert.Contains("AutomationSyntheticErrorResponse.Create(ex)", sharedClientText);
         Assert.DoesNotContain("internal static class AutomationSyntheticErrorResponse", sharedClientText);
