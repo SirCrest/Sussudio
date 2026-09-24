@@ -193,7 +193,7 @@ public static class FramePacingVerdictTools
         return new[]
             {
                 AutomationSnapshotFormatter.GetDouble(snapshot, "ExpectedCaptureFrameRate"),
-                AutomationSnapshotFormatter.GetDouble(snapshot, "SourceFrameRateExact"),
+                AutomationSnapshotFormatter.GetDouble(snapshot, "DetectedSourceFrameRate"),
                 AutomationSnapshotFormatter.GetDouble(snapshot, "FlashbackPlaybackTargetFps"),
                 AutomationSnapshotFormatter.GetDouble(snapshot, "EncoderFrameRate")
             }

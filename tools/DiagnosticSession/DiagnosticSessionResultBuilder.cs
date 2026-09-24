@@ -766,9 +766,9 @@ internal static class DiagnosticSessionResultBuilder
             IsSnapshotEpochDiagnosticHealthObservation(diagnosticHealthObservation)
                 ? "snapshot epoch consistency warning tolerated"
                 : IsPreviewSchedulerDiagnosticHealthObservation(diagnosticHealthObservation)
-                    ? scenarioPlan.ToleratesStrictArtifactDiagnosticHealthWarning
-                        ? "present/display warning tolerated for strict artifact verification scenario"
-                        : "preview scheduler transition warning tolerated for preview-cycle scenario"
+                    ? scenarioPlan.IsPreviewCycleScenario
+                        ? "preview scheduler transition warning tolerated for preview-cycle scenario"
+                        : "preview scheduler warning tolerated for sparse deadline-drop run"
                     : IsPresentDisplayDiagnosticHealthObservation(diagnosticHealthObservation)
                         ? scenarioPlan.ToleratesControlOnlyDiagnosticHealthWarning
                             ? "present/display warning tolerated for flashback control scenario"

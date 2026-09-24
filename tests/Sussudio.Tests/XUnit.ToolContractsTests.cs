@@ -63,7 +63,7 @@ public sealed class SsctlFormatterContractsTests
     [Theory]
     [InlineData("Capture Commands:")]
     [InlineData("Process CPU:")]
-    [InlineData("Legacy Score:")]
+    [InlineData("Performance Score:")]
     [InlineData("Frame Time:")]
     [InlineData("Pipeline Latency: 1ms (app receive -> estimated visible)")]
     [InlineData("Average Rate:")]
@@ -659,7 +659,8 @@ public sealed class ToolFormatterContractsTests
         Assert.Contains("Reorder: avg=0.4ms", output);
         Assert.Contains("Pipeline: avg=5.1ms", output);
         Assert.Contains("== Diagnostics ==", output);
-        Assert.Contains("Legacy Score:", output);
+        Assert.Contains("Performance Score:", output);
+        Assert.Contains("Performance Summary:", output);
         Assert.Contains("Pacing Classifier: stage=MjpegDecode confidence=Medium evidence=decode p95 over budget", output);
         Assert.Contains("Frame Time:", output);
         Assert.Contains("Average Rate:", output);
@@ -667,15 +668,53 @@ public sealed class ToolFormatterContractsTests
         Assert.Contains("Decoder[1]: avg=2.2ms", output);
     }
 
-    // The formatters read the snapshot through Get(snapshot, "FieldName") with a silent
-    // string default, so a renamed AutomationSnapshot property degrades to a placeholder
-    // in ssctl and MCP output with no error anywhere. This turns that silent field loss
-    // into a build failure naming the exact field.
+    [Fact]
+    public void SnapshotFieldExtractor_CollectsSnapshotReceiversAndReadChannelFields()
+    {
+        var fields = ExtractSnapshotFields("""
+            Get(snapshot, "SessionState");
+            GetString(lastSnapshot.Value, "StatusText");
+            GetNullableLong(finalRecordingSample, "FlashbackVideoFramesSubmittedToEncoder");
+            ReadChannel(snapshot,
+                "CaptureCadenceObservedFps",
+                "CaptureCadenceSampleCount");
+            Get(segment, "SequenceNumber");
+            GetDouble(slowFrame, "WorstOverBudgetMs");
+            GetString(request.Verification.Value, "Message");
+            GetString(response, "ErrorCode");
+            ReadChannel(segment, "SequenceNumber");
+            """);
+
+        Assert.Equal(
+            new[]
+            {
+                "CaptureCadenceObservedFps",
+                "CaptureCadenceSampleCount",
+                "FlashbackVideoFramesSubmittedToEncoder",
+                "SessionState",
+                "StatusText"
+            },
+            fields.OrderBy(field => field, StringComparer.Ordinal));
+    }
+
+    // Snapshot consumers use accessors with silent defaults, so a renamed
+    // AutomationSnapshot property can degrade output without an error. Keep every shared
+    // formatter and diagnostic consumer inside this guard.
     [Fact]
     public void SnapshotFormatters_ReferenceOnlyRealAutomationSnapshotFields()
     {
         var referenced = ExtractSnapshotFields(RuntimeContractSource.ReadAutomationSnapshotFormatterSource());
         referenced.UnionWith(ExtractSnapshotFields(RuntimeContractSource.ReadSsctlSnapshotFormatterSource()));
+
+        var diagnosticSessionDirectory = System.IO.Path.Combine(RuntimeContractSource.GetRepoRoot(), "tools", "DiagnosticSession");
+        foreach (var sourcePath in System.IO.Directory
+                     .EnumerateFiles(diagnosticSessionDirectory, "*.cs")
+                     .OrderBy(path => path, StringComparer.Ordinal))
+        {
+            referenced.UnionWith(ExtractSnapshotFields(System.IO.File.ReadAllText(sourcePath)));
+        }
+
+        referenced.UnionWith(ExtractSnapshotFields(RuntimeContractSource.ReadRepoFile("tools/McpServer/Tools/FramePacingVerdictTools.cs")));
         Assert.NotEmpty(referenced);
 
         var snapshotType = global::Program.RequireSnapshotType();
@@ -730,59 +769,52 @@ public sealed class ToolFormatterContractsTests
     private static HashSet<string> ExtractSnapshotFields(string sourceText)
     {
         var fields = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var callPrefix in new[]
+        const string invocationPattern =
+            @"\b(?<method>Get(?:Int|Double|Long|NullableLong|Bool|String)?|FormatFrameBudgetMs|FormatIntervalMs|ReadChannel)\s*\(\s*(?<receiver>[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)\s*,(?<arguments>[^)]*)\)";
+        foreach (System.Text.RegularExpressions.Match call in
+                 System.Text.RegularExpressions.Regex.Matches(sourceText, invocationPattern))
         {
-            "Get(snapshot,",
-            "GetInt(snapshot,",
-            "GetDouble(snapshot,",
-            "GetLong(snapshot,",
-            "GetNullableLong(snapshot,",
-            "GetBool(snapshot,",
-            "GetString(snapshot,",
-            "FormatFrameBudgetMs(snapshot,",
-            "FormatIntervalMs(snapshot,"
-        })
-        {
-            ExtractSnapshotFieldsFromCalls(sourceText, callPrefix, fields);
+            if (!IsSnapshotReceiver(call.Groups["receiver"].Value))
+            {
+                continue;
+            }
+
+            var arguments = call.Groups["arguments"].Value;
+            if (call.Groups["method"].Value == "ReadChannel")
+            {
+                foreach (System.Text.RegularExpressions.Match property in
+                         System.Text.RegularExpressions.Regex.Matches(arguments, "\\\"(?<field>[^\\\"]+)\\\""))
+                {
+                    fields.Add(property.Groups["field"].Value);
+                }
+            }
+            else
+            {
+                var property = System.Text.RegularExpressions.Regex.Match(arguments, "^\\s*\\\"(?<field>[^\\\"]+)\\\"");
+                if (property.Success)
+                {
+                    fields.Add(property.Groups["field"].Value);
+                }
+            }
         }
 
         return fields;
     }
 
-    private static void ExtractSnapshotFieldsFromCalls(string sourceText, string callPrefix, HashSet<string> fields)
+    private static bool IsSnapshotReceiver(string expression)
     {
-        var index = 0;
-        while (index < sourceText.Length)
+        var receiver = expression.Trim();
+        if (receiver.EndsWith(".Value", StringComparison.Ordinal))
         {
-            var callIdx = sourceText.IndexOf(callPrefix, index, StringComparison.Ordinal);
-            if (callIdx < 0)
-            {
-                break;
-            }
-
-            var afterComma = callIdx + callPrefix.Length;
-            var quoteIdx = sourceText.IndexOf('"', afterComma);
-            if (quoteIdx < 0 || quoteIdx - afterComma > 10)
-            {
-                index = afterComma;
-                continue;
-            }
-
-            var endQuoteIdx = sourceText.IndexOf('"', quoteIdx + 1);
-            if (endQuoteIdx < 0)
-            {
-                index = quoteIdx + 1;
-                continue;
-            }
-
-            var fieldName = sourceText.Substring(quoteIdx + 1, endQuoteIdx - quoteIdx - 1);
-            if (fieldName.Length > 0)
-            {
-                fields.Add(fieldName);
-            }
-
-            index = endQuoteIdx + 1;
+            receiver = receiver[..^6];
         }
+
+        var segmentStart = receiver.LastIndexOf('.') + 1;
+        var finalIdentifier = receiver[segmentStart..];
+        return string.Equals(finalIdentifier, "snapshot", StringComparison.Ordinal) ||
+               finalIdentifier.EndsWith("Snapshot", StringComparison.Ordinal) ||
+               string.Equals(finalIdentifier, "finalRecordingSample", StringComparison.Ordinal) ||
+               string.Equals(finalIdentifier, "firstRecordingSample", StringComparison.Ordinal);
     }
 }
 
@@ -3493,6 +3525,13 @@ static partial class Program
         AssertContains(healthText, "diagnostic health {tolerance.WarningReason}:");
         AssertContains(healthText, "snapshot epoch consistency warning tolerated");
         AssertContains(healthText, "flashback force-rotate drain warning tolerated for flashback scenario");
+        AssertContains(healthText, "scenarioPlan.IsPreviewCycleScenario");
+        AssertContains(healthText, "preview scheduler warning tolerated for sparse deadline-drop run");
+        Assert.True(
+            System.Text.RegularExpressions.Regex.IsMatch(
+                healthText,
+                @"IsPreviewSchedulerDiagnosticHealthObservation\(diagnosticHealthObservation\)\s*\?\s*scenarioPlan\.IsPreviewCycleScenario\s*\?\s*""preview scheduler transition warning tolerated for preview-cycle scenario""\s*:\s*""preview scheduler warning tolerated for sparse deadline-drop run"""),
+            "Preview-scheduler warning labels must follow the preview-cycle scenario flag.");
         AssertContains(healthText, "present/display warning tolerated for strict artifact verification scenario");
         AssertContains(healthText, "present/display warning tolerated for flashback control scenario");
         AssertContains(
@@ -4410,7 +4449,7 @@ static partial class Program
                             pipeClient,
                             240,
                             30d,
-                            120d)
+                            0d)
                         .ConfigureAwait(false);
 
                     AssertContains(output, "Verdict: HalfRatePreviewAndPlaybackSuspected");
@@ -4462,7 +4501,8 @@ static partial class Program
                       {
                         "Success": true,
                         "Snapshot": {
-                          "ExpectedCaptureFrameRate": 120,
+                          "ExpectedCaptureFrameRate": 0,
+                          "DetectedSourceFrameRate": 120,
                           "CaptureCadenceObservedFps": 120,
                           "CaptureCadenceFivePercentLowFps": 120,
                           "CaptureCadenceOnePercentLowFps": 119,
@@ -4474,7 +4514,7 @@ static partial class Program
                           "PreviewCadenceSampleCount": 1800,
                           "PreviewCadenceSampleDurationMs": 30000,
                           "PreviewCadenceRecentIntervalsMs": [16.67, 16.67, 16.67, 16.67, 16.67, 16.67],
-                          "FlashbackPlaybackTargetFps": 120,
+                          "FlashbackPlaybackTargetFps": 0,
                           "FlashbackPlaybackObservedFps": 60,
                           "FlashbackPlaybackFivePercentLowFps": 60,
                           "FlashbackPlaybackOnePercentLowFps": 58,
@@ -10684,7 +10724,8 @@ static partial class Program
         AssertContains(formatted, "WASAPI Playback:");
         AssertContains(formatted, "Audio Buffer: status=Healthy underrun=false overrun=false underrunEvents=0 overrunEvents=0 reason=No audio buffer underrun or overrun counters have moved for the active audio path.");
         AssertContains(formatted, "== Diagnostics ==");
-        AssertContains(formatted, "Legacy Score:");
+        AssertContains(formatted, "Performance Score:");
+        AssertContains(formatted, "Performance Summary:");
         AssertContains(formatted, "Pipeline Latency: 1ms (app receive -> estimated visible)");
         AssertContains(formatted, "Process CPU: 1.5%");
         AssertContains(formatted, "== MJPEG Pipeline Timing ==");
