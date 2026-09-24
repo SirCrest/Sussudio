@@ -1690,9 +1690,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private void StopStatsDockPolling()
         => _statsOverlayCompositionController.StopPolling();
 
-    private void ShowStatsDockPanel()
-        => _statsOverlayCompositionController.ShowDockPanel();
-
     private void HideStatsDockPanel(bool immediate = false)
         => _statsOverlayCompositionController.HideDockPanel(immediate);
 
@@ -1825,7 +1822,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             ResetSettingsShelfAnimation = _settingsShelfController.ResetAnimationState,
             SyncFlashbackTimelineToggle = _flashbackTimelineController.SyncToggle,
             HideStatsDockPanelImmediate = () => HideStatsDockPanel(immediate: true),
-            ShowStatsDockPanel = ShowStatsDockPanel,
+            ShowStatsDockPanel = () => _statsOverlayCompositionController.ShowDockPanel(),
             UpdateVideoContentOverlays = UpdateVideoContentOverlays,
             FadeInVideoShadow = () => FadeInVideoFrameShadow(delayMs: 0, durationMs: 400),
             IsWindowClosing = () => _isWindowClosing,
