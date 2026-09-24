@@ -805,9 +805,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private void ResetAudioMeterVisuals()
         => _audioMeterController.ResetVisuals();
 
-    private void ResetMicrophoneMeterVisuals()
-        => _audioMeterController.ResetMicrophoneVisuals();
-
     private void SetAudioMeterTargetLevel(double targetLevel)
         => _audioMeterController.SetAudioMeterTargetLevel(targetLevel);
 
@@ -837,7 +834,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             MicMeterRow = MicMeterRow,
             DeviceAudioRowTranslate = DeviceAudioRowTranslate,
             MicMeterRowTranslate = MicMeterRowTranslate,
-            ResetMicrophoneMeterVisuals = ResetMicrophoneMeterVisuals,
+            ResetMicrophoneMeterVisuals = () => _audioMeterController.ResetMicrophoneVisuals(),
         });
     }
 
