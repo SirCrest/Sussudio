@@ -203,37 +203,23 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
 
     private static void ValidateAudioOptions(LibAvEncoderOptions options)
     {
-        if (options.AudioSampleRate <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(options), "AudioSampleRate must be positive.");
-        }
-
-        if (options.AudioChannels <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(options), "AudioChannels must be positive.");
-        }
-
-        if (options.AudioBitRate <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(options), "AudioBitRate must be positive.");
-        }
+        RequirePositive(options.AudioSampleRate, "AudioSampleRate must be positive.");
+        RequirePositive(options.AudioChannels, "AudioChannels must be positive.");
+        RequirePositive(options.AudioBitRate, "AudioBitRate must be positive.");
 
         if (options.MicrophoneEnabled)
         {
-            if (options.MicrophoneSampleRate <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(options), "MicrophoneSampleRate must be positive.");
-            }
+            RequirePositive(options.MicrophoneSampleRate, "MicrophoneSampleRate must be positive.");
+            RequirePositive(options.MicrophoneChannels, "MicrophoneChannels must be positive.");
+            RequirePositive(options.MicrophoneBitRate, "MicrophoneBitRate must be positive.");
+        }
+    }
 
-            if (options.MicrophoneChannels <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(options), "MicrophoneChannels must be positive.");
-            }
-
-            if (options.MicrophoneBitRate <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(options), "MicrophoneBitRate must be positive.");
-            }
+    private static void RequirePositive(int value, string message)
+    {
+        if (value <= 0)
+        {
+            throw new ArgumentOutOfRangeException("options", message);
         }
     }
 

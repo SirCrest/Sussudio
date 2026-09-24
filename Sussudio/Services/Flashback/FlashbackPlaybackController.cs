@@ -118,15 +118,12 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
             {
                 if (_state == FlashbackPlaybackState.Live) return TimeSpan.Zero;
 
-                // No frame has been decoded yet since leaving Live (e.g. between
-                // issuing Pause/Seek and the playback thread displaying its first
-                // frame) -- _lastVideoPtsTicks briefly reads 0 and would otherwise
-                // report a "-0:00" gap instead of the real distance from live.
-                // Estimate the same way HandleEndOfSegment's fallback does:
-                // PlaybackPosition is relative to the valid-start captured when
-                // leaving Live, which is still _bufferManager.ValidStartPts here
-                // because no time has passed for eviction to move it before the
-                // first frame lands.
+                // Between issuing Pause/Seek and the playback thread showing its first
+                // frame, _lastVideoPtsTicks briefly reads 0 and would report a bogus
+                // "-0:00" gap. Estimate instead, the same way HandleEndOfSegment's
+                // fallback does: PlaybackPosition is relative to ValidStartPts as it
+                // was when we left Live, which still equals the current ValidStartPts
+                // since no time has passed for eviction to move it.
                 var estimatedAbsPts = SaturatingAdd(PlaybackPosition, _bufferManager.ValidStartPts);
                 var estimatedGap = latest - estimatedAbsPts;
                 return estimatedGap > TimeSpan.Zero ? estimatedGap : TimeSpan.Zero;
@@ -769,12 +766,7 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
                 return new PlaybackCadenceMetrics(0, 0, 0, 0, Interlocked.Read(ref _playbackSlowFrameCount), 0, 0, 0, 0, Array.Empty<double>());
             }
 
-            samples = new double[_playbackFrameIntervalCount];
-            var oldest = (_playbackFrameIntervalHead - _playbackFrameIntervalCount + _playbackFrameIntervalsMs.Length) % _playbackFrameIntervalsMs.Length;
-            for (var i = 0; i < samples.Length; i++)
-            {
-                samples[i] = _playbackFrameIntervalsMs[(oldest + i) % _playbackFrameIntervalsMs.Length];
-            }
+            samples = RingBufferHelpers.Copy(_playbackFrameIntervalsMs, _playbackFrameIntervalCount, _playbackFrameIntervalHead);
         }
 
         var sum = 0.0;
@@ -806,12 +798,7 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
                 return new PlaybackDecodeMetrics(0, 0, 0, 0, 0);
             }
 
-            samples = new double[_playbackDecodeDurationCount];
-            var oldest = (_playbackDecodeDurationHead - _playbackDecodeDurationCount + _playbackDecodeDurationsMs.Length) % _playbackDecodeDurationsMs.Length;
-            for (var i = 0; i < samples.Length; i++)
-            {
-                samples[i] = _playbackDecodeDurationsMs[(oldest + i) % _playbackDecodeDurationsMs.Length];
-            }
+            samples = RingBufferHelpers.Copy(_playbackDecodeDurationsMs, _playbackDecodeDurationCount, _playbackDecodeDurationHead);
         }
 
         var total = 0.0;
@@ -2354,23 +2341,9 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
             if (adjustedDelayMs > 0)
             {
                 var targetTicks = (long)(adjustedDelayMs / 1000.0 * Stopwatch.Frequency);
-                var remaining = targetTicks - pacingStopwatch.ElapsedTicks;
-                if (remaining > 0)
+                if (targetTicks - pacingStopwatch.ElapsedTicks > 0)
                 {
-                    var spinThresholdTicks = 2L * Stopwatch.Frequency / 1000;
-                    if (remaining > spinThresholdTicks)
-                    {
-                        var sleepMs = (int)((remaining - spinThresholdTicks) * 1000 / Stopwatch.Frequency);
-                        if (sleepMs > 0)
-                        {
-                            Thread.Sleep(sleepMs);
-                        }
-                    }
-
-                    while (pacingStopwatch.ElapsedTicks < targetTicks)
-                    {
-                        Thread.SpinWait(1);
-                    }
+                    SpinWaitForTicks(pacingStopwatch, targetTicks);
                 }
             }
 
@@ -2386,27 +2359,35 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
     private void WallClockPace(Stopwatch pacingStopwatch, TimeSpan frameDuration)
     {
         var targetTicks = (long)(frameDuration.TotalSeconds * Stopwatch.Frequency);
-        var remaining = targetTicks - pacingStopwatch.ElapsedTicks;
-        if (remaining > 0)
+        if (targetTicks - pacingStopwatch.ElapsedTicks > 0)
         {
-            var spinThresholdTicks = 2L * Stopwatch.Frequency / 1000;
-            if (remaining > spinThresholdTicks)
-            {
-                var sleepMs = (int)((remaining - spinThresholdTicks) * 1000 / Stopwatch.Frequency);
-                if (sleepMs > 0)
-                {
-                    Thread.Sleep(sleepMs);
-                }
-            }
-
-            while (pacingStopwatch.ElapsedTicks < targetTicks)
-            {
-                Thread.SpinWait(1);
-            }
+            SpinWaitForTicks(pacingStopwatch, targetTicks);
         }
         else
         {
             Interlocked.Increment(ref _playbackLateFrames);
+        }
+    }
+
+    // Sleeps for the coarse remainder of the wait, then spins for the last ~2ms.
+    // Thread.Sleep's scheduler granularity (~1-15ms) is too imprecise for frame
+    // pacing on its own, so the tail is busy-waited for accuracy.
+    private static void SpinWaitForTicks(Stopwatch stopwatch, long targetTicks)
+    {
+        var remaining = targetTicks - stopwatch.ElapsedTicks;
+        var spinThresholdTicks = 2L * Stopwatch.Frequency / 1000;
+        if (remaining > spinThresholdTicks)
+        {
+            var sleepMs = (int)((remaining - spinThresholdTicks) * 1000 / Stopwatch.Frequency);
+            if (sleepMs > 0)
+            {
+                Thread.Sleep(sleepMs);
+            }
+        }
+
+        while (stopwatch.ElapsedTicks < targetTicks)
+        {
+            Thread.SpinWait(1);
         }
     }
 

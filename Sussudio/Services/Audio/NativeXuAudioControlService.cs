@@ -351,22 +351,25 @@ internal sealed partial class NativeXuAudioControlService
 
     private static AnalogGainDecision DecodeGain(byte[] payload)
     {
-        var bestProfile = GainProfiles
-            .Select(profile => new
+        // GainProfiles is sorted by ascending percent, so the strict < keeps the
+        // lowest-percent profile when distances tie.
+        var bestProfile = GainProfiles[0];
+        var bestDistance = int.MaxValue;
+        var worstDistance = 0;
+        foreach (var profile in GainProfiles)
+        {
+            var distance = ComputeDistance(payload, profile.ReferenceBytes, GainByteIndexes);
+            if (distance < bestDistance)
             {
-                Profile = profile,
-                Distance = ComputeDistance(payload, profile.ReferenceBytes, GainByteIndexes)
-            })
-            .OrderBy(result => result.Distance)
-            .ThenBy(result => result.Profile.Percent)
-            .First();
+                bestDistance = distance;
+                bestProfile = profile;
+            }
 
-        var worstDistance = GainProfiles
-            .Select(profile => ComputeDistance(payload, profile.ReferenceBytes, GainByteIndexes))
-            .Max();
-        var confidence = worstDistance == 0 ? 1d : (worstDistance - bestProfile.Distance) / (double)worstDistance;
+            worstDistance = Math.Max(worstDistance, distance);
+        }
 
-        return new AnalogGainDecision(bestProfile.Profile.Label, confidence, bestProfile.Profile.Percent);
+        var confidence = worstDistance == 0 ? 1d : (worstDistance - bestDistance) / (double)worstDistance;
+        return new AnalogGainDecision(bestProfile.Label, confidence, bestProfile.Percent);
     }
 
     private static int ComputeDistance(byte[] payload, byte[] reference, IReadOnlyList<int> indexes)

@@ -1179,20 +1179,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameTryEn
         var packet = VideoFramePacket.Frame(buffer, expectedSize, enqueueTick, isP010);
         Interlocked.Exchange(ref _lastVideoEnqueueTick, enqueueTick);
 
-        var enqueueResult = TryEnqueueVideoPacket(queue!, packet);
-        if (enqueueResult != VideoEnqueueResult.Overloaded)
-        {
-            return enqueueResult == VideoEnqueueResult.Accepted;
-        }
-
-        var dropped = Interlocked.Increment(ref _videoDropsQueueSaturated);
-        if (dropped == 1 || dropped % 30 == 0)
-        {
-            Logger.Log(
-                $"FLASHBACK_SINK_VIDEO_OVERLOAD saturated={dropped} evicted={Interlocked.Read(ref _videoDropsBacklogEviction)} total_dropped={DroppedVideoFrames}");
-        }
-
-        return false;
+        return ResolveVideoEnqueueOutcome(TryEnqueueVideoPacket(queue!, packet));
     }
 
     bool IRawVideoFrameLeaseTryEncoder.TryEnqueueRawVideoFrame(PooledVideoFrameLease frame)
@@ -1234,7 +1221,11 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameTryEn
         var packet = VideoFramePacket.Frame(frame, enqueueTick);
         Interlocked.Exchange(ref _lastVideoEnqueueTick, enqueueTick);
 
-        var enqueueResult = TryEnqueueVideoPacket(queue!, packet);
+        return ResolveVideoEnqueueOutcome(TryEnqueueVideoPacket(queue!, packet));
+    }
+
+    private bool ResolveVideoEnqueueOutcome(VideoEnqueueResult enqueueResult)
+    {
         if (enqueueResult != VideoEnqueueResult.Overloaded)
         {
             return enqueueResult == VideoEnqueueResult.Accepted;
@@ -1461,7 +1452,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameTryEn
                 DecrementQueueDepth(ref queueDepth, "audio_evict");
                 Interlocked.Increment(ref backlogEvictions);
                 Interlocked.Increment(ref retiredPackets);
-                // Track dropped audio samples for A/V drift diagnostics (analogous to SkipVideoFrame for video)
+                // Track dropped audio samples for A/V drift diagnostics, same purpose as
+                // LibAvEncoder.SkipVideoFrame's frame-count tracking on the video side.
                 var evictedSamples = GetSampleCount(evictedPacket.Length);
                 var totalDropped = Interlocked.Add(ref _droppedAudioSamplesCount, evictedSamples);
                 if (totalDropped == evictedSamples || totalDropped % 48_000 < evictedSamples)
@@ -1918,7 +1910,6 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameTryEn
                     madeProgress = DrainMicrophonePackets(microphoneQueue.Reader) || madeProgress;
                 }
 
-                // Video (existing drain methods, unchanged behavior)
                 if (gpuQueue != null)
                 {
                     madeProgress = DrainGpuPackets(gpuQueue.Reader, GpuDrainBatchLimit) || madeProgress;

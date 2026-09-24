@@ -363,14 +363,12 @@ public partial class CaptureService
                 ? "P010"
                 : "NV12";
         var mfSourceReaderNegotiatedFormat = unifiedVideoCapture?.NegotiatedFormat ?? lastMfSourceReaderNegotiatedFormat;
-        var negotiatedSubtypeFromSourceReader =
-            !string.IsNullOrWhiteSpace(mfSourceReaderNegotiatedFormat) &&
-            mfSourceReaderNegotiatedFormat.Contains("P010", StringComparison.OrdinalIgnoreCase)
-                ? "P010"
-                : !string.IsNullOrWhiteSpace(mfSourceReaderNegotiatedFormat) &&
-                  mfSourceReaderNegotiatedFormat.Contains("NV12", StringComparison.OrdinalIgnoreCase)
-                    ? "NV12"
-                    : "unknown";
+        var negotiatedSubtypeFromSourceReader = mfSourceReaderNegotiatedFormat switch
+        {
+            { } format when format.Contains("P010", StringComparison.OrdinalIgnoreCase) => "P010",
+            { } format when format.Contains("NV12", StringComparison.OrdinalIgnoreCase) => "NV12",
+            _ => "unknown"
+        };
         var videoNegotiatedSubtype = unifiedVideoCapture != null
             ? (unifiedVideoCapture.IsHighFrameRateMjpegMode ? "MJPG"
                 : unifiedVideoCapture.IsP010 ? "P010" : "NV12")

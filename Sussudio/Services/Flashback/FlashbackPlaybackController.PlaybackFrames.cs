@@ -217,6 +217,8 @@ internal sealed partial class FlashbackPlaybackController
         return true;
     }
 
+    private static TimeSpan ClampNonNegative(TimeSpan value) => value < TimeSpan.Zero ? TimeSpan.Zero : value;
+
     private static bool TryCalculatePreviewFrameBytes(int width, int height, bool isHdr, out int bytes)
     {
         bytes = 0;
@@ -463,8 +465,7 @@ internal sealed partial class FlashbackPlaybackController
             if (filePts < currentValidStart)
             {
                 filePts = currentValidStart;
-                bufferPosition = SaturatingSubtract(filePts, validStartPts);
-                if (bufferPosition < TimeSpan.Zero) bufferPosition = TimeSpan.Zero;
+                bufferPosition = ClampNonNegative(SaturatingSubtract(filePts, validStartPts));
             }
 
             if (!decoder.SeekToKeyframe(filePts, cancellationToken))
@@ -552,8 +553,7 @@ internal sealed partial class FlashbackPlaybackController
                 }
                 Interlocked.Exchange(ref _lastVideoPtsTicks, frame.Pts.Ticks);
 
-                var actualPosition = SaturatingSubtract(frame.Pts, validStartPts);
-                if (actualPosition < TimeSpan.Zero) actualPosition = TimeSpan.Zero;
+                var actualPosition = ClampNonNegative(SaturatingSubtract(frame.Pts, validStartPts));
                 PlaybackPosition = actualPosition;
             }
             else
@@ -574,14 +574,12 @@ internal sealed partial class FlashbackPlaybackController
     }
 
     /// <summary>
-    /// After a pause-from-live keyframe seek, forward-decodes toward the live-
-    /// derived pause target (<paramref name="pauseTargetFilePts"/>, absolute file
-    /// PTS space) so the displayed frame is close to what the user saw when they
-    /// pressed pause, rather than up to one GOP stale. Every intermediate frame is
-    /// released; only the final frame is submitted, the same way
-    /// <see cref="SeekAndDisplayKeyframe"/> submits its frame. Bails out and keeps
-    /// whatever keyframe is already displayed -- no snap-to-live -- on decode
-    /// failure or if a newer command is already queued.
+    /// After a pause-from-live keyframe seek, forward-decodes toward the live-derived
+    /// pause target (<paramref name="pauseTargetFilePts"/>, absolute file PTS) so the
+    /// displayed frame matches what the user saw at the moment they hit pause, instead
+    /// of being up to one GOP stale. Intermediate frames are released; only the final
+    /// frame is submitted. On decode failure or if a newer command is already queued,
+    /// bails out and leaves whatever keyframe is already on screen.
     /// </summary>
     private void DecodeForwardToPauseTarget(
         FlashbackDecoder decoder,
@@ -628,8 +626,7 @@ internal sealed partial class FlashbackPlaybackController
             }
 
             Interlocked.Exchange(ref _lastVideoPtsTicks, frame.Pts.Ticks);
-            var actualPosition = SaturatingSubtract(frame.Pts, frozenValidStart);
-            if (actualPosition < TimeSpan.Zero) actualPosition = TimeSpan.Zero;
+            var actualPosition = ClampNonNegative(SaturatingSubtract(frame.Pts, frozenValidStart));
             PlaybackPosition = actualPosition;
             Logger.Log(
                 $"FLASHBACK_PLAYBACK_PAUSE_FORWARD_DECODE_OK frames_decoded={decodedCount + 1} pos_ms={(long)actualPosition.TotalMilliseconds} budget={maxForwardDecodeFrames}");
@@ -742,16 +739,15 @@ internal sealed partial class FlashbackPlaybackController
     {
         continuePlayback = true;
 
-        // Frame skip: when video falls significantly behind audio, decode-and-discard
-        // frames to catch up rather than falling further behind. This handles codecs
-        // whose decode time exceeds the frame interval (e.g. AV1 at 4K@120fps where
-        // each decode takes ~25ms but frame interval is 8.33ms).
+        // When video falls significantly behind audio, decode-and-discard frames to
+        // catch up instead of falling further behind. Needed for codecs whose decode
+        // time exceeds the frame interval (e.g. AV1 at 4K@120fps: ~25ms decode vs.
+        // 8.33ms frame interval).
         //
-        // The drift recompute MUST re-sync the audio clock each iteration: a single
-        // skip can take ~25ms, during which the WASAPI render thread has likely
-        // advanced _audioClockPtsTicks. Extrapolating from the original capture
-        // diverges from the actual audio clock the longer the loop runs and can
-        // either exit early (false-recovered) or burn the full skip cap unnecessarily.
+        // Re-read the audio clock every iteration rather than reusing one snapshot:
+        // a single skip can take ~25ms, and WASAPI keeps advancing _audioClockPtsTicks
+        // during that time. Extrapolating from a stale reading would either end the
+        // loop early or burn the whole skip budget for no reason.
         const double FrameSkipThresholdMs = 250.0;
         const int MaxSkipFrames = 30; // cap to prevent infinite skip loops
         if (!TryComputeAudioMasterDriftMs(videoFrame.Pts.Ticks, out var driftMs) ||
@@ -827,12 +823,10 @@ internal sealed partial class FlashbackPlaybackController
     }
 
     /// <summary>
-    /// Decodes and submits the next frame at real-time pace.
-    /// Decode-first structure: do the work, then wait for the remainder of the frame interval.
-    /// Uses sleep + spin-wait hybrid for sub-millisecond accuracy at 120fps.
-    /// When the decoder can't keep up (drift > 200ms), skips frames without display
-    /// to maintain audio synchronization.
-    /// Returns true if still playing, false if transitioned to another state.
+    /// Decodes and submits the next frame at real-time pace: decode first, then sleep
+    /// out the rest of the frame interval (sleep + spin-wait hybrid for sub-millisecond
+    /// accuracy at 120fps). Drops frames without display when decode falls more than
+    /// 250ms behind audio. Returns true if still playing, false on a state transition.
     /// </summary>
     private bool PaceAndDecodeFrame(
         FlashbackDecoder decoder,
@@ -884,8 +878,7 @@ internal sealed partial class FlashbackPlaybackController
             }
             Interlocked.Exchange(ref _lastVideoPtsTicks, videoFrame.Pts.Ticks);
 
-            var newPosition = SaturatingSubtract(videoFrame.Pts, frozenValidStart);
-            if (newPosition < TimeSpan.Zero) newPosition = TimeSpan.Zero;
+            var newPosition = ClampNonNegative(SaturatingSubtract(videoFrame.Pts, frozenValidStart));
             PlaybackPosition = newPosition;
 
             if (PauseIfOutPointReached(newPosition, pacingStopwatch))

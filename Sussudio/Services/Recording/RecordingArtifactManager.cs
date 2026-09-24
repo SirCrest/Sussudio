@@ -580,16 +580,15 @@ internal static class RecordingFinalizationRecoveryArtifacts
             return;
         }
 
-        foreach (var existing in preserved)
+        if (preserved.Any(existing => string.Equals(existing, path, StringComparison.OrdinalIgnoreCase)))
         {
-            if (string.Equals(existing, path, StringComparison.OrdinalIgnoreCase))
-            {
-                return;
-            }
+            return;
         }
 
         preserved.Add(path);
     }
+
+    private static readonly string[] RecoverableExtensions = { ".mp4", ".mkv", ".mov", ".ts", ".m4a", ".tmp" };
 
     private static void AddRecoverableFilesFromDirectory(List<string> preserved, string? directory)
     {
@@ -601,12 +600,7 @@ internal static class RecordingFinalizationRecoveryArtifacts
         foreach (var filePath in Directory.EnumerateFiles(directory, "*", SearchOption.TopDirectoryOnly))
         {
             var extension = Path.GetExtension(filePath);
-            if (extension.Equals(".mp4", StringComparison.OrdinalIgnoreCase) ||
-                extension.Equals(".mkv", StringComparison.OrdinalIgnoreCase) ||
-                extension.Equals(".mov", StringComparison.OrdinalIgnoreCase) ||
-                extension.Equals(".ts", StringComparison.OrdinalIgnoreCase) ||
-                extension.Equals(".m4a", StringComparison.OrdinalIgnoreCase) ||
-                extension.Equals(".tmp", StringComparison.OrdinalIgnoreCase))
+            if (RecoverableExtensions.Any(candidate => extension.Equals(candidate, StringComparison.OrdinalIgnoreCase)))
             {
                 AddExistingFile(preserved, filePath);
             }

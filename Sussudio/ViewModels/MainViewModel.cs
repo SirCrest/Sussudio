@@ -2346,8 +2346,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         }
     }
 
-    // REVIEWED 2026-04-07: IDisposable fallback only. MainWindow.Closed calls
-    // await ViewModel.DisposeAsync(); this sync path is for GC finalizer safety.
+    // IDisposable fallback only. MainWindow.Closed calls await ViewModel.DisposeAsync();
+    // this sync path exists for GC finalizer safety.
     public void Dispose()
         => _disposalController.Dispose();
 

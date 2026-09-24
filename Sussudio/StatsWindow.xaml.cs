@@ -148,10 +148,7 @@ public sealed partial class StatsWindow : Window
     {
         try
         {
-            var hwnd = WindowNative.GetWindowHandle(this);
-            var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
-            var appWindow = AppWindow.GetFromWindowId(windowId);
-            if (appWindow.Presenter is OverlappedPresenter presenter)
+            if (_appWindow.Presenter is OverlappedPresenter presenter)
             {
                 presenter.IsAlwaysOnTop = AlwaysOnTopToggle.IsOn;
             }

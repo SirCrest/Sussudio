@@ -1275,9 +1275,8 @@ private RecordingHealthSnapshotFields CaptureRecordingHealthSnapshotFields(
                 FlashbackExportLastForceRotateFallbackSegments = flashbackExport.LastForceRotateFallbackSegments,
                 FlashbackExportLastForceRotateFallbackInPointMs = flashbackExport.LastForceRotateFallbackInPointMs,
                 FlashbackExportLastForceRotateFallbackOutPointMs = flashbackExport.LastForceRotateFallbackOutPointMs,
-                // Surface the silent codec/preset substitution alongside the existing
-                // export status so automation, the verifier, and (eventually) the UI
-                // can show what was actually encoded vs what the user requested.
+                // Reports what was actually encoded vs. what was requested, since a codec/preset
+                // substitution can happen silently.
                 FlashbackExportVerificationFormat = fields.FlashbackExportVerificationFormat,
                 FlashbackCodecDowngradeReason = fields.FlashbackCodecDowngradeReason,
                 LastExportId = flashbackExport.LastResultId,

@@ -16,10 +16,9 @@ internal sealed partial class FlashbackPlaybackController
 {
     // --- Playback thread ---
 
-    // Bounded forward-decode budget for pause-from-live frame accuracy (below):
-    // one GOP at the current encode frame rate, clamped so a missing/zero
-    // encode frame rate still gets a usable budget and a corrupt value can't
-    // spin the decode loop indefinitely.
+    // Forward-decode budget for pause-from-live (used below): one GOP at the
+    // current encode frame rate, clamped so a zero/bogus frame rate can't
+    // starve the budget or spin the decode loop indefinitely.
     private const int PauseFromLiveMinForwardDecodeFrames = 30;
     private const int PauseFromLiveMaxForwardDecodeFramesCap = 240;
 
@@ -43,8 +42,7 @@ internal sealed partial class FlashbackPlaybackController
     [DllImport("winmm.dll", ExactSpelling = true)]
     private static extern uint timeEndPeriod(uint uMilliseconds);
 
-    // Created once by the playback thread; never shared with another generation.
-    // Existing command/exit paths retain decoder and queued-frame cleanup ordering.
+    // Created once per playback thread run; never shared across generations.
     private sealed class PlaybackWorkerState
     {
         public FlashbackDecoder? Decoder;
@@ -419,7 +417,6 @@ internal sealed partial class FlashbackPlaybackController
         worker.PendingExactResumeTarget = null;
         RestoreLiveForPlaybackThreadExit(worker, "go_live");
         Logger.Log("FLASHBACK_PLAYBACK_GO_LIVE");
-        return;
     }
 
     private void HandleStopCommand(PlaybackWorkerState worker)
@@ -503,8 +500,8 @@ internal sealed partial class FlashbackPlaybackController
         worker.FrameDuration = ResolveFrameDuration(worker.Decoder);
         RestoreAudioCallback(worker.Decoder, seekTarget.Ticks);
         SafeFlushPlayback("play");
-        // Retained pictures precede the decoder's current position. Consume them
-        // before priming can decode ahead, invalidate borrowed data, or rewind.
+        // Retained frames precede the decoder's position. Consume them before
+        // priming decodes ahead, invalidates their borrowed data, or rewinds.
         if (!resumeWithoutSeek || worker.PrebufferedFrames.Count == 0)
         {
             PrimePlaybackAudioBuffer(worker.Decoder, worker.PrebufferedFrames, commandChannel, ref worker.FileOpen, seekTarget, "play", cts.Token);
@@ -514,7 +511,6 @@ internal sealed partial class FlashbackPlaybackController
 
         SetState(FlashbackPlaybackState.Playing, "user");
         Logger.Log($"FLASHBACK_PLAYBACK_PLAY pos_ms={(long)PlaybackPosition.TotalMilliseconds}");
-        return;
     }
 
     private void HandlePauseCommand(
@@ -567,11 +563,9 @@ internal sealed partial class FlashbackPlaybackController
                 return;
             }
 
-            // The keyframe just displayed can be up to one GOP behind pauseTarget
-            // (the live-derived pause point). Forward-decode toward it so the user
-            // sees roughly the frame they paused on instead of a stale keyframe.
-            // On decode failure this leaves the keyframe display in place and does
-            // not snap to live -- scrub-settle-grade refinement is out of scope here.
+            // The displayed keyframe can be up to one GOP behind pauseTarget, so
+            // decode forward to land closer to the actual pause point. A decode
+            // failure here just leaves the keyframe on screen -- no snap-to-live.
             DecodeForwardToPauseTarget(worker.Decoder, commandChannel, pauseTarget, worker.FrozenValidStart, PauseFromLiveMaxForwardDecodeFrames, cts.Token);
 
             worker.PendingExactResumeTarget = SaturatingAdd(PlaybackPosition, worker.FrozenValidStart);
@@ -579,7 +573,6 @@ internal sealed partial class FlashbackPlaybackController
             SetState(FlashbackPlaybackState.Paused, "user");
             Logger.Log($"FLASHBACK_PLAYBACK_PAUSE_FROM_LIVE pos_ms={(long)PlaybackPosition.TotalMilliseconds} target_ms={(long)pauseTarget.TotalMilliseconds} frozen_frame=true");
         }
-        return;
     }
 
     private void HandleSeekCommand(
@@ -678,7 +671,6 @@ internal sealed partial class FlashbackPlaybackController
         }
         SetState(worker.IsPlaying ? FlashbackPlaybackState.Playing : FlashbackPlaybackState.Paused, "user");
         Logger.Log($"FLASHBACK_PLAYBACK_SEEK pos_ms={(long)PlaybackPosition.TotalMilliseconds} resumePlay={worker.IsPlaying}");
-        return;
     }
 
     private void HandleBeginScrubCommand(
@@ -731,7 +723,6 @@ internal sealed partial class FlashbackPlaybackController
             worker.PendingExactResumeTarget = null;
             RestoreLiveAfterSeekDisplayFailure(worker.Decoder, ref worker.FileOpen, "begin_scrub_display_failed");
         }
-        return;
     }
 
     private void HandleUpdateScrubCommand(
@@ -787,7 +778,6 @@ internal sealed partial class FlashbackPlaybackController
             worker.PendingExactResumeTarget = null;
             RestoreLiveAfterSeekDisplayFailure(worker.Decoder, ref worker.FileOpen, "scrub_update_display_failed");
         }
-        return;
     }
 
     private void HandleEndScrubCommand(
@@ -850,7 +840,6 @@ internal sealed partial class FlashbackPlaybackController
         SetState(worker.IsPlaying ? FlashbackPlaybackState.Playing : FlashbackPlaybackState.Paused, "user");
         var endScrubBufDur = _bufferManager.BufferedDuration;
         Logger.Log($"FLASHBACK_ENDSCRUB pos_ms={(long)PlaybackPosition.TotalMilliseconds} bufferDur_ms={(long)endScrubBufDur.TotalMilliseconds} gapFromLive_ms={SaturatingSubtract(endScrubBufDur, PlaybackPosition).TotalMilliseconds:F0} resumePlay={worker.IsPlaying}");
-        return;
     }
 
     private void HandleNudgeCommand(
@@ -903,6 +892,5 @@ internal sealed partial class FlashbackPlaybackController
             worker.IsScrubbing = false;
             RestoreLiveAfterSeekDisplayFailure(worker.Decoder, ref worker.FileOpen, "nudge_display_failed");
         }
-        return;
     }
 }

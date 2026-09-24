@@ -924,7 +924,6 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
         return TimeSpan.FromSeconds(remainingTicks / (double)Stopwatch.Frequency);
     }
 
-
     private readonly record struct DecodedFrame(
         long SeqNo,
         PooledVideoFrame Frame,
