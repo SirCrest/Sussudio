@@ -355,9 +355,9 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
                     {
                         // Fork to preview before the strict reorder ring so a slow
                         // neighboring decode cannot delay this frame's submission.
-                        // The jitter buffer re-orders by sequence number and
-                        // deadline-skips gaps on its own; only recording/Flashback
-                        // need the strict in-order emit below.
+                        // Gap recovery runs through DropDeadlineExpiredFrames before
+                        // selection on each emit tick; only recording/Flashback need
+                        // the strict in-order emit below.
                         NotifyPreviewFrameDecoded(pooledFrame);
                     }
 

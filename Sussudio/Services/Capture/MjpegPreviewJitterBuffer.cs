@@ -549,7 +549,7 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
                 return null;
             }
 
-            var index = SelectNextPreviewFrameIndexWithDeadlineRecovery(Stopwatch.GetTimestamp(), allowDeadlineSkip: true);
+            var index = SelectNextPreviewFrameIndexWithDeadlineRecovery(Stopwatch.GetTimestamp());
             if (index < 0)
             {
                 missReason = DequeueMissReason.WaitingForSequence;
@@ -620,7 +620,7 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
         return frame;
     }
 
-    private int SelectNextPreviewFrameIndexWithDeadlineRecovery(long nowTick, bool allowDeadlineSkip)
+    private int SelectNextPreviewFrameIndexWithDeadlineRecovery(long nowTick)
     {
         if (_frames.Count == 0)
         {
@@ -637,11 +637,6 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
         if (exact >= 0)
         {
             return exact;
-        }
-
-        if (!allowDeadlineSkip)
-        {
-            return -1;
         }
 
         var oldestIndex = GetOldestFrameIndex();

@@ -375,8 +375,8 @@ namespace Sussudio.Tests
             => global::Program.MjpegPreviewJitter_DropsExpiredFramesBelowTargetDepth();
 
         [Fact]
-        public Task MjpegPreviewJitterSkipsMissingPreviewSequenceAfterDeadline()
-            => global::Program.MjpegPreviewJitter_SkipsMissingPreviewSequenceAfterDeadline();
+        public Task MjpegPreviewJitterDropsExpiredMissingSequenceBeforeSelection()
+            => global::Program.MjpegPreviewJitter_DropsExpiredMissingSequenceBeforeSelection();
 
         [Fact]
         public Task MjpegPreviewJitterLateSequenceDoesNotCountAsQueued()
@@ -1884,7 +1884,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task MjpegPreviewJitter_SkipsMissingPreviewSequenceAfterDeadline()
+    internal static Task MjpegPreviewJitter_DropsExpiredMissingSequenceBeforeSelection()
     {
         var jitterType = RequireType("Sussudio.Services.Capture.MjpegPreviewJitterBuffer");
         var frameType = RequireType("Sussudio.Services.Contracts.PooledVideoFrame");
@@ -1898,25 +1898,36 @@ static partial class Program
             ?? throw new InvalidOperationException("Jitter frame list missing."));
         var bufferedFrameType = RequireNestedType(jitterType, "BufferedFrame");
         var nv12 = Enum.Parse(formatType, "Nv12");
-        var pool = new TrackingArrayPool();
-        var owner = CreatePooledVideoFrame(frameType, nv12, 12L, 100L, 200L, 16, 16, 384, pool);
-        var lease = addLeaseMethod.Invoke(owner, Array.Empty<object>())
+        var stalePool = new TrackingArrayPool();
+        var staleOwner = CreatePooledVideoFrame(frameType, nv12, 12L, 100L, 200L, 16, 16, 384, stalePool);
+        var staleLease = addLeaseMethod.Invoke(staleOwner, Array.Empty<object>())
             ?? throw new InvalidOperationException("AddLease returned null.");
-        ((IDisposable)owner).Dispose();
+        ((IDisposable)staleOwner).Dispose();
 
-        frames.Add(CreateLeaseBufferedFrame(bufferedFrameType, lease, Stopwatch.GetTimestamp() - Stopwatch.Frequency));
+        var now = Stopwatch.GetTimestamp();
+        var nextPool = new TrackingArrayPool();
+        var nextOwner = CreatePooledVideoFrame(frameType, nv12, 13L, 300L, 400L, 16, 16, 384, nextPool);
+        var nextLease = addLeaseMethod.Invoke(nextOwner, Array.Empty<object>())
+            ?? throw new InvalidOperationException("AddLease returned null.");
+        ((IDisposable)nextOwner).Dispose();
 
+        frames.Add(CreateLeaseBufferedFrame(bufferedFrameType, staleLease, now - Stopwatch.Frequency));
+        frames.Add(CreateLeaseBufferedFrame(bufferedFrameType, nextLease, now));
+
+        InvokeNonPublicInstanceMethod(jitter, "DropDeadlineExpiredFrames", new object?[] { now });
         var dequeued = InvokeNonPublicInstanceMethod(jitter, "TryDequeue", null)
-            ?? throw new InvalidOperationException("Expected jitter buffer to dequeue the first available frame after deadline.");
+            ?? throw new InvalidOperationException("Expected jitter buffer to dequeue the fresh frame after the deadline drop pass.");
 
         AssertEqual(0, frames.Count, "remaining preview frame count");
-        AssertEqual(13L, GetLongPrivateField(jitter, "_nextPreviewSequence"), "next preview sequence");
-        AssertEqual(2L, GetLongPrivateField(jitter, "_deadlineDropCount"), "virtual deadline skips");
-        AssertEqual(2L, GetLongPrivateField(jitter, "_totalDropped"), "total preview skips");
-        AssertEqual(1L, GetLongPrivateField(jitter, "_targetIncreaseCount"), "target increase count after missing sequence");
+        AssertEqual(14L, GetLongPrivateField(jitter, "_nextPreviewSequence"), "next preview sequence");
+        AssertEqual(1L, GetLongPrivateField(jitter, "_deadlineDropCount"), "deadline drops before selection");
+        AssertEqual(1L, GetLongPrivateField(jitter, "_totalDropped"), "total preview drops");
+        AssertEqual(1L, GetLongPrivateField(jitter, "_targetIncreaseCount"), "target increase count after deadline drop");
+        AssertEqual(1, stalePool.ReturnCount, "expired missing-sequence lease return count");
+        AssertEqual(0, nextPool.ReturnCount, "fresh lease retained for selection");
 
         ((IDisposable)dequeued).Dispose();
-        AssertEqual(1, pool.ReturnCount, "dequeued preview lease return count");
+        AssertEqual(1, nextPool.ReturnCount, "selected preview lease returned after dequeue");
 
         return Task.CompletedTask;
     }
