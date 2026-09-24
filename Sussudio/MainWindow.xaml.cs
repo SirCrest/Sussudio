@@ -1385,9 +1385,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private void SetupButtonHoverAnimations()
         => _controlBarAnimationController.AttachHoverAnimations();
 
-    private IReadOnlyList<FrameworkElement> GetEntranceButtons()
-        => _controlBarAnimationController.EntranceButtons;
-
     private void InitializeLaunchEntranceAnimationController()
     {
         _launchEntranceAnimationController = new LaunchEntranceAnimationController(new LaunchEntranceAnimationControllerContext
@@ -1399,10 +1396,10 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             StatsRow = StatsRow,
             PreviewBorder = PreviewBorder,
             PreviewBorderScale = PreviewBorderScale,
-            GetEntranceButtons = GetEntranceButtons,
+            GetEntranceButtons = () => _controlBarAnimationController.EntranceButtons,
             IsPreviewFirstVisualConfirmed = () => IsPreviewFirstVisualConfirmed,
-            StartSplashLoadingPhrases = StartSplashLoadingPhrases,
-            StopSplashLoadingPhrases = StopSplashLoadingPhrases,
+            StartSplashLoadingPhrases = () => _splashLoadingPhraseController.Start(),
+            StopSplashLoadingPhrases = () => _splashLoadingPhraseController.Stop(),
             AddPreviewShellEntranceAnimations = AddPreviewShellEntranceAnimations,
             FadeInControlBarShadow = () => FadeInControlBarShadow(delayMs: 400, durationMs: 500),
         });
@@ -1742,12 +1739,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             SplashLoadingTransformB = SplashLoadingTransformB,
         });
     }
-
-    private void StartSplashLoadingPhrases()
-        => _splashLoadingPhraseController.Start();
-
-    private void StopSplashLoadingPhrases()
-        => _splashLoadingPhraseController.Stop();
 
     private void InitializeFullScreenController()
     {

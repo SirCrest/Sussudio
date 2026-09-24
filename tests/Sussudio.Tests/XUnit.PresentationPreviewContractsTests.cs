@@ -7752,7 +7752,7 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(adapterText, "SplashContent = SplashContent,");
         AssertContains(adapterText, "PreviewBorder = PreviewBorder,");
         AssertContains(adapterText, "PreviewBorderScale = PreviewBorderScale,");
-        AssertContains(adapterText, "GetEntranceButtons = GetEntranceButtons,");
+        AssertContains(adapterText, "GetEntranceButtons = () => _controlBarAnimationController.EntranceButtons,");
         AssertContains(adapterText, "IsPreviewFirstVisualConfirmed = () => IsPreviewFirstVisualConfirmed,");
         AssertContains(adapterText, "FadeInControlBarShadow = () => FadeInControlBarShadow(delayMs: 400, durationMs: 500),");
         AssertContains(adapterText, "=> _launchEntranceAnimationController.PrepareInitialState();");
