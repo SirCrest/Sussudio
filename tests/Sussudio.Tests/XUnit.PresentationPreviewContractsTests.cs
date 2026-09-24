@@ -7988,13 +7988,13 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(captureOptionBindingsText, "ResolutionComboBox = ResolutionComboBox,");
         AssertContains(captureOptionBindingsText, "VideoFormatComboBox = VideoFormatComboBox,");
         AssertContains(captureOptionBindingsText, "TrueHdrPreviewToggle = TrueHdrPreviewToggle,");
-        AssertContains(captureOptionBindingsText, "ApplyInitialDecoderCountSelection = ApplyInitialDecoderCountSelection,");
+        AssertContains(captureOptionBindingsText, "ApplyInitialDecoderCountSelection = () => _captureOptionPresentationController.ApplyInitialDecoderCountSelection(),");
         AssertContains(captureOptionBindingsText, "ApplyAudioClipVisibility = ApplyAudioClipVisibility,");
         AssertContains(captureOptionBindingsText, "RefreshHdrHintText = RefreshHdrHintText,");
         AssertContains(captureOptionBindingsText, "UpdateFpsTelemetryTooltip = UpdateFpsTelemetryTooltip,");
         AssertContains(captureOptionBindingsText, "UpdateVideoContentOverlays = UpdateVideoContentOverlays,");
         AssertContains(captureOptionBindingsText, "SetHdrPassthroughEnabled = enabled => _previewRendererHostController.SetHdrPassthroughEnabled(enabled),");
-        AssertContains(captureOptionBindingsText, "EnsureSplitEncodeModeSelection = EnsureSplitEncodeModeSelection");
+        AssertContains(captureOptionBindingsText, "EnsureSplitEncodeModeSelection = () => _captureSelectionBindingController.EnsureSplitEncodeModeSelection(),");
         AssertContains(captureOptionBindingsText, "private void InitializeCaptureOptionCollections()");
         AssertContains(captureOptionBindingsText, "=> _captureOptionBindingController.InitializeCollections();");
         AssertContains(captureOptionBindingsText, "private void ApplyInitialCaptureOptionSelections()");

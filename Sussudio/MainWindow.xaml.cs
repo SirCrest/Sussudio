@@ -995,7 +995,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             CustomBitrateNumberBox = CustomBitrateNumberBox,
             HdrToggle = HdrToggle,
             TrueHdrPreviewToggle = TrueHdrPreviewToggle,
-            ApplyInitialDecoderCountSelection = ApplyInitialDecoderCountSelection,
+            ApplyInitialDecoderCountSelection = () => _captureOptionPresentationController.ApplyInitialDecoderCountSelection(),
             ApplyBitrateVisibility = ApplyBitrateVisibility,
             ApplyHdrToggleEnabledState = ApplyHdrToggleEnabledState,
             ApplyAudioClipVisibility = ApplyAudioClipVisibility,
@@ -1004,12 +1004,12 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             UpdateVideoContentOverlays = UpdateVideoContentOverlays,
             SetHdrPassthroughEnabled = enabled => _previewRendererHostController.SetHdrPassthroughEnabled(enabled),
             UpdateDecoderCountVisibility = UpdateDecoderCountVisibility,
-            EnsureResolutionSelection = EnsureResolutionSelection,
-            EnsureFrameRateSelection = EnsureFrameRateSelection,
-            EnsureFormatSelection = EnsureFormatSelection,
-            EnsureQualitySelection = EnsureQualitySelection,
-            EnsurePresetSelection = EnsurePresetSelection,
-            EnsureSplitEncodeModeSelection = EnsureSplitEncodeModeSelection,
+            EnsureResolutionSelection = () => _captureSelectionBindingController.EnsureResolutionSelection(),
+            EnsureFrameRateSelection = () => _captureSelectionBindingController.EnsureFrameRateSelection(),
+            EnsureFormatSelection = () => _captureSelectionBindingController.EnsureFormatSelection(),
+            EnsureQualitySelection = () => _captureSelectionBindingController.EnsureQualitySelection(),
+            EnsurePresetSelection = () => _captureSelectionBindingController.EnsurePresetSelection(),
+            EnsureSplitEncodeModeSelection = () => _captureSelectionBindingController.EnsureSplitEncodeModeSelection(),
             SaveSettings = () => ViewModel.TriggerSaveSettings()
         });
     }
@@ -1047,32 +1047,14 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private void ApplyDeviceAudioControlState()
         => _captureSelectionBindingController.ApplyDeviceAudioControlState();
 
-    private void EnsureResolutionSelection()
-        => _captureSelectionBindingController.EnsureResolutionSelection();
-
     private void HandleAvailableResolutionsPropertyChanged()
         => _captureSelectionBindingController.HandleAvailableResolutionsPropertyChanged();
-
-    private void EnsureFrameRateSelection()
-        => _captureSelectionBindingController.EnsureFrameRateSelection();
 
     private void HandleAvailableFrameRatesPropertyChanged()
         => _captureSelectionBindingController.HandleAvailableFrameRatesPropertyChanged();
 
-    private void EnsureFormatSelection()
-        => _captureSelectionBindingController.EnsureFormatSelection();
-
-    private void EnsureQualitySelection()
-        => _captureSelectionBindingController.EnsureQualitySelection();
-
-    private void EnsurePresetSelection()
-        => _captureSelectionBindingController.EnsurePresetSelection();
-
     private void HandleAvailablePresetsPropertyChanged()
         => _captureSelectionBindingController.HandleAvailablePresetsPropertyChanged();
-
-    private void EnsureSplitEncodeModeSelection()
-        => _captureSelectionBindingController.EnsureSplitEncodeModeSelection();
 
     private void HandleAvailableSplitEncodeModesPropertyChanged()
         => _captureSelectionBindingController.HandleAvailableSplitEncodeModesPropertyChanged();
@@ -1166,9 +1148,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
     private bool TryHandleOutputPropertyChanged(string propertyName)
         => _outputPathController.TryHandlePropertyChanged(propertyName);
-
-    private void ApplyInitialDecoderCountSelection()
-        => _captureOptionPresentationController.ApplyInitialDecoderCountSelection();
 
     private void UpdateDecoderCountVisibility()
         => _captureOptionPresentationController.UpdateDecoderCountVisibility();
