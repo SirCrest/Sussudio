@@ -251,6 +251,9 @@ else {
         exitCode = 1
         durationMs = 0
         succeeded = $false
+        # Same shape as Invoke-Step: the result projection below reads lockDetected
+        # from every step, and under strict mode a missing property throws.
+        lockDetected = $false
         output = "Harness assembly not built: $harnessDll"
     }
 }
