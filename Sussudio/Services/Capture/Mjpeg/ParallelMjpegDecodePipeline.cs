@@ -708,10 +708,13 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
 
     private void StartEmitter()
     {
+        // The emitter feeds recording and Flashback in strict order; give it the
+        // same scheduling class as the decode workers it drains.
         _emitThread = new Thread(EmitLoop)
         {
             IsBackground = true,
-            Name = "MjpegEmitter"
+            Name = "MjpegEmitter",
+            Priority = ThreadPriority.AboveNormal
         };
         _emitThread.Start();
     }
@@ -1201,6 +1204,7 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
 
     private void EmitLoop()
     {
+        using var mmcss = MmcssThreadRegistration.TryRegister(_decodeMmcssTask, _decodeMmcssPriority, message => Logger.Log(message));
         while (!_stopped || HasAliveWorkers() || Volatile.Read(ref _reorderBufferDepth) > 0)
         {
             _emitSignal.WaitOne(8);

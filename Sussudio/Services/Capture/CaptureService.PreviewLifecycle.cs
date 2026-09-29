@@ -264,17 +264,18 @@ public partial class CaptureService
             Logger.LogFatalBreadcrumb($"PREVIEW_START phase=init_done");
             unifiedVideoCapture.SetPreviewSink(_videoPipeline.PreviewFrameSink);
             TryApplySharedPreviewDevice(unifiedVideoCapture, _videoPipeline.PreviewFrameSink);
-            Logger.LogFatalBreadcrumb($"PREVIEW_START phase=starting");
-            unifiedVideoCapture.Start();
-            Logger.LogFatalBreadcrumb($"PREVIEW_START phase=started");
             // Preview submits GPU textures directly (SubmitTexture), never CPU bytes, so
             // skip Lock2D by default — it stalls the GPU pipeline (~5% cadence drops at
             // 120fps, worse at 4K). The hasTexture/!frameData.IsEmpty guards elsewhere
-            // still cover the rare case where GPU texture extraction fails.
+            // still cover the rare case where GPU texture extraction fails. Set before
+            // Start() so the first frames do not pay the readback either.
             if (unifiedVideoCapture.D3DManager != null)
             {
                 unifiedVideoCapture.SetSkipCpuReadback(true);
             }
+            Logger.LogFatalBreadcrumb($"PREVIEW_START phase=starting");
+            unifiedVideoCapture.Start();
+            Logger.LogFatalBreadcrumb($"PREVIEW_START phase=started");
             _videoPipeline.InstallCapture(unifiedVideoCapture);
             // Duplicated inline (rather than shared with its twin in
             // CaptureService.RecordingLifecycle.cs) because CaptureServiceOwnershipTests

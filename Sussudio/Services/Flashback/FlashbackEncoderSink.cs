@@ -28,6 +28,9 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameTryEn
     private const int VideoDrainBatchLimit = 24;
     private const int AudioDrainBatchLimit = 128;
     private const int GpuDrainBatchLimit = 16;
+    // Same MMCSS class as the preview render thread that shares the D3D device.
+    private const string EncodeMmcssTask = "Playback";
+    private const int EncodeMmcssPriority = 1;
     private const int StopTimeoutMs = 30_000;
     private const int DisposeTimeoutMs = 1_000;
     private const int VideoQueueLatencyWindowSize = 256;
@@ -1894,6 +1897,14 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameTryEn
         try
         {
             Logger.Log("FLASHBACK_SINK_ENCODING_LOOP_START");
+            // The GPU lane holds only a few frames and the encode is synchronous
+            // per frame (delay=0), so this dedicated LongRunning thread must not
+            // be starved by the MMCSS-registered capture and render threads.
+            Thread.CurrentThread.Priority = ThreadPriority.AboveNormal;
+            using var mmcss = MmcssThreadRegistration.TryRegister(
+                EncodeMmcssTask,
+                EncodeMmcssPriority,
+                message => Logger.Log(message));
             var videoQueue = _videoQueue ?? throw new InvalidOperationException("Video queue is not initialized.");
             var audioQueue = _audioQueue ?? throw new InvalidOperationException("Audio queue is not initialized.");
             var microphoneQueue = _microphoneQueue;

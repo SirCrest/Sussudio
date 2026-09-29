@@ -667,15 +667,18 @@ internal sealed partial class D3D11PreviewRenderer
             renderTicks += Stopwatch.GetTimestamp() - renderStart;
             _deviceContext.PSSetShaderResources(0, 2, _srvNullArray2);
 
-            var rendererMode = ReferenceEquals(pixelShader, _hdrPassthroughPS)
+            var passthrough = ReferenceEquals(pixelShader, _hdrPassthroughPS);
+            var rendererMode = passthrough
                 ? RendererModeHdrPassthrough
                 : PreviewShaderSources.RendererModeHdr;
-            var mode = ReferenceEquals(pixelShader, _hdrPassthroughPS)
-                ? "passthrough" : "tonemapping";
+            // Constant strings: only the first frame logs this message, so do
+            // not build an interpolated string on every HDR frame.
             PresentAndTrackFrame(
                 frame,
                 rendererMode,
-                $"D3D11 preview first HDR frame rendered via {mode} shader.",
+                passthrough
+                    ? "D3D11 preview first HDR frame rendered via passthrough shader."
+                    : "D3D11 preview first HDR frame rendered via tonemapping shader.",
                 totalStart,
                 inputUploadTicks,
                 renderTicks,

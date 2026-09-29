@@ -60,8 +60,19 @@ public partial class MainViewModel
     [ObservableProperty]
     public partial double MicrophoneVolume { get; set; } = 100.0;
 
-    [ObservableProperty]
-    public partial double AudioPeak { get; set; }
+    /// <summary>
+    /// Latest program-audio peak. Written by the WASAPI callback thread about
+    /// fifteen times per second and read only by snapshot builders; nothing
+    /// binds it, so it bypasses PropertyChanged like <see cref="AudioMeterTarget"/>
+    /// instead of routing a property-changed event off the audio thread per update.
+    /// </summary>
+    public double AudioPeak
+    {
+        get => Volatile.Read(ref _audioPeak);
+        set => Volatile.Write(ref _audioPeak, value);
+    }
+
+    private double _audioPeak;
 
     [ObservableProperty]
     public partial bool AudioClipping { get; set; }

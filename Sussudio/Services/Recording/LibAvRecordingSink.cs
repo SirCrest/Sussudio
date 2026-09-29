@@ -41,6 +41,13 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameTryEncode
     private readonly LibAvEncoder _encoder = new();
     private readonly InProcessRecordingStructureVerifier _structureVerifier = new();
     private readonly SemaphoreSlim _workAvailable = new(0, 1);
+    // 1 while a Release is outstanding. Producers (capture read loop, WASAPI
+    // workers) only Release on the 0->1 transition, so redundant signals are a
+    // single interlocked read instead of a SemaphoreFullException per call.
+    private int _workSignalPending;
+    // Same MMCSS class as the preview render thread that shares the D3D device.
+    private const string EncodeMmcssTask = "Playback";
+    private const int EncodeMmcssPriority = 1;
     private readonly TaskCompletionSource<bool> _cleanupCompletion = new(
         TaskCreationOptions.RunContinuationsAsynchronously);
     private Channel<VideoFramePacket>? _videoQueue;
@@ -208,6 +215,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameTryEncode
             Interlocked.Exchange(ref _audioQueueDepth, 0);
             Interlocked.Exchange(ref _microphoneQueueDepth, 0);
             Interlocked.Exchange(ref _workSignalAlreadySignaled, 0);
+            Interlocked.Exchange(ref _workSignalPending, 0);
             _encodingTask = Task.Factory.StartNew(
                 () => EncodingLoop(_cts.Token),
                 _cts.Token,
@@ -443,6 +451,15 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameTryEncode
     {
         try
         {
+            // This loop is on the recording's critical path: the GPU lane holds
+            // only a few frames and overflow fails the recording, so it must not
+            // be starved by the MMCSS-registered capture and render threads.
+            // LongRunning gives it a dedicated thread, so the priority is its own.
+            Thread.CurrentThread.Priority = ThreadPriority.AboveNormal;
+            using var mmcss = MmcssThreadRegistration.TryRegister(
+                EncodeMmcssTask,
+                EncodeMmcssPriority,
+                message => Logger.Log(message));
             var videoQueue = _videoQueue ?? throw new InvalidOperationException("Video queue is not initialized.");
             var audioQueue = _audioQueue ?? throw new InvalidOperationException("Audio queue is not initialized.");
             var microphoneQueue = _microphoneQueue;
@@ -499,6 +516,9 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameTryEncode
                 }
 
                 _workAvailable.Wait(cancellationToken);
+                // Clear before draining so a signal that arrives during the
+                // drain issues a fresh Release for the next iteration.
+                Interlocked.Exchange(ref _workSignalPending, 0);
             }
 
             MarkFinalizationProgress("Flushing");
@@ -1527,10 +1547,18 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameTryEncode
 
     private void SignalWork(string operation)
     {
+        if (Interlocked.Exchange(ref _workSignalPending, 1) != 0)
+        {
+            // Already signaled; the encode loop clears the flag after it wakes,
+            // before draining, so the work that prompted this call is covered.
+            Interlocked.Increment(ref _workSignalAlreadySignaled);
+            return;
+        }
+
         try { _workAvailable.Release(); }
         catch (SemaphoreFullException)
         {
-            // Best-effort: semaphore already signaled — work loop will pick it up.
+            // Defensive only: the pending flag keeps at most one Release outstanding.
             var alreadySignaled = Interlocked.Increment(ref _workSignalAlreadySignaled);
             if (alreadySignaled == 1 || alreadySignaled % 30 == 0)
             {

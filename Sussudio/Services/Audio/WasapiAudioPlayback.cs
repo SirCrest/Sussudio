@@ -215,7 +215,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
             bool initialized;
             if (hr == WasapiComInterop.S_OK)
             {
-                initialized = WasapiComInterop.TryInitializeSharedStreamWithAudioClient3(audioClient3, desiredFormat);
+                initialized = WasapiComInterop.TryInitializeSharedStreamWithAudioClient3(audioClient3, desiredFormat, streamLabel: "render");
                 if (!initialized)
                 {
                     WasapiComInterop.ThrowIfFailed(
@@ -238,7 +238,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
                     WasapiComInterop.AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY;
 
                 initialized = WasapiComInterop.TryInitializeSharedStreamWithAudioClient3(
-                    audioClient3, desiredFormat, extraStreamFlags: autoConvertFlags);
+                    audioClient3, desiredFormat, extraStreamFlags: autoConvertFlags, streamLabel: "render-autoconvert");
                 if (!initialized)
                 {
                     var hrInit = audioClient.Initialize(
@@ -719,6 +719,12 @@ internal sealed class WasapiAudioPlayback : IDisposable
     {
         try
         {
+            // Same scheduling class as the capture worker: a late render callback
+            // fills silence and permanently lengthens the monitoring path.
+            using var mmcss = MmcssThreadRegistration.TryRegister(
+                WasapiComInterop.AudioMmcssTask,
+                WasapiComInterop.AudioMmcssPriority,
+                message => Logger.Log(message));
             var renderEvent = _renderEvent;
             if (renderEvent == null)
             {

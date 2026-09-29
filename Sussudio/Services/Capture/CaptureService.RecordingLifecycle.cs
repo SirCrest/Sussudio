@@ -373,6 +373,17 @@ public partial class CaptureService
                 ? activeLibAvSink
                 : null;
 
+        // The source reader skips its Lock2D readback only for DXGI samples. A GPU
+        // recording consumes textures, so no consumer needs CPU bytes and the
+        // readback (a GPU sync plus a full-frame copy per frame) is pure cost; this
+        // also covers a recording-only session, whose owned capture starts below.
+        // A software recording on the D3D path needs the bytes, so restore the
+        // readback for its duration; recording stop re-applies the preview policy.
+        if (unifiedVideoCapture.D3DManager != null)
+        {
+            unifiedVideoCapture.SetSkipCpuReadback(gpuEncoder != null);
+        }
+
         activeLibAvSink.MarkRecordingBoundaryStarted();
         await unifiedVideoCapture.StartRecordingAsync(rollback.RecordingSink, activeLibAvSink, gpuEncoder).ConfigureAwait(false);
         if (gpuEncoder != null)
@@ -1951,11 +1962,17 @@ public partial class CaptureService
         var recordingQueueRejectedByBoundary = 0L;
         if (unifiedVideoCapture != null)
         {
-            // SkipCpuReadback stays true across this stop: preview consumes GPU textures
-            // directly, so a Lock2D readback is never needed while the D3D device is shared.
+            // Preview consumes GPU textures directly, so once the recording sink is
+            // detached no consumer needs a Lock2D readback while the D3D device is
+            // shared. Re-apply that policy here because a software recording on the
+            // D3D path clears the skip for its duration.
             try
             {
                 await unifiedVideoCapture.StopRecordingAsync().ConfigureAwait(false);
+                if (unifiedVideoCapture.D3DManager != null)
+                {
+                    unifiedVideoCapture.SetSkipCpuReadback(true);
+                }
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {

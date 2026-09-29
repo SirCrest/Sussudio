@@ -934,6 +934,15 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             Volatile.Read(ref _sharedDeviceResetPending) == 0)
         {
             ResetFrameReady("render_loop_empty_after_failure");
+            // A submit that landed between the emptiness check and the reset
+            // would otherwise wait for the next submit and then be dropped as
+            // stale. Mirror the idle path's re-check.
+            if (!_pendingFrames.IsEmpty ||
+                Volatile.Read(ref _compositionTransformDirty) != 0 ||
+                Volatile.Read(ref _sharedDeviceResetPending) != 0)
+            {
+                SignalFrameReady("render_loop_race_after_render");
+            }
         }
 
         return true;
@@ -1764,6 +1773,10 @@ public readonly record struct PresentCadenceMetrics(
 
     public PipelineLatencyMetrics GetPipelineLatencyMetrics()
     {
+        // The render thread takes this lock once per presented frame. Copy the
+        // window under the lock and sort the copy outside it so a stats poll
+        // never holds the render thread for a full-window sort.
+        double[] samples;
         lock (_pipelineLatencyLock)
         {
             if (_pipelineLatencyCount <= 0)
@@ -1771,15 +1784,16 @@ public readonly record struct PresentCadenceMetrics(
                 return default;
             }
 
-            var samples = RingBufferHelpers.Copy(_pipelineLatencyWindowMs, _pipelineLatencyCount, _pipelineLatencyIndex, _pipelineLatencyCount);
-            var timing = SummarizeCpuStageTiming(samples);
-            return new PipelineLatencyMetrics(
-                timing.SampleCount,
-                timing.AverageMs,
-                timing.P95Ms,
-                timing.P99Ms,
-                timing.MaxMs);
+            samples = RingBufferHelpers.Copy(_pipelineLatencyWindowMs, _pipelineLatencyCount, _pipelineLatencyIndex, _pipelineLatencyCount);
         }
+
+        var timing = SummarizeCpuStageTiming(samples);
+        return new PipelineLatencyMetrics(
+            timing.SampleCount,
+            timing.AverageMs,
+            timing.P95Ms,
+            timing.P99Ms,
+            timing.MaxMs);
     }
 
     public double[] GetRecentPipelineLatencyMs(int maxSamples)
@@ -1813,16 +1827,19 @@ public readonly record struct PresentCadenceMetrics(
 
     public FrameLatencyWaitMetrics GetFrameLatencyWaitMetrics()
     {
-        CpuStageTimingMetrics timing;
+        // Copy under the lock, sort outside it: the render thread takes this
+        // lock before every frame's waitable-object wait.
+        double[] waitSamples;
         lock (_frameLatencyWaitTimingLock)
         {
-            timing = SummarizeCpuStageTiming(RingBufferHelpers.Copy(
+            waitSamples = RingBufferHelpers.Copy(
                 _frameLatencyWaitTimingWindowMs,
                 _frameLatencyWaitTimingCount,
                 _frameLatencyWaitTimingIndex,
-                _frameLatencyWaitTimingWindowMs.Length));
+                _frameLatencyWaitTimingWindowMs.Length);
         }
 
+        var timing = SummarizeCpuStageTiming(waitSamples);
         var lastTicks = Interlocked.Read(ref _frameLatencyWaitLastTicks);
         return new FrameLatencyWaitMetrics(
             Enabled: _waitableSwapChainEnabled,
