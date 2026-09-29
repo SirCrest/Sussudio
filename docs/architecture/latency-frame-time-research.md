@@ -33,17 +33,25 @@ Typical: 1.5-2.5 source frames after the read loop. Worst case: 4.5-5.5 frames.
 
 ### Live preview, 4K120 MJPEG (software decode path, default above 60 fps)
 
-Adds roughly 43 ms (about 5 frames) before the renderer:
+Adds roughly 35-43 ms (about 4-5 frames) before the renderer:
 
 | Segment | Estimate | Source |
 |---|---|---|
 | CPU JPEG decode, one thread | about 16 ms (offline benchmark, 4K yuvj420p) | `Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.cs:1545-1547` |
 | Planar to NV12 pack | about 2 ms | `ParallelMjpegDecodePipeline.cs:1454-1489` |
 | Worker wake through ThreadPool | 0.05-0.3 ms | `ParallelMjpegDecodePipeline.cs:291, 617-623` |
-| Jitter buffer hold | about 25 ms (target depth 3 = 3 intervals; ratchets to 8) | `UnifiedVideoCapture.cs:697`, `Services/Capture/MjpegPreviewJitterBuffer.cs:295-306, 1180-1212` |
+| Jitter buffer hold | 17-25 ms: about 2 intervals right after priming, settling toward 3 intervals in steady state (target depth 3; ratchets to 8) | `UnifiedVideoCapture.cs:697`, `Services/Capture/MjpegPreviewJitterBuffer.cs:295-306, 339-367, 1180-1212` |
 
-The jitter buffer is more than half of this and is the single largest
-controllable term in the whole pipeline.
+The jitter-buffer residence has two regimes. The emit loop waits until the
+queue holds `target` frames and then dequeues the oldest at once
+(`MjpegPreviewJitterBuffer.cs:295-306`), so at that moment the frame has
+waited about `target - 1` intervals (16.7 ms at 120 fps). The output-interval
+trim is evaluated after each dequeue (`:367, 1180-1191`) and compares the
+post-dequeue depth with the target, stretching the interval by 0.5 % while the
+depth is below target, so with a source at nominal rate the queue drifts to
+`target` frames after dequeue and the residence settles near `target` intervals
+(25 ms). Either way the buffer is 40-60 % of the pre-renderer budget and the
+largest controllable term in the pipeline.
 
 ### Audio monitoring (WASAPI shared mode)
 
@@ -151,11 +159,22 @@ slice. No `ID3D11Fence`, query or keyed mutex exists in the repository.
 
 Fix: perform the `CopySubresourceRegion` into an app-owned texture ring on the
 read-loop thread (a GPU command enqueue costing tens of microseconds of CPU)
-and queue the ring index. This removes the hazard, removes a thread hop before
-the copy, and lets the recording queue grow so that overflow becomes drop rather
-than fatal. The eight-texture pool already exists
+and queue the ring index. This removes the hazard and removes a thread hop
+before the copy. The eight-texture pool already exists
 (`LibAvEncoder.VideoFrames.cs:106`); it needs to grow to 16-24 slots (power of
 two) at 12-25 MB each.
+
+The copy alone does not change the overflow policy: `TryEnqueueGpuPacket`
+still calls `FailEncoding` when its bounded channel is full
+(`LibAvRecordingSink.cs:1212-1241`). Making overflow survivable is a separate,
+explicit policy change with its own timing contract: on a full queue drop the
+newest frame, count it as a queue drop in the recording-integrity counters,
+record the sequence gap on the GPU lane (today only the CPU lane feeds the gap
+tracker, `LibAvRecordingSink.cs:1818`), and advance the encoder's video PTS by
+the dropped frame so audio and video stay aligned (`SkipVideoFrame`,
+`LibAvEncoder.cs:91`, exists for this and has no callers). Without the PTS
+step a drop shortens the video timeline by one frame time, so the policy
+change and the PTS handling must ship together.
 
 Evidence: record a frame-counter test signal with preview and Flashback active
 and check the output for repeated or out-of-order counters.
@@ -175,9 +194,14 @@ and check the output for repeated or out-of-order counters.
   next good frame.
 - The output clock is nominal fps with a ±0.5-1.5 % trim
   (`MjpegPreviewJitterBuffer.cs:228, 1180-1191`). Measured input intervals are
-  recorded (`:807`) but only feed metrics. `artifacts/live-e2e-20260905-232055/REPORT.md`
-  records 66-95 incoming fps against a 120 target; with that input the buffer
-  will underflow chronically and ratchet to the maximum.
+  recorded (`:807`) but only feed metrics. A local live run from 2026-09-05
+  (the gitignored `artifacts/live-e2e-20260905-232055/REPORT.md` in the main
+  checkout; it is not in the repository, so this figure cannot be verified from
+  the tree) recorded 66-95 incoming fps against a 120 target. If a source
+  delivers below nominal like that, this design underflows chronically and
+  ratchets the target to the maximum. Reproduce with a diagnostic session that
+  records `MjpegPreviewJitterUnderflowCount` and `MjpegPreviewJitterTargetDepth`
+  over a minute of preview, and keep the JSON under `artifacts/`.
 - Every `ResumePreviewSubmission` and preview re-attach forces a full re-prime.
   `ResumePreviewSubmission` (`UnifiedVideoCapture.cs:1040`) has no
   already-resumed early-out.
@@ -265,7 +289,7 @@ Each of these is small on its own but sits on the critical path.
 | 3.2 | Renderer dequeues oldest-first with a hard-coded 1.5-interval stale threshold, so at fps = Hz a standing one-frame offset can persist | `D3D11PreviewRenderer.cs:877-882, 1001` | 1-1.5 frames | Confirmed; add latest-wins when depth ≥ 2 |
 | 3.3 | CPU frames (MJPEG path) upload through `UpdateSubresource` of 12-25 MB on the render thread while holding the shared immediate-context lock; fallback path does per-row copies into a staging texture | `RenderPasses.cs:347, 370-421` | 1-3 ms, serialises encoder copies | Confirmed. `RenderCpuTimingMetrics.InputUpload` measures it |
 | 3.4 | HDR texture path does two `CopySubresourceRegion` calls plus a shader pass per frame; `Description` is queried per frame | `RenderPasses.cs:604-616` | 2 GPU copies | Confirmed. VideoProcessor passthrough would be zero-copy; `CheckVideoProcessorFormatConversion` is never called |
-| 3.5 | `SemaphoreSlim(0, 1).Release()` throws `SemaphoreFullException` on every redundant signal from WASAPI and capture threads; the catch-and-count shows the author saw it | `LibAvRecordingSink.cs:43, 1528-1544` | 10-50 µs per throw on hot threads | Verified. Use `AutoResetEvent` or check `CurrentCount` |
+| 3.5 | `SemaphoreSlim(0, 1).Release()` throws `SemaphoreFullException` on every redundant signal from WASAPI and capture threads; the catch-and-count shows the author saw it | `LibAvRecordingSink.cs:43, 1528-1544` | 10-50 µs per throw on hot threads | Verified. Use an atomic gate: producers `Interlocked.Exchange` a pending flag and only `Release` on the 0-to-1 transition; the consumer clears the flag after its wait returns and before draining. A `CurrentCount` check is not enough, because two producers can both read zero and one still throws. `AutoResetEvent` (idempotent `Set`) is the alternative. Implemented on this branch as the interlocked gate |
 | 3.6 | `GetDeviceRemovedReason` per encoded frame under the device lock | `LibAvEncoder.VideoFrames.cs:349` | small | Confirmed. Check every N frames or after a send failure |
 | 3.7 | Two stats getters sort 2400-sample windows while holding locks the render thread takes every frame; `RingBufferHelpers.Copy` does a modulo per element | `D3D11PreviewRenderer.cs:1765-1783, 1814-1824, 2228, 2293`; `RuntimeHelpers.cs:212-230` | 100-200 µs stall per stats poll | Confirmed. Copy under lock, sort outside; use two `Array.Copy` segments; rings are single-writer so a seqlock removes the lock |
 | 3.8 | MJPEG decode workers wake through `WaitToReadAsync().GetAwaiter().GetResult()` on a channel without `AllowSynchronousContinuations`, so each wake goes through the ThreadPool | `ParallelMjpegDecodePipeline.cs:291, 617-623` | 50-300 µs per wake | Suspected. Use a direct MPMC queue with Monitor or `SemaphoreSlim` |
@@ -332,11 +356,26 @@ its first sample as a baseline and divides by nominal fps
 (`CaptureService.RuntimeSnapshots.cs:1434-1498`), so it cannot report absolute
 offset and shows NTSC rate mismatch as drift.
 
-Fix: stamp audio packets with `qpcPosition` and video with the MF sample time
-(converted to the QPC domain); derive PTS from timestamps or insert exactly the
-missing samples or frames at gap boundaries; feed the gap tracker on the GPU
-lane; add an `ingress_lag_ms` metric (now minus sample time) so backlog inside
-the source reader becomes visible.
+Fix: stamp audio packets with `qpcPosition` and video with the MF sample time,
+derive PTS from those stamps or insert exactly the missing samples or frames at
+gap boundaries, feed the gap tracker on the GPU lane, and add an
+`ingress_lag_ms` metric (now minus sample time) so backlog inside the source
+reader becomes visible. Two policies have to be defined before that is safe:
+
+- **Invalid audio stamps.** When `GetBuffer` returns
+  `AUDCLNT_BUFFERFLAGS_TIMESTAMP_ERROR` the device and QPC positions are
+  unreliable; the capture worker already observes the flag
+  (`WasapiAudioCapture.cs:551-554`). For such packets keep the current
+  sample-count PTS (previous PTS plus frames delivered) and re-anchor from the
+  next packet that carries a valid stamp, treating any jump larger than one
+  period as a gap to fill rather than a re-timing of delivered audio.
+- **Clock domains.** An MF sample time is a stream presentation time, not
+  necessarily on the WASAPI QPC epoch. Correlate once per session: record
+  `(sampleTime, QPC at ReadSample return)` for the first N samples, take the
+  minimum offset as the fixed mapping, and treat later offset growth as ingress
+  lag. If the offset is not stable (a source whose sample times are not
+  QPC-derived), fall back to arrival-QPC-based video stamps and log which
+  mapping is in use, so the encoder never mixes epochs.
 
 ## 7. Where existing libraries or OS facilities should do the work
 
@@ -366,8 +405,8 @@ the source reader becomes visible.
 
 | Candidate | Why not |
 |---|---|
-| NVDEC MJPEG (`mjpeg_cuvid`, `-hwaccel cuda`) | offline benchmark: 86 fps single session vs 62 fps CPU single thread; four sessions 272 fps vs six CPU processes 310 fps. No per-frame latency win, and it needs CUDA or D3D11 interop for every consumer |
-| libjpeg-turbo | 27 ms per 4K frame full colour vs about 16 ms for FFmpeg's decoder |
+| NVDEC MJPEG (`mjpeg_cuvid`, `-hwaccel cuda`) | Not pursued now, not rejected on latency grounds. The offline figures are throughput through the FFmpeg CLI, which pipelines: 86 fps single session vs 62 fps CPU single thread, four sessions 272 fps vs six CPU processes 310 fps. They show no capacity advantage, but they say nothing about submission-to-completion latency, which is unmeasured (if the single session were strictly serial the inverse would be about 11.6 ms vs 16.1 ms per frame, but that is not established). Revisit only with a per-frame latency measurement, and weigh it against the CUDA or D3D11 interop every consumer would then need |
+| libjpeg-turbo | Parity at best on current evidence, not slower. The offline comparison measured full-colour output (27 ms) which includes a colour conversion the app would not perform; the grey-only figure (16 ms) matches FFmpeg's decoder, which is consistent with both being entropy-bound. TurboJPEG's `tjDecompressToYUV` writes planes directly, so a fair test is that path plus the same NV12 packing. Measure it before adding a native dependency; do not expect a large win |
 | FFmpeg frame or slice threading for MJPEG | the decoder reports no threading capability; app-level workers are the right structure |
 | `delay=0` on the standard recording path | makes `avcodec_send_frame` synchronous per frame and serialises the NVENC pipeline; risks falling behind real time at 4K120 with p6/p7. The default delay only affects packet emission, not file timing |
 | Zero-copy MF texture into NVENC | saves about 0.1 ms of GPU time; needs `MF_SA_D3D11_BINDFLAGS` render-target binding and pinned samples |
@@ -420,7 +459,50 @@ existing contracts (no silent codec or preset downgrade; source-reader fan-out
 stays non-blocking) and needs a live run for the numbers above to become
 evidence.
 
-## 10. Environment knobs that shape latency (defaults)
+## 10. Implemented on this branch (2026-09-29)
+
+The contained, contract-preserving items were implemented on this branch and
+pass `scripts\validate.ps1` (build with 0 errors, 2,321 xUnit tests with 0
+failures, assembly-load smoke, `git diff --check`). None of them changes pacing
+defaults, codec or preset selection, automation wire behaviour, or the
+non-blocking source-reader fan-out. What the automated run does not prove is
+listed after the table; every item still needs a live run with a device.
+
+| Item | Change |
+|---|---|
+| 2.1 | `SetSharedDevice` returns early when the pointer is unchanged and the device is active, so recording start and preview re-attach no longer rebuild the swap chain |
+| 2.2 | `IAudioClient3` inherits `IAudioClient` without redeclaring it and carries the three `IAudioClient2` slots; initialisation requests the minimum shared-mode period, retries with the default period, then falls back to legacy `Initialize`; `WASAPI_CLIENT3_INIT` logs the HRESULT, period mode and all four periods |
+| 2.3 | Both encode loops run `AboveNormal` under MMCSS "Playback"; the MJPEG emitter runs `AboveNormal` under the decode class; both WASAPI workers register as "Pro Audio" |
+| 2.6 | Preview sets the readback skip before `Start()`; recording start sets it to `gpuEncoder != null` whenever the D3D manager is present (covers recording-only sessions and software recordings on the D3D path); recording stop restores the preview-only policy |
+| 2.8 | Preview is the first consumer in every fan-out path; the visual-cadence luma scan runs after the preview submit (in `finally`, so lease-unavailable frames are still tracked) and after the recording and Flashback enqueues on the MJPEG emitter |
+| 2.9 | A CPU-backed sample on the D3D-manager path takes the single pooled copy unless strict texture delivery is required, in which case the strict failure accounting still runs |
+| 3.5 | Recording-sink work signal uses an interlocked pending gate; redundant signals no longer throw |
+| 3.7 | Pipeline-latency and frame-latency-wait metrics copy under the lock and sort outside it; ring copies use two `Array.Copy` segments |
+| 3.11 | The render loop re-checks the queue after resetting the frame-ready event on the post-render path |
+| 3.15 | `AudioPeak` is a volatile property; it no longer raises `PropertyChanged` from the WASAPI thread |
+| 3.17 | The HDR first-frame message is a constant string |
+| extra | `ResumePreviewSubmission` returns early when preview was never suppressed (no redundant drop and MJPEG re-prime); the pixel-format observer guard does a plain read before its CAS |
+
+Evaluated and not changed on this branch:
+
+- 2.4 texture ring and overflow policy, 2.5 jitter defaults and missing-sequence
+  feed, 2.7 monitor fill target, 3.1 and 3.2 pacing, 3.3 and 3.4 upload and
+  HDR pass, section 4 demand gating (automation freshness is a wire contract),
+  section 5 Flashback, section 6 timestamps, GC settings: each changes
+  behaviour that needs a live measurement or product sign-off first.
+- FFmpeg log level: libav calls a custom log callback for every level and only
+  the default callback honours `av_log_set_level`, so lowering the level would
+  not reduce the marshalling; the fix would be a `byte*`-typed callback that
+  decodes the format string only for errors. Left as is.
+
+Live checks to run first with a device: `WASAPI_CLIENT3_INIT` should report
+`period_mode=minimum` (or a logged rejection with the reason); `MMCSS registered`
+lines should appear for the encode loops and the "Pro Audio" workers; no
+`UNIFIED_VIDEO_PREVIEW_TEXTURE_FAIL` burst at recording start; a recording-only
+session should log no `MF_SOURCE_READER_D3D_BUFFER_MISS`-driven readback; and a
+recording made with preview active should verify with `verify_recording`.
+
+## 11. Environment knobs that shape latency (defaults)
 
 | Knob | Default | Owner |
 |---|---|---|
