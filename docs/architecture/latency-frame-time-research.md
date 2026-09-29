@@ -456,7 +456,9 @@ reader becomes visible. Two policies have to be defined before that is safe:
 2. Contained fixes with no behaviour change: 2.1 device-pointer check, 2.2
    interop declaration plus minimum period plus logging, 2.3 MMCSS, 2.6
    readback flag, 3.5 signalling, 3.6, 3.7, 3.15, 3.17, section 4 demand gating.
-3. Structural: 2.4 copy-at-capture texture ring (also fixes fatal overflow),
+3. Structural: 2.4 copy-at-capture texture ring, and separately the
+   drop-newest overflow policy with sequence-gap and PTS handling that 2.4
+   specifies (the ring alone leaves `FailEncoding` on a full channel in place),
    2.8 fan-out order and scan gating, 2.9 pooled fallback, 2.5 jitter defaults
    and missing-sequence feed, 2.7 monitor fill target, section 6 timestamps.
 4. Flashback: 5.3, 5.4, 5.1, 5.2, 5.5, 5.6.
