@@ -140,49 +140,6 @@ public sealed class WasapiNegotiatedFormatAndWorkerLifetimeTests
         throwIfBlocked.Invoke(null, new[] { role });
     }
 
-    [Fact]
-    public void WorkerFinallyOwnsNativeReleaseAndTimeoutIsFiveSeconds()
-    {
-        var playbackSource = RuntimeContractSource.ReadRepoFile(
-            "Sussudio/Services/Audio/WasapiAudioPlayback.cs");
-        var captureSource = RuntimeContractSource.ReadRepoFile(
-            "Sussudio/Services/Audio/WasapiAudioCapture.cs");
-
-        Assert.Contains("WorkerExitTimeout = TimeSpan.FromSeconds(5)", playbackSource);
-        Assert.Contains("WorkerExitTimeout = TimeSpan.FromSeconds(5)", captureSource);
-        Assert.Contains("finally", playbackSource);
-        Assert.Contains("finally", captureSource);
-        Assert.Contains("ReleaseNativeResources();\n            _workerExited?.TrySetResult(true);", Normalize(playbackSource));
-        Assert.Contains("ReleaseNativeResources();\n            _workerExited?.TrySetResult(true);", Normalize(captureSource));
-        Assert.DoesNotContain("_audioClient?.Stop();\n        }\n\n        var thread", Normalize(playbackSource));
-        Assert.DoesNotContain("_audioClient?.Stop();\n        }\n\n        var thread", Normalize(captureSource));
-    }
-
-    [Fact]
-    public void QuarantinedWorker_RequestsRecoveryAndBoundedProcessClosure()
-    {
-        var quarantineSource = RuntimeContractSource.ReadRepoFile(
-            "Sussudio/Services/Audio/WasapiWorkerQuarantine.cs");
-        var windowSource = RuntimeContractSource.ReadRepoFile("Sussudio/MainWindow.xaml.cs");
-
-        Assert.Contains("var handler = EmergencyCloseRequested;", quarantineSource, StringComparison.Ordinal);
-        Assert.Contains("handler?.Invoke(", quarantineSource, StringComparison.Ordinal);
-        Assert.Contains("StopRecordingForEmergencyAsync()", windowSource, StringComparison.Ordinal);
-        Assert.Contains("Task.Delay(TimeSpan.FromSeconds(10))", windowSource, StringComparison.Ordinal);
-        Assert.Contains("MarkRecordingFinalizationUnresolved", windowSource, StringComparison.Ordinal);
-        Assert.Contains("Environment.Exit(1);", windowSource, StringComparison.Ordinal);
-
-        var windowControllerSource = RuntimeContractSource.ReadRepoFile(
-            "Sussudio/Controllers/Window/WindowControllers.cs");
-        Assert.Contains("await _context.PrepareForCloseAsync();", windowControllerSource, StringComparison.Ordinal);
-        Assert.Contains("if (_context.IsEmergencyClosePending())", windowControllerSource, StringComparison.Ordinal);
-
-        var captureSource = RuntimeContractSource.ReadRepoFile(
-            "Sussudio/Services/Audio/WasapiAudioCapture.cs");
-        Assert.Contains("WASAPI capture wait failed", captureSource, StringComparison.Ordinal);
-        Assert.Contains("OnCaptureFailed(new InvalidOperationException", captureSource, StringComparison.Ordinal);
-    }
-
     private object ParseFormat<T>(T format) where T : struct
     {
         var pointer = Marshal.AllocHGlobal(Marshal.SizeOf<T>());
@@ -271,8 +228,6 @@ public sealed class WasapiNegotiatedFormatAndWorkerLifetimeTests
 
     private static void SetField(object instance, string name, object? value) =>
         instance.GetType().GetField(name, InstanceFlags)!.SetValue(instance, value);
-
-    private static string Normalize(string value) => value.Replace("\r\n", "\n", StringComparison.Ordinal);
 
     private delegate void WriteOutputSampleDelegate(Span<byte> outputFrame, int channelIndex, float sample);
 

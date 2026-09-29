@@ -109,65 +109,6 @@ public sealed class RecordingFinalizationTruthTests
     }
 
     [Fact]
-    public void FinalizationOwner_ClosesThenReopensBeforeVerified()
-    {
-        var flashbackSink = RuntimeContractSource.ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs");
-        AssertInOrder(Slice(flashbackSink, "private void EncodingLoop", "private bool DrainVideoPackets"),
-            "var finalPts = ResolveEncoderPts();",
-            "_encoder.FlushAndClose();",
-            "_bufferManager.OnSegmentCompleted(_tsFilePath, _segmentStartPts, finalPts, finalSegmentBytes);");
-        var sink = RuntimeContractSource.ReadRepoFile(
-            "Sussudio/Services/Recording/LibAvRecordingSink.cs");
-        var loop = Slice(sink, "private void EncodingLoop", "private void CompleteWriter");
-
-        AssertInOrder(
-            loop,
-            "_encoder.FlushAndClose();",
-            "_structureVerifier.Verify(",
-            "_structureVerificationCompleted = true;");
-        Assert.Contains("FinalizationNoProgressTimeoutMs = 30_000", sink, StringComparison.Ordinal);
-        Assert.Contains("FinalizationAbsoluteTimeoutMs = 120_000", sink, StringComparison.Ordinal);
-        Assert.Contains("cleanupPending: true", sink, StringComparison.Ordinal);
-        Assert.Contains("_finalizationWaitTimedOut", sink, StringComparison.Ordinal);
-        Assert.Contains("reason=stop_timeout_already_exhausted", sink, StringComparison.Ordinal);
-        Assert.Contains("CleanupCompletionTask", sink, StringComparison.Ordinal);
-        Assert.Contains("_cleanupCompletion.TrySetResult(true)", sink, StringComparison.Ordinal);
-        Assert.Contains("progressDeadline", sink, StringComparison.Ordinal);
-        Assert.Contains("LIBAV_SINK_FINALIZE_NO_PROGRESS_TIMEOUT", sink, StringComparison.Ordinal);
-
-        var verifier = RuntimeContractSource.ReadRepoFile(
-            "Sussudio/Services/Recording/Verification/InProcessRecordingStructureVerifier.cs");
-        AssertInOrder(
-            verifier,
-            "avformat_open_input",
-            "avformat_find_stream_info",
-            "av_read_frame",
-            "avformat_close_input");
-        Assert.Contains("RecordingFailureCodes.StreamTopologyMismatch", verifier, StringComparison.Ordinal);
-        Assert.Contains("RecordingFailureCodes.RequiredStreamHasNoPackets", verifier, StringComparison.Ordinal);
-        Assert.Contains("RecordingFailureCodes.VideoDurationInvalid", verifier, StringComparison.Ordinal);
-        Assert.Contains("RecordingFailureCodes.VideoDurationShort", verifier, StringComparison.Ordinal);
-        Assert.Contains("RecordingFailureCodes.AudioDurationInvalid", verifier, StringComparison.Ordinal);
-        Assert.Contains("RecordingFailureCodes.AudioDurationMismatch", verifier, StringComparison.Ordinal);
-        Assert.Contains("MaxVideoDurationShortfallSeconds = 2.0", verifier, StringComparison.Ordinal);
-        Assert.Contains("Math.Min(", verifier, StringComparison.Ordinal);
-        Assert.Contains("BuildRequestedTracks(context)", verifier, StringComparison.Ordinal);
-        Assert.Contains("ResolveObservedAudioTrackName", verifier, StringComparison.Ordinal);
-
-        var sourceReader = RuntimeContractSource.ReadRepoFile(
-            "Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs");
-        Assert.Contains("var readSampleSucceeded = false;", sourceReader, StringComparison.Ordinal);
-        AssertInOrder(
-            sourceReader,
-            "MfInteropHelpers.ThrowIfFailed(hr, \"IMFSourceReader.ReadSample\");",
-            "readSampleSucceeded = true;");
-        Assert.Contains(
-            "if (!readSampleSucceeded || Volatile.Read(ref _strictD3DOutputRequired))",
-            sourceReader,
-            StringComparison.Ordinal);
-    }
-
-    [Fact]
     public void AutomationSnapshot_ProjectsAdditiveRecordingTruthFields()
     {
         var assembly = SussudioAssembly.Load();
@@ -376,26 +317,6 @@ public sealed class RecordingFinalizationTruthTests
     private static T Read<T>(object instance, string propertyName) =>
         (T)instance.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance)!
             .GetValue(instance)!;
-
-    private static string Slice(string source, string start, string end)
-    {
-        var startIndex = source.IndexOf(start, StringComparison.Ordinal);
-        Assert.True(startIndex >= 0, $"Missing slice start: {start}");
-        var endIndex = source.IndexOf(end, startIndex, StringComparison.Ordinal);
-        Assert.True(endIndex > startIndex, $"Missing slice end: {end}");
-        return source[startIndex..endIndex];
-    }
-
-    private static void AssertInOrder(string source, params string[] markers)
-    {
-        var previous = -1;
-        foreach (var marker in markers)
-        {
-            var current = source.IndexOf(marker, previous + 1, StringComparison.Ordinal);
-            Assert.True(current > previous, $"Missing or out-of-order marker: {marker}");
-            previous = current;
-        }
-    }
 
     // The emitting sites now reference RecordingFailureCodes.X rather than
     // spelling the wire string inline, so the string itself has to stay pinned

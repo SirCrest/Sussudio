@@ -238,10 +238,6 @@ implementations and shared fixtures out of the oversized `Program` helper namesp
 - `HarnessCore.cs` owns the assembly-load smoke entry point and the xUnit bootstrap
   helper that initializes the staged app assembly before wrappers call shared
   reflection helpers.
-- `tests/Sussudio.Tests/XUnit.FlashbackFatalPathContractsTests.cs` owns the
-  2026-07 flashback hardening contracts for the fatal-error path: cleanup
-  preserves DVR history (no purge), unconditional recovery preserve, and the
-  bounded auto-restart scheduler in `CaptureService.Flashback.cs`.
 - `tests/Sussudio.Tests/XUnit.FlashbackDiskPolicyTests.cs` owns the behavioral
   checks for the flashback free-disk policy (`IsDiskSpaceLow` /
   `IsDiskCriticallyLow` via the injectable `FreeDiskBytesProvider` seam) and
@@ -251,19 +247,8 @@ implementations and shared fixtures out of the oversized `Program` helper namesp
   source check preserves path reservation before the encoder-lane handoff.
   `XUnit.FlashbackRecordingBoundaryTests.cs` deterministically proves that later
   queued preview work cannot extend the captured recording boundary.
-- `tests/Sussudio.Tests/XUnit.FlashbackResumeHardeningTests.cs` owns the
-  playback resume hardening source contracts: keep-frames audio prebuffer
-  (bounded, CPU frames only, rewind only on release) and the
-  `StateChanged` event raised from `SetState` with a transition reason.
-- `tests/Sussudio.Tests/XUnit.FlashbackUiHealthTests.cs` owns the flashback
-  UI health surfacing contracts: the `FlashbackHealthMessage` ViewModel
-  property, the involuntary snap-to-live reason filter, the
-  `FlashbackHealthInfoBar` AutomationId, and the resubscribe-on-controller-
-  rebuild logic in the flashback status poll.
-- `tests/Sussudio.Tests/XUnit.FlashbackUxSeamTests.cs` owns the playback UX
-  seam contracts: pause-from-live bounded forward-decode to the pause target,
-  the `PreWarm()` no-command warm-up API, and the `GapFromLive` fallback
-  before the first decoded frame.
+- `tests/Sussudio.Tests/XUnit.FlashbackUiHealthTests.cs` pins the
+  `FlashbackHealthInfoBar` AutomationId.
 - `XUnit.ToolContractsTests.cs` owns the former legacy MCP tool execution
   groups: window/preview wait, screenshot, frame-capture, window action,
   preview-toggle/probe, PresentMon correlation, performance timeline,
@@ -328,9 +313,7 @@ implementations and shared fixtures out of the oversized `Program` helper namesp
   present cadence, device-lost, diagnostics, contracts/metrics ownership,
   runtime capture, render setup/resource, and render pipeline checks. The legacy
   D3D catalog hook was removed after the final group moved to xUnit.
-- `ArchitectureGuardrailsTests.cs` owns the former legacy
-  AGENT_MAP ownership, path-reference, test-project shape guard,
-  architecture-doc reference drift, and migration-inventory guard checks.
+- `ArchitectureGuardrailsTests.cs` owns the RTK I2C probe unsafe-native-path guard.
 - Additional focused `[Fact]`/`[Theory]` files such as
   `XUnit.AutomationContractsTests.cs`,
   `XUnit.ToolContractsTests.cs` (automation client timeout policy,

@@ -16,7 +16,7 @@ Sussudio values careful, measured, high-performance engineering. Make the code f
 ## Preferred Agent Behavior
 
 - Start from live repo evidence. Re-read the files you are about to change, even if the prompt includes a detailed summary.
-- Give each behavior one obvious owner. When moving behavior to a new file, controller, facade, or partial, update matching ownership tests and `docs/architecture/AGENT_MAP.md` in the same slice.
+- Give each behavior one obvious owner. When moving behavior to a new file, controller, facade, or partial, update `docs/architecture/AGENT_MAP.md` in the same slice. Do not add tests that pin which file a symbol lives in.
 - Preserve runtime contracts. Capture, recording, HDR, Flashback, audio, preview pacing, and automation protocol behavior should stay identical unless the task explicitly asks for a behavior change.
 - Commit coherent checkpoints during long-running cleanup work so rollback stays easy. Commit only changes belonging to the current task; inspect the staged diff and preserve unrelated work.
 
@@ -42,9 +42,16 @@ Agents have repeatedly made these mistakes in this repo. Check for them before f
 - Trimming usings or dependencies by only searching for method calls. Search for type names too.
 - Making mechanical PowerShell rewrites without preserving UTF-8 and inspecting the diff immediately afterward.
 
+## Testing Policy
+
+- Never write unit tests after you write code.
+- Highly prefer E2E tests as the sole testing mechanism. Use them to verify complex features work: drive the live app through `ssctl` diagnostic sessions or the MCP tools (`run_diagnostic_session`, `control_recording`, `wait_for_condition`, `verify_recording`, `assert_snapshot`). At the end of E2E tests, produce a verifiable and repeatable artifact — a recording checked by `verify_recording`/`RecordingVerifier`, a diagnostic-session report, or a JSON result under `artifacts/` — that another agent can re-run and re-check.
+- If you must test a system in isolation, first write down all the ways it could fail, then write the code. Isolated tests are for failure modes E2E cannot reach: fault injection, cancellation, races, timeouts, shutdown, crash recovery, malformed input, and wire contracts consumed by external tools.
+- Do not write tests that assert on source text, file layout, file existence, or which file owns a method. They catch refactors, not bugs.
+
 ## Validation
 
-Use focused tests while editing. After meaningful code changes, including ownership moves and runtime changes, run the single validation entry point:
+After meaningful code changes, including ownership moves and runtime changes, run the single validation entry point:
 
 ```powershell
 powershell -NoProfile -File scripts\validate.ps1

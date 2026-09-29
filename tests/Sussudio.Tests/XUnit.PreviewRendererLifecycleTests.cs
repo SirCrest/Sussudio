@@ -224,25 +224,6 @@ public sealed class PreviewRendererLifecycleTests
         Assert.False(GetHandleInformation(nativeHandle, out _));
     }
 
-    [Fact]
-    public void UnbindAcknowledgementPrecedesJoinAndResourceRelease()
-    {
-        var stop = ReadMember("D3D11PreviewRenderer.cs", "public void Stop()");
-        AssertBefore(stop, "UnbindSwapChainFromPanel();", "renderThread.Join(");
-        AssertBefore(stop, "renderThread.Join(", "if (Volatile.Read(ref _renderThreadCleanupPending)");
-        AssertBefore(stop, "Volatile.Write(ref _renderThreadCleanupPending, 0);", "_renderThread = null;");
-        var cleanup = ReadMember("D3D11PreviewRenderer.Resources.cs", "private void CleanupD3DResources()");
-        AssertBefore(cleanup, "UnbindSwapChainFromPanel();", "DisposeProcessorResources();");
-        var uiUnbind = ReadMember("D3D11PreviewRenderer.cs", "private void ExecuteSwapChainUnbindOnUiThread(");
-        AssertBefore(uiUnbind, "if (_panel?.XamlRoot == null)", "panelNative.SetSwapChain(IntPtr.Zero);");
-        Assert.Contains("throw new InvalidOperationException", uiUnbind);
-        var acknowledge = ReadMember("D3D11PreviewRenderer.cs", "private void ExecuteSwapChainUnbindRequest(");
-        AssertBefore(acknowledge, "unbind();", "Volatile.Write(ref _swapChainBound, 0);");
-        AssertBefore(acknowledge, "Volatile.Write(ref _swapChainBound, 0);", "request.Completion.TrySetResult(null);");
-        var reset = ReadMember("D3D11PreviewRenderer.cs", "private void HandlePendingSharedDeviceResetOnRenderThread()");
-        AssertBefore(reset, "if (Volatile.Read(ref _stopRequested)", "InitializeD3D();");
-    }
-
     private static TaskCompletionSource<object?> GetUnbindCompletion(object request)
         => (TaskCompletionSource<object?>)request.GetType().GetProperty("Completion")!.GetValue(request)!;
 
@@ -328,46 +309,6 @@ public sealed class PreviewRendererLifecycleTests
         Assert.All(resources, resource => Assert.Equal(1, resource.DisposeCount));
     }
 
-    [Fact]
-    public void DisplayReadinessPrecedesSelectionAndRechecksLifecycleState()
-    {
-        var dispatch = ReadMember("D3D11PreviewRenderer.cs", "private bool ProcessRenderThreadFrameOrIdle()");
-        var wait = dispatch.IndexOf("WaitForFrameLatencySignal();", StringComparison.Ordinal);
-        var dequeue = dispatch.IndexOf("TryDequeuePendingFrame(out var frame)", StringComparison.Ordinal);
-        AssertBefore(dispatch, "TryResizeOutputForPendingFrame();", "WaitForFrameLatencySignal();");
-        Assert.True(wait >= 0 && dequeue > wait);
-        var afterWaitBeforeDequeue = dispatch[wait..dequeue];
-        Assert.Contains("_stopRequested", afterWaitBeforeDequeue);
-        Assert.Contains("_sharedDeviceResetPending", afterWaitBeforeDequeue);
-        AssertBefore(dispatch, "frame.SubmissionGeneration", "RenderFrame(frame);");
-    }
-
-    [Fact]
-    public void SwapChainReplacementClosesLatencyHandleWhileResizePreservesIt()
-    {
-        var resize = ReadMember("D3D11PreviewRenderer.Resources.cs", "private void ResizeCompositionSwapChain(");
-        Assert.DoesNotContain("DisposeFrameLatencyWaitHandle", resize);
-        Assert.DoesNotContain("ConfigureFrameLatencyWaitableObject", resize);
-        var replacement = ReadMember("D3D11PreviewRenderer.Resources.cs", "private void RecreateSdrCompositionSwapChain(");
-        AssertBefore(replacement, "DisposeFrameLatencyWaitHandle();", "_swapChain!.Dispose();");
-        var cleanup = ReadMember("D3D11PreviewRenderer.Resources.cs", "private void CleanupD3DResources()");
-        AssertBefore(cleanup, "DisposeFrameLatencyWaitHandle();", "_swapChain?.Dispose();");
-    }
-
-    [Fact]
-    public void NativeInputCacheReleasesBeforeProcessorAndDeviceOwners()
-    {
-        var processor = ReadMember("D3D11PreviewRenderer.Resources.cs", "private void DisposeProcessorResources()");
-        AssertBefore(processor, "ClearExternalInputViewCache();", "_videoProcessorEnumerator?.Dispose();");
-        var cleanup = ReadMember("D3D11PreviewRenderer.Resources.cs", "private void CleanupD3DResources()");
-        AssertBefore(cleanup, "DisposeProcessorResources();", "_device?.Dispose();");
-        var creation = ReadMember("D3D11PreviewRenderer.RenderPasses.cs", "private ID3D11VideoProcessorInputView ResolveExternalInputView(");
-        var failure = creation[creation.IndexOf("catch", StringComparison.Ordinal)..];
-        Assert.Contains("view.Dispose();", failure);
-        Assert.Contains("textureOwner.Dispose();", failure);
-        Assert.Contains("Marshal.Release(texturePointer);", failure);
-    }
-
     private static object CreateCache()
         => Activator.CreateInstance(SussudioAssembly.Load().GetType(
             "Sussudio.Services.Preview.PreviewInputViewCache`1", throwOnError: true)!
@@ -385,29 +326,6 @@ public sealed class PreviewRendererLifecycleTests
             DisposeCount++;
             if (throwOnDispose) { throw new InvalidOperationException("Synthetic disposal failure."); }
         }
-    }
-
-    // Native objects cannot be exercised by the offline fixture. Keep these few
-    // ownership/order assertions alongside behavioral lifecycle coverage.
-    private static string ReadMember(string fileName, string declaration)
-    {
-        var root = new DirectoryInfo(Environment.CurrentDirectory);
-        while (root != null && !Directory.Exists(Path.Combine(root.FullName, ".git")) &&
-               !File.Exists(Path.Combine(root.FullName, ".git")))
-        {
-            root = root.Parent;
-        }
-
-        Assert.NotNull(root);
-        var source = File.ReadAllText(Path.Combine(root!.FullName, "Sussudio", "Services", "Preview", fileName));
-        return global::Program.ExtractDeclaredMemberCode(source, declaration);
-    }
-
-    private static void AssertBefore(string source, string earlier, string later)
-    {
-        var first = source.IndexOf(earlier, StringComparison.Ordinal);
-        var second = source.IndexOf(later, StringComparison.Ordinal);
-        Assert.True(first >= 0 && second > first, $"Expected '{earlier}' before '{later}'.");
     }
 
     // A renderer fixture intentionally has no swap chain, panel, or GPU device.

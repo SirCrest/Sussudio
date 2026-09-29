@@ -23,9 +23,7 @@ Service dependencies flow from Automation to Capture to Flashback. Capture owns
 integration with concrete video and audio producers. Audio and Telemetry are
 consumed services alongside Contracts, Runtime, Gpu, Preview, Recording, and
 NativeXu; these services may consume each other but must not depend on Capture,
-Flashback, or Automation. `tests/Sussudio.Tests/ArchitectureGuardrailsTests.cs`
-checks qualified service references and protects both directions with synthetic
-source cases.
+Flashback, or Automation.
 
 Preview performance regression coverage includes
 `tests/Sussudio.Tests/PreviewFrameTimeHistoryTests.cs` (history and geometry),
@@ -51,9 +49,8 @@ are still genuinely large; others are small roots for split families. Prefer
 extracting new behavior into a named collaborator or feature folder instead of
 expanding these ownership roots.
 
-When splitting or moving code, update this map in the same commit, add or update
-the focused ownership test, and search every `ReadRepoFile(...)` reference that
-mentions the moved files.
+When splitting or moving code, update this map in the same commit. Do not add
+tests that pin which file owns a symbol; see AGENTS.md § Testing Policy.
 
 | Area | Current owners / split families | Responsibility / details |
 |------|---------------------|----------------------|
@@ -1605,10 +1602,6 @@ Primary current owners:
   blocked native work, the two-probe bound, captured identity, cancellation,
   and latest-refresh/probe-result guards. These fixtures do not enumerate
   physical devices or write persistent format-cache entries.
-- `tests/Sussudio.Tests/ArchitectureGuardrailsTests.cs` owns DeviceService
-  scoring, cohesive MF device enumerator ownership, source-reader
-  negotiation/interop ownership, MF symbolic-link matching assertions, and the
-  broader service-layer source-ownership checks.
 - `tests/Sussudio.Tests/XUnit.CoreRuntimeContractsTests.cs` owns the core
   runtime xUnit execution surface plus the ported HdrOutputPolicy, HDR output
   environment-switch, disabled source-telemetry-provider behavior checks, and
@@ -1787,17 +1780,8 @@ Primary current owners:
 - `tests/Sussudio.Tests/XUnit.FlashbackFailureTests.cs` checks structured
   export causes through real validation failures, misleading filenames,
   cancellation, artifact preservation, diagnostics, and output publication.
-- `tests/Sussudio.Tests/ArchitectureGuardrailsTests.cs` owns
-  shared implementations for consolidated AGENT_MAP reference drift,
-  test-owner code-span, README automation consumer, UI/presentation ownership,
-  CaptureService ownership, Flashback preview startup wording, shared tool
-  automation exact-path, duplicate tools/Common owner, empty test marker-shell
-  checks, literal `ReadRepoFile` source-shape path drift, cleanup-plan
-  file/folder reference drift, xUnit migration inventory checks, shared Markdown
-  code-span path-token extraction and resolution helpers, AGENT_MAP consumer
-  coverage, ownership-file discovery, exact code-span policy, xUnit inventory
-  helpers, and the xUnit execution surface for those architecture-doc checks
-  after their removal from the legacy offline harness catalog.
+- `tests/Sussudio.Tests/ArchitectureGuardrailsTests.cs` owns the RTK I2C probe
+  unsafe-native-path guard.
 - `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns the shared/ssctl
   snapshot formatter contract family: typed accessors, core section formatting,
   section-order, Flashback opt-in smoke checks, source ownership, Flashback
@@ -1886,23 +1870,6 @@ Primary current owners:
   their removal from the legacy offline harness catalog. Keep the public
   wrapper classes in this file unless a group needs an independent fixture or
   executable helper state.
-- `tests/Sussudio.Tests/ArchitectureGuardrailsTests.cs` owns service
-  folder-to-namespace architecture assertions, flat `Sussudio.Services`
-  import bans, and the harness-visible service namespace/source ownership
-  orchestrator, plus app-service contract boundary assertions that keep
-  `Sussudio/Services/Contracts` separate from `Sussudio.Automation.Contracts`
-  wire/protocol ownership, and AutomationCommandKind project/source ownership
-  alignment across the app and automation tools, plus the shared source
-  enumeration, project XML, and C# comment/string stripping helpers used by
-  service namespace architecture assertions, plus NativeXuAudioProbe
-  linked-source, split-source, locator, RTK unsafe-path behavior, and
-  no-reflection source ownership assertions. It also owns DeviceService,
-  NativeXu support, GPU interop, decoder, capture telemetry, MainViewModel
-  source ownership orchestration assertions, and MainViewModel device-native
-  audio state, mode/gain, request-controller, device refresh, capture device
-  selection, format probe, source telemetry, recording capability, preview
-  renderer enqueue, UI dispatch, property-change, runtime lifecycle/event-
-  ingress, recording runtime, and disposal source ownership assertions.
 - Focused `tests/Sussudio.Tests/XUnit.PresentationPreview*.cs` slices own
   presentation-preview capture/root policy, MainViewModel, MainWindow, stats,
   D3D renderer, preview pacing, and harness-registration execution surfaces.
@@ -2090,9 +2057,7 @@ Primary current owners:
   Real H.264 software opens cover incomplete probe metadata, and HEVC HDR
   decoding verifies the HDR flag and every converted luma/chroma sample in
   the P010 software output.
-  `tests/Sussudio.Tests/XUnit.FlashbackResumeHardeningTests.cs` retains the
-  playback state-change event source contract; prebuffer behavior lives in the
-  dedicated behavioral suite.
+  Prebuffer behavior lives in the dedicated behavioral suite.
 - `tests/Sussudio.Tests/XUnit.FlashbackContractsTests.cs` owns the xUnit
   execution surface and backing `Program` methods for the former legacy
   Flashback playback startup, command-queue, source-shape, cadence, submission,
