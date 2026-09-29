@@ -261,20 +261,63 @@ internal interface IAudioClient
     int GetService(ref Guid riid, [MarshalAs(UnmanagedType.IUnknown)] out object service);
 }
 
-// Vtable layout: IUnknown (3), IAudioClient (12, inherited), IAudioClient2 (3),
-// IAudioClient3 (3). Built-in COM interop lays out a derived ComImport interface
-// as the base interface's slots followed by the methods declared here, so the
-// base methods must not be redeclared and the IAudioClient2 slots must be
-// present even though nothing calls them. Redeclaring the base methods with
-// `new` double-counted their slots and bound the three IAudioClient3 methods
-// past the end of the real vtable, so low-latency shared-mode initialization
-// could never succeed.
+// Native vtable: IUnknown (3), IAudioClient (12), IAudioClient2 (3), IAudioClient3 (3).
+// Built-in [ComImport] interop does not inherit vtable slots from a managed base
+// interface (only source-generated COM does), so every base method must be
+// redeclared here, in native order, ahead of the methods this interface adds.
+// The C# base-interface list only makes the RCW castable to IAudioClient.
+// Before this declaration carried the three IAudioClient2 slots, the three
+// IAudioClient3 methods were bound to IAudioClient2's positions, so the
+// low-latency shared-mode path failed and fell back to legacy Initialize.
 [ComImport]
 [Guid("7ED4EE07-8E67-4CD4-8C1A-2B7A5987AD42")]
 [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
 internal interface IAudioClient3 : IAudioClient
 {
-    // IAudioClient2 slots. Never called; declared for vtable position only.
+    // IAudioClient slots 3-14, redeclared for vtable position.
+    [PreserveSig]
+    new int Initialize(
+        int shareMode,
+        uint streamFlags,
+        long bufferDuration,
+        long periodicity,
+        IntPtr format,
+        IntPtr audioSessionGuid);
+
+    [PreserveSig]
+    new int GetBufferSize(out uint bufferFrameCount);
+
+    [PreserveSig]
+    new int GetStreamLatency(out long latency);
+
+    [PreserveSig]
+    new int GetCurrentPadding(out uint paddingFrameCount);
+
+    [PreserveSig]
+    new int IsFormatSupported(int shareMode, IntPtr format, out IntPtr closestMatch);
+
+    [PreserveSig]
+    new int GetMixFormat(out IntPtr format);
+
+    [PreserveSig]
+    new int GetDevicePeriod(out long defaultPeriod, out long minimumPeriod);
+
+    [PreserveSig]
+    new int Start();
+
+    [PreserveSig]
+    new int Stop();
+
+    [PreserveSig]
+    new int Reset();
+
+    [PreserveSig]
+    new int SetEventHandle(IntPtr eventHandle);
+
+    [PreserveSig]
+    new int GetService(ref Guid riid, [MarshalAs(UnmanagedType.IUnknown)] out object service);
+
+    // IAudioClient2 slots 15-17. Never called; declared for vtable position only.
     [PreserveSig]
     int IsOffloadCapable(int category, out int offloadCapable);
 
@@ -288,7 +331,7 @@ internal interface IAudioClient3 : IAudioClient
         out long minBufferDuration,
         out long maxBufferDuration);
 
-    // IAudioClient3 slots.
+    // IAudioClient3 slots 18-20.
     [PreserveSig]
     int GetSharedModeEnginePeriod(
         IntPtr format,

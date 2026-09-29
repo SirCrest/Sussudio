@@ -98,14 +98,20 @@ Only the first apply after renderer creation needs the reset.
 ### 2.2 The IAudioClient3 low-latency path cannot work as declared (Verified)
 
 `Services/Audio/WasapiComInterop.cs:267` declares
-`[ComImport] interface IAudioClient3 : IAudioClient` and then redeclares all
-twelve `IAudioClient` methods with `new`. Built-in COM interop lays out a
-derived `ComImport` interface as the base interface's slots followed by the
-methods declared on the derived interface, so the twelve redeclared methods
-occupy twelve extra slots. The declaration also omits the three `IAudioClient2`
-methods (`IsOffloadCapable`, `SetClientProperties`, `GetBufferSizeLimits`; no
-reference exists anywhere in the repo). The three real `IAudioClient3` methods
-are therefore bound to slots 27-29 of a 21-entry vtable.
+`[ComImport] interface IAudioClient3 : IAudioClient` and redeclares the twelve
+`IAudioClient` methods with `new`. That redeclaration is required: built-in
+`[ComImport]` interop does not inherit vtable slots from a managed base
+interface (only source-generated COM does), so a derived interface's vtable is
+IUnknown plus the methods it declares itself. What the declaration omits is the
+three `IAudioClient2` methods that sit between `IAudioClient` and
+`IAudioClient3` in the native vtable (`IsOffloadCapable`, `SetClientProperties`,
+`GetBufferSizeLimits`; no reference exists anywhere in the repo). The three
+`IAudioClient3` methods are therefore bound three slots early, to
+`IAudioClient2`'s positions, with incompatible native signatures. (An earlier
+revision of this report and of the branch's first fix described the mechanism
+as double-counting and removed the redeclarations, which bound the methods to
+`IAudioClient`'s slots 6-8 instead; a Codex CLI review caught that, and the
+branch now keeps the twelve redeclarations and adds the three missing slots.)
 
 `TryInitializeSharedStreamWithAudioClient3` (`WasapiComInterop.cs:784-808`)
 returns `false` on any failing HRESULT with no log line and the callers fall
@@ -118,11 +124,14 @@ discards the minimum period (`WasapiComInterop.cs:795`), so it would still run
 at the default engine period (about 10 ms) instead of the minimum (about 2.7 ms
 on typical HD Audio, device dependent).
 
-Fix: declare `IAudioClient3` as a flat `IUnknown`-based interface listing all
-eighteen methods in vtable order (12 + 3 + 3). Request the minimum period,
+Fix: keep the twelve `new` redeclarations and insert the three `IAudioClient2`
+methods between them and the `IAudioClient3` methods, so the declaration lists
+all eighteen slots in native order (12 + 3 + 3). Request the minimum period,
 rounded to a multiple of the fundamental period, and fall back to default on
 failure. Log the HRESULT and the four periods at initialisation. Estimated gain
-per side: 3.7 ms average, 7 ms worst.
+per side: 3.7 ms average, 7 ms worst. No test exercises native dispatch through
+`IAudioClient3`, so a green suite cannot detect a wrong layout; the
+`WASAPI_CLIENT3_INIT` log line on a live run is the check.
 
 ### 2.3 Encode threads run at normal priority without MMCSS while overflow is fatal (Verified)
 
@@ -471,9 +480,9 @@ listed after the table; every item still needs a live run with a device.
 | Item | Change |
 |---|---|
 | 2.1 | `SetSharedDevice` returns early when the pointer is unchanged and the device is active, so recording start and preview re-attach no longer rebuild the swap chain |
-| 2.2 | `IAudioClient3` inherits `IAudioClient` without redeclaring it and carries the three `IAudioClient2` slots; initialisation requests the minimum shared-mode period, retries with the default period, then falls back to legacy `Initialize`; `WASAPI_CLIENT3_INIT` logs the HRESULT, period mode and all four periods |
+| 2.2 | `IAudioClient3` keeps the twelve redeclared `IAudioClient` methods (built-in interop does not inherit slots) and now carries the three `IAudioClient2` slots ahead of its own three; initialisation requests the minimum shared-mode period, retries with the default period, then falls back to legacy `Initialize`; `WASAPI_CLIENT3_INIT` logs the HRESULT, period mode and all four periods |
 | 2.3 | Both encode loops run `AboveNormal` under MMCSS "Playback"; the MJPEG emitter runs `AboveNormal` under the decode class; both WASAPI workers register as "Pro Audio" |
-| 2.6 | Preview sets the readback skip before `Start()`; recording start sets it to `gpuEncoder != null` whenever the D3D manager is present (covers recording-only sessions and software recordings on the D3D path); recording stop restores the preview-only policy. When start reuses the preview capture it records the prior value in the rollback state and a failed start restores it, so a surviving preview never inherits a software recording's readback |
+| 2.6 | Preview sets the readback skip before `Start()`; recording start sets it to `gpuEncoder != null` whenever the D3D manager is present (covers recording-only sessions and software recordings on the D3D path); recording stop restores the preview-only policy. When start reuses the preview capture it records the prior value in the rollback state and a failed start first detaches the recording consumer it attached (previously left attached to a disposed sink, a pre-existing gap) and then restores the value, so a surviving preview never inherits a software recording's readback or a dead recording route |
 | 2.8 | Preview is the first consumer in all four fan-out paths: the pooled CPU path, the non-pooled CPU fallback, the MJPEG strict emitter, and the DXGI texture path in `OnDualFrameArrived` (its recording and Flashback enqueues now follow the texture submit). The visual-cadence luma scan runs last in every path, after both the preview submit and the sink enqueues, gated as before on an active preview sink |
 | 2.9 | A CPU-backed sample on the D3D-manager path takes the single pooled copy unless strict texture delivery is required, in which case the strict failure accounting still runs |
 | 3.5 | Recording-sink work signal uses an interlocked pending gate; redundant signals no longer throw |
