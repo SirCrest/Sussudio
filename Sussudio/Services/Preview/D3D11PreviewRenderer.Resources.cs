@@ -766,6 +766,18 @@ internal sealed partial class D3D11PreviewRenderer
         ID3D11Device? previous;
         lock (_lifecycleLock)
         {
+            // Recording start and preview re-attach re-apply the device the
+            // renderer already initialized on. Re-applying an unchanged, active
+            // device would deactivate texture submission and queue a full
+            // swap-chain teardown/rebuild for nothing, dropping every preview
+            // frame until the render thread finished the reset.
+            if (_sharedDevice != null &&
+                _sharedDevice.NativePointer == sharedDevice.NativePointer &&
+                Volatile.Read(ref _sharedDeviceActive) != 0)
+            {
+                return;
+            }
+
             Marshal.AddRef(sharedDevice.NativePointer);
             previous = _sharedDevice;
             _sharedDevice = new ID3D11Device(sharedDevice.NativePointer);

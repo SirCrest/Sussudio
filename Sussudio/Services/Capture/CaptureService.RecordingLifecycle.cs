@@ -373,8 +373,27 @@ public partial class CaptureService
                 ? activeLibAvSink
                 : null;
 
+        // The source reader skips its Lock2D readback only for DXGI samples. A GPU
+        // recording consumes textures, so no consumer needs CPU bytes and the
+        // readback (a GPU sync plus a full-frame copy per frame) is pure cost; this
+        // also covers a recording-only session, whose owned capture starts below.
+        // A software recording on the D3D path needs the bytes, so restore the
+        // readback for its duration; recording stop re-applies the preview policy.
+        if (unifiedVideoCapture.D3DManager != null)
+        {
+            // Remember the preview's policy so a failed start can put it back;
+            // an owned capture is disposed on rollback and needs no restore.
+            if (rollback.OwnedUnifiedVideoCapture == null)
+            {
+                rollback.PreviousSkipCpuReadback = unifiedVideoCapture.SkipCpuReadback;
+            }
+
+            unifiedVideoCapture.SetSkipCpuReadback(gpuEncoder != null);
+        }
+
         activeLibAvSink.MarkRecordingBoundaryStarted();
         await unifiedVideoCapture.StartRecordingAsync(rollback.RecordingSink, activeLibAvSink, gpuEncoder).ConfigureAwait(false);
+        rollback.VideoRecordingAttached = true;
         if (gpuEncoder != null)
         {
             Logger.Log("GPU_RECORDING_ACTIVE gpu_encoder=active");
@@ -1951,11 +1970,17 @@ public partial class CaptureService
         var recordingQueueRejectedByBoundary = 0L;
         if (unifiedVideoCapture != null)
         {
-            // SkipCpuReadback stays true across this stop: preview consumes GPU textures
-            // directly, so a Lock2D readback is never needed while the D3D device is shared.
+            // Preview consumes GPU textures directly, so once the recording sink is
+            // detached no consumer needs a Lock2D readback while the D3D device is
+            // shared. Re-apply that policy here because a software recording on the
+            // D3D path clears the skip for its duration.
             try
             {
                 await unifiedVideoCapture.StopRecordingAsync().ConfigureAwait(false);
+                if (unifiedVideoCapture.D3DManager != null)
+                {
+                    unifiedVideoCapture.SetSkipCpuReadback(true);
+                }
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -2402,6 +2427,36 @@ public partial class CaptureService
 
         await DisposeMicrophoneCaptureAsync().ConfigureAwait(false);
 
+        // Detach the recording consumer that StartRecordingAsync attached before
+        // anything else: the sink is disposed below, and a reused preview capture
+        // survives this rollback, so it must stop routing frames to recording.
+        // Only an owned capture is disposed by the transient-backend cleanup.
+        if (rollback.VideoRecordingAttached && rollback.RecordingVideoCapture != null)
+        {
+            rollback.VideoRecordingAttached = false;
+            try
+            {
+                await rollback.RecordingVideoCapture.StopRecordingAsync().ConfigureAwait(false);
+            }
+            catch (Exception detachEx)
+            {
+                Logger.Log($"CAPTURE_RECORDING_START_ROLLBACK_DETACH_WARN type={detachEx.GetType().Name} msg='{detachEx.Message}'");
+            }
+        }
+
+        // A software recording start on a reused preview capture cleared the
+        // readback skip; a failure after that point must not leave the surviving
+        // preview doing a Lock2D readback per frame until its capture is recreated.
+        // This runs after the detach above so no CPU consumer remains when the
+        // texture-only policy returns.
+        if (rollback.PreviousSkipCpuReadback is bool previousSkipCpuReadback &&
+            rollback.RecordingVideoCapture != null &&
+            rollback.OwnedUnifiedVideoCapture == null)
+        {
+            rollback.RecordingVideoCapture.SetSkipCpuReadback(previousSkipCpuReadback);
+            rollback.PreviousSkipCpuReadback = null;
+        }
+
         if (rollback.OwnedUnifiedVideoCapture != null)
         {
             DetachUnifiedVideoCapture(rollback.OwnedUnifiedVideoCapture);
@@ -2571,6 +2626,18 @@ public partial class CaptureService
 
         public bool SinkAttachedForAudioOnly { get; set; }
 
+        // The readback-skip policy the reused preview capture had before recording
+        // start changed it; null when start did not touch it. A failed start must
+        // put it back, or the surviving preview pays a Lock2D readback per frame.
+        public bool? PreviousSkipCpuReadback { get; set; }
+
+        // True once StartRecordingAsync has attached the recording consumer to
+        // RecordingVideoCapture. A failed start must detach it again; a reused
+        // preview capture is not disposed, so without this it would keep feeding
+        // a disposed sink and, once the readback skip is restored, reject every
+        // texture-only frame as a size mismatch.
+        public bool VideoRecordingAttached { get; set; }
+
         // Clears the handles a successful start has handed off, so rollback on a
         // later failure path no longer tears down resources the caller now owns.
         public void Commit()
@@ -2579,6 +2646,8 @@ public partial class CaptureService
             RecordingSink = null;
             OwnedWasapiAudioCapture = null;
             OwnedUnifiedVideoCapture = null;
+            PreviousSkipCpuReadback = null;
+            VideoRecordingAttached = false;
         }
     }
 }

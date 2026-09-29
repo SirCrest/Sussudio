@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
 using Sussudio.Services.Recording;
+using Sussudio.Services.Runtime;
 using Sussudio.Services.Telemetry;
 
 namespace Sussudio.Services.Audio;
@@ -150,7 +151,7 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
             selectedFormat = useDesiredFormat ? desiredFormat : mixFormat;
             _captureFormat = WasapiComInterop.ReadAudioFormat(selectedFormat);
 
-            if (!WasapiComInterop.TryInitializeSharedStreamWithAudioClient3(audioClient3, selectedFormat))
+            if (!WasapiComInterop.TryInitializeSharedStreamWithAudioClient3(audioClient3, selectedFormat, streamLabel: "capture"))
             {
                 WasapiComInterop.ThrowIfFailed(
                     audioClient.Initialize(
@@ -563,6 +564,13 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
     {
         try
         {
+            // The video threads run under MMCSS; without a registration of its
+            // own this worker can be preempted by them under 4K120 load, and a
+            // late callback becomes a permanent monitoring-latency increase.
+            using var mmcss = MmcssThreadRegistration.TryRegister(
+                WasapiComInterop.AudioMmcssTask,
+                WasapiComInterop.AudioMmcssPriority,
+                message => Logger.Log(message));
             var captureEvent = _captureEvent;
             if (captureEvent == null)
             {

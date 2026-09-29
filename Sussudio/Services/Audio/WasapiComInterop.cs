@@ -261,11 +261,20 @@ internal interface IAudioClient
     int GetService(ref Guid riid, [MarshalAs(UnmanagedType.IUnknown)] out object service);
 }
 
+// Native vtable: IUnknown (3), IAudioClient (12), IAudioClient2 (3), IAudioClient3 (3).
+// Built-in [ComImport] interop does not inherit vtable slots from a managed base
+// interface (only source-generated COM does), so every base method must be
+// redeclared here, in native order, ahead of the methods this interface adds.
+// The C# base-interface list only makes the RCW castable to IAudioClient.
+// Before this declaration carried the three IAudioClient2 slots, the three
+// IAudioClient3 methods were bound to IAudioClient2's positions, so the
+// low-latency shared-mode path failed and fell back to legacy Initialize.
 [ComImport]
 [Guid("7ED4EE07-8E67-4CD4-8C1A-2B7A5987AD42")]
 [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
 internal interface IAudioClient3 : IAudioClient
 {
+    // IAudioClient slots 3-14, redeclared for vtable position.
     [PreserveSig]
     new int Initialize(
         int shareMode,
@@ -308,6 +317,21 @@ internal interface IAudioClient3 : IAudioClient
     [PreserveSig]
     new int GetService(ref Guid riid, [MarshalAs(UnmanagedType.IUnknown)] out object service);
 
+    // IAudioClient2 slots 15-17. Never called; declared for vtable position only.
+    [PreserveSig]
+    int IsOffloadCapable(int category, out int offloadCapable);
+
+    [PreserveSig]
+    int SetClientProperties(IntPtr properties);
+
+    [PreserveSig]
+    int GetBufferSizeLimits(
+        IntPtr format,
+        int eventDriven,
+        out long minBufferDuration,
+        out long maxBufferDuration);
+
+    // IAudioClient3 slots 18-20.
     [PreserveSig]
     int GetSharedModeEnginePeriod(
         IntPtr format,
@@ -781,29 +805,62 @@ internal static class WasapiComInterop
         return (IAudioClient)clientObject;
     }
 
-    internal static bool TryInitializeSharedStreamWithAudioClient3(IAudioClient3? audioClient3, IntPtr format, uint extraStreamFlags = 0)
+    // MMCSS class for the WASAPI capture and render workers. The video threads
+    // register as "Capture"/"Playback"; audio workers use the audio class so
+    // the scheduler treats them as the audio engine's own clients.
+    internal const string AudioMmcssTask = "Pro Audio";
+    internal const int AudioMmcssPriority = 1;
+
+    // Low-latency shared mode: request the engine's minimum period first (about
+    // 2.7 ms on typical HD Audio versus the 10 ms default), fall back to the
+    // default period, and let the caller fall back to legacy Initialize when
+    // both fail. Every outcome is logged because the periods are otherwise
+    // invisible and decide the audio path's latency floor.
+    internal static bool TryInitializeSharedStreamWithAudioClient3(
+        IAudioClient3? audioClient3,
+        IntPtr format,
+        uint extraStreamFlags = 0,
+        string streamLabel = "stream")
     {
         if (audioClient3 == null)
         {
+            Logger.Log($"WASAPI_CLIENT3_UNAVAILABLE stream={streamLabel}");
             return false;
         }
 
         var hr = audioClient3.GetSharedModeEnginePeriod(
             format,
             out var defaultPeriodInFrames,
-            out _,
-            out _,
-            out _);
+            out var fundamentalPeriodInFrames,
+            out var minPeriodInFrames,
+            out var maxPeriodInFrames);
         if (hr < 0)
         {
+            Logger.Log($"WASAPI_CLIENT3_PERIOD_QUERY_FAILED stream={streamLabel} hr=0x{hr:X8}");
             return false;
         }
 
-        hr = audioClient3.InitializeSharedAudioStream(
-            AUDCLNT_STREAMFLAGS_EVENTCALLBACK | extraStreamFlags,
-            defaultPeriodInFrames,
-            format,
-            IntPtr.Zero);
+        var streamFlags = AUDCLNT_STREAMFLAGS_EVENTCALLBACK | extraStreamFlags;
+        var requestedPeriodInFrames = minPeriodInFrames > 0 ? minPeriodInFrames : defaultPeriodInFrames;
+        var periodMode = requestedPeriodInFrames == defaultPeriodInFrames ? "default" : "minimum";
+        hr = audioClient3.InitializeSharedAudioStream(streamFlags, requestedPeriodInFrames, format, IntPtr.Zero);
+        if (hr < 0 && requestedPeriodInFrames != defaultPeriodInFrames)
+        {
+            Logger.Log(
+                $"WASAPI_CLIENT3_MIN_PERIOD_REJECTED stream={streamLabel} hr=0x{hr:X8} " +
+                $"requested_frames={requestedPeriodInFrames} retrying_default_frames={defaultPeriodInFrames}");
+            requestedPeriodInFrames = defaultPeriodInFrames;
+            periodMode = "default";
+            hr = audioClient3.InitializeSharedAudioStream(streamFlags, requestedPeriodInFrames, format, IntPtr.Zero);
+        }
+
+        var sampleRate = ReadAudioFormat(format).SampleRate;
+        var periodMs = sampleRate > 0 ? requestedPeriodInFrames * 1000.0 / sampleRate : 0.0;
+        Logger.Log(
+            $"WASAPI_CLIENT3_INIT stream={streamLabel} hr=0x{hr:X8} period_mode={periodMode} " +
+            $"period_frames={requestedPeriodInFrames} period_ms={periodMs:F2} " +
+            $"default_frames={defaultPeriodInFrames} fundamental_frames={fundamentalPeriodInFrames} " +
+            $"min_frames={minPeriodInFrames} max_frames={maxPeriodInFrames}");
         return hr >= 0;
     }
 }

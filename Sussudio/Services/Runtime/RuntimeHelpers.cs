@@ -220,13 +220,21 @@ internal static class RingBufferHelpers
         }
 
         var result = new double[take];
-        var start = (index - take + window.Length) % window.Length;
-        for (var i = 0; i < take; i++)
-        {
-            result[i] = window[(start + i) % window.Length];
-        }
-
+        CopyRingSegments(window, index, take, result);
         return result;
+    }
+
+    // At most two contiguous segments; avoids a modulo per element while the
+    // caller holds a lock that a hot thread also takes.
+    private static void CopyRingSegments<T>(T[] window, int index, int take, T[] result)
+    {
+        var start = (index - take + window.Length) % window.Length;
+        var firstSegment = Math.Min(take, window.Length - start);
+        Array.Copy(window, start, result, 0, firstSegment);
+        if (firstSegment < take)
+        {
+            Array.Copy(window, 0, result, firstSegment, take - firstSegment);
+        }
     }
 
     public static int[] Copy(int[] window, int count, int index, int? maxCount = null)
@@ -240,12 +248,7 @@ internal static class RingBufferHelpers
         }
 
         var result = new int[take];
-        var start = (index - take + window.Length) % window.Length;
-        for (var i = 0; i < take; i++)
-        {
-            result[i] = window[(start + i) % window.Length];
-        }
-
+        CopyRingSegments(window, index, take, result);
         return result;
     }
 }
