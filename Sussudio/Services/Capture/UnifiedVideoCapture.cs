@@ -202,6 +202,8 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
         return Task.CompletedTask;
     }
 
+    public bool SkipCpuReadback => _capture?.SkipCpuReadback ?? false;
+
     public void SetSkipCpuReadback(bool skip)
     {
         var capture = _capture;
@@ -785,6 +787,19 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
 
         EnqueueRecordingFrame(frameData, width, height, isP010, sourceSequence);
         EnqueueFlashbackFrame(frameData, width, height, isP010, sourceSequence);
+
+        // Last, so the luma scan delays neither preview nor the sinks; the MF
+        // buffer stays valid for the whole callback.
+        if (previewWanted)
+        {
+            TrackPreviewVisualFrame(
+                frameData,
+                width,
+                height,
+                isP010 ? PooledVideoPixelFormat.P010 : PooledVideoPixelFormat.Nv12,
+                arrivalTick,
+                sequenceNumber: sourceSequence);
+        }
     }
 
     // Single-copy fan-out for uncompressed CPU frames: the MF buffer is only
@@ -835,6 +850,21 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             if (flashbackWanted)
             {
                 EnqueueFlashbackFrame(frame);
+            }
+
+            // Visual cadence tracking compares consecutive frames; this runs on
+            // the single-threaded capture read loop, so ordering holds. It runs
+            // last so the luma scan delays neither preview nor the sinks; the
+            // pooled frame stays alive until the finally below.
+            if (previewSink != null)
+            {
+                TrackPreviewVisualFrame(
+                    frame.Span,
+                    frame.Width,
+                    frame.Height,
+                    frame.PixelFormat,
+                    frame.ArrivalTick,
+                    sequenceNumber: sourceSequence);
             }
         }
         finally
@@ -904,25 +934,11 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             return;
         }
 
-        var gpuEncoder = Volatile.Read(ref _gpuRecordingEncoder);
-        if (gpuEncoder != null && gpuTexture != IntPtr.Zero)
-        {
-            EnqueueGpuRecordingFrame(gpuEncoder, gpuTexture, gpuSubresource, sourceSequence);
-        }
-        else
-        {
-            EnqueueRecordingFrame(frameData, width, height, isP010, sourceSequence);
-        }
-
-        if (gpuTexture != IntPtr.Zero)
-        {
-            EnqueueFlashbackGpuFrame(gpuTexture, gpuSubresource, sourceSequence);
-        }
-        else
-        {
-            EnqueueFlashbackFrame(frameData, width, height, isP010, sourceSequence);
-        }
-
+        // Preview first, as on the CPU paths: the sink enqueues below each add
+        // an AddRef, a channel write and a wake before the frame would reach the
+        // renderer. Nothing in the preview block depends on them. The luma scan
+        // is deferred to the end of the method so it delays neither.
+        var trackVisualCadence = false;
         var previewSink = Volatile.Read(ref _previewSink);
         if (!_previewSuppressed && previewSink != null)
         {
@@ -953,19 +969,13 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
                         accepted: true);
                     textureSubmitted = true;
                     Interlocked.Exchange(ref _consecutiveTextureFailures, 0);
-                    if (!frameData.IsEmpty)
+                    if (frameData.IsEmpty)
                     {
-                        TrackPreviewVisualFrame(
-                            frameData,
-                            width,
-                            height,
-                            isP010 ? PooledVideoPixelFormat.P010 : PooledVideoPixelFormat.Nv12,
-                            arrivalTick,
-                            sequenceNumber: sourceSequence);
+                        MarkPreviewVisualCadenceUnavailable("d3d_texture_only");
                     }
                     else
                     {
-                        MarkPreviewVisualCadenceUnavailable("d3d_texture_only");
+                        trackVisualCadence = true;
                     }
                 }
                 catch (Exception ex)
@@ -1002,7 +1012,42 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             else if (!textureSubmitted && !frameData.IsEmpty)
             {
                 SubmitPreviewRawFrame(previewSink, frameData, width, height, isP010, arrivalTick, sourceSequence);
+                trackVisualCadence = true;
             }
+        }
+
+        var gpuEncoder = Volatile.Read(ref _gpuRecordingEncoder);
+        if (gpuEncoder != null && gpuTexture != IntPtr.Zero)
+        {
+            EnqueueGpuRecordingFrame(gpuEncoder, gpuTexture, gpuSubresource, sourceSequence);
+        }
+        else
+        {
+            EnqueueRecordingFrame(frameData, width, height, isP010, sourceSequence);
+        }
+
+        if (gpuTexture != IntPtr.Zero)
+        {
+            EnqueueFlashbackGpuFrame(gpuTexture, gpuSubresource, sourceSequence);
+        }
+        else
+        {
+            EnqueueFlashbackFrame(frameData, width, height, isP010, sourceSequence);
+        }
+
+        // Visual cadence tracking compares consecutive frames; this runs on the
+        // single-threaded capture read loop, so ordering holds. Last, so the luma
+        // scan delays neither preview nor the sinks; the MF buffer stays valid
+        // for the whole callback.
+        if (trackVisualCadence)
+        {
+            TrackPreviewVisualFrame(
+                frameData,
+                width,
+                height,
+                isP010 ? PooledVideoPixelFormat.P010 : PooledVideoPixelFormat.Nv12,
+                arrivalTick,
+                sequenceNumber: sourceSequence);
         }
     }
 
@@ -1213,21 +1258,6 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
                 reason: "exception");
             Logger.Log($"UNIFIED_VIDEO_PREVIEW_FRAME_FAIL type={ex.GetType().Name} msg={ex.Message}");
         }
-        finally
-        {
-            // Visual cadence tracking compares consecutive frames; this runs on
-            // the single-threaded capture read loop, so ordering holds. It runs
-            // after the submit so the luma scan is not on the preview's critical
-            // path, and in finally so a lease-unavailable frame is still tracked;
-            // the caller keeps the pooled frame alive until we return.
-            TrackPreviewVisualFrame(
-                frame.Span,
-                frame.Width,
-                frame.Height,
-                frame.PixelFormat,
-                frame.ArrivalTick,
-                sequenceNumber: sourceSequence);
-        }
     }
 
     private unsafe void SubmitPreviewRawFrame(
@@ -1278,16 +1308,6 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
                 reason: "exception");
             Logger.Log($"UNIFIED_VIDEO_PREVIEW_FRAME_FAIL type={ex.GetType().Name} msg={ex.Message}");
         }
-
-        // After the submit so the luma scan does not delay preview; the MF
-        // buffer stays valid for the whole callback.
-        TrackPreviewVisualFrame(
-            frameData,
-            width,
-            height,
-            isP010 ? PooledVideoPixelFormat.P010 : PooledVideoPixelFormat.Nv12,
-            arrivalTick,
-            sequenceNumber: sourceSequence);
     }
 
     private void TrackPreviewVisualFrame(

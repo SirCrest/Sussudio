@@ -381,6 +381,13 @@ public partial class CaptureService
         // readback for its duration; recording stop re-applies the preview policy.
         if (unifiedVideoCapture.D3DManager != null)
         {
+            // Remember the preview's policy so a failed start can put it back;
+            // an owned capture is disposed on rollback and needs no restore.
+            if (rollback.OwnedUnifiedVideoCapture == null)
+            {
+                rollback.PreviousSkipCpuReadback = unifiedVideoCapture.SkipCpuReadback;
+            }
+
             unifiedVideoCapture.SetSkipCpuReadback(gpuEncoder != null);
         }
 
@@ -2419,6 +2426,17 @@ public partial class CaptureService
 
         await DisposeMicrophoneCaptureAsync().ConfigureAwait(false);
 
+        // A software recording start on a reused preview capture cleared the
+        // readback skip; a failure after that point must not leave the surviving
+        // preview doing a Lock2D readback per frame until its capture is recreated.
+        if (rollback.PreviousSkipCpuReadback is bool previousSkipCpuReadback &&
+            rollback.RecordingVideoCapture != null &&
+            rollback.OwnedUnifiedVideoCapture == null)
+        {
+            rollback.RecordingVideoCapture.SetSkipCpuReadback(previousSkipCpuReadback);
+            rollback.PreviousSkipCpuReadback = null;
+        }
+
         if (rollback.OwnedUnifiedVideoCapture != null)
         {
             DetachUnifiedVideoCapture(rollback.OwnedUnifiedVideoCapture);
@@ -2588,6 +2606,11 @@ public partial class CaptureService
 
         public bool SinkAttachedForAudioOnly { get; set; }
 
+        // The readback-skip policy the reused preview capture had before recording
+        // start changed it; null when start did not touch it. A failed start must
+        // put it back, or the surviving preview pays a Lock2D readback per frame.
+        public bool? PreviousSkipCpuReadback { get; set; }
+
         // Clears the handles a successful start has handed off, so rollback on a
         // later failure path no longer tears down resources the caller now owns.
         public void Commit()
@@ -2596,6 +2619,7 @@ public partial class CaptureService
             RecordingSink = null;
             OwnedWasapiAudioCapture = null;
             OwnedUnifiedVideoCapture = null;
+            PreviousSkipCpuReadback = null;
         }
     }
 }
