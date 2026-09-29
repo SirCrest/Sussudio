@@ -443,6 +443,28 @@ public class DeviceService
             IsHdr = f.IsHdr
         }).ToList();
 
+    private static MediaFormat ToMediaFormat(CachedMediaFormat cached) => new()
+    {
+        Width = cached.Width,
+        Height = cached.Height,
+        FrameRate = cached.FrameRate,
+        FrameRateNumerator = cached.FrameRateNumerator,
+        FrameRateDenominator = cached.FrameRateDenominator,
+        PixelFormat = cached.PixelFormat,
+        IsHdr = cached.IsHdr
+    };
+
+    private static CachedMediaFormat ToCachedMediaFormat(MediaFormat format) => new()
+    {
+        Width = format.Width,
+        Height = format.Height,
+        FrameRate = format.FrameRate,
+        FrameRateNumerator = format.FrameRateNumerator,
+        FrameRateDenominator = format.FrameRateDenominator,
+        PixelFormat = format.PixelFormat,
+        IsHdr = format.IsHdr
+    };
+
     private static string GetFormatCacheDirectory()
         => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Sussudio");
 
@@ -500,16 +522,7 @@ public class DeviceService
 
             foreach (var cached in cache.Formats)
             {
-                device.SupportedFormats.Add(new MediaFormat
-                {
-                    Width = cached.Width,
-                    Height = cached.Height,
-                    FrameRate = cached.FrameRate,
-                    FrameRateNumerator = cached.FrameRateNumerator,
-                    FrameRateDenominator = cached.FrameRateDenominator,
-                    PixelFormat = cached.PixelFormat,
-                    IsHdr = cached.IsHdr
-                });
+                device.SupportedFormats.Add(ToMediaFormat(cached));
             }
 
             device.IsHdrCapable = cache.IsHdrCapable;
@@ -539,16 +552,7 @@ public class DeviceService
 
             foreach (var fmt in formats)
             {
-                cache.Formats.Add(new CachedMediaFormat
-                {
-                    Width = fmt.Width,
-                    Height = fmt.Height,
-                    FrameRate = fmt.FrameRate,
-                    FrameRateNumerator = fmt.FrameRateNumerator,
-                    FrameRateDenominator = fmt.FrameRateDenominator,
-                    PixelFormat = fmt.PixelFormat,
-                    IsHdr = fmt.IsHdr
-                });
+                cache.Formats.Add(ToCachedMediaFormat(fmt));
             }
 
             var json = JsonSerializer.Serialize(cache, DeviceFormatCacheJsonContext.Default.DeviceFormatCacheFile);

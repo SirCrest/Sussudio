@@ -263,7 +263,7 @@ internal static class CaptureResolutionSelectionPolicy
             return false;
         }
 
-        var requestedBucket = GetFriendlyFrameRateBucket(frameRate);
+        var requestedBucket = FrameRateTimingPolicy.GetFriendlyFrameRateBucket(frameRate);
         return ResolutionSupportsFriendlyFrameRate(
             resolutionToFormats,
             resolutionKey,
@@ -287,7 +287,7 @@ internal static class CaptureResolutionSelectionPolicy
         return formats.Any(format =>
             (!hdrOnly || CaptureModeOptionsBuilder.IsHdrModeCandidate(format)) &&
             (!sdrOnly || !CaptureModeOptionsBuilder.IsHdrModeCandidate(format)) &&
-            GetFriendlyFrameRateBucket(format.FrameRateExact) == friendlyBucket);
+            FrameRateTimingPolicy.GetFriendlyFrameRateBucket(format.FrameRateExact) == friendlyBucket);
     }
 
     private static ResolutionOption? SelectSourceResolutionOption(
@@ -316,7 +316,7 @@ internal static class CaptureResolutionSelectionPolicy
             return exact;
         }
 
-        var sourceKey = GetResolutionKey(sourceWidth, sourceHeight);
+        var sourceKey = $"{sourceWidth}x{sourceHeight}";
         var enabled = options.Where(option => option.IsEnabled).ToList();
         if (enabled.Count == 0)
         {
@@ -414,7 +414,7 @@ internal static class CaptureResolutionSelectionPolicy
 
             var buckets = formats
                 .Where(format => !CaptureModeOptionsBuilder.IsHdrModeCandidate(format))
-                .Select(format => GetFriendlyFrameRateBucket(format.FrameRateExact))
+                .Select(format => FrameRateTimingPolicy.GetFriendlyFrameRateBucket(format.FrameRateExact))
                 .ToHashSet();
             if (buckets.Count > 0)
             {
@@ -470,7 +470,7 @@ internal static class CaptureResolutionSelectionPolicy
 
         var buckets = formats
             .Where(format => !sdrOnly || !CaptureModeOptionsBuilder.IsHdrModeCandidate(format))
-            .Select(format => GetFriendlyFrameRateBucket(format.FrameRateExact))
+            .Select(format => FrameRateTimingPolicy.GetFriendlyFrameRateBucket(format.FrameRateExact))
             .Distinct()
             .OrderByDescending(bucket => bucket)
             .ToList();
@@ -546,14 +546,8 @@ internal static class CaptureResolutionSelectionPolicy
         return candidates.Max(format => format.FrameRateExact);
     }
 
-    private static int GetFriendlyFrameRateBucket(double frameRate)
-        => (int)Math.Round(frameRate, MidpointRounding.AwayFromZero);
-
     private static string FormatFriendlyFrameRate(double frameRate)
         => $"{Math.Round(frameRate):0}";
-
-    private static string GetResolutionKey(uint width, uint height)
-        => $"{width}x{height}";
 
     private static bool IsAutoResolutionValue(string? resolutionValue)
         => string.Equals(resolutionValue, "Source", StringComparison.OrdinalIgnoreCase);
@@ -1027,7 +1021,7 @@ internal static class DeviceFormatProbeRetargetPolicy
                 request.PreviousFrameRate > 0 ? request.PreviousFrameRate : request.SelectedFrameRate);
             if (selectedNv12 != null)
             {
-                var targetResolution = GetResolutionKey(selectedNv12.Width, selectedNv12.Height);
+                var targetResolution = $"{selectedNv12.Width}x{selectedNv12.Height}";
                 if (!string.Equals(targetResolution, request.SelectedResolution, StringComparison.OrdinalIgnoreCase))
                 {
                     return DeviceFormatProbeRetargetDecision.SdrNv12Retarget(
@@ -1072,13 +1066,13 @@ internal static class DeviceFormatProbeRetargetPolicy
         IReadOnlyCollection<MediaFormat> supportedFormats,
         double preferredRate)
     {
-        var preferredBucket = GetFriendlyFrameRateBucket(preferredRate);
+        var preferredBucket = FrameRateTimingPolicy.GetFriendlyFrameRateBucket(preferredRate);
         var nv12Candidates = supportedFormats
             .Where(format => format.PixelFormat.Equals("NV12", StringComparison.OrdinalIgnoreCase))
             .ToList();
 
         return nv12Candidates
-            .Where(format => GetFriendlyFrameRateBucket(format.FrameRateExact) == preferredBucket)
+            .Where(format => FrameRateTimingPolicy.GetFriendlyFrameRateBucket(format.FrameRateExact) == preferredBucket)
             .OrderByDescending(format => (long)format.Width * format.Height)
             .FirstOrDefault()
             ?? nv12Candidates
@@ -1094,12 +1088,6 @@ internal static class DeviceFormatProbeRetargetPolicy
             format.Height,
             format.FrameRateExact,
             hdrEnabled: false);
-
-    private static string GetResolutionKey(uint width, uint height)
-        => $"{width}x{height}";
-
-    private static int GetFriendlyFrameRateBucket(double frameRate)
-        => (int)Math.Round(frameRate, MidpointRounding.AwayFromZero);
 }
 
 internal sealed record DeviceFormatProbeRetargetRequest(

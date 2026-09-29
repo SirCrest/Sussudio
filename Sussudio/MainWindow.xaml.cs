@@ -1789,8 +1789,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private void StopFullScreenAutoHideTimer()
         => _fullScreenController.StopAutoHideTimer();
 
-    // Preview lifecycle, renderer, startup, and transition adapter wiring shares the MainWindow composition surface; behavior stays in named controllers.
-private PreviewAudioFadeController _previewAudioFadeController = null!;
+    // Preview lifecycle, renderer, startup, and transition adapter wiring; behavior stays in named controllers.
+    private PreviewAudioFadeController _previewAudioFadeController = null!;
     private PreviewButtonActionController _previewButtonActionController = null!;
     private PreviewButtonPresentationController _previewButtonPresentationController = null!;
     private PreviewFadeInController _previewFadeInController = null!;

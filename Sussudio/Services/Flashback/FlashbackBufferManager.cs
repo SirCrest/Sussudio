@@ -326,7 +326,7 @@ internal sealed class FlashbackBufferManager : IDisposable
 
         List<PendingEvictedSegmentDelete>? pendingDeletes = null;
         var ptsTicks = pts.Ticks;
-        // Atomic monotonic update
+        // CAS loop so concurrent callers never move the PTS backward.
         long current;
         do
         {
@@ -499,7 +499,8 @@ internal sealed class FlashbackBufferManager : IDisposable
             var sessionDirectory = FlashbackSessionRecoveryScanner.BuildSessionDirectory(tempDirectory, sessionId);
             Directory.CreateDirectory(sessionDirectory);
 
-            // Clean up orphaned export temp files from previous sessions.
+            // Startup housekeeping: drop orphaned export temp files, stale root
+            // segment files, stale session directories, and enforce the cache budget.
             FlashbackExportOutputTransaction.CleanupOrphanedTempFiles(tempDirectory);
             FlashbackStartupCacheCleanup.CleanupStaleRootSegmentFiles(tempDirectory);
             FlashbackStartupCacheCleanup.CleanupStaleSessionDirectories(tempDirectory, sessionDirectory);
@@ -817,7 +818,6 @@ internal sealed class FlashbackBufferManager : IDisposable
             : 0;
         long freedBytes = 0;
 
-        // Delete completed segments.
         for (int i = _completedSegments.Count - 1; i >= 0; i--)
         {
             if (TryDeleteFile(_completedSegments[i].Path))
@@ -827,7 +827,6 @@ internal sealed class FlashbackBufferManager : IDisposable
             }
         }
 
-        // Delete active segment.
         if (_activeSegmentPath != null)
         {
             if (TryDeleteFile(_activeSegmentPath))

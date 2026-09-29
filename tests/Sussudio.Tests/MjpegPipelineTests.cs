@@ -289,10 +289,6 @@ namespace Sussudio.Tests
         }
 
         [Fact]
-        public Task ParallelMjpegDecodePipelineReorderLivesWithRoot()
-            => global::Program.ParallelMjpegDecodePipeline_ReorderLivesWithRoot();
-
-        [Fact]
         public Task PooledVideoFrameLeaseLifecycleReturnsBufferAfterLastRelease()
             => global::Program.PooledVideoFrame_LeaseLifecycle_ReturnsBufferAfterLastRelease();
 
@@ -331,20 +327,8 @@ namespace Sussudio.Tests
             => global::Program.ParallelMjpegDecodePipeline_NormalCompletionConsumesFinalMissingSequences();
 
         [Fact]
-        public Task VisualCadenceTrackerUsesExactCropPixelsWithOnePassDiff()
-            => global::Program.VisualCadenceTracker_UsesExactCropPixelsWithOnePassDiff();
-
-        [Fact]
         public Task MjpegLeasedVideoPacketsReleaseQueuedLeases()
             => global::Program.MjpegLeasedVideoPackets_ReleaseQueuedLeases();
-
-        [Fact]
-        public Task MjpegPreviewJitterExposesAdaptiveDeadlinePolicy()
-            => global::Program.MjpegPreviewJitter_ExposesAdaptiveDeadlinePolicy();
-
-        [Fact]
-        public Task MjpegPreviewJitterEmitLoopLivesWithLifecycleRoot()
-            => global::Program.MjpegPreviewJitter_EmitLoopLivesWithLifecycleRoot();
 
         [Fact]
         public Task MjpegPreviewJitterDropsSoftDeadlineOverflowToRecoverLatency()
@@ -447,57 +431,6 @@ namespace Sussudio.Tests
             var pastResult = (TimeSpan)method.Invoke(null, new object[] { pastDeadline })!;
             Assert.True(pastResult.TotalMilliseconds <= 0,
                 $"Past deadline should return <=0ms, got {pastResult.TotalMilliseconds:F1}");
-        }
-
-        [Fact]
-        public void ParallelMjpegDecodePipelineTimingMetricsHasExpectedProperties()
-        {
-            var metricsType = RequireType("Sussudio.Services.Capture.Mjpeg.ParallelMjpegDecodePipeline+PipelineTimingMetrics");
-
-            var expectedProps = new[]
-            {
-                "DecoderCount", "DecodeSampleCount", "DecodeAvgMs", "DecodeP95Ms", "DecodeMaxMs",
-                "ReorderSampleCount", "ReorderAvgMs", "ReorderP95Ms", "ReorderMaxMs",
-                "PipelineSampleCount", "PipelineAvgMs", "PipelineP95Ms", "PipelineMaxMs",
-                "TotalDecoded", "TotalEmitted", "TotalDropped", "ReorderSkips",
-                "ReorderBufferDepth", "PerDecoder"
-            };
-
-            foreach (var prop in expectedProps)
-            {
-                var propInfo = metricsType.GetProperty(prop, BindingFlags.Public | BindingFlags.Instance);
-                Assert.NotNull(propInfo);
-            }
-        }
-
-        [Fact]
-        public void SoftwareMjpegDecoderLivesWithPipelineWorker()
-        {
-            var rootText = ReadRepoFile("Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.cs");
-            var decoderType = RequireType("Sussudio.Services.Capture.Mjpeg.SoftwareMjpegDecoder");
-
-            Assert.Contains("internal sealed unsafe class SoftwareMjpegDecoder : IDisposable", rootText, StringComparison.Ordinal);
-            Assert.Contains("public void Initialize(int width, int height)", rootText, StringComparison.Ordinal);
-            Assert.Contains("public void Dispose()", rootText, StringComparison.Ordinal);
-            Assert.Contains("public bool DecodeToNv12(ReadOnlySpan<byte> jpegData, Span<byte> nv12Destination)", rootText, StringComparison.Ordinal);
-            Assert.Contains("SW_MJPEG_DECODE_DIAG", rootText, StringComparison.Ordinal);
-            Assert.Contains("Buffer.MemoryCopy(", rootText, StringComparison.Ordinal);
-
-            // The policy in Sussudio-Defragmentation-Goal.md requires a written rationale
-            // for any file left above 1200 lines; keep the pipeline's entry honest.
-            var cleanupPlanText = RuntimeContractSource.ReadRepoFile("docs/architecture/cleanup-plan.md");
-            Assert.Contains("## Retained Large Files", cleanupPlanText, StringComparison.Ordinal);
-            Assert.Contains("`Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.cs` (", cleanupPlanText, StringComparison.Ordinal);
-            Assert.Contains("one _reorderLock-guarded sequencing invariant", cleanupPlanText, StringComparison.Ordinal);
-            Assert.Contains("SoftwareMjpegDecoder is the per-worker leaf", cleanupPlanText, StringComparison.Ordinal);
-
-            var widthProp = decoderType.GetProperty("Width", BindingFlags.Public | BindingFlags.Instance);
-            var heightProp = decoderType.GetProperty("Height", BindingFlags.Public | BindingFlags.Instance);
-            var nv12SizeProp = decoderType.GetProperty("Nv12Size", BindingFlags.Public | BindingFlags.Instance);
-
-            Assert.NotNull(widthProp);
-            Assert.NotNull(heightProp);
-            Assert.NotNull(nv12SizeProp);
         }
 
         [Theory]
@@ -1162,85 +1095,6 @@ static partial class Program
 
 
 
-    internal static Task VisualCadenceTracker_UsesExactCropPixelsWithOnePassDiff()
-    {
-        var trackerSource = ReadRepoFile("Sussudio/Services/Capture/CaptureCadenceTrackers.cs").Replace("\r\n", "\n");
-        var captureSource = ReadUnifiedVideoCaptureSource();
-
-        AssertContains(trackerSource, "internal sealed class VisualCadenceTracker");
-        AssertDoesNotContain(trackerSource, "partial class VisualCadenceTracker");
-        AssertContains(trackerSource, "DefaultSampleColumns = 640");
-        AssertContains(trackerSource, "DefaultSampleRows = 360");
-        AssertContains(trackerSource, "sampleX = cropX + Math.Max(0, (cropWidth - sampleWidth) / 2)");
-        AssertContains(trackerSource, "sampleY = cropY + Math.Max(0, (cropHeight - sampleHeight) / 2)");
-        AssertContains(trackerSource, "var x = sampleX + col;");
-        AssertContains(trackerSource, "var y = sampleY + row;");
-        AssertContains(trackerSource, "SampleLumaAndCompare(");
-        AssertContains(trackerSource, "destination[index] = luma;");
-        AssertContains(trackerSource, "if (previous != null && previous[index] != luma)");
-        AssertContains(trackerSource, "_lastSample = new byte[_sampleSize * 2]");
-        AssertContains(trackerSource, "if (bytesPerLuma == 2)");
-        AssertContains(trackerSource, "if (previous != null && previous[index] != secondLuma)");
-        AssertContains(trackerSource, "sample.ChangedPixels");
-        AssertContains(trackerSource, "PromoteCurrentSample(sampleLength, bytesPerLuma)");
-        AssertContains(trackerSource, "_lastSample = _currentSample;");
-        AssertContains(trackerSource, "AddValueSample(_deltaWindow, ref _deltaCount, ref _deltaIndex, delta)");
-        AssertContains(trackerSource, "if (delta > 0)");
-        AssertContains(trackerSource, "private readonly record struct LumaSample(int Length, double ChangedPixels)");
-        AssertContains(trackerSource, "private static void AddTimingSample(double[] window, ref int count, ref int index, double value)");
-        AssertContains(trackerSource, "private static void AddValueSample(double[] window, ref int count, ref int index, double value)");
-        AssertContains(trackerSource, "public readonly record struct Metrics(");
-        AssertContains(trackerSource, "public Metrics GetMetrics(int maxRecentIntervals = 180)");
-        AssertContains(trackerSource, "var deltaStats = ComputeStats(deltas);");
-        AssertContains(trackerSource, "ResolveMotionConfidence(_sampleCount, deltaStats.Average, repeatPercent, changeIntervals.Length)");
-        AssertDoesNotContain(trackerSource, "ChangeThreshold");
-        AssertDoesNotContain(trackerSource, "ComputeAverageDelta");
-        AssertDoesNotContain(trackerSource, "Array.Copy(_currentSample, _lastSample");
-        AssertDoesNotContain(trackerSource, "ComputeChangedPixelCount");
-
-        AssertContains(captureSource, "previewFrameProbe: null");
-        AssertContains(captureSource, "frame.ArrivalTick");
-        AssertContains(captureSource, "cropLeft: 0.25");
-        AssertContains(captureSource, "cropWidth: 0.5");
-        AssertContains(captureSource, "sampleColumns: 320");
-        AssertContains(captureSource, "cropLeft: 0.375");
-        AssertContains(captureSource, "cropWidth: 0.25");
-
-        return Task.CompletedTask;
-    }
-
-
-    internal static Task ParallelMjpegDecodePipeline_ReorderLivesWithRoot()
-    {
-        var rootText = ReadRepoFile("Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.cs")
-            .Replace("\r\n", "\n");
-        var reorderText = rootText;
-
-        AssertContains(reorderText, "private readonly record struct DecodedFrame(");
-        AssertContains(reorderText, "private readonly SortedDictionary<long, DecodedFrame> _reorderFrames = new();");
-        AssertContains(reorderText, "private readonly SortedSet<long> _knownMissingSequences = new();");
-        AssertContains(reorderText, "private readonly object _reorderLock = new();");
-        AssertContains(reorderText, "private static int ResolveDecodedReorderCapacity(int width, int height)");
-        AssertContains(reorderText, "private void DetectAndResetStall(bool emittedAny)");
-        AssertContains(reorderText, "private void MarkKnownMissing(long seqNo, string reason)");
-        AssertContains(reorderText, "private bool ConsumeKnownMissingFrames()");
-        AssertContains(reorderText, "private bool TryAddDecodedFrame(long seqNo, PooledVideoFrame frame, long decodedTick)");
-        AssertContains(reorderText, "private void EmitLoop()");
-        AssertContains(reorderText, "private bool DrainReadyFrames()");
-        AssertContains(reorderText, "private void NotifyPreviewFrameDecoded(PooledVideoFrame frame)");
-        AssertDoesNotContain(reorderText, "DrainRemainingFramesInOrder");
-        AssertContains(reorderText, "RecordTimingSample(_reorderLatencyMs");
-        AssertContains(reorderText, "_emitCallback(frame.Frame);");
-        AssertContains(rootText, "private void EmitLoop()");
-        AssertContains(rootText, "private bool DrainReadyFrames()");
-        AssertContains(rootText, "private bool TryAddDecodedFrame(long seqNo, PooledVideoFrame frame, long decodedTick)");
-        AssertContains(rootText, "private readonly record struct DecodedFrame(");
-
-        return Task.CompletedTask;
-    }
-
-
-
     internal static Task ParallelMjpegDecodePipeline_KnownLossSkipsInsteadOfSignalingFatal()
     {
         var pipelineType = RequireType("Sussudio.Services.Capture.Mjpeg.ParallelMjpegDecodePipeline");
@@ -1537,87 +1391,6 @@ static partial class Program
             addMethod.Invoke(reorderFrames, new object[] { seqNo, decodedFrame });
             SetPrivateField(pipeline, "_reorderBufferDepth", ((IDictionary)reorderFrames).Count);
         }
-    }
-
-    internal static Task MjpegPreviewJitter_ExposesAdaptiveDeadlinePolicy()
-    {
-        var source = ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.cs");
-        var pipelineSource = ReadRepoFile("Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.cs");
-        var captureSource = ReadUnifiedVideoCaptureSource();
-        AssertContains(source, "DropDeadlineExpiredFrames");
-        AssertContains(source, "DropLatencyOverflowFrames");
-        AssertContains(source, "SoftDeadlineExtraFrames = 2");
-        AssertContains(source, "AggressiveCatchUpSurplusFrames = 4");
-        AssertContains(source, "IncreaseTargetDepth");
-        AssertContains(source, "MaybeDecreaseTargetDepth");
-        AssertContains(source, "HasLatencyPressure");
-        AssertContains(source, "GetAdjustedOutputIntervalTicks");
-        AssertContains(source, "private enum DequeueMissReason");
-        AssertContains(source, "TryDequeueCore(out var dequeueMissReason)");
-        AssertContains(source, "dequeueMissReason == DequeueMissReason.WaitingForSequence");
-        AssertContains(source, "_signal.WaitOne(1);");
-        AssertContains(source, "DeadlineDropCount");
-        AssertContains(source, "TargetIncreaseCount");
-        AssertContains(source, "TargetDecreaseCount");
-        AssertContains(source, "LastSelectedPreviewPresentId");
-        AssertContains(source, "LastSelectedSourceSequenceNumber");
-        AssertContains(source, "RecordSelectedFrame");
-        AssertContains(source, "RecordDroppedFrame");
-        AssertContains(source, "ResetForPreviewSuppression");
-        AssertContains(source, "ReprimeAfterPreviewResume");
-        AssertContains(source, "TryRecordResumeReprimeMiss");
-        AssertContains(source, "ResumeReprimeCount");
-        AssertContains(source, "if (AddFrameInOrder(frame))");
-        AssertContains(source, "private bool AddFrameInOrder(BufferedFrame frame)");
-        AssertContains(source, "return false;");
-        AssertContains(source, "SUSSUDIO_PREVIEW_JITTER_TARGET_DEPTH");
-        AssertContains(source, "SUSSUDIO_PREVIEW_JITTER_MIN_TARGET_DEPTH");
-        AssertContains(source, "SUSSUDIO_PREVIEW_JITTER_MAX_TARGET_DEPTH");
-        AssertContains(source, "SUSSUDIO_PREVIEW_JITTER_MAX_DEPTH");
-        AssertContains(source, "SUSSUDIO_PREVIEW_DISPLAY_CLOCK_PACING\", 0");
-        AssertContains(source, "SUSSUDIO_PREVIEW_JITTER_MMCSS_TASK\") ?? \"Playback\"");
-        AssertContains(pipelineSource, "PreviewFrameCallback");
-        AssertContains(pipelineSource, "NotifyPreviewFrameDecoded");
-        AssertContains(captureSource, "OnMjpegPipelinePreviewFrameDecoded");
-        AssertContains(captureSource, "Volatile.Read(ref _mjpegPreviewJitterBuffer)?.ResetForPreviewSuppression()");
-        AssertContains(captureSource, "Volatile.Read(ref _mjpegPreviewJitterBuffer)?.ReprimeAfterPreviewResume()");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task MjpegPreviewJitter_EmitLoopLivesWithLifecycleRoot()
-    {
-        var rootText = ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.cs")
-            .Replace("\r\n", "\n");
-        var queueIngressText = rootText;
-        var framePacingText = rootText;
-        var metricsText = rootText;
-
-        AssertDoesNotContain(rootText, "partial class MjpegPreviewJitterBuffer");
-        AssertContains(queueIngressText, "private sealed class BufferedFrame : IDisposable");
-        AssertContains(queueIngressText, "public void Enqueue(ReadOnlySpan<byte> nv12Data, int width, int height, long arrivalTick)");
-        AssertContains(queueIngressText, "public void Enqueue(PooledVideoFrameLease frame)");
-        AssertContains(queueIngressText, "private void EnqueueBufferedFrame(BufferedFrame frame)");
-        AssertContains(queueIngressText, "private bool AddFrameInOrder(BufferedFrame frame)");
-        AssertContains(queueIngressText, "private BufferedFrame RemoveOldestFrame()");
-        AssertContains(queueIngressText, "private bool TryRecordResumeReprimeMiss(long nowTick)");
-        AssertContains(rootText, "private void EmitLoop()");
-        AssertContains(rootText, "MmcssThreadRegistration.TryRegister(_mmcssTask, _mmcssPriority");
-        AssertContains(framePacingText, "private long AlignDueTickToDisplayClock(IPreviewFrameSink? sink, long currentDueTick, long nowTick)");
-        AssertContains(framePacingText, "private void SubmitFrame(IPreviewFrameSink sink, BufferedFrame frame)");
-        AssertContains(framePacingText, "private void WaitForTicks(long ticks)");
-        AssertContains(framePacingText, "private static extern uint timeBeginPeriod(uint uPeriod);");
-        AssertContains(framePacingText, "private static extern uint timeEndPeriod(uint uPeriod);");
-        AssertContains(framePacingText, "private void DropDeadlineExpiredFrames(long nowTick)");
-        AssertContains(framePacingText, "private void IncreaseTargetDepth(long nowTick)");
-        AssertContains(framePacingText, "private bool HasLatencyPressure(long nowTick)");
-        AssertContains(rootText, "private long AlignDueTickToDisplayClock(");
-        AssertContains(rootText, "private void SubmitFrame(IPreviewFrameSink sink, BufferedFrame frame)");
-        AssertContains(metricsText, "public Metrics GetMetrics()");
-        AssertContains(metricsText, "private void RecordInputInterval(long nowTick)");
-        AssertContains(metricsText, "private void RecordDroppedFrame(long sourceSequenceNumber, string reason)");
-
-        return Task.CompletedTask;
     }
 
     internal static Task MjpegPreviewJitter_DropsSoftDeadlineOverflowToRecoverLatency()

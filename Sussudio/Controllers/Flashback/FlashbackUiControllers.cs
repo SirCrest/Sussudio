@@ -34,12 +34,8 @@ internal sealed class FlashbackCommandController
 
     public void SetInPointAtPlayhead()
     {
-        // Pass the visual playhead position (FlashbackPlaybackPosition is set by
-        // the timer to controller.PlaybackPosition during Playing, and by the
-        // PointerMoved handler to fraction*bufferDuration during Scrubbing).
-        // The parameterless overload reads controller.PlaybackPosition which is
-        // keyframe-snapped; clicking In mid-GOP would otherwise land hundreds of
-        // milliseconds before where the user is pointing.
+        // Use the visual playhead position, not the keyframe-snapped controller
+        // position, or clicking In mid-GOP lands hundreds of ms early.
         var pos = _context.ViewModel.FlashbackSetInPointAt(_context.ViewModel.FlashbackPlaybackPosition);
         if (pos.HasValue)
         {
@@ -414,9 +410,9 @@ internal sealed class FlashbackMarkerPresentationController
     {
         var trackWidth = _context.ScrubArea.ActualWidth;
         var trackHeight = _context.ScrubArea.ActualHeight;
-        var hasUsableTrack = IsUsableTrackDimension(trackWidth) &&
-                             IsUsableTrackDimension(trackHeight);
-        var hasUsableDuration = IsUsableDuration(bufferDuration);
+        var hasUsableTrack = FlashbackTimelineGeometry.IsUsableTrackDimension(trackWidth) &&
+                             FlashbackTimelineGeometry.IsUsableTrackDimension(trackHeight);
+        var hasUsableDuration = FlashbackTimelineGeometry.IsUsableDuration(bufferDuration);
 
         TimeSpan? inPtVal = null, outPtVal = null;
 
@@ -462,12 +458,6 @@ internal sealed class FlashbackMarkerPresentationController
             _context.SelectionRegion.Visibility = Visibility.Collapsed;
         }
     }
-
-    private static bool IsUsableTrackDimension(double value)
-        => double.IsFinite(value) && value > 0;
-
-    private static bool IsUsableDuration(TimeSpan value)
-        => double.IsFinite(value.TotalSeconds) && value > TimeSpan.Zero;
 }
 
 internal sealed class FlashbackPlaybackPresentationControllerContext
@@ -597,10 +587,8 @@ internal sealed class FlashbackPlaybackUiCoordinator
         _context.UpdateMarkers();
     }
 
-    // Position-changed handler. Visual playhead motion is driven by RefreshPlayheadMotion;
-    // this method refreshes label text. For Paused/Live states a position change
-    // implies seek or scrub-end, so it also re-anchors. Playing ticks deliberately
-    // skip re-anchor.
+    // Refreshes label text on a position change. Paused/Live position changes mean a
+    // seek or scrub-end and re-anchor the playhead; Playing ticks skip re-anchoring.
     public void UpdatePosition()
     {
         var state = _context.ViewModel.FlashbackState;
@@ -1007,17 +995,13 @@ internal sealed class FlashbackTimelineAnimationController
             return;
         }
 
-        if (_shouldRemainVisible())
-        {
-            _timelinePanel.Height = double.NaN;
-            _timelinePanel.Opacity = 1;
-        }
-        else
+        if (!_shouldRemainVisible())
         {
             _timelinePanel.Visibility = Visibility.Collapsed;
-            _timelinePanel.Height = double.NaN;
-            _timelinePanel.Opacity = 1;
         }
+
+        _timelinePanel.Height = double.NaN;
+        _timelinePanel.Opacity = 1;
 
         _timelineStoryboard = null;
         IsAnimating = false;

@@ -121,9 +121,9 @@ public partial class CaptureService
         }, cancellationToken);
 
     /// <summary>
-    /// Tears down the running flashback encoder and buffer, then rebuilds
-    /// with current settings. Retires the old session for bounded startup
-    /// cleanup instead of purging history as an implicit settings side effect.
+    /// Tears down and rebuilds the flashback encoder/buffer with current settings,
+    /// retiring the old session for bounded cleanup rather than purging history as
+    /// an implicit side effect of a settings change.
     /// </summary>
     public Task RestartFlashbackAsync(CancellationToken cancellationToken = default)
         => RunTransitionAsync(CurrentSessionState, async transitionToken =>
@@ -478,12 +478,12 @@ public partial class CaptureService
     /// (i.e. with <c>_sessionTransitionLock</c> held) to prevent concurrent UI toggles
     /// from tearing <c>_currentSettings</c> between the snapshot and the encoder rebuild.
     /// </summary>
-    // REVIEWED 2026-05-11: method is private; the only call site is RestartFlashbackAsync(settings),
-    // which already executes inside RunTransitionAsync and therefore holds _sessionTransitionLock.
-    // Making this public (as it was before) allowed any caller to bypass the transition gate and
-    // race with concurrent flashback restarts - the root cause of the rapid-settings segment-purge
-    // data loss (Gate 4 #1, Gate 2 Section 551/553). SemaphoreSlim is not re-entrant, so we must NOT
-    // acquire the lock here; callers are responsible for holding it (enforced by private access).
+    // REVIEWED 2026-05-11: kept private. Its only caller, RestartFlashbackAsync(settings), already
+    // runs inside RunTransitionAsync and holds _sessionTransitionLock. Making this public (as it once
+    // was) let callers bypass that gate and race concurrent flashback restarts - the root cause of the
+    // rapid-settings segment-purge data loss (Gate 4 #1, Gate 2 Section 551/553). SemaphoreSlim isn't
+    // re-entrant, so this method must not acquire the lock itself; private access enforces that callers
+    // already hold it.
     private void UpdateEncodingSettings(CaptureSettings source)
     {
         if (_currentSettings == null) return;

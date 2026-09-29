@@ -250,10 +250,10 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         var targetFormat = isHdr ? AVPixelFormat.AV_PIX_FMT_P010LE : AVPixelFormat.AV_PIX_FMT_NV12;
         if (format == targetFormat)
         {
-            var lumaBytes = isHdr ? width * 2 : width;
-            var chromaBytes = isHdr ? width * 2 : width;
-            return TryValidatePlane(frame, 0, lumaBytes, out failure) &&
-                   TryValidatePlane(frame, 1, chromaBytes, out failure);
+            // NV12/P010 luma and chroma planes share the same line size.
+            var lineBytes = isHdr ? width * 2 : width;
+            return TryValidatePlane(frame, 0, lineBytes, out failure) &&
+                   TryValidatePlane(frame, 1, lineBytes, out failure);
         }
 
         if (!isHdr && IsConvertibleSdrPlanarFormat(format))
@@ -1997,26 +1997,15 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
 
     private void CopyFramePlanesToBuffer(byte* dest, int destSize)
     {
-        if (_isHdr)
-        {
-            var yLinesize = _videoWidth * 2;
-            var yPlaneSize = yLinesize * _videoHeight;
-            var uvLinesize = _videoWidth * 2;
+        // NV12 and P010 share layout; P010 just doubles the bytes per sample.
+        var bytesPerSample = _isHdr ? 2 : 1;
+        var lineSize = _videoWidth * bytesPerSample;
+        var yPlaneSize = lineSize * _videoHeight;
 
-            CopyPlane(_videoFrame->data[0], _videoFrame->linesize[0],
-                      dest, yLinesize, _videoHeight);
-            CopyPlane(_videoFrame->data[1], _videoFrame->linesize[1],
-                      dest + yPlaneSize, uvLinesize, _videoHeight / 2);
-        }
-        else
-        {
-            var yPlaneSize = _videoWidth * _videoHeight;
-
-            CopyPlane(_videoFrame->data[0], _videoFrame->linesize[0],
-                      dest, _videoWidth, _videoHeight);
-            CopyPlane(_videoFrame->data[1], _videoFrame->linesize[1],
-                      dest + yPlaneSize, _videoWidth, _videoHeight / 2);
-        }
+        CopyPlane(_videoFrame->data[0], _videoFrame->linesize[0],
+                  dest, lineSize, _videoHeight);
+        CopyPlane(_videoFrame->data[1], _videoFrame->linesize[1],
+                  dest + yPlaneSize, lineSize, _videoHeight / 2);
     }
 
     private static void CopyPlane(byte* src, int srcLinesize, byte* dst, int dstLinesize, int height)

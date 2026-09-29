@@ -545,7 +545,6 @@ public partial class CaptureService
             var microphoneDeviceId = settings.MicrophoneDeviceId
                 ?? throw new InvalidOperationException(
                     "Recording microphone is enabled but no microphone device is selected.");
-            var micSink = activeLibAvSink; // capture stable reference - LibAv sink is nulled on success path
             var micCapture = new WasapiAudioCapture();
             await micCapture.InitializeAsync(microphoneDeviceId, transitionToken).ConfigureAwait(false);
             micCapture.AudioLevelUpdated += OnMicrophoneAudioLevelUpdated;
@@ -1952,6 +1951,8 @@ public partial class CaptureService
         var recordingQueueRejectedByBoundary = 0L;
         if (unifiedVideoCapture != null)
         {
+            // SkipCpuReadback stays true across this stop: preview consumes GPU textures
+            // directly, so a Lock2D readback is never needed while the D3D device is shared.
             try
             {
                 await unifiedVideoCapture.StopRecordingAsync().ConfigureAwait(false);
@@ -1971,11 +1972,6 @@ public partial class CaptureService
                         null,
                         RecordingFailureCodes.UnifiedStopFailed);
                 }
-            }
-            finally
-            {
-                // Keep SkipCpuReadback=true - preview uses GPU textures, not CPU bytes.
-                // Lock2D is never needed while D3D shared device is active.
             }
 
             _lastMfSourceReaderFramesDelivered = unifiedVideoCapture.VideoFramesArrived;

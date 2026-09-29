@@ -8,7 +8,6 @@ using Sussudio.Models;
 using Sussudio.Services.Audio;
 using Sussudio.Services.Capture.Mjpeg;
 using Sussudio.Services.Contracts;
-using Windows.Storage;
 using Sussudio.Services.Flashback;
 using Sussudio.Services.Gpu;
 using Sussudio.Services.Preview;
@@ -90,8 +89,8 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private readonly object _disposalLock = new();
     private Task? _disposalTask;
     private bool _isInitialized;
-    // REVIEWED 2026-04-07: writes serialized by _sessionTransitionLock;
-    // unsync reads from UI thread produce at-worst one-frame-stale value (no crash/corruption).
+    // Writes are serialized by _sessionTransitionLock; unsynchronized reads from
+    // the UI thread can see an at-worst one-frame-stale value (no crash/corruption).
     private bool _isRecording;
     private bool _isVideoPreviewActive;
     private bool _isAudioPreviewActive;
@@ -403,7 +402,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         return new NativeXuAtCommandProvider();
     }
 
-private readonly object _recordingFailureTelemetryLock = new();
+    private readonly object _recordingFailureTelemetryLock = new();
     private bool _lastRecordingEncodingFailed;
     private string? _lastRecordingEncodingFailureType;
     private string? _lastRecordingEncodingFailureMessage;
@@ -804,19 +803,12 @@ private readonly object _recordingFailureTelemetryLock = new();
 
     private void BeginFlashbackBackendCleanup(Exception ex)
     {
-        // Unconditional preserve BEFORE entering the async cleanup task: a fatal
-        // error must never destroy the user's DVR history, regardless of what kind
-        // of exception triggered cleanup. This mirrors the sibling pattern at
-        // buffer_cycle_failed / recording_finalize_failed, which both call
-        // PreserveRecoverySegments before invoking BeginFlashbackBackendCleanup.
-        // PreserveRecoverySegments is idempotent (sets a bool flag), so the
-        // double-call from buffer_cycle_failed is harmless. The flag causes
-        // ResolveSegmentPurge (inside DisposeFlashbackPreviewBackendAsync) to
-        // short-circuit the purge regardless of the purgeSegments argument, and
-        // MarkSessionPreservedForRecovery suppresses Directory.Delete in
-        // FlashbackBufferManager.Dispose so segment files survive on disk. Bounded
-        // startup cleanup (retire markers + Task 2 preserved-session aging) reclaims
-        // the disk later instead of an immediate purge.
+        // Preserve before the async cleanup task starts: a fatal error must never
+        // destroy the user's DVR history. Idempotent, so the duplicate call some
+        // callers already make before invoking this method is harmless. Setting
+        // the flag makes DisposeFlashbackPreviewBackendAsync's purge short-circuit
+        // and keeps FlashbackBufferManager.Dispose from deleting segment files;
+        // bounded startup cleanup reclaims that disk space later instead.
         _flashbackBackend.PreserveRecoverySegments("backend_fatal");
         if (IsGpuDeviceLost(ex))
         {
@@ -897,20 +889,14 @@ private readonly object _recordingFailureTelemetryLock = new();
     }
 
     /// <summary>
-    /// Returns true when <paramref name="ex"/> represents a GPU device-removed /
-    /// hung / reset condition (TDR). In these cases the flashback rolling buffer
-    /// (CPU-resident file data, independent of GPU state) is intact and must NOT
-    /// be purged during backend cleanup.
-    ///
-    /// Covers one level of <see cref="AggregateException"/> unwrap, matching
-    /// <c>App.IsRecoverableUnhandled</c>. Deeper unwrap is a separate policy
-    /// decision tracked as a deferred follow-up so both classifiers move together.
-    ///
-    /// DEVICE_HUNG (0x887A0006) is included alongside DEVICE_REMOVED and
-    /// DEVICE_RESET because a hung GPU is treated by the driver as a TDR reset:
-    /// the OS kills and recreates the device, leaving buffer data intact.
-    /// AUDCLNT_E_DEVICE_INVALIDATED and MF_E_* are intentionally excluded -
-    /// they are not GPU TDR events and would not flow through this path.
+    /// True for a GPU device-removed/hung/reset (TDR) HRESULT. The flashback
+    /// rolling buffer is CPU-resident file data independent of GPU state, so on
+    /// these it must survive backend cleanup rather than be purged.
+    /// DEVICE_HUNG is included because the driver treats a hung GPU as a TDR
+    /// reset (OS kills and recreates the device, buffer data intact).
+    /// AUDCLNT_E_DEVICE_INVALIDATED and MF_E_* are excluded: not GPU TDR events.
+    /// Unwraps one level of <see cref="AggregateException"/>, matching
+    /// <c>App.IsRecoverableUnhandled</c>; deeper unwrap is a separate follow-up.
     /// </summary>
     private static bool IsGpuDeviceLost(Exception ex)
     {
@@ -1278,12 +1264,6 @@ internal sealed class CaptureRecordingBackendResources
     {
         Context = null;
         SettingsSnapshot = null;
-    }
-
-    public void ClearAll()
-    {
-        ClearActiveBackend();
-        ClearContextAndSettings();
     }
 
     public void ClearPendingLibAvDrainIfCompletedSuccessfully()

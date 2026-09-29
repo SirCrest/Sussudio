@@ -698,11 +698,7 @@ internal static class CaptureSettingsProjectionBuilder
         }
 
         var format = input.SelectedFormat;
-        if (format != null &&
-            !input.IsHdrEnabled &&
-            format.Width >= 3840 &&
-            format.Height >= 2160 &&
-            format.FrameRateExact >= 100)
+        if (IsFourKHighFrameRateMjpegCandidate(format, input.IsHdrEnabled))
         {
             return "MJPG";
         }
@@ -717,18 +713,18 @@ internal static class CaptureSettingsProjectionBuilder
             return true;
         }
 
-        if (string.Equals(input.SelectedVideoFormat, "Auto", StringComparison.OrdinalIgnoreCase))
-        {
-            var format = input.SelectedFormat;
-            return format != null &&
-                   !input.IsHdrEnabled &&
-                   format.Width >= 3840 &&
-                   format.Height >= 2160 &&
-                   format.FrameRateExact >= 100;
-        }
-
-        return false;
+        return string.Equals(input.SelectedVideoFormat, "Auto", StringComparison.OrdinalIgnoreCase) &&
+               IsFourKHighFrameRateMjpegCandidate(input.SelectedFormat, input.IsHdrEnabled);
     }
+
+    // The UVC driver reports NV12 at 4K/100fps+, but it's actually CPU-decoded MJPG
+    // that drops frames; forcing raw MJPG lets MF use GPU DXVA decode instead.
+    private static bool IsFourKHighFrameRateMjpegCandidate(MediaFormat? format, bool isHdrEnabled)
+        => format != null &&
+           !isHdrEnabled &&
+           format.Width >= 3840 &&
+           format.Height >= 2160 &&
+           format.FrameRateExact >= 100;
 }
 
 internal sealed class CaptureSettingsProjectionInput

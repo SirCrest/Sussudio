@@ -26,7 +26,6 @@ public partial class CaptureService
                 !CanReuseFlashbackBackend(previousSettings, settings);
             _currentSettings = settings;
 
-            // Capture mic monitor settings for preview-time metering
             _micMonitorEnabled = settings.MicrophoneEnabled;
             _micMonitorDeviceId = settings.MicrophoneDeviceId;
             _micMonitorDeviceName = settings.MicrophoneDeviceName;
@@ -94,9 +93,9 @@ public partial class CaptureService
             Exception? stopFailure = null;
             try
             {
-                // Invariant: preview lifecycle must not affect the recording/flashback pipeline.
-                // Keep the capture + flashback backend alive across preview toggles unless the
-                // caller explicitly requests a full teardown (reinit, shutdown, settings change).
+                // Preview lifecycle must never affect recording/flashback: keep the capture and
+                // flashback backend alive across preview toggles unless the caller explicitly
+                // requests a full teardown (reinit, shutdown, settings change).
                 var keepPipelineAlive = !teardownPipeline &&
                     (_isRecording || (_flashbackEnabled && _flashbackBackend.Sink != null));
 
@@ -189,9 +188,9 @@ public partial class CaptureService
             return false;
         }
 
-        // Fast-path: the capture pipeline is already running (recording active, or
-        // flashback backend kept alive across a prior preview toggle). Just reattach
-        // the preview renderer: no device re-init, no flashback restart.
+        // Fast path: capture is already running (recording active, or flashback kept
+        // alive across a prior preview toggle). Just reattach the renderer — no device
+        // re-init, no flashback restart.
         if (_flashbackBackend.Sink?.IsP010 is bool sinkIsP010 &&
             sinkIsP010 != unifiedVideoCapture.IsP010)
         {
@@ -214,8 +213,8 @@ public partial class CaptureService
         }
         await EnsureFlashbackAudioInputsAsync(settings, transitionToken, "preview_fast_path").ConfigureAwait(false);
         _isVideoPreviewActive = true;
-        // Native source polling may have stopped while this capture kept running.
-        // Enabling it again reuses the capture-owned telemetry worker.
+        // Telemetry polling may have stopped while this capture kept running; restart
+        // reuses the capture-owned worker rather than creating a new one.
         StartTelemetryPoll();
         StatusChanged?.Invoke(this, "Preview started");
         return true;
@@ -268,22 +267,20 @@ public partial class CaptureService
             Logger.LogFatalBreadcrumb($"PREVIEW_START phase=starting");
             unifiedVideoCapture.Start();
             Logger.LogFatalBreadcrumb($"PREVIEW_START phase=started");
-            // Skip Lock2D by default: preview uses GPU textures via SubmitTexture,
-            // never CPU bytes. Lock2D causes GPU pipeline stalls (~5% cadence drops
-            // at 120fps, worse at 4K). The existing guards (hasTexture, !frameData.IsEmpty)
-            // handle the rare fallback case where GPU texture extraction fails.
+            // Preview submits GPU textures directly (SubmitTexture), never CPU bytes, so
+            // skip Lock2D by default — it stalls the GPU pipeline (~5% cadence drops at
+            // 120fps, worse at 4K). The hasTexture/!frameData.IsEmpty guards elsewhere
+            // still cover the rare case where GPU texture extraction fails.
             if (unifiedVideoCapture.D3DManager != null)
             {
                 unifiedVideoCapture.SetSkipCpuReadback(true);
             }
             _videoPipeline.InstallCapture(unifiedVideoCapture);
-            // Kept inline rather than routed through ResetVideoBaselineCounters (its twin in
-            // CaptureService.RecordingLifecycle.cs): CaptureServiceOwnershipTests'
-            // CaptureService_InitializationLivesWithServiceRoot deliberately asserts that BOTH
-            // lifecycle partials spell out this SetActualCaptureFrameRate call, and separately
-            // asserts neither file invokes the telemetry frame-rate correction helper -- so the
-            // rate is provably taken from the negotiated capture here. desloppify flags the
-            // 7-line overlap with the recording path as boilerplate_duplication; the guard wins.
+            // Duplicated inline (rather than shared with its twin in
+            // CaptureService.RecordingLifecycle.cs) because CaptureServiceOwnershipTests
+            // pins both lifecycle partials spelling out this SetActualCaptureFrameRate call
+            // directly, proving the rate comes from the negotiated capture and not a shared
+            // telemetry-correction helper. Don't dedupe this against the guard test.
             _lastMfSourceReaderFramesDelivered = 0;
             _lastMfSourceReaderFramesDropped = 0;
             _lastMfSourceReaderNegotiatedFormat = unifiedVideoCapture.NegotiatedFormat;

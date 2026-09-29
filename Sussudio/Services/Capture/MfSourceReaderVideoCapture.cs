@@ -547,7 +547,6 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
     }
 
 
-
     private bool TrySetSourceReaderD3DManager(IMFAttributes attributes, IntPtr dxgiDeviceManager)
     {
         object? managerAsUnknown = null;

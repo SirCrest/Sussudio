@@ -192,8 +192,8 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
         _workerTask = Task.Run(ProcessQueueAsync);
     }
 
-    // REVIEWED 2026-04-07: IDisposable fallback only; MainViewModel.DisposeAsync
-    // calls DisposeAsync directly. This sync path is never hit in production.
+    // IDisposable fallback only; MainViewModel.DisposeAsync calls DisposeAsync
+    // directly, so this sync path is never hit in production.
     public void Dispose()
     {
         if (!TryBeginDispose()) return;
@@ -535,7 +535,7 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
             lock (_snapshotLock)
             {
                 var oldestPendingCommandAgeMs = _pendingCommandEnqueuedAtUtc.Count > 0
-                    ? Math.Max(0L, (long)(DateTimeOffset.UtcNow - _pendingCommandEnqueuedAtUtc.Peek()).TotalMilliseconds)
+                    ? ElapsedMsSince(_pendingCommandEnqueuedAtUtc.Peek())
                     : 0L;
                 return new CaptureSessionSnapshot
                 {
@@ -598,10 +598,13 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
 
     private void RecordCommandQueueLatency(DateTimeOffset enqueuedAtUtc)
     {
-        var latencyMs = Math.Max(0L, (long)(DateTimeOffset.UtcNow - enqueuedAtUtc).TotalMilliseconds);
+        var latencyMs = ElapsedMsSince(enqueuedAtUtc);
         Volatile.Write(ref _lastCommandQueueLatencyMs, latencyMs);
         AtomicMax.Update(ref _maxCommandQueueLatencyMs, latencyMs);
     }
+
+    private static long ElapsedMsSince(DateTimeOffset utc) =>
+        Math.Max(0L, (long)(DateTimeOffset.UtcNow - utc).TotalMilliseconds);
 
     private sealed class CoordinatorWorkItem
     {

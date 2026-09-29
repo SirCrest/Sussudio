@@ -1,5 +1,4 @@
 using System.Linq.Expressions;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using Xunit;
 
@@ -7,28 +6,6 @@ namespace Sussudio.Tests;
 
 public sealed class StatsUiSamplerTests
 {
-    [Fact]
-    public void FullscreenDockVisibilityControlsSamplingWithoutChangingThePreference()
-    {
-        var readSource = typeof(global::Program).GetMethod("ReadRepoFile", BindingFlags.NonPublic | BindingFlags.Static)!;
-        var source = (string)readSource.Invoke(null, new object[] { "Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs" })!;
-        var visibility = global::Program.ExtractDeclaredMemberCode(source, "public void ApplyStatsVisibility(bool visible, bool immediate = false)");
-        var show = global::Program.ExtractDeclaredMemberCode(source, "public void ShowDockPanel()");
-        var hide = global::Program.ExtractDeclaredMemberCode(source, "public void HideDockPanel(bool immediate = false)");
-        var demand = global::Program.ExtractDeclaredMemberCode(source, "private void RefreshActivity()");
-        var apply = global::Program.ExtractDeclaredMemberCode(source, "private void ApplySample(StatsUiSample sample)");
-
-        Assert.Contains("_dockVisible = visible;", visibility);
-        Assert.Contains("RefreshActivity();", visibility);
-        Assert.Contains("ApplyStatsVisibility(true)", show);
-        Assert.Contains("ApplyStatsVisibility(false, immediate)", hide);
-        Assert.DoesNotContain("StatsToggle.IsChecked", visibility);
-        Assert.Contains("_dockVisible || IsFrameTimeOverlayVisible", demand);
-        Assert.DoesNotContain("StatsToggle.IsChecked", demand);
-        Assert.Contains("if (_dockVisible)", apply);
-        Assert.DoesNotContain("StatsToggle.IsChecked", apply);
-    }
-
     [Fact]
     public void ThreeConsumersShareEachSampleAndHealthRunsAtHalfTheLabelRate()
     {

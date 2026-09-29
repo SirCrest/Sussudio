@@ -582,9 +582,7 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
             return false;
         }
 
-        var index = _frames.FindIndex(candidate =>
-            candidate.SequenceNumber >= 0 &&
-            candidate.SequenceNumber > frame.SequenceNumber);
+        var index = FindFirstIndexAfterSequence(frame.SequenceNumber);
         if (index < 0)
         {
             _frames.Add(frame);
@@ -599,15 +597,7 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
 
     private BufferedFrame RemoveOldestFrame()
     {
-        var oldestIndex = 0;
-        for (var i = 1; i < _frames.Count; i++)
-        {
-            if (_frames[i].EnqueueTick < _frames[oldestIndex].EnqueueTick)
-            {
-                oldestIndex = i;
-            }
-        }
-
+        var oldestIndex = GetOldestFrameIndex();
         var frame = _frames[oldestIndex];
         _frames.RemoveAt(oldestIndex);
         if (frame.SequenceNumber >= 0 && frame.SequenceNumber == _nextPreviewSequence)
@@ -631,7 +621,7 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
             return firstOrdered >= 0 ? firstOrdered : GetOldestFrameIndex();
         }
 
-        var exact = _frames.FindIndex(frame => frame.SequenceNumber == _nextPreviewSequence);
+        var exact = FindIndexBySequence(_nextPreviewSequence);
         if (exact >= 0)
         {
             return exact;
@@ -657,6 +647,34 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
         }
 
         return oldestIndex;
+    }
+
+    // Manual loops instead of List.FindIndex(lambda) to avoid a delegate
+    // allocation on every enqueue/dequeue (this runs per frame, up to 120/sec).
+    private int FindFirstIndexAfterSequence(long sequenceNumber)
+    {
+        for (var i = 0; i < _frames.Count; i++)
+        {
+            if (_frames[i].SequenceNumber > sequenceNumber)
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    private int FindIndexBySequence(long sequenceNumber)
+    {
+        for (var i = 0; i < _frames.Count; i++)
+        {
+            if (_frames[i].SequenceNumber == sequenceNumber)
+            {
+                return i;
+            }
+        }
+
+        return -1;
     }
 
     private int GetOldestFrameIndex()
@@ -835,7 +853,7 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
             reason = depth == 0
                 ? "empty-queue"
                 : _nextPreviewSequence >= 0 &&
-                  _frames.FindIndex(frame => frame.SequenceNumber == _nextPreviewSequence) < 0
+                  FindIndexBySequence(_nextPreviewSequence) < 0
                     ? "waiting-for-sequence"
                     : "selection-blocked";
         }
@@ -886,7 +904,6 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
 
     private static long MsToTicks(double ms)
         => Math.Max(0, (long)Math.Round(ms * Stopwatch.Frequency / 1000.0));
-
 
     private long AlignDueTickToDisplayClock(IPreviewFrameSink? sink, long currentDueTick, long nowTick)
     {

@@ -159,10 +159,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
 
             Volatile.Write(ref _recordingEncoder, encoder);
             Volatile.Write(ref _gpuRecordingEncoder, gpuEncoder);
-            Interlocked.Exchange(ref _videoFramesWrittenToSink, 0);
-            Interlocked.Exchange(ref _recordingFramesDelivered, 0);
-            Interlocked.Exchange(ref _recordingFramesRejected, 0);
-            Interlocked.Exchange(ref _recordingQueueRejectedFrames, 0);
+            ResetRecordingFrameCounters();
             Volatile.Write(ref _recordingActive, true);
         }
 
@@ -171,13 +168,20 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
 
     public void BeginFlashbackRecordingAccounting()
     {
+        ResetRecordingFrameCounters();
+        Interlocked.Exchange(ref _flashbackRecordingLastAcceptedSequence, -1);
+        Interlocked.Exchange(ref _flashbackRecordingSequenceGaps, 0);
+        Volatile.Write(ref _flashbackRecordingAccountingActive, true);
+    }
+
+    // Shared by every path that starts a fresh accounting window (record start,
+    // Flashback recording start, session re-init) so the four counters can't drift apart.
+    private void ResetRecordingFrameCounters()
+    {
         Interlocked.Exchange(ref _videoFramesWrittenToSink, 0);
         Interlocked.Exchange(ref _recordingFramesDelivered, 0);
         Interlocked.Exchange(ref _recordingFramesRejected, 0);
         Interlocked.Exchange(ref _recordingQueueRejectedFrames, 0);
-        Interlocked.Exchange(ref _flashbackRecordingLastAcceptedSequence, -1);
-        Interlocked.Exchange(ref _flashbackRecordingSequenceGaps, 0);
-        Volatile.Write(ref _flashbackRecordingAccountingActive, true);
     }
 
     public void EndFlashbackRecordingAccounting()
@@ -373,10 +377,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             _visualCenterCadenceTracker.Reset();
             Interlocked.Exchange(ref _videoFramesArrived, 0);
             Interlocked.Exchange(ref _videoFramesDropped, 0);
-            Interlocked.Exchange(ref _videoFramesWrittenToSink, 0);
-            Interlocked.Exchange(ref _recordingFramesDelivered, 0);
-            Interlocked.Exchange(ref _recordingFramesRejected, 0);
-            Interlocked.Exchange(ref _recordingQueueRejectedFrames, 0);
+            ResetRecordingFrameCounters();
             Interlocked.Exchange(ref _lastVideoFrameArrivedTick, 0);
             Interlocked.Exchange(ref _fatalErrorSignaled, 0);
             Interlocked.Exchange(ref _consecutiveTextureFailures, 0);
