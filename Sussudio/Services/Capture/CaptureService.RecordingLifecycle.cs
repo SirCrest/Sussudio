@@ -154,7 +154,7 @@ public partial class CaptureService
 
             transitionToken.ThrowIfCancellationRequested();
             PublishRecordingFinalizingOutcome();
-            StatusChanged?.Invoke(this, "Finalizing recording...");
+            StatusChanged?.Invoke(this, StatusMessages.FinalizingRecording);
             FinalizeResult result;
             try
             {
@@ -170,7 +170,7 @@ public partial class CaptureService
                 throw;
             }
             // Preview continues running on the active source-reader/WASAPI sessions - no resume needed.
-            StatusChanged?.Invoke(this, result.StatusMessage);
+            StatusChanged?.Invoke(this, StatusMessages.Detail(result.StatusMessage));
             if (!result.Succeeded)
             {
                 var recoveryDetail = string.IsNullOrWhiteSpace(result.RecoveryPath)
@@ -418,7 +418,7 @@ public partial class CaptureService
         PublishRecordingStartedOutcome(rollback.RecordingContext);
         _recordingStopwatch.Restart();
         EnsureCaptureTelemetrySampling();
-        StatusChanged?.Invoke(this, "Recording");
+        StatusChanged?.Invoke(this, StatusMessages.Recording);
         rollback.Commit();
     }
 
@@ -718,7 +718,7 @@ public partial class CaptureService
         {
             StatusChanged?.Invoke(
                 this,
-                $"Still finalizing recording ({progress.Stage.ToLowerInvariant()})...");
+                StatusMessages.StillFinalizingRecording(progress.Stage));
         }
 
     }

@@ -65,7 +65,7 @@ public partial class CaptureService
 
             _isVideoPreviewActive = true;
             StartTelemetryPoll();
-            StatusChanged?.Invoke(this, "Preview started");
+            StatusChanged?.Invoke(this, StatusMessages.PreviewStarted);
         }, cancellationToken);
 
     public Task StopVideoPreviewAsync(CancellationToken cancellationToken = default)
@@ -140,7 +140,7 @@ public partial class CaptureService
                 }
             }
 
-            StatusChanged?.Invoke(this, "Preview stopped");
+            StatusChanged?.Invoke(this, StatusMessages.PreviewStopped);
         }, cancellationToken, cleanupRetainedResources: true);
 
     private async Task RecyclePreviewPipelineForStartAsync(
@@ -216,7 +216,7 @@ public partial class CaptureService
         // Telemetry polling may have stopped while this capture kept running; restart
         // reuses the capture-owned worker rather than creating a new one.
         StartTelemetryPoll();
-        StatusChanged?.Invoke(this, "Preview started");
+        StatusChanged?.Invoke(this, StatusMessages.PreviewStarted);
         return true;
     }
 
@@ -618,7 +618,7 @@ public partial class CaptureService
             if (_previewAudioGraph.ProgramCapture == null)
             {
                 _isAudioPreviewActive = false;
-                StatusChanged?.Invoke(this, "Audio preview unavailable");
+                StatusChanged?.Invoke(this, StatusMessages.AudioPreviewUnavailable);
                 return;
             }
 
@@ -657,7 +657,7 @@ public partial class CaptureService
                 throw;
             }
 
-            StatusChanged?.Invoke(this, "Audio preview started");
+            StatusChanged?.Invoke(this, StatusMessages.AudioPreviewStarted);
         }, cancellationToken);
 
     private async Task<WasapiAudioCapture?> StartPreviewAudioGraphAsync(
@@ -687,7 +687,7 @@ public partial class CaptureService
                 {
                     Logger.Log(
                         $"WASAPI_CAPTURE_START_FAIL_CONTINUE_VIDEO type={audioEx.GetType().Name} msg='{audioEx.Message}'");
-                    StatusChanged?.Invoke(this, "Audio unavailable; video preview is still running");
+                    StatusChanged?.Invoke(this, StatusMessages.AudioUnavailableVideoRunning);
                     if (wasapiCapture != null)
                     {
                         wasapiCapture.AudioLevelUpdated -= OnWasapiAudioLevelUpdated;
@@ -727,7 +727,7 @@ public partial class CaptureService
                     _isAudioPreviewActive = false;
                     Logger.Log(
                         $"WASAPI_PLAYBACK_UNAVAILABLE_CONTINUE_VIDEO type={playbackEx.GetType().Name} msg='{playbackEx.Message}'");
-                    StatusChanged?.Invoke(this, "Audio monitoring unavailable; video preview is still running");
+                    StatusChanged?.Invoke(this, StatusMessages.AudioMonitoringUnavailableVideoRunning);
                 }
             }
 
@@ -1020,7 +1020,7 @@ public partial class CaptureService
             }
 
             AudioLevelUpdated?.Invoke(this, new AudioLevelEventArgs(0, 0, false));
-            StatusChanged?.Invoke(this, "Audio preview stopped");
+            StatusChanged?.Invoke(this, StatusMessages.AudioPreviewStopped);
         }, cancellationToken);
 
     public Task UpdateAudioInputAsync(string? audioDeviceId, string? audioDeviceName, CancellationToken cancellationToken = default)

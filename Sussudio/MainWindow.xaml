@@ -247,8 +247,8 @@
             <!-- Disk warning InfoBar — overlays at top of preview area -->
             <InfoBar x:Name="DiskWarningInfoBar"
                      AutomationProperties.AutomationId="DiskWarningInfoBar"
-                     Title="Disk Space Warning"
-                     Message="Recording disk usage exceeds the flashback buffer limit. Oldest segments cannot be evicted."
+                     Title="Disk space warning"
+                     Message="Recording disk usage exceeds the Flashback buffer limit. Oldest segments cannot be evicted."
                      Severity="Error"
                      IsOpen="False"
                      IsClosable="False"

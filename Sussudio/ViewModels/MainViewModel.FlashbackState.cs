@@ -22,8 +22,8 @@ public partial class MainViewModel
     private bool _suppressFlashbackSettingsUpdate;
     private static readonly int[] SupportedFlashbackBufferMinutes = { 1, 2, 5, 10, 15, 30 };
 
-    private const string FlashbackSnapToLiveHealthMessage = "Returned to live — playback error.";
-    private const string FlashbackDeadBackendHealthMessage = "Flashback is not running — use Restart Flashback.";
+    private const string FlashbackSnapToLiveHealthMessage = StatusMessages.FlashbackSnapToLiveNotice;
+    private const string FlashbackDeadBackendHealthMessage = StatusMessages.FlashbackNotRunningNotice;
     private static readonly TimeSpan FlashbackHealthMessageClearDelay = TimeSpan.FromSeconds(5);
 
     private DispatcherQueueTimer? _flashbackHealthClearTimer;
@@ -509,7 +509,7 @@ public partial class MainViewModel
         var message =
             $"Flashback {action} rejected (state={playback.State}, " +
             $"threadAlive={playback.ThreadAlive}, pending={playback.PendingCommands}, " +
-            $"lastFailure={lastFailure}).";
+            $"lastFailure={lastFailure})";
 
         Logger.Log(
             $"{logToken} state={playback.State} threadAlive={playback.ThreadAlive} " +
@@ -691,10 +691,14 @@ public partial class MainViewModel
         string exportPath,
         FinalizeResult result)
     {
-        var statusMessage = result.StatusMessage?.Trim();
-        return string.IsNullOrWhiteSpace(statusMessage)
-            ? $"{successPrefix}: {exportPath}"
-            : $"{successPrefix}: {exportPath} - {statusMessage}";
+        // Name the file, not its full path, so a partial-export caveat in the result
+        // detail stays inside the width of the one-row status line.
+        var fileName = Path.GetFileName(exportPath);
+        var displayName = string.IsNullOrEmpty(fileName) ? exportPath : fileName;
+        var statusMessage = StatusMessages.Detail(result.StatusMessage);
+        return statusMessage.Length == 0
+            ? $"{successPrefix}: {displayName}"
+            : $"{successPrefix}: {displayName} ({statusMessage})";
     }
 
     private async Task<ExportFlashbackOutcome> ExportFlashbackCoreAsync(
@@ -791,12 +795,12 @@ public partial class MainViewModel
             case ExportFlashbackOutcome.Stale:
                 return;
             case ExportFlashbackOutcome.Failed failed:
-                StatusText = $"Export error: {failed.ErrorMessage}";
+                StatusText = StatusMessages.ExportFailed(failed.ErrorMessage);
                 break;
             case ExportFlashbackOutcome.Succeeded succeeded:
                 StatusText = succeeded.Result.Succeeded
                     ? FormatSuccessfulFlashbackExportStatus("Export complete", exportPath, succeeded.Result)
-                    : $"Export failed: {succeeded.Result.StatusMessage}";
+                    : StatusMessages.ExportFailed(succeeded.Result.StatusMessage);
                 break;
         }
     }
@@ -819,12 +823,12 @@ public partial class MainViewModel
             case ExportFlashbackOutcome.Stale:
                 return;
             case ExportFlashbackOutcome.Failed failed:
-                StatusText = $"Save error: {failed.ErrorMessage}";
+                StatusText = StatusMessages.SaveFailed(failed.ErrorMessage);
                 break;
             case ExportFlashbackOutcome.Succeeded succeeded:
                 StatusText = succeeded.Result.Succeeded
                     ? FormatSuccessfulFlashbackExportStatus("Saved last 5 minutes", exportPath, succeeded.Result)
-                    : $"Save failed: {succeeded.Result.StatusMessage}";
+                    : StatusMessages.SaveFailed(succeeded.Result.StatusMessage);
                 break;
         }
     }
@@ -884,7 +888,7 @@ public partial class MainViewModel
         }
 
         Logger.Log($"FLASHBACK_EXPORT_UI_REJECTED op={operation} reason=inactive");
-        StatusText = "Flashback export unavailable: flashback is not active.";
+        StatusText = StatusMessages.FlashbackNotActiveForExport;
         return false;
     }
 

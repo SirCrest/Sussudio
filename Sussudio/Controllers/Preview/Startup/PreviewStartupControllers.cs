@@ -387,18 +387,33 @@ internal sealed class PreviewStartupSessionController
         return Task.CompletedTask;
     }
 
+    private const string TimeoutReasonPrefix = "no-visual-confirmation-within-";
+    private const string MissingSignalsMarker = " missing:";
+
     private static string FormatTimeoutReason(int timeoutMs, string? missingSignals)
         => string.IsNullOrWhiteSpace(missingSignals)
-            ? $"no-visual-confirmation-within-{timeoutMs}ms"
-            : $"no-visual-confirmation-within-{timeoutMs}ms missing:{missingSignals}";
+            ? $"{TimeoutReasonPrefix}{timeoutMs}ms"
+            : $"{TimeoutReasonPrefix}{timeoutMs}ms{MissingSignalsMarker}{missingSignals}";
 
     private static string FormatTimeoutStatusText(string? missingSignals)
-        => string.IsNullOrWhiteSpace(missingSignals)
-            ? "Preview failed to attach to UI (session started but no visual confirmation)."
-            : $"Preview failed to start (missing readiness signal: {missingSignals}).";
+        => StatusMessages.PreviewFailed(string.IsNullOrWhiteSpace(missingSignals)
+            ? "no visual confirmation"
+            : $"missing readiness signal ({missingSignals})");
 
+    // The failure stop republishes after teardown. A timeout reason is a machine token, so it
+    // maps back to the same readable text the watchdog already published; other reasons are
+    // shown as given.
     private static string FormatFailureStopStatusText(string reason)
-        => $"Preview startup failed: {reason}";
+    {
+        if (!reason.StartsWith(TimeoutReasonPrefix, StringComparison.Ordinal))
+        {
+            return StatusMessages.PreviewFailed(reason);
+        }
+
+        var markerIndex = reason.IndexOf(MissingSignalsMarker, StringComparison.Ordinal);
+        return FormatTimeoutStatusText(
+            markerIndex < 0 ? null : reason[(markerIndex + MissingSignalsMarker.Length)..]);
+    }
 
     public PreviewStartupReadinessSignalSnapshot SignalSnapshot => _readinessSignals.Snapshot;
 

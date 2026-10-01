@@ -27,6 +27,7 @@
     <!-- Execute the complete managed controller logic with test-only UI boundaries. -->
     <Compile Include="..\..\Sussudio\Controllers\Dispatch\UiDispatchControllers.cs" Link="Production\UiDispatchControllers.cs" />
     <!-- Dependency-free production policies executed directly by their unit tests. -->
+    <Compile Include="..\..\Sussudio\Models\StatusMessages.cs" Link="Production\StatusMessages.cs" />
     <Compile Include="..\..\Sussudio\Services\Preview\PreviewOutputSizePolicy.cs" Link="Production\PreviewOutputSizePolicy.cs" />
     <Compile Include="..\..\Sussudio\Services\Automation\PreviewPacingSlowStageClassifier.cs" Link="Production\PreviewPacingSlowStageClassifier.cs" />
     <Compile Include="..\..\Sussudio\Controllers\Audio\AudioControlBindingController.cs" Link="Production\AudioControlBindingController.cs" />

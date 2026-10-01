@@ -339,6 +339,7 @@ internal sealed class StatusStripPresentationController
     public StatusStripPresentationController(StatusStripPresentationControllerContext context)
     {
         _context = context;
+        _context.StatusTextBlock.IsTextTrimmedChanged += (_, _) => UpdateStatusToolTip();
     }
 
     public void ApplyInitial(StatusStripPresentationSnapshot snapshot)
@@ -399,6 +400,17 @@ internal sealed class StatusStripPresentationController
     private void UpdateStatusText(string statusText)
     {
         _context.StatusTextBlock.Text = statusText;
+        UpdateStatusToolTip();
+    }
+
+    // The status line is one ellipsis-trimmed row, so a long message is cut off. Offer the
+    // full text as a tooltip only while it is trimmed; a message that fits needs no tooltip.
+    private void UpdateStatusToolTip()
+    {
+        var statusTextBlock = _context.StatusTextBlock;
+        ToolTipService.SetToolTip(
+            statusTextBlock,
+            statusTextBlock.IsTextTrimmed ? statusTextBlock.Text : null);
     }
 
     private void UpdateRecordingTime(string recordingTime)

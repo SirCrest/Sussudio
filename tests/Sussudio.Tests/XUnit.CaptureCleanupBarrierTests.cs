@@ -297,7 +297,7 @@ public sealed class CaptureCleanupBarrierTests
         Assert.Same(failure, observed);
         Assert.True(cancelled);
         Assert.Equal(0, requested);
-        Assert.Contains("Close again to retry", status);
+        Assert.Contains("close again to retry", status);
         Assert.False((bool)lifecycle.GetType().GetProperty("IsRecordingStopInProgress")!.GetValue(lifecycle)!);
         Assert.False((bool)lifecycle.GetType().GetProperty("IsAllowedAfterRecordingStop")!.GetValue(lifecycle)!);
         Assert.True((bool)Invoke(lifecycle, "TryMarkRequested")!);

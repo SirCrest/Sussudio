@@ -543,7 +543,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         var message =
             $"The {role} audio worker did not stop safely. Sussudio must close so its native audio resources are not reused. " +
             "Recording recovery is being attempted; the app will close when you acknowledge this message or after ten seconds.";
-        ViewModel.StatusText = "Audio shutdown timed out. Sussudio must close.";
+        ViewModel.StatusText = StatusMessages.AudioShutdownTimedOut;
 
         Task emergencyCleanup;
         try

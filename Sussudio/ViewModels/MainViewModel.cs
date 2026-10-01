@@ -202,7 +202,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private const int PreviewReinitializeDebounceMs = 250;
     private const string AutoResolutionValue = "Source";
     private const double AutoFrameRateValue = 0;
-    private const string HdrToggleBlockedWhileRecordingMessage = "Stop recording before switching between HDR and SDR pipelines.";
+    private const string HdrToggleBlockedWhileRecordingMessage = StatusMessages.StopRecordingBeforeSwitchingHdr;
 
     private readonly DeviceService _deviceService;
     private readonly CaptureService _captureService;
@@ -273,9 +273,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                 !RecordingFinalizationRecoveryArtifacts.IsUnresolvedMarkerPath(path))
                 ?? recoveredRecording.MarkerPath;
             RecoveredRecordingFailureMessage = recoveredRecording.Reason;
-            StatusText = recoveredRecording.Reason.StartsWith("Recording failed", StringComparison.OrdinalIgnoreCase)
-                ? recoveredRecording.Reason
-                : $"Recording failed: {recoveredRecording.Reason}";
+            StatusText = StatusMessages.RecordingFailed(recoveredRecording.Reason);
         }
         StartRecordingCapabilityRefresh();
         return Task.CompletedTask;
@@ -369,14 +367,14 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                 return true;
             }
 
-            StatusText = $"Settings save failed: {settingsSaveFailure}. Changes may revert after restart.";
+            StatusText = StatusMessages.SettingsSaveFailed(settingsSaveFailure);
             return false;
         }
         catch (Exception ex)
         {
             var failure = $"{ex.GetType().Name}: {ex.Message}";
             Logger.Log($"SETTINGS_SAVE: unexpected error: {failure}");
-            StatusText = $"Settings save failed: {failure}. Changes may revert after restart.";
+            StatusText = StatusMessages.SettingsSaveFailed(failure);
             return false;
         }
     }
@@ -1895,7 +1893,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     }
 
     [ObservableProperty]
-    public partial string StatusText { get; set; } = "Ready";
+    public partial string StatusText { get; set; } = StatusMessages.Ready;
 
     [ObservableProperty]
     public partial string LiveResolution { get; set; } = LiveInfoUnavailable;

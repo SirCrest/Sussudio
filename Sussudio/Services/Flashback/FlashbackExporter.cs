@@ -134,7 +134,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
 
     private static FinalizeResult CreateCancelledExportResult(string outputPath)
     {
-        const string message = "Flashback export cancelled.";
+        const string message = "Flashback export canceled.";
         Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
         return FlashbackExportFailureCodes.Create(outputPath, message, FlashbackExportFailureCodes.Cancelled);
     }
@@ -182,7 +182,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         }
         catch (OperationCanceledException)
         {
-            const string message = "Flashback export cancelled.";
+            const string message = "Flashback export canceled.";
             Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
             cancellationResult = FlashbackExportFailureCodes.Create(outputPath, message, FlashbackExportFailureCodes.Cancelled);
             return false;
@@ -865,7 +865,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             }
             catch (OperationCanceledException)
             {
-                const string message = "Flashback export cancelled.";
+                const string message = "Flashback export canceled.";
                 Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
                 return FlashbackExportFailureCodes.Create(outputPath, message, FlashbackExportFailureCodes.Cancelled);
             }
@@ -1787,7 +1787,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             }
             catch (OperationCanceledException)
             {
-                const string message = "Flashback export cancelled.";
+                const string message = "Flashback export canceled.";
                 Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
                 return FlashbackExportFailureCodes.Create(outputPath, message, FlashbackExportFailureCodes.Cancelled);
             }

@@ -121,7 +121,8 @@ static partial class Program
     {
         var harness = new PreviewLifecycleHarness(await CreateDisposedPreviewCoordinatorAsync());
         var error = await Assert.ThrowsAsync<ObjectDisposedException>(() => harness.Start());
-        Assert.Equal($"Failed to initialize: {error.Message}", harness.Status);
+        Assert.StartsWith("Device initialization failed: Cannot access a disposed object.", harness.Status);
+        Assert.DoesNotContain('\n', harness.Status);
         Assert.False(harness.Initialized);
         Assert.False(harness.Previewing);
         Assert.Equal(1, harness.BuildSettingsCalls);
@@ -134,7 +135,7 @@ static partial class Program
         var harness = new PreviewLifecycleHarness { Device = null };
         var error = await Assert.ThrowsAsync<InvalidOperationException>(() => harness.Initialize());
         Assert.Equal("No capture device selected.", error.Message);
-        Assert.Equal("Failed to initialize: No capture device selected.", harness.Status);
+        Assert.Equal("Device initialization failed: No capture device selected", harness.Status);
         Assert.False(harness.Initialized);
         Assert.Equal(0, harness.BuildSettingsCalls);
     }
@@ -283,7 +284,7 @@ static partial class Program
         Assert.False(harness.Initialized);
         Assert.False(harness.Previewing);
         Assert.False(harness.Reinitializing);
-        Assert.Equal("Failed to apply format: synthetic device busy", harness.Status);
+        Assert.Equal("Capture settings update failed: synthetic device busy", harness.Status);
         Assert.False(await harness.Reinitialize("after-busy").WaitAsync(TimeSpan.FromSeconds(5)));
         Assert.Equal(5, harness.BuildSettingsCalls);
     }
@@ -308,7 +309,7 @@ static partial class Program
         Assert.DoesNotContain("stop-requested", harness.Trace);
         Assert.True(harness.Previewing);
         Assert.False(harness.ReinitializeAdmitted);
-        Assert.Equal("Stop recording before changing capture settings.", harness.Status);
+        Assert.Equal("Stop recording before changing capture settings", harness.Status);
     }
 
     internal static async Task PreviewLifecycle_PendingRecordingStartPreventsReinitialize()
@@ -346,7 +347,7 @@ static partial class Program
         var reinitialize = harness.Reinitialize("recording-guard");
         Assert.True(harness.ReinitializeAdmitted);
         var error = await Assert.ThrowsAsync<InvalidOperationException>(() => harness.SetRecording(true));
-        Assert.Equal("Wait for capture settings to finish applying before starting recording.", error.Message);
+        Assert.Equal("Wait for capture settings to finish applying before recording", error.Message);
         Assert.Equal(error.Message, harness.Status);
         Assert.Equal(0, harness.RecordingStartCalls);
         Assert.False(harness.RecordingTransitioning);

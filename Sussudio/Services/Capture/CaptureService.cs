@@ -376,7 +376,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             await RefreshSourceTelemetryAsync(transitionToken).ConfigureAwait(false);
             TryCorrectFrameRateFromTelemetry();
             _isInitialized = true;
-            StatusChanged?.Invoke(this, "Initialized");
+            StatusChanged?.Invoke(this, StatusMessages.DeviceReady);
         }, cancellationToken);
 
     public CaptureService() : this(new ProcessSupervisor(), null)
@@ -477,7 +477,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             {
                 transitionToken.ThrowIfCancellationRequested();
                 PublishRecordingFinalizingOutcome();
-                StatusChanged?.Invoke(this, "Finalizing recording...");
+                StatusChanged?.Invoke(this, StatusMessages.FinalizingRecording);
                 var result = await StopAndDisposeRecordingBackendAsync(
                     "Stopped during cleanup",
                     emergency: false,
@@ -848,7 +848,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                     {
                         try
                         {
-                            StatusChanged?.Invoke(this, $"Flashback error: {ex.Message}");
+                            StatusChanged?.Invoke(this, StatusMessages.FlashbackFailed(ex.Message));
                         }
                         catch (Exception statusEx)
                         {

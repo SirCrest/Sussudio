@@ -82,6 +82,7 @@ tests that pin which file owns a symbol; see AGENTS.md § Testing Policy.
 | Capture models | `Sussudio/Models/Capture/CaptureModels.cs` | Capture configuration, input media formats, health, cadence, and runtime DTOs. `MediaFormat` owns input frame-rate and pixel-format behavior beside `CaptureDevice`. |
 | Recording models | `Sussudio/Models/Recording/RecordingModels.cs` | Encoder capabilities, recording statistics, and integrity DTOs. `RecordingIntegrityStatus` and `RecordingIntegrityAudioStatus` define the typed integrity vocabulary; only the `AutomationSnapshot` projection turns these values into wire text. `EncoderSupport` owns recording-format-to-NVENC codec-name mapping. |
 | Flashback models | `Sussudio/Models/Flashback/FlashbackModels.cs` | Buffer options, session context, playback state, export progress/segments/requests, and force-rotation results. These types retain the `Sussudio.Models` namespace. |
+| Status messages | `Sussudio/Models/StatusMessages.cs` | Owns footer status-line wording (`MainViewModel.StatusText`) and the `CaptureService.StatusChanged` text that feeds it, plus the style rules: sentence-case fragments without a trailing period, `...` only for work in flight, `{Subject} failed: {reason}`, `; ` before a consequence, ASCII only. `Failed` does not double a `{Subject} failed` prefix; `Detail` collapses whitespace and drops trailing periods from exception and service text; `OperationFailed` maps internal UI operation names (log tokens) to readable subjects. Service result messages (`FinalizeResult.StatusMessage`, Flashback export results) are data read by automation and diagnostics tools and stay with their producers. Add a new footer message here rather than inline. |
 | Source telemetry | `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs`, `NativeXuAtProtocol.cs` | Native XU AT-command transport and source-signal protocol parsing. |
 | App service contracts | `Sussudio/Services/Contracts/ServiceContracts.cs`, `Sussudio/Services/Contracts/ISourceSignalTelemetryProvider.cs` | Shared source, recording, preview, and telemetry interfaces, separate from `Sussudio.Automation.Contracts` wire/protocol contracts. |
 | Recording | `Sussudio/Services/Recording/LibAvEncoder.cs`, `LibAvEncoder.Audio.cs`, `LibAvEncoder.VideoFrames.cs`, `LibAvRecordingSink.cs`, `Sussudio/Services/Recording/Verification/RecordingVerifier.cs`, `InProcessRecordingStructureVerifier.cs` | Encoder lifecycle, audio/video input, sink queues, and verification. See [recording](#recording). |
@@ -1171,7 +1172,8 @@ Primary current owners:
   update hook; `Sussudio/Controllers/Shell/ShellChromeController.cs` owns window title
   base/build-stamp formatting and the recording-time suffix used by property
   changes, plus bottom status-strip projection: status text, recording time, disk warning,
-  disk-space text, recording size, recording bitrate, the status-strip
+  disk-space text, recording size, recording bitrate, the status-line tooltip that
+  shows the full message only while it is ellipsis-trimmed, the status-strip
   `PropertyChanged` router, the recording-only title-refresh callback, and the
   Flashback bitrate fallback used while Flashback is enabled and recording is
   idle. `Sussudio/MainWindow.xaml.cs` is the XAML-facing
@@ -2210,7 +2212,9 @@ Primary current owners:
   stores callbacks without invoking collaborators initialized later. Timeout
   diagnostics receive external visibility values; startup state stays in the owner.
   `PreviewStartupControllers.cs` also owns preview startup timeout reason,
-  timeout status, and failure-stop status text.
+  timeout status, and failure-stop status text; the wording comes from
+  `Sussudio/Models/StatusMessages.cs`, and a timeout reason maps back to the same
+  readable timeout status after teardown.
   `Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs` owns preview-
   specific ViewModel event lifecycle and the preview property-change router for
   preview start/stop/reinit state.

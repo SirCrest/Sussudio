@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.UI.Dispatching;
+using Sussudio.Models;
 using Sussudio.ViewModels;
 
 namespace Sussudio.Controllers;
@@ -222,7 +223,7 @@ internal sealed class WindowUiDispatchController
         catch (Exception ex)
         {
             Logger.LogException(ex);
-            _context.ViewModel.StatusText = $"{operationName} failed: {ex.Message}";
+            _context.ViewModel.StatusText = StatusMessages.OperationFailed(operationName, ex.Message);
         }
     }
 }
@@ -282,7 +283,7 @@ internal sealed class MainViewModelUiDispatchController
         catch (Exception ex)
         {
             _context.LogException(ex);
-            _context.SetStatusText($"{operationName} failed: {ex.Message}");
+            _context.SetStatusText(StatusMessages.OperationFailed(operationName, ex.Message));
         }
     }
 
