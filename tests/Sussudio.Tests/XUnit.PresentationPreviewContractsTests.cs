@@ -1910,7 +1910,7 @@ static partial class Program
         AssertEqual(false, SignalWindowActive(true), "confirmed visual closes signal window");
         AssertEqual(false, GetBoolProperty(controller, "ShouldRefreshMissingSignalsForSnapshot"), "rendering does not refresh missing signals");
         AssertEqual(
-            "log:PREVIEW_START_STATE state=Rendering attempt=attempt-1 recovery=0 reason=-|stop-overlay|schedule-fade|complete-reinit:attempt-1:ConfirmPreviewFirstVisual|log:PREVIEW_FIRST_VISUAL_CONFIRMED attempt=attempt-1 source=D3D11FirstFrame elapsedMs=250 recovery=0",
+            "log:PREVIEW_START_STATE state=Rendering attempt=attempt-1 recovery=0 reason=-|stop-overlay|status:Preview started|schedule-fade|complete-reinit:attempt-1:ConfirmPreviewFirstVisual|log:PREVIEW_FIRST_VISUAL_CONFIRMED attempt=attempt-1 source=D3D11FirstFrame elapsedMs=250 recovery=0",
             string.Join("|", recorder.Events), "first visual presentation order");
         var firstVisualUtc = GetPropertyValue(controller, "FirstVisualUtc");
         recorder.Events.Clear();

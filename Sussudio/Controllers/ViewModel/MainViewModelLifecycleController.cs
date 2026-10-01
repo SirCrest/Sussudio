@@ -366,6 +366,7 @@ internal sealed class MainViewModelRuntimeEventIngressControllerContext
     public required Func<Action, bool> TryEnqueueOnUiThread { get; init; }
     public required Func<CaptureRuntimeSnapshot> GetRuntimeSnapshot { get; init; }
     public required Action<string> SetStatusText { get; init; }
+    public required Func<bool> IsStartingAudioForPreview { get; init; }
     public required Action<CaptureRuntimeSnapshot> UpdateLiveCaptureInfo { get; init; }
     public required Action<CaptureRuntimeSnapshot> UpdateHdrRuntimeStatusFromCapture { get; init; }
     public required Action<bool> SetIsInitialized { get; init; }
@@ -439,7 +440,12 @@ internal sealed class MainViewModelRuntimeEventIngressController
         if (!_context.TryEnqueueOnUiThread(() =>
         {
             var runtimeSnapshot = _context.GetRuntimeSnapshot();
-            _context.SetStatusText(status);
+            // A preview start owns the footer until its first visual; audio success inside it
+            // is not news. Audio warnings still come through.
+            if (!(status == StatusMessages.AudioPreviewStarted && _context.IsStartingAudioForPreview()))
+            {
+                _context.SetStatusText(status);
+            }
             _context.UpdateFlashbackHealthStatus();
             _context.UpdateLiveCaptureInfo(runtimeSnapshot);
             _context.UpdateHdrRuntimeStatusFromCapture(runtimeSnapshot);
@@ -578,6 +584,13 @@ internal sealed class MainViewModelPreviewLifecycleController
 
     public bool IsReinitializeAdmitted => _previewReinitializeController.IsReinitializeAdmitted;
 
+    private int _audioStartsForPreviewStart;
+
+    // True while StartPreviewAsync is starting audio as part of a preview start. The service's
+    // "Audio preview started" event is queued before that command completes, so it arrives
+    // while this is still true and must not replace the preview-level status.
+    public bool IsStartingAudioForPreview => Volatile.Read(ref _audioStartsForPreviewStart) > 0;
+
     public async Task InitializeDeviceAsync(CancellationToken cancellationToken = default)
     {
         try
@@ -631,18 +644,20 @@ internal sealed class MainViewModelPreviewLifecycleController
         await _context.SessionCoordinator.StartVideoPreviewAsync(settings, cancellationToken).ConfigureAwait(true);
 
         _context.SetIsPreviewing(true);
-        _context.SetStatusText(StatusMessages.PreviewStarted);
+        // The capture session is running but nothing is on screen yet; the preview startup
+        // session publishes "Preview started" when it confirms the first visual.
+        _context.SetStatusText(StatusMessages.PreviewStarting);
 
         if (_context.ShouldStartAudioPreview())
         {
-            await _context.SessionCoordinator.StartAudioPreviewAsync(cancellationToken);
-            // The service queues "Audio preview started" before its command completes, so it
-            // is applied ahead of this continuation. Keep the resting text at preview level so
-            // it does not depend on the audio setting. If audio did not start, leave the
-            // service's "unavailable" warning visible.
-            if (_context.IsAudioPreviewActive())
+            Interlocked.Increment(ref _audioStartsForPreviewStart);
+            try
             {
-                _context.SetStatusText(StatusMessages.PreviewStarted);
+                await _context.SessionCoordinator.StartAudioPreviewAsync(cancellationToken);
+            }
+            finally
+            {
+                Interlocked.Decrement(ref _audioStartsForPreviewStart);
             }
         }
 

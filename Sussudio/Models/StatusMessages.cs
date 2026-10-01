@@ -53,6 +53,7 @@ internal static class StatusMessages
     // Work in flight.
     public const string ScanningForDevices = "Scanning for devices...";
     public const string InitializingDevice = "Initializing device...";
+    public const string PreviewStarting = "Preview starting...";
     public const string ApplyingCaptureSettings = "Applying capture settings...";
     public const string StartingRecording = "Starting recording...";
     public const string FinalizingRecording = "Finalizing recording...";

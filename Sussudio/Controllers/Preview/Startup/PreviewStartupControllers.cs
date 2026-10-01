@@ -184,6 +184,7 @@ internal sealed class PreviewStartupSessionController
         SetStartupState(PreviewStartupState.Rendering);
         StopWatchdog();
         _context.StopOverlay();
+        _context.SetStatusText(StatusMessages.PreviewStarted);
         _context.ScheduleFadeIn();
         _context.CompleteFirstVisualTransition(
             AttemptLabel,

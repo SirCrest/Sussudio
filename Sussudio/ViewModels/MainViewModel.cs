@@ -2710,6 +2710,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                     OnDeviceFormatProbeCompleted = deviceFormatProbeController.OnDeviceFormatProbeCompleted,
                     AttachCaptureStatusChanged = handler => viewModel._captureService.StatusChanged += handler,
                     DetachCaptureStatusChanged = handler => viewModel._captureService.StatusChanged -= handler,
+                    IsStartingAudioForPreview = () => previewLifecycleController.IsStartingAudioForPreview,
                     AttachCaptureErrorOccurred = handler => viewModel._captureService.ErrorOccurred += handler,
                     DetachCaptureErrorOccurred = handler => viewModel._captureService.ErrorOccurred -= handler,
                     IsCaptureErrorCurrent = viewModel._captureService.IsCaptureErrorCurrent,
