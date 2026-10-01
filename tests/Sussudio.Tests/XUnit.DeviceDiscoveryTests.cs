@@ -681,7 +681,7 @@ public sealed class DeviceDiscoveryTests
         }
 
         fixture.AssertOriginalState();
-        Assert.Equal("Error scanning devices: device scan failed", fixture.Status);
+        Assert.Equal("Device scan failed: device scan failed", fixture.Status);
     }
 
     [Fact]
@@ -793,7 +793,7 @@ public sealed class DeviceDiscoveryTests
         }
 
         fixture.AssertOriginalState();
-        Assert.Equal("Error scanning devices: newer scan failed", fixture.Status);
+        Assert.Equal("Device scan failed: newer scan failed", fixture.Status);
     }
 
     [Theory]
@@ -822,7 +822,7 @@ public sealed class DeviceDiscoveryTests
         }
 
         fixture.AssertOriginalState();
-        Assert.Equal("Error scanning devices: newer scan failed", fixture.Status);
+        Assert.Equal("Device scan failed: newer scan failed", fixture.Status);
     }
 
     private sealed class AudioRefreshFixture : IDisposable

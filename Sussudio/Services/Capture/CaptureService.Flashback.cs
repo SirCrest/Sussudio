@@ -205,7 +205,7 @@ public partial class CaptureService
         if (attempt > MaxFlashbackAutoRestartAttempts)
         {
             Logger.Log($"FLASHBACK_AUTO_RESTART_GIVE_UP attempts={attempt - 1} cause={cause.GetType().Name}");
-            StatusChanged?.Invoke(this, "Flashback stopped after repeated errors — use Restart Flashback to retry.");
+            StatusChanged?.Invoke(this, StatusMessages.FlashbackStoppedAfterRepeatedErrors);
             return;
         }
 
@@ -234,13 +234,13 @@ public partial class CaptureService
 
                     await EnsureFlashbackPreviewBackendAsync(capture, settings, transitionToken).ConfigureAwait(false);
                     Logger.Log($"FLASHBACK_AUTO_RESTART_OK attempt={attempt}");
-                    StatusChanged?.Invoke(this, "Flashback recovered after an error.");
+                    StatusChanged?.Invoke(this, StatusMessages.FlashbackRecovered);
                 }, CancellationToken.None).ConfigureAwait(false);
             }
             catch (Exception restartEx)
             {
                 Logger.Log($"FLASHBACK_AUTO_RESTART_FAIL attempt={attempt} type={restartEx.GetType().Name} msg='{restartEx.Message}'");
-                StatusChanged?.Invoke(this, $"Flashback restart failed: {restartEx.Message}");
+                StatusChanged?.Invoke(this, StatusMessages.FlashbackRestartFailed(restartEx.Message));
             }
         });
     }
@@ -789,7 +789,7 @@ public partial class CaptureService
             _flashbackRecordingStartBytes = _flashbackBackend.BufferManager?.TotalBytesWritten ?? 0;
             PublishRecordingStartedOutcome(fbRecordingContext);
             _recordingStopwatch.Restart();
-            StatusChanged?.Invoke(this, "Recording");
+            StatusChanged?.Invoke(this, StatusMessages.Recording);
             Logger.Log($"FLASHBACK_UNIFIED_RECORDING_START output='{fbRecordingContext.FinalOutputPath}'");
         }
         finally
@@ -1213,7 +1213,7 @@ public partial class CaptureService
         {
             finalizeCts.Dispose();
             flashbackCancellationException = new OperationCanceledException(cancellationToken);
-            fbResult = FlashbackExportFailureCodes.Create(fbOutputPath, "Flashback recording finalize cancelled.", FlashbackExportFailureCodes.Cancelled);
+            fbResult = FlashbackExportFailureCodes.Create(fbOutputPath, "Flashback recording finalize canceled.", FlashbackExportFailureCodes.Cancelled);
         }
         catch (Exception ex)
         {
@@ -1562,7 +1562,7 @@ public partial class CaptureService
                 }
                 catch (OperationCanceledException) when (ct.IsCancellationRequested)
                 {
-                    return FailFlashbackExport(outputPath, "Flashback export cancelled.", FlashbackExportFailureCodes.Cancelled, inPoint, outPoint);
+                    return FailFlashbackExport(outputPath, "Flashback export canceled.", FlashbackExportFailureCodes.Cancelled, inPoint, outPoint);
                 }
             }
 
@@ -1635,7 +1635,7 @@ public partial class CaptureService
         {
             var cancelled = ex is OperationCanceledException && ct.IsCancellationRequested;
             var statusMessage = cancelled
-                ? "Flashback export cancelled."
+                ? "Flashback export canceled."
                 : ex.Message;
             Logger.Log(
                 $"FLASHBACK_EXPORT_CORE_FAIL id={exportId} type={ex.GetType().Name} " +
@@ -1962,7 +1962,7 @@ public partial class CaptureService
     {
         if (ct.IsCancellationRequested)
         {
-            return FailFlashbackExport(outputPath, "Flashback export cancelled.", FlashbackExportFailureCodes.Cancelled);
+            return FailFlashbackExport(outputPath, "Flashback export canceled.", FlashbackExportFailureCodes.Cancelled);
         }
 
         if (!double.IsFinite(seconds) || seconds <= 0 || seconds > TimeSpan.MaxValue.TotalSeconds)
@@ -2050,7 +2050,7 @@ public partial class CaptureService
         {
             ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);
             ReleaseFlashbackExportOperationLockIfHeld(ref exportOperationLockHeld);
-            return new FlashbackExportBackendSnapshotResult(default, FailFlashbackExport(outputPath, "Flashback export cancelled.", FlashbackExportFailureCodes.Cancelled));
+            return new FlashbackExportBackendSnapshotResult(default, FailFlashbackExport(outputPath, "Flashback export canceled.", FlashbackExportFailureCodes.Cancelled));
         }
         catch (Exception ex)
         {

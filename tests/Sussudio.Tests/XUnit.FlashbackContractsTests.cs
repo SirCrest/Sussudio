@@ -703,7 +703,7 @@ static partial class Program
             }) ?? throw new InvalidOperationException("ExportSegmentsCore returned null.");
 
             AssertEqual(false, GetBoolProperty(result, "Succeeded"), "Cancelled export reports failure result");
-            AssertContains(GetStringProperty(result, "StatusMessage"), "cancelled");
+            AssertContains(GetStringProperty(result, "StatusMessage"), "canceled");
             AssertEqual("flashback-export-cancelled", GetStringProperty(result, "FailureCode"), "Cancellation carries explicit identity");
             AssertEqual(false, File.Exists(outputPath), "Cancelled export does not create output");
             AssertEqual(false, File.Exists(outputPath + ".tmp"), "Cancelled export does not leave temp output");
@@ -744,7 +744,7 @@ static partial class Program
             }) ?? throw new InvalidOperationException("ExportCore returned null.");
 
             AssertEqual(false, GetBoolProperty(singleResult, "Succeeded"), "Cancelled single-file export reports failure");
-            AssertContains(GetStringProperty(singleResult, "StatusMessage"), "cancelled");
+            AssertContains(GetStringProperty(singleResult, "StatusMessage"), "canceled");
             AssertEqual("flashback-export-cancelled", GetStringProperty(singleResult, "FailureCode"), "Cancellation carries explicit identity");
             AssertDoesNotContain(GetStringProperty(singleResult, "StatusMessage"), "not found");
 
@@ -764,7 +764,7 @@ static partial class Program
             }) ?? throw new InvalidOperationException("ExportSegmentsCore returned null.");
 
             AssertEqual(false, GetBoolProperty(segmentResult, "Succeeded"), "Cancelled segment export reports failure");
-            AssertContains(GetStringProperty(segmentResult, "StatusMessage"), "cancelled");
+            AssertContains(GetStringProperty(segmentResult, "StatusMessage"), "canceled");
             AssertEqual("flashback-export-cancelled", GetStringProperty(segmentResult, "FailureCode"), "Cancellation carries explicit identity");
             AssertDoesNotContain(GetStringProperty(segmentResult, "StatusMessage"), "no segment paths");
         }

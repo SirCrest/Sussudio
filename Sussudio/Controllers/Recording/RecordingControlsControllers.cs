@@ -410,7 +410,7 @@ internal sealed class OutputPathController
         }
         catch (Exception ex)
         {
-            _context.SetStatusText($"Error selecting folder: {ex.Message}");
+            _context.SetStatusText(StatusMessages.FolderSelectionFailed(ex.Message));
         }
     }
 

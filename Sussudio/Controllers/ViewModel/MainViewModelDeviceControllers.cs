@@ -305,7 +305,7 @@ internal sealed class MainViewModelDeviceAudioRequestController
                 !_context.IsDisposing() &&
                 _context.IsCurrentSelectedDevice(device))
             {
-                _context.SetStatusText("Analog gain applied but could not be saved to the device; it may revert after power cycle.");
+                _context.SetStatusText(StatusMessages.AnalogGainNotPersisted);
             }
 
             return Task.CompletedTask;
@@ -362,7 +362,7 @@ internal sealed class MainViewModelDeviceRefreshController
     {
         cancellationToken.ThrowIfCancellationRequested();
         var requestGeneration = Interlocked.Increment(ref _refreshRequestGeneration);
-        _context.SetStatusText("Scanning for devices...");
+        _context.SetStatusText(StatusMessages.ScanningForDevices);
 
         try
         {
@@ -422,14 +422,14 @@ internal sealed class MainViewModelDeviceRefreshController
             else
             {
                 _context.SetSelectedDevice(null);
-                _context.SetStatusText("No compatible video capture devices found (see log for discovery summary)");
+                _context.SetStatusText(StatusMessages.NoCompatibleDevicesFound);
             }
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             if (requestGeneration == Volatile.Read(ref _refreshRequestGeneration))
             {
-                _context.SetStatusText("Device scan canceled");
+                _context.SetStatusText(StatusMessages.DeviceScanCanceled);
             }
 
             throw;
@@ -438,7 +438,7 @@ internal sealed class MainViewModelDeviceRefreshController
         {
             if (requestGeneration == Volatile.Read(ref _refreshRequestGeneration))
             {
-                _context.SetStatusText($"Error scanning devices: {ex.Message}");
+                _context.SetStatusText(StatusMessages.DeviceScanFailed(ex.Message));
             }
 
             if (throwOnScanFailure)
@@ -455,9 +455,10 @@ internal sealed class MainViewModelDeviceRefreshController
         CancellationToken cancellationToken)
     {
         var devices = _context.GetDevices();
-        _context.SetStatusText(discoveryElapsedMs <= 1500
-            ? $"Found {devices.Count} device(s) in {discoveryElapsedMs} ms"
-            : $"Found {devices.Count} device(s) in {discoveryElapsedMs} ms (slow scan: waiting on system device enumeration/probe startup)");
+        _context.SetStatusText(StatusMessages.DevicesFound(
+            devices.Count,
+            discoveryElapsedMs,
+            slowScan: discoveryElapsedMs > 1500));
 
         var savedDeviceId = _context.GetPendingSavedDeviceId();
         _context.SetPendingSavedDeviceId(null);
@@ -486,7 +487,7 @@ internal sealed class MainViewModelDeviceRefreshController
             Logger.Log($"Auto-start preview failed after device scan: {ex.Message}");
             if (requestGeneration == Volatile.Read(ref _refreshRequestGeneration))
             {
-                _context.SetStatusText($"Preview failed to start: {ex.Message}");
+                _context.SetStatusText(StatusMessages.PreviewFailed(ex.Message));
             }
         }
     }
@@ -1037,7 +1038,7 @@ internal sealed class MainViewModelCaptureModeOptionRebuildController
             _context.ApplyResolvedFrameRateSelection(selection.Selected, fallbackRate);
             if (_context.IsHdrEnabled() && selection.Selected is { IsEnabled: false })
             {
-                _context.SetStatusText($"No HDR-capable frame rate is available for {_context.GetSelectedResolutionDisplayText()}.");
+                _context.SetStatusText(StatusMessages.NoHdrFrameRateAvailable(_context.GetSelectedResolutionDisplayText()));
             }
 
             if (!_context.IsHdrEnabled() && _context.ModeSelection.PendingSdrAutoSelectionForDeviceChange && selection.Selected != null)
@@ -1177,7 +1178,7 @@ internal sealed class MainViewModelCaptureModeOptionRebuildController
 
             if (_context.IsHdrEnabled() && selected is { IsEnabled: false })
             {
-                _context.SetStatusText("No HDR-capable resolution is available for this device.");
+                _context.SetStatusText(StatusMessages.NoHdrResolutionAvailable);
             }
 
             _context.SetDisabledResolutionReason(selected is { IsEnabled: false }
@@ -1444,7 +1445,7 @@ internal sealed class MainViewModelRecordingCapabilityController
             selection = selection with { AvailableFormats = formats, SelectedFormat = requestedFormat };
             if (!_detectedRecordingFormats.Contains(requestedFormat, StringComparer.OrdinalIgnoreCase))
             {
-                _context.SetStatusText($"The selected recording format '{requestedFormat}' is unavailable in this FFmpeg runtime. Choose another format to change it.");
+                _context.SetStatusText(StatusMessages.RecordingFormatUnavailable(requestedFormat));
             }
         }
 
@@ -1463,7 +1464,7 @@ internal sealed class MainViewModelRecordingCapabilityController
         if (_context.IsHdrEnabled() &&
             !RecordingSettingsSelectionPolicy.IsHdrCompatible(_context.GetSelectedRecordingFormat()))
         {
-            _context.SetStatusText("HDR recording requires HEVC or AV1 (10-bit).");
+            _context.SetStatusText(StatusMessages.HdrRecordingNeedsTenBitCodec);
         }
 
         Logger.Log($"Selected recording format: {_context.GetSelectedRecordingFormat()}");
@@ -1534,7 +1535,7 @@ internal sealed class MainViewModelRecordingCapabilityController
         catch (Exception ex)
         {
             Logger.Log($"SPLIT_ENCODE_PROBE_INCONCLUSIVE error='{ex.Message}'");
-            void ShowFailure() => _context.SetStatusText("Split encode availability could not be checked. Your selected mode is unchanged.");
+            void ShowFailure() => _context.SetStatusText(StatusMessages.SplitEncodeCheckInconclusive);
             if (_context.HasUiThreadAccess())
             {
                 ShowFailure();
@@ -1557,7 +1558,7 @@ internal sealed class MainViewModelRecordingCapabilityController
             if (!modes.Contains(selectedMode, StringComparer.OrdinalIgnoreCase))
             {
                 modes.Add(selectedMode);
-                _context.SetStatusText($"The selected split mode '{selectedMode}' is unavailable in this FFmpeg runtime. Choose another mode to change it.");
+                _context.SetStatusText(StatusMessages.SplitEncodeModeUnavailable(selectedMode));
             }
             _context.ReplaceAvailableSplitEncodeModes(modes);
             Logger.Log($"Split encode modes refreshed: {string.Join(", ", _context.GetAvailableSplitEncodeModes())}");

@@ -131,17 +131,17 @@ public sealed class FlashbackHealthLifetimeTests
         Write(viewModel, "FlashbackHealthMessage", "");
 
         Invoke(viewModel, "UpdateFlashbackHealthStatus");
-        Assert.Equal("Flashback is not running — use Restart Flashback.", Read<string>(viewModel, "FlashbackHealthMessage"));
+        Assert.Equal("Flashback is not running. Use Restart Flashback to retry.", Read<string>(viewModel, "FlashbackHealthMessage"));
         Write(fixture.Backend, "Sink", Uninitialized("Sussudio.Services.Flashback.FlashbackEncoderSink"));
         Invoke(viewModel, "UpdateFlashbackHealthStatus");
         Assert.Equal("", Read<string>(viewModel, "FlashbackHealthMessage"));
 
-        Write(viewModel, "FlashbackHealthMessage", "Returned to live — playback error.");
+        Write(viewModel, "FlashbackHealthMessage", "Returned to live after a playback error.");
         Invoke(viewModel, "UpdateFlashbackHealthStatus");
-        Assert.Equal("Returned to live — playback error.", Read<string>(viewModel, "FlashbackHealthMessage"));
+        Assert.Equal("Returned to live after a playback error.", Read<string>(viewModel, "FlashbackHealthMessage"));
         Write(fixture.Backend, "Sink", null);
         Invoke(viewModel, "UpdateFlashbackHealthStatus");
-        Assert.Equal("Flashback is not running — use Restart Flashback.", Read<string>(viewModel, "FlashbackHealthMessage"));
+        Assert.Equal("Flashback is not running. Use Restart Flashback to retry.", Read<string>(viewModel, "FlashbackHealthMessage"));
         Write(viewModel, "IsFlashbackEnabled", false);
         Invoke(viewModel, "UpdateFlashbackHealthStatus");
         Assert.Equal("", Read<string>(viewModel, "FlashbackHealthMessage"));

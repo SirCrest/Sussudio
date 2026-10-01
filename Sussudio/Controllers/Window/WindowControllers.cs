@@ -712,7 +712,7 @@ internal sealed class WindowAppClosingController
             Logger.Log($"WINDOW_CLOSE_PREPARE_FAILED type={ex.GetType().Name} msg='{ex.Message}'");
             _context.LifecycleController.ResetRequestedAfterFailure();
             _context.LifecycleController.CompleteRequest(ex);
-            _context.SetStatusText($"Close paused: {ex.Message} Close again to retry.");
+            _context.SetStatusText(StatusMessages.CloseFailed(ex.Message));
         }
         finally
         {
@@ -751,7 +751,7 @@ internal sealed class WindowCloseRecordingFinalizationController
         ArgumentNullException.ThrowIfNull(isAllowedAfterRecordingStop);
 
         Logger.Log("WINDOW_CLOSE_RECORDING_STOP: recording active, awaiting graceful stop...");
-        viewModel.StatusText = "Stopping recording — please wait…";
+        viewModel.StatusText = StatusMessages.StoppingRecordingBeforeClose;
 
         if (shutdownContent != null)
         {
@@ -770,14 +770,14 @@ internal sealed class WindowCloseRecordingFinalizationController
 
             Logger.LogFatalBreadcrumb("RECORDING_FINALIZE_TIMEOUT "
                 + $"budget_ms={StopBudgetMs}; close cancelled to protect recording.");
-            viewModel.StatusText = "Still saving recording. Close cancelled.";
+            viewModel.StatusText = StatusMessages.CloseCanceledRecordingStillSaving;
             return false;
         }
         catch (Exception ex)
         {
             Logger.LogException(ex);
             Logger.Log($"WINDOW_CLOSE_RECORDING_STOP: stop failed: {ex.Message}");
-            viewModel.StatusText = $"Close cancelled: recording stop failed ({ex.Message})";
+            viewModel.StatusText = StatusMessages.RecordingStopFailedCloseCanceled(ex.Message);
             return false;
         }
         finally
@@ -803,7 +803,7 @@ internal sealed class WindowCloseRecordingFinalizationController
         }
 
         Logger.Log("WINDOW_CLOSE_RECORDING_STOP: recording active, awaiting graceful stop...");
-        viewModel.StatusText = "Stopping recording - please wait...";
+        viewModel.StatusText = StatusMessages.StoppingRecordingBeforeClose;
 
         if (shutdownContent != null)
         {

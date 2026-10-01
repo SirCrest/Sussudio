@@ -366,6 +366,7 @@ internal sealed class MainViewModelRuntimeEventIngressControllerContext
     public required Func<Action, bool> TryEnqueueOnUiThread { get; init; }
     public required Func<CaptureRuntimeSnapshot> GetRuntimeSnapshot { get; init; }
     public required Action<string> SetStatusText { get; init; }
+    public required Func<bool> IsStartingAudioForPreview { get; init; }
     public required Action<CaptureRuntimeSnapshot> UpdateLiveCaptureInfo { get; init; }
     public required Action<CaptureRuntimeSnapshot> UpdateHdrRuntimeStatusFromCapture { get; init; }
     public required Action<bool> SetIsInitialized { get; init; }
@@ -436,10 +437,18 @@ internal sealed class MainViewModelRuntimeEventIngressController
 
     private void OnCaptureStatusChanged(object? sender, string status)
     {
+        // A preview start owns the footer until its first visual; audio success inside it is not
+        // news. Decide here, while the service is still inside the audio-start command and the
+        // counter is held: by the time the queued callback runs, an already-completed command
+        // may have resumed the view model and released it. Audio warnings still come through.
+        var suppressStatus = status == StatusMessages.AudioPreviewStarted && _context.IsStartingAudioForPreview();
         if (!_context.TryEnqueueOnUiThread(() =>
         {
             var runtimeSnapshot = _context.GetRuntimeSnapshot();
-            _context.SetStatusText(status);
+            if (!suppressStatus)
+            {
+                _context.SetStatusText(status);
+            }
             _context.UpdateFlashbackHealthStatus();
             _context.UpdateLiveCaptureInfo(runtimeSnapshot);
             _context.UpdateHdrRuntimeStatusFromCapture(runtimeSnapshot);
@@ -460,7 +469,7 @@ internal sealed class MainViewModelRuntimeEventIngressController
             }
 
             var runtimeSnapshot = _context.GetRuntimeSnapshot();
-            _context.SetStatusText($"Error: {ex.Message}");
+            _context.SetStatusText(StatusMessages.CaptureFailed(ex.Message));
             _context.UpdateFlashbackHealthStatus();
             _context.SetIsInitialized(_context.IsCaptureInitialized());
             _context.SetIsPreviewing(_context.IsVideoPreviewActive());
@@ -578,6 +587,13 @@ internal sealed class MainViewModelPreviewLifecycleController
 
     public bool IsReinitializeAdmitted => _previewReinitializeController.IsReinitializeAdmitted;
 
+    private int _audioStartsForPreviewStart;
+
+    // True while StartPreviewAsync is starting audio as part of a preview start. The service's
+    // "Audio preview started" event is queued before that command completes, so it arrives
+    // while this is still true and must not replace the preview-level status.
+    public bool IsStartingAudioForPreview => Volatile.Read(ref _audioStartsForPreviewStart) > 0;
+
     public async Task InitializeDeviceAsync(CancellationToken cancellationToken = default)
     {
         try
@@ -585,7 +601,7 @@ internal sealed class MainViewModelPreviewLifecycleController
             cancellationToken.ThrowIfCancellationRequested();
             var selectedDevice = _context.SelectedDevice()
                 ?? throw new InvalidOperationException("No capture device selected.");
-            _context.SetStatusText("Initializing device...");
+            _context.SetStatusText(StatusMessages.InitializingDevice);
             var settings = _context.BuildCaptureSettings();
             Logger.Log(
                 $"CAPTURE_INIT device='{selectedDevice.Name}' id='{selectedDevice.Id}' format={settings.Format} {settings.Width}x{settings.Height}@{settings.FrameRate} hdr={settings.HdrEnabled} audio={settings.AudioEnabled}");
@@ -593,19 +609,19 @@ internal sealed class MainViewModelPreviewLifecycleController
             await _context.SessionCoordinator.InitializeAsync(selectedDevice, settings, cancellationToken);
 
             _context.SetIsInitialized(true);
-            _context.SetStatusText("Device ready");
+            _context.SetStatusText(StatusMessages.DeviceReady);
             Logger.Log("CAPTURE_INIT_READY");
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            _context.SetStatusText("Device initialization canceled");
+            _context.SetStatusText(StatusMessages.DeviceInitializationCanceled);
             _context.SetIsInitialized(false);
             throw;
         }
         catch (Exception ex)
         {
             Logger.LogException(ex);
-            _context.SetStatusText($"Failed to initialize: {ex.Message}");
+            _context.SetStatusText(StatusMessages.DeviceInitializationFailed(ex.Message));
             _context.SetIsInitialized(false);
             throw;
         }
@@ -627,15 +643,31 @@ internal sealed class MainViewModelPreviewLifecycleController
             await InitializeDeviceAsync(cancellationToken);
         }
 
+        // A start while preview is already running (for example a device refresh that keeps the
+        // same device) leaves video untouched and produces no new first visual.
+        var alreadyPreviewing = _context.IsPreviewing();
         var settings = _context.BuildCaptureSettings();
         await _context.SessionCoordinator.StartVideoPreviewAsync(settings, cancellationToken).ConfigureAwait(true);
 
         _context.SetIsPreviewing(true);
-        _context.SetStatusText("Preview starting...");
+        // The capture session is running but nothing is on screen yet; the preview startup
+        // session replaces this with "Preview started" when it confirms the first visual.
+        if (!alreadyPreviewing)
+        {
+            _context.SetStatusText(StatusMessages.PreviewStarting);
+        }
 
         if (_context.ShouldStartAudioPreview())
         {
-            await _context.SessionCoordinator.StartAudioPreviewAsync(cancellationToken);
+            Interlocked.Increment(ref _audioStartsForPreviewStart);
+            try
+            {
+                await _context.SessionCoordinator.StartAudioPreviewAsync(cancellationToken);
+            }
+            finally
+            {
+                Interlocked.Decrement(ref _audioStartsForPreviewStart);
+            }
         }
 
         _context.ApplyLatestSourceTelemetryForPreviewStart();
@@ -679,7 +711,7 @@ internal sealed class MainViewModelPreviewLifecycleController
         cancellationToken.ThrowIfCancellationRequested();
         if (_context.IsRecording())
         {
-            _context.SetStatusText("Stop recording before switching capture devices.");
+            _context.SetStatusText(StatusMessages.StopRecordingBeforeSwitchingDevices);
             return false;
         }
 
@@ -707,7 +739,7 @@ internal sealed class MainViewModelPreviewLifecycleController
         }
 
         _context.SetIsInitialized(false);
-        _context.SetStatusText($"Selected device: {device.Name}");
+        _context.SetStatusText(StatusMessages.SelectedDevice(device.Name));
         return true;
     }
 
@@ -787,7 +819,7 @@ internal sealed class MainViewModelPreviewLifecycleController
 
         if (!_context.IsPreviewReinitializing())
         {
-            _context.SetStatusText("Preview stopped");
+            _context.SetStatusText(StatusMessages.PreviewStopped);
         }
     }
 
@@ -896,7 +928,7 @@ internal sealed class MainViewModelPreviewReinitializeController
         if (_context.IsRecording())
         {
             Logger.Log($"REINIT_REJECTED_RECORDING reason='{reason}' - stop recording before changing capture settings.");
-            _context.SetStatusText("Stop recording before changing capture settings.");
+            _context.SetStatusText(StatusMessages.StopRecordingBeforeChangingSettings);
             return false;
         }
 
@@ -931,7 +963,7 @@ internal sealed class MainViewModelPreviewReinitializeController
                 }
 
                 Logger.Log($"REINIT_WAIT_FLASHBACK_CYCLE_TIMEOUT reason={reason} timeoutMs={_context.FlashbackCycleBeforeReinitializeTimeoutMs}");
-                _context.SetStatusText($"Failed to apply format: {ex.Message}");
+                _context.SetStatusText(StatusMessages.CaptureSettingsUpdateFailed(ex.Message));
                 return false;
             }
             catch (Exception ex)
@@ -967,7 +999,7 @@ internal sealed class MainViewModelPreviewReinitializeController
             if (_context.IsRecording() || _context.IsRecordingTransitioning())
             {
                 Logger.Log($"REINIT_REJECTED_RECORDING reason='{reason}' - recording became active while waiting.");
-                _context.SetStatusText("Stop recording before changing capture settings.");
+                _context.SetStatusText(StatusMessages.StopRecordingBeforeChangingSettings);
                 return false;
             }
 
@@ -987,7 +1019,7 @@ internal sealed class MainViewModelPreviewReinitializeController
         var success = false;
         try
         {
-            _context.SetStatusText("Applying new settings...");
+            _context.SetStatusText(StatusMessages.ApplyingCaptureSettings);
             Logger.Log($"=== Reinitializing device ({reason}) ===");
 
             if (shouldRestartPreview)
@@ -1014,7 +1046,7 @@ internal sealed class MainViewModelPreviewReinitializeController
         {
             Logger.LogException(ex);
             Logger.Log($"REINIT_ABORT_RENDERER_STOP_TIMEOUT reason='{reason}' msg='{ex.InnerException?.Message ?? ex.Message}'");
-            _context.SetStatusText($"Failed to apply format: {ex.Message}");
+            _context.SetStatusText(StatusMessages.CaptureSettingsUpdateFailed(ex.Message));
             success = false;
         }
         catch (Exception ex) when (IsDeviceBusyException(ex) && shouldRestartPreview)
@@ -1072,14 +1104,14 @@ internal sealed class MainViewModelPreviewReinitializeController
                     }
 
                     Logger.Log($"REINIT_RECOVERY_RESTART outcome={recoveryOutcome} reason='{reason}'");
-                    _context.SetStatusText($"Failed to apply format: {ex.Message}");
+                    _context.SetStatusText(StatusMessages.CaptureSettingsUpdateFailed(ex.Message));
                     success = false;
                 }
             }
             catch (Exception outerEx)
             {
                 Logger.Log($"REINIT_DEVICE_BUSY_OUTER_FAULT reason='{reason}' type={outerEx.GetType().Name} msg='{outerEx.Message}'");
-                _context.SetStatusText($"Failed to apply format: {ex.Message}");
+                _context.SetStatusText(StatusMessages.CaptureSettingsUpdateFailed(ex.Message));
                 success = false;
             }
         }
@@ -1091,7 +1123,7 @@ internal sealed class MainViewModelPreviewReinitializeController
                 await CleanupFailedPreviewRestartAsync(reason).ConfigureAwait(true);
             }
 
-            _context.SetStatusText($"Failed to apply format: {ex.Message}");
+            _context.SetStatusText(StatusMessages.CaptureSettingsUpdateFailed(ex.Message));
             success = false;
         }
         finally
@@ -1146,7 +1178,7 @@ internal sealed class MainViewModelPreviewReinitializeController
         if (success && shouldRestartPreview && !previewRestartCanceled && reportSuccessfulPreview)
         {
             var selectedFormat = _context.SelectedFormat()!;
-            _context.SetStatusText($"Preview: {selectedFormat.Width}x{selectedFormat.Height}@{selectedFormat.FrameRate}fps");
+            _context.SetStatusText(StatusMessages.PreviewMode(selectedFormat.Width, selectedFormat.Height, selectedFormat.FrameRate));
         }
 
         return success;
@@ -1272,9 +1304,8 @@ internal sealed class MainViewModelRecordingTransitionController
 
         if (enabled && _previewLifecycleController.IsReinitializeAdmitted)
         {
-            const string message = "Wait for capture settings to finish applying before starting recording.";
-            _context.SetStatusText(message);
-            throw new InvalidOperationException(message);
+            _context.SetStatusText(StatusMessages.WaitForSettingsBeforeRecording);
+            throw new InvalidOperationException(StatusMessages.WaitForSettingsBeforeRecording);
         }
 
         if (Interlocked.CompareExchange(ref _recordingToggleInProgress, 1, 0) != 0)
@@ -1358,7 +1389,7 @@ internal sealed class MainViewModelRecordingTransitionController
         try
         {
             _context.SetIsRecordingTransitioning(true);
-            _context.SetStatusText(enabled ? "Starting recording..." : "Finalizing recording...");
+            _context.SetStatusText(enabled ? StatusMessages.StartingRecording : StatusMessages.FinalizingRecording);
 
             if (enabled)
             {
@@ -1386,7 +1417,7 @@ internal sealed class MainViewModelRecordingTransitionController
     {
         if (!_context.HasSelectedDevice())
         {
-            _context.SetStatusText("No device selected");
+            _context.SetStatusText(StatusMessages.NoDeviceSelected);
             throw new InvalidOperationException(_context.GetStatusText());
         }
 
@@ -1405,19 +1436,19 @@ internal sealed class MainViewModelRecordingTransitionController
             _context.ClearRecordingBitrateSamples();
             _context.SetRecordingSizeInfo("0 B");
             _context.SetRecordingBitrateInfo("--");
-            _context.SetStatusText("Recording...");
+            _context.SetStatusText(StatusMessages.Recording);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             _context.SetIsRecording(_context.GetSessionIsRecording());
-            _context.SetStatusText("Recording start canceled");
+            _context.SetStatusText(StatusMessages.RecordingStartCanceled);
             throw;
         }
         catch (Exception ex)
         {
             Logger.LogException(ex);
             _context.SetIsRecording(_context.GetSessionIsRecording());
-            _context.SetStatusText($"Recording failed: {ex.Message}");
+            _context.SetStatusText(StatusMessages.RecordingFailed(ex.Message));
             throw;
         }
     }
@@ -1427,25 +1458,25 @@ internal sealed class MainViewModelRecordingTransitionController
         // UX: Freeze the timer immediately when the user requests stop (finalization can take seconds).
         // Keep IsRecording true until the stop transition completes so the button remains in "Stop" state.
         _context.StopRecordingStopwatch();
-        _context.SetStatusText("Finalizing recording...");
+        _context.SetStatusText(StatusMessages.FinalizingRecording);
 
         try
         {
             await _context.StopRecordingAsync(cancellationToken);
             _context.SetIsRecording(false);
-            _context.SetStatusText($"Recording saved ({_context.GetRecordingTime()})");
+            _context.SetStatusText(StatusMessages.RecordingSaved(_context.GetRecordingTime()));
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             _context.SetIsRecording(_context.GetSessionIsRecording());
-            _context.SetStatusText("Stop recording canceled");
+            _context.SetStatusText(StatusMessages.RecordingStopCanceled);
             throw;
         }
         catch (Exception ex)
         {
             Logger.LogException(ex);
             _context.SetIsRecording(_context.GetSessionIsRecording());
-            _context.SetStatusText($"Recording failed: {ex.Message}");
+            _context.SetStatusText(StatusMessages.RecordingFailed(ex.Message));
             throw;
         }
     }

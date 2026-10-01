@@ -98,7 +98,7 @@ public sealed class DeviceAudioRequestControllerTests
         await EventuallyAsync(() => fixture.FlashPersistCount == 1 && fixture.PendingUiOperations.Count == 1);
         await fixture.RunPendingUiOperationsAsync();
 
-        Assert.Equal("Analog gain applied but could not be saved to the device; it may revert after power cycle.", fixture.StatusText);
+        Assert.Equal("Analog audio gain applied but could not be saved to the device; it may revert after power cycle", fixture.StatusText);
     }
 
     private static async Task EventuallyAsync(Func<bool> condition)

@@ -444,8 +444,8 @@ internal static class CaptureOptionTooltipFormatter
         if (isRecording)
         {
             combinedHint = string.IsNullOrWhiteSpace(combinedHint)
-                ? "Stop recording before switching between HDR and SDR pipelines."
-                : $"{combinedHint}{Environment.NewLine}Stop recording before switching between HDR and SDR pipelines.";
+                ? StatusMessages.StopRecordingBeforeSwitchingHdr
+                : $"{combinedHint}{Environment.NewLine}{StatusMessages.StopRecordingBeforeSwitchingHdr}";
         }
 
         return string.IsNullOrWhiteSpace(combinedHint) ? null : combinedHint;

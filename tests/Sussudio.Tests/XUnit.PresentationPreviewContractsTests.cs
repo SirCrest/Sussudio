@@ -1609,21 +1609,29 @@ static partial class Program
             formatTimeoutReason.Invoke(null, new object?[] { 10000, "FirstCaptureFrame+FirstVisual" })?.ToString(),
             "timeout reason with missing signals");
         AssertEqual(
-            "Preview failed to attach to UI (session started but no visual confirmation).",
+            "Preview failed: no visual confirmation",
             formatTimeoutStatusText.Invoke(null, new object?[] { null })?.ToString(),
             "timeout status without missing signals");
         AssertEqual(
-            "Preview failed to attach to UI (session started but no visual confirmation).",
+            "Preview failed: no visual confirmation",
             formatTimeoutStatusText.Invoke(null, new object?[] { "   " })?.ToString(),
             "timeout status with whitespace missing signals");
         AssertEqual(
-            "Preview failed to start (missing readiness signal: FirstCaptureFrame+FirstVisual).",
+            "Preview failed: missing readiness signal (FirstCaptureFrame+FirstVisual)",
             formatTimeoutStatusText.Invoke(null, new object?[] { "FirstCaptureFrame+FirstVisual" })?.ToString(),
             "timeout status with missing signals");
         AssertEqual(
-            "Preview startup failed: no-visual-confirmation-within-10000ms missing:FirstCaptureFrame+FirstVisual",
+            "Preview failed: missing readiness signal (FirstCaptureFrame+FirstVisual)",
             formatFailureStopStatusText.Invoke(null, new object?[] { "no-visual-confirmation-within-10000ms missing:FirstCaptureFrame+FirstVisual" })?.ToString(),
-            "failure stop status");
+            "failure stop status for a timeout with missing signals repeats the readable timeout text");
+        AssertEqual(
+            "Preview failed: no visual confirmation",
+            formatFailureStopStatusText.Invoke(null, new object?[] { "no-visual-confirmation-within-10000ms" })?.ToString(),
+            "failure stop status for a timeout without missing signals repeats the readable timeout text");
+        AssertEqual(
+            "Preview failed: renderer lost",
+            formatFailureStopStatusText.Invoke(null, new object?[] { "renderer lost" })?.ToString(),
+            "failure stop status shows a non-timeout reason as given");
 
         return Task.CompletedTask;
     }
@@ -1669,13 +1677,13 @@ static partial class Program
             AssertEqual("FirstCaptureFrame+FirstVisual", GetStringProperty(controller, "MissingSignals"), "timeout caches owned missing signals");
             AssertEqual(reason, GetStringProperty(controller, "LastFailureReason"), "timeout failure reason");
             AssertEqual(reason, recorder.StopPreviewReasons.Single(), "timeout forces teardown");
-            AssertEqual("Preview failed to start (missing readiness signal: FirstCaptureFrame+FirstVisual).", recorder.StatusTexts[0], "timeout status");
-            AssertEqual($"Preview startup failed: {reason}", recorder.StatusTexts[1], "failure stop status");
+            AssertEqual("Preview failed: missing readiness signal (FirstCaptureFrame+FirstVisual)", recorder.StatusTexts[0], "timeout status");
+            AssertEqual(recorder.StatusTexts[0], recorder.StatusTexts[1], "failure stop republishes the readable timeout status");
             var timeoutEvents = string.Join("|", recorder.Events);
             AssertOccursBefore(timeoutEvents, "log:PREVIEW_START_STATE state=Failed", "reason=timeout renderer=null");
             AssertOccursBefore(timeoutEvents, "reason=timeout renderer=null", "stop-overlay");
-            AssertOccursBefore(timeoutEvents, "stop-overlay", "status:Preview failed to start");
-            AssertOccursBefore(timeoutEvents, "status:Preview failed to start", $"stop-preview:{reason}");
+            AssertOccursBefore(timeoutEvents, "stop-overlay", "status:Preview failed");
+            AssertOccursBefore(timeoutEvents, "status:Preview failed", $"stop-preview:{reason}");
 
             foreach (var guard in new[] { "closing", "user-stop", "not-previewing", "not-waiting" })
             {
@@ -1724,7 +1732,7 @@ static partial class Program
         AssertEqual("PreviewStartupFailureStop", pending[0].Name, "failure stop operation name");
         await pending[0].Operation().ConfigureAwait(false);
         AssertEqual("first", recorder.StopPreviewReasons.Single(), "scheduled stop uses the first reason");
-        AssertEqual("Preview startup failed: first", recorder.StatusTexts.Single(), "completed stop publishes failure status");
+        AssertEqual("Preview failed: first", recorder.StatusTexts.Single(), "completed stop publishes failure status");
 
         InvokePreviewStartup(controller, "ScheduleFailureStop", "after-completion");
         AssertEqual(2, pending.Count, "completed teardown releases the scheduling gate");
@@ -1778,9 +1786,11 @@ static partial class Program
         var playback = Activator.CreateInstance(playbackType, false, false, "Collapsed")!;
         SetPropertyOrBackingField(context, "GetPlaybackSnapshotState", Expression.Lambda(
             typeof(Func<>).MakeGenericType(playbackType), Expression.Constant(playback, playbackType)).Compile());
+        SetPropertyOrBackingField(context, "GetStatusText", new Func<string>(() => state.CurrentStatus));
         SetPropertyOrBackingField(context, "SetStatusText", new Action<string>(value =>
         {
             state.StatusTexts.Add(value);
+            state.CurrentStatus = value;
             state.Events.Add($"status:{value}");
         }));
         SetPropertyOrBackingField(context, "StopPreviewForFailureAsync", new Func<string, Task>(reason =>
@@ -1820,6 +1830,7 @@ static partial class Program
         public Action? InspectFirstVisualTransition { get; set; }
         public List<string> Events { get; } = [];
         public List<string> StatusTexts { get; } = [];
+        public string CurrentStatus { get; set; } = string.Empty;
         public List<string> StopPreviewReasons { get; } = [];
     }
 
@@ -1896,13 +1907,15 @@ static partial class Program
             AssertEqual(recorder.Now, GetPropertyValue(controller, "FirstVisualUtc"), "visual timestamp precedes transition callback");
         };
         recorder.Events.Clear();
+        recorder.CurrentStatus = "Preview starting...";
         recorder.Now = recorder.Now.AddMilliseconds(250);
         InvokePreviewStartup(controller, "ConfirmFirstVisual", "D3D11FirstFrame");
+        AssertEqual("Preview started", recorder.CurrentStatus, "first visual completes the pending preview status");
         AssertEqual(string.Empty, GetStringProperty(controller, "MissingSignals"), "confirmation clears cached missing signals");
         AssertEqual(false, SignalWindowActive(true), "confirmed visual closes signal window");
         AssertEqual(false, GetBoolProperty(controller, "ShouldRefreshMissingSignalsForSnapshot"), "rendering does not refresh missing signals");
         AssertEqual(
-            "log:PREVIEW_START_STATE state=Rendering attempt=attempt-1 recovery=0 reason=-|stop-overlay|schedule-fade|complete-reinit:attempt-1:ConfirmPreviewFirstVisual|log:PREVIEW_FIRST_VISUAL_CONFIRMED attempt=attempt-1 source=D3D11FirstFrame elapsedMs=250 recovery=0",
+            "log:PREVIEW_START_STATE state=Rendering attempt=attempt-1 recovery=0 reason=-|stop-overlay|status:Preview started|schedule-fade|complete-reinit:attempt-1:ConfirmPreviewFirstVisual|log:PREVIEW_FIRST_VISUAL_CONFIRMED attempt=attempt-1 source=D3D11FirstFrame elapsedMs=250 recovery=0",
             string.Join("|", recorder.Events), "first visual presentation order");
         var firstVisualUtc = GetPropertyValue(controller, "FirstVisualUtc");
         recorder.Events.Clear();
@@ -3882,7 +3895,7 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         string? Fps(string? sourceTelemetrySummaryText, string? sourceTargetSummaryText)
             => buildFpsTelemetryTooltip.Invoke(null, new object?[] { sourceTelemetrySummaryText, sourceTargetSummaryText })?.ToString();
 
-        var stopRecordingText = "Stop recording before switching between HDR and SDR pipelines.";
+        var stopRecordingText = "Stop recording before switching between HDR and SDR pipelines";
         AssertEqual(
             $"Source is SDR{System.Environment.NewLine}4K HDR requires 59.94 or lower",
             Hdr("  4K HDR requires 59.94 or lower ", " Source is SDR ", isRecording: false),

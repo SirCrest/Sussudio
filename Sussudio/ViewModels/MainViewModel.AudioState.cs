@@ -1023,7 +1023,7 @@ public partial class MainViewModel
                 }
             });
 
-            StatusText = $"Device audio mode change failed ({mode})";
+            StatusText = StatusMessages.DeviceAudioModeChangeFailed(mode);
             return false;
         }
 
@@ -1034,7 +1034,7 @@ public partial class MainViewModel
             return false;
         }
 
-        StatusText = $"Device audio mode set to {mode}";
+        StatusText = StatusMessages.DeviceAudioModeSet(mode);
         if (reapplyAnalogGain && string.Equals(mode, DeviceAudioMode.Analog, StringComparison.OrdinalIgnoreCase))
         {
             var gainApplied = await ApplyAnalogAudioGainAsync(
@@ -1087,7 +1087,7 @@ public partial class MainViewModel
 
         if (!applied)
         {
-            StatusText = $"Analog audio gain change failed ({gainPercent:0}%)";
+            StatusText = StatusMessages.AnalogGainChangeFailed(gainPercent);
             return false;
         }
 
@@ -1098,7 +1098,7 @@ public partial class MainViewModel
             return false;
         }
 
-        StatusText = $"Analog audio gain set to {gainPercent:0}%";
+        StatusText = StatusMessages.AnalogGainSet(gainPercent);
         WithAudioControlRefreshSuppressed(() => AnalogAudioGainPercent = gainPercent);
         RequestAnalogGainFlashPersist(device, gainByte);
 

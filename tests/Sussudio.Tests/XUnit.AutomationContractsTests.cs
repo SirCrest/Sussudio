@@ -5447,7 +5447,7 @@ static partial class Program
         AssertContains(automationText, "public async Task SetFlashbackBufferMinutesAsync(int minutes, CancellationToken cancellationToken = default)");
         AssertContains(automationText, "public async Task SetFlashbackGpuDecodeAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertContains(automationText, "public void ReportFlashbackPlaybackRejection(string action, string logToken)");
-        AssertContains(automationText, "lastFailure={lastFailure}");
+        AssertContains(automationText, "StatusMessages.FlashbackPlaybackRejected(");
         AssertContains(automationText, "StatusText = message;");
         AssertContains(automationText, "case AutomationFlashbackAction.SetInPoint:");
         AssertContains(automationText, "case AutomationFlashbackAction.SetOutPoint:");
@@ -5654,10 +5654,10 @@ static partial class Program
         AssertContains(recordingTransitionControllerText, "if (transitionError is OperationCanceledException transitionCanceled && inFlightTarget == (enabled ? 1 : 0))");
         AssertContains(recordingTransitionControllerText, "throw transitionCanceled;");
         AssertContains(recordingTransitionControllerText, "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)");
-        AssertContains(recordingTransitionControllerText, "_context.SetStatusText(\"Recording start canceled\");");
-        AssertContains(recordingTransitionControllerText, "_context.SetStatusText(\"Stop recording canceled\");");
-        AssertContains(recordingTransitionControllerText, "_context.SetStatusText($\"Recording failed: {ex.Message}\");");
-        AssertContains(recordingTransitionControllerText, "_context.SetStatusText($\"Recording failed: {ex.Message}\");");
+        AssertContains(recordingTransitionControllerText, "_context.SetStatusText(StatusMessages.RecordingStartCanceled);");
+        AssertContains(recordingTransitionControllerText, "_context.SetStatusText(StatusMessages.RecordingStopCanceled);");
+        AssertContains(recordingTransitionControllerText, "_context.SetStatusText(StatusMessages.RecordingFailed(ex.Message));");
+        AssertContains(recordingTransitionControllerText, "_context.SetStatusText(StatusMessages.RecordingFailed(ex.Message));");
         AssertContains(recordingTransitionControllerText, "throw;");
 
         return Task.CompletedTask;
@@ -6259,7 +6259,7 @@ static partial class Program
         AssertContains(rawFlashbackExportText, "EnsureFlashbackActiveForExport(\"export\")");
         AssertContains(rawFlashbackExportText, "EnsureFlashbackActiveForExport(\"save_last_5m\")");
         AssertContains(rawFlashbackExportText, "FLASHBACK_EXPORT_UI_REJECTED op={operation} reason=inactive");
-        AssertContains(rawFlashbackExportText, "Flashback export unavailable: flashback is not active.");
+        AssertContains(rawFlashbackExportText, "StatusText = StatusMessages.FlashbackNotActiveForExport;");
         AssertMemberContains(flashbackExportText, "ExportFlashbackAsync", "case ExportFlashbackOutcome.Stale:");
         AssertMemberContains(flashbackExportText, "SaveFlashbackLast5mAsync", "case ExportFlashbackOutcome.Stale:");
         AssertContains(rawFlashbackExportText, "private static string FormatSuccessfulFlashbackExportStatus(");
@@ -6273,10 +6273,10 @@ static partial class Program
             "FormatSuccessfulFlashbackExportStatus(");
         AssertContains(
             rawFlashbackExportText,
-            "FormatSuccessfulFlashbackExportStatus(\"Export complete\", exportPath, succeeded.Result)");
+            "FormatSuccessfulFlashbackExportStatus(StatusMessages.ExportComplete, exportPath, succeeded.Result)");
         AssertContains(
             rawFlashbackExportText,
-            "FormatSuccessfulFlashbackExportStatus(\"Saved last 5 minutes\", exportPath, succeeded.Result)");
+            "FormatSuccessfulFlashbackExportStatus(StatusMessages.SavedLastFiveMinutes, exportPath, succeeded.Result)");
         AssertContains(viewModelFlashbackStateText, "private int _flashbackExportOperationId;");
         AssertContains(disposalText, "Interlocked.Increment(ref _flashbackExportOperationId);");
         AssertContains(disposalText, "var exportCts = Interlocked.Exchange(ref _exportCts, null);");
@@ -6353,7 +6353,7 @@ static partial class Program
         var partialStatus = (string)formatter!.Invoke(
             null,
             new object?[] { "Export complete", "clip.mp4", partialSuccess })!;
-        AssertContains(partialStatus, "Export complete: clip.mp4 - Exported 42 packets");
+        AssertContains(partialStatus, "Export complete: clip.mp4 (Exported 42 packets");
         AssertContains(partialStatus, "live-edge partial fallback");
         AssertContains(partialStatus, "export may omit the newest frames");
 
@@ -6400,7 +6400,7 @@ static partial class Program
         AssertContains(settingsPersistenceText, "private bool SaveSettings()");
         AssertContains(settingsPersistenceText, "SettingsService.Load()");
         AssertContains(settingsPersistenceText, "SettingsService.Save(settings, out var settingsSaveFailure)");
-        AssertContains(settingsPersistenceText, "StatusText = $\"Settings save failed: {settingsSaveFailure}. Changes may revert after restart.\";");
+        AssertContains(settingsPersistenceText, "StatusText = StatusMessages.SettingsSaveFailed(settingsSaveFailure);");
         AssertContains(settingsPersistenceText, "return false;");
         AssertContains(settingsServiceText, "public static bool Save(UserSettings settings, out string failure)");
         AssertContains(settingsServiceText, "internal static bool SaveToFile(UserSettings settings, string settingsFilePath, out string failure)");
@@ -6793,7 +6793,7 @@ static partial class Program
         AssertContains(deviceRefreshControllerText, "private readonly MainViewModelDeviceRefreshControllerContext _context;");
         AssertDoesNotContain(deviceRefreshControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(deviceRefreshControllerText, "_viewModel.");
-        AssertContains(deviceRefreshControllerText, "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)\n        {\n            if (requestGeneration == Volatile.Read(ref _refreshRequestGeneration))\n            {\n                _context.SetStatusText(\"Device scan canceled\");\n            }\n\n            throw;\n        }");
+        AssertContains(deviceRefreshControllerText, "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)\n        {\n            if (requestGeneration == Volatile.Read(ref _refreshRequestGeneration))\n            {\n                _context.SetStatusText(StatusMessages.DeviceScanCanceled);\n            }\n\n            throw;\n        }");
         AssertContains(selectDevice, "return InvokeOnUiThreadAsync(async () =>");
         AssertContains(selectDevice, "var applied = await ApplySelectedDeviceWithResultAsync(target, cancellationToken).ConfigureAwait(true);");
         AssertContains(selectDevice, "throw new InvalidOperationException(\"Capture device selection did not initialize; rollback was skipped if a newer selection superseded this request.\");");
