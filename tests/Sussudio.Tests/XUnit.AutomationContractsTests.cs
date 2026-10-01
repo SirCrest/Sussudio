@@ -5447,7 +5447,7 @@ static partial class Program
         AssertContains(automationText, "public async Task SetFlashbackBufferMinutesAsync(int minutes, CancellationToken cancellationToken = default)");
         AssertContains(automationText, "public async Task SetFlashbackGpuDecodeAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertContains(automationText, "public void ReportFlashbackPlaybackRejection(string action, string logToken)");
-        AssertContains(automationText, "lastFailure={lastFailure}");
+        AssertContains(automationText, "StatusMessages.FlashbackPlaybackRejected(");
         AssertContains(automationText, "StatusText = message;");
         AssertContains(automationText, "case AutomationFlashbackAction.SetInPoint:");
         AssertContains(automationText, "case AutomationFlashbackAction.SetOutPoint:");
@@ -6273,10 +6273,10 @@ static partial class Program
             "FormatSuccessfulFlashbackExportStatus(");
         AssertContains(
             rawFlashbackExportText,
-            "FormatSuccessfulFlashbackExportStatus(\"Export complete\", exportPath, succeeded.Result)");
+            "FormatSuccessfulFlashbackExportStatus(StatusMessages.ExportComplete, exportPath, succeeded.Result)");
         AssertContains(
             rawFlashbackExportText,
-            "FormatSuccessfulFlashbackExportStatus(\"Saved last 5 minutes\", exportPath, succeeded.Result)");
+            "FormatSuccessfulFlashbackExportStatus(StatusMessages.SavedLastFiveMinutes, exportPath, succeeded.Result)");
         AssertContains(viewModelFlashbackStateText, "private int _flashbackExportOperationId;");
         AssertContains(disposalText, "Interlocked.Increment(ref _flashbackExportOperationId);");
         AssertContains(disposalText, "var exportCts = Interlocked.Exchange(ref _exportCts, null);");

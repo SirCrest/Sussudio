@@ -1786,9 +1786,11 @@ static partial class Program
         var playback = Activator.CreateInstance(playbackType, false, false, "Collapsed")!;
         SetPropertyOrBackingField(context, "GetPlaybackSnapshotState", Expression.Lambda(
             typeof(Func<>).MakeGenericType(playbackType), Expression.Constant(playback, playbackType)).Compile());
+        SetPropertyOrBackingField(context, "GetStatusText", new Func<string>(() => state.CurrentStatus));
         SetPropertyOrBackingField(context, "SetStatusText", new Action<string>(value =>
         {
             state.StatusTexts.Add(value);
+            state.CurrentStatus = value;
             state.Events.Add($"status:{value}");
         }));
         SetPropertyOrBackingField(context, "StopPreviewForFailureAsync", new Func<string, Task>(reason =>
@@ -1828,6 +1830,7 @@ static partial class Program
         public Action? InspectFirstVisualTransition { get; set; }
         public List<string> Events { get; } = [];
         public List<string> StatusTexts { get; } = [];
+        public string CurrentStatus { get; set; } = string.Empty;
         public List<string> StopPreviewReasons { get; } = [];
     }
 
@@ -1904,8 +1907,10 @@ static partial class Program
             AssertEqual(recorder.Now, GetPropertyValue(controller, "FirstVisualUtc"), "visual timestamp precedes transition callback");
         };
         recorder.Events.Clear();
+        recorder.CurrentStatus = "Preview starting...";
         recorder.Now = recorder.Now.AddMilliseconds(250);
         InvokePreviewStartup(controller, "ConfirmFirstVisual", "D3D11FirstFrame");
+        AssertEqual("Preview started", recorder.CurrentStatus, "first visual completes the pending preview status");
         AssertEqual(string.Empty, GetStringProperty(controller, "MissingSignals"), "confirmation clears cached missing signals");
         AssertEqual(false, SignalWindowActive(true), "confirmed visual closes signal window");
         AssertEqual(false, GetBoolProperty(controller, "ShouldRefreshMissingSignalsForSnapshot"), "rendering does not refresh missing signals");

@@ -506,10 +506,12 @@ public partial class MainViewModel
         var lastFailure = string.IsNullOrWhiteSpace(playback.LastCommandFailure)
             ? "none"
             : playback.LastCommandFailure;
-        var message =
-            $"Flashback {action} rejected (state={playback.State}, " +
-            $"threadAlive={playback.ThreadAlive}, pending={playback.PendingCommands}, " +
-            $"lastFailure={lastFailure})";
+        var message = StatusMessages.FlashbackPlaybackRejected(
+            action,
+            playback.State.ToString(),
+            playback.ThreadAlive,
+            playback.PendingCommands,
+            lastFailure);
 
         Logger.Log(
             $"{logToken} state={playback.State} threadAlive={playback.ThreadAlive} " +
@@ -695,10 +697,7 @@ public partial class MainViewModel
         // detail stays inside the width of the one-row status line.
         var fileName = Path.GetFileName(exportPath);
         var displayName = string.IsNullOrEmpty(fileName) ? exportPath : fileName;
-        var statusMessage = StatusMessages.Detail(result.StatusMessage);
-        return statusMessage.Length == 0
-            ? $"{successPrefix}: {displayName}"
-            : $"{successPrefix}: {displayName} ({statusMessage})";
+        return StatusMessages.FlashbackFileSaved(successPrefix, displayName, result.StatusMessage);
     }
 
     private async Task<ExportFlashbackOutcome> ExportFlashbackCoreAsync(
@@ -799,7 +798,7 @@ public partial class MainViewModel
                 break;
             case ExportFlashbackOutcome.Succeeded succeeded:
                 StatusText = succeeded.Result.Succeeded
-                    ? FormatSuccessfulFlashbackExportStatus("Export complete", exportPath, succeeded.Result)
+                    ? FormatSuccessfulFlashbackExportStatus(StatusMessages.ExportComplete, exportPath, succeeded.Result)
                     : StatusMessages.ExportFailed(succeeded.Result.StatusMessage);
                 break;
         }
@@ -827,7 +826,7 @@ public partial class MainViewModel
                 break;
             case ExportFlashbackOutcome.Succeeded succeeded:
                 StatusText = succeeded.Result.Succeeded
-                    ? FormatSuccessfulFlashbackExportStatus("Saved last 5 minutes", exportPath, succeeded.Result)
+                    ? FormatSuccessfulFlashbackExportStatus(StatusMessages.SavedLastFiveMinutes, exportPath, succeeded.Result)
                     : StatusMessages.SaveFailed(succeeded.Result.StatusMessage);
                 break;
         }

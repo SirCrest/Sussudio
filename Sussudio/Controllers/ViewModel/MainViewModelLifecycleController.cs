@@ -437,12 +437,15 @@ internal sealed class MainViewModelRuntimeEventIngressController
 
     private void OnCaptureStatusChanged(object? sender, string status)
     {
+        // A preview start owns the footer until its first visual; audio success inside it is not
+        // news. Decide here, while the service is still inside the audio-start command and the
+        // counter is held: by the time the queued callback runs, an already-completed command
+        // may have resumed the view model and released it. Audio warnings still come through.
+        var suppressStatus = status == StatusMessages.AudioPreviewStarted && _context.IsStartingAudioForPreview();
         if (!_context.TryEnqueueOnUiThread(() =>
         {
             var runtimeSnapshot = _context.GetRuntimeSnapshot();
-            // A preview start owns the footer until its first visual; audio success inside it
-            // is not news. Audio warnings still come through.
-            if (!(status == StatusMessages.AudioPreviewStarted && _context.IsStartingAudioForPreview()))
+            if (!suppressStatus)
             {
                 _context.SetStatusText(status);
             }
@@ -640,13 +643,19 @@ internal sealed class MainViewModelPreviewLifecycleController
             await InitializeDeviceAsync(cancellationToken);
         }
 
+        // A start while preview is already running (for example a device refresh that keeps the
+        // same device) leaves video untouched and produces no new first visual.
+        var alreadyPreviewing = _context.IsPreviewing();
         var settings = _context.BuildCaptureSettings();
         await _context.SessionCoordinator.StartVideoPreviewAsync(settings, cancellationToken).ConfigureAwait(true);
 
         _context.SetIsPreviewing(true);
         // The capture session is running but nothing is on screen yet; the preview startup
-        // session publishes "Preview started" when it confirms the first visual.
-        _context.SetStatusText(StatusMessages.PreviewStarting);
+        // session replaces this with "Preview started" when it confirms the first visual.
+        if (!alreadyPreviewing)
+        {
+            _context.SetStatusText(StatusMessages.PreviewStarting);
+        }
 
         if (_context.ShouldStartAudioPreview())
         {

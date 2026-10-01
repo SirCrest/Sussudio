@@ -134,6 +134,28 @@ internal static class StatusMessages
 
     public static string ScreenshotSaved(string fileName) => $"Screenshot saved: {fileName}";
 
+    public const string ExportComplete = "Export complete";
+    public const string SavedLastFiveMinutes = "Saved last 5 minutes";
+
+    // "{outcome}: {file}" with an optional service detail in parentheses, for Flashback
+    // export and save. The detail is the producer's result text, shown through Detail().
+    public static string FlashbackFileSaved(string outcome, string fileName, string? detail)
+    {
+        var text = Detail(detail);
+        return text.Length == 0 ? $"{outcome}: {fileName}" : $"{outcome}: {fileName} ({text})";
+    }
+
+    // Diagnostic on purpose: a rejected playback command is rare and the footer is the only
+    // place the user sees why. The state is passed as text so this file stays dependency-free.
+    public static string FlashbackPlaybackRejected(
+        string action,
+        string state,
+        bool threadAlive,
+        int pendingCommands,
+        string lastFailure)
+        => $"Flashback {action} rejected (state={state}, threadAlive={threadAlive}, " +
+           $"pending={pendingCommands}, lastFailure={lastFailure})";
+
     public static string DeviceAudioModeSet(string mode) => $"Device audio mode set to {mode}";
 
     public static string DeviceAudioModeChangeFailed(string mode) => $"Device audio mode change failed ({mode})";

@@ -2163,6 +2163,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             IsWindowClosing = () => _isWindowClosing,
             GetTimeoutDiagnosticSnapshot = GetPreviewStartupTimeoutDiagnosticSnapshot,
             GetPlaybackSnapshotState = GetPreviewStartupPlaybackSnapshotState,
+            GetStatusText = () => ViewModel.StatusText,
             SetStatusText = value => ViewModel.StatusText = value,
             StopPreviewForFailureAsync = _ => ViewModel.StopPreviewAsync(userInitiated: true, teardownPipeline: true),
             RunUiEventHandlerAsync = RunUiEventHandlerAsync

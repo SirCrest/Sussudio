@@ -25,6 +25,7 @@ internal sealed class PreviewStartupSessionControllerContext
     public required Func<bool> IsWindowClosing { get; init; }
     public required Func<(string PlaceholderVisibility, string GpuVisibility, string CpuVisibility)> GetTimeoutDiagnosticSnapshot { get; init; }
     public required Func<PreviewStartupPlaybackSnapshotState> GetPlaybackSnapshotState { get; init; }
+    public required Func<string> GetStatusText { get; init; }
     public required Action<string> SetStatusText { get; init; }
     public required Func<string, Task> StopPreviewForFailureAsync { get; init; }
     public required Func<Func<Task>, string, Task> RunUiEventHandlerAsync { get; init; }
@@ -184,7 +185,12 @@ internal sealed class PreviewStartupSessionController
         SetStartupState(PreviewStartupState.Rendering);
         StopWatchdog();
         _context.StopOverlay();
-        _context.SetStatusText(StatusMessages.PreviewStarted);
+        // Complete only the pending status this start published. A warning (audio unavailable),
+        // a failure (settings update) or an operation result written since then stays visible.
+        if (_context.GetStatusText() == StatusMessages.PreviewStarting)
+        {
+            _context.SetStatusText(StatusMessages.PreviewStarted);
+        }
         _context.ScheduleFadeIn();
         _context.CompleteFirstVisualTransition(
             AttemptLabel,
