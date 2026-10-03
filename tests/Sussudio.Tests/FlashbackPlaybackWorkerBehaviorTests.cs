@@ -72,7 +72,7 @@ public sealed class FlashbackPlaybackWorkerBehaviorTests
     [Theory]
     [InlineData("GoLive", true)]
     [InlineData("Stop", false)]
-    public void LiveAndStopDisposeTheWorkerDecoderAndPreserveTheDispatchLoopDecision(string commandKind, bool keepRunning)
+    public void LiveAndStopReleaseTheWorkerFileAndPreserveTheDispatchLoopDecision(string commandKind, bool keepRunning)
     {
         using var session = new WorkerSession(commandKind);
         using var cancellation = new CancellationTokenSource();
@@ -81,8 +81,21 @@ public sealed class FlashbackPlaybackWorkerBehaviorTests
 
         Assert.Equal(keepRunning, session.Execute(commandKind, cancellation));
 
-        Assert.Null(Field(session.Worker, "Decoder"));
-        Assert.True((bool)Field(session.Decoder, "_disposed")!);
+        if (keepRunning)
+        {
+            // Go Live keeps the decoder warm for the next interaction; only the file is closed.
+            Assert.Same(session.Decoder, Field(session.Worker, "Decoder"));
+            Assert.False((bool)Field(session.Decoder, "_disposed")!);
+            Assert.False(Read<bool>(session.Decoder, "IsOpen"));
+            Assert.Null(Field(session.Controller, "_currentOpenFilePath"));
+        }
+        else
+        {
+            Assert.Null(Field(session.Worker, "Decoder"));
+            Assert.True((bool)Field(session.Decoder, "_disposed")!);
+        }
+
+        Assert.False((bool)Field(session.Worker, "FileOpen")!);
         Assert.False((bool)Field(session.Worker, "IsPlaying")!);
         Assert.False((bool)Field(session.Worker, "IsScrubbing")!);
         Assert.Null(Field(session.Worker, "PendingExactResumeTarget"));

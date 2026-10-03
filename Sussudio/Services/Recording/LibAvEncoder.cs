@@ -76,6 +76,14 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
     public long NextVideoPts => _nextVideoPts;
 
     /// <summary>
+    /// Raised on the encode thread for every video keyframe packet, right after it is handed
+    /// to the muxer: the output path, the packet PTS in stream time, and the output byte
+    /// position captured before the write. Flashback indexes segments with it so playback
+    /// can seek by byte offset instead of bisecting an index-less MPEG-TS file.
+    /// </summary>
+    public event Action<string, TimeSpan, long>? VideoKeyframeWritten;
+
+    /// <summary>
     /// Sets initial PTS counters for video (frame units) and audio (sample units).
     /// Used when continuing encoding after a sink-only cycle so file-level
     /// timestamps continue from the previous session.

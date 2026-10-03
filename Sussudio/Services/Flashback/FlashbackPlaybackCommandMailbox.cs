@@ -296,16 +296,6 @@ internal sealed class FlashbackPlaybackCommandMailbox
         return next.Kind is CommandKind.Play or CommandKind.GoLive or CommandKind.Stop;
     }
 
-    internal bool ShouldYieldPauseFromLiveToQueuedSeekOrPlay(ChannelReader<Command> reader)
-    {
-        if (!reader.TryPeek(out var next))
-        {
-            return false;
-        }
-
-        return next.Kind is CommandKind.Seek or CommandKind.Play or CommandKind.GoLive or CommandKind.Stop;
-    }
-
     internal void Complete(Generation generation)
     {
         try

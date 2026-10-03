@@ -684,9 +684,47 @@ internal sealed unsafe partial class LibAvEncoder
         ffmpeg.av_packet_rescale_ts(packet, sourceTimeBase, _videoStream->time_base);
         packet->stream_index = _videoStream->index;
         var packetSize = packet->size;
+        // The muxer consumes the packet; read what the keyframe index needs before the write.
+        var isKeyframe = (packet->flags & ffmpeg.AV_PKT_FLAG_KEY) != 0;
+        var keyframePts = packet->pts;
+        var keyframePosition = isKeyframe && _formatCtx->pb != null ? ffmpeg.avio_tell(_formatCtx->pb) : -1L;
         ThrowIfError(ffmpeg.av_interleaved_write_frame(_formatCtx, packet), "av_interleaved_write_frame");
         Interlocked.Increment(ref _videoPacketsWritten);
         _totalBytesWritten += packetSize;
+        if (isKeyframe && keyframePosition >= 0 && keyframePts != ffmpeg.AV_NOPTS_VALUE)
+        {
+            NotifyVideoKeyframeWritten(keyframePts, keyframePosition);
+        }
+    }
+
+    private void NotifyVideoKeyframeWritten(long streamPts, long bytePosition)
+    {
+        var handler = VideoKeyframeWritten;
+        if (handler == null)
+        {
+            return;
+        }
+
+        var timeBase = _videoStream->time_base;
+        if (timeBase.num <= 0 || timeBase.den <= 0)
+        {
+            return;
+        }
+
+        var seconds = streamPts * (double)timeBase.num / timeBase.den;
+        if (!double.IsFinite(seconds) || seconds < 0 || seconds > TimeSpan.MaxValue.TotalSeconds)
+        {
+            return;
+        }
+
+        try
+        {
+            handler(_options?.OutputPath ?? string.Empty, TimeSpan.FromSeconds(seconds), bytePosition);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"LIBAV_ENCODER_KEYFRAME_EVENT_WARN type={ex.GetType().Name} msg='{ex.Message}'");
+        }
     }
 
     private void CopyPackedFrameToVideoFrame(ReadOnlySpan<byte> frameData, LibAvEncoderOptions options)
