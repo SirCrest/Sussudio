@@ -889,6 +889,8 @@ internal sealed partial class FlashbackPlaybackController
         PlaybackCommand cmd,
         CancellationTokenSource cts)
     {
+        // Nudges queued behind this one folded their deltas into it.
+        cmd = _commandMailbox.ResolveLatestPositionAndReleaseCoalescingSlot(cmd);
         worker.PendingExactResumeTarget = null;
         var nudgedPos = SaturatingAdd(PlaybackPosition, cmd.Delta);
         nudgedPos = ClampPosition(nudgedPos, worker.FrozenValidStart);

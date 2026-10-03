@@ -38,6 +38,7 @@ internal sealed class FlashbackPlaybackCommandMailbox
         public bool HasPositionOverride { get; init; }
         public SeekIntentSlot? SeekSlot { get; init; }
         public ScrubUpdateIntentSlot? ScrubUpdateSlot { get; init; }
+        public NudgeIntentSlot? NudgeSlot { get; init; }
         public long QueuedTimestamp { get; init; }
     }
 
@@ -79,6 +80,21 @@ internal sealed class FlashbackPlaybackCommandMailbox
         internal long LatestTicks;
     }
 
+    /// <summary>
+    /// A queued nudge that later nudges fold into. Held arrow keys repeat at 30 Hz;
+    /// each repeat would otherwise queue a serial exact seek. The deltas sum, so
+    /// the one decode that runs lands where the key repeats would have ended.
+    /// </summary>
+    internal sealed class NudgeIntentSlot
+    {
+        internal NudgeIntentSlot(long deltaTicks)
+        {
+            DeltaTicks = deltaTicks;
+        }
+
+        internal long DeltaTicks;
+    }
+
     private readonly object _slotSync = new();
     private Generation _currentGeneration;
     private long _latestScrubUpdateTicks;
@@ -90,6 +106,8 @@ internal sealed class FlashbackPlaybackCommandMailbox
     private long _commandsDropped;
     private long _scrubUpdatesCoalesced;
     private long _seekCommandsCoalesced;
+    private long _nudgeCommandsCoalesced;
+    private NudgeIntentSlot? _queuedNudgeSlot;
     private int _pendingCommands;
     private int _maxPendingCommands;
     private long _lastCommandQueueLatencyMs;
@@ -110,6 +128,8 @@ internal sealed class FlashbackPlaybackCommandMailbox
     internal long CommandsDropped => Interlocked.Read(ref _commandsDropped);
     internal long ScrubUpdatesCoalesced => Interlocked.Read(ref _scrubUpdatesCoalesced);
     internal long SeekCommandsCoalesced => Interlocked.Read(ref _seekCommandsCoalesced);
+    // Log-only telemetry; not part of the automation snapshot.
+    internal long NudgeCommandsCoalesced => Interlocked.Read(ref _nudgeCommandsCoalesced);
     internal int PendingCommands => Volatile.Read(ref _pendingCommands);
     internal int MaxPendingCommands => Volatile.Read(ref _maxPendingCommands);
     internal long LastCommandQueueLatencyMs => Interlocked.Read(ref _lastCommandQueueLatencyMs);
@@ -150,7 +170,38 @@ internal sealed class FlashbackPlaybackCommandMailbox
                 _queuedScrubUpdateSlot = null;
             }
 
+            if (command.Kind != CommandKind.Nudge)
+            {
+                _queuedNudgeSlot = null;
+            }
+
             return true;
+        }
+    }
+
+    internal EnqueueDisposition TryEnqueueNudge(TimeSpan delta)
+    {
+        lock (_slotSync)
+        {
+            if (_queuedNudgeSlot is { } queuedSlot)
+            {
+                queuedSlot.DeltaTicks += delta.Ticks;
+                TrackCoalescedNudgeCommand();
+                return EnqueueDisposition.Coalesced;
+            }
+
+            var slot = new NudgeIntentSlot(delta.Ticks);
+            _queuedNudgeSlot = slot;
+            if (!TryEnqueueCore(new Command { Kind = CommandKind.Nudge, Delta = delta, NudgeSlot = slot }))
+            {
+                ClearQueuedNudgeSlotUnsafe(slot);
+                return EnqueueDisposition.Rejected;
+            }
+
+            // A nudge after a queued seek or scrub closes their slots: ordering matters.
+            _queuedSeekSlot = null;
+            _queuedScrubUpdateSlot = null;
+            return EnqueueDisposition.Enqueued;
         }
     }
 
@@ -175,6 +226,7 @@ internal sealed class FlashbackPlaybackCommandMailbox
             }
 
             _queuedScrubUpdateSlot = null;
+            _queuedNudgeSlot = null;
             return EnqueueDisposition.Enqueued;
         }
     }
@@ -201,6 +253,7 @@ internal sealed class FlashbackPlaybackCommandMailbox
             }
 
             _queuedSeekSlot = null;
+            _queuedNudgeSlot = null;
             return EnqueueDisposition.Enqueued;
         }
     }
@@ -230,6 +283,7 @@ internal sealed class FlashbackPlaybackCommandMailbox
 
             _queuedSeekSlot = null;
             _queuedScrubUpdateSlot = null;
+            _queuedNudgeSlot = null;
             return true;
         }
     }
@@ -250,6 +304,13 @@ internal sealed class FlashbackPlaybackCommandMailbox
                 var resolvedScrub = command with { Position = TimeSpan.FromTicks(scrubSlot.LatestTicks) };
                 ClearQueuedScrubUpdateSlotUnsafe(scrubSlot);
                 return resolvedScrub;
+            }
+
+            if (command.NudgeSlot is { } nudgeSlot)
+            {
+                var resolvedNudge = command with { Delta = TimeSpan.FromTicks(nudgeSlot.DeltaTicks) };
+                ClearQueuedNudgeSlotUnsafe(nudgeSlot);
+                return resolvedNudge;
             }
 
             return command;
@@ -342,6 +403,7 @@ internal sealed class FlashbackPlaybackCommandMailbox
         {
             _queuedSeekSlot = null;
             _queuedScrubUpdateSlot = null;
+            _queuedNudgeSlot = null;
         }
     }
 
@@ -439,6 +501,15 @@ internal sealed class FlashbackPlaybackCommandMailbox
         }
     }
 
+    private void TrackCoalescedNudgeCommand()
+    {
+        var coalesced = Interlocked.Increment(ref _nudgeCommandsCoalesced);
+        if (coalesced == 1 || coalesced % 120 == 0)
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_NUDGE_COALESCED count={coalesced}");
+        }
+    }
+
     private void TrackCommandQueueLatency(Command command)
     {
         if (command.QueuedTimestamp <= 0)
@@ -484,6 +555,14 @@ internal sealed class FlashbackPlaybackCommandMailbox
         }
     }
 
+    private void ClearQueuedNudgeSlotUnsafe(NudgeIntentSlot slot)
+    {
+        if (ReferenceEquals(_queuedNudgeSlot, slot))
+        {
+            _queuedNudgeSlot = null;
+        }
+    }
+
     private void ClearQueuedCommandSlotForDroppedCommand(Command command)
     {
         lock (_slotSync)
@@ -496,6 +575,11 @@ internal sealed class FlashbackPlaybackCommandMailbox
             if (command.ScrubUpdateSlot != null && ReferenceEquals(_queuedScrubUpdateSlot, command.ScrubUpdateSlot))
             {
                 _queuedScrubUpdateSlot = null;
+            }
+
+            if (command.NudgeSlot != null && ReferenceEquals(_queuedNudgeSlot, command.NudgeSlot))
+            {
+                _queuedNudgeSlot = null;
             }
         }
     }

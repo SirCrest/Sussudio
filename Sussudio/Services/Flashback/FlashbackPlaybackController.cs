@@ -378,7 +378,7 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
             return false;
         }
         if (!EnsurePlaybackThread(CommandKind.Nudge)) return false;
-        return SendCommand(new PlaybackCommand { Kind = CommandKind.Nudge, Delta = delta });
+        return SendNudgeCommand(delta);
     }
 
     private bool SendCommand(PlaybackCommand command)
@@ -404,6 +404,18 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
         if (_commandMailbox.TryEnqueueSeek(position) == FlashbackPlaybackCommandMailbox.EnqueueDisposition.Rejected)
         {
             SetLastCommandFailure($"write_failed:{CommandKind.Seek}{FormatCommandDetail(position: position)}");
+            return false;
+        }
+
+        ClearLastCommandFailure();
+        return true;
+    }
+
+    private bool SendNudgeCommand(TimeSpan delta)
+    {
+        if (_commandMailbox.TryEnqueueNudge(delta) == FlashbackPlaybackCommandMailbox.EnqueueDisposition.Rejected)
+        {
+            SetLastCommandFailure($"write_failed:{CommandKind.Nudge}{FormatCommandDetail(delta: delta)}");
             return false;
         }
 

@@ -969,8 +969,10 @@ Entry points:
   state, and no-op logging. `FlashbackPlaybackCommandMailbox.cs` owns each
   playback generation's bounded channel, command admission/drop policy,
   seek/scrub coalescing and queued-position resolution, control-yield peek
-  policy, pending-command accounting, shared command-kind payload formatting,
-  queue telemetry, completion, and abandoned-command draining.
+  policy, nudge-delta coalescing (a queued nudge absorbs later nudges until
+  any other command closes its slot), pending-command accounting, shared
+  command-kind payload formatting, queue telemetry, completion, and
+  abandoned-command draining.
   `ResolveLatestPositionAndReleaseCoalescingSlot` resolves the latest seek or
   scrub position and releases its queued coalescing slot under the same lock.
   The mailbox owns no decoder or playback state.
@@ -1004,8 +1006,15 @@ Entry points:
   the segment file, Stop and thread exit dispose it, and the decoder is
   recreated only when the D3D device pointer changes.
 - `FlashbackPlaybackController.ThreadCommands.cs` owns playback-thread
-  nudge command execution, including frame-step decode, no-file recovery, and
-  seek-display failure recovery.
+  nudge command execution, including coalesced-delta resolution, frame-step
+  decode, no-file recovery, and seek-display failure recovery.
+- Flashback UI feedback: `MainViewModel.FlashbackState.cs` owns the pushed,
+  coalesced playback-state refresh that follows every controller transition
+  (`QueueFlashbackPlaybackStateRefresh`) alongside the 250 ms status poll;
+  `Controllers/Flashback/FlashbackUiControllers.cs` owns the scrub pointer
+  throttle (Stopwatch-based window with a trailing flush so the last pointer
+  position is always sent) and the position label, which follows the pointer
+  while scrubbing.
 - `FlashbackPlaybackController.cs` owns live audio
   suppress/restore, decoder audio callback wiring, playback chunk
   validation/return, playback PTS gate handling, pooled audio-buffer return

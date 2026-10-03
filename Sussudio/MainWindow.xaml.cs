@@ -319,7 +319,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             ScrubArea = FlashbackScrubArea,
             PositionMagneticPlayhead = (x, trackWidth) => _flashbackPlayheadMotionController.PositionMagneticPlayhead(x, trackWidth),
             RefreshPlayheadMotion = reason => _flashbackPlayheadMotionController.RefreshPlayheadMotion(reason),
-            GetTickCount64 = () => Environment.TickCount64,
+            DispatcherQueue = DispatcherQueue,
+            GetTimestamp = System.Diagnostics.Stopwatch.GetTimestamp,
         });
     }
 
