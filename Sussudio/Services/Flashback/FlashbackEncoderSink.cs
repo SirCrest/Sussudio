@@ -340,7 +340,11 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameTryEn
             MicrophoneEnabled = context.MicrophoneEnabled,
             MicrophoneSampleRate = 48_000,
             MicrophoneChannels = 2,
-            MicrophoneBitRate = 320_000
+            MicrophoneBitRate = 320_000,
+            // Flashback segments are played back against their own audio clock (the
+            // audio-master pacer) and seeked by time, so audio seconds ahead of the
+            // picture is the single largest playback defect in long sessions.
+            LockVideoPtsToAudioClock = true
         };
     }
 

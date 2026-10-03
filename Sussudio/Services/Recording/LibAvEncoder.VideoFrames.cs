@@ -367,7 +367,7 @@ internal sealed unsafe partial class LibAvEncoder
             _forceNextKeyframe = false;
         }
 
-        _hwFrame->pts = Interlocked.Increment(ref _nextVideoPts) - 1;
+        _hwFrame->pts = AllocateVideoPts();
         LogAvSyncIfDue();
 
         var attachedHdrSideData = false;
@@ -435,7 +435,7 @@ internal sealed unsafe partial class LibAvEncoder
             _forceNextKeyframe = false;
         }
 
-        _hwFrame->pts = Interlocked.Increment(ref _nextVideoPts) - 1;
+        _hwFrame->pts = AllocateVideoPts();
         LogAvSyncIfDue();
 
         var attachedHdrSideData = false;
@@ -503,7 +503,7 @@ internal sealed unsafe partial class LibAvEncoder
             _forceNextKeyframe = false;
         }
 
-        _videoFrame->pts = Interlocked.Increment(ref _nextVideoPts) - 1;
+        _videoFrame->pts = AllocateVideoPts();
         LogAvSyncIfDue();
 
         var attachedHdrSideData = false;

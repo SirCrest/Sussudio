@@ -811,7 +811,14 @@ Entry points:
   parsing, video packet drains, bitstream-filter drains, timestamp rescaling,
   interleaved video packet writes, the `VideoKeyframeWritten` notification
   (stream PTS plus the output byte offset sampled before the interleaved
-  write), and hardware-frame unref cleanup.
+  write), and hardware-frame unref cleanup. Video PTS is allocated through
+  `AllocateVideoPts` (`LibAvEncoder.Audio.cs`), which with
+  `LibAvEncoderOptions.LockVideoPtsToAudioClock` follows the audio sample
+  clock: a lead of two frames or more that holds for a whole 120-frame window
+  moves the frame counter up to the audio time (frames lost upstream or
+  dropped by the sink), a persistent video lead is logged only, and audio is
+  never resampled or padded. The Flashback sink turns the lock on; the
+  recording sink does not.
 - `LibAvEncoder.cs` also owns output rotation, zero-delay NVENC output for
   independently decodable rotated files, IO close/reopen, stream reinitialization,
   retained game-audio/microphone counters for finalization after native cleanup,

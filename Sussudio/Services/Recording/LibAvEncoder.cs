@@ -41,6 +41,15 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
     private AVBSFContext* _bsfCtx;
     private LibAvEncoderOptions? _options;
     private long _nextVideoPts;
+    // Audio-clock lock state (LibAvEncoderOptions.LockVideoPtsToAudioClock); see
+    // LibAvEncoder.Audio.cs AllocateVideoPts.
+    private long _lastAudioInputTimestamp;
+    private long _videoPtsSkippedByAudioLock;
+    private long _videoPtsSkipEvents;
+    private long _lastVideoLeadsAudioLogFrame;
+    private double _audioLeadWindowMinFrames = double.MaxValue;
+    private double _audioLeadWindowMaxFrames = double.MinValue;
+    private int _audioLeadWindowCount;
     private long _encodedFrameCount;
     private long _droppedFrameCount;
     private long _videoPacketsWritten;
@@ -94,7 +103,11 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
         Interlocked.Exchange(ref _nextVideoPts, videoPts);
         Interlocked.Exchange(ref _audio.NextPts, audioPts);
         Interlocked.Exchange(ref _mic.NextPts, audioPts);
+        ResetAudioClockLockWindow();
     }
+
+    /// <summary>Video PTS skipped so far to follow the audio clock (log-only telemetry).</summary>
+    public long VideoPtsSkippedByAudioLock => Interlocked.Read(ref _videoPtsSkippedByAudioLock);
 
     public void SkipVideoFrame() { Interlocked.Increment(ref _nextVideoPts); }
 
@@ -589,6 +602,11 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
             _lastSyncLogVideoFrame = 0;
             _driftCorrectionAppliedSamples = 0;
             _lastDriftCorrectionVideoFrame = 0;
+            _lastAudioInputTimestamp = 0;
+            _videoPtsSkippedByAudioLock = 0;
+            _videoPtsSkipEvents = 0;
+            _lastVideoLeadsAudioLogFrame = 0;
+            ResetAudioClockLockWindow();
             _audio.AccumulatorBytes = 0;
             _audio.BufferedSamples = 0;
             _mic.AccumulatorBytes = 0;
@@ -1329,6 +1347,8 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
         _nextVideoPts = 0;
         _audio.NextPts = 0;
         _mic.NextPts = 0;
+        _lastAudioInputTimestamp = 0;
+        ResetAudioClockLockWindow();
         // Finalization reads these counters after native resources are closed.
         // Keep microphone totals just like game-audio totals until the next initialization.
         var finalMicSamplesReceived = _micSamplesReceived;
@@ -1395,6 +1415,17 @@ internal sealed record LibAvEncoderOptions
     public IntPtr D3D11DeviceContextPtr { get; init; }
     public IntPtr CudaHwDeviceCtxPtr { get; init; }
     public IntPtr CudaHwFramesCtxPtr { get; init; }
+
+    /// <summary>
+    /// Lock video PTS to the audio sample clock. Audio PTS is a sample counter and video
+    /// PTS a frame counter; frames lost before the sink (capture stalls and restarts)
+    /// leave audio ahead of the picture for the rest of the session. With this on, a
+    /// lead of two frames or more that persists across a whole evaluation window moves
+    /// the next frame's PTS up to the audio time. Audio is never resampled or padded;
+    /// a persistent video lead (missing audio) is logged only. Flashback segments turn
+    /// this on; recordings keep their existing timestamps.
+    /// </summary>
+    public bool LockVideoPtsToAudioClock { get; init; }
 }
 
 internal readonly record struct RotateOutputResult(string PreviousPath, long PreviousEncodedFrames, long PreviousTotalBytes);

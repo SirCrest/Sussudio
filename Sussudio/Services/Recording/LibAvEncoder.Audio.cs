@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.Threading;
 using System;
 using FFmpeg.AutoGen;
 
@@ -45,8 +47,12 @@ internal sealed unsafe partial class LibAvEncoder
     public bool MicrophoneEnabled => _options?.MicrophoneEnabled == true && _mic.CodecCtx != null && _mic.Stream != null;
 
     public void SendAudioSamples(ReadOnlySpan<byte> f32leSamples)
-        => SendStreamSamples(ref _audio, f32leSamples, static o => o.AudioChannels, ref _audioSamplesReceived,
+    {
+        // The audio clock is only followed while audio is arriving (see AllocateVideoPts).
+        Volatile.Write(ref _lastAudioInputTimestamp, Stopwatch.GetTimestamp());
+        SendStreamSamples(ref _audio, f32leSamples, static o => o.AudioChannels, ref _audioSamplesReceived,
             trackDriftCorrection: true, DriftCorrectionThresholdMs, nameof(SendAudioSamples));
+    }
 
     public void SendMicrophoneSamples(ReadOnlySpan<byte> f32leSamples)
         => SendStreamSamples(ref _mic, f32leSamples, static o => o.MicrophoneChannels, ref _micSamplesReceived,
@@ -439,6 +445,16 @@ internal sealed unsafe partial class LibAvEncoder
 
     private const long AvSyncLogCadenceFrames = 300;
     private const long MinimumAvSyncVideoFrames = 30;
+
+    // Audio-clock lock. A lead must hold for a whole window before video PTS moves: the
+    // minimum lead over the window is the persistent part (frames lost upstream, or
+    // dropped by the sink); a transient lead from the encode loop draining audio ahead
+    // of a video backlog returns to zero inside the window and is ignored.
+    private const int AudioClockLockWindowFrames = 120;
+    private const double AudioClockLockThresholdFrames = 2.0;
+    // Beyond this the two counters are not describing one session; log, do not correct.
+    private const double AudioClockLockMaxCorrectionSeconds = 30.0;
+    private const double AudioClockStaleMs = 500.0;
     // Drift correction disabled: capture card audio and video share the same USB bus
     // clock, so there is no ongoing drift. The apparent drift at startup is a one-time
     // offset from WASAPI pre-buffering. Correcting it causes audible pops because 480-
@@ -451,6 +467,106 @@ internal sealed unsafe partial class LibAvEncoder
     private long _lastSyncLogVideoFrame;
     private long _driftCorrectionAppliedSamples;
     private long _lastDriftCorrectionVideoFrame;
+
+    /// <summary>
+    /// Allocates the next video PTS (frame units). With
+    /// <see cref="LibAvEncoderOptions.LockVideoPtsToAudioClock"/> the frame counter first
+    /// follows the audio clock when delivered audio has led by two frames or more for a
+    /// whole window. Called on the encode thread, which also delivers audio, so the
+    /// audio counters it reads are stable for the call.
+    /// </summary>
+    private long AllocateVideoPts()
+    {
+        if (_options is { LockVideoPtsToAudioClock: true, AudioEnabled: true })
+        {
+            ApplyAudioClockLock();
+        }
+
+        return Interlocked.Increment(ref _nextVideoPts) - 1;
+    }
+
+    private void ApplyAudioClockLock()
+    {
+        var lastAudio = Volatile.Read(ref _lastAudioInputTimestamp);
+        if (lastAudio == 0 ||
+            Stopwatch.GetElapsedTime(lastAudio).TotalMilliseconds > AudioClockStaleMs ||
+            _nextVideoPts < MinimumAvSyncVideoFrames)
+        {
+            // No audio clock to follow (not started yet, or stalled): a lead measured now
+            // would say nothing about frame loss.
+            ResetAudioClockLockWindow();
+            return;
+        }
+
+        var vtb = _cachedVideoTimeBase;
+        var atb = _audio.CachedTimeBase;
+        if (vtb.num <= 0 || vtb.den <= 0 || atb.num <= 0 || atb.den <= 0)
+        {
+            return;
+        }
+
+        var videoFrame = _nextVideoPts;
+        var audioSamples = _audio.NextPts + _audio.BufferedSamples;
+        var frameSec = vtb.num / (double)vtb.den;
+        var videoTimeSec = videoFrame * frameSec;
+        var audioTimeSec = audioSamples * atb.num / (double)atb.den;
+        var leadFrames = (audioTimeSec - videoTimeSec) / frameSec;
+
+        _audioLeadWindowMinFrames = Math.Min(_audioLeadWindowMinFrames, leadFrames);
+        _audioLeadWindowMaxFrames = Math.Max(_audioLeadWindowMaxFrames, leadFrames);
+        if (++_audioLeadWindowCount < AudioClockLockWindowFrames)
+        {
+            return;
+        }
+
+        var minLeadFrames = _audioLeadWindowMinFrames;
+        var maxLeadFrames = _audioLeadWindowMaxFrames;
+        ResetAudioClockLockWindow();
+
+        if (minLeadFrames >= AudioClockLockThresholdFrames)
+        {
+            var leadSec = minLeadFrames * frameSec;
+            if (leadSec > AudioClockLockMaxCorrectionSeconds)
+            {
+                if (videoFrame - _lastVideoLeadsAudioLogFrame >= AvSyncLogCadenceFrames)
+                {
+                    _lastVideoLeadsAudioLogFrame = videoFrame;
+                    Logger.Log($"LIBAV_AV_LOCK_SKIPPED reason=lead_exceeds_limit lead_ms={leadSec * 1000.0:F0} video_frame={videoFrame}");
+                }
+
+                return;
+            }
+
+            // Land one frame behind the audio clock so packet jitter does not re-trigger.
+            var skip = (long)Math.Floor(minLeadFrames) - 1;
+            if (skip <= 0)
+            {
+                return;
+            }
+
+            Interlocked.Add(ref _nextVideoPts, skip);
+            var totalSkipped = Interlocked.Add(ref _videoPtsSkippedByAudioLock, skip);
+            var events = Interlocked.Increment(ref _videoPtsSkipEvents);
+            Logger.Log(
+                $"LIBAV_AV_LOCK_VIDEO_PTS_SKIP frames={skip} lead_ms={leadSec * 1000.0:F1} video_frame={videoFrame} " +
+                $"total_skipped={totalSkipped} events={events}");
+        }
+        else if (maxLeadFrames <= -AudioClockLockThresholdFrames &&
+                 videoFrame - _lastVideoLeadsAudioLogFrame >= AvSyncLogCadenceFrames)
+        {
+            // Audio behind video for the whole window: samples went missing. Not corrected
+            // here (padding audio mid-stream pops); reported so the gap is visible.
+            _lastVideoLeadsAudioLogFrame = videoFrame;
+            Logger.Log($"LIBAV_AV_LOCK_VIDEO_LEADS lead_ms={-maxLeadFrames * frameSec * 1000.0:F1} video_frame={videoFrame}");
+        }
+    }
+
+    private void ResetAudioClockLockWindow()
+    {
+        _audioLeadWindowMinFrames = double.MaxValue;
+        _audioLeadWindowMaxFrames = double.MinValue;
+        _audioLeadWindowCount = 0;
+    }
 
     private int GetDriftCorrectionSamples(long audioSamples, int sampleRate, out long correctionVideoFrame, out double driftMs,
         double thresholdMs = DriftCorrectionThresholdMs)

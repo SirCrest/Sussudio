@@ -376,6 +376,45 @@ passed, 0 failed) and `Report-DeadSurface.ps1` at zero. Contract and behaviour
 tests were updated to the new design (`XUnit.FlashbackContractsTests.cs`,
 `FlashbackPlaybackWorkerBehaviorTests.cs`, `FlashbackPrebufferBehaviorTests.cs`).
 
+### Phase B: UI feedback (F10) and the jitter buffer (F9)
+
+| # | What shipped | Where |
+|---|---|---|
+| F10 | Every controller state transition queues one coalesced refresh of the bound view-model state on the UI thread; the 250 ms poll remains as the fallback. The position label follows the pointer while scrubbing. The scrub throttle is Stopwatch-based (8 ms) with a trailing flush so the newest pointer position is always sent. The mailbox coalesces nudges (a queued nudge absorbs later deltas until another command closes its slot) | `MainViewModel.FlashbackState.cs` (`QueueFlashbackPlaybackStateRefresh`), `FlashbackUiControllers.cs` (`FlashbackScrubInteractionController`, `FlashbackPlaybackUiCoordinator.UpdatePosition`), `FlashbackPlaybackCommandMailbox.TryEnqueueNudge` |
+| F9 | The MJPEG preview jitter buffer waits 250 ms per idle wake while preview submission is suppressed (input is dropped at Enqueue and resume sets the signal) and 20 ms while unprimed, instead of a 2 ms poll | `MjpegPreviewJitterBuffer.RunEmitLoop` |
+
+### Phase C: A/V PTS lock (F12)
+
+| # | What shipped | Where |
+|---|---|---|
+| F12 | `LibAvEncoderOptions.LockVideoPtsToAudioClock`, on for Flashback segments only. Video PTS is allocated through `AllocateVideoPts`; when delivered audio leads the frame counter by two frames or more for a whole 120-frame window (the minimum lead over the window, so a transient encode-loop backlog does not trigger it), the counter skips to one frame behind the audio time. Leads above 30 s are logged, not corrected. Audio behind video is logged (`LIBAV_AV_LOCK_VIDEO_LEADS`), never padded. The lock is idle while no audio has arrived for 500 ms | `LibAvEncoder.Audio.cs` (`AllocateVideoPts`, `ApplyAudioClockLock`), `FlashbackEncoderSink.CreateEncoderOptions` |
+
+Not done in this phase: inserting silence at WASAPI `DATA_DISCONTINUITY` gaps
+(audio loss stays visible in the log only) and the same lock for recordings
+(their timestamps are unchanged by design; enabling it is one option flag in
+`LibAvRecordingSink`).
+
+### Phase D: preview and background
+
+| What shipped | Where |
+|---|---|
+| NVML polling demand-gated to the stats dock at 1 s; parked otherwise | `NvmlMonitor.SetPollingDemand`, `StatsOverlayCompositionController.SetSamplingDemand` |
+| Source (XU) telemetry refresh every fourth 500 ms tick; A/V drift sample unchanged | `CaptureService.RuntimeSnapshots.cs` telemetry loop |
+| Automation hub probes the preview producer epoch through a signature read; the full preview snapshot is built once per tick instead of three times | `AutomationDiagnosticsHub.PreviewRuntimeEpochProvider`, `PreviewRuntimeSnapshotSamplingController.GetEpochAsync` |
+| `DriveInfo.AvailableFreeSpace` probed on the pool, one in flight, result posted to the UI thread | `MainViewModel.UpdateDiskSpace` |
+| Waitable swap-chain wait = 1.5 measured refresh intervals (4..20 ms; 8 ms until measured) | `D3D11PreviewRenderer.ResolveFrameLatencyWaitTimeoutMs` |
+| DEVICE_HUNG and DRIVER_INTERNAL_ERROR classified as device loss; other render failures log the first five then every 300th | `D3D11PreviewRenderer.Resources.cs` `IsDeviceLostException`, `ShouldLogRenderFailure` |
+| Shader bytecode compiled once per process | `D3D11PreviewRenderer.Resources.cs` `ShaderBytecodeCache` |
+| `PreviewInputViewCache.Capacity` 8 to 32 | `PreviewInputViewCache.cs` |
+
+Left as found, with reasons: the dequeue stale threshold and latest-wins
+depth (needs a live A/B), input-ring retention across resize (memory versus
+rebuild time, no measurement yet), the CPU-upload lease path (F11, needs the
+renderer's lease ownership rules), the audio-ramp 10 ms sampler (bounded to a
+startup trace session), `Process.Refresh` (one cheap call per tick), and
+demand gating of the hub's 500 ms poll (it feeds the automation timeline,
+which must stay populated for `get_performance_timeline`).
+
 Not yet verified live: the 4K60 GPU-decode timings in sections 1 and 2 after
 these changes. Run `run_diagnostic_session` scenario `flashback-scrub-stress`
 against a built app and compare `FLASHBACK_PLAYBACK_CMD_COMPLETE`,
