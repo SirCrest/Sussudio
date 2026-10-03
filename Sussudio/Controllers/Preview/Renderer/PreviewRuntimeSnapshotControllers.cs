@@ -36,50 +36,24 @@ internal sealed class PreviewRuntimeSnapshotSamplingController
             "Failed to enqueue preview snapshot operation.",
             cancellationToken);
 
+    /// <summary>
+    /// The producer epoch alone: the same signature read as a snapshot, without the
+    /// renderer percentile passes that <see cref="GetSnapshotAsync"/> pays for.
+    /// </summary>
+    public Task<long> GetEpochAsync(CancellationToken cancellationToken = default)
+        => _context.UiDispatchController.InvokeWithRetryAsync(
+            () => GetOrAdvancePreviewRuntimeSnapshotEpoch(BuildSignature()),
+            "Failed to enqueue preview snapshot epoch operation.",
+            cancellationToken);
+
     private PreviewRuntimeSnapshot BuildSnapshot()
     {
-        var startupSession = _context.StartupSessionController;
-        var startupSignalSnapshot = startupSession.SignalSnapshot;
-        var startupMissingSignals = startupSession.MissingSignals;
-        if (string.IsNullOrWhiteSpace(startupMissingSignals) &&
-            startupSession.ShouldRefreshMissingSignalsForSnapshot)
-        {
-            startupMissingSignals = startupSession.BuildMissingSignals();
-        }
-
-        var rendererHost = _context.RendererHostController;
-        var signature = new PreviewRuntimeSnapshotSignature(
-            _context.ViewModel.IsPreviewing,
-            rendererHost.IsCpuPreviewSourceAttached,
-            _context.IsGpuElementVisible(),
-            _context.IsCpuElementVisible(),
-            _context.IsPlaceholderVisible(),
-            rendererHost.FramesArrived,
-            rendererHost.FramesDisplayed,
-            rendererHost.FramesDropped,
-            rendererHost.LastPresentedTick,
-            rendererHost.PreviewMinPresentationIntervalMs,
-            startupSession.State,
-            startupSession.IsWaitingForFirstVisual,
-            startupSession.AttemptId,
-            startupSession.RequestedUtc,
-            startupSession.VisualTimeoutMs,
-            startupSignalSnapshot.GpuSignalMediaOpened,
-            startupSignalSnapshot.GpuSignalFirstFrame,
-            startupSignalSnapshot.GpuSignalPlaybackAdvancing,
-            startupSignalSnapshot.RequiredSignals,
-            startupSignalSnapshot.ReceivedSignals,
-            startupSignalSnapshot.Strategy,
-            startupMissingSignals,
-            startupSession.RecoveryAttemptCount,
-            startupSession.LastFailureReason,
-            startupSession.FirstVisualConfirmed,
-            startupSession.PositionEventCount);
+        var signature = BuildSignature();
         var previewRuntimeEpoch = GetOrAdvancePreviewRuntimeSnapshotEpoch(signature);
         return PreviewRuntimeSnapshotController.Build(new PreviewRuntimeSnapshotInput
         {
             PreviewRuntimeEpoch = previewRuntimeEpoch,
-            D3DRenderer = rendererHost.Renderer,
+            D3DRenderer = _context.RendererHostController.Renderer,
             IsPreviewing = signature.IsPreviewing,
             PreviewSourceAttached = signature.PreviewSourceAttached,
             GpuElementVisible = signature.GpuElementVisible,
@@ -107,6 +81,47 @@ internal sealed class PreviewRuntimeSnapshotSamplingController
             FirstVisualConfirmed = signature.FirstVisualConfirmed,
             GpuPositionEventCount = signature.GpuPositionEventCount
         });
+    }
+
+    private PreviewRuntimeSnapshotSignature BuildSignature()
+    {
+        var startupSession = _context.StartupSessionController;
+        var startupSignalSnapshot = startupSession.SignalSnapshot;
+        var startupMissingSignals = startupSession.MissingSignals;
+        if (string.IsNullOrWhiteSpace(startupMissingSignals) &&
+            startupSession.ShouldRefreshMissingSignalsForSnapshot)
+        {
+            startupMissingSignals = startupSession.BuildMissingSignals();
+        }
+
+        var rendererHost = _context.RendererHostController;
+        return new PreviewRuntimeSnapshotSignature(
+            _context.ViewModel.IsPreviewing,
+            rendererHost.IsCpuPreviewSourceAttached,
+            _context.IsGpuElementVisible(),
+            _context.IsCpuElementVisible(),
+            _context.IsPlaceholderVisible(),
+            rendererHost.FramesArrived,
+            rendererHost.FramesDisplayed,
+            rendererHost.FramesDropped,
+            rendererHost.LastPresentedTick,
+            rendererHost.PreviewMinPresentationIntervalMs,
+            startupSession.State,
+            startupSession.IsWaitingForFirstVisual,
+            startupSession.AttemptId,
+            startupSession.RequestedUtc,
+            startupSession.VisualTimeoutMs,
+            startupSignalSnapshot.GpuSignalMediaOpened,
+            startupSignalSnapshot.GpuSignalFirstFrame,
+            startupSignalSnapshot.GpuSignalPlaybackAdvancing,
+            startupSignalSnapshot.RequiredSignals,
+            startupSignalSnapshot.ReceivedSignals,
+            startupSignalSnapshot.Strategy,
+            startupMissingSignals,
+            startupSession.RecoveryAttemptCount,
+            startupSession.LastFailureReason,
+            startupSession.FirstVisualConfirmed,
+            startupSession.PositionEventCount);
     }
 
     private long GetOrAdvancePreviewRuntimeSnapshotEpoch(PreviewRuntimeSnapshotSignature signature)

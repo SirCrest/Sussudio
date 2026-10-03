@@ -917,9 +917,10 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             {
                 HandleDeviceLost(ex);
             }
-            else
+            else if (ShouldLogRenderFailure(out var renderFailureCount))
             {
-                Logger.Log($"D3D11_PREVIEW_RENDER_FAILED type={ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
+                // A persistent failure would otherwise log once per frame at the capture rate.
+                Logger.Log($"D3D11_PREVIEW_RENDER_FAILED count={renderFailureCount} type={ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
             }
 
             TrackFrameDropped(frame, "render-failed");
@@ -1047,12 +1048,33 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         }
 
         var waitStart = Stopwatch.GetTimestamp();
-        var result = WaitForSingleObject(waitHandle, 8);
+        var result = WaitForSingleObject(waitHandle, ResolveFrameLatencyWaitTimeoutMs());
         TrackFrameLatencyWait(result, Stopwatch.GetTimestamp() - waitStart);
         if (result != WaitObject0 && result != WaitTimeout)
         {
             Logger.Log($"D3D11_PREVIEW_WAITABLE_SWAPCHAIN_WAIT result={result}.");
         }
+    }
+
+    // Until DXGI frame statistics have measured the display, assume a fast panel.
+    private const uint DefaultFrameLatencyWaitTimeoutMs = 8;
+
+    /// <summary>
+    /// One and a half measured refresh intervals, clamped to 4..20 ms: a normal vblank
+    /// signal arrives inside the window at any refresh rate (a fixed 8 ms timed out
+    /// every frame at 60 Hz), and a stalled compositor cannot hold the render thread
+    /// for more than about two frames.
+    /// </summary>
+    private uint ResolveFrameLatencyWaitTimeoutMs()
+    {
+        var refreshTicks = Volatile.Read(ref _measuredRefreshIntervalTicks);
+        if (refreshTicks <= 0)
+        {
+            return DefaultFrameLatencyWaitTimeoutMs;
+        }
+
+        var refreshMs = refreshTicks * 1000.0 / Stopwatch.Frequency;
+        return (uint)Math.Clamp(Math.Ceiling(refreshMs * 1.5), 4.0, 20.0);
     }
 
     private void DisposeFrameLatencyWaitHandle()
@@ -1564,6 +1586,14 @@ public readonly record struct PresentCadenceMetrics(
     private double[] _renderTotalCpuTimingWindowMs = new double[1200];
     private int _renderCpuTimingCount;
     private int _renderCpuTimingIndex;
+    private long _renderFailureCount;
+
+    private bool ShouldLogRenderFailure(out long count)
+    {
+        count = Interlocked.Increment(ref _renderFailureCount);
+        return count <= 5 || count % 300 == 0;
+    }
+
     private readonly object _frameLatencyWaitTimingLock = new();
     private double[] _frameLatencyWaitTimingWindowMs = new double[1200];
     private int _frameLatencyWaitTimingCount;

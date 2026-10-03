@@ -274,6 +274,8 @@ internal sealed class StatsOverlayHardwareSourceContext
     public required Func<ParallelMjpegDecodePipeline.PipelineTimingMetrics?> GetMjpegPipelineTimingDetails { get; init; }
     public required Func<int?> GetPendingPreviewFrameCount { get; init; }
     public required Func<NvmlSnapshot?> GetNvmlSnapshot { get; init; }
+    // Follows the sampler's demand so hardware monitors only poll while displayed.
+    public Action<bool>? SetHardwareSamplingDemand { get; init; }
 }
 
 internal sealed class StatsOverlayFrameTimeTargetsContext
@@ -703,7 +705,8 @@ internal sealed class StatsOverlayCompositionController : IDisposable
 
     private void SetSamplingDemand(bool active)
     {
-        if (active && !_disposed)
+        var sampling = active && !_disposed;
+        if (sampling)
         {
             _statsPollTimer.Start();
         }
@@ -711,6 +714,8 @@ internal sealed class StatsOverlayCompositionController : IDisposable
         {
             _statsPollTimer.Stop();
         }
+
+        _context.HardwareSources.SetHardwareSamplingDemand?.Invoke(sampling);
     }
 
     private void StatsPollTimer_Tick(DispatcherQueueTimer sender, object args)
@@ -733,6 +738,7 @@ internal sealed class StatsOverlayCompositionController : IDisposable
         _statsOverlayController.Dispose();
         _sampler.Dispose();
         _statsPollTimer.Stop();
+        _context.HardwareSources.SetHardwareSamplingDemand?.Invoke(false);
         _statsPollTimer.Tick -= StatsPollTimer_Tick;
         _frameTimeGraph.Dispose();
     }

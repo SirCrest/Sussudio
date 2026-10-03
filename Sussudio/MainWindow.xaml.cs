@@ -62,6 +62,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             ViewModel,
             GetPreviewRuntimeSnapshotAsync,
             this);
+        _automationHostLifecycleController.PreviewRuntimeEpochProvider = GetPreviewRuntimeEpochAsync;
         InitializePreviewReinitTransitionController();
         InitializePreviewRendererHostController();
         InitializeStatsOverlayCompositionController();
@@ -1598,6 +1599,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             GetMjpegPipelineTimingDetails = ViewModel.GetMjpegPipelineTimingDetails,
             GetPendingPreviewFrameCount = () => _previewRendererHostController.PendingFrameCount,
             GetNvmlSnapshot = () => _nvmlMonitor?.GetLatestSnapshot(),
+            SetHardwareSamplingDemand = active => _nvmlMonitor?.SetPollingDemand(active),
         };
 
     private StatsOverlayFrameTimeTargetsContext CreateStatsOverlayFrameTimeTargetsContext()
@@ -1982,6 +1984,9 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
     private async Task<PreviewRuntimeSnapshot> GetPreviewRuntimeSnapshotAsync(CancellationToken cancellationToken = default)
         => await _previewRuntimeSnapshotSamplingController.GetSnapshotAsync(cancellationToken).ConfigureAwait(false);
+
+    private async Task<long> GetPreviewRuntimeEpochAsync(CancellationToken cancellationToken = default)
+        => await _previewRuntimeSnapshotSamplingController.GetEpochAsync(cancellationToken).ConfigureAwait(false);
 
     private bool IsPreviewStopRequestedByUser
         => _previewLifecycleEventController.StopRequestedByUser;
