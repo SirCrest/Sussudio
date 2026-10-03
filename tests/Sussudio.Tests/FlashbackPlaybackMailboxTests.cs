@@ -42,33 +42,14 @@ public sealed class FlashbackPlaybackMailboxTests
         Assert.False(mailbox.TryReadCurrent(out _));
     }
 
-    [Theory]
-    [InlineData("Seek", " pos_ms=1250")]
-    [InlineData("BeginScrub", " pos_ms=1250")]
-    [InlineData("UpdateScrub", " pos_ms=1250")]
-    [InlineData("EndScrub", " pos_ms=1250")]
-    [InlineData("Nudge", " delta_ms=-250")]
-    [InlineData("Play", "")]
-    [InlineData("Pause", "")]
-    [InlineData("GoLive", "")]
-    [InlineData("Stop", "")]
-    [InlineData("Warm", "")]
-    public void CommandDetailsDescribeOnlyTheRelevantPayload(string kind, string expected)
+    // pos_ms= is pinned through the controller failure strings in FlashbackContractsTests and
+    // FlashbackPlaybackWorkerBehaviorTests; delta_ms= has no other pin, so it stays here.
+    [Fact]
+    public void NudgeDetailKeepsFractionalMillisecondsInBothFormatters()
     {
-        var mailbox = new MailboxHarness();
-        var details = mailbox.FormatDetails(kind, TimeSpan.FromMilliseconds(1250), TimeSpan.FromMilliseconds(-250));
-        Assert.Equal(expected, details.Mailbox);
-        Assert.Equal(expected, details.Controller);
-    }
-
-    [Theory]
-    [InlineData(0, " delta_ms=0")]
-    [InlineData(0.125, " delta_ms=0.125")]
-    public void NudgeDetailsPreserveZeroAndFractionalMilliseconds(double deltaMs, string expected)
-    {
-        var details = new MailboxHarness().FormatDetails("Nudge", TimeSpan.Zero, TimeSpan.FromMilliseconds(deltaMs));
-        Assert.Equal(expected, details.Mailbox);
-        Assert.Equal(expected, details.Controller);
+        var details = new MailboxHarness().FormatDetails("Nudge", TimeSpan.Zero, TimeSpan.FromMilliseconds(0.125));
+        Assert.Equal(" delta_ms=0.125", details.Mailbox);
+        Assert.Equal(" delta_ms=0.125", details.Controller);
     }
 
     [Fact]

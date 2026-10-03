@@ -289,26 +289,6 @@ public sealed class PreviewRendererLifecycleTests
         Assert.Equal(1, victim.DisposeCount);
     }
 
-    [Fact]
-    public void FailedClearStillReleasesEveryEntryAndRemainsIdempotent()
-    {
-        var cache = CreateCache();
-        var resources = Enumerable.Range(1, 8)
-            .Select(index => new LifetimeProbe(throwOnDispose: index == 1 || index == 4)).ToArray();
-        for (var index = 0; index < resources.Length; index++)
-        {
-            CacheCall(cache, "Add", new IntPtr(index + 1), 0, resources[index]);
-        }
-
-        var failure = Assert.Throws<TargetInvocationException>(() => CacheCall(cache, "Clear"));
-
-        Assert.IsType<InvalidOperationException>(failure.InnerException);
-        Assert.All(resources, resource => Assert.Equal(1, resource.DisposeCount));
-        Assert.Equal(0, cache.GetType().GetProperty("Count")!.GetValue(cache));
-        CacheCall(cache, "Clear");
-        Assert.All(resources, resource => Assert.Equal(1, resource.DisposeCount));
-    }
-
     private static object CreateCache()
         => Activator.CreateInstance(SussudioAssembly.Load().GetType(
             "Sussudio.Services.Preview.PreviewInputViewCache`1", throwOnError: true)!

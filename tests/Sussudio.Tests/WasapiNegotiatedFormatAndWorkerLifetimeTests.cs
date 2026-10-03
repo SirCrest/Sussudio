@@ -97,7 +97,7 @@ public sealed class WasapiNegotiatedFormatAndWorkerLifetimeTests
     }
 
     [Fact]
-    public void CanonicalRenderFormatAloneUsesBulkCopyFastPath()
+    public void CanonicalRenderFormatPredicateAcceptsFloat32Stereo48kAndRejectsAnotherRate()
     {
         var playbackType = RequireType("Sussudio.Services.Audio.WasapiAudioPlayback");
         var isCanonical = playbackType.GetMethod("IsCanonicalRenderFormat", StaticFlags)!;

@@ -32,24 +32,13 @@ namespace Sussudio.Tests
         public Task RawSendsRemainConcurrentAndRetainOwnershipThroughDisposal(bool failSend)
             => global::Program.DiagnosticInfrastructure_DisposeDuringRawSend(failSend);
 
+        // The four raw (concurrent) scenarios plus one serialized representative.
         [Theory]
         [InlineData("flashback-playback", false)]
-        [InlineData("flashback-stress", false)]
         [InlineData("flashback-scrub-stress", true)]
-        [InlineData("flashback-restart-cycle", false)]
-        [InlineData("flashback-encoder-cycle", false)]
-        [InlineData("flashback-export-playback", false)]
-        [InlineData("flashback-segment-playback", false)]
-        [InlineData("flashback-range-export", false)]
         [InlineData("flashback-range-export-audio-switch", true)]
-        [InlineData("flashback-lifecycle", false)]
         [InlineData("flashback-export-concurrent", true)]
         [InlineData("flashback-disable-during-export", true)]
-        [InlineData("flashback-rotated-export", false)]
-        [InlineData("flashback-preview-cycle", false)]
-        [InlineData("flashback-playback-preview-cycle", false)]
-        [InlineData("flashback-recording-preview-cycle", false)]
-        [InlineData("flashback-recording-settings-deferred", false)]
         public Task ScenarioStartupPreservesCommandSerializationChoice(string scenario, bool raw)
             => global::Program.DiagnosticInfrastructure_ScenarioCommandRouting(scenario, raw);
 
@@ -71,10 +60,6 @@ namespace Sussudio.Tests
         [Fact]
         public void OutputLockPreservesAnUnrelatedIOException()
             => global::Program.DiagnosticInfrastructure_OutputLockPreservesMissingDirectory();
-
-        [Fact]
-        public Task ASucceedingRecoveryStopAddsNoWarning()
-            => global::Program.DiagnosticInfrastructure_RecoveryStopSucceeds();
 
         [Theory]
         [InlineData(false)]
@@ -522,23 +507,6 @@ static partial class Program
 
     // Recovery cleanup is best-effort, but a stop that never reached the app leaves the
     // session recording; the transport failure has to reach the diagnostic report.
-    internal static async Task DiagnosticInfrastructure_RecoveryStopSucceeds()
-    {
-        var warnings = new List<string> { "primary readiness warning" };
-        var commands = new List<string>();
-
-        await InvokeDiagnosticRecoveryStopAsync(
-            (command, _, _) =>
-            {
-                commands.Add(command);
-                return Task.FromResult(JsonDocument.Parse("{\"Success\":true}").RootElement.Clone());
-            },
-            warnings).ConfigureAwait(false);
-
-        Assert.Equal(new[] { "SetRecordingEnabled" }, commands);
-        Assert.Equal(new[] { "primary readiness warning" }, warnings);
-    }
-
     internal static async Task DiagnosticInfrastructure_RecoveryStopFailureRecorded(bool canceled)
     {
         var warnings = new List<string> { "primary readiness warning" };

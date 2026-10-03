@@ -15,21 +15,6 @@ public sealed class RecordingFinalizationTruthTests
     }
 
     [Fact]
-    public void LifecycleAndOutcomeContracts_AreTypedAndUnambiguous()
-    {
-        var assembly = SussudioAssembly.Load();
-        var lifecycle = assembly.GetType(
-            "Sussudio.Services.Contracts.RecordingLifecyclePhase",
-            throwOnError: true)!;
-        var outcome = assembly.GetType(
-            "Sussudio.Services.Contracts.RecordingFinalizeOutcome",
-            throwOnError: true)!;
-
-        Assert.Equal(new[] { "Idle", "Recording", "Finalizing" }, Enum.GetNames(lifecycle));
-        Assert.Equal(new[] { "None", "Saved", "Failed" }, Enum.GetNames(outcome));
-    }
-
-    [Fact]
     public void FinalizeResultFactories_CannotLabelFailureAsSaved()
     {
         var resultType = SussudioAssembly.Load().GetType(
@@ -63,9 +48,6 @@ public sealed class RecordingFinalizationTruthTests
         Assert.False(Read<bool>(directlyConstructed, "Succeeded"));
         outcomeProperty.SetValue(directlyConstructed, Enum.Parse(outcomeProperty.PropertyType, "None"));
         Assert.False(Read<bool>(directlyConstructed, "Succeeded"));
-
-        var flashbackSink = RuntimeContractSource.ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs");
-        Assert.Contains("Outcome = RecordingFinalizeOutcome.Saved", flashbackSink, StringComparison.Ordinal);
 
         var saved = success.Invoke(null, new object?[] { "saved.mp4", "Recording saved", true, 17L })!;
         Assert.True(Read<bool>(saved, "Succeeded"));
@@ -106,47 +88,6 @@ public sealed class RecordingFinalizationTruthTests
         Assert.Equal("recording-finalization-timeout", Read<string>(failed, "FailureCode"));
         Assert.Equal(120_000L, Read<long>(failed, "FinalizationElapsedMs"));
         Assert.Single(Read<IReadOnlyList<string>>(failed, "PreservedArtifacts"));
-    }
-
-    [Fact]
-    public void AutomationSnapshot_ProjectsAdditiveRecordingTruthFields()
-    {
-        var assembly = SussudioAssembly.Load();
-        var captureSnapshot = assembly.GetType(
-            "Sussudio.Models.CaptureRuntimeSnapshot",
-            throwOnError: true)!;
-        var automationSnapshot = assembly.GetType(
-            "Sussudio.Models.AutomationSnapshot",
-            throwOnError: true)!;
-
-        foreach (var propertyName in new[]
-        {
-            "RecordingLifecyclePhase",
-            "RecordingFinalizeOutcome",
-            "RecordingFinalizeFailureCode",
-            "RecordingFinalizationVerificationCompleted",
-            "RecordingFinalizationCleanupPending",
-            "RecordingFinalizationElapsedMs",
-            "RecordingRecoveryPath",
-            "RecordingRequestedTracks",
-            "RecordingObservedTracks",
-            "RecordingFinalizationProgressStage"
-        })
-        {
-            Assert.NotNull(captureSnapshot.GetProperty(propertyName));
-            Assert.NotNull(automationSnapshot.GetProperty(propertyName));
-        }
-
-        var projection = RuntimeContractSource.ReadRepoFile(
-            "Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs");
-        Assert.Contains(
-            "RecordingFinalizeOutcome = captureRuntime.RecordingFinalizeOutcome",
-            projection,
-            StringComparison.Ordinal);
-        Assert.Contains(
-            "RecordingRecoveryPath = captureRuntime.RecordingRecoveryPath",
-            projection,
-            StringComparison.Ordinal);
     }
 
     [Fact]
@@ -198,11 +139,6 @@ public sealed class RecordingFinalizationTruthTests
             Assert.Contains(markerPath, Read<IReadOnlyList<string>>(recovered!, "PreservedArtifacts"));
             Assert.Contains(outputPath, Read<IReadOnlyList<string>>(recovered!, "PreservedArtifacts"));
             Assert.Contains(preservedSegmentPath, Read<IReadOnlyList<string>>(recovered!, "PreservedArtifacts"));
-
-            var viewModel = RuntimeContractSource.ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs");
-            Assert.Contains("RestoreLastRecordingFailure(OutputPath)", viewModel, StringComparison.Ordinal);
-            var window = RuntimeContractSource.ReadRepoFile("Sussudio/MainWindow.xaml");
-            Assert.Contains("RecordingRecoveryOpenLocationButton", window, StringComparison.Ordinal);
         }
         finally
         {
@@ -300,12 +236,6 @@ public sealed class RecordingFinalizationTruthTests
                 0L
             })!;
             Assert.True((bool)durableMarkerCheck.Invoke(null, new[] { durableFailure })!);
-
-            var lifecycle = RuntimeContractSource.ReadRepoFile(
-                "Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs");
-            Assert.Contains("RecordingFinalizationRecoveryArtifacts.BeginActive", lifecycle, StringComparison.Ordinal);
-            Assert.Contains("RecordingFinalizationRecoveryArtifacts.RetireActive", lifecycle, StringComparison.Ordinal);
-            Assert.Contains("result.Succeeded || HasDurableUnresolvedRecoveryMarker(result)", lifecycle, StringComparison.Ordinal);
         }
         finally
         {
@@ -326,9 +256,6 @@ public sealed class RecordingFinalizationTruthTests
     [Fact]
     public void RecordingFailureCodes_PinTheWireValuesTheEmittingSitesReference()
     {
-        var registry = RuntimeContractSource.ReadRepoFile(
-            "Sussudio/Services/Recording/RecordingFailureCodes.cs");
-
         var expected = new (string Name, string Value)[]
         {
             ("FinalizationTimeout", "recording-finalization-timeout"),
@@ -362,22 +289,22 @@ public sealed class RecordingFinalizationTruthTests
             ("StopFailed", "recording-stop-failed"),
         };
 
-        foreach (var (name, value) in expected)
-        {
-            Assert.Contains(
-                $"internal const string {name} = \"{value}\";",
-                registry,
-                StringComparison.Ordinal);
-        }
+        AssertRegistryValues("Sussudio.Services.Recording.RecordingFailureCodes", expected);
 
         // The contract's own fallback stays inline in ServiceContracts.cs so the
-        // Contracts layer does not import Services/Recording; keep the two in step.
-        var serviceContracts = RuntimeContractSource.ReadRepoFile(
-            "Sussudio/Services/Contracts/ServiceContracts.cs");
-        Assert.Contains(
-            "failureCode: \"recording-finalization-failed\"",
-            serviceContracts,
-            StringComparison.Ordinal);
+        // Contracts layer does not import Services/Recording; the three-argument
+        // Failure overload must keep emitting the registry's FinalizationFailed value.
+        var resultType = SussudioAssembly.Load().GetType(
+            "Sussudio.Services.Contracts.FinalizeResult",
+            throwOnError: true)!;
+        var defaultFailure = resultType.GetMethod(
+            "Failure",
+            BindingFlags.Public | BindingFlags.Static,
+            binder: null,
+            types: new[] { typeof(string), typeof(string), typeof(IEnumerable<string>) },
+            modifiers: null)!
+            .Invoke(null, new object?[] { "fallback.mp4", "Recording failed", null })!;
+        Assert.Equal("recording-finalization-failed", Read<string>(defaultFailure, "FailureCode"));
     }
 
     // Same contract, other side of the pipe: AutomationCommandResponse.ErrorCode
@@ -386,9 +313,6 @@ public sealed class RecordingFinalizationTruthTests
     [Fact]
     public void AutomationErrorCodes_PinTheWireValuesTheDispatcherReferences()
     {
-        var registry = RuntimeContractSource.ReadRepoFile(
-            "Sussudio/Services/Automation/AutomationErrorCodes.cs");
-
         var expected = new (string Name, string Value)[]
         {
             ("Canceled", "canceled"),
@@ -413,26 +337,24 @@ public sealed class RecordingFinalizationTruthTests
             ("RequestTooLarge", "request-too-large"),
         };
 
+        AssertRegistryValues("Sussudio.Services.Automation.AutomationErrorCodes", expected);
+    }
+
+    // Loads the registry from the staged app assembly and compares each constant's
+    // actual string value, so a changed or deleted constant fails by name.
+    private static void AssertRegistryValues(string registryTypeName, (string Name, string Value)[] expected)
+    {
+        var registry = SussudioAssembly.Load().GetType(registryTypeName, throwOnError: true)!;
+
         foreach (var (name, value) in expected)
         {
-            Assert.Contains(
-                $"internal const string {name} = \"{value}\";",
-                registry,
-                StringComparison.Ordinal);
-        }
+            var field = registry.GetField(
+                name,
+                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly)
+                ?? throw new MissingFieldException(registryTypeName, name);
 
-        // No emitting site should spell a protocol error code inline any more.
-        foreach (var relativePath in new[]
-                 {
-                     "Sussudio/Services/Automation/AutomationCommandDispatcher.cs",
-                     "Sussudio/Services/Automation/NamedPipeAutomationServer.cs",
-                 })
-        {
-            var source = RuntimeContractSource.ReadRepoFile(relativePath);
-            foreach (var (_, value) in expected)
-            {
-                Assert.DoesNotContain($"errorCode: \"{value}\"", source, StringComparison.Ordinal);
-            }
+            Assert.True(field.IsLiteral, $"{registryTypeName}.{name} must stay a compile-time constant");
+            Assert.Equal(value, field.GetRawConstantValue() as string);
         }
     }
 }

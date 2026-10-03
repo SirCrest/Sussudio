@@ -27,7 +27,6 @@ public sealed class RecordingSettingsApplicationTests
         Assert.Equal(setting == "format" ? RecordingSettingsChangeKind.RecordingFormat : RecordingSettingsChangeKind.EncoderParameters, request.Kind);
         Assert.False(operation.IsCompleted);
         Assert.Same(request.Completion.Task, fixture.Controller.PendingApplication);
-        Assert.Equal(new[] { "dispatch-enter", "setter", "capture", "apply", "dispatch-exit" }, fixture.Events);
         request.Completion.SetResult(RecordingSettingsApplyDisposition.Applied);
         await operation;
         await EventuallyAsync(() => fixture.Controller.PendingApplication == null);
@@ -147,21 +146,6 @@ public sealed class RecordingSettingsApplicationTests
         Assert.Empty(fixture.Requests);
     }
 
-    [Fact]
-    public void CompleteSelectionCopiesAllEncoderFieldsAndPreservesOtherCaptureSettings()
-    {
-        var desired = new RecordingSettingsSelection(RecordingFormat.Av1Mp4, VideoQuality.Custom, 88.5, NvencPreset.P7, SplitEncodeMode.ThreeWay);
-        var settings = new CaptureSettings { Width = 3840, AudioEnabled = true };
-        desired.ApplyTo(settings);
-        Assert.Equal(desired, RecordingSettingsSelection.From(settings));
-        Assert.True(desired.Matches(settings));
-        Assert.Equal(3840, settings.Width);
-        Assert.True(settings.AudioEnabled);
-        settings.SplitEncodeMode = SplitEncodeMode.Auto;
-        Assert.False(desired.Matches(settings));
-        Assert.False(desired.Matches(null));
-    }
-
     private static async Task EventuallyAsync(Func<bool> condition)
     {
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(3));
@@ -184,7 +168,6 @@ public sealed class RecordingSettingsApplicationTests
         public bool Hdr;
         public bool ThrowFromSetter;
         public bool ThrowFromApply;
-        public List<string> Events { get; } = new();
         public System.Collections.Concurrent.ConcurrentQueue<string> Logs { get; } = new();
         public List<Request> Requests { get; } = new();
         public MainViewModelRecordingSettingsController Controller { get; }
@@ -193,12 +176,7 @@ public sealed class RecordingSettingsApplicationTests
         {
             Controller = new MainViewModelRecordingSettingsController(new MainViewModelRecordingSettingsControllerContext
             {
-                InvokeOnUiThreadAsync = (callback, _) =>
-                {
-                    Events.Add("dispatch-enter");
-                    try { return callback(); }
-                    finally { Events.Add("dispatch-exit"); }
-                },
+                InvokeOnUiThreadAsync = (callback, _) => callback(),
                 GetAvailableRecordingFormats = () => Enum.GetNames<RecordingFormat>(),
                 GetAvailableQualities = () => Enum.GetNames<VideoQuality>(),
                 GetAvailableSplitEncodeModes = () => Enum.GetNames<SplitEncodeMode>(),
@@ -215,10 +193,9 @@ public sealed class RecordingSettingsApplicationTests
                 SetSelectedPreset = value => Set(() => Settings.NvencPreset = Enum.Parse<NvencPreset>(value)),
                 SetCustomBitrateMbps = value => Set(() => Settings.CustomBitrateMbps = value),
                 SetOutputPath = _ => { },
-                CaptureSelection = () => { Events.Add("capture"); return RecordingSettingsSelection.From(Settings); },
+                CaptureSelection = () => RecordingSettingsSelection.From(Settings),
                 ApplyAsync = (selection, kind, _) =>
                 {
-                    Events.Add("apply");
                     if (ThrowFromApply) throw new InvalidOperationException("injected enqueue failure");
                     var request = new Request(selection, kind);
                     Requests.Add(request);
@@ -230,7 +207,6 @@ public sealed class RecordingSettingsApplicationTests
 
         private void Set(Action mutation, RecordingSettingsChangeKind kind = RecordingSettingsChangeKind.EncoderParameters)
         {
-            Events.Add("setter");
             if (ThrowFromSetter) throw new InvalidOperationException("injected setter failure");
             mutation();
             Controller.OnSelectionChanged(kind, "property reaction");

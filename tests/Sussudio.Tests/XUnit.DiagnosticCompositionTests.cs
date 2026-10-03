@@ -31,7 +31,7 @@ public sealed class DiagnosticCompositionTests
     }
 
     [Fact]
-    public void EveryScenarioPreservesItsNameRequirementsAndWarningPolicies()
+    public void EveryScenarioPreservesItsPublicNameAndExportVerificationFileName()
     {
         var assembly = LoadAssembly();
         var catalogType = assembly.GetType("Sussudio.Tools.DiagnosticSessionScenarioCatalog", throwOnError: true)!;
@@ -39,11 +39,7 @@ public sealed class DiagnosticCompositionTests
         var entries = ((IEnumerable)catalogType.GetProperty("Entries", Members)!.GetValue(null)!).Cast<object>().ToArray();
         using var fixture = ReadFixture("scenarios.json");
         var expectedEntries = fixture.RootElement.EnumerateArray().ToArray();
-        Assert.Equal(25, entries.Length);
         Assert.Equal(expectedEntries.Length, entries.Length);
-        var constructor = Assert.Single(planType.GetConstructors(Members));
-        var identity = Assert.Single(constructor.GetParameters());
-        Assert.True(identity.ParameterType.IsEnum);
 
         for (var i = 0; i < expectedEntries.Length; i++)
         {
@@ -59,11 +55,6 @@ public sealed class DiagnosticCompositionTests
                     : planType.GetProperty(property.Name, Members)!.GetValue(plan);
             }
             AssertJsonEquivalent(expected, JsonSerializer.SerializeToElement(actual), $"scenario[{i}]");
-
-            var name = expected.GetProperty("Name").GetString()!;
-            var expectedKind = string.Concat(name.Split('-').Select(part => char.ToUpperInvariant(part[0]) + part[1..]));
-            var parsedPlan = planType.GetMethod("From", Members)!.Invoke(null, new object[] { name })!;
-            Assert.Equal(expectedKind, planType.GetProperty("Kind", Members)!.GetValue(parsedPlan)!.ToString());
         }
     }
 

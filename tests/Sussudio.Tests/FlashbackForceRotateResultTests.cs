@@ -56,40 +56,6 @@ public sealed class FlashbackForceRotateResultTests
         Assert.Equal("Failed", Property<object>(Completion(request), "Status").ToString());
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void FailedCompletionMakesPlannerRejectEvenWhenStablePathsExist(bool requireCompleteLiveEdge)
-    {
-        var request = CreateRequest();
-        request.GetType().GetMethod("Fail")!.Invoke(request, null);
-        var preserved = new[] { "original.mp4" };
-
-        var plan = Planner.GetMethod("PlanLiveEdge", BindingFlags.Static | BindingFlags.NonPublic)!
-            .Invoke(null, new object[] { Completion(request), requireCompleteLiveEdge, preserved, preserved })!;
-
-        Assert.Equal("ForceRotateFailed", Property<object>(plan, "FailureKind").ToString());
-        Assert.Equal("Flashback export failed: live-edge segment rotation failed.", Property<string>(plan, "FailureMessage"));
-        Assert.Same(preserved, Property<IReadOnlyList<string>>(plan, "PreservedArtifacts"));
-        Assert.False(Property<bool>(plan, "ForceRotateFallbackUsed"));
-        Assert.Null(plan.GetType().GetProperty("SegmentPaths")!.GetValue(plan));
-    }
-
-    [Fact]
-    public void SuccessfulEmptyCompletionRetainsTheOptionalStablePathFallback()
-    {
-        var request = CreateRequest();
-        Complete(request, Result("Completed", Array.Empty<string>()));
-        var stable = new[] { "stable.mp4" };
-
-        var plan = Planner.GetMethod("PlanLiveEdge", BindingFlags.Static | BindingFlags.NonPublic)!
-            .Invoke(null, new object[] { Completion(request), false, stable, stable })!;
-
-        Assert.Equal("None", Property<object>(plan, "FailureKind").ToString());
-        Assert.Same(stable, Property<IReadOnlyList<string>>(plan, "SegmentPaths"));
-        Assert.True(Property<bool>(plan, "ForceRotateFallbackUsed"));
-    }
-
     private static object CreateRequest()
         => Activator.CreateInstance(Sink.GetNestedType("ForceRotateRequest", BindingFlags.NonPublic)!, "prepared.mp4")!;
 
@@ -113,7 +79,6 @@ public sealed class FlashbackForceRotateResultTests
         => (T)target.GetType().GetProperty(property)!.GetValue(target)!;
 
     private static Type Sink => TypeOf("Sussudio.Services.Flashback.FlashbackEncoderSink");
-    private static Type Planner => TypeOf("Sussudio.Services.Flashback.FlashbackExportPlanner");
     private static Type Model => TypeOf("Sussudio.Models.FlashbackForceRotateResult");
     private static Type TypeOf(string name) => SussudioAssembly.Load().GetType(name, throwOnError: true)!;
 }

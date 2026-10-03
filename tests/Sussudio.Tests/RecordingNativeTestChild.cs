@@ -85,17 +85,10 @@ internal static class RecordingNativeTestChild
     {
         exitCode = 2;
         if (args.Length == 0 || args[0] != ChildFlag) return false;
-        if (args.Length != 4 || args[3] is not ("capability" or "p010" or "mismatch" or "hold")) return true;
+        if (args.Length != 4 || args[3] is not ("capability" or "p010" or "mismatch")) return true;
         // Set once for the entire process, before any app type or native worker starts.
         Environment.SetEnvironmentVariable("SUSSUDIO_LOG_ROOT", Path.Combine(args[2], "logs"));
         Environment.SetEnvironmentVariable("SUSSUDIO_RECOVERY_DIRECTORY", Path.Combine(args[2], "recovery"));
-        if (args[3] == "hold")
-        {
-            Console.WriteLine("RECORDING_CHILD_HOLDING_PRIVATE_ENVIRONMENT");
-            Console.Out.Flush();
-            Thread.Sleep(Timeout.Infinite);
-            return true;
-        }
         Assembly? assembly = null;
         try
         {
@@ -142,20 +135,5 @@ internal static class RecordingNativeTestChild
             }
         }
         return true;
-    }
-}
-
-public sealed class RecordingNativeTestChildTests
-{
-    [Fact]
-    public async Task TimeoutTerminatesChildBeforeDeletingItsPrivateFiles()
-    {
-        var parentRecovery = Environment.GetEnvironmentVariable("SUSSUDIO_RECOVERY_DIRECTORY");
-        var parentLogs = Environment.GetEnvironmentVariable("SUSSUDIO_LOG_ROOT");
-        var result = await RecordingNativeTestChild.RunAsync("hold", TimeSpan.FromSeconds(1));
-        Assert.True(result.TimedOut, result.FailureDetail);
-        Assert.False(Directory.Exists(result.Directory));
-        Assert.Equal(parentRecovery, Environment.GetEnvironmentVariable("SUSSUDIO_RECOVERY_DIRECTORY"));
-        Assert.Equal(parentLogs, Environment.GetEnvironmentVariable("SUSSUDIO_LOG_ROOT"));
     }
 }

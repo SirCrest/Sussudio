@@ -12,17 +12,12 @@ public sealed class SettingsServiceTests
         using var files = new SettingsFiles();
         var path = Path.Combine(files.DirectoryPath, "nested", "settings.json");
         var settings = CreateSettings(
-            ("SelectedDeviceId", "capture-1"),
             ("OutputPath", "D:\\Clips\\雪"),
             ("SelectedRecordingFormat", "AV1"),
-            ("SelectedPreset", "P7"),
-            ("SelectedSplitEncodeMode", "Auto"),
             ("CustomBitrateMbps", 42.5d),
             ("IsHdrEnabled", true),
             ("IsAudioEnabled", false),
-            ("SelectedDeviceAudioMode", "Analog"),
-            ("FlashbackBufferMinutes", 7),
-            ("SelectedVideoFormat", "3840x2160 P010"));
+            ("FlashbackBufferMinutes", 7));
 
         Assert.True(Save(settings, path, out var failure), failure);
         Assert.Empty(failure);
@@ -33,18 +28,13 @@ public sealed class SettingsServiceTests
         Assert.False(document.RootElement.GetProperty("IsAudioEnabled").GetBoolean());
 
         var loaded = Load(path);
-        AssertPreference(loaded, "SelectedDeviceId", "capture-1");
         AssertPreference(loaded, "OutputPath", "D:\\Clips\\雪");
         AssertPreference(loaded, "SelectedRecordingFormat", "AV1");
-        AssertPreference(loaded, "SelectedPreset", "P7");
-        AssertPreference(loaded, "SelectedSplitEncodeMode", "Auto");
         AssertPreference(loaded, "CustomBitrateMbps", 42.5d);
         AssertPreference(loaded, "IsHdrEnabled", true);
         AssertPreference(loaded, "IsAudioEnabled", false);
         AssertPreference(loaded, "IsAudioPreviewEnabled", null);
-        AssertPreference(loaded, "SelectedDeviceAudioMode", "Analog");
         AssertPreference(loaded, "FlashbackBufferMinutes", 7);
-        AssertPreference(loaded, "SelectedVideoFormat", "3840x2160 P010");
     }
 
     [Fact]

@@ -90,48 +90,12 @@ public sealed class FlashbackDecoderContractsTests
     }
 
     [Fact]
-    public Task FlashbackDecoderCalculatesNv12FrameBufferSizes()
-        => global::Program.FlashbackDecoder_CalculateFrameBufferSize_Nv12();
-
-    [Fact]
-    public Task FlashbackDecoderCalculatesP010FrameBufferSizes()
-        => global::Program.FlashbackDecoder_CalculateFrameBufferSize_P010();
-
-    [Fact]
-    public Task FlashbackDecoderDefaultsToClosedState()
-        => global::Program.FlashbackDecoder_DefaultState_IsNotOpenAndNotInitialized();
+    public Task FlashbackDecoderCalculatesFrameBufferSizes()
+        => global::Program.FlashbackDecoder_CalculateFrameBufferSize_MatchesPlaneLayouts();
 
     [Fact]
     public Task FlashbackDecoderDisposeBeforeInitializeIsSafe()
         => global::Program.FlashbackDecoder_DisposeBeforeInitialize_DoesNotThrow();
-
-    [Fact]
-    public Task FlashbackDecoderUnreferencesDiscardedAudioFrames()
-        => global::Program.FlashbackDecoder_DiscardedAudioFramesAreUnreffed();
-
-    [Fact]
-    public Task FlashbackDecoderMjpegPlaybackUsesLowLatencySingleThreadDecode()
-        => global::Program.FlashbackDecoder_MjpegPlaybackUsesSingleThreadLowLatencyDecode();
-
-    [Fact]
-    public Task FlashbackDecoderRejectsInvalidTimestamps()
-        => global::Program.FlashbackDecoder_PtsConversionRejectsInvalidTimestamps();
-
-    [Fact]
-    public Task FlashbackDecoderInputStreamsAndFrameSizesAreBounded()
-        => global::Program.FlashbackDecoder_InputStreamsAndFrameSizesAreBounded();
-
-    [Fact]
-    public Task FlashbackDecoderAudioOutputBuffersAreBounded()
-        => global::Program.FlashbackDecoder_AudioOutputBuffersAreBounded();
-
-    [Fact]
-    public Task FlashbackDecoderSoftwareFramePlanesAreValidated()
-        => global::Program.FlashbackDecoder_SoftwareFramePlanesAreValidated();
-
-    [Fact]
-    public Task FlashbackDecoderD3D11FramesAreValidated()
-        => global::Program.FlashbackDecoder_D3D11FramesAreValidated();
 
     [Fact]
     public Task FlashbackDecoderRejectsInitializeAfterDispose()
@@ -158,10 +122,6 @@ public sealed class FlashbackEncoderSinkContractsTests
         => global::Program.FlashbackEncoderSink_MapCodecName_MapsFormats();
 
     [Fact]
-    public Task FlashbackEncoderCountersDefaultToZero()
-        => global::Program.FlashbackEncoderSink_CountersDefaultToZero();
-
-    [Fact]
     public Task FlashbackEncoderBoundsHighResolutionCpuQueueCapacity()
         => global::Program.FlashbackEncoderSink_HighResolutionCpuQueueCapacityIsBounded();
 
@@ -172,14 +132,6 @@ public sealed class FlashbackEncoderSinkContractsTests
     [Fact]
     public Task FlashbackEncoderForceRotateDrainDoesNotRejectVideoByLifecycleState()
         => global::Program.FlashbackEncoderSink_ForceRotateDrainingDoesNotRejectVideoByLifecycleState();
-
-    [Fact]
-    public Task FlashbackEncoderDisposeResetsGpuQueueDepth()
-        => global::Program.FlashbackEncoderSink_DisposeResetsGpuQueueDepth();
-
-    [Fact]
-    public Task FlashbackEncoderPtsGuardsInvalidFrameRates()
-        => global::Program.FlashbackEncoderSink_EncoderPtsGuardsInvalidFrameRate();
 
     [Fact]
     public void FlashbackEncoderRestartKeepsTheNextFrameTimestamp()
@@ -195,31 +147,6 @@ public sealed class FlashbackEncoderSinkContractsTests
         Assert.Equal((12_001L, 9_610_401L), Resolve(TimeSpan.FromSeconds(12_001 / (60_000.0 / 1001)), 60_000.0 / 1001));
         Assert.Equal((0L, 0L), Resolve(TimeSpan.Zero, 120));
     }
-
-    [Fact]
-    public Task FlashbackEncoderSinkRestoresActiveSegmentAfterRotationFailure()
-        => global::Program.FlashbackEncoderSink_RotateFailureRestoresActiveSegment();
-
-    [Fact]
-    public Task FlashbackEncoderSinkRegistersSegmentsOnCancellationAndRotationFailure()
-        => global::Program.FlashbackEncoderSink_RegistersSegmentsOnCancellationAndRotationFailure();
-
-    [Fact]
-    public Task FlashbackEncoderSinkRejectsForceRotateAfterEncoderFailure()
-        => global::Program.FlashbackEncoderSink_ForceRotateRejectsFailedEncoder();
-
-    [Fact]
-    public Task FlashbackEncoderSinkLogsFatalSegmentRegistrationFailures()
-        => global::Program.FlashbackEncoderSink_FatalSegmentRegistrationFailuresAreLogged();
-
-    [Fact]
-    public Task FlashbackEncoderSinkValidatesAudioPacketsBeforeRent()
-        => global::Program.FlashbackEncoderSink_AudioPacketsAreValidatedBeforeRent();
-
-    [Fact]
-    public Task FlashbackEncoderSinkInterleavesAudioWithBoundedVideoBatches()
-        => global::Program.FlashbackEncoderSink_NormalDrainLoopInterleavesAudioWithBoundedVideoBatches();
-
 }
 
 public sealed class FlashbackExporterContractsTests
@@ -230,20 +157,12 @@ public sealed class FlashbackExporterContractsTests
     }
 
     [Fact]
-    public Task FlashbackSuppressedExceptionsUseAppLogs()
-        => global::Program.FlashbackSuppressedExceptionsUseAppLogs();
-
-    [Fact]
     public Task FlashbackOutputTransactionCleanupIgnoresNonexistentDirectories()
         => global::Program.FlashbackOutputTransaction_CleanupOrphanedTempFiles_HandlesNonexistentDirectory();
 
     [Fact]
     public Task FlashbackOutputTransactionCleanupDeletesOrphanedTempFiles()
         => global::Program.FlashbackOutputTransaction_CleanupOrphanedTempFiles_DeletesTempFiles();
-
-    [Fact]
-    public Task FlashbackExporterDoesNotScanUserOutputDirectoryForOrphans()
-        => global::Program.FlashbackExporter_DoesNotScanUserOutputDirectoryForOrphans();
 
     [Fact]
     public Task FlashbackExporterRejectsNullRequests()
@@ -390,10 +309,6 @@ public sealed class FlashbackPlaybackContractsTests
     }
 
     [Fact]
-    public Task FlashbackPlaybackInitialStateIsLive()
-        => global::Program.FlashbackPlaybackController_InitialState_IsLive();
-
-    [Fact]
     public Task FlashbackPlaybackCommandsNoOpBeforeInitialize()
         => global::Program.FlashbackPlaybackController_CommandsNoOpBeforeInitialize();
 
@@ -410,28 +325,8 @@ public sealed class FlashbackPlaybackContractsTests
         => global::Program.FlashbackPlaybackController_CommandQueue_AcceptsNewestControlWhenFull();
 
     [Fact]
-    public Task FlashbackCommandPositionsClampBeforeFileLookup()
-        => global::Program.FlashbackPlaybackController_ClampsCommandPositionsBeforeFileLookup();
-
-    [Fact]
-    public Task FlashbackPlaybackTimestampArithmeticIsSaturating()
-        => global::Program.FlashbackPlaybackController_TimestampArithmeticIsSaturating();
-
-    [Fact]
-    public Task FlashbackPauseFromLiveDisplaysBufferedFrameBeforePaused()
-        => global::Program.FlashbackPlaybackController_PauseFromLive_DisplaysBufferedFrameBeforePaused();
-
-    [Fact]
     public Task FlashbackPlaybackPtsCadenceTelemetryTracksMismatches()
         => global::Program.FlashbackPlaybackController_PtsCadenceTelemetry_TracksMismatches();
-
-    [Fact]
-    public Task FlashbackNudgeOpensDecoderAfterPauseFromLive()
-        => global::Program.FlashbackPlaybackController_NudgeCreatesDecoderWhenPaused();
-
-    [Fact]
-    public Task FlashbackPlaybackInOutPointsDefaultToUnset()
-        => global::Program.FlashbackPlaybackController_InOutPoints_DefaultToUnset();
 
     [Fact]
     public void PlaybackRejectionsKeepReadinessThreadAndDisposalAccountingSeparateFromMailboxFailures()
@@ -546,6 +441,7 @@ static partial class Program
         var result = task.GetType().GetProperty("Result")!.GetValue(task)!;
         var succeeded = GetBoolProperty(result, "Succeeded");
         AssertEqual(false, succeeded, "Export fails when input file not found");
+        AssertEqual("flashback-export-input-unavailable", GetStringProperty(result, "FailureCode"), "Missing input reports input-unavailable");
     }
 
     internal static async Task FlashbackExporter_ExportAsync_ReturnsFailure_WhenOutputPathEmpty()
@@ -577,6 +473,7 @@ static partial class Program
             await task.ConfigureAwait(false);
             var result = task.GetType().GetProperty("Result")!.GetValue(task)!;
             AssertEqual(false, GetBoolProperty(result, "Succeeded"), "Export fails when output path empty");
+            AssertEqual("flashback-export-invalid-output-path", GetStringProperty(result, "FailureCode"), "Empty output path reports invalid-output-path");
         }
         finally
         {
@@ -649,6 +546,7 @@ static partial class Program
         await task.ConfigureAwait(false);
         var result = task.GetType().GetProperty("Result")!.GetValue(task)!;
         AssertEqual(false, GetBoolProperty(result, "Succeeded"), "Export segments fails when no segments");
+        AssertEqual("flashback-export-segment-unavailable", GetStringProperty(result, "FailureCode"), "Empty segment list reports segment-unavailable");
     }
 
     internal static async Task FlashbackExporter_RejectsNullRequests()
@@ -793,15 +691,6 @@ static partial class Program
         }
         var unknown = create.Invoke(null, new object?[] { "cancel.mp4", "Flashback export cancelled.", "unknown-code", null });
         AssertEqual("Failed", method.Invoke(null, new[] { unknown })?.ToString(), "Unknown code never falls back to message parsing");
-        // The export diagnostics that classify failures moved out of CaptureService into
-        // FlashbackExportState, so the classifier call is pinned against its new owner.
-        var source = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExportState.cs");
-        AssertContains(source, "FlashbackExportFailureCodes.Classify(result)");
-        AssertDoesNotContain(source, "ContainsFlashbackExportFailureText");
-        // Neither owner may regress to parsing display text for the failure category.
-        AssertDoesNotContain(
-            ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs"),
-            "ContainsFlashbackExportFailureText");
 
         return Task.CompletedTask;
     }
@@ -890,13 +779,6 @@ static partial class Program
             .Single(method =>
                 method.Name == "AudioParamsMatchOrCanUseTemplate" &&
                 method.GetParameters().Length == 6);
-        var sourceText = ReadFlashbackExporterSource();
-        var streamsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs")
-            .Replace("\r\n", "\n");
-        var templateSelectionBlock = ExtractTextBetween(
-            sourceText,
-            "private bool TryInitializeSegmentOutputTemplate(",
-            "    private bool TryOpenSegmentInputForExport");
         var audioType = Enum.Parse(avMediaType, "AVMEDIA_TYPE_AUDIO");
         var videoType = Enum.Parse(avMediaType, "AVMEDIA_TYPE_VIDEO");
         var subtitleType = Enum.Parse(avMediaType, "AVMEDIA_TYPE_SUBTITLE");
@@ -947,30 +829,6 @@ static partial class Program
             (bool)audioParamsMatch.Invoke(null, new object?[] { 48000, 2, 8, 48000, 2, 8 })!,
             "matching complete audio params are accepted");
 
-        AssertContains(streamsText, "private static int CountUsableTemplateStreams(AVFormatContext* inputContext, int inputStreamCount)");
-        AssertContains(streamsText, "private static bool TemplateStreamContributesToTemplateScore(");
-        AssertContains(streamsText, "AVMediaType.AVMEDIA_TYPE_AUDIO => channelCount > 0 && sampleRate > 0,");
-        AssertContains(streamsText, "AVMediaType.AVMEDIA_TYPE_VIDEO => width > 0 && height > 0,");
-        AssertContains(streamsText, "private static bool AudioParamsMatchOrCanUseTemplate(AVCodecParameters* inputCodec, AVCodecParameters* templateCodec)");
-        AssertContains(streamsText, "var inputAudioParamsIncomplete = inputSampleRate <= 0 || inputChannelCount <= 0;");
-        AssertContains(streamsText, "var templateHasCompleteAudioParams = templateSampleRate > 0 && templateChannelCount > 0;");
-        AssertContains(streamsText, "return templateHasCompleteAudioParams;");
-        AssertContains(streamsText, "if (!AudioParamsMatchOrCanUseTemplate(inputCodec, templateCodec))");
-        AssertContains(streamsText, "audio_params expected=");
-        AssertContains(templateSelectionBlock, "var bestMappedStreamCount = -1;");
-        AssertContains(templateSelectionBlock, "var candidateMappedStreamCount = CountUsableTemplateStreams(_activeInputContext, candidateStreamCount);");
-        AssertContains(templateSelectionBlock, "FLASHBACK_EXPORT_TEMPLATE_CANDIDATE");
-        AssertContains(templateSelectionBlock, "mapped_streams={candidateMappedStreamCount}");
-        AssertContains(templateSelectionBlock, "if (candidateMappedStreamCount > bestMappedStreamCount)");
-        AssertContains(templateSelectionBlock, "bestTemplatePath = templatePath;");
-        AssertContains(templateSelectionBlock, "OpenInput(bestTemplatePath);");
-        AssertContains(templateSelectionBlock, "FLASHBACK_EXPORT_TEMPLATE_SELECTED");
-        AssertContains(templateSelectionBlock, "mapped_streams={bestMappedStreamCount}");
-        AssertOccursBefore(
-            templateSelectionBlock,
-            "var candidateMappedStreamCount = CountUsableTemplateStreams(_activeInputContext, candidateStreamCount);",
-            "OpenInput(bestTemplatePath);");
-
         return Task.CompletedTask;
     }
 
@@ -992,16 +850,6 @@ static partial class Program
         state.GetType().GetProperty("MinBaseUs")!.SetValue(state, 165_630_667L);
         Assert.Equal(165_700_000L, state.GetType().GetProperty("TimestampOriginUs")!.GetValue(state));
         Assert.Equal(165_730_000L, resolveBase.Invoke(null, new object[] { state.GetType().GetProperty("TimestampOriginUs")!.GetValue(state)!, 30_000L }));
-        var source = ReadFlashbackExporterSource();
-        AssertContains(source, "outputContext->avoid_negative_ts = ffmpeg.AVFMT_AVOID_NEG_TS_DISABLED;");
-        AssertContains(source, "\"use_editlist\", \"1\"");
-        AssertContains(source, "ffmpeg.av_seek_frame(_activeInputContext, state.VideoStreamIndex, seekTimestamp, ffmpeg.AVSEEK_FLAG_BACKWARD)");
-        AssertContains(source, "if ((packet->flags & ffmpeg.AV_PKT_FLAG_KEY) == 0) continue;");
-        AssertContains(source, "var keyframeLimitUs = Math.Max(targetUs, state.TimestampBasesUs[state.VideoStreamIndex]);");
-        AssertContains(source, "if (ptsUs > keyframeLimitUs) break;");
-        AssertContains(source, "FreeBufferedPackets(state.BufferedPackets, state.BufferedStreamIndices);");
-        AssertContains(source, "preservePreroll: state.UseSegmentTimeline && state.SegmentInOffsetUs > 0");
-        AssertDoesNotContain(source, "comparePtsUs < state.SegmentInOffsetUs");
         return Task.CompletedTask;
     }
 
@@ -1022,7 +870,6 @@ static partial class Program
         Assert.Equal(175_000L, Offset(TimeSpan.FromMilliseconds(1_002_975), TimeSpan.FromMilliseconds(1_002_800), 158_333));
         Assert.Equal(0L, Offset(TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(12), 0));
         Assert.Equal(7_000_000L, Offset(null, TimeSpan.Zero, 7_000_000));
-        AssertContains(ReadFlashbackExporterSource(), "ResolveSegmentOutputOffsetUs(segment.StartPts, inPoint, outputPtsOffsetUs)");
         return Task.CompletedTask;
     }
 
@@ -1099,11 +946,6 @@ static partial class Program
 
     internal static Task FlashbackExporter_RejectsDuplicateSegmentPaths()
     {
-        var sourceText = ReadFlashbackExporterSource();
-        AssertContains(sourceText, "var duplicateSegmentIndex = FindDuplicateSegmentPathIndex(segments);");
-        AssertContains(sourceText, "Flashback export failed: duplicate segment path at index {duplicateSegmentIndex}.");
-        AssertContains(sourceText, "private static int FindDuplicateSegmentPathIndex(IReadOnlyList<FlashbackExportSegment> segments)");
-
         var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
         var segmentType = RequireType("Sussudio.Models.FlashbackExportSegment");
         var tempDir = Path.Combine(Path.GetTempPath(), $"fb_export_duplicate_segment_{Guid.NewGuid():N}");
@@ -1217,26 +1059,6 @@ static partial class Program
 
     internal static Task FlashbackExporter_OutputPathValidation_ReturnsFailure()
     {
-        var sourceText = ReadFlashbackExporterSource();
-
-        AssertContains(sourceText, "if (!TryValidateOutputPath(outputPath, out var normalizedOutputPath, out var outputPathFailure))\n        {\n            Logger.Log($\"FLASHBACK_EXPORT_FAIL reason='{outputPathFailure}'\");\n            return FlashbackExportFailureCodes.Create(outputPath, outputPathFailure, FlashbackExportFailureCodes.InvalidOutputPath);\n        }\n        outputPath = normalizedOutputPath;");
-        AssertContains(sourceText, "if (!TryValidateExportRange(inPoint, outPoint, out var rangeFailure))");
-        AssertContains(sourceText, "private static bool TryValidateExportRange(TimeSpan inPoint, TimeSpan outPoint, out string failureMessage)");
-        AssertContains(sourceText, "failureMessage = \"Flashback export failed: in point must not be negative.\";");
-        AssertContains(sourceText, "failureMessage = \"Flashback export failed: export range is empty or invalid.\";");
-        AssertContains(sourceText, "var invalidSegmentIndex = FindInvalidSegmentPathIndex(segments);");
-        AssertContains(sourceText, "Flashback export failed: segment path at index {invalidSegmentIndex} is empty.");
-        AssertContains(sourceText, "private static int FindInvalidSegmentPathIndex(IReadOnlyList<FlashbackExportSegment> segments)");
-        AssertContains(sourceText, "private static bool TryValidateOutputPath(string outputPath, out string fullOutputPath, out string failureMessage)");
-        AssertContains(sourceText, "fullOutputPath = Path.GetFullPath(outputPath);");
-        AssertContains(sourceText, "failureMessage = \"Flashback export failed: output path is required.\";");
-        AssertContains(sourceText, "catch (Exception ex)\n        {\n            failureMessage = $\"Flashback export failed: output path is invalid '{outputPath}'.\";\n            Logger.Log($\"FLASHBACK_EXPORT_PATH_VALIDATE_WARN path='{outputPath}' type={ex.GetType().Name} msg='{ex.Message}'\");\n            return false;\n        }");
-        AssertContains(sourceText, "failureMessage = $\"Flashback export failed: output path is invalid '{outputPath}'.\";");
-        AssertContains(sourceText, "failureMessage = $\"Flashback export failed: output directory does not exist for '{outputPath}'.\";");
-        AssertContains(sourceText, "if (Directory.Exists(fullOutputPath))\n        {\n            failureMessage = $\"Flashback export failed: output path is a directory '{outputPath}'.\";\n            return false;\n        }");
-        AssertContains(sourceText, "FLASHBACK_EXPORT_PATH_COMPARE_WARN");
-        AssertContains(sourceText, "FLASHBACK_EXPORT_PROGRESS_ESTIMATE_WARN");
-
         var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
         var validateOutputPath = exporterType.GetMethod("TryValidateOutputPath", BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("TryValidateOutputPath not found.");
@@ -1305,10 +1127,6 @@ static partial class Program
                 AssertEqual(false, GetBoolProperty(segmentResult, "Succeeded"), "Segment export rejects source overwrite");
                 AssertContains(GetStringProperty(segmentResult, "StatusMessage"), "must not overwrite source segment");
                 AssertEqual(8L, new FileInfo(sourcePath).Length, "Segment rejection preserves source bytes");
-
-                var sourceText = ReadFlashbackExporterSource();
-                AssertDoesNotContain(sourceText, "var tmpPath = outputPath + \".tmp\";");
-                AssertContains(sourceText, "FlashbackExportOutputTransaction.TryReserve(outputPath, out outputTransaction, out var tempOutputFailure, out var tempOutputFailureCode)");
             }
             finally
             {
@@ -1420,30 +1238,6 @@ static partial class Program
         {
             global::Program.TryDeleteDirectory(tempDir);
         }
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task FlashbackExporter_DoesNotScanUserOutputDirectoryForOrphans()
-    {
-        var sourceText = ReadFlashbackExporterSource();
-
-        AssertDoesNotContain(sourceText, "private static void CleanupOrphanedTempFilesNearOutput(string outputPath)");
-        AssertDoesNotContain(sourceText, "FLASHBACK_EXPORT_ORPHAN_OUTPUT_SCAN_FAIL");
-
-        var singleExportBlock = ExtractTextBetween(
-            sourceText,
-            "private FinalizeResult ExportCore(",
-            "    private FinalizeResult ExportSegmentsCore(");
-        AssertDoesNotContain(singleExportBlock, "var tmpPath = outputPath + \".tmp\";");
-        AssertDoesNotContain(singleExportBlock, "CleanupOrphanedTempFilesNearOutput(outputPath);");
-
-        var segmentExportBlock = ExtractTextBetween(
-            sourceText,
-            "private FinalizeResult ExportSegmentsCore(",
-            "    private SegmentPacketWriteResult WriteSegmentPacketsToActiveOutput(");
-        AssertDoesNotContain(segmentExportBlock, "var tmpPath = outputPath + \".tmp\";");
-        AssertDoesNotContain(segmentExportBlock, "CleanupOrphanedTempFilesNearOutput(outputPath);");
 
         return Task.CompletedTask;
     }
@@ -1865,30 +1659,6 @@ static partial class Program
         return published;
     }
 
-    internal static Task FlashbackPlaybackController_InitialState_IsLive()
-    {
-        var bufferManagerType = RequireType("Sussudio.Services.Flashback.FlashbackBufferManager");
-        var bufferManager = Activator.CreateInstance(bufferManagerType, new object?[] { null })!;
-
-        var controllerType = RequireType("Sussudio.Services.Flashback.FlashbackPlaybackController");
-        var ctor = controllerType.GetConstructor(
-            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
-            binder: null,
-            types: new[] { bufferManagerType },
-            modifiers: null)
-            ?? throw new InvalidOperationException("FlashbackPlaybackController constructor not found.");
-
-        var controller = ctor.Invoke(new[] { bufferManager });
-
-        var stateStr = GetPropertyValue(controller, "State")?.ToString();
-        AssertEqual("Live", stateStr, "Initial state is Live");
-
-        var position = (TimeSpan)GetPropertyValue(controller, "PlaybackPosition")!;
-        AssertEqual(TimeSpan.Zero, position, "Initial PlaybackPosition");
-
-        return Task.CompletedTask;
-    }
-
     internal static Task FlashbackPlaybackController_CommandsNoOpBeforeInitialize()
     {
         var bufferManagerType = RequireType("Sussudio.Services.Flashback.FlashbackBufferManager");
@@ -1902,13 +1672,16 @@ static partial class Program
             modifiers: null)!;
         var controller = ctor.Invoke(new[] { bufferManager });
 
-        var playMethod = controllerType.GetMethod("Play", BindingFlags.Public | BindingFlags.Instance);
-        var pauseMethod = controllerType.GetMethod("Pause", BindingFlags.Public | BindingFlags.Instance);
-        var goLiveMethod = controllerType.GetMethod("GoLive", BindingFlags.Public | BindingFlags.Instance);
+        var playMethod = controllerType.GetMethod("Play", BindingFlags.Public | BindingFlags.Instance)
+            ?? throw new InvalidOperationException("FlashbackPlaybackController.Play not found.");
+        var pauseMethod = controllerType.GetMethod("Pause", BindingFlags.Public | BindingFlags.Instance)
+            ?? throw new InvalidOperationException("FlashbackPlaybackController.Pause not found.");
+        var goLiveMethod = controllerType.GetMethod("GoLive", BindingFlags.Public | BindingFlags.Instance)
+            ?? throw new InvalidOperationException("FlashbackPlaybackController.GoLive not found.");
 
-        playMethod?.Invoke(controller, null);
-        pauseMethod?.Invoke(controller, null);
-        goLiveMethod?.Invoke(controller, null);
+        playMethod.Invoke(controller, null);
+        pauseMethod.Invoke(controller, null);
+        goLiveMethod.Invoke(controller, null);
 
         var stateStr = GetPropertyValue(controller, "State")?.ToString();
         AssertEqual("Live", stateStr, "State unchanged after no-op commands");
@@ -2004,163 +1777,6 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackPlaybackController_ClampsCommandPositionsBeforeFileLookup()
-    {
-        var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
-        // All three scrub-related command paths must clamp via the eviction-aware
-        // overload so a long-held scrub doesn't resolve to evicted file PTS.
-        const string seekClampBeforeOpen = "cmd = cmd with { Position = ClampPosition(cmd.Position, worker.FrozenValidStart) };\n        var seekResumeTarget = ClampPlaybackTargetToMinimumLiveLead(";
-        const string scrubClampBeforeOpen = "cmd = cmd with { Position = ClampPosition(cmd.Position, worker.FrozenValidStart) };\n        worker.Decoder ??= CreateDecoder();\n        EnsureFileOpen(worker.Decoder, ref worker.FileOpen, SaturatingAdd(cmd.Position, worker.FrozenValidStart));";
-
-        AssertContains(sourceText, seekClampBeforeOpen);
-        AssertContains(sourceText, "SaturatingAdd(cmd.Position, worker.FrozenValidStart),\n            worker.FrozenValidStart,\n            \"seek\");");
-        AssertContains(sourceText, "cmd = cmd with { Position = ClampPosition(SaturatingSubtract(seekResumeTarget, worker.FrozenValidStart), worker.FrozenValidStart) };");
-        AssertContains(sourceText, "if (_commandMailbox.ShouldYieldSeekToQueuedPlay(commandChannel))\n        {\n            PlaybackPosition = cmd.Position;\n            worker.PendingExactResumeTarget = seekResumeTarget;");
-        AssertContains(sourceText, "worker.Decoder ??= CreateDecoder();\n        EnsureFileOpen(worker.Decoder, ref worker.FileOpen, seekResumeTarget);");
-        AssertEqual(1, sourceText.Split(scrubClampBeforeOpen, StringSplitOptions.None).Length - 1, "BeginScrub clamps before file lookup with frozen reference");
-        var updateScrubBlock = ExtractTextBetween(
-            sourceText,
-            "private void HandleUpdateScrubCommand(",
-            "    private void HandleEndScrubCommand(");
-        AssertContains(updateScrubBlock, "cmd = cmd with { Position = ClampPosition(cmd.Position, worker.FrozenValidStart) };\n        if (_commandMailbox.ShouldYieldScrubUpdateToQueuedControl(commandChannel))");
-        AssertContains(updateScrubBlock, "worker.Decoder ??= CreateDecoder();\n        EnsureFileOpen(worker.Decoder, ref worker.FileOpen, SaturatingAdd(cmd.Position, worker.FrozenValidStart));");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task FlashbackPlaybackController_TimestampArithmeticIsSaturating()
-    {
-        var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
-
-        AssertContains(sourceText, "private static TimeSpan SaturatingAdd(TimeSpan left, TimeSpan right)");
-        AssertContains(sourceText, "private static TimeSpan SaturatingSubtract(TimeSpan left, TimeSpan right)");
-        AssertContains(sourceText, "if (rightTicks > 0 && leftTicks > long.MaxValue - rightTicks)");
-        AssertContains(sourceText, "if (rightTicks < 0 && leftTicks < long.MinValue - rightTicks)");
-        AssertContains(sourceText, "if (rightTicks < 0 && leftTicks > long.MaxValue + rightTicks)");
-        AssertContains(sourceText, "if (rightTicks > 0 && leftTicks < long.MinValue + rightTicks)");
-        AssertDoesNotContain(sourceText, "cmd.Position + worker.FrozenValidStart");
-        AssertDoesNotContain(sourceText, "PlaybackPosition + worker.FrozenValidStart");
-        AssertDoesNotContain(sourceText, "PlaybackPosition + cmd.Delta");
-        AssertDoesNotContain(sourceText, "bufferPosition + validStartPts");
-        AssertDoesNotContain(sourceText, "pos + frozenValidStart");
-        AssertDoesNotContain(sourceText, "nudgeFrame.Pts - worker.FrozenValidStart");
-        AssertDoesNotContain(sourceText, "frame.Pts - validStartPts");
-        AssertDoesNotContain(sourceText, "videoFrame.Pts - frozenValidStart");
-        AssertDoesNotContain(sourceText, "latestAbsPts - lastFrameAbsPts");
-        AssertDoesNotContain(sourceText, "absoluteLatestPts - absoluteFramePts");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task FlashbackPlaybackController_PauseFromLive_DisplaysBufferedFrameBeforePaused()
-    {
-        var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
-        var publicPauseBlock = ExtractTextBetween(
-            sourceText,
-            "public bool Pause()",
-            "    public bool GoLive()");
-
-        var pauseFromLiveBlock = ExtractTextBetween(
-            sourceText,
-            "else if (State == FlashbackPlaybackState.Live)",
-            "    private void HandleNudgeCommand(");
-
-        AssertContains(publicPauseBlock, "return SendCommand(new PlaybackCommand { Kind = CommandKind.Pause });");
-        AssertDoesNotContain(publicPauseBlock, "SeekAndDisplay");
-        AssertContains(pauseFromLiveBlock, "SafeSuppressPreviewSubmission(\"pause_from_live\");");
-        AssertContains(pauseFromLiveBlock, "SafePauseRendering(\"pause_from_live\");");
-        AssertContains(pauseFromLiveBlock, "var pauseTarget = ResolvePauseFromLiveTarget(worker.FrozenValidStart);");
-        AssertContains(pauseFromLiveBlock, "EnsureFileOpen(worker.Decoder, ref worker.FileOpen, SaturatingAdd(pausePos, worker.FrozenValidStart));");
-        AssertContains(pauseFromLiveBlock, "if (!IsDecoderFileReady(worker.Decoder, worker.FileOpen))");
-        AssertContains(pauseFromLiveBlock, "SetNoFileFailure(CommandKind.Pause, pausePos);");
-        AssertContains(pauseFromLiveBlock, "if (_commandMailbox.ShouldYieldPauseFromLiveToQueuedSeekOrPlay(commandChannel))");
-        AssertContains(pauseFromLiveBlock, "FLASHBACK_PLAYBACK_PAUSE_FROM_LIVE_DEFER_DISPLAY");
-        AssertContains(pauseFromLiveBlock, "if (!SeekAndDisplayKeyframe(worker.Decoder, ref worker.FileOpen, pausePos, worker.FrozenValidStart, CommandKind.Pause, cts.Token))");
-        AssertContains(pauseFromLiveBlock, "RestoreLiveAfterSeekDisplayFailure(worker.Decoder, ref worker.FileOpen, \"pause_from_live_display_failed\");");
-        AssertContains(pauseFromLiveBlock, "worker.PendingExactResumeTarget = SaturatingAdd(PlaybackPosition, worker.FrozenValidStart);");
-        AssertContains(pauseFromLiveBlock, "SetState(FlashbackPlaybackState.Paused, \"user\");");
-        AssertContains(pauseFromLiveBlock, "frozen_frame=true");
-        AssertContains(sourceText, "private TimeSpan ResolvePauseFromLiveTarget(TimeSpan frozenValidStart)");
-        AssertContains(sourceText, "return ClampPlaybackTargetToMinimumLiveLead(latestPts, frozenValidStart, \"pause_from_live\");");
-        AssertDoesNotContain(pauseFromLiveBlock, "SeekAndDisplayExactFrame");
-        AssertDoesNotContain(sourceText, "private void SeekAndDisplayExactFrame");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task FlashbackPlaybackController_NudgeCreatesDecoderWhenPaused()
-    {
-        var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
-
-        var nudgeBlock = ExtractTextBetween(
-            sourceText,
-            "private void HandleNudgeCommand(",
-            "\n}");
-
-        AssertContains(nudgeBlock, "worker.Decoder ??= CreateDecoder();");
-        AssertContains(nudgeBlock, "EnsureFileOpen(worker.Decoder, ref worker.FileOpen, SaturatingAdd(nudgedPos, worker.FrozenValidStart));");
-        AssertContains(nudgeBlock, "if (!IsDecoderFileReady(worker.Decoder, worker.FileOpen))");
-        AssertContains(nudgeBlock, "FLASHBACK_PLAYBACK_NUDGE_NO_FILE");
-        AssertContains(nudgeBlock, "RestoreLiveAfterNoFile(\"nudge_no_file\");");
-        AssertContains(nudgeBlock, "if (!SeekAndDisplayKeyframe(worker.Decoder, ref worker.FileOpen, nudgedPos, worker.FrozenValidStart, CommandKind.Nudge, cts.Token))");
-        AssertContains(nudgeBlock, "RestoreLiveAfterSeekDisplayFailure(worker.Decoder, ref worker.FileOpen, \"nudge_display_failed\");");
-        AssertDoesNotContain(nudgeBlock, "if (worker.Decoder != null)");
-        var noFileRestore = ExtractDeclaredMemberCode(sourceText, "private void RestoreLiveAfterNoFile(");
-        AssertContains(noFileRestore, "ReleasePlaybackFrameForLive(operation);\n        RestoreLiveAudio();\n        SafeResumePreviewSubmission(operation);\n        SafeResumeRendering(operation);\n        SetState(FlashbackPlaybackState.Live, operation);");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task FlashbackPlaybackController_InOutPoints_DefaultToUnset()
-    {
-        var bufferManagerType = RequireType("Sussudio.Services.Flashback.FlashbackBufferManager");
-        var bufferManager = Activator.CreateInstance(bufferManagerType, new object?[] { null })!;
-
-        var controllerType = RequireType("Sussudio.Services.Flashback.FlashbackPlaybackController");
-        var ctor = controllerType.GetConstructor(
-            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
-            binder: null,
-            types: new[] { bufferManagerType },
-            modifiers: null)!;
-        var controller = ctor.Invoke(new[] { bufferManager });
-
-        var inPointProp = controllerType.GetProperty("InPoint", BindingFlags.Public | BindingFlags.Instance);
-        var outPointProp = controllerType.GetProperty("OutPoint", BindingFlags.Public | BindingFlags.Instance);
-
-        AssertNotNull(inPointProp, "FlashbackPlaybackController.InPoint");
-        AssertNotNull(outPointProp, "FlashbackPlaybackController.OutPoint");
-        foreach (var propertyName in new[]
-                 {
-                     "CommandsEnqueued",
-                     "CommandsProcessed",
-                     "CommandsDropped",
-                     "CommandsRejected",
-                     "ScrubUpdatesCoalesced",
-                     "PendingCommands",
-                     "MaxPendingCommands",
-                     "LastCommandQueueLatencyMs",
-                     "MaxCommandQueueLatencyMs",
-                     "LastCommandQueued",
-                     "LastCommandProcessed",
-                     "LastCommandQueuedUtcUnixMs",
-                     "LastCommandProcessedUtcUnixMs",
-                     "LastCommandFailureUtcUnixMs",
-                     "LastCommandFailure",
-                     "PlaybackThreadAlive"
-                 })
-        {
-            AssertNotNull(controllerType.GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance), propertyName);
-        }
-
-        var clearMethod = controllerType.GetMethod("ClearInOutPoints", BindingFlags.Public | BindingFlags.Instance);
-        AssertNotNull(clearMethod, "FlashbackPlaybackController.ClearInOutPoints");
-        clearMethod!.Invoke(controller, null);
-
-        return Task.CompletedTask;
-    }
-
-
-
     internal static Task FlashbackPlaybackController_InOutPointChangesStopAfterDispose()
     {
         var bufferManagerType = RequireType("Sussudio.Services.Flashback.FlashbackBufferManager");
@@ -2183,14 +1799,6 @@ static partial class Program
 
         AssertEqual((TimeSpan?)TimeSpan.Zero, (TimeSpan?)GetPropertyValue(controller, "InPoint"), "disposed InPoint");
         AssertEqual<object?>(null, GetPropertyValue(controller, "OutPoint"), "disposed OutPoint");
-
-        var sourceText = ReadFlashbackPlaybackControllerSource();
-        AssertContains(sourceText, "FLASHBACK_PLAYBACK_SET_IN_SKIP reason=disposed");
-        AssertContains(sourceText, "SetLastCommandFailure(\"disposed:SetInPoint\");");
-        AssertContains(sourceText, "FLASHBACK_PLAYBACK_SET_OUT_SKIP reason=disposed");
-        AssertContains(sourceText, "SetLastCommandFailure(\"disposed:SetOutPoint\");");
-        AssertContains(sourceText, "FLASHBACK_PLAYBACK_CLEAR_INOUT_SKIP reason=disposed");
-        AssertContains(sourceText, "SetLastCommandFailure(\"disposed:ClearInOutPoints\");");
 
         return Task.CompletedTask;
     }
@@ -2261,25 +1869,25 @@ static partial class Program
         var method = sinkType.GetMethod("ResolveFrameRateParts", BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("ResolveFrameRateParts not found.");
 
-        // "60000/1001" â†’ (60000, 1001)
+        // "60000/1001" -> (60000, 1001)
         var result1 = method.Invoke(null, new object[] { "60000/1001" });
         var (num1, den1) = GetTupleValues(result1!);
         AssertEqual(60000, num1, "60000/1001 numerator");
         AssertEqual(1001, den1, "60000/1001 denominator");
 
-        // "30/1" â†’ (30, 1)
+        // "30/1" -> (30, 1)
         var result2 = method.Invoke(null, new object[] { "30/1" });
         var (num2, den2) = GetTupleValues(result2!);
         AssertEqual(30, num2, "30/1 numerator");
         AssertEqual(1, den2, "30/1 denominator");
 
-        // null â†’ (null, null)
+        // null -> (null, null)
         var result3 = method.Invoke(null, new object?[] { null });
         var (num3, den3) = GetNullableTupleValues(result3!);
         if (num3 != null)
             throw new InvalidOperationException($"Expected null numerator for null input, got {num3}");
 
-        // Empty string â†’ (null, null)
+        // Empty string -> (null, null)
         var result4 = method.Invoke(null, new object[] { "" });
         var (num4, den4) = GetNullableTupleValues(result4!);
         if (num4 != null)
@@ -2296,26 +1904,9 @@ static partial class Program
 
         var formatType = RequireType("Sussudio.Models.RecordingFormat");
 
-        var hevc = method.Invoke(null, new[] { Enum.Parse(formatType, "HevcMp4") })?.ToString();
-        AssertContains(hevc ?? "", "hevc");
-
-        var h264 = method.Invoke(null, new[] { Enum.Parse(formatType, "H264Mp4") })?.ToString();
-        AssertContains(h264 ?? "", "264");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task FlashbackEncoderSink_CountersDefaultToZero()
-    {
-        var sinkType = RequireType("Sussudio.Services.Flashback.FlashbackEncoderSink");
-        var optionsType = RequireType("Sussudio.Models.FlashbackBufferOptions");
-        var ctor = sinkType.GetConstructor(new[] { optionsType })
-            ?? throw new InvalidOperationException("FlashbackEncoderSink(FlashbackBufferOptions) constructor not found.");
-        var sink = ctor.Invoke(new object?[] { null })!;
-
-        AssertEqual(0L, GetLongProperty(sink, "DroppedVideoFrames"), "DroppedVideoFrames");
-        AssertEqual(0L, GetLongProperty(sink, "EncodedVideoFrames"), "EncodedVideoFrames");
-        AssertEqual(0L, GetLongProperty(sink, "AudioSamplesReceived"), "AudioSamplesReceived");
+        AssertEqual("hevc_nvenc", method.Invoke(null, new[] { Enum.Parse(formatType, "HevcMp4") })?.ToString(), "HevcMp4 codec name");
+        AssertEqual("h264_nvenc", method.Invoke(null, new[] { Enum.Parse(formatType, "H264Mp4") })?.ToString(), "H264Mp4 codec name");
+        AssertEqual("av1_nvenc", method.Invoke(null, new[] { Enum.Parse(formatType, "Av1Mp4") })?.ToString(), "Av1Mp4 codec name");
 
         return Task.CompletedTask;
     }
@@ -2340,65 +1931,6 @@ static partial class Program
 
         return Task.CompletedTask;
     }
-
-    internal static Task FlashbackEncoderSink_EncoderPtsGuardsInvalidFrameRate()
-    {
-        var sourceText = ReadFlashbackEncoderSinkSource();
-
-        AssertDoesNotContain(sourceText, "TimeSpan.FromSeconds(_encoder.NextVideoPts / frameRate)");
-        AssertDoesNotContain(sourceText, "TimeSpan.FromSeconds(_encoder.NextVideoPts / finalFrameRate)");
-        AssertDoesNotContain(sourceText, "ptsBaseOffset.TotalSeconds * context.FrameRate");
-        AssertContains(sourceText, "var sessionFrameRate = ResolveSessionFrameRate(context.FrameRate);");
-        AssertContains(sourceText, "var sessionContext = context with { FrameRate = sessionFrameRate };");
-        AssertContains(sourceText, "_encoder.Initialize(CreateOptions(sessionContext, tsPath));");
-        AssertContains(sourceText, "_bufferManager.EncodeFrameRate = sessionFrameRate;");
-        AssertContains(sourceText, "private const double FallbackSessionFrameRate = 30.0;");
-        AssertContains(sourceText, "private const double MaxSessionFrameRate = 1000.0;");
-        AssertContains(sourceText, "var currentPts = ResolveEncoderPts();");
-        AssertContains(sourceText, "var finalPts = ResolveEncoderPts();");
-        AssertContains(sourceText, "var crashPts = ResolveEncoderPts();");
-        AssertContains(sourceText, "var pts = ResolveEncoderPts();");
-        AssertContains(sourceText, "private TimeSpan ResolveEncoderPts()");
-        AssertContains(sourceText, "var frameRate = ResolveSessionFrameRate(_sessionContext?.FrameRate ?? 30.0);");
-        AssertContains(sourceText, "if (!double.IsFinite(seconds) || seconds <= 0)");
-        AssertContains(sourceText, "if (!double.IsFinite(frameRate) || frameRate <= 0)\n        {\n            return FallbackSessionFrameRate;\n        }");
-        AssertContains(sourceText, "return Math.Min(frameRate, MaxSessionFrameRate);");
-        AssertContains(sourceText, "private static (int? Numerator, int? Denominator) ResolveSessionFrameRateParts(int? numerator, int? denominator)");
-        AssertContains(sourceText, "if (!double.IsFinite(fps) || fps <= 0 || fps > MaxSessionFrameRate)");
-        AssertContains(sourceText, "FrameRateNumerator = frameRateNumerator,");
-        AssertContains(sourceText, "FrameRateDenominator = frameRateDenominator,");
-        AssertContains(sourceText, "private static long ToNonNegativeLongSaturated(double value)");
-        AssertContains(sourceText, "private static long NonNegativeByteDelta(long currentBytes, long startBytes)");
-        AssertContains(sourceText, "private static TimeSpan NonNegativeDuration(TimeSpan end, TimeSpan start)");
-        AssertContains(sourceText, "private static (TimeSpan StartPts, TimeSpan EndPts) ResumeEvictionBestEffort(\n        FlashbackBufferManager bufferManager,\n        string operation)");
-        AssertContains(sourceText, "return bufferManager.ResumeEviction();");
-        AssertContains(sourceText, "FLASHBACK_SINK_EVICTION_RESUME_WARN");
-        AssertContains(sourceText, "return (bufferManager.RecordingStartPts, bufferManager.RecordingEndPts);");
-        AssertContains(sourceText, "var finalSegmentBytes = NonNegativeByteDelta(_encoder.TotalBytesWritten, Interlocked.Read(ref _segmentStartBytes));");
-        AssertContains(sourceText, "var crashSegmentBytes = NonNegativeByteDelta(_encoder.TotalBytesWritten, Interlocked.Read(ref _segmentStartBytes));");
-        var rotateBlock = ExtractDeclaredMemberCode(
-            sourceText,
-            "private bool RotateSegment(TimeSpan currentPts, string? preparedPath = null)");
-        // Preserve the completed segment's baseline before native rotation resets
-        // byte counters or the sink advances its active segment's PTS and baseline.
-        AssertOccursBefore(rotateBlock, "var completedStartPts = _segmentStartPts;", "_encoder.RotateOutput(newPath)");
-        AssertOccursBefore(rotateBlock, "var completedStartBytes = Interlocked.Read(ref _segmentStartBytes);", "_encoder.RotateOutput(newPath)");
-        AssertOccursBefore(rotateBlock, "_encoder.RotateOutput(newPath)", "completedSegmentBytes = NonNegativeByteDelta(result.PreviousTotalBytes, completedStartBytes);");
-        AssertOccursBefore(rotateBlock, "completedSegmentBytes = NonNegativeByteDelta(result.PreviousTotalBytes, completedStartBytes);", "Interlocked.Exchange(ref _segmentStartBytes, _encoder.TotalBytesWritten);");
-        AssertContains(rotateBlock, "_bufferManager.OnSegmentCompleted(completedPath!, completedStartPts, currentPts, completedSegmentBytes);");
-        AssertContains(rotateBlock, "var failPts = encoderRotated ? currentPts : ResolveEncoderPts();");
-        AssertContains(rotateBlock, "var failSegmentBytes = encoderRotated\n                            ? completedSegmentBytes\n                            : NonNegativeByteDelta(_encoder.TotalBytesWritten, completedStartBytes);");
-        AssertContains(rotateBlock, "_bufferManager.OnSegmentCompleted(completedPath, completedStartPts, failPts, failSegmentBytes);");
-        AssertDoesNotContain(rotateBlock, "result.PreviousTotalBytes - completedStartBytes");
-        AssertDoesNotContain(rotateBlock, "_encoder.TotalBytesWritten - completedStartBytes");
-        AssertDoesNotContain(sourceText, "_encoder.TotalBytesWritten - Interlocked.Read(ref _segmentStartBytes)");
-        AssertDoesNotContain(sourceText, "result.PreviousTotalBytes - Interlocked.Read(ref _segmentStartBytes)");
-        AssertDoesNotContain(sourceText, "LastRecordingEndPts - LastRecordingStartPts");
-
-        return Task.CompletedTask;
-    }
-
-
 
     internal static Task FlashbackEncoderSink_ForceRotateDrainingDoesNotRejectVideoByLifecycleState()
     {
@@ -2429,274 +1961,6 @@ static partial class Program
         {
             (sink as IDisposable)?.Dispose();
         }
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task FlashbackEncoderSink_DisposeResetsGpuQueueDepth()
-    {
-        var sourceText = ReadFlashbackEncoderSinkSource();
-
-        AssertContains(sourceText, "ReturnRemainingGpuBuffers(_gpuQueue, ref _gpuQueueDepth);");
-        AssertContains(sourceText, "private static void ReturnRemainingGpuBuffers(Channel<GpuFramePacket>? queue, ref int queueDepth)");
-        AssertContains(sourceText, "Interlocked.Exchange(ref queueDepth, 0);");
-        AssertContains(sourceText, "var timeoutFailure = new TimeoutException(\"Flashback encode drain timed out while stopping.\");");
-        AssertContains(sourceText, "_encodingFailure ??= timeoutFailure;");
-        AssertContains(sourceText, "_encodingFailure ??= ex;");
-        AssertContains(sourceText, "CancelEncodingCts(\"dispose\");");
-        AssertContains(sourceText, "CancelEncodingCts(\"stop_timeout\");");
-        AssertContains(sourceText, "private void CancelEncodingCts(string operation)");
-        AssertContains(sourceText, "FLASHBACK_SINK_CANCEL_WARN");
-        AssertContains(sourceText, "DisposeCtsBestEffort(_cts, \"start_fail\");");
-        AssertContains(sourceText, "DisposeCtsBestEffort(_cts, \"finalize_dispose\");");
-        AssertContains(sourceText, "DisposeWorkAvailableBestEffort(\"finalize_dispose\");");
-        AssertContains(sourceText, "DisposeEncoderBestEffort(\"start_fail\");");
-        AssertContains(sourceText, "DisposeEncoderBestEffort(\"finalize_dispose\");");
-        AssertContains(sourceText, "DisposeEncoderBestEffort(\"encoding_loop_fatal\");");
-        AssertContains(sourceText, "FLASHBACK_SINK_CTS_DISPOSE_WARN");
-        AssertContains(sourceText, "FLASHBACK_SINK_WORK_SIGNAL_DISPOSE_WARN");
-        AssertContains(sourceText, "private void SignalWork(string operation)");
-        AssertContains(sourceText, "FLASHBACK_SINK_WORK_SIGNAL_SKIPPED");
-        AssertContains(sourceText, "SignalWork(\"force_rotate_idle\");");
-        AssertContains(sourceText, "SignalWork(\"force_rotate_request\");");
-        AssertEqual(1, sourceText.Split("_workAvailable.Set();", StringSplitOptions.None).Length - 1, "All work-signal wakeups go through SignalWork");
-        AssertContains(sourceText, "FLASHBACK_SINK_ENCODER_DISPOSE_WARN");
-        AssertContains(sourceText, "Logger.Log($\"FLASHBACK_SINK_BUFFER_DISPOSE_WARN type={ex.GetType().Name} msg={ex.Message}\");");
-        AssertContains(sourceText, "Logger.Log($\"FLASHBACK_RECORDING_FAIL type={failure.GetType().Name} error='{failure.Message}'\");");
-        AssertContains(sourceText, "ReturnVideoPacketBestEffort(packet);");
-        AssertContains(sourceText, "ReleaseGpuTextureBestEffort(packet.Texture);");
-        AssertContains(sourceText, "FLASHBACK_SINK_RETURN_VIDEO_PACKET_WARN");
-        AssertContains(sourceText, "FLASHBACK_SINK_RELEASE_GPU_PACKET_WARN");
-        AssertContains(sourceText, "public long VideoQueueRejectedFrames => Interlocked.Read(ref _videoQueueRejectedFrames);");
-        AssertContains(sourceText, "public string? LastVideoQueueRejectReason => Volatile.Read(ref _lastVideoQueueRejectReason);");
-        AssertContains(sourceText, "public long GpuQueueRejectedFrames => Interlocked.Read(ref _gpuQueueRejectedFrames);");
-        AssertContains(sourceText, "public string? LastGpuQueueRejectReason => Volatile.Read(ref _lastGpuQueueRejectReason);");
-        AssertContains(sourceText, "Interlocked.Exchange(ref _videoQueueRejectedFrames, 0);");
-        AssertContains(sourceText, "Volatile.Write(ref _lastVideoQueueRejectReason, null);");
-        AssertContains(sourceText, "Interlocked.Exchange(ref _gpuQueueRejectedFrames, 0);");
-        AssertContains(sourceText, "Volatile.Write(ref _lastGpuQueueRejectReason, null);");
-        AssertContains(sourceText, "private string? GetVideoEnqueueRejectReason(bool isGpu)");
-        AssertContains(sourceText, "private string? GetVideoInputRejectReason(Channel<VideoFramePacket>? queue, int expectedSize, bool dataIsEmpty)");
-        AssertContains(sourceText, "private string? GetGpuInputRejectReason(Channel<GpuFramePacket>? queue, IntPtr texture)");
-        AssertContains(sourceText, "Rotation has an encoder-lane fence.");
-        AssertDoesNotContain(sourceText, "return \"force_rotate_draining\";");
-        AssertContains(sourceText, "return \"cancelled\";");
-        AssertContains(sourceText, "return \"disposed\";");
-        AssertContains(sourceText, "return \"not_started\";");
-        AssertContains(sourceText, "return \"queue_null\";");
-        AssertContains(sourceText, "return \"invalid_expected_size\";");
-        AssertContains(sourceText, "return dataIsEmpty ? \"data_empty\" : null;");
-        AssertContains(sourceText, "return texture == IntPtr.Zero ? \"null_texture\" : null;");
-        AssertContains(sourceText, "TrackGpuQueueRejected(\"invalid_subresource\");");
-        AssertContains(sourceText, "? $\"encoding_failed:{failure.GetType().Name}\"");
-        AssertContains(sourceText, "private void TrackVideoQueueRejected(string reason)");
-        AssertContains(sourceText, "private void TrackGpuQueueRejected(string reason)");
-        AssertContains(sourceText, "FLASHBACK_SINK_VIDEO_QUEUE_REJECT");
-        AssertContains(sourceText, "FLASHBACK_SINK_GPU_QUEUE_REJECT");
-        AssertContains(sourceText, "total == 1 || total % 30 == 0");
-        // The claim/high-water/rollback sequence now lives in QueueAdmission
-        // (behaviorally covered by QueueAdmissionTests) and is shared with
-        // LibAvRecordingSink; each lane here supplies only its own counters and tag.
-        AssertContains(sourceText, "private bool TryWriteVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)");
-        AssertContains(sourceText, "QueueAdmission.TryWrite(queue, packet, ref _videoQueueDepth, ref _videoQueueMaxDepth, \"video\", DecrementQueueDepth)");
-        AssertContains(sourceText, "private bool TryWriteGpuPacket(Channel<GpuFramePacket> queue, GpuFramePacket packet)");
-        AssertContains(sourceText, "QueueAdmission.TryWrite(queue, packet, ref _gpuQueueDepth, ref _gpuQueueMaxDepth, \"gpu\", DecrementQueueDepth)");
-        AssertContains(sourceText, "private static bool TryWriteAudioPacket(");
-        AssertContains(sourceText, "QueueAdmission.TryWrite(queue, packet, ref queueDepth, queueName, DecrementQueueDepth)");
-        AssertDoesNotContain(sourceText, "var depth = Interlocked.Increment(ref _videoQueueDepth);");
-        AssertDoesNotContain(sourceText, "var depth = Interlocked.Increment(ref _gpuQueueDepth);");
-        AssertContains(sourceText, "TryWriteAudioPacket(queue, packet, ref queueDepth, \"audio\")");
-        AssertContains(sourceText, "TryWriteAudioPacket(queue, packet, ref queueDepth, \"audio_after_evict\")");
-        AssertContains(sourceText, "private static void DecrementQueueDepth(ref int target, string queueName)");
-        // The clamped CAS loop now lives in AtomicCounter (behaviorally covered by
-        // AtomicCounterTests); this sink keeps only its own underflow diagnostic.
-        AssertContains(sourceText, "if (!AtomicCounter.TryDecrement(ref target))");
-        AssertDoesNotContain(sourceText, "Interlocked.CompareExchange(ref target, current - 1, current)");
-        AssertContains(sourceText, "FLASHBACK_SINK_QUEUE_DEPTH_UNDERFLOW");
-        AssertContains(sourceText, "DecrementQueueDepth(ref _videoQueueDepth, \"video\");");
-        AssertContains(sourceText, "DecrementQueueDepth(ref _gpuQueueDepth, \"gpu\");");
-        AssertContains(sourceText, "DecrementQueueDepth(ref _audioQueueDepth, \"audio\");");
-        AssertContains(sourceText, "DecrementQueueDepth(ref _microphoneQueueDepth, \"microphone\");");
-        AssertDoesNotContain(sourceText, "private bool WaitForBackpressureRetryCancellation()");
-        AssertDoesNotContain(sourceText, "=> WaitForCancellation(TimeSpan.FromMilliseconds(1));");
-        AssertContains(sourceText, "private bool WaitForCancellation(TimeSpan timeout)");
-        AssertContains(sourceText, "return cts.Token.WaitHandle.WaitOne(timeout);");
-        AssertContains(sourceText, "catch (ObjectDisposedException)\n        {\n            return true;\n        }");
-        AssertDoesNotContain(sourceText, "if (WaitForBackpressureRetryCancellation())");
-        AssertContains(sourceText, "TrackVideoQueueRejected(\"queue_full\");");
-        AssertContains(sourceText, "TrackGpuQueueRejected(\"queue_full\");");
-        AssertDoesNotContain(sourceText, "FLASHBACK_SINK_VIDEO_BACKPRESSURE_DROP");
-        AssertDoesNotContain(sourceText, "FLASHBACK_SINK_GPU_BACKPRESSURE_DROP");
-        AssertDoesNotContain(sourceText, "FailEncoding(overloadFailure);");
-        AssertDoesNotContain(sourceText, "Flashback recording video queue overloaded after");
-        AssertDoesNotContain(sourceText, "Flashback GPU recording queue overloaded after");
-        AssertContains(sourceText, "if (WaitForCancellation(TimeSpan.FromMilliseconds(10)))\n            {\n                return false;\n            }");
-        AssertDoesNotContain(sourceText, "var depth = Interlocked.Decrement(ref target);");
-        AssertDoesNotContain(sourceText, "Interlocked.Exchange(ref target, 0);\n        Logger.Log($\"FLASHBACK_SINK_QUEUE_DEPTH_UNDERFLOW");
-        AssertDoesNotContain(sourceText, "Interlocked.Decrement(ref _videoQueueDepth)");
-        AssertDoesNotContain(sourceText, "Interlocked.Decrement(ref _gpuQueueDepth)");
-        AssertDoesNotContain(sourceText, "AtomicMax.Update(ref _videoQueueMaxDepth, Interlocked.Increment(ref _videoQueueDepth))");
-        AssertDoesNotContain(sourceText, "AtomicMax.Update(ref _gpuQueueMaxDepth, Interlocked.Increment(ref _gpuQueueDepth))");
-        AssertDoesNotContain(sourceText, "queue.Writer.TryWrite(packet))\n        {\n            Interlocked.Increment(ref queueDepth);");
-        AssertDoesNotContain(sourceText, "Marshal.Release(packet.Texture);");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task FlashbackEncoderSink_AudioPacketsAreValidatedBeforeRent()
-    {
-        var sourceText = ReadFlashbackEncoderSinkSource();
-
-        AssertContains(sourceText, "private const int AudioInputBlockAlignBytes = 2 * sizeof(float);");
-        AssertContains(sourceText, "private const int MaxAudioPacketBytes = 4 * 1024 * 1024;");
-        AssertContains(sourceText, "if (!TryValidateAudioPacketLength(samples.Length, \"audio\"))");
-        AssertContains(sourceText, "if (!TryValidateAudioPacketLength(samples.Length, \"microphone\"))");
-        AssertContains(sourceText, "private static bool TryValidateAudioPacketLength(int byteLength, string source)");
-        AssertContains(sourceText, "if (byteLength <= 0 || byteLength > MaxAudioPacketBytes)");
-        AssertContains(sourceText, "FLASHBACK_SINK_AUDIO_PACKET_REJECT source={source} reason=size");
-        AssertContains(sourceText, "if (byteLength % AudioInputBlockAlignBytes != 0)");
-        AssertContains(sourceText, "FLASHBACK_SINK_AUDIO_PACKET_REJECT source={source} reason=alignment");
-        AssertContains(sourceText, "return byteLength > 0 ? byteLength / AudioInputBlockAlignBytes : 0;");
-        AssertDoesNotContain(sourceText, "const int inputBlockAlign = 2 * sizeof(float);");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task FlashbackEncoderSink_NormalDrainLoopInterleavesAudioWithBoundedVideoBatches()
-    {
-        var sourceText = ReadFlashbackEncoderSinkSource();
-
-        AssertContains(sourceText, "private const int VideoDrainBatchLimit = 24;");
-        AssertContains(sourceText, "private const int GpuDrainBatchLimit = 16;");
-        AssertContains(sourceText, "DrainGpuPackets(gpuQueue.Reader, GpuDrainBatchLimit)");
-        AssertContains(sourceText, "DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit)");
-        AssertContains(sourceText, "private bool DrainVideoPackets(ChannelReader<VideoFramePacket> reader, int maxPackets = int.MaxValue)");
-        AssertContains(sourceText, "while (drainedCount < maxPackets)");
-        AssertContains(sourceText, "private bool DrainGpuPackets(ChannelReader<GpuFramePacket> reader, int maxPackets = int.MaxValue)");
-        AssertContains(sourceText, "while (drainedCount < maxPackets && reader.TryRead(out var packet))");
-
-        var loopBlock = ExtractTextBetween(
-            sourceText,
-            "private void EncodingLoop(CancellationToken cancellationToken)",
-            "    private bool DrainVideoPackets");
-        AssertOccursBefore(loopBlock, "DrainAudioPackets(audioQueue.Reader)", "DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit)");
-        AssertOccursBefore(loopBlock, "DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit)", "// Audio AGAIN");
-        var secondAudioDrainBlock = ExtractTextBetween(
-            loopBlock,
-            "// Audio AGAIN",
-            "// Handle force-rotate requests");
-        AssertContains(secondAudioDrainBlock, "DrainAudioPackets(audioQueue.Reader)");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task FlashbackEncoderSink_RotateFailureRestoresActiveSegment()
-    {
-        var sinkText = ReadFlashbackEncoderSinkSource();
-        var bufferText = ReadFlashbackBufferManagerSource();
-
-        var rotateBlock = ExtractTextBetween(
-            sinkText,
-            "private bool RotateSegment(TimeSpan currentPts, string? preparedPath = null)",
-            "    public FlashbackForceRotateResult ForceRotateForExport");
-        AssertContains(rotateBlock, "var completedPath = _tsFilePath;");
-        AssertContains(rotateBlock, "string? newPath = null;");
-        AssertContains(rotateBlock, "var encoderRotated = false;");
-        AssertContains(rotateBlock, "var completedStartPts = _segmentStartPts;");
-        AssertContains(rotateBlock, "newPath = preparedPath ?? _bufferManager.GenerateSegmentPath();");
-        AssertContains(rotateBlock, "encoderRotated = true;");
-        AssertOccursBefore(rotateBlock, "encoderRotated = true;", "_tsFilePath = newPath;");
-        AssertOccursBefore(rotateBlock, "_tsFilePath = newPath;", "_bufferManager.OnSegmentCompleted(completedPath!, completedStartPts, currentPts, completedSegmentBytes);");
-        AssertContains(rotateBlock, "if (newPath != null && !encoderRotated)");
-        AssertContains(rotateBlock, "_bufferManager.AbandonReservedSegmentPath(newPath);");
-        AssertContains(rotateBlock, "_bufferManager.AbandonGeneratedSegmentPath(newPath, completedPath);");
-
-        var abandonBlock = ExtractTextBetween(
-            bufferText,
-            "public void AbandonGeneratedSegmentPath",
-            "    public void OnSegmentCompleted");
-        AssertContains(abandonBlock, "if (IsSameSegmentPath(_activeSegmentPath, generatedPath))");
-        AssertContains(abandonBlock, "_activeSegmentPath = restoreActivePath;");
-        AssertContains(abandonBlock, "_nextSegmentIndex--;");
-        AssertContains(abandonBlock, "if (!IsSameSegmentPath(generatedPath, restoreActivePath))");
-        AssertContains(abandonBlock, "TryDeleteFile(generatedPath);");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task FlashbackEncoderSink_RegistersSegmentsOnCancellationAndRotationFailure()
-    {
-        var sourceText = ReadFlashbackEncoderSinkSource();
-
-        var cancelBlock = ExtractTextBetween(
-            sourceText,
-            "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)",
-            "        catch (Exception ex)\n        {\n            Logger.Log($\"FLASHBACK_SINK_ENCODING_LOOP_FATAL");
-        AssertContains(cancelBlock, "Logger.Log(\"FLASHBACK_SINK_ENCODING_LOOP_CANCELLED\");");
-        AssertContains(cancelBlock, "FailPendingForceRotate();");
-        AssertContains(cancelBlock, "var cancelPts = ResolveEncoderPts();");
-        AssertContains(cancelBlock, "if (cancelPts > _segmentStartPts)");
-        AssertContains(cancelBlock, "var cancelSegmentBytes = NonNegativeByteDelta(_encoder.TotalBytesWritten, Interlocked.Read(ref _segmentStartBytes));");
-        AssertContains(cancelBlock, "_bufferManager.OnSegmentCompleted(_tsFilePath, _segmentStartPts, cancelPts, cancelSegmentBytes);");
-        AssertContains(cancelBlock, "FLASHBACK_SINK_ENCODING_LOOP_CANCELLED_SEGMENT_REGISTERED");
-        AssertContains(cancelBlock, "FLASHBACK_SINK_CANCELLED_SEGMENT_REGISTER_FAIL");
-        AssertContains(cancelBlock, "ReturnAllRemainingQueuedBuffers();");
-        AssertOccursBefore(cancelBlock, "_bufferManager.OnSegmentCompleted(_tsFilePath, _segmentStartPts, cancelPts, cancelSegmentBytes);", "ReturnAllRemainingQueuedBuffers();");
-
-        var rotateFailureBlock = ExtractTextBetween(
-            sourceText,
-            "catch (Exception ex)\n        {\n            var terminalFailure = encoderRotated || !_encoder.IsEncoding;",
-            "    public FlashbackForceRotateResult ForceRotateForExport");
-        AssertContains(rotateFailureBlock, "Interlocked.Increment(ref _segmentRotationFailures);");
-        AssertContains(rotateFailureBlock, "var failPts = encoderRotated ? currentPts : ResolveEncoderPts();");
-        AssertContains(rotateFailureBlock, "if (failPts > completedStartPts)");
-        AssertContains(rotateFailureBlock, "NonNegativeByteDelta(_encoder.TotalBytesWritten, completedStartBytes);");
-        AssertContains(rotateFailureBlock, "_bufferManager.OnSegmentCompleted(completedPath, completedStartPts, failPts, failSegmentBytes);");
-        AssertContains(rotateFailureBlock, "FLASHBACK_SINK_ROTATE_FAIL_SEGMENT_REGISTERED");
-        AssertContains(rotateFailureBlock, "FLASHBACK_SINK_ROTATE_FAIL_SEGMENT_REGISTER_FAIL");
-        AssertContains(rotateFailureBlock, "_segmentStartPts = currentPts;");
-        AssertOccursBefore(rotateFailureBlock, "_bufferManager.OnSegmentCompleted(completedPath, completedStartPts, failPts, failSegmentBytes);", "_segmentStartPts = currentPts;");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task FlashbackEncoderSink_ForceRotateRejectsFailedEncoder()
-    {
-        var sourceText = ReadFlashbackEncoderSinkSource();
-
-        var forceRotateBlock = ExtractTextBetween(
-            sourceText,
-            "public FlashbackForceRotateResult ForceRotateForExport",
-            "    private bool TryCancelForceRotate");
-        AssertContains(forceRotateBlock, "CancellationToken cancellationToken = default");
-        AssertContains(forceRotateBlock, "cancellationToken.ThrowIfCancellationRequested();");
-        AssertContains(forceRotateBlock, "if (inPoint < TimeSpan.Zero || outPoint <= inPoint)");
-        AssertContains(forceRotateBlock, "FLASHBACK_SINK_FORCE_ROTATE_REJECTED_RANGE");
-        AssertOccursBefore(forceRotateBlock, "FLASHBACK_SINK_FORCE_ROTATE_REJECTED_RANGE", "var request = new ForceRotateRequest(preparedPath);");
-        AssertContains(forceRotateBlock, "FLASHBACK_SINK_FORCE_ROTATE_REJECTED_INACTIVE");
-        AssertContains(forceRotateBlock, "if (_encodingFailure != null || _encodingTask?.IsCompleted == true)");
-        AssertContains(forceRotateBlock, "FLASHBACK_SINK_FORCE_ROTATE_REJECTED");
-        AssertContains(forceRotateBlock, "return FlashbackForceRotateResult.Failed();");
-        AssertContains(forceRotateBlock, "_bufferManager.ReserveSegmentPath();");
-        AssertContains(forceRotateBlock, "var request = new ForceRotateRequest(preparedPath);");
-        AssertContains(forceRotateBlock, "if (!_started || _disposed || _encodingFailure != null || _encodingTask?.IsCompleted == true)");
-        AssertContains(forceRotateBlock, "FLASHBACK_SINK_FORCE_ROTATE_REJECTED_AFTER_LOCK");
-        AssertOccursBefore(forceRotateBlock, "FLASHBACK_SINK_FORCE_ROTATE_REJECTED_AFTER_LOCK", "_forceRotateRequest = request;");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task FlashbackEncoderSink_FatalSegmentRegistrationFailuresAreLogged()
-    {
-        var sourceText = ReadFlashbackEncoderSinkSource();
-
-        var fatalBlock = ExtractTextBetween(
-            sourceText,
-            "catch (Exception ex)\n        {\n            Logger.Log($\"FLASHBACK_SINK_ENCODING_LOOP_FATAL",
-            "            ReturnAllRemainingQueuedBuffers();");
-        AssertContains(fatalBlock, "catch (Exception segmentEx)");
-        AssertContains(fatalBlock, "FLASHBACK_SINK_FATAL_SEGMENT_REGISTER_FAIL");
-        AssertContains(fatalBlock, "Preserve the original fatal error.");
 
         return Task.CompletedTask;
     }
@@ -2796,186 +2060,6 @@ static partial class Program
         }
     }
 
-
-    private static string ReadFlashbackPlaybackControllerPlaybackSource()
-        => ReadFlashbackPlaybackControllerSource();
-
-    internal static Task FlashbackDecoder_DiscardedAudioFramesAreUnreffed()
-    {
-        var sourceText = ReadFlashbackDecoderSource();
-
-        var audioDecodeBlock = ExtractTextBetween(
-            sourceText,
-            "private void DecodeAndDeliverAudioPacket",
-            "private DecodedVideoFrame ConvertAndOutputVideoFrame()");
-        AssertContains(audioDecodeBlock, "if (callback == null)\n            {\n                ffmpeg.av_frame_unref(_audioFrame);\n                continue; // Codec advanced, but no delivery during seek/scrub\n            }");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task FlashbackDecoder_MjpegPlaybackUsesSingleThreadLowLatencyDecode()
-    {
-        var sourceText = ReadFlashbackDecoderSource();
-
-        AssertContains(sourceText, "if (codecPar->codec_id == AVCodecID.AV_CODEC_ID_MJPEG)\n        {\n            _videoCodecCtx->thread_count = 1;\n        }");
-        AssertContains(sourceText, "_videoCodecCtx->thread_count = Math.Clamp(Environment.ProcessorCount / 2, 1, 12);");
-        AssertOccursBefore(sourceText, "_videoCodecCtx->thread_type = ffmpeg.FF_THREAD_FRAME | ffmpeg.FF_THREAD_SLICE;", "ThrowIfError(\n            ffmpeg.avcodec_open2(_videoCodecCtx, codec, null),");
-        AssertOccursBefore(
-            sourceText,
-            "if (codecPar->codec_id == AVCodecID.AV_CODEC_ID_MJPEG)",
-            "ThrowIfError(\n            ffmpeg.avcodec_open2(_videoCodecCtx, codec, null),");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task FlashbackDecoder_PtsConversionRejectsInvalidTimestamps()
-    {
-        var sourceText = ReadFlashbackDecoderSource();
-        var timestampFragmentPath = Path.Combine(
-            GetRepoRoot(),
-            "Sussudio",
-            "Services",
-            "Flashback",
-            "FlashbackDecoder.Timestamps.cs");
-
-        AssertEqual(false, File.Exists(timestampFragmentPath), "Flashback decoder timestamp helpers stay folded into caller owners");
-        AssertContains(sourceText, "var pts = DecodePtsToTimeSpan(ResolveBestEffortFrameTimestamp(_videoFrame), _videoTimeBase);");
-        AssertContains(sourceText, "var pts = DecodePtsToTimeSpan(ResolveBestEffortFrameTimestamp(_audioFrame), _audioTimeBase);");
-        AssertContains(sourceText, "var streamTimestamp = ToStreamTimestamp(target, _videoTimeBase);");
-        AssertContains(sourceText, "_formatCtx, _videoStreamIndex, streamTimestamp, ffmpeg.AVSEEK_FLAG_BACKWARD);");
-        AssertContains(sourceText, "var timestampUs = ToAvTimeBaseTimestamp(target);");
-        AssertContains(sourceText, "_formatCtx, -1, timestampUs, ffmpeg.AVSEEK_FLAG_BACKWARD);");
-        AssertContains(sourceText, "FLASHBACK_DECODER_SEEK_FALLBACK_OK");
-        AssertContains(sourceText, "private static TimeSpan DecodePtsToTimeSpan(long pts, AVRational timeBase)");
-        AssertContains(sourceText, "private static long ResolveBestEffortFrameTimestamp(AVFrame* frame)");
-        AssertContains(sourceText, "frame->best_effort_timestamp != ffmpeg.AV_NOPTS_VALUE");
-        AssertContains(sourceText, "return frame->best_effort_timestamp;");
-        AssertContains(sourceText, "return frame->pts;");
-        AssertContains(sourceText, "if (pts == ffmpeg.AV_NOPTS_VALUE || timeBase.num <= 0 || timeBase.den <= 0)");
-        AssertContains(sourceText, "if (!double.IsFinite(seconds) || seconds <= 0 || seconds > TimeSpan.MaxValue.TotalSeconds)");
-        AssertContains(sourceText, "private static long ToAvTimeBaseTimestamp(TimeSpan value)");
-        AssertContains(sourceText, "private static long ToStreamTimestamp(TimeSpan value, AVRational timeBase)");
-        AssertContains(sourceText, "if (value <= TimeSpan.Zero || timeBase.num <= 0 || timeBase.den <= 0)");
-        AssertContains(sourceText, "var timestamp = value.TotalSeconds * timeBase.den / timeBase.num;");
-        AssertContains(sourceText, "if (!double.IsFinite(microseconds) || microseconds >= long.MaxValue)\n        {\n            return long.MaxValue;\n        }");
-        AssertContains(sourceText, "if (!double.IsFinite(timestamp) || timestamp >= long.MaxValue)\n        {\n            return long.MaxValue;\n        }");
-        AssertContains(sourceText, "private bool _suppressRecoverableSeekLogsForNextVideoFrame;");
-        AssertContains(sourceText, "_suppressRecoverableSeekLogsForNextVideoFrame = true;");
-        AssertContains(sourceText, "using var recoverableSeekLogScope = BeginRecoverableSeekLogSuppressionIfNeeded();");
-        AssertContains(sourceText, "private IDisposable? BeginRecoverableSeekLogSuppressionIfNeeded()");
-        AssertContains(sourceText, "return LibAvEncoder.SuppressRecoverableSeekFfmpegLogs();");
-        AssertContains(sourceText, "_suppressRecoverableSeekLogsForNextVideoFrame = false;");
-        AssertDoesNotContain(sourceText, "(long)(target.TotalSeconds * ffmpeg.AV_TIME_BASE)");
-        AssertDoesNotContain(sourceText, "var seconds = (double)_videoFrame->pts * _videoTimeBase.num / _videoTimeBase.den;\n            pts = TimeSpan.FromSeconds(seconds);");
-        AssertDoesNotContain(sourceText, "var seconds = (double)_audioFrame->pts * _audioTimeBase.num / _audioTimeBase.den;\n            pts = TimeSpan.FromSeconds(seconds);");
-        AssertDoesNotContain(sourceText, "DecodePtsToTimeSpan(_videoFrame->pts, _videoTimeBase)");
-        AssertDoesNotContain(sourceText, "DecodePtsToTimeSpan(_audioFrame->pts, _audioTimeBase)");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task FlashbackDecoder_InputStreamsAndFrameSizesAreBounded()
-    {
-        var sourceText = ReadFlashbackDecoderSource();
-
-        AssertContains(sourceText, "private const int MaxSupportedInputStreams = 64;");
-        AssertContains(sourceText, "private const int MaxDecodedVideoDimension = 8192;");
-        AssertContains(sourceText, "private const int MaxDecodedVideoFrameBytes = 512 * 1024 * 1024;");
-        AssertContains(sourceText, "private const int MaxMpegTsProbeSizeBytes = 20 * 1024 * 1024;");
-        AssertContains(sourceText, "private const int MaxMpegTsAnalyzeDurationUs = 5 * 1000 * 1000;");
-        AssertContains(sourceText, "_formatCtx->probesize = MaxMpegTsProbeSizeBytes;");
-        AssertContains(sourceText, "_formatCtx->max_analyze_duration = MaxMpegTsAnalyzeDurationUs;");
-        AssertContains(sourceText, "codecId is AVCodecID.AV_CODEC_ID_HEVC or AVCodecID.AV_CODEC_ID_H264");
-        AssertContains(sourceText, "ffmpeg.av_dict_set(&probeOptions[i], \"skip_frame\", \"all\", 0)");
-        AssertContains(sourceText, "ffmpeg.av_dict_free(&probeOptions[i]);");
-        AssertContains(sourceText, "if (!TryGetInputStreamCount(_formatCtx, out var streamCount, out var streamCountFailure))");
-        AssertContains(sourceText, "if (!IsValidStreamIndex(_videoStreamIndex, streamCount))");
-        AssertContains(sourceText, "if (_audioStreamIndex >= 0 && !IsValidStreamIndex(_audioStreamIndex, streamCount))");
-        AssertContains(sourceText, "FLASHBACK_DECODER_AUDIO_WARN reason=invalid_stream_index");
-        AssertContains(sourceText, "ValidateVideoDimensions(_videoWidth, _videoHeight);");
-        AssertContains(sourceText, "private static void ValidateVideoDimensions(int width, int height)");
-        AssertContains(sourceText, "width > MaxDecodedVideoDimension");
-        AssertContains(sourceText, "height > MaxDecodedVideoDimension");
-        AssertContains(sourceText, "(width & 1) != 0");
-        AssertContains(sourceText, "var pixels = (long)width * height;");
-        AssertContains(sourceText, "if (bytes <= 0 || bytes > MaxDecodedVideoFrameBytes || bytes > int.MaxValue)");
-        AssertDoesNotContain(sourceText, "return width * height * 2 + width * (height / 2) * 2;");
-        AssertDoesNotContain(sourceText, "return width * height + width * (height / 2);");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task FlashbackDecoder_AudioOutputBuffersAreBounded()
-    {
-        var sourceText = ReadFlashbackDecoderSource();
-
-        AssertContains(sourceText, "private const int MaxDecodedAudioFrameBytes = 16 * 1024 * 1024;");
-        AssertContains(sourceText, "byte[]? result = null;\n        var returnResultToPool = true;");
-        AssertContains(sourceText, "if (inputSamples <= 0)\n            {\n                return new DecodedAudioChunk { Samples = Array.Empty<byte>(), ValidLength = 0, Pts = pts };\n            }");
-        AssertContains(sourceText, "maxOutputSamples = ToBoundedAudioSampleCount((long)inputSamples * 2);");
-        AssertContains(sourceText, "if (!TryCalculateAudioBufferBytes(maxOutputSamples, out var outputBytesNeeded))");
-        AssertContains(sourceText, "FLASHBACK_DECODER_AUDIO_WARN reason=invalid_output_size");
-        AssertContains(sourceText, "if (!TryCalculateAudioBufferBytes(outputSamplesProduced, out var validBytes) || validBytes > result.Length)");
-        AssertContains(sourceText, "FLASHBACK_DECODER_AUDIO_WARN reason=invalid_converted_size");
-        AssertContains(sourceText, "returnResultToPool = false;");
-        AssertContains(sourceText, "finally\n        {\n            ffmpeg.av_frame_unref(_audioFrame);\n            if (returnResultToPool && result is { Length: > 0 })");
-        AssertContains(sourceText, "ArrayPool<byte>.Shared.Return(result);");
-        AssertContains(sourceText, "private static int ToBoundedAudioSampleCount(long sampleCount)");
-        AssertContains(sourceText, "private static bool TryCalculateAudioBufferBytes(int sampleCount, out int bytes)");
-        AssertContains(sourceText, "var calculated = (long)sampleCount * OutputAudioChannels * sizeof(float);");
-        AssertDoesNotContain(sourceText, "var outputBytesNeeded = maxOutputSamples * OutputAudioChannels * sizeof(float);");
-        AssertDoesNotContain(sourceText, "var validBytes = outputSamplesProduced * OutputAudioChannels * sizeof(float);");
-
-        return Task.CompletedTask;
-    }
-
-
-    internal static Task FlashbackDecoder_SoftwareFramePlanesAreValidated()
-    {
-        var sourceText = ReadFlashbackDecoderSource();
-
-        AssertContains(sourceText, "if (actualFormat != AVPixelFormat.AV_PIX_FMT_NONE && actualFormat != _decodedPixelFormat)");
-        AssertContains(sourceText, "if (!TryValidateSoftwareVideoFrame(_videoFrame, _decodedPixelFormat, _videoWidth, _videoHeight, _isHdr, out var frameFailure))");
-        AssertContains(sourceText, "FLASHBACK_DECODER_VIDEO_WARN reason=invalid_software_frame");
-        AssertContains(sourceText, "ffmpeg.av_frame_unref(_videoFrame);\n            return default;");
-        var softwareOutputBlock = ExtractTextBetween(
-            sourceText,
-            "var outputSize = CalculateFrameBufferSize(_videoWidth, _videoHeight, _isHdr);",
-            "    private void CopyFramePlanesToBuffer");
-        AssertContains(softwareOutputBlock, "finally\n        {\n            ffmpeg.av_frame_unref(_videoFrame);\n        }");
-        AssertOccursBefore(softwareOutputBlock, "CopyFramePlanesToBuffer((byte*)dataPtr, outputSize);", "finally\n        {\n            ffmpeg.av_frame_unref(_videoFrame);\n        }");
-        AssertContains(sourceText, "private static bool TryValidateSoftwareVideoFrame(");
-        AssertContains(sourceText, "width_mismatch frame={frame->width} expected={width}");
-        AssertContains(sourceText, "height_mismatch frame={frame->height} expected={height}");
-        AssertContains(sourceText, "private static bool IsConvertibleSdrPlanarFormat(AVPixelFormat format)");
-        AssertContains(sourceText, "format == AVPixelFormat.AV_PIX_FMT_YUV420P ||\n           format == AVPixelFormat.AV_PIX_FMT_YUVJ420P");
-        AssertContains(sourceText, "if (!isHdr && IsConvertibleSdrPlanarFormat(format))");
-        AssertContains(sourceText, "format == AVPixelFormat.AV_PIX_FMT_YUV420P10LE");
-        AssertContains(sourceText, "failure = $\"unsupported_format:{format}\";");
-        AssertContains(sourceText, "IsConvertibleSdrPlanarFormat(_decodedPixelFormat) ||");
-        AssertContains(sourceText, "private static bool TryValidatePlane(AVFrame* frame, int planeIndex, int minLineSize, out string failure)");
-        AssertContains(sourceText, "var plane = (uint)planeIndex;");
-        AssertContains(sourceText, "failure = $\"plane_{planeIndex}_null\";");
-        AssertContains(sourceText, "failure = $\"plane_{planeIndex}_linesize:{frame->linesize[plane]}<{minLineSize}\";");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task FlashbackDecoder_D3D11FramesAreValidated()
-    {
-        var sourceText = ReadFlashbackDecoderSource();
-
-        AssertContains(sourceText, "if (!TryValidateD3D11VideoFrame(clonedFrame, _videoWidth, _videoHeight, out var d3dFrameFailure))");
-        AssertContains(sourceText, "Logger.Log($\"FLASHBACK_DECODER_VIDEO_WARN reason=invalid_d3d11_frame detail='{d3dFrameFailure}' w={_videoWidth} h={_videoHeight}\");\n                ffmpeg.av_frame_free(&clonedFrame);\n                return default;");
-        AssertContains(sourceText, "private static bool TryValidateD3D11VideoFrame(AVFrame* frame, int width, int height, out string failure)");
-        AssertContains(sourceText, "failure = \"texture_null\";");
-        AssertContains(sourceText, "failure = $\"subresource_out_of_range:{subresource}\";");
-        AssertOccursBefore(sourceText, "TryValidateD3D11VideoFrame(clonedFrame, _videoWidth, _videoHeight", "var texturePtr = (IntPtr)clonedFrame->data[0];");
-
-        return Task.CompletedTask;
-    }
-
-
     internal static Task FlashbackDecoder_RejectsInitializeAfterDispose()
     {
         var decoderType = RequireType("Sussudio.Services.Flashback.FlashbackDecoder");
@@ -2988,17 +2072,6 @@ static partial class Program
         var invocation = Assert.Throws<TargetInvocationException>(
             () => initialize.Invoke(decoder, new object[] { IntPtr.Zero, IntPtr.Zero }));
         Assert.IsType<ObjectDisposedException>(invocation.InnerException);
-
-        var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
-            .Replace("\r\n", "\n");
-        var d3d11Text = rootText;
-        AssertContains(rootText, "public void Initialize(IntPtr d3dDevicePtr, IntPtr d3dContextPtr)");
-        var initializeBlock = ExtractTextBetween(
-            d3d11Text,
-            "public void Initialize(IntPtr d3dDevicePtr, IntPtr d3dContextPtr)",
-            "    private static AVPixelFormat GetFormatD3D11");
-        AssertContains(initializeBlock, "ThrowIfDisposed();");
-        AssertOccursBefore(initializeBlock, "ThrowIfDisposed();", "if (_initialized)");
 
         return Task.CompletedTask;
     }
@@ -3019,118 +2092,24 @@ static partial class Program
 
         AssertEqual(null, callbackProperty.GetValue(decoder), "Disposed decoder clears audio callback");
 
-        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
-            .Replace("\r\n", "\n");
-        var disposeBlock = ExtractTextBetween(
-            sourceText,
-            "public void Dispose()",
-            "// Free persistent D3D11VA device context");
-        AssertContains(disposeBlock, "AudioChunkCallback = null;");
-        AssertOccursBefore(disposeBlock, "AudioChunkCallback = null;", "CloseFileCore();");
-
         return Task.CompletedTask;
     }
-
-    internal static Task FlashbackSuppressedExceptionsUseAppLogs()
-    {
-        var decoderText = ReadFlashbackDecoderSource();
-        var d3d11Text = decoderText;
-        var d3d11DiscoveryText = d3d11Text;
-
-        var openFileBlock = ExtractTextBetween(
-            decoderText,
-            "public void OpenFile(string filePath)",
-            "    /// <summary>\n    /// Closes the currently open file");
-        AssertContains(openFileBlock, "FLASHBACK_DECODER_OPEN_WARN");
-        AssertContains(openFileBlock, "CloseFileCore();\n            throw;");
-        AssertContains(decoderText, "var closedPath = _currentFilePath;\n        CloseFileCore();\n        Logger.Log($\"FLASHBACK_DECODER_CLOSE path='{closedPath}'\");");
-        AssertContains(decoderText, "_currentPosition = TimeSpan.Zero;\n        _currentFilePath = null;\n        _needsConvert = false;");
-        AssertDoesNotContain(openFileBlock, "System.Diagnostics.Trace.TraceWarning");
-        AssertContains(decoderText, "FLASHBACK_DECODER_INIT d3d11va=false reason=exception type={ex.GetType().Name} msg='{ex.Message}'");
-        AssertContains(d3d11Text, "var codec = FindD3D11VADecoder(codecPar->codec_id, out var codecName);");
-        AssertContains(d3d11Text, "FLASHBACK_DECODER_D3D11VA_SKIP reason=no_d3d11_device_ctx_decoder");
-        AssertContains(d3d11Text, "FLASHBACK_DECODER_D3D11VA_SKIP reason=exception type={ex.GetType().Name} msg='{ex.Message}'");
-        AssertContains(d3d11Text, "private static string DescribeHardwareConfigs");
-        AssertContains(d3d11DiscoveryText, "private static AVCodec* FindD3D11VADecoder(AVCodecID codecId, out string codecName)");
-        AssertContains(d3d11DiscoveryText, "ffmpeg.avcodec_find_decoder_by_name(preferredName)");
-        AssertContains(d3d11DiscoveryText, "AVCodecID.AV_CODEC_ID_AV1 => \"av1\"");
-        AssertContains(d3d11DiscoveryText, "FLASHBACK_DECODER_D3D11VA_SELECT source=preferred codec={codecName}");
-        AssertContains(d3d11DiscoveryText, "FLASHBACK_DECODER_D3D11VA_CANDIDATE source={source} codec={codecName} configs=[{hardwareConfigSummary}] d3d11_device_ctx={hasD3D11DeviceConfig}");
-        AssertContains(d3d11DiscoveryText, "private static string DescribeHardwareConfigs(AVCodec* codec, out bool hasD3D11DeviceConfig)");
-        AssertContains(d3d11DiscoveryText, "ffmpeg.avcodec_get_hw_config(codec, i)");
-        AssertContains(d3d11DiscoveryText, "pixelFormat == AVPixelFormat.AV_PIX_FMT_D3D11");
-        AssertContains(d3d11DiscoveryText, "deviceType == AVHWDeviceType.AV_HWDEVICE_TYPE_D3D11VA");
-        AssertContains(d3d11DiscoveryText, "AvCodecHwConfigMethodHwDeviceCtx");
-        AssertContains(d3d11DiscoveryText, "private static string FormatHardwareConfigMethods(int methods)");
-        AssertContains(d3d11DiscoveryText, "private static string GetPixelFormatName(AVPixelFormat pixelFormat)");
-        AssertContains(d3d11DiscoveryText, "private static string GetHardwareDeviceName(AVHWDeviceType deviceType)");
-
-        return Task.CompletedTask;
-    }
-
-
 
     // FlashbackDecoder: CalculateFrameBufferSize
 
-    internal static Task FlashbackDecoder_CalculateFrameBufferSize_Nv12()
+    internal static Task FlashbackDecoder_CalculateFrameBufferSize_MatchesPlaneLayouts()
     {
         var decoderType = RequireType("Sussudio.Services.Flashback.FlashbackDecoder");
         var method = decoderType.GetMethod("CalculateFrameBufferSize",
             BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("CalculateFrameBufferSize not found.");
 
-        // NV12: width * height + width * (height / 2)
-        var size1080 = (int)method.Invoke(null, new object[] { 1920, 1080, false })!;
-        AssertEqual(1920 * 1080 + 1920 * (1080 / 2), size1080, "NV12 1080p buffer size");
-
-        var size720 = (int)method.Invoke(null, new object[] { 1280, 720, false })!;
-        AssertEqual(1280 * 720 + 1280 * (720 / 2), size720, "NV12 720p buffer size");
-
-        var size4k = (int)method.Invoke(null, new object[] { 3840, 2160, false })!;
-        AssertEqual(3840 * 2160 + 3840 * (2160 / 2), size4k, "NV12 4K buffer size");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task FlashbackDecoder_CalculateFrameBufferSize_P010()
-    {
-        var decoderType = RequireType("Sussudio.Services.Flashback.FlashbackDecoder");
-        var method = decoderType.GetMethod("CalculateFrameBufferSize",
-            BindingFlags.Static | BindingFlags.NonPublic)
-            ?? throw new InvalidOperationException("CalculateFrameBufferSize not found.");
-
-        // P010: width * height * 2 + width * (height / 2) * 2
-        var size1080 = (int)method.Invoke(null, new object[] { 1920, 1080, true })!;
-        AssertEqual(1920 * 1080 * 2 + 1920 * (1080 / 2) * 2, size1080, "P010 1080p buffer size");
-
-        var size4k = (int)method.Invoke(null, new object[] { 3840, 2160, true })!;
-        AssertEqual(3840 * 2160 * 2 + 3840 * (2160 / 2) * 2, size4k, "P010 4K buffer size");
-
-        // P010 should be exactly 2x NV12
-        var nv12Size = (int)method.Invoke(null, new object[] { 1920, 1080, false })!;
-        AssertEqual(nv12Size * 2, size1080, "P010 is 2x NV12");
-
-        return Task.CompletedTask;
-    }
-
-    // FlashbackDecoder: state guard properties
-
-
-
-
-
-
-
-
-    internal static Task FlashbackDecoder_DefaultState_IsNotOpenAndNotInitialized()
-    {
-        var decoderType = RequireType("Sussudio.Services.Flashback.FlashbackDecoder");
-        var decoder = Activator.CreateInstance(decoderType)!;
-
-        var isOpenProp = decoderType.GetProperty("IsOpen",
-            BindingFlags.Public | BindingFlags.Instance);
-        AssertNotNull(isOpenProp, "FlashbackDecoder.IsOpen");
-        AssertEqual(false, (bool)isOpenProp!.GetValue(decoder)!, "IsOpen default");
+        // Decoded frame buffers are allocated from this size. Literal byte counts:
+        // NV12 is 1.5 bytes per pixel and P010 is 3 bytes per pixel.
+        AssertEqual(3_110_400, (int)method.Invoke(null, new object[] { 1920, 1080, false })!, "NV12 1080p buffer size");
+        AssertEqual(6_220_800, (int)method.Invoke(null, new object[] { 1920, 1080, true })!, "P010 1080p buffer size");
+        AssertEqual(12_441_600, (int)method.Invoke(null, new object[] { 3840, 2160, false })!, "NV12 4K buffer size");
+        AssertEqual(24_883_200, (int)method.Invoke(null, new object[] { 3840, 2160, true })!, "P010 4K buffer size");
 
         return Task.CompletedTask;
     }

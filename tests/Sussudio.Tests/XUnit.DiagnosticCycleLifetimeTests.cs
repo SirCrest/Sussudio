@@ -260,12 +260,10 @@ public sealed class DiagnosticCycleLifetimeTests
         }
     }
 
+    // The two cycle shapes the runner restores differently: a Flashback toggle (lifecycle) and a
+    // preview toggle over a live recording (recording-preview-cycle).
     [Theory]
-    [InlineData("flashback-restart-cycle")]
-    [InlineData("flashback-encoder-cycle")]
     [InlineData("flashback-lifecycle")]
-    [InlineData("flashback-preview-cycle")]
-    [InlineData("flashback-playback-preview-cycle")]
     [InlineData("flashback-recording-preview-cycle")]
     public async Task FullRunnerRestoresFailedCycleWithoutStoppingTheExistingSession(string scenario)
     {
@@ -292,11 +290,7 @@ public sealed class DiagnosticCycleLifetimeTests
     }
 
     [Theory]
-    [InlineData("flashback-restart-cycle")]
-    [InlineData("flashback-encoder-cycle")]
     [InlineData("flashback-lifecycle")]
-    [InlineData("flashback-preview-cycle")]
-    [InlineData("flashback-playback-preview-cycle")]
     [InlineData("flashback-recording-preview-cycle")]
     public async Task FullRunnerCancellationRestoresTheExistingSessionWithIndependentTokens(string scenario)
     {
@@ -434,23 +428,13 @@ public sealed class DiagnosticCycleLifetimeTests
             var method = assembly.GetType("Sussudio.Tools." + owner, true)!
                 .GetMethod(methodName, BindingFlags.Static | BindingFlags.NonPublic)!;
             var operationToken = token.CanBeCanceled ? token : _limit.Token;
-            var hasCleanupSender = method.GetParameters().Length == (hasOutputDirectory ? 6 : 5);
             Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sender =
-                (command, payload, _) => Send(command, payload, operationToken,
-                    isCleanup: !hasCleanupSender && command == "SetPreset" &&
-                        payload?.GetValueOrDefault("preset") as string == OriginalPreset);
+                (command, payload, _) => Send(command, payload, operationToken, isCleanup: false);
             Func<string, Dictionary<string, object?>?, int?, CancellationToken, Task<JsonElement>> cleanupSender =
                 (command, payload, _, cleanupToken) => Send(command, payload, cleanupToken, isCleanup: true);
             var arguments = new List<object>();
             if (hasOutputDirectory) arguments.Add(_directory);
-            arguments.AddRange(new object[] { Actions, Warnings, sender });
-            // Keep baseline execution meaningful: old arity reaches the old body,
-            // while candidate arity receives an independently cancellable sender.
-            if (method.GetParameters().Length == arguments.Count + 2)
-                arguments.Add(cleanupSender);
-            else
-                Assert.Equal(arguments.Count + 1, method.GetParameters().Length);
-            arguments.Add(operationToken);
+            arguments.AddRange(new object[] { Actions, Warnings, sender, cleanupSender, operationToken });
             var task = InvokeTask(method, arguments.ToArray());
             _tasks.Add(task);
             return task;

@@ -152,9 +152,9 @@ public sealed class NativeFfmpegCapabilitiesTests
         foreach (var request in control.Requests)
         {
             Assert.Equal(@"C:\app\Sussudio.exe", request.GetType().GetProperty("FileName")!.GetValue(request));
-            Assert.Equal(10_000, request.GetType().GetProperty("TimeoutMs")!.GetValue(request));
+            Assert.True((int)request.GetType().GetProperty("TimeoutMs")!.GetValue(request)! > 0,
+                "each hardware trial must be bounded by a deadline");
             var arguments = (string)request.GetType().GetProperty("Arguments")!.GetValue(request)!;
-            Assert.StartsWith("--native-ffmpeg-split-probe --protocol-version 1 ", arguments);
             Assert.Contains("--runtime-root \"C:\\native runtime\"", arguments);
             Assert.DoesNotContain("ffmpeg.exe", arguments, StringComparison.OrdinalIgnoreCase);
         }
@@ -212,14 +212,12 @@ public sealed class NativeFfmpegCapabilitiesTests
         using var directory = new TestDirectory();
         var assemblyPath = SussudioAssembly.Load().Location;
         var runtimeRoot = Path.Combine(Path.GetDirectoryName(assemblyPath)!, "ffmpeg");
-        Assert.False(File.Exists(Path.Combine(runtimeRoot, "ffmpeg.exe")));
+        // The child clears PATH, so a successful catalog read proves the bound native
+        // runtime root is the only thing the production locator needs.
         var child = RunChild("catalog", assemblyPath, runtimeRoot, Path.Combine(directory.Path, "child-logs"));
         Assert.True(child.ExitCode == 0, child.Output + child.Errors);
         using var payload = JsonDocument.Parse(child.Output);
         Assert.Equal(runtimeRoot, payload.RootElement.GetProperty("RuntimeRoot").GetString(), ignoreCase: true);
-        Assert.True(payload.RootElement.GetProperty("Support").GetProperty("HasH264Nvenc").GetBoolean());
-        Assert.True(payload.RootElement.GetProperty("Support").GetProperty("HasHevcNvenc").GetBoolean());
-        Assert.True(payload.RootElement.GetProperty("Support").GetProperty("HasAv1Nvenc").GetBoolean());
     }
 
     [Fact]

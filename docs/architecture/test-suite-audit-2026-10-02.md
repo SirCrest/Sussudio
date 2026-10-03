@@ -123,10 +123,33 @@ Ordered by risk, lowest first. Each step is a self-contained PR that leaves the 
 - `ArchitectureGuardrailsTests` lines 137-195 grep the native RTK shim for `MUTATING_UNVERIFIED_FORWARD(rtk_burnToFlash)`. It is a source-text test, and it is also the only automated check that the shim blocks destructive firmware and EDID writes. Replace with a behavioral native test or consciously accept losing the guard.
 - `MainWindowAutomationIds` and `XUnit.FlashbackUiHealthTests` pin XAML `AutomationId`s. No in-repo consumer references them. Delete unless an external UIA driver (Stream Deck plugin, scripts) depends on them.
 - `VerifyFile_RejectsUnknownProfile` in `XUnit.AutomationContractsTests.cs` uses its own test file as the existing-file input; point it at a temp file before any file deletion or rename.
-- `RecordingPipelineContractsTests` guards the "no `Thread.Sleep` in the LibAv sink" rail by grepping source. The mutation run shows the suite has no behavioral guard for hot-path blocking. Decide whether a timing-based test is worth writing or whether the live pacing checks (`Measure-PreviewScenario.ps1`, `get_frame_pacing_verdict`) own that rail.
+- `RecordingPipelineContractsTests` guarded the "no `Thread.Sleep` in the LibAv sink" rail by grepping source and was removed in the pruning pass, so the suite now has no guard at all for hot-path blocking. Decide whether a timing-based test is worth writing or whether the live pacing checks (`Measure-PreviewScenario.ps1`, `get_frame_pacing_verdict`) own that rail.
 - Deleting bucket F UI-binding tests before an E2E exists removes the only control-to-VM routing check.
 - Reviewer line counts are estimates from reading, not from running a deletion. Expect the real number to land within about 10% of 15,000.
 
 ## What this audit does not prove
 
 The reviewers read, they did not execute, each file; counts are approximate. The mutation set is 13 hand-picked mistakes, not a mutation-testing sweep, so it shows what kinds of errors the suite sees, not a coverage percentage. Automated checks still prove nothing about live capture, audible output, HDR display, or recording playback; those remain live-check territory per AGENTS.md.
+
+## Applied on 2026-10-03
+
+Steps 1 and 2 of the plan were applied to the automation, tool, recording, Flashback, diagnostic, native, and controller test files, with the suite rebuilt and re-run after each stage. The results:
+
+| Measure | Before | After |
+|---|---|---|
+| Test cases | 2,321 | 1,993 |
+| Test source lines | 64,862 in 102 files | 56,232 in 98 files |
+| Full validation | green | green (`scripts/validate.ps1`, 0 failed, 0 skipped) |
+
+What changed:
+
+- Whole files removed: `XUnit.FlashbackSinkHardeningTests.cs`, `XUnit.FlashbackUiHealthTests.cs`, `FlashbackFailureIdentityTests.cs` (its distinct cases folded into `XUnit.FlashbackFailureTests.cs`), and `XUnit.PreviewRendererPerformanceTests.cs` (its zero-allocation check folded into `PreviewInputViewCacheTests.cs`).
+- Source-text, shape, tautology, and duplicate tests removed from `XUnit.AutomationContractsTests.cs` (7,601 to 4,420 lines), `XUnit.ToolContractsTests.cs` (9,154 to 7,386), `XUnit.RecordingContractsTests.cs` (3,807 to 3,116), `XUnit.FlashbackContractsTests.cs` (3,159 to 2,138), `AutomationCommandCatalogTests.cs` (577 to 448), and about thirty smaller files.
+- Sole-guard conversions instead of deletions: the recording failure-code and automation error-code pins now read each constant's value by reflection; the three exporter tests that only asserted `Succeeded == false` now assert the expected failure code; `MapCodecName` asserts exact encoder names; `CommandsNoOpBeforeInitialize` fails loudly if a command method disappears; `VerifyFile_RejectsUnknownProfile` uses a temp file; the stale `PreviewStartupState` drift was fixed in `populated.json` instead of being patched in the comparer; `scenarios.json` keeps only the two wire-visible fields per scenario.
+- `HarnessCore.cs` lost 322 lines of source-reading helpers that no test called any more.
+- `docs/architecture/AGENT_MAP.md` and `tests/Sussudio.Tests/MIGRATION.md` were corrected where they described the removed tests.
+
+Not applied:
+
+- The presentation/ownership/guardrails slice (`XUnit.PresentationPreviewContractsTests.cs`, `MainWindowControllerOwnershipTests.cs`, `CaptureServiceOwnershipTests.cs`, `ArchitectureGuardrailsTests.cs`) and the core/model/MJPEG slice (`XUnit.CoreRuntimeContractsTests.cs`, `XUnit.ModelContractsTests.cs`, `MjpegPipelineTests.cs`). The session's permission classifier refused to delegate those deletions, so roughly 4,700 of the planned lines remain. Known leftovers from the applied slices that point into these files: five source-text bodies in `XUnit.AutomationContractsTests.cs` whose wrappers still live in `XUnit.PresentationPreviewContractsTests.cs`; the body `MainWindowAutomationIds_CoverAgentCriticalSurface` in `MainWindowControllerOwnershipTests.cs`, whose wrapper was removed so the XAML `AutomationId` grep no longer runs; the uncalled `SharedFormatter_RendersRecordingIntegrity` body and the unused `RuntimeContractSource.ReadAutomationPipeClientSource` reader in `XUnit.CoreRuntimeContractsTests.cs`.
+- Step 3 (E2E conversions) and step 4 (direct `<Compile Include>` links for the kept reflection tests).

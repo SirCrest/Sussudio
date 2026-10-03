@@ -560,7 +560,7 @@
   "PreviewGpuElementVisible": false,
   "PreviewCpuElementVisible": true,
   "PreviewRendererAttached": false,
-  "PreviewStartupState": "previewRuntime.StartupState",
+  "PreviewStartupState": "RendererAttaching",
   "PreviewAttemptId": "previewRuntime.StartupAttemptId",
   "PreviewStartupElapsedMs": 1073.25,
   "PreviewStartupTimeoutMs": 1084,
