@@ -1876,14 +1876,6 @@ public partial class CaptureService
         StartTelemetryPollCoreLocked();
     }
 
-    private void StartTelemetryPollCore()
-    {
-        lock (_telemetryPollSync)
-        {
-            EnsureTelemetryPollStartedLocked();
-        }
-    }
-
     private void StartTelemetryPollCoreLocked()
     {
         var generation = Interlocked.Increment(ref _telemetryPollGeneration);
@@ -1916,15 +1908,6 @@ public partial class CaptureService
                 }
             }
         }, cts.Token);
-    }
-
-    private void StopTelemetryPoll()
-    {
-        lock (_telemetryPollSync)
-        {
-            Volatile.Write(ref _sourceTelemetryPollingRequested, false);
-            StopTelemetryPollLocked();
-        }
     }
 
     private void StopTelemetryPollLocked()
