@@ -150,6 +150,12 @@ internal static class UiElementReader
             return false;
         }
 
+        // A realized list/combo item is operable through its owning selector even though its own peer carries no pattern.
+        if (OwnerOf(element) is not null)
+        {
+            return true;
+        }
+
         var peer = TryCreatePeer(element);
         if (peer is null)
         {
@@ -165,6 +171,76 @@ internal static class UiElementReader
         }
 
         return false;
+    }
+
+    // The owning selector and the item's index for a realized item container (ComboBoxItem, ListViewItem, ...). In WinUI
+    // the SelectionItem pattern lives on the item-data peer the selector's own peer creates, not on the container's
+    // peer: a container read through CreatePeerForElement reports no patterns at all (observed live on the Flashback
+    // buffer combo's open dropdown). Selecting such a container therefore goes through its owner.
+    public static (Selector Owner, int Index)? OwnerOf(UIElement element)
+    {
+        if (element is not SelectorItem item)
+        {
+            return null;
+        }
+
+        try
+        {
+            if (ItemsControl.ItemsControlFromItemContainer(item) is not Selector owner)
+            {
+                return null;
+            }
+
+            var index = owner.IndexFromContainer(item);
+            return index >= 0 ? (owner, index) : null;
+        }
+        catch (Exception ex) when (IsPeerReadFailure(ex))
+        {
+            return null;
+        }
+    }
+
+    // The item-data peer of one item, which carries the SelectionItem pattern and selects the item through the selector
+    // whether or not a container exists. The selector's peer lists one ItemAutomationPeer per item; duplicates (equal
+    // items) are told apart by their order. Null provider with the reason when the peer is not reachable this way.
+    public static (ISelectionItemProvider? Provider, UiItemPeerLookup Lookup, string? Error) FindItemDataPeer(Selector selector, int index)
+    {
+        try
+        {
+            var ownerPeer = TryCreatePeer(selector);
+            var children = ownerPeer?.GetChildren();
+            if (children is null)
+            {
+                return (null, UiItemPeerLookup.NotFound, null);
+            }
+
+            var item = selector.Items[index];
+            var occurrence = 0;
+            for (var earlier = 0; earlier < index; earlier++)
+            {
+                if (Equals(selector.Items[earlier], item))
+                {
+                    occurrence++;
+                }
+            }
+
+            var seen = 0;
+            foreach (var child in children)
+            {
+                if (child is ItemAutomationPeer itemPeer && Equals(itemPeer.Item, item) && seen++ == occurrence)
+                {
+                    return TryGetPattern(itemPeer, PatternInterface.SelectionItem) is ISelectionItemProvider provider
+                        ? (provider, UiItemPeerLookup.NotFound, null)
+                        : (null, UiItemPeerLookup.NotFound, null);
+                }
+            }
+
+            return (null, UiItemPeerLookup.NotFound, null);
+        }
+        catch (Exception ex) when (IsPeerReadFailure(ex))
+        {
+            return (null, UiItemPeerLookup.Failed, $"{ex.GetType().Name}: {ex.Message}");
+        }
     }
 
     // Types whose peers carry no operable pattern of their own; skipping them keeps a full-tree walk from creating a peer
@@ -215,6 +291,11 @@ internal static class UiElementReader
         var element = probe.Element;
         var peer = TryCreatePeer(element);
         var patterns = peer is null ? null : ListPatterns(peer);
+        if (OwnerOf(element) is not null && patterns?.Contains(UiPatterns.SelectionItem) != true)
+        {
+            // An item container is selectable through its owner even though its own peer lists nothing.
+            patterns = (patterns ?? Array.Empty<string>()).Append(UiPatterns.SelectionItem).ToList();
+        }
 
         string? toggleState = null;
         UiRange? range = null;
@@ -279,13 +360,18 @@ internal static class UiElementReader
     // The peer's facts that action planning needs, read fresh from the live element.
     public static UiElementFacts ReadFacts(UIElement element)
     {
+        var patterns = new HashSet<string>(StringComparer.Ordinal);
         var peer = TryCreatePeer(element);
-        if (peer is null)
+        if (OwnerOf(element) is not null)
         {
-            return new UiElementFacts(Array.Empty<string>(), false, null, null, null);
+            patterns.Add(UiPatterns.SelectionItem);
         }
 
-        var patterns = new HashSet<string>(StringComparer.Ordinal);
+        if (peer is null)
+        {
+            return new UiElementFacts(patterns, false, null, null, null);
+        }
+
         foreach (var name in new[]
         {
             PatternInterface.Invoke, PatternInterface.Toggle, PatternInterface.Value, PatternInterface.RangeValue,
@@ -400,9 +486,10 @@ internal static class UiElementReader
         return parts.Count == 0 ? "None" : string.Join("+", parts);
     }
 
-    // Item texts in list order: a realized container's visible text when there is one, otherwise the item itself
-    // (strings as-is, ContentControl items by their content). Items that are plain view-model objects fall back to
-    // ToString(), which is only as readable as the type makes it.
+    // Item texts in list order. Strings are used as-is and ContentControl/UIElement items by their content. A view-model
+    // object is read through the selector's DisplayMemberPath (what the control shows), then through a realized
+    // container's visible text, and only then through ToString(), which is only as readable as the type makes it.
+    // DisplayMemberPath comes first so an item has the same text whether or not its dropdown is open.
     public static IReadOnlyList<string> ItemTexts(Selector selector, int max)
     {
         var count = Math.Min(selector.Items.Count, max);
@@ -423,7 +510,7 @@ internal static class UiElementReader
             string value => value,
             ContentControl contentControl => ExtractText(contentControl),
             UIElement element => CollectText(element),
-            _ => null,
+            _ => UiDisplayMemberPath.Resolve(item, Read(() => selector.DisplayMemberPath)),
         };
 
         if (string.IsNullOrWhiteSpace(text) && selector.ContainerFromIndex(index) is UIElement container)

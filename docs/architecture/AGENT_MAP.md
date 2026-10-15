@@ -647,8 +647,11 @@ Fingers:
   `Sussudio/Services/Automation/`: `UiTargetResolver` (path, `x:Name`,
   `AutomationId`, automation name, text; ambiguity, hidden and disabled handling),
   `UiActionPlanner` (action and value validation against what the element
-  supports), `UiSelectionMatcher` (item text or `#N`) and `UiVisibilityRules`
-  (effective visibility). `UiAutomationModels.cs` owns the wire DTOs and status
+  supports), `UiSelectionMatcher` (item text or `#N`), `UiSelectionVia` (the
+  truthful `Via` text of the three select routes: item-data peer, container peer,
+  `Selector.SelectedIndex`), `UiDisplayMemberPath` (item text from
+  `ItemsControl.DisplayMemberPath`) and `UiVisibilityRules` (effective
+  visibility). `UiAutomationModels.cs` owns the wire DTOs and status
   constants.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.UiAutomation.cs` owns
   the command 66 and 67 handlers and the status to error-code mapping

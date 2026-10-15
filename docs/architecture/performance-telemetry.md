@@ -688,8 +688,8 @@ the UI thread through the window's dispatch controller: owners are
 `UiAutomationBridge` (walk and actions, `Sussudio/Controllers/Window`) and
 `UiElementReader` (element state), with the decisions that need no visual tree in
 pure, unit-tested types (`UiTargetResolver`, `UiActionPlanner`,
-`UiSelectionMatcher`, `UiVisibilityRules`) and the wire types in
-`UiAutomationModels`.
+`UiSelectionMatcher`, `UiSelectionVia`, `UiDisplayMemberPath`,
+`UiVisibilityRules`) and the wire types in `UiAutomationModels`.
 
 **Tree.** The walk starts at the window content and at the child of every open
 popup (`VisualTreeHelper.GetOpenPopupsForXamlRoot`), so flyouts and menus are
@@ -706,7 +706,14 @@ or any ancestor, or a zero-sized element, is hidden, and the reason names the
 root-most culprit. *Disabled* includes disabled ancestors. `interactiveOnly`
 (default true) lists only elements whose peer exposes invoke, toggle, value,
 range-value, selection-item, selection or expand-collapse, flattening the layout
-containers around them; `false` lists every element. The output is bounded:
+containers around them; `false` lists every element. A realized list or combo
+item (`ComboBoxItem`, `ListViewItem`, any `SelectorItem` whose owning selector
+and index resolve) reports `SelectionItem` and counts as interactive even though
+its own automation peer lists no pattern at all (observed live on the open
+dropdown of the Flashback buffer combo, where the items first appeared only with
+`--all` and as not interactive): the SelectionItem pattern lives on the item-data
+peer the selector's peer creates, so such an item is selected through its owner
+(see Actions). The output is bounded:
 `maxDepth` 1 to 64 (default 10; nodes at the limit are listed without children and
 their descendants are counted), at most 1500 emitted nodes and 20000 visited
 elements; `Truncated` and `TruncationReason` say when a cap stopped the walk, so a
@@ -737,13 +744,43 @@ value arity, `expand` or `collapse` on a leaf, and a value passed to an action
 that takes none. Actions go through the peer's pattern providers
 (`IInvokeProvider`, `IToggleProvider`, `IValueProvider`, `IRangeValueProvider`,
 `ISelectionItemProvider`, `IExpandCollapseProvider`, `IScrollItemProvider`);
-`focus` uses `Focus(FocusState.Programmatic)`. `select` on a container takes the
-item text (exact, case-insensitive, trimmed) or `#N` for a zero-based index; a
-bare number is text, because labels such as "60" are common. Duplicate item text
-is ambiguous and lists the indexes. `Via` names the mechanism used
-(`peer:Invoke`, `peer:Toggle`, ...); for a combo item with no realized container
-it is `Selector.SelectedIndex`. Item text of non-string items is best effort
-(`ToString()`).
+`focus` uses `Focus(FocusState.Programmatic)`.
+
+`select` on a list or combo box takes the item text (exact, case-insensitive,
+trimmed) or `#N` for a zero-based index; a bare number is text, because labels
+such as "60" are common. The item texts it matches against (also listed in the
+tree) are read in this order: a string as is, a `ContentControl` or `UIElement`
+item by its content, then for a view-model object the selector's
+`ItemsControl.DisplayMemberPath` (a simple or dotted path of public instance
+properties with a public getter, read with the invariant culture; a blank path, a
+missing or null segment, a throwing getter, an indexer or a value that is not
+text-like such as a nested object resolves nothing and never throws), then a
+realized container's visible text, and only then `ToString()`. The path comes
+before the container text so an item has the same text whether or not its
+dropdown is open; without it the resolution and frame-rate combos listed every
+item as its type name and could not be selected by text. A value that matches no
+item, or several (the error lists the indexes), is rejected before anything runs
+as `invalid-value` (`invalid-request`, like an out-of-range slider value) with the
+capped item list in the message.
+
+`select` on an item container (a path from the open dropdown) takes no value and
+selects that item through its owning selector. Whichever way the item was named,
+the selection takes the first usable of three routes, and `Via` says which ran:
+`peer:SelectionItem (item-data peer of item #N "text")` (the selector's own peer
+lists one item-data peer per item, found by item and order, so duplicates stay
+distinct); `peer:SelectionItem (container peer of item #N "text")` when the
+realized container's own peer exposes the pattern; and `Selector.SelectedIndex
+(item #N "text": <why no item-data peer>; <why no container peer>)`, the same
+selection a click produces. The reasons are distinct and true: the peer lists no
+item-data peer (or looking it up failed, with the error), and the container is not
+realized, has no peer, or has a peer without SelectionItem; the first version
+said "no realized container" while the dropdown was open and every container
+existed. Observed live: a closed combo box lists no item-data peers and has no
+containers (so a select on it reports `Selector.SelectedIndex` with both reasons),
+and an open dropdown lists them (so a select, by text or by popup path, reports
+the item-data peer and the dropdown closes; the response of a popup-path select
+states that its element left the tree). The other actions' `Via` is
+`peer:<Pattern>` (`peer:Invoke`, `peer:Toggle`, ...).
 
 **Not supported: `accelerator`.** WinUI has no public API to raise a
 `KeyboardAccelerator`, so the action is rejected with a specific message. The
@@ -757,8 +794,9 @@ flyout closed, is reported as such). `invoked` means the peer accepted the call;
 `force` skips only the pre-check, so a peer may still refuse (a disabled control
 usually does), which is `action-failed` with the reason. Statuses: `invoked`,
 `not-found`, `ambiguous`, `hidden`, `disabled`, `invalid-action`,
-`action-unsupported`, `invalid-value`, `action-failed`, `window-unavailable`.
-Every attempt is logged as `AUTO-UI-INVOKE`.
+`action-unsupported`, `invalid-value` (a bad value, including a select that
+matches no item or several), `action-failed`, `window-unavailable`. Every attempt
+is logged as `AUTO-UI-INVOKE`.
 
 CLI: `ssctl ui tree [--root NAME] [--depth N] [--all] [--json]` and
 `ssctl ui invoke <target> [action] [value] [--force] [--json]`. MCP:
@@ -1086,8 +1124,24 @@ Written before the code, per the testing policy:
   a value on an action that takes none is rejected and an empty value counts as
   absent; `focus` and `scroll-into-view` need no pattern. Item selection matches
   exact text or `#N` and treats a bare number as text; duplicate text is
-  ambiguous and lists indexes; no match lists capped items; an out-of-range
-  index and an empty list are errors.
+  ambiguous and lists indexes; no match lists capped items and is
+  `invalid-value`; an out-of-range index and an empty list are errors.
+- Fingers, item text and selection routes (live window 3 follow-up, written
+  before the code): `DisplayMemberPath` with no path, a blank path or no item
+  resolves nothing and never throws; a simple property is read by exact name,
+  including a computed one; a dotted path walks nested properties and an empty
+  segment resolves nothing; a missing property, a null at any segment and a
+  throwing getter resolve nothing instead of failing the tree; private, internal,
+  static, field and non-public-getter members are not read; an indexer is never
+  read and a member hiding an inherited one of another type resolves to the
+  hiding member instead of throwing an ambiguous-match error; non-string values
+  format invariantly (59.94 reads "59.94" under a comma culture); a nested object
+  is not printed as its type name; an empty string is a resolved empty text. The
+  `Via` text of the fallback never claims "no realized container" for a container
+  that exists, gives distinct texts for a missing container, a container without
+  a peer and a peer without SelectionItem, carries a failed lookup's error and
+  says plainly when a lookup found nothing, names the item index and text in
+  every route, and says which peer selected.
 - Fingers, visibility (slice 4): a collapsed element or ancestor is hidden and
   the reason names the root-most culprit; opacity at or below 0.01 on the element
   or any ancestor is hidden; a zero-sized element is hidden and a zero-sized
