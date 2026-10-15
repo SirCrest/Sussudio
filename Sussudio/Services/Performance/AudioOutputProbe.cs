@@ -8,43 +8,6 @@ using Sussudio.Services.Audio;
 
 namespace Sussudio.Services.Performance;
 
-/// <summary>Counters from one probe run that explain what the capture saw (and how much of the tap was recorded).</summary>
-public sealed record AudioProbeDiagnostics(
-    int LoopbackPackets,
-    long LoopbackFrames,
-    double ActivationMs,
-    double FirstPacketMs,
-    int WaitTimeouts,
-    bool BufferTruncated,
-    long TapFrames,
-    int TapPackets,
-    long TapRejectedPackets);
-
-/// <summary>
-/// Response of CaptureAudioOutput. <see cref="Status"/> is <c>captured</c> when audible audio was captured (the analysis
-/// verdict then says whether it had defects), otherwise a visible failure: <c>unsupported-os</c>, <c>tap-busy</c>,
-/// <c>activation-failed</c>, <c>initialize-failed</c>, <c>capture-failed</c>, <c>no-audio-rendered</c> (the loopback
-/// delivered nothing, or only silence) or <c>wav-write-failed</c>. The analysis (and WAV, when requested) is still
-/// returned for <c>no-audio-rendered</c> and <c>wav-write-failed</c>.
-/// </summary>
-public sealed record AudioOutputProbeResult(
-    string Status,
-    string Message,
-    double RequestedSeconds,
-    double CapturedSeconds,
-    int ProcessId,
-    string Source,
-    string? WavPath,
-    long WavBytes,
-    AudioAnalysis? Analysis,
-    AudioLatencyResult? Latency,
-    AudioProbeDiagnostics? Diagnostics,
-    string? FailureStage,
-    string? FailureHResult)
-{
-    public bool Captured => Status == "captured";
-}
-
 /// <summary>
 /// Hears what this app actually plays: captures this process's rendered audio through Windows process loopback (the
 /// stream the mixer receives from the app, before volume of the endpoint and before the device), analyses it, and, on
@@ -195,8 +158,9 @@ public static class AudioOutputProbe
             }
         }
 
-        // The loopback stream delivers zero-filled packets while this process renders nothing (verified live on a quiet
-        // process: continuous 10 ms packets of exact zeros), so silence is the only evidence that no audio was rendered.
+        // The loopback stream delivers zero-filled packets while this process renders nothing (observed with a scratch harness on the live mixer, not
+        // yet through the app: continuous 10 ms packets of exact zeros), so silence is the only evidence that no audio
+        // was rendered (a capture with no packets at all is reported separately above).
         var capturedSeconds = Math.Round(capture.Frames / (double)SampleRate, 3);
         var silent = analysis.Verdict == "silent";
         var status = wavError is not null ? "wav-write-failed" : silent ? "no-audio-rendered" : "captured";

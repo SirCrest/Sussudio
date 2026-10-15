@@ -101,7 +101,10 @@ namespace Sussudio.Models
         FrameTrace = 61,
         GetTuningKnobs = 62,
         SetTuningKnob = 63,
-        GetLogTail = 64
+        GetLogTail = 64,
+        CaptureAudioOutput = 65,
+        GetUiTree = 66,
+        InvokeUiElement = 67
     }
 }
 
@@ -132,8 +135,11 @@ namespace Sussudio.Tools
         public const string Gain = "gain";
         public const string Height = "height";
         public const string IncludeIdle = "includeIdle";
+        public const string InteractiveOnly = "interactiveOnly";
+        public const string MaxDepth = "maxDepth";
         public const string MaxEntries = "maxEntries";
         public const string MaxEvents = "maxEvents";
+        public const string MeasureLatency = "measureLatency";
         public const string MicrophoneVolumePercent = "microphoneVolumePercent";
         public const string Minutes = "minutes";
         public const string Mode = "mode";
@@ -147,9 +153,11 @@ namespace Sussudio.Tools
         public const string Quality = "quality";
         public const string Reset = "reset";
         public const string Resolution = "resolution";
+        public const string Root = "root";
         public const string Seconds = "seconds";
         public const string Section = "section";
         public const string SplitEncodeMode = "splitEncodeMode";
+        public const string Target = "target";
         public const string Text = "text";
         public const string TimeoutMs = "timeoutMs";
         public const string UseSelectionRange = "useSelectionRange";
@@ -422,6 +430,7 @@ namespace Sussudio.Tools
             RegisterFlashbackEntries(entries);
             RegisterVerificationEntries(entries);
             RegisterPerfTelemetryEntries(entries);
+            RegisterAgentSenseEntries(entries);
 
             return entries.Values.ToArray();
         }
@@ -513,6 +522,13 @@ namespace Sussudio.Tools
             Set(entries, AutomationCommandKind.GetTuningKnobs, "{ filter?: string }", ready: false, timeoutMs: DefaultTimeout, pathPolicy: AutomationCommandPathPolicy.None, "knobs [FILTER]", "List the SUSSUDIO_* tuning knobs with type, default, range, current and launch value, owner file and when a change takes effect. filter is a case-insensitive substring of the knob name.", Optional(AutomationPayloadKeys.Filter, AutomationPayloadFieldType.String));
             Set(entries, AutomationCommandKind.SetTuningKnob, "{ name: string, value?: string, reset?: bool }", ready: false, timeoutMs: DefaultTimeout, pathPolicy: AutomationCommandPathPolicy.None, "knob set <name> <value> | knob reset <name>", "Set a tuning knob (process environment variable) or, with reset true, restore its launch value. Values of the wrong type or outside the range are rejected, never clamped. The response states what must restart for the change to take effect; overrides are not persisted.", Required(AutomationPayloadKeys.Name, AutomationPayloadFieldType.String), Optional(AutomationPayloadKeys.Value, AutomationPayloadFieldType.String), Optional(AutomationPayloadKeys.Reset, AutomationPayloadFieldType.Boolean));
             Set(entries, AutomationCommandKind.GetLogTail, "{ maxEntries?: int, contains?: string }", ready: false, timeoutMs: DefaultTimeout, pathPolicy: AutomationCommandPathPolicy.None, "log tail [--max N] [--contains TEXT]", "Get the most recent app log lines (up to 4096 retained) plus per-caller and per-tag line counts for spotting log spam. contains filters lines by case-insensitive substring.", Optional(AutomationPayloadKeys.MaxEntries, AutomationPayloadFieldType.Integer), Optional(AutomationPayloadKeys.Contains, AutomationPayloadFieldType.String));
+        }
+
+        private static void RegisterAgentSenseEntries(Dictionary<AutomationCommandKind, AutomationCommandMetadata> entries)
+        {
+            Set(entries, AutomationCommandKind.CaptureAudioOutput, "{ seconds?: double, outputPath?: string, measureLatency?: bool }", ready: false, timeoutMs: AutomationPipeProtocol.ExtendedResponseTimeoutMs, pathPolicy: AutomationCommandPathPolicy.WriteFile, "audio listen [--seconds N] [--wav PATH] [--latency]", "Listen to what Sussudio actually renders: records the app's own audio output (Windows process loopback, mixed before the endpoint) for seconds (0.5 to 30, default 5) and returns an analysis (RMS and peak dBFS per channel, clipping, clicks, dropouts, packet discontinuities, verdict). outputPath writes the captured audio as a float WAV. measureLatency also estimates capture-delivery-to-mixer latency by correlating the capture-delivery tap with the loopback signal; it excludes device input latency and endpoint output latency. Silent output is reported as status no-audio-rendered, never as a pass.", Optional(AutomationPayloadKeys.Seconds, AutomationPayloadFieldType.Number), Optional(AutomationPayloadKeys.OutputPath, AutomationPayloadFieldType.String), Optional(AutomationPayloadKeys.MeasureLatency, AutomationPayloadFieldType.Boolean));
+            Set(entries, AutomationCommandKind.GetUiTree, "{ root?: string, maxDepth?: int, interactiveOnly?: bool }", ready: false, timeoutMs: AutomationPipeProtocol.ExtendedResponseTimeoutMs, pathPolicy: AutomationCommandPathPolicy.None, "ui tree [--root NAME] [--depth N] [--all]", "Read the live WinUI visual tree (window content plus open popups and flyouts) as JSON: per element the type, x:Name, AutomationId, automation name, visible text, enabled state, effective visibility, toggle state, range value, selected item, expand state, bounds in window DIPs, supported automation patterns and keyboard accelerators. root limits the walk to one element, resolved like an invoke target (x:Name, AutomationId, automation name, visible text or a path from an earlier tree); maxDepth bounds depth (1 to 64, default 10); interactiveOnly (default true) lists only elements that expose an operable automation pattern (buttons, toggles, sliders, text boxes, selectors, expanders) without the layout containers around them, and false lists every element. The node count is capped and the response says when it truncated.", Optional(AutomationPayloadKeys.Root, AutomationPayloadFieldType.String), Optional(AutomationPayloadKeys.MaxDepth, AutomationPayloadFieldType.Integer), Optional(AutomationPayloadKeys.InteractiveOnly, AutomationPayloadFieldType.Boolean));
+            Set(entries, AutomationCommandKind.InvokeUiElement, "{ target: string, action?: string, value?: string, force?: bool }", ready: false, timeoutMs: AutomationPipeProtocol.ExtendedResponseTimeoutMs, pathPolicy: AutomationCommandPathPolicy.None, "ui invoke <target> [action] [value] [--force]", "Operate a UI control through its automation peer. target is resolved by x:Name, then AutomationId, then automation name, then visible text; an ambiguous target is rejected with the candidate paths. action is invoke (default for buttons), toggle, set-value, select, expand, collapse, focus or scroll-into-view; the action must be supported by the element. Hidden or disabled elements are rejected unless force is true. The response carries the element state re-read after the action. Keyboard accelerators cannot be raised through a public API: invoke the element that owns the accelerator instead.", Required(AutomationPayloadKeys.Target, AutomationPayloadFieldType.String), Optional(AutomationPayloadKeys.Action, AutomationPayloadFieldType.String), Optional(AutomationPayloadKeys.Value, AutomationPayloadFieldType.String), Optional(AutomationPayloadKeys.Force, AutomationPayloadFieldType.Boolean));
         }
 
         private static int DefaultTimeout => AutomationPipeProtocol.DefaultResponseTimeoutMs;

@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using FFmpeg.AutoGen;
 using Sussudio.Models;
+using Sussudio.Services.Automation;
 
 namespace Sussudio.Services.Contracts
 {
@@ -33,6 +34,8 @@ namespace Sussudio.Services.Contracts
         Task ResizeToAsync(int width, int height, CancellationToken cancellationToken = default);
         Task SnapToRegionAsync(AutomationWindowAction region, CancellationToken cancellationToken = default);
         Task<WindowScreenshotResult> CaptureWindowScreenshotAsync(string outputPath, CancellationToken cancellationToken = default);
+        Task<UiTreeResult> GetUiTreeAsync(UiTreeRequest request, CancellationToken cancellationToken = default);
+        Task<UiInvokeResult> InvokeUiElementAsync(UiInvokeRequest request, CancellationToken cancellationToken = default);
     }
 
     // Diagnostics facade consumed by the command dispatcher and MCP/ssctl tools.

@@ -49,6 +49,8 @@ internal static partial class CommandHandlers
             "knobs" => HandleKnobsAsync(context),
             "knob" => HandleKnobAsync(context),
             "log" => HandleLogAsync(context),
+            "audio" => HandleAudioAsync(context),
+            "ui" => HandleUiAsync(context),
             _ => throw new UsageException($"Unknown command '{arguments[0]}'.")
         };
     }

@@ -14,6 +14,7 @@ using Microsoft.UI.Xaml.Media.Animation;
 using Sussudio.Controllers;
 using Sussudio.Models;
 using Sussudio.Services.Audio;
+using Sussudio.Services.Automation;
 using Sussudio.Services.Gpu;
 using Sussudio.Services.Preview;
 using Sussudio.ViewModels;
@@ -1186,6 +1187,15 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 ViewModel = ViewModel
             });
 
+    private UiAutomationBridge? _uiAutomationBridge;
+
+    private UiAutomationBridge UiAutomationBridge =>
+        _uiAutomationBridge ??= new UiAutomationBridge(new UiAutomationBridgeContext
+        {
+            GetContent = () => Content,
+            InvokeOnUiThreadAsync = InvokeOnUiThreadAsync
+        });
+
     private AppWindow InitializeNativeShellWindow()
     {
         var result = _nativeWindowBootstrapController.Initialize(this, ViewModel.SetWindowHandle);
@@ -1304,6 +1314,12 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         string outputPath,
         CancellationToken cancellationToken = default)
         => _windowScreenshotController.CaptureAsync(outputPath, cancellationToken);
+
+    public Task<UiTreeResult> GetUiTreeAsync(UiTreeRequest request, CancellationToken cancellationToken = default)
+        => UiAutomationBridge.GetTreeAsync(request, cancellationToken);
+
+    public Task<UiInvokeResult> InvokeUiElementAsync(UiInvokeRequest request, CancellationToken cancellationToken = default)
+        => UiAutomationBridge.InvokeAsync(request, cancellationToken);
 
     private void InitializeControlBarAnimationController()
     {

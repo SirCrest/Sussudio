@@ -65,6 +65,12 @@
     <Compile Include="..\..\Sussudio\Services\Performance\AudioLatencyAnalysis.cs" Link="Production\AudioLatencyAnalysis.cs" />
     <Compile Include="..\..\Sussudio\Services\Performance\AudioMonitorTap.cs" Link="Production\AudioMonitorTap.cs" />
     <Compile Include="..\..\Sussudio\Services\Performance\AudioWavWriter.cs" Link="Production\AudioWavWriter.cs" />
+    <Compile Include="..\..\Sussudio\Services\Performance\AudioOutputProbeModels.cs" Link="Production\AudioOutputProbeModels.cs" />
+    <Compile Include="..\..\Sussudio\Services\Automation\UiAutomationModels.cs" Link="Production\UiAutomationModels.cs" />
+    <Compile Include="..\..\Sussudio\Services\Automation\UiTargetResolver.cs" Link="Production\UiTargetResolver.cs" />
+    <Compile Include="..\..\Sussudio\Services\Automation\UiActionPlanner.cs" Link="Production\UiActionPlanner.cs" />
+    <Compile Include="..\..\Sussudio\Services\Automation\UiSelectionMatcher.cs" Link="Production\UiSelectionMatcher.cs" />
+    <Compile Include="..\..\Sussudio\Services\Automation\UiVisibilityRules.cs" Link="Production\UiVisibilityRules.cs" />
   </ItemGroup>
   <ItemGroup>
     <!-- Tool-side performance analysis (frame trace analyzer, experiment runner): pure code shared with ssctl and McpServer. -->
