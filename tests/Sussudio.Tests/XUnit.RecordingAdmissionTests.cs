@@ -83,7 +83,7 @@ internal static partial class Program
             else if (path == "gpu")
             {
                 captureType.GetMethod("EnqueueGpuRecordingFrame", BindingFlags.Instance | BindingFlags.NonPublic)!
-                    .Invoke(capture, new object[] { encoder, new IntPtr(1234), 3, 731L });
+                    .Invoke(capture, new object[] { encoder, new IntPtr(1234), 3, 731L, 4242L });
             }
             else
             {

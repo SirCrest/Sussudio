@@ -1246,7 +1246,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameTryEn
         return false;
     }
 
-    public bool TryEnqueueGpuVideoFrame(IntPtr d3d11Texture2D, int subresourceIndex)
+    public bool TryEnqueueGpuVideoFrame(IntPtr d3d11Texture2D, int subresourceIndex, long arrivalTick = -1)
     {
         var queue = _gpuQueue;
         var rejectReason = GetGpuInputRejectReason(queue, d3d11Texture2D);
@@ -1264,7 +1264,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameTryEn
         }
 
         Marshal.AddRef(d3d11Texture2D);
-        var packet = new GpuFramePacket(d3d11Texture2D, subresourceIndex) { EnqueueQpc = Stopwatch.GetTimestamp() };
+        var packet = new GpuFramePacket(d3d11Texture2D, subresourceIndex) { EnqueueQpc = Stopwatch.GetTimestamp(), ArrivalTick = arrivalTick };
         var enqueueResult = TryEnqueueGpuPacket(queue!, packet);
         if (enqueueResult != VideoEnqueueResult.Overloaded)
         {
@@ -1639,8 +1639,11 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameTryEn
     private readonly record struct AudioSamplePacket(byte[] Buffer, int Length);
     private readonly record struct GpuFramePacket(IntPtr Texture, int Subresource)
     {
-        // QPC enqueue stamp for queue_dwell; an init property so the packet keeps its original constructor.
+        // QPC enqueue stamp for queue_dwell and the frame's arrival tick (the frame-trace id); init properties so the
+        // packet keeps its original constructor. An unset arrival tick is read as -1 (no frame identity).
         public long EnqueueQpc { get; init; }
+
+        public long ArrivalTick { get; init; }
     }
     private sealed class RecordingBoundaryFence
     {
@@ -2146,11 +2149,12 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameTryEn
         while (drainedCount < maxPackets && reader.TryRead(out var packet))
         {
             DecrementQueueDepth(ref _gpuQueueDepth, "gpu");
-            // The GPU lane carries a texture, not a frame identity, so its trace id is -1.
-            EncoderPerfMetrics.Flashback.RecordQueueDwell(packet.EnqueueQpc, -1);
+            // The trace id is the frame's arrival tick when the producer supplied it, otherwise -1.
+            var perfFrameId = packet.ArrivalTick > 0 ? packet.ArrivalTick : -1;
+            EncoderPerfMetrics.Flashback.RecordQueueDwell(packet.EnqueueQpc, perfFrameId);
             try
             {
-                _encoder.PerfFrameId = -1;
+                _encoder.PerfFrameId = perfFrameId;
                 _encoder.SendGpuVideoFrame(packet.Texture, packet.Subresource);
                 Interlocked.Increment(ref _videoFramesSubmittedToEncoder);
                 var pts = AdvanceEncodedVideoFrameAndGetPts();

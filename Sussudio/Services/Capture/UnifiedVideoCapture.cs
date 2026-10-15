@@ -1020,7 +1020,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
         var gpuEncoder = Volatile.Read(ref _gpuRecordingEncoder);
         if (gpuEncoder != null && gpuTexture != IntPtr.Zero)
         {
-            EnqueueGpuRecordingFrame(gpuEncoder, gpuTexture, gpuSubresource, sourceSequence);
+            EnqueueGpuRecordingFrame(gpuEncoder, gpuTexture, gpuSubresource, sourceSequence, arrivalTick);
         }
         else
         {
@@ -1029,7 +1029,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
 
         if (gpuTexture != IntPtr.Zero)
         {
-            EnqueueFlashbackGpuFrame(gpuTexture, gpuSubresource, sourceSequence);
+            EnqueueFlashbackGpuFrame(gpuTexture, gpuSubresource, sourceSequence, arrivalTick);
         }
         else
         {
@@ -1489,12 +1489,12 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
         }
     }
 
-    private void EnqueueGpuRecordingFrame(IGpuVideoFrameTryEncoder encoder, IntPtr texture, int subresource, long sourceSequence)
+    private void EnqueueGpuRecordingFrame(IGpuVideoFrameTryEncoder encoder, IntPtr texture, int subresource, long sourceSequence, long arrivalTick)
     {
         Interlocked.Increment(ref _recordingFramesDelivered);
         try
         {
-            var accepted = encoder.TryEnqueueGpuVideoFrame(texture, subresource);
+            var accepted = encoder.TryEnqueueGpuVideoFrame(texture, subresource, arrivalTick);
             if (accepted)
             {
                 Interlocked.Increment(ref _videoFramesWrittenToSink);
@@ -1606,7 +1606,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
         }
     }
 
-    private void EnqueueFlashbackGpuFrame(IntPtr texture, int subresource, long sourceSequence)
+    private void EnqueueFlashbackGpuFrame(IntPtr texture, int subresource, long sourceSequence, long arrivalTick)
     {
         var sink = Volatile.Read(ref _flashbackSink);
         if (sink == null)
@@ -1616,7 +1616,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
 
         try
         {
-            var accepted = sink.TryEnqueueGpuVideoFrame(texture, subresource);
+            var accepted = sink.TryEnqueueGpuVideoFrame(texture, subresource, arrivalTick);
             RecordFlashbackOutcome(sink, sourceSequence, accepted);
         }
         catch (Exception ex)

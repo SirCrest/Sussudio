@@ -1094,11 +1094,12 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameTryEncode
         while (drainedCount < maxPackets && reader.TryRead(out var packet))
         {
             DecrementQueueDepth(ref _gpuQueueDepth, "gpu");
-            // The GPU lane carries a texture, not a frame identity, so its trace id is -1.
-            EncoderPerfMetrics.Recording.RecordQueueDwell(packet.EnqueueQpc, -1);
+            // The trace id is the frame's arrival tick when the producer supplied it, otherwise -1.
+            var perfFrameId = packet.ArrivalTick > 0 ? packet.ArrivalTick : -1;
+            EncoderPerfMetrics.Recording.RecordQueueDwell(packet.EnqueueQpc, perfFrameId);
             try
             {
-                _encoder.PerfFrameId = -1;
+                _encoder.PerfFrameId = perfFrameId;
                 _encoder.SendGpuVideoFrame(packet.Texture, packet.Subresource);
                 Interlocked.Increment(ref _videoFramesSubmittedToEncoder);
                 Interlocked.Exchange(ref _lastVideoWriteTick, Environment.TickCount64);
@@ -1422,9 +1423,12 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameTryEncode
     }
 
     // The QPC enqueue stamps are init properties, not positional, so the packets keep their original constructors.
+    // ArrivalTick is the frame's arrival tick (the frame-trace id); unset is read as -1 (no frame identity).
     private readonly record struct GpuFramePacket(IntPtr Texture, int Subresource)
     {
         public long EnqueueQpc { get; init; }
+
+        public long ArrivalTick { get; init; }
     }
 
     private readonly record struct CudaFramePacket(IntPtr Frame)
@@ -1432,7 +1436,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameTryEncode
         public long EnqueueQpc { get; init; }
     }
 
-    public bool TryEnqueueGpuVideoFrame(IntPtr d3d11Texture2D, int subresourceIndex)
+    public bool TryEnqueueGpuVideoFrame(IntPtr d3d11Texture2D, int subresourceIndex, long arrivalTick = -1)
     {
         var queue = _gpuQueue;
         if (_disposed || !_started || queue == null || d3d11Texture2D == IntPtr.Zero)
@@ -1441,7 +1445,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameTryEncode
         }
 
         Marshal.AddRef(d3d11Texture2D);
-        var packet = new GpuFramePacket(d3d11Texture2D, subresourceIndex) { EnqueueQpc = Stopwatch.GetTimestamp() };
+        var packet = new GpuFramePacket(d3d11Texture2D, subresourceIndex) { EnqueueQpc = Stopwatch.GetTimestamp(), ArrivalTick = arrivalTick };
 
         var enqueueResult = TryEnqueueGpuPacket(queue, packet);
         if (enqueueResult != VideoEnqueueResult.Overloaded)
