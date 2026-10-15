@@ -72,16 +72,29 @@ function Get-Data($result) {
     return $null
 }
 
-function Get-MedianIntervalMs {
-    param([string] $Label)
-    $timeline = Invoke-Ssctl $Label @('timeline', '--max', '24')
-    # Timestamps are read from the raw text: PowerShell 7 would otherwise turn them into culture-formatted DateTime values.
-    $times = @([regex]::Matches($timeline.Raw, '"TimestampUtc"\s*:\s*"([^"]+)"') | ForEach-Object {
-            [DateTimeOffset]::Parse($_.Groups[1].Value, [Globalization.CultureInfo]::InvariantCulture)
-        })
+# Spacing of the diagnostics hub ticks, from the performance timeline. Only entries newer than $After count, so a
+# knob change is measured on ticks that ran under it. The snapshot refresh has occasional latency spikes of several
+# hundred milliseconds that dominate the median, so the lower quartile is the figure that follows the poll interval.
+function Get-HubIntervalStats {
+    param([string] $Label, [DateTimeOffset] $After)
+    $timeline = Invoke-Ssctl $Label @('timeline', '--max', '60')
+    # Timestamps are read from the raw text (PowerShell 7 would turn them into culture-formatted DateTime values),
+    # only after the "Data" property: the response envelope has its own TimestampUtc, and JSON escapes '+'.
+    $raw = $timeline.Raw
+    $dataIndex = $raw.IndexOf('"Data"', [StringComparison]::Ordinal)
+    if ($dataIndex -lt 0) { return $null }
+    $times = @([regex]::Matches($raw.Substring($dataIndex), '"TimestampUtc"\s*:\s*"([^"]+)"') | ForEach-Object {
+            [DateTimeOffset]::Parse([regex]::Unescape($_.Groups[1].Value), [Globalization.CultureInfo]::InvariantCulture)
+        } | Where-Object { $_ -ge $After })
     if ($times.Count -lt 6) { return $null }
-    $deltas = @(@(for ($i = 1; $i -lt $times.Count; $i++) { ($times[$i] - $times[$i - 1]).TotalMilliseconds }) | Sort-Object)
-    return [double]$deltas[[int][Math]::Floor($deltas.Count / 2)]
+    $allDeltas = @(for ($i = 1; $i -lt $times.Count; $i++) { ($times[$i] - $times[$i - 1]).TotalMilliseconds })
+    $deltas = @($allDeltas | Where-Object { $_ -gt 0 } | Sort-Object)
+    if ($deltas.Count -lt 5) { return $null }
+    return [pscustomobject]@{
+        Intervals = $deltas.Count
+        MedianMs  = [double]$deltas[[int][Math]::Floor($deltas.Count / 2)]
+        P25Ms     = [double]$deltas[[int][Math]::Floor($deltas.Count / 4)]
+    }
 }
 
 $startedUtc = (Get-Date).ToUniversalTime().ToString('o')
@@ -175,23 +188,29 @@ if ($null -ne $knobData) {
 }
 
 # 6. Live knob: the diagnostics hub tick should follow SUSSUDIO_DIAGNOSTICS_POLL_MS.
-$baselineMs = Get-MedianIntervalMs '06a-timeline-baseline'
+Start-Sleep -Seconds 12
+$baseline = Get-HubIntervalStats '06a-timeline-baseline' ([DateTimeOffset]::UtcNow.AddSeconds(-12))
 $set = Invoke-Ssctl '06b-knob-set-250' @('knob', 'set', 'SUSSUDIO_DIAGNOSTICS_POLL_MS', '250')
+$setAt = [DateTimeOffset]::UtcNow
 Add-Check 'knob set accepts an in-range value' ($set.Exit -eq 0) "exit=$($set.Exit)"
-Start-Sleep -Seconds 8
-$fastMs = Get-MedianIntervalMs '06c-timeline-250'
+Start-Sleep -Seconds 12
+$fast = Get-HubIntervalStats '06c-timeline-250' $setAt.AddSeconds(1)
 $reset = Invoke-Ssctl '06d-knob-reset' @('knob', 'reset', 'SUSSUDIO_DIAGNOSTICS_POLL_MS')
+$resetAt = [DateTimeOffset]::UtcNow
 Add-Check 'knob reset' ($reset.Exit -eq 0) "exit=$($reset.Exit)"
-Start-Sleep -Seconds 14
-$restoredMs = Get-MedianIntervalMs '06e-timeline-restored'
-if ($null -ne $baselineMs -and $null -ne $fastMs) {
-    Add-Check 'hub ticks faster after set 250' ($fastMs -lt ($baselineMs * 0.75)) ("median interval baseline={0:N0} ms, at 250={1:N0} ms" -f $baselineMs, $fastMs)
+Start-Sleep -Seconds 12
+$restored = Get-HubIntervalStats '06e-timeline-restored' $resetAt.AddSeconds(1)
+if ($null -ne $baseline -and $null -ne $fast) {
+    Add-Check 'hub ticks faster after set 250' ($fast.P25Ms -lt ($baseline.P25Ms * 0.75)) ("lower-quartile interval baseline={0:N0} ms, at 250={1:N0} ms (medians {2:N0} and {3:N0} ms, {4} and {5} intervals)" -f $baseline.P25Ms, $fast.P25Ms, $baseline.MedianMs, $fast.MedianMs, $baseline.Intervals, $fast.Intervals)
 }
 else {
     Add-Check 'hub ticks faster after set 250' $false 'timeline had too few entries to measure'
 }
-if ($null -ne $baselineMs -and $null -ne $restoredMs) {
-    Add-Check 'hub tick rate restored after reset' ([Math]::Abs($restoredMs - $baselineMs) -lt ($baselineMs * 0.5)) ("median interval baseline={0:N0} ms, restored={1:N0} ms" -f $baselineMs, $restoredMs)
+if ($null -ne $baseline -and $null -ne $restored) {
+    Add-Check 'hub tick rate restored after reset' ([Math]::Abs($restored.P25Ms - $baseline.P25Ms) -lt ($baseline.P25Ms * 0.25)) ("lower-quartile interval baseline={0:N0} ms, restored={1:N0} ms ({2} intervals)" -f $baseline.P25Ms, $restored.P25Ms, $restored.Intervals)
+}
+else {
+    Add-Check 'hub tick rate restored after reset' $false 'timeline had too few entries to measure'
 }
 
 # 7. Rejections: out of range, unknown name, credential.
