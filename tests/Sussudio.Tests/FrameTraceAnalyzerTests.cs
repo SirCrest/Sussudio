@@ -777,7 +777,7 @@ public sealed class FrameTraceAnalyzerTests
         Assert.Equal(20, analysis.Frames.Total);
         Assert.Equal(2, Assert.Single(analysis.AmbientEvents, e => e.Name == "gc.pause").Count);
         Assert.DoesNotContain(analysis.Stages, stage => stage.Stage == "gc.pause");
-        Assert.Empty(analysis.Warnings.Where(w => w.Contains("QPC", StringComparison.OrdinalIgnoreCase)));
+        Assert.DoesNotContain(analysis.Warnings, w => w.Contains("QPC", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]

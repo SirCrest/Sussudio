@@ -732,7 +732,7 @@ public sealed class PerfExperimentRunnerTests : IDisposable
         Assert.Equal(PerfExperimentStatus.Completed, result.Status);
         Assert.Equal(2, result.Runs.Count);
         Assert.All(result.Metrics, metric => Assert.Equal("baseline", Assert.Single(metric.Variants).Verdict.Value));
-        Assert.Empty(app.Calls.Where(c => c.Command == "SetTuningKnob"));
+        Assert.DoesNotContain(app.Calls, c => c.Command == "SetTuningKnob");
     }
 
     [Fact]

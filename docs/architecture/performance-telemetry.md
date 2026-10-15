@@ -1199,7 +1199,14 @@ Everything else is verified end to end against the live app (section 6).
 `scripts\validate.ps1` plus live runs whose artifacts live under
 `artifacts/perf-overhaul/` and can be re-run: a perf window over steady
 preview, a frame trace dumped and analyzed, a knob A/B experiment, an audio
-listen, and a UI tree read and invoke.
+listen, and a UI tree read and invoke. Two scripts make the command surface
+repeatable against any build: `scripts/performance/Verify-PerfTelemetry.ps1`
+(report, window, marker, trace, knobs, log tail; 35 checks) and
+`scripts/performance/Verify-AgentSenses.ps1` (audio listen, UI tree and
+invoke; 24 checks). Each writes `verify-result.json` and exits non-zero on
+any failed check. With a silent capture source the audio checks still pass
+on the `no-audio-rendered` path; `observations.listenStatus` says which path
+ran, and a `captured` run with a measured latency needs audible content.
 
 ## 7. Agent playbook
 

@@ -599,6 +599,11 @@ recording and audio sites call into it, never the other way round.
   check for this surface: it drives ssctl through report, window, marker,
   trace, knob and log-tail, saves each raw response and writes
   `verify-result.json`. It starts no preview or recording.
+  `scripts/performance/Verify-AgentSenses.ps1` is the matching check for the
+  senses: audio listen (loopback packets, WAV, latency or an explained
+  refusal, tap-busy, input rejection) and UI tree and invoke (toggle, slider,
+  rejections, hidden targets). It returns the Stats overlay and preview
+  volume to where they started and changes no persisted setting.
 
 ## Agent Senses (Ears And Fingers)
 
