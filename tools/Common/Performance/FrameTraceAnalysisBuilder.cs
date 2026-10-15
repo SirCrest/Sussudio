@@ -20,6 +20,7 @@ internal static class FrameTraceAnalysisBuilder
     private const double ExpectedStageFraction = 0.5;
     private const double MinStageAttributionMs = 1.0;
     private const double MinAmbientAttributionMs = 2.0;
+    private const double DirectCauseCoverage = 0.75;
     private const int MaxEventAttributions = 6;
     private const int MaxMarkerAttributions = 3;
     private const int MaxMarkerDetailChars = 160;
@@ -419,7 +420,7 @@ internal static class FrameTraceAnalysisBuilder
                 PerfMath.Round((presents[k + 1].Us - capture.MinUs) / 1000d),
                 PerfMath.Round(intervals[k]),
                 arrivalInterval is { } value ? PerfMath.Round(value) : null,
-                DescribeCause(attributions),
+                DescribeCause(attributions, intervals[k] - median),
                 attributions));
         }
 
@@ -528,12 +529,22 @@ internal static class FrameTraceAnalysisBuilder
     private static string Truncate(string text)
         => text.Length <= MaxMarkerDetailChars ? text : text[..MaxMarkerDetailChars] + "...";
 
-    private static string DescribeCause(List<TraceAttribution> attributions)
+    // An event's figure is how long it overlapped the interval, a stage's or arrival's is how much it exceeded its median,
+    // so the two do not rank against each other directly. A late arrival or a grown stage is on the frame's own path:
+    // when it covers most of the interval's excess it is the cause, and an event on another thread that merely
+    // overlapped (an automation command, a UI stall, a hub refresh) is context. A GC pause stops every managed thread,
+    // the capture loop included, so it can be why the frame arrived late and keeps its place by overlap.
+    private static string DescribeCause(List<TraceAttribution> attributions, double intervalExcessMs)
     {
         var top = attributions.FirstOrDefault(a => a.Ms > 0);
         if (top is null)
         {
             return "no stage grew, no arrival gap and no ambient event overlapped: the delay is outside the traced stages";
+        }
+
+        if (top.Kind == "event" && top.Name != "gc.pause")
+        {
+            top = attributions.FirstOrDefault(a => a.Kind is "arrival" or "stage" && a.Ms >= intervalExcessMs * DirectCauseCoverage) ?? top;
         }
 
         return top.Kind switch

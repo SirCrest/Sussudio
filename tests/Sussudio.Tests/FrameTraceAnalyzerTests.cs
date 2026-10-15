@@ -318,6 +318,82 @@ public sealed class FrameTraceAnalyzerTests
         Assert.Contains("arrival", hitch.LikelyCause);
     }
 
+    // Seen live: a 27 ms present interval whose source frame arrived 26.5 ms after the previous one was blamed on a
+    // 44 ms automation command that ran on another thread at the same time. Overlap is not excess: the renderer cannot
+    // present a frame that has not arrived, whatever else ran meanwhile.
+    [Theory]
+    [InlineData("automation.command")]
+    [InlineData("ui.dispatcher_latency")]
+    [InlineData("telemetry.hub_refresh")]
+    public void ALateArrivalThatExplainsTheHitchOutranksAnEventThatMerelyOverlapsIt(string eventName)
+    {
+        var trace = LateArrivalAtFrame40(lateByMs: 12);
+        trace.Span(eventName, 100 + 39 * 16.667 - 5, 40, -1, tid: 9);
+        var analysis = FrameTraceAnalyzer.AnalyzeJson(trace.Build());
+
+        var hitch = analysis.PresentCadence!.Hitches[0];
+        Assert.Contains("late arrival", hitch.LikelyCause);
+        var overlapping = Assert.Single(hitch.Attributions, a => a.Name == eventName);
+        Assert.True(overlapping.Ms > hitch.Attributions.Single(a => a.Kind == "arrival").Ms, "the event must overlap more than the arrival excess for this case to mean anything");
+    }
+
+    // A GC pause stops every managed thread, the capture loop included, so it can be why the frame arrived late.
+    [Fact]
+    public void AGcPauseOverlappingALateArrivalIsStillNamed()
+    {
+        var trace = LateArrivalAtFrame40(lateByMs: 12);
+        trace.Span("gc.pause", 100 + 39 * 16.667 + 2, 20, -1, tid: 9);
+        var analysis = FrameTraceAnalyzer.AnalyzeJson(trace.Build());
+
+        Assert.Contains("gc.pause", analysis.PresentCadence!.Hitches[0].LikelyCause);
+    }
+
+    // The arrival gap clears the attribution threshold but covers well under the interval's excess (the frame also
+    // waited 14 ms after submit), so the event that covers the whole interval stays the named cause.
+    [Fact]
+    public void AnArrivalGapThatExplainsLittleOfTheHitchDoesNotOutrankTheEvent()
+    {
+        var trace = new TraceBuilder();
+        for (var i = 0; i < 100; i++)
+        {
+            trace.Frame(100 + i * 16.667 + (i >= 40 ? 10 : 0), presentDelayMs: i == 40 ? 14 : 0);
+        }
+
+        trace.Span("automation.command", 100 + 39 * 16.667 - 5, 60, -1, tid: 9);
+        var analysis = FrameTraceAnalyzer.AnalyzeJson(trace.Build());
+
+        var hitch = analysis.PresentCadence!.Hitches[0];
+        Assert.Contains(hitch.Attributions, a => a.Kind == "arrival");
+        Assert.Contains("automation.command", hitch.LikelyCause);
+    }
+
+    // With nothing on the frame's own path to blame, an overlapping event is named exactly as before.
+    [Fact]
+    public void AnOverlappingEventIsNamedWhenNoArrivalGapOrStageExplainsTheHitch()
+    {
+        var trace = new TraceBuilder();
+        for (var i = 0; i < 100; i++)
+        {
+            trace.Frame(100 + i * 16.667, presentDelayMs: i == 50 ? 14 : 0);
+        }
+
+        trace.Span("automation.command", 100 + 50 * 16.667, 30, -1, tid: 9);
+        var analysis = FrameTraceAnalyzer.AnalyzeJson(trace.Build());
+
+        Assert.Contains("automation.command", analysis.PresentCadence!.Hitches[0].LikelyCause);
+    }
+
+    private static TraceBuilder LateArrivalAtFrame40(double lateByMs)
+    {
+        var trace = new TraceBuilder();
+        for (var i = 0; i < 100; i++)
+        {
+            trace.Frame(100 + i * 16.667 + (i >= 40 ? lateByMs : 0));
+        }
+
+        return trace;
+    }
+
     [Fact]
     public void FramesMissingStagesAreCountedAndNotDropped()
     {

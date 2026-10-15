@@ -974,6 +974,12 @@ Written before the code, per the testing policy:
   payload keys from the shared vocabulary.
 - Analyzer: malformed and truncated trace JSON produce an error, not a
   crash; frames missing stages are counted, not dropped.
+- Hitch cause (live window 3, written before the code): a late arrival that
+  explains the interval is named over an automation command, UI stall or hub
+  refresh that overlapped longer; a GC pause overlapping a late arrival is
+  still named; an arrival gap covering little of the excess does not outrank
+  an event covering all of it; with no arrival gap and no grown stage the
+  overlapping event is named as before.
 - QPC to 100 ns conversion and ingress classification (slice 2a, written
   before the code): `ticks * 10_000_000` overflows a `long` after 25.6 hours
   of uptime at 10 MHz, so the conversion must stay exact far beyond that;
@@ -1175,7 +1181,13 @@ frames are listed with their per-stage breakdown. The report has:
   most on that frame, a late arrival, or an overlapping event (a GC pause, UI
   stall, automation command or Flashback segment rotation, or any other
   non-audio event of 2 ms or more such as a `telemetry.hub_refresh`), plus any
-  marker in the interval;
+  marker in the interval. An event's figure is its overlap with the interval
+  while a stage's or arrival's is its excess over the median, so they do not
+  rank directly: a late arrival or grown stage that covers at least 75 % of
+  the interval's excess is named ahead of an overlapping event on another
+  thread, which stays listed as context. A GC pause keeps its place by overlap,
+  because it stops the capture loop too (live window 3 had a 27 ms interval
+  after a 26.5 ms source gap blamed on a 44 ms automation command);
 - the slowest frames, events outside frames (`id = -1`), and drops counted per
   reason (`args.reason` of `preview.drop`, the names in `PreviewDropReasons`;
   a dropped slow frame names its reason, and a dump without reasons reports
