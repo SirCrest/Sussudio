@@ -23,7 +23,7 @@ namespace Sussudio.Services.Automation;
 // requests, validates payloads, delegates mutations to the view model, and
 // shapes every response with correlation and lifecycle fields for external
 // harnesses.
-public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
+public sealed partial class AutomationCommandDispatcher : IAutomationCommandDispatcher
 {
     // Trivial one-property capture and pipeline commands live with the ordered
     // port-mapped dispatcher that consumes them.
@@ -785,6 +785,27 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
 
             case AutomationCommandKind.SetMicrophoneVolume:
                 return await ExecuteSetMicrophoneVolumeCommandAsync(payload, correlationId, cancellationToken).ConfigureAwait(false);
+
+            case AutomationCommandKind.GetPerfReport:
+                return ExecuteGetPerfReportCommand(payload, correlationId);
+
+            case AutomationCommandKind.PerfWindow:
+                return ExecutePerfWindowCommand(payload, correlationId);
+
+            case AutomationCommandKind.AddPerfMarker:
+                return ExecuteAddPerfMarkerCommand(payload, correlationId);
+
+            case AutomationCommandKind.FrameTrace:
+                return await ExecuteFrameTraceCommandAsync(payload, correlationId, cancellationToken).ConfigureAwait(false);
+
+            case AutomationCommandKind.GetTuningKnobs:
+                return ExecuteGetTuningKnobsCommand(payload, correlationId);
+
+            case AutomationCommandKind.SetTuningKnob:
+                return ExecuteSetTuningKnobCommand(payload, correlationId);
+
+            case AutomationCommandKind.GetLogTail:
+                return ExecuteGetLogTailCommand(payload, correlationId);
 
             default:
                 return CreateResponse(

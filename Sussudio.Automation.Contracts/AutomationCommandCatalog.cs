@@ -94,7 +94,14 @@ namespace Sussudio.Models
         SelectMicrophoneDevice = 54,
         SetMicrophoneVolume = 55,
         SetFlashbackBufferMinutes = 56,
-        SetFlashbackGpuDecode = 57
+        SetFlashbackGpuDecode = 57,
+        GetPerfReport = 58,
+        PerfWindow = 59,
+        AddPerfMarker = 60,
+        FrameTrace = 61,
+        GetTuningKnobs = 62,
+        SetTuningKnob = 63,
+        GetLogTail = 64
     }
 }
 
@@ -109,23 +116,28 @@ namespace Sussudio.Tools
         public const string Assertions = "assertions";
         public const string AuthToken = "authToken";
         public const string BitrateMbps = "bitrateMbps";
+        public const string Capacity = "capacity";
         public const string Condition = "condition";
+        public const string Contains = "contains";
         public const string DecoderCount = "decoderCount";
         public const string DeviceId = "deviceId";
         public const string DeviceName = "deviceName";
         public const string Enabled = "enabled";
         public const string Field = "field";
         public const string FilePath = "filePath";
+        public const string Filter = "filter";
         public const string Force = "force";
         public const string Format = "format";
         public const string FrameRate = "frameRate";
         public const string Gain = "gain";
         public const string Height = "height";
+        public const string IncludeIdle = "includeIdle";
         public const string MaxEntries = "maxEntries";
         public const string MaxEvents = "maxEvents";
         public const string MicrophoneVolumePercent = "microphoneVolumePercent";
         public const string Minutes = "minutes";
         public const string Mode = "mode";
+        public const string Name = "name";
         public const string Op = "op";
         public const string OutputPath = "outputPath";
         public const string PollMs = "pollMs";
@@ -133,10 +145,12 @@ namespace Sussudio.Tools
         public const string Preset = "preset";
         public const string PreviewVolumePercent = "previewVolumePercent";
         public const string Quality = "quality";
+        public const string Reset = "reset";
         public const string Resolution = "resolution";
         public const string Seconds = "seconds";
         public const string Section = "section";
         public const string SplitEncodeMode = "splitEncodeMode";
+        public const string Text = "text";
         public const string TimeoutMs = "timeoutMs";
         public const string UseSelectionRange = "useSelectionRange";
         public const string Value = "value";
@@ -144,6 +158,7 @@ namespace Sussudio.Tools
         public const string VideoFormat = "videoFormat";
         public const string Visible = "visible";
         public const string Width = "width";
+        public const string Window = "window";
         public const string X = "x";
         public const string Y = "y";
     }
@@ -406,6 +421,7 @@ namespace Sussudio.Tools
             RegisterUiEntries(entries);
             RegisterFlashbackEntries(entries);
             RegisterVerificationEntries(entries);
+            RegisterPerfTelemetryEntries(entries);
 
             return entries.Values.ToArray();
         }
@@ -486,6 +502,17 @@ namespace Sussudio.Tools
         {
             Set(entries, AutomationCommandKind.VerifyLastRecording, "{}", ready: false, timeoutMs: AutomationPipeProtocol.ExtendedResponseTimeoutMs, pathPolicy: AutomationCommandPathPolicy.None, "verify", "Verify the last recording.");
             Set(entries, AutomationCommandKind.VerifyFile, "{ filePath: string, verificationProfile?: string }", ready: false, timeoutMs: AutomationPipeProtocol.ExtendedResponseTimeoutMs, pathPolicy: AutomationCommandPathPolicy.ReadFile, "verify <path> [--profile NAME]", "Verify an arbitrary media file.", Required(AutomationPayloadKeys.FilePath, AutomationPayloadFieldType.String), Optional(AutomationPayloadKeys.VerificationProfile, AutomationPayloadFieldType.String));
+        }
+
+        private static void RegisterPerfTelemetryEntries(Dictionary<AutomationCommandKind, AutomationCommandMetadata> entries)
+        {
+            Set(entries, AutomationCommandKind.GetPerfReport, "{ window?: string, filter?: string, includeIdle?: bool }", ready: false, timeoutMs: DefaultTimeout, pathPolicy: AutomationCommandPathPolicy.None, "perf report [--window NAME] [--filter PREFIX] [--idle]", "Get the performance report: latency histograms, counters, hot-thread CPU, process, GC, DWM and active tuning overrides. Without window it covers the whole process lifetime; with window it returns the delta since that window began without closing it. filter is a metric-name prefix; metrics with no samples are omitted unless includeIdle is true.", Optional(AutomationPayloadKeys.Window, AutomationPayloadFieldType.String), Optional(AutomationPayloadKeys.Filter, AutomationPayloadFieldType.String), Optional(AutomationPayloadKeys.IncludeIdle, AutomationPayloadFieldType.Boolean));
+            Set(entries, AutomationCommandKind.PerfWindow, "{ action: string, name?: string }", ready: false, timeoutMs: DefaultTimeout, pathPolicy: AutomationCommandPathPolicy.None, "perf window begin|read|end|cancel|list [NAME]", "Manage named performance measurement windows (up to 16). action is begin, read, end, cancel or list. begin starts or restarts a window, read returns its report without closing it, end returns the report and closes it, cancel discards it, list shows open windows. name is required except for list.", Required(AutomationPayloadKeys.Action, AutomationPayloadFieldType.String), Optional(AutomationPayloadKeys.Name, AutomationPayloadFieldType.String));
+            Set(entries, AutomationCommandKind.AddPerfMarker, "{ text: string }", ready: false, timeoutMs: DefaultTimeout, pathPolicy: AutomationCommandPathPolicy.None, "perf mark <text>", "Add an annotation to the performance timeline, recorded with the time it was added; it appears in perf reports and in frame trace dumps.", Required(AutomationPayloadKeys.Text, AutomationPayloadFieldType.String));
+            Set(entries, AutomationCommandKind.FrameTrace, "{ action: string, capacity?: int, outputPath?: string }", ready: false, timeoutMs: AutomationPipeProtocol.ExtendedResponseTimeoutMs, pathPolicy: AutomationCommandPathPolicy.WriteFile, "perf trace start [--capacity N]|stop|status|dump [path]", "Control the frame trace flight recorder (off by default). action is start, stop, status or dump. start allocates the ring (capacity is rounded to a power of two between 4096 and 4194304 events), stop freezes it, status reports it, dump writes Chrome Trace Event JSON that Perfetto opens; dump without outputPath writes to a temporary file and returns its path.", Required(AutomationPayloadKeys.Action, AutomationPayloadFieldType.String), Optional(AutomationPayloadKeys.Capacity, AutomationPayloadFieldType.Integer), Optional(AutomationPayloadKeys.OutputPath, AutomationPayloadFieldType.String));
+            Set(entries, AutomationCommandKind.GetTuningKnobs, "{ filter?: string }", ready: false, timeoutMs: DefaultTimeout, pathPolicy: AutomationCommandPathPolicy.None, "knobs [FILTER]", "List the SUSSUDIO_* tuning knobs with type, default, range, current and launch value, owner file and when a change takes effect. filter is a case-insensitive substring of the knob name.", Optional(AutomationPayloadKeys.Filter, AutomationPayloadFieldType.String));
+            Set(entries, AutomationCommandKind.SetTuningKnob, "{ name: string, value?: string, reset?: bool }", ready: false, timeoutMs: DefaultTimeout, pathPolicy: AutomationCommandPathPolicy.None, "knob set <name> <value> | knob reset <name>", "Set a tuning knob (process environment variable) or, with reset true, restore its launch value. Values of the wrong type or outside the range are rejected, never clamped. The response states what must restart for the change to take effect; overrides are not persisted.", Required(AutomationPayloadKeys.Name, AutomationPayloadFieldType.String), Optional(AutomationPayloadKeys.Value, AutomationPayloadFieldType.String), Optional(AutomationPayloadKeys.Reset, AutomationPayloadFieldType.Boolean));
+            Set(entries, AutomationCommandKind.GetLogTail, "{ maxEntries?: int, contains?: string }", ready: false, timeoutMs: DefaultTimeout, pathPolicy: AutomationCommandPathPolicy.None, "log tail [--max N] [--contains TEXT]", "Get the most recent app log lines (up to 4096 retained) plus per-caller and per-tag line counts for spotting log spam. contains filters lines by case-insensitive substring.", Optional(AutomationPayloadKeys.MaxEntries, AutomationPayloadFieldType.Integer), Optional(AutomationPayloadKeys.Contains, AutomationPayloadFieldType.String));
         }
 
         private static int DefaultTimeout => AutomationPipeProtocol.DefaultResponseTimeoutMs;

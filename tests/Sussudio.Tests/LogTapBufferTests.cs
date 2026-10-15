@@ -153,7 +153,9 @@ public sealed class LogTapBufferTests
     {
         var tap = new LogTapBuffer();
         using var stop = new CancellationTokenSource();
-        var writer = Task.Run(() =>
+        // A dedicated thread: under a loaded parallel test run a pool-queued writer can start late enough to miss the
+        // whole read window, which would test nothing.
+        var writer = Task.Factory.StartNew(() =>
         {
             var i = 0;
             while (!stop.IsCancellationRequested)
@@ -161,11 +163,11 @@ public sealed class LogTapBufferTests
                 tap.Add(Line($"C{i % 7}", $"TAG_{i % 11} n={i}"));
                 i++;
             }
-        });
+        }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
 
         long previous = 0;
         var deadline = System.Diagnostics.Stopwatch.StartNew();
-        while (deadline.ElapsedMilliseconds < 300)
+        while (deadline.ElapsedMilliseconds < 300 || (previous == 0 && deadline.ElapsedMilliseconds < 10_000))
         {
             var counts = tap.Counts();
             Assert.True(counts.TotalLines >= previous);

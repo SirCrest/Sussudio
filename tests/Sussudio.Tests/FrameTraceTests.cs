@@ -253,7 +253,8 @@ public sealed class FrameTraceTests
         var recorder = NewRecorder();
         Assert.True(recorder.Start(FrameTraceBuffer.MinCapacity).Success);
         using var stop = new CancellationTokenSource();
-        var writers = Enumerable.Range(0, 3).Select(w => Task.Run(() =>
+        // Dedicated threads: pool-queued writers can start after the first dumps under a loaded parallel test run.
+        var writers = Enumerable.Range(0, 3).Select(w => Task.Factory.StartNew(() =>
         {
             long id = w;
             while (!stop.IsCancellationRequested)
@@ -261,7 +262,7 @@ public sealed class FrameTraceTests
                 recorder.Record(FrameTraceEventKind.CaptureRead, Stopwatch.GetTimestamp(), 100, id);
                 id += 3;
             }
-        })).ToArray();
+        }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default)).ToArray();
 
         for (var i = 0; i < 20; i++)
         {

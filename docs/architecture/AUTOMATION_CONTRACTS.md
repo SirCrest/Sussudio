@@ -68,5 +68,20 @@ contains no credential and does not report whether a particular running server
 has configured a token. Retrieve the manifest with valid credentials when the
 server requires authentication.
 
+## Performance telemetry commands
+
+Manifest revision 3 appends commands 58-64: `GetPerfReport`, `PerfWindow`,
+`AddPerfMarker`, `FrameTrace`, `GetTuningKnobs`, `SetTuningKnob` and
+`GetLogTail`. They read and control process-wide telemetry only, so they are
+ready-independent (they work with no capture device) and their responses carry
+the result in `Data` without an embedded automation snapshot. `FrameTrace dump`
+writes a file under the `WriteFile` path policy; `SetTuningKnob` rejects unknown
+names, wrong types and out-of-range values with `invalid-request` and never
+clamps. `SUSSUDIO_AUTOMATION_TOKEN` is not a settable knob. The wire contract is
+specified in `docs/architecture/performance-telemetry.md` section 3, and the
+ssctl verbs (`perf`, `knobs`, `knob`, `log`) and MCP tools (`get_perf_report`,
+`perf_window`, `add_perf_marker`, `frame_trace`, `get_tuning_knobs`,
+`set_tuning_knob`, `get_log_tail`) are projections of those seven commands.
+
 Ownership for each consumer is mapped in `docs/architecture/AGENT_MAP.md`; the
 architecture guardrail tests cross-check this checklist against that map.

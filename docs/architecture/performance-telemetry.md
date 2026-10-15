@@ -38,7 +38,7 @@ RTX 4090 and Ryzen 9 7950X. Artifacts: `artifacts/perf-overhaul/baseline/`.
 
 | # | Finding | Evidence |
 |---|---|---|
-| D1 | The preview slow-stage classifier requires 30 s of samples (`PreviewPacingSlowStageClassifier.MinSampleDurationMs`), but the source and present windows hold 20 s (`CadenceWindowSeconds = 20`). Sample-ready classification can never run at 30 fps or above; only the hard-signal shortcuts fire. `get_frame_pacing_verdict` defaults to the same unreachable 30 s. | Live: `PreviewCadenceSampleDurationMs = 20011.7`, `CaptureCadenceSampleDurationMs = 20013.0` after five minutes |
+| D1 | The preview slow-stage classifier requires 30 s of samples (`PreviewPacingSlowStageClassifier.MinSampleDurationMs`), but the source and present windows hold 20 s (`CadenceWindowSeconds = 20`). Sample-ready classification can never run at 30 fps or above; only the hard-signal shortcuts fire. `get_frame_pacing_verdict` defaults to the same unreachable 30 s. **Fixed in slice 1:** both now require 15 s. | Live: `PreviewCadenceSampleDurationMs = 20011.7`, `CaptureCadenceSampleDurationMs = 20013.0` after five minutes |
 | D2 | The frame ledger defines 18 stages and emits 6. Decode, upload, render, present and encode stages are never written, the device timestamp is always null, and the preview present id is not recorded, so the ledger cannot be joined to the renderer. One global lock is taken several times per frame. | `UnifiedVideoCapture.cs` FrameLedger; `CaptureModels.cs` FrameLedgerStage |
 | D3 | Pipeline latency starts after `ReadSample` returns. USB, driver, Frame Server and source-reader queueing are invisible. | `MfSourceReaderVideoCapture.cs` ReadLoop `arrivalTick` |
 | D4 | WASAPI callback intervals use `Environment.TickCount64` (about 15.6 ms resolution) and keep avg/max over 100 samples. The severe-gap threshold collapses to 100 ms. Render has no interval, jitter or underrun-duration measurement. | `WasapiAudioCapture.TrackCaptureCallback`; `WasapiAudioPlayback` |
@@ -159,6 +159,16 @@ every histogram and counter plus thread CPU, process CPU, I/O and GC totals.
 Beginning an existing name restarts it and says so. The delta report is the
 same shape as the lifetime report, so tools have one parser.
 
+Report semantics (slice 1): a lifetime report is measured from a zero baseline
+taken at process creation (cumulative counters start at zero; DWM frame counts
+from the first reading). Process and thread CPU are percent of one core over
+the report interval; a thread that started mid-window or exited before the
+window ended is divided by the part of the interval it ran, and a retired
+thread with no CPU in the interval is omitted. `Process.IoReadBytes` and
+`IoWriteBytes` are deltas over the interval, memory and handle counts are
+instantaneous. Marker lists in a window report contain only markers added
+since the window began.
+
 ### 2.4 `FrameTrace` flight recorder
 
 A lock-free ring of 40-byte events, off by default. `start` allocates the
@@ -176,6 +186,12 @@ site costs one volatile read.
   index, so a torn slot is dropped, never emitted.
 - Markers (`perf mark`) and thread names are kept beside the ring and
   emitted as instant and metadata events.
+- Lifecycle (slice 1): `start` while a trace is running is an error (stop it
+  first); `stop` freezes the ring and the frozen buffer stays readable until
+  the next `start`; `dump` with no trace ever recorded is an error and `dump`
+  overwrites an existing file. GC pauses (runtime `EventListener`, GC keyword)
+  are recorded as `GcPause` spans when a trace is running and always feed the
+  `gc.pause` histogram.
 - Frame events use the source sequence as `Id` in every stage, so the
   analyzer joins a frame from read loop to present.
 
@@ -193,11 +209,19 @@ initializer). Responses state what must restart. Values outside the range
 or of the wrong type are rejected, not clamped. Every change logs
 `TUNING_KNOB_SET name= old= new= apply=` and appears in the next report.
 
+The catalog (slice 1) lists 51 `SUSSUDIO_*` knobs. `SUSSUDIO_AUTOMATION_TOKEN`
+(credential), `SUSSUDIO_AUTOMATION_PIPE` (the pipe the command arrives on),
+`SUSSUDIO_LOG_ROOT` and `SUSSUDIO_RECOVERY_DIRECTORY` (storage roots read once
+at startup) are deliberately not settable at runtime; `knobs` lists them under
+`Excluded` with the reason. MMCSS task-name knobs are string choices. `apply`
+scopes are read from each consumer's read site; where the read site could not
+be confirmed from source the catalog uses the stricter scope.
+
 New live knobs added on this branch:
 
 | Knob | Default | Effect |
 |---|---|---|
-| `SUSSUDIO_DIAGNOSTICS_POLL_MS` | 500 | diagnostics hub poll interval, 100-10000 |
+| `SUSSUDIO_DIAGNOSTICS_POLL_MS` | 500 | diagnostics hub poll interval, 100-10000 (slice 1) |
 | `SUSSUDIO_TELEMETRY_SENSORS` | auto | `auto`: sensors run while a window is open or a trace runs; `on`; `off` |
 | `SUSSUDIO_PREVIEW_GPU_TIMING` | auto | GPU timestamp queries; `auto` follows sensor demand |
 
@@ -295,7 +319,9 @@ Tool-side only (no app command): `ssctl perf trace analyze <file>`,
 
 ```json
 {
-  "Window": "baseline", "Since": "process-start|window", "DurationMs": 30012.4,
+  "Window": "baseline", "Since": "process-start|window",
+  "StartedUtc": "2026-10-14T20:00:00.0000000Z", "GeneratedUtc": "2026-10-14T20:00:30.0120000Z",
+  "DurationMs": 30012.4,
   "Metrics": [ { "Name": "preview.present_interval", "Unit": "ms", "Count": 1799,
                  "RatePerSec": 59.94, "Mean": 16.68, "P50": 16.67, "P90": 16.9,
                  "P99": 18.2, "P999": 21.0, "Max": 21.3, "MaxApprox": true } ],
@@ -306,9 +332,9 @@ Tool-side only (no app command): `ssctl perf trace analyze <file>`,
                "IoReadBytes": 0, "IoWriteBytes": 0, "Handles": 0, "Threads": 0 },
   "Gc": { "Gen0": 0, "Gen1": 0, "Gen2": 0, "PauseMs": 0.0, "AllocatedBytes": 0 },
   "Gpu": { "Engines": [ { "Type": "VideoEncode", "MeanPercent": 31.0, "P95Percent": 35.0 } ],
-           "DedicatedBytes": 0, "Adapters": [ ] },
+           "DedicatedBytes": null, "Adapters": [ ] },
   "Dwm": { "RefreshHz": 59.94, "FramesComposedPerSec": 59.9 },
-  "Capture": { "IngressClock": "qpc|relative|unknown" },
+  "Capture": { "IngressClock": "qpc|relative|unknown", "IngressClockMinOffsetMs": null },
   "Sensors": { "Active": true, "Reason": "window:baseline" },
   "Trace": { "Running": false, "Events": 0, "Capacity": 0 },
   "Knobs": [ { "Name": "SUSSUDIO_PREVIEW_JITTER_TARGET_DEPTH", "Value": "1", "Launch": null, "Apply": "preview-restart" } ],
@@ -317,8 +343,21 @@ Tool-side only (no app command): `ssctl perf trace analyze <file>`,
 ```
 
 Time metrics are reported in milliseconds; percent and byte metrics in their
-own units. `filter` is a name prefix. Metrics with zero count are omitted
-unless `includeIdle` is true.
+own units. `filter` is a name prefix (case-insensitive). Metrics with zero
+count are omitted unless `includeIdle` is true. `Gpu.DedicatedBytes` is null
+and `Gpu.Adapters` empty until the GPU/VRAM sensors land; `Gpu.Engines` is
+built from the `gpu.*` percent metrics that have samples. `Sensors.Active`
+means demand exists (an open window or a running trace), with `Reason`
+`window:<names>`, `trace` or `idle`. `Dwm` values are null when DWM timing is
+unavailable. `Threads` is empty until dedicated threads call
+`HotThreads.Register`. `Capture.IngressClockMinOffsetMs` is the smallest
+observed sample-time offset the ingress classification used.
+
+The command-catalog payload shapes use `string` for `action` (the allowed
+values are listed in the command description), because the catalog shape
+grammar has no enumeration type. A rejected `SetTuningKnob` still returns
+`Data` with `Failure` (`UnknownKnob`, `WrongType`, `OutOfRange`, ...) beside
+the `invalid-request` error code.
 
 ## 4. Invariants
 

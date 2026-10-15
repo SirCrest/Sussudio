@@ -13,6 +13,7 @@ using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Win32;
 using Sussudio.Models;
+using Sussudio.Services.Performance;
 using Vortice.DXGI;
 
 namespace Sussudio;
@@ -453,6 +454,7 @@ public static class Logger
                 while (entries < MaxDrainBatchEntries && LogChannel.Reader.TryRead(out var entry))
                 {
                     batch.Append(entry);
+                    LogTap.Add(entry);
                     entries++;
                 }
 

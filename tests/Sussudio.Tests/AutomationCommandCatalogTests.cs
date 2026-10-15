@@ -85,6 +85,13 @@ public sealed class AutomationCommandCatalogTests
         [55] = "SetMicrophoneVolume",
         [56] = "SetFlashbackBufferMinutes",
         [57] = "SetFlashbackGpuDecode",
+        [58] = "GetPerfReport",
+        [59] = "PerfWindow",
+        [60] = "AddPerfMarker",
+        [61] = "FrameTrace",
+        [62] = "GetTuningKnobs",
+        [63] = "SetTuningKnob",
+        [64] = "GetLogTail",
     };
 
     // ── Wire-contract stability ──────────────────────────────────────────────
@@ -123,7 +130,7 @@ public sealed class AutomationCommandCatalogTests
         if (added.Length == 0)
         {
             Assert.Equal(FrozenCommandIds.Count, actual.Count);
-            Assert.Equal(2, AutomationPipeProtocol.CommandManifestRevision);
+            Assert.Equal(3, AutomationPipeProtocol.CommandManifestRevision);
         }
     }
 
@@ -163,12 +170,13 @@ public sealed class AutomationCommandCatalogTests
     {
         var expectedKeys = new[]
         {
-            "action", "actionId", "armed", "assertions", "authToken", "bitrateMbps", "condition",
-            "decoderCount", "deviceId", "deviceName", "enabled", "field", "filePath", "force", "format",
-            "frameRate", "gain", "height", "maxEntries", "maxEvents", "microphoneVolumePercent",
-            "minutes", "mode", "op", "outputPath", "pollMs", "positionMs", "preset", "previewVolumePercent",
-            "quality", "resolution", "seconds", "section", "splitEncodeMode", "timeoutMs", "useSelectionRange",
-            "value", "verificationProfile", "videoFormat", "visible", "width", "x", "y"
+            "action", "actionId", "armed", "assertions", "authToken", "bitrateMbps", "capacity", "condition",
+            "contains", "decoderCount", "deviceId", "deviceName", "enabled", "field", "filePath", "filter", "force",
+            "format", "frameRate", "gain", "height", "includeIdle", "maxEntries", "maxEvents",
+            "microphoneVolumePercent", "minutes", "mode", "name", "op", "outputPath", "pollMs", "positionMs",
+            "preset", "previewVolumePercent", "quality", "reset", "resolution", "seconds", "section",
+            "splitEncodeMode", "text", "timeoutMs", "useSelectionRange", "value", "verificationProfile",
+            "videoFormat", "visible", "width", "window", "x", "y"
         };
         var fields = typeof(AutomationPayloadKeys)
             .GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly)
@@ -192,7 +200,8 @@ public sealed class AutomationCommandCatalogTests
             .Select(field => field.Name)
             .Distinct(StringComparer.Ordinal)
             .OrderBy(key => key, StringComparer.Ordinal);
-        var nestedAssertionKeys = new[] { AutomationPayloadKeys.Field, AutomationPayloadKeys.Op, AutomationPayloadKeys.Value };
+        // Value is also a real top-level field (SetTuningKnob), so only Field and Op are nested-assertion-only keys.
+        var nestedAssertionKeys = new[] { AutomationPayloadKeys.Field, AutomationPayloadKeys.Op };
         var topLevelKeys = typeof(AutomationPayloadKeys)
             .GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly)
             .Where(field => field.IsLiteral && field.FieldType == typeof(string))

@@ -196,6 +196,7 @@ internal static class SsctlHelpWriter
         WriteFlashbackSection(writer);
         WriteWindowSection(writer);
         WriteWaitVerifySection(writer);
+        WritePerformanceSection(writer);
         WriteFlagsSection(writer);
     }
 
@@ -322,6 +323,19 @@ internal static class SsctlHelpWriter
         WriteCatalogHelpLine(writer, AutomationCommandKind.SetStatsSectionVisible);
         WriteCatalogHelpLine(writer, AutomationCommandKind.SetFrameTimeOverlayVisible);
         WriteCatalogHelpLine(writer, AutomationCommandKind.SetSettingsVisible);
+        writer.WriteLine();
+    }
+
+    private static void WritePerformanceSection(TextWriter writer)
+    {
+        writer.WriteLine("Performance:");
+        WriteCatalogHelpLine(writer, AutomationCommandKind.GetPerfReport, "[--json]");
+        WriteCatalogHelpLine(writer, AutomationCommandKind.PerfWindow, "[--json]");
+        WriteCatalogHelpLine(writer, AutomationCommandKind.AddPerfMarker);
+        WriteCatalogHelpLine(writer, AutomationCommandKind.FrameTrace);
+        WriteCatalogHelpLine(writer, AutomationCommandKind.GetTuningKnobs, "[--json]");
+        WriteCatalogHelpLine(writer, AutomationCommandKind.SetTuningKnob);
+        WriteCatalogHelpLine(writer, AutomationCommandKind.GetLogTail, "[--json]");
         writer.WriteLine();
     }
 

@@ -84,6 +84,7 @@ tests that pin which file owns a symbol; see AGENTS.md § Testing Policy.
 | Flashback models | `Sussudio/Models/Flashback/FlashbackModels.cs` | Buffer options, session context, playback state, export progress/segments/requests, and force-rotation results. These types retain the `Sussudio.Models` namespace. |
 | Status messages | `Sussudio/Models/StatusMessages.cs` | Owns footer status-line wording (`MainViewModel.StatusText`) and the `CaptureService.StatusChanged` text that feeds it, plus the style rules: sentence-case fragments without a trailing period, `...` only for work in flight, `{Subject} failed: {reason}`, `; ` before a consequence, ASCII only. `Failed` does not double a `{Subject} failed` prefix; `Detail` collapses whitespace and drops trailing periods from exception and service text; `OperationFailed` maps internal UI operation names (log tokens) to readable subjects. Service result messages (`FinalizeResult.StatusMessage`, Flashback export results) are data read by automation and diagnostics tools and stay with their producers. Add a new footer message here rather than inline. |
 | Source telemetry | `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs`, `NativeXuAtProtocol.cs` | Native XU AT-command transport and source-signal protocol parsing. |
+| Performance telemetry | `Sussudio/Services/Performance/` (histograms, windows, frame trace, tuning knobs, hot threads, process sensors, log tap, report builder), `Sussudio/Services/Automation/AutomationCommandDispatcher.PerfTelemetry.cs` | Agent-facing latency/CPU/GC/trace telemetry and runtime tuning knobs. See [performance telemetry](#performance-telemetry) and `docs/architecture/performance-telemetry.md`. |
 | App service contracts | `Sussudio/Services/Contracts/ServiceContracts.cs`, `Sussudio/Services/Contracts/ISourceSignalTelemetryProvider.cs` | Shared source, recording, preview, and telemetry interfaces, separate from `Sussudio.Automation.Contracts` wire/protocol contracts. |
 | Recording | `Sussudio/Services/Recording/LibAvEncoder.cs`, `LibAvEncoder.Audio.cs`, `LibAvEncoder.VideoFrames.cs`, `LibAvRecordingSink.cs`, `Sussudio/Services/Recording/Verification/RecordingVerifier.cs`, `InProcessRecordingStructureVerifier.cs` | Encoder lifecycle, audio/video input, sink queues, and verification. See [recording](#recording). |
 | Portable release tooling | `tools/reliability-gates.ps1`, `tools/package-github-release.ps1`, `tools/release/release-helpers.ps1`, `Sussudio/ffmpeg/manifest.json` | Reliability gates, package assembly, shared release helpers, and native-runtime manifest. |
@@ -217,8 +218,8 @@ Entry points:
   command IDs only and never renumber or reuse values. Keep payload shape,
   readiness gating, timeout policy, CLI help, MCP descriptions, and path-policy
   assignments beside the command family they describe.
-  Its public `AutomationPayloadKeys` vocabulary covers the 40 catalog fields and
-  nested assertion `Field`/`Op`/`Value` keys, shared by dispatcher, CLI, MCP, and
+  Its public `AutomationPayloadKeys` vocabulary covers the 49 catalog fields (`Value` is shared with nested assertions) and
+  the nested assertion `Field`/`Op` keys, shared by dispatcher, CLI, MCP, and
   diagnostic senders. `AutomationCommandCatalogTests.cs` protects the wire spellings.
   Manifest authentication metadata describes the static credential locations and
   precedence; it never reads or serializes a configured credential. The dispatcher
@@ -276,8 +277,11 @@ Automation diagnostics ownership:
   segment/restart/enable command bodies. Construct it with
   `AutomationViewModelPorts`; this dispatcher root should not expose or store
   the aggregate automation ViewModel dependency. Keep the dispatcher in a
-  single non-partial class body unless a command group becomes a named injected
-  collaborator rather than an in-file section.
+  single class body unless a command group becomes a named injected
+  collaborator rather than an in-file section; the one deliberate partial is
+  `AutomationCommandDispatcher.PerfTelemetry.cs` (see
+  [performance telemetry](#performance-telemetry)), whose handlers touch only
+  process-wide telemetry state and share the payload/path helpers in this file.
   Required string and boolean extraction have one owner in the dispatcher,
   shared by custom routes and table handlers. Its narrow request-validation
   exception maps existing caller rejections to `invalid-request`; invoked port
@@ -429,6 +433,66 @@ Automation diagnostics ownership:
   `AutomationSnapshotRegressionTests.TimelinePreservesEveryCapturedField`
   checks independent default/populated timeline fixtures captured before the
   copy-only projection layers were removed. No providers or devices start.
+## Performance Telemetry
+
+Contract and rationale: `docs/architecture/performance-telemetry.md`. The owner of
+all process-wide performance telemetry is `Sussudio/Services/Performance/`
+(namespace `Sussudio.Services.Performance`). It depends on nothing else in the
+app except `Logger` (log tap and knob-change log lines); capture, preview,
+recording and audio sites call into it, never the other way round.
+
+- `PerfHistogram.cs`, `PerfCounter.cs`, `PerfRegistry.cs`, `PerfMetrics.cs` own
+  the lock-free log-linear histograms (microsecond time metrics, true or
+  approximate max), counters, the copy-on-write name registry, and the static
+  metric catalog recording sites use (`PerfMetrics.<Field>.RecordElapsedSince(...)`).
+  Metric names are wire names: append, never rename.
+- `PerfWindowSet.cs` and `PerfWindows.cs` own named measurement windows (at most
+  16): begin/read/end/cancel/list as registry deltas plus the system samples at
+  both ends.
+- `FrameTraceBuffer.cs`, `FrameTraceRecorder.cs`, `FrameTraceEventKind.cs` and
+  `PerfMarkers.cs` own the opt-in frame trace flight recorder (seqlock ring,
+  Chrome Trace JSON dump) and the marker log. A stopped recorder costs one
+  volatile read per record site.
+- `TuningKnobCatalog.cs`, `TuningKnobStore.cs` and `TuningKnobs.cs` own the
+  `SUSSUDIO_*` knob catalog (type, default, range, apply scope, owner file),
+  validation (reject, never clamp), launch-value capture and reset, and the
+  `TUNING_KNOB_SET` log line. A new knob is one catalog row; read it at its
+  consumer through the environment as before. `SUSSUDIO_AUTOMATION_TOKEN`,
+  the pipe name, log root and recovery directory are excluded by design.
+  `SUSSUDIO_DIAGNOSTICS_POLL_MS` is the only live knob wired in this slice
+  (`AutomationDiagnosticsHub.RunLoopAsync`).
+- `HotThreads.cs` owns the dedicated-thread registry (`HotThreads.Register(role)`),
+  per-thread CPU time/cycles/priority and the bounded retired list.
+- `ProcessSensors.cs` owns process CPU/memory/IO/handle sensors, GC counters and
+  the runtime GC-pause `EventListener`, and `DwmGetCompositionTimingInfo`.
+  `PerfIngressClock.cs` holds the capture ingress clock classification the
+  report states.
+- `LogTapBuffer.cs` and `LogTap.cs` own the 4,096-line log ring with per-caller
+  and per-tag counts, fed by the logger's writer task.
+- `PerfReportBuilder.cs` owns the perf report DTOs and builds lifetime and
+  window reports (microseconds reported as milliseconds, idle metrics omitted
+  unless asked).
+- `Sussudio/Services/Automation/AutomationCommandDispatcher.PerfTelemetry.cs`
+  owns the seven handlers for commands 58-64 (`GetPerfReport`, `PerfWindow`,
+  `AddPerfMarker`, `FrameTrace`, `GetTuningKnobs`, `SetTuningKnob`,
+  `GetLogTail`). They are ready-independent, return no snapshot, and the frame
+  trace dump goes through the `WriteFile` path policy. The dispatcher is a
+  partial class for this one command group because its handlers share the
+  payload/path helpers in `AutomationCommandDispatcher.cs`.
+- Wire surface: command IDs 58-64 and manifest revision 3 live in
+  `Sussudio.Automation.Contracts/AutomationCommandCatalog.cs` and
+  `AutomationPipeProtocol.cs`. ssctl verbs are `perf report|window|mark|trace`,
+  `knobs`, `knob set|reset` and `log tail` in `tools/ssctl/CommandHandlers.Perf.cs`
+  (rendering in `tools/ssctl/PerfFormatters.cs`); MCP tools are in
+  `tools/McpServer/Tools/PerfTelemetryTools.cs`. AutomationClient and
+  `tools/send-automation-command.ps1` resolve commands by catalog name and need
+  no per-command code.
+- Tests are isolated and cover failure modes only: histogram boundaries and
+  concurrency, window limits, trace wraparound/torn slots, knob validation and
+  reset, log tap bounds. Pure pieces are linked into
+  `tests/Sussudio.Tests/Sussudio.Tests.csproj`; the rest is verified end to end
+  against the live app with artifacts under `artifacts/perf-overhaul/`.
+
 ## Capture Runtime
 
 Primary current owner: `Sussudio/Services/Capture/`
@@ -2869,7 +2933,11 @@ Primary owners:
   consumption, optional flag value parsing, command-handler JSON
   detection/pretty-printing, primitive parsing, Flashback export numeric
   validation, on/off and show/hide parsing, recording format normalization,
-  snap action mapping, and assertion value parsing.
+  snap action mapping, and assertion value parsing. It is a partial class: the
+  performance-telemetry verbs live in `tools/ssctl/CommandHandlers.Perf.cs`
+  (`perf report|window|mark|trace`, `knobs`, `knob set|reset`, `log tail`;
+  `perf trace dump` resolves its path client-side because the app does not share
+  the CLI working directory) and render through `tools/ssctl/PerfFormatters.cs`.
 - `tools/ssctl/Formatters.cs` owns CLI result formatting:
   shared result/JSON helpers, recent diagnostic-event output, standalone
   memory/GC summaries, capture option summaries, device-list output,
@@ -2920,7 +2988,14 @@ Primary owners:
   `get_frame_pacing_verdict` MCP tool entry point, pipe command orchestration,
   response shaping, performance-timeline projection, snapshot cadence channel
   projection, recent-interval parsing, readiness and verdict policy, private
-  row/channel records, and the operator-facing verdict text.
+  row/channel records, and the operator-facing verdict text. Its
+  `minSampleSeconds` default (15) tracks `PreviewPacingSlowStageClassifier`'s
+  minimum cadence window, which must stay below the 20 s cadence windows.
+- `tools/McpServer/Tools/PerfTelemetryTools.cs` owns the seven performance
+  telemetry MCP tools (`get_perf_report`, `perf_window`, `add_perf_marker`,
+  `frame_trace`, `get_tuning_knobs`, `set_tuning_knob`, `get_log_tail`). Each
+  forwards one automation command and returns the app's structured `Data`
+  payload unchanged.
 - Shared PresentMon option precedence and preview-present field extraction live
   in `tools/Common/PresentMon/PresentMonProbe.cs`. Request cancellation terminates
   only the child owned by that probe. MCP handlers propagate SDK request tokens

@@ -5440,6 +5440,15 @@ static partial class Program
             HelpLine(AutomationCommandKind.SetFrameTimeOverlayVisible),
             HelpLine(AutomationCommandKind.SetSettingsVisible),
             "",
+            "Performance:",
+            HelpLine(AutomationCommandKind.GetPerfReport, "[--json]"),
+            HelpLine(AutomationCommandKind.PerfWindow, "[--json]"),
+            HelpLine(AutomationCommandKind.AddPerfMarker),
+            HelpLine(AutomationCommandKind.FrameTrace),
+            HelpLine(AutomationCommandKind.GetTuningKnobs, "[--json]"),
+            HelpLine(AutomationCommandKind.SetTuningKnob),
+            HelpLine(AutomationCommandKind.GetLogTail, "[--json]"),
+            "",
             "Flags:",
             "  --json            Print raw JSON responses where supported",
             "  --pipe NAME       Named pipe (default: SussudioAutomation)",
@@ -7171,7 +7180,14 @@ static partial class Program
         ("SelectMicrophoneDevice", 54),
         ("SetMicrophoneVolume", 55),
         ("SetFlashbackBufferMinutes", 56),
-        ("SetFlashbackGpuDecode", 57)
+        ("SetFlashbackGpuDecode", 57),
+        ("GetPerfReport", 58),
+        ("PerfWindow", 59),
+        ("AddPerfMarker", 60),
+        ("FrameTrace", 61),
+        ("GetTuningKnobs", 62),
+        ("SetTuningKnob", 63),
+        ("GetLogTail", 64)
     ];
 
     internal static Task AutomationCommandCatalog_CoversCommandsAndPolicyMetadata()
@@ -7422,7 +7438,8 @@ static partial class Program
             ["CapturePreviewFrame"] = ("WriteFile", "outputPath", false),
             ["CaptureWindowScreenshot"] = ("WriteFile", "outputPath", false),
             ["FlashbackExport"] = ("WriteFile", "outputPath", true),
-            ["VerifyFile"] = ("ReadFile", "filePath", true)
+            ["VerifyFile"] = ("ReadFile", "filePath", true),
+            ["FrameTrace"] = ("WriteFile", "outputPath", false)
         };
 
         var pathEntries = entries
@@ -7467,7 +7484,7 @@ static partial class Program
 
     internal static Task AutomationManifest_SerializationIsStable()
     {
-        const string ExpectedManifestSha256 = "54C31AFC222765BAA96AEAF28B5E9A6E233583EE23F55828DB4C629D47C82DE0";
+        const string ExpectedManifestSha256 = "688D23FF0D99C22631DB040A4475E4DE68A55046C210E5AEED5905E47DEBDB15";
         var catalogType = RequireAutomationContractType("Sussudio.Tools.AutomationCommandCatalog");
         var createManifestJson = RequireNonPublicStaticMethod(catalogType, "CreateManifestJson");
         var first = (string)createManifestJson.Invoke(null, Array.Empty<object>())!;

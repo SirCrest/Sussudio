@@ -54,7 +54,11 @@ public sealed partial class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
     private double _lastProcessCpuTotalMs;
 
     private const int MaxRecentEvents = 500;
-    private const int PollIntervalMs = 500;
+    // Live tuning knob (see TuningKnobCatalog): read again each tick so a runtime change applies on the next delay.
+    private const string PollIntervalEnvVar = "SUSSUDIO_DIAGNOSTICS_POLL_MS";
+    private const int DefaultPollIntervalMs = 500;
+    private const int MinPollIntervalMs = 100;
+    private const int MaxPollIntervalMs = 10000;
     private const int LowSignalMuteThresholdMs = 8000;
     private const int RecordingNoGrowthThresholdMs = 4000;
     private const double AudioSignalThreshold = 0.008;
@@ -231,7 +235,7 @@ public sealed partial class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
 
             try
             {
-                await Task.Delay(PollIntervalMs, cancellationToken).ConfigureAwait(false);
+                await Task.Delay(EnvironmentHelpers.GetIntFromEnv(PollIntervalEnvVar, DefaultPollIntervalMs, MinPollIntervalMs, MaxPollIntervalMs), cancellationToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
