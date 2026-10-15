@@ -531,9 +531,11 @@ with `Software: true`.
   counts per render path (`GpuTimingPath`: `VideoProcessor`, `Nv12Shader`, `HdrShader`), logs them when it is released
   (`D3D11_PREVIEW_GPU_TIMING released ... vp=rec/unm nv12=rec/unm hdr=rec/unm`) and the state line names the path in use.
   *Evidenced:* in the live runs on the RTX 4090 (SDR source, `PreviewRendererMode: D3D11VideoProcessor`) every unmeasured span came
-  from the `VideoProcessorBlt` path (`vp=433/48 nv12=0/0 hdr=0/0`, 8 to 12 % of its frames, scattered at random rather than periodic,
-  and not tied to any other stage's duration). They are not sub-microsecond spans: the timestamps were identical. The shader paths were
-  not exercised in those runs, so how they behave is not measured. *Hypothesis, not verified:* the blit can complete on a
+  from the `VideoProcessorBlt` path. With Flashback on it was 8 to 12 % of that path's frames (`vp=433/48 nv12=0/0 hdr=0/0`),
+  scattered at random rather than periodic and not tied to any other stage's duration; with Flashback off, in a later run, it was
+  1,490 of 1,856 frames (`vp=366/1490 nv12=0/0 hdr=0/0`, 80 %; the first measurement was 59 %), so the fraction differs a lot between
+  runs and configurations and is not a constant of the path (the cause of the difference was not investigated). They are not sub-microsecond spans: the timestamps were identical. The shader
+  paths were not exercised in those runs, so how they behave is not measured. *Hypothesis, not verified:* the blit can complete on a
   hardware video-processing queue that does not write the timestamps the query reads. Nothing in the app can repair that reading, so
   the meaning per path is: on the shader paths a span brackets a `Draw` the same context executes, and a zero would be a pass that did
   not reach the GPU timer; on the `VideoProcessorBlt` path `preview.gpu_render` is the subset of frames the timer could see. Treat it
