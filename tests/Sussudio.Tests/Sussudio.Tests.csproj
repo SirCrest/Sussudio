@@ -43,6 +43,19 @@
     <Compile Include="..\..\Sussudio\Controllers\Stats\FrameTimeGraphGeometry.cs" Link="Production\FrameTimeGraphGeometry.cs" />
     <Compile Include="..\..\Sussudio\Services\Preview\PreviewInputViewCache.cs" Link="Production\PreviewInputViewCache.cs" />
     <Compile Include="..\..\Sussudio\Controllers\ViewModel\PreviewAudioTransitionControllers.cs" Link="Production\PreviewAudioTransitionControllers.cs" />
+    <!-- Performance telemetry core: pure types with no WinUI, Win32 or logger dependency. -->
+    <Compile Include="..\..\Sussudio\Services\Performance\PerfHistogram.cs" Link="Production\PerfHistogram.cs" />
+    <Compile Include="..\..\Sussudio\Services\Performance\PerfCounter.cs" Link="Production\PerfCounter.cs" />
+    <Compile Include="..\..\Sussudio\Services\Performance\PerfRegistry.cs" Link="Production\PerfRegistry.cs" />
+    <Compile Include="..\..\Sussudio\Services\Performance\PerfWindowSet.cs" Link="Production\PerfWindowSet.cs" />
+    <Compile Include="..\..\Sussudio\Services\Performance\PerfMetrics.cs" Link="Production\PerfMetrics.cs" />
+    <Compile Include="..\..\Sussudio\Services\Performance\FrameTraceEventKind.cs" Link="Production\FrameTraceEventKind.cs" />
+    <Compile Include="..\..\Sussudio\Services\Performance\FrameTraceBuffer.cs" Link="Production\FrameTraceBuffer.cs" />
+    <Compile Include="..\..\Sussudio\Services\Performance\PerfMarkers.cs" Link="Production\PerfMarkers.cs" />
+    <Compile Include="..\..\Sussudio\Services\Performance\FrameTraceRecorder.cs" Link="Production\FrameTraceRecorder.cs" />
+    <Compile Include="..\..\Sussudio\Services\Performance\TuningKnobStore.cs" Link="Production\TuningKnobStore.cs" />
+    <Compile Include="..\..\Sussudio\Services\Performance\TuningKnobCatalog.cs" Link="Production\TuningKnobCatalog.cs" />
+    <Compile Include="..\..\Sussudio\Services\Performance\LogTapBuffer.cs" Link="Production\LogTapBuffer.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Update="Fixtures\RecordingStructure\*.mp4" CopyToOutputDirectory="PreserveNewest" />
