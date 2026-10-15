@@ -113,7 +113,7 @@ do not use these rows as permission for cosmetic file-count churn.
 | System | Status | Current evidence | Closure guidance |
 |--------|--------|------------------|------------------|
 | CaptureService | Leave As-Is For Now | `Sussudio/Services/Capture/CaptureService.cs`, `Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs`, `Sussudio/Services/Capture/CaptureService.Flashback.cs`, `Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs`, `Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs`, and `Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs` form a six-file family in the generated baseline. The files now map to transition serialization/root state, preview lifecycle, Flashback backend/export/recording, health snapshots, recording lifecycle, and runtime snapshots. | Do not merge this family just to reduce partial count. A future boundary pass should happen only if one named behavior, such as Flashback export or snapshot assembly, can move behind an independently testable collaborator without changing capture/preview/recording hot-path ordering. |
-| AutomationDiagnosticsHub | Ready | `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs` owns the single `BuildAutomationSnapshot` initializer: captured domain inputs supply copy-only fields directly, while twelve computed/stateful projection helpers preserve normalization and sampling order. Flashback export, recording and playback fields share that initializer, including runtime-first null fallback for backend diagnostics. `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`, `Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs`, and `Sussudio/Services/Automation/AutomationDiagnosticsHub.Evaluation.cs` remain the polling/timeline, stateful refresh/alerts, and diagnostic verdict owners. `tests/Sussudio.Tests/AutomationSnapshotRegressionTests.cs` protects every serialized field against populated/default input fixtures; ownership tests protect the collector/initializer boundary. | Preserve the 18 captured inputs, computation/sampling order, JSON field names and CLI/MCP/tool contracts. Keep raw mapping in the existing initializer and retain helpers only for computation or state sampling. |
+| AutomationDiagnosticsHub | Ready | `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs` owns the single `BuildAutomationSnapshot` initializer: captured domain inputs supply copy-only fields directly, while twelve computed/stateful projection helpers preserve normalization and sampling order. Flashback export, recording and playback fields share that initializer, including runtime-first null fallback for backend diagnostics. `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`, `Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs`, and `Sussudio/Services/Automation/AutomationDiagnosticsHub.Evaluation.cs` remain the polling/timeline, stateful refresh/alerts, and diagnostic verdict owners. The hub's optional `PreviewRuntimeEpochProvider` (set by `WindowAutomationHostLifecycleController` from `PreviewRuntimeSnapshotSamplingController.GetEpochAsync`) supplies the preview producer epoch for the before/after change check, so the full preview snapshot is built once per tick instead of three times. `tests/Sussudio.Tests/AutomationSnapshotRegressionTests.cs` protects every serialized field against populated/default input fixtures; ownership tests protect the collector/initializer boundary. | Preserve the 18 captured inputs, computation/sampling order, JSON field names and CLI/MCP/tool contracts. Keep raw mapping in the existing initializer and retain helpers only for computation or state sampling. |
 | FlashbackPlaybackController | Ready | `Sussudio/Services/Flashback/FlashbackPlaybackController.cs`, `Sussudio/Services/Flashback/FlashbackPlaybackCommandMailbox.cs`, `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs`, and `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs` align to public playback state/command admission/metrics, a per-generation bounded command mailbox, playback-thread command execution, and frame decode/submit pacing. Existing Flashback contract tests and this map document command, frame, audio-master, marker, and lifecycle ownership. | Treat the mailbox and three controller partials as intentional. Keep the mailbox bounded and state-free: it owns queue admission, drop/coalescing, generation completion, yield, and queue telemetry; the controller owns public command/state admission; `ThreadCommands` owns decoder/state execution. Preserve playback command names, capacity, queue telemetry, live-restore behavior, A/V drift policy, and segment-edge recovery. |
 | D3D11PreviewRenderer | Ready | `Sussudio/Services/Preview/D3D11PreviewRenderer.cs`, `Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs`, and `Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs` now align to renderer facade/thread/submission/metrics, render-pass execution plus screenshot staging, and D3D resource/device/swap-chain/shader ownership. Presentation preview tests guard removed renderer shards, diagnostics contracts, device-lost recovery, present accounting, screenshots, and frame-ready signaling. | Treat the three-file split as intentional. Reopen only if a named resource/pass collaborator gains an independent test seam. Preserve preview pacing, swap-chain binding, device-lost recovery, screenshot capture, HDR pass behavior, and GPU synchronization boundaries. |
 
@@ -809,7 +809,16 @@ Entry points:
   GPU device-removed checks, hardware/software frame PTS/keyframe assignment,
   per-frame HDR side-data attachment/removal, HDR mastering-display metadata
   parsing, video packet drains, bitstream-filter drains, timestamp rescaling,
-  interleaved video packet writes, and hardware-frame unref cleanup.
+  interleaved video packet writes, the `VideoKeyframeWritten` notification
+  (stream PTS plus the output byte offset sampled before the interleaved
+  write), and hardware-frame unref cleanup. Video PTS is allocated through
+  `AllocateVideoPts` (`LibAvEncoder.Audio.cs`), which with
+  `LibAvEncoderOptions.LockVideoPtsToAudioClock` follows the audio sample
+  clock: a lead of two frames or more that holds for a whole 120-frame window
+  moves the frame counter up to the audio time (frames lost upstream or
+  dropped by the sink), a persistent video lead is logged only, and audio is
+  never resampled or padded. The Flashback sink turns the lock on; the
+  recording sink does not.
 - `LibAvEncoder.cs` also owns output rotation, zero-delay NVENC output for
   independently decodable rotated files, IO close/reopen, stream reinitialization,
   retained game-audio/microphone counters for finalization after native cleanup,
@@ -912,17 +921,29 @@ Entry points:
   session-directory path safety checks, read-only segment counts, active-path
   projection, active segment start PTS calculation, segment-info projection,
   eviction-pause state, recording PTS range capture, pause-driven disk warning
-  state, eviction selection, eviction file deletion, and disk-budget/window
-  retention policy.
+  state, eviction selection, eviction file deletion, disk-budget/window
+  retention policy, the writer-side keyframe index (per session segment: PTS
+  plus the byte offset before the interleaved write, bounded per segment,
+  monotonic, dropped with the segment on eviction, abandonment, and purge) with
+  at-or-before lookup, and the playback stream hints the encoder sink publishes
+  for hinted decoder opens.
 - `FlashbackStartupCacheCleanup.cs` owns startup stale-root/stale-session cleanup, temp-drive free-space probing, session-directory naming/path-safety scanner helpers, startup session-cache budget calculation, session-directory stats, oldest-session eviction, and cache-budget cleanup telemetry.
 - `FlashbackDecoder.cs` owns decoder lifecycle, file open/close, dispose shell,
-  H.264/HEVC header-only probing, compatible MPEG-TS input continuation with
+  H.264/HEVC header-only probing, hinted opens (writer-supplied stream
+  parameters pre-fill the demuxer so the probe parses headers only, with no
+  probe decode, frame-rate sampling, or duration scan), compatible MPEG-TS input continuation with
   retained codec state and validated stream parameters, hardware surface capacity
   for the controller's bounded read-ahead queue, completed-input decoder drains (only after
   the controller has found a successor file),
   stream-count/index bounds, decoded frame-size/dimension validation,
   D3D11/software decoded-frame validation, decoded video/audio output DTOs,
-  keyframe/exact seek control flow, MPEG-TS exact-seek GOP preroll,
+  keyframe/exact seek control flow (indexed byte seek plus keyframe-only
+  decode first; timestamp seek with a one-GOP MPEG-TS back-off as the
+  fallback; exact seek decodes forward from the keyframe and converts only the
+  presented frame; a frame-threaded software decoder drops frames to the
+  keyframe instead of using skip_frame), audio prebuffering that demuxes ahead
+  while stashing the video packets it passes (fed back before the demuxer is
+  read again; no video decode and no rewind),
   seek timestamp conversion helpers,
   pending-frame transfer, seek-cap diagnostics, seek-buffer flushing, video
   frame receive, packet feeding, inline audio interleave during video reads,
@@ -938,7 +959,8 @@ Entry points:
   best-effort frame timestamp selection, software plane copies, and
   YUV-to-NV12/P010 conversion kernels.
 - `FlashbackPlaybackController*.cs` plus `FlashbackPlaybackCommandMailbox.cs` own playback, scrub, and marker control.
-- `FlashbackPlaybackController.cs` owns decoder creation, active file
+- `FlashbackPlaybackController.cs` owns decoder creation (D3D device identity,
+  keyframe-index lookup wiring, hinted open for session segment paths), active file
   identity, file open checks, shared decoder close/open identity transitions,
   best-effort decoder file close handling, held-frame release during teardown,
   decoder close/dispose timing, cleanup telemetry, active fMP4 reopen retry,
@@ -955,8 +977,10 @@ Entry points:
   state, and no-op logging. `FlashbackPlaybackCommandMailbox.cs` owns each
   playback generation's bounded channel, command admission/drop policy,
   seek/scrub coalescing and queued-position resolution, control-yield peek
-  policy, pending-command accounting, shared command-kind payload formatting,
-  queue telemetry, completion, and abandoned-command draining.
+  policy, nudge-delta coalescing (a queued nudge absorbs later nudges until
+  any other command closes its slot), pending-command accounting, shared
+  command-kind payload formatting, queue telemetry, completion, and
+  abandoned-command draining.
   `ResolveLatestPositionAndReleaseCoalescingSlot` resolves the latest seek or
   scrub position and releases its queued coalescing slot under the same lock.
   The mailbox owns no decoder or playback state.
@@ -981,31 +1005,45 @@ Entry points:
   command execution, including exact resume, file-open/reopen, audio prebuffer,
   and rendering resume ordering.
 - `FlashbackPlaybackController.ThreadCommands.cs` owns playback-thread
-  pause command execution, including pause-from-live freeze/display ordering,
-  exact resume targets, and audio/preview suppression.
+  pause command execution, including the pause-from-live freeze (live
+  submission stops so the last presented picture stays on screen; the paused
+  position is the live edge; nothing is opened or decoded until the next
+  command), exact resume targets, and audio/preview suppression.
+- `FlashbackPlaybackController.ThreadCommands.cs` owns the worker decoder's
+  lifetime across interactions: Go Live keeps the decoder warm and closes only
+  the segment file, Stop and thread exit dispose it, and the decoder is
+  recreated only when the D3D device pointer changes.
 - `FlashbackPlaybackController.ThreadCommands.cs` owns playback-thread
-  nudge command execution, including frame-step decode, no-file recovery, and
-  seek-display failure recovery.
+  nudge command execution, including coalesced-delta resolution, frame-step
+  decode, no-file recovery, and seek-display failure recovery.
+- Flashback UI feedback: `MainViewModel.FlashbackState.cs` owns the pushed,
+  coalesced playback-state refresh that follows every controller transition
+  (`QueueFlashbackPlaybackStateRefresh`) alongside the 250 ms status poll;
+  `Controllers/Flashback/FlashbackUiControllers.cs` owns the scrub pointer
+  throttle (Stopwatch-based window with a trailing flush so the last pointer
+  position is always sent) and the position label, which follows the pointer
+  while scrubbing.
 - `FlashbackPlaybackController.cs` owns live audio
   suppress/restore, decoder audio callback wiring, playback chunk
   validation/return, playback PTS gate handling, pooled audio-buffer return
   warnings, playback-state audio/preview routing, best-effort preview
   submission guards, audio renderer pause/resume/flush guards, playback
-  startup/seek audio prebuffering, target/timeout/frame-budget policy, borrowed
-  CPU-frame retention capped at one before rewind, decoder
-  rewind after decode-ahead audio priming, audio-master clock sample state,
+  startup/seek audio prebuffering, target/timeout/stash-size policy (audio is
+  primed by demuxing ahead while the decoder stashes video packets; the
+  decoder is never rewound), audio-master clock sample state,
   stale-clock detection, read-only A/V drift projection, clock-drift
   computation, correction policy, delay-adjustment counter projection,
   fallback accounting/classification, fallback reason/drift/clock-age telemetry,
-  and wall-clock sleep/spin pacing.
+  and pacing waits on the playback thread's `PrecisionWaiter` (high-resolution
+  waitable timer with a short spin tail; sleep/spin fallback without it).
 - `FlashbackPlaybackController.PlaybackFrames.cs` owns continuous playback frame
-  decode/submit pacing, seek/scrub keyframe display, keyframe seek/reopen retry,
+  decode/submit pacing, seek/scrub keyframe-or-exact display, keyframe seek/reopen retry,
   file-PTS mapping for displayed seek frames, seek/scrub decoded-frame
   acquisition, adjacent-segment fallback display, preview-sink selection,
   submission telemetry, renderer calls, validation, GPU/CPU skip reasons,
   NV12/P010 byte-size policy, held-frame handoff/release, no-frame seek-display
   failure accounting, frame-skip catch-up, frame-rate resolution,
-  continuous-playback snap threshold policy, pause-from-live target calculation,
+  continuous-playback snap threshold policy,
   software-decode budget detection, decoder hardware-acceleration status
   refresh, over-budget snap telemetry, rolling playback cadence metric updates,
   decoded PTS cadence state/projection/tracking, mismatch telemetry,
@@ -1029,7 +1067,7 @@ Entry points:
   DTOs, percentile projection, private metric counters, read-only projections,
   cadence/decode sample rings, playback metric reset, seek-cap telemetry, decode
   timing wrappers, max decode phase state, and dominant decode phase resolution.
-- `FlashbackEncoderSink.cs` owns construction, root field state, buffer session creation, generated session ID formatting, encoder option construction, segment extension policy, transport container selection, session frame-rate rational validation, recording-to-Flashback session mapping, recording-format codec mapping, split-encode wire mapping, recording frame-rate argument parsing, encoder initialization, active-segment setup, startup queue allocation, session validation, frame-rate fallback/clamping, startup metric/counter reset, video diagnostics reset, start-failure rollback, PTS continuation, background task startup, start-transaction orchestration, queue completion/signaling, shared queue-depth accounting, cancellation waits, failure notification, video/audio/GPU packet DTOs, video enqueue result classification, ArrayPool packet buffer rent/return helpers, leased video packet disposal, queued-buffer cleanup, raw/lease/GPU video enqueue entry points, video/GPU rejection guards, frame-size validation, texture AddRef ownership, audio/microphone enqueue entry points, force-rotate audio rejection guards, hot WASAPI writer adapters, video/GPU/audio/microphone queue admission transactions, queue-full classification, producer wakeup signaling, enqueue lifecycle guards, channel writes, rejection counters, backlog eviction accounting, throttled queue diagnostics, the background encode loop, normal drain ordering, force-rotate dispatch, export force-rotate state/status projections, idle waits, request admission/publication, timeout/cancellation result classification, committed-pending grace handling, pending-request cancellation, force-rotate drain abort policy, the `ForceRotateRequest` state machine, queue drain-to-rotate ordering, commit/rotation execution, result completion, failure logging, draining-gate cleanup, cancellation handling, fatal cleanup, final segment registration, bounded packet drains, frame-size defense, encoder submission, encoder PTS resolution, latest-PTS and disk-byte refresh, frame-encoded event dispatch, segment-rotation triggering, active-segment registration, rotation-failure recovery, public runtime counters, queue telemetry, encoder status/format projections, recording PTS boundary state, active-recording projection, begin-recording availability checks, the `IRecordingSink.StartAsync` adapter, recording begin/end validation, eviction-pause handoff, active-state publication, PTS clamping, ready logging, saturated PTS conversion, non-negative byte/duration math, best-effort eviction resume fallback, `StopAsync`, stop drain timeout classification, final stop result reporting, `Dispose`/`DisposeAsync`, deferred cleanup, final dispose reset, cancellation/disposal helpers, and best-effort encoder/buffer manager disposal.
+- `FlashbackEncoderSink.cs` owns construction, root field state, keyframe-event forwarding into the buffer manager's index, playback stream hint publication, buffer session creation, generated session ID formatting, encoder option construction, segment extension policy, transport container selection, session frame-rate rational validation, recording-to-Flashback session mapping, recording-format codec mapping, split-encode wire mapping, recording frame-rate argument parsing, encoder initialization, active-segment setup, startup queue allocation, session validation, frame-rate fallback/clamping, startup metric/counter reset, video diagnostics reset, start-failure rollback, PTS continuation, background task startup, start-transaction orchestration, queue completion/signaling, shared queue-depth accounting, cancellation waits, failure notification, video/audio/GPU packet DTOs, video enqueue result classification, ArrayPool packet buffer rent/return helpers, leased video packet disposal, queued-buffer cleanup, raw/lease/GPU video enqueue entry points, video/GPU rejection guards, frame-size validation, texture AddRef ownership, audio/microphone enqueue entry points, force-rotate audio rejection guards, hot WASAPI writer adapters, video/GPU/audio/microphone queue admission transactions, queue-full classification, producer wakeup signaling, enqueue lifecycle guards, channel writes, rejection counters, backlog eviction accounting, throttled queue diagnostics, the background encode loop, normal drain ordering, force-rotate dispatch, export force-rotate state/status projections, idle waits, request admission/publication, timeout/cancellation result classification, committed-pending grace handling, pending-request cancellation, force-rotate drain abort policy, the `ForceRotateRequest` state machine, queue drain-to-rotate ordering, commit/rotation execution, result completion, failure logging, draining-gate cleanup, cancellation handling, fatal cleanup, final segment registration, bounded packet drains, frame-size defense, encoder submission, encoder PTS resolution, latest-PTS and disk-byte refresh, frame-encoded event dispatch, segment-rotation triggering, active-segment registration, rotation-failure recovery, public runtime counters, queue telemetry, encoder status/format projections, recording PTS boundary state, active-recording projection, begin-recording availability checks, the `IRecordingSink.StartAsync` adapter, recording begin/end validation, eviction-pause handoff, active-state publication, PTS clamping, ready logging, saturated PTS conversion, non-negative byte/duration math, best-effort eviction resume fallback, `StopAsync`, stop drain timeout classification, final stop result reporting, `Dispose`/`DisposeAsync`, deferred cleanup, final dispose reset, cancellation/disposal helpers, and best-effort encoder/buffer manager disposal.
 - The sink's internal rotation-operation constructor supports controlled calls
   into the real encoder while `RotateSegment` retains path, index, counter, and
   fatal-state ownership. Normal construction calls the concrete encoder directly.
@@ -1720,8 +1758,10 @@ Primary current owners:
   encoder discovery from the selected native runtime and cached split-encode capability
   trials through bounded `NativeFfmpegCapabilityProbe` app children. The private child
   uses the same runtime, isolated logs, explicit result validation and supervised process
-  lifetime. The locator also owns one-time native initialization, FFmpeg log callback
-  routing, and recoverable seek-log suppression.
+  lifetime. The locator also owns one-time native initialization, the native FFmpeg
+  log callback (an unmanaged function pointer that filters by level before any
+  marshalling, formats error lines with the original va_list, and rate limits
+  them), and recoverable seek-log suppression.
 - `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs` owns app-surface
   legacy `Program` helpers, named-pipe automation server framing/security/app
   auth wiring checks, project-file build/publish policy contract helpers, and
@@ -1847,12 +1887,15 @@ Primary current owners:
 - `Sussudio/Services/Runtime/SettingsService.cs` owns `UserSettings`, the
   source-generated JSON context, and LocalAppData settings persistence:
   serialized load/save, temporary-file replacement, and failure reporting.
+- `Sussudio/Services/Gpu/NvmlMonitor.cs` owns NVML polling, demand-gated by the stats dock through `SetPollingDemand`; the timer is parked while nothing displays the values.
 - `Sussudio/Services/Runtime/RuntimeHelpers.cs` owns runtime helper types
   shared across multiple services: AtomicMax, AtomicCounter, QueueAdmission,
   TelemetryAgeHelper, EnvironmentHelpers, RingBufferHelpers, EncodingTaskHelpers,
   PercentileHelpers, IntervalCadenceStatistics (record struct), shared minimum-window-size Win32
-  subclassing, bounded external process supervision contracts and runner, and
-  best-effort MMCSS worker registration. `ProcessRunResult` retains independent
+  subclassing, bounded external process supervision contracts and runner,
+  best-effort MMCSS worker registration, and `PrecisionWaiter` (a per-thread
+  high-resolution waitable timer for frame pacing, with a sleep/spin fallback
+  when the OS declines one). `ProcessRunResult` retains independent
   stdout/stderr read exceptions; diagnostic wrappers preserve each original
   cause. `AtomicCounter.TrySubtractSaturating` saturates at zero and reports success only
   when the entire positive amount was available.

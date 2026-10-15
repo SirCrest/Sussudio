@@ -160,12 +160,19 @@ public sealed partial class AutomationDiagnosticsHub
             token => _snapshotQueryPort.GetRecordingStatsSnapshotAsync(token),
             snapshot => snapshot.CaptureSessionEpoch,
             cancellationToken).ConfigureAwait(false);
-        var previewRuntimeFragment = await CaptureSnapshotFragmentAsync(
-            collectionEpoch,
-            _previewSnapshotProvider,
-            _previewSnapshotProvider,
-            snapshot => snapshot.PreviewRuntimeEpoch,
-            cancellationToken).ConfigureAwait(false);
+        var previewRuntimeFragment = PreviewRuntimeEpochProvider is { } previewEpochProvider
+            ? await CaptureSnapshotFragmentAsync(
+                collectionEpoch,
+                previewEpochProvider,
+                _previewSnapshotProvider,
+                snapshot => snapshot.PreviewRuntimeEpoch,
+                cancellationToken).ConfigureAwait(false)
+            : await CaptureSnapshotFragmentAsync(
+                collectionEpoch,
+                _previewSnapshotProvider,
+                _previewSnapshotProvider,
+                snapshot => snapshot.PreviewRuntimeEpoch,
+                cancellationToken).ConfigureAwait(false);
         var viewModelSnapshot = viewModelFragment.Value;
         var captureRuntime = captureRuntimeFragment.Value;
         var health = healthFragment.Value;

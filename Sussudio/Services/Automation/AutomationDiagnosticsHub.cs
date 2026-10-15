@@ -19,6 +19,13 @@ public sealed partial class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
 {
     private readonly IAutomationSnapshotQueryPort _snapshotQueryPort;
     private readonly Func<CancellationToken, Task<PreviewRuntimeSnapshot>> _previewSnapshotProvider;
+
+    /// <summary>
+    /// Optional cheap epoch probe for the preview runtime producer. When set, the
+    /// before/after producer-change check reads the epoch instead of building the
+    /// whole preview snapshot (percentile passes over the renderer's sample rings) twice more per tick.
+    /// </summary>
+    public Func<CancellationToken, Task<long>>? PreviewRuntimeEpochProvider { get; set; }
     private readonly RecordingVerifier _recordingVerifier;
     private readonly object _stateLock = new();
     private readonly List<DiagnosticsEvent> _recentEvents = new();

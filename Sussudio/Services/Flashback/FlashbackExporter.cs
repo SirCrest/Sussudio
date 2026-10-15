@@ -124,14 +124,6 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         }
     }
 
-    private void EnsureNotDisposed()
-    {
-        lock (_lifetimeSync)
-        {
-            ObjectDisposedException.ThrowIf(_disposed, this);
-        }
-    }
-
     private static FinalizeResult CreateCancelledExportResult(string outputPath)
     {
         const string message = "Flashback export canceled.";

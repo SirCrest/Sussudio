@@ -37,12 +37,15 @@ public sealed class NvmlMonitor : IDisposable
     private readonly IntPtr _device;
     private readonly string? _gpuName;
     private readonly Timer? _pollTimer;
+    private readonly int _pollIntervalMs;
     private NvmlSnapshot? _latestSnapshot;
     private int _pollInProgress;
+    private int _pollingDemand;
     private bool _disposed;
 
-    public NvmlMonitor(int pollIntervalMs = 500)
+    public NvmlMonitor(int pollIntervalMs = 1000)
     {
+        _pollIntervalMs = Math.Max(250, pollIntervalMs);
         try
         {
             if (!TryLoadNativeLibrary())
@@ -78,7 +81,10 @@ public sealed class NvmlMonitor : IDisposable
             // Avoid polling synchronously during startup/GPU pipeline transitions.
             // NVML driver calls can raise corrupted-state access violations that
             // bypass managed catch blocks; keep polling serialized and delayed.
-            _pollTimer = new Timer(Poll, null, pollIntervalMs, pollIntervalMs);
+            // The stats dock is the only consumer, so the timer stays parked until
+            // SetPollingDemand(true): ten driver calls per tick are not spent while
+            // nothing displays them.
+            _pollTimer = new Timer(Poll, null, Timeout.Infinite, Timeout.Infinite);
         }
         catch (Exception ex)
         {
@@ -90,6 +96,42 @@ public sealed class NvmlMonitor : IDisposable
     public bool IsAvailable => _available;
 
     public NvmlSnapshot? GetLatestSnapshot() => Volatile.Read(ref _latestSnapshot);
+
+    /// <summary>
+    /// Starts polling when a consumer (the stats dock) is showing the values and parks
+    /// the timer again when it is not. The first poll runs immediately on demand.
+    /// </summary>
+    public void SetPollingDemand(bool active)
+    {
+        if (!_available || _disposed || _pollTimer == null)
+        {
+            return;
+        }
+
+        var requested = active ? 1 : 0;
+        if (Interlocked.Exchange(ref _pollingDemand, requested) == requested)
+        {
+            return;
+        }
+
+        try
+        {
+            if (active)
+            {
+                _pollTimer.Change(0, _pollIntervalMs);
+            }
+            else
+            {
+                _pollTimer.Change(Timeout.Infinite, Timeout.Infinite);
+            }
+
+            Logger.Log($"NVML_MONITOR_DEMAND active={active} interval_ms={_pollIntervalMs}");
+        }
+        catch (ObjectDisposedException)
+        {
+            // Dispose won the race; nothing to schedule.
+        }
+    }
 
     private void Poll(object? state)
     {
