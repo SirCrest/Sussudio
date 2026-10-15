@@ -40,6 +40,13 @@ public sealed class FrameTraceRecorder
         _threads = threads;
     }
 
+    /// <summary>
+    /// Raised, outside the lock and on the calling thread, after a trace started or stopped (the value of
+    /// <see cref="IsEnabled"/> changed). Demand-driven sensors subscribe so none polls while no trace runs.
+    /// Handlers must be quick and must not throw.
+    /// </summary>
+    public event Action? Changed;
+
     /// <summary>True while a trace is recording. One volatile read.</summary>
     public bool IsEnabled => _active is not null;
 
@@ -68,6 +75,7 @@ public sealed class FrameTraceRecorder
     /// <summary>Starts a trace with the requested capacity (rounded and clamped). Rejected while one is running.</summary>
     public FrameTraceStartResult Start(int requestedCapacity)
     {
+        FrameTraceStartResult result;
         lock (_gate)
         {
             if (_active is { } running)
@@ -78,13 +86,18 @@ public sealed class FrameTraceRecorder
             var buffer = new FrameTraceBuffer(requestedCapacity);
             _frozen = null;
             _active = buffer;
-            return new FrameTraceStartResult(true, null, buffer.Capacity);
+            result = new FrameTraceStartResult(true, null, buffer.Capacity);
         }
+
+        RaiseChanged();
+        return result;
     }
 
     /// <summary>Freezes the running trace. Harmless when nothing is running.</summary>
     public FrameTraceStatus Stop()
     {
+        FrameTraceStatus status;
+        var stopped = false;
         lock (_gate)
         {
             if (_active is { } running)
@@ -92,10 +105,18 @@ public sealed class FrameTraceRecorder
                 running.Freeze();
                 _frozen = running;
                 _active = null;
+                stopped = true;
             }
 
-            return StatusLocked();
+            status = StatusLocked();
         }
+
+        if (stopped)
+        {
+            RaiseChanged();
+        }
+
+        return status;
     }
 
     public FrameTraceStatus GetStatus()
@@ -229,6 +250,19 @@ public sealed class FrameTraceRecorder
 
         error = null;
         return true;
+    }
+
+    private void RaiseChanged()
+    {
+        // A subscriber must never turn a trace command into a failure; sensors report their own faults.
+        try
+        {
+            Changed?.Invoke();
+        }
+        catch (Exception)
+        {
+            // Intentionally swallowed: the trace start or stop itself already succeeded.
+        }
     }
 
     private FrameTraceStatus StatusLocked()

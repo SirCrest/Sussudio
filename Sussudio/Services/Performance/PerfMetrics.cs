@@ -59,10 +59,11 @@ public static class PerfMetrics
     // ui, runtime, gpu
     public static readonly PerfHistogram UiDispatcherLatency = Time("ui.dispatcher_latency", "UI responsiveness probe: dispatcher enqueue to run");
     public static readonly PerfHistogram GcPause = Time("gc.pause", "each GC suspension, from the runtime event listener");
-    public static readonly PerfHistogram GpuEngine3d = Percent("gpu.engine.3d", "PDH GPU Engine 3D utilization for this process, 1 Hz while sensors run");
-    public static readonly PerfHistogram GpuEngineVideoEncode = Percent("gpu.engine.video_encode", "PDH GPU Engine video encode utilization for this process, 1 Hz while sensors run");
-    public static readonly PerfHistogram GpuEngineVideoDecode = Percent("gpu.engine.video_decode", "PDH GPU Engine video decode utilization for this process, 1 Hz while sensors run");
-    public static readonly PerfHistogram GpuEngineCopy = Percent("gpu.engine.copy", "PDH GPU Engine copy utilization for this process, 1 Hz while sensors run");
+    public static readonly PerfHistogram GpuEngine3d = CentiPercent("gpu.engine.3d", "PDH GPU Engine 3D utilization of this process (sum over its 3D engine instances), 1 Hz while sensors run");
+    public static readonly PerfHistogram GpuEngineVideoEncode = CentiPercent("gpu.engine.video_encode", "PDH GPU Engine video encode utilization of this process, 1 Hz while sensors run");
+    public static readonly PerfHistogram GpuEngineVideoDecode = CentiPercent("gpu.engine.video_decode", "PDH GPU Engine video decode utilization of this process, 1 Hz while sensors run");
+    public static readonly PerfHistogram GpuEngineCopy = CentiPercent("gpu.engine.copy", "PDH GPU Engine copy utilization of this process, 1 Hz while sensors run");
+    public static readonly PerfHistogram GpuEngineOther = CentiPercent("gpu.engine.other", "PDH GPU Engine utilization of this process on every other engine type (compute, video processing, security, ...), 1 Hz while sensors run");
     public static readonly PerfHistogram GpuNvmlGpuUtil = Percent("gpu.nvml.gpu_util", "NVML GPU utilization at each NVML poll");
     public static readonly PerfHistogram GpuNvmlEncoderUtil = Percent("gpu.nvml.encoder_util", "NVML encoder utilization at each NVML poll");
     public static readonly PerfHistogram GpuNvmlDecoderUtil = Percent("gpu.nvml.decoder_util", "NVML decoder utilization at each NVML poll");
@@ -87,6 +88,7 @@ public static class PerfMetrics
 
     public static readonly PerfCounter CaptureReadErrors = Registry.Counter("capture.read_errors", "read-loop exceptions");
     public static readonly PerfCounter UiStall50Ms = Registry.Counter("ui.stall_50ms", "UI probe waits over 50 ms");
+    public static readonly PerfCounter PreviewGpuTimingSkipped = Registry.Counter("preview.gpu_timing_skipped", "frames not GPU-timed while timing was enabled: every query slot still pending, or the GPU reported a disjoint timestamp range");
     public static readonly PerfCounter AudioRenderUnderrun = Registry.Counter("audio.render_underrun", "render events with an empty queue");
 
     /// <summary>
@@ -102,4 +104,7 @@ public static class PerfMetrics
 
     private static PerfHistogram Percent(string name, string description) =>
         Registry.Histogram(name, PerfUnit.Percent, description);
+
+    private static PerfHistogram CentiPercent(string name, string description) =>
+        Registry.Histogram(name, PerfUnit.CentiPercent, description);
 }

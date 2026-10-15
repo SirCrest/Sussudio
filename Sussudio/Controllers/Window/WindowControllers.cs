@@ -884,6 +884,8 @@ internal sealed class WindowShutdownCleanupControllerContext
 
     public required Action StopTimers { get; init; }
 
+    public required Action StopTelemetrySensors { get; init; }
+
     public required Action StopStatsOverlay { get; init; }
 
     public required Action StopRecordingVisuals { get; init; }
@@ -930,6 +932,7 @@ internal sealed class WindowShutdownCleanupController
         _context.LifecycleController.MarkClosing();
         _context.DetachMeterActivationHandlers();
         _context.StopTimers();
+        _context.StopTelemetrySensors();
         _context.StopStatsOverlay();
         _context.StopRecordingVisuals();
         _context.DetachMainContentSizeChanged();

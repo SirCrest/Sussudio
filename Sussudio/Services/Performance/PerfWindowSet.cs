@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 
 namespace Sussudio.Services.Performance;
 
@@ -70,12 +71,26 @@ public sealed class PerfWindowSet<TSystem>
     private readonly Dictionary<string, Window> _windows = new(StringComparer.Ordinal);
     private readonly PerfRegistry _registry;
     private readonly Func<TSystem> _captureSystem;
+    private int _openCount;
 
     public PerfWindowSet(PerfRegistry registry, Func<TSystem> captureSystem)
     {
         _registry = registry;
         _captureSystem = captureSystem;
     }
+
+    /// <summary>
+    /// Raised, outside the lock and on the calling thread, after the number of open windows changed (a window was
+    /// started, ended or cancelled; a restart does not change it). Demand-driven sensors subscribe to start and stop
+    /// themselves, so no sensor polls while nothing is open. Handlers must be quick and must not throw.
+    /// </summary>
+    public event Action? Changed;
+
+    /// <summary>
+    /// Number of open windows. One volatile read, no lock: <see cref="List"/> takes the gate that <c>Begin</c> holds
+    /// for the whole baseline capture (milliseconds), which a render thread polling for demand must never wait on.
+    /// </summary>
+    public int OpenCount => Volatile.Read(ref _openCount);
 
     /// <summary>
     /// Starts a window. An existing name restarts from a fresh baseline and the outcome says so; a new name past
@@ -88,6 +103,7 @@ public sealed class PerfWindowSet<TSystem>
             return new PerfWindowBeginResult(PerfWindowBeginOutcome.InvalidName, Count());
         }
 
+        PerfWindowBeginResult result;
         lock (_gate)
         {
             var exists = _windows.ContainsKey(name);
@@ -97,10 +113,18 @@ public sealed class PerfWindowSet<TSystem>
             }
 
             _windows[name] = new Window(name, DateTime.UtcNow, _registry.Snapshot(), _captureSystem());
-            return new PerfWindowBeginResult(
+            Volatile.Write(ref _openCount, _windows.Count);
+            result = new PerfWindowBeginResult(
                 exists ? PerfWindowBeginOutcome.Restarted : PerfWindowBeginOutcome.Started,
                 _windows.Count);
         }
+
+        if (result.Outcome == PerfWindowBeginOutcome.Started)
+        {
+            RaiseChanged();
+        }
+
+        return result;
     }
 
     /// <summary>Delta since <c>begin</c> without closing the window, or null for an unknown name.</summary>
@@ -128,18 +152,33 @@ public sealed class PerfWindowSet<TSystem>
             {
                 return null;
             }
+
+            Volatile.Write(ref _openCount, _windows.Count);
         }
 
+        RaiseChanged();
         return Measure(window);
     }
 
     /// <summary>Discards a window without a report. False when the name is unknown.</summary>
     public bool Cancel(string? name)
     {
+        bool removed;
         lock (_gate)
         {
-            return name is not null && _windows.Remove(name);
+            removed = name is not null && _windows.Remove(name);
+            if (removed)
+            {
+                Volatile.Write(ref _openCount, _windows.Count);
+            }
         }
+
+        if (removed)
+        {
+            RaiseChanged();
+        }
+
+        return removed;
     }
 
     public IReadOnlyList<PerfWindowInfo> List()
@@ -163,6 +202,19 @@ public sealed class PerfWindowSet<TSystem>
         var system = _captureSystem();
         var delta = current.Subtract(window.Baseline);
         return new PerfWindowReading<TSystem>(window.Name, window.StartedUtc, delta.ElapsedTicks, delta, window.SystemSample, system);
+    }
+
+    private void RaiseChanged()
+    {
+        // A subscriber must never turn a window command into a failure; sensors report their own faults.
+        try
+        {
+            Changed?.Invoke();
+        }
+        catch (Exception)
+        {
+            // Intentionally swallowed: the window change itself already succeeded.
+        }
     }
 
     private int Count()

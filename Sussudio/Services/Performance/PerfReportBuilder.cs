@@ -46,17 +46,57 @@ public sealed record PerfReportGc(int Gen0, int Gen1, int Gen2, double PauseMs, 
 
 public sealed record PerfReportGpuEngine(string Type, double MeanPercent, double P95Percent);
 
-/// <summary>GPU section. <see cref="DedicatedBytes"/> is null until a sensor measures it.</summary>
+/// <summary>
+/// GPU section. <see cref="Engines"/> are this process's engine utilization while the PDH sensor ran.
+/// <see cref="DedicatedBytes"/> is this process's dedicated GPU memory from the same sensor, null while that sensor is
+/// not running or has no PDH instance for the process. <see cref="Adapters"/> is read on demand when the report is
+/// built (instantaneous gauges); <see cref="AdaptersError"/> says why it is empty when the read failed.
+/// </summary>
 public sealed record PerfReportGpu(
     IReadOnlyList<PerfReportGpuEngine> Engines,
     long? DedicatedBytes,
-    IReadOnlyList<string> Adapters);
+    IReadOnlyList<PerfReportGpuAdapter> Adapters,
+    string? AdaptersError);
 
-public sealed record PerfReportDwm(double? RefreshHz, double? FramesComposedPerSec);
+/// <summary>
+/// DWM compositor view. <see cref="FramesComposedPerSec"/> counts composition passes, not frames shown: a preview that
+/// reaches the display by independent flip, direct flip or an overlay plane is scanned out without DWM composing it,
+/// so on a high-refresh display a low value is normal. <see cref="CompositionPath"/> (<c>unknown</c>, <c>idle</c>,
+/// <c>bypass</c>, <c>composed</c> or <c>mixed</c>) and <see cref="Interpretation"/> read it against the swap chain's
+/// present rate. <see cref="RefreshCountPerSec"/> is the DWM refresh counter's rate; it advances with composition
+/// activity and is NOT a hardware vblank rate (an idle desktop measured 0.2/s on a 120 Hz display): use
+/// <see cref="PerfReportDisplay.VblankPerSec"/> for the display's real refresh cadence.
+/// </summary>
+public sealed record PerfReportDwm(
+    double? RefreshHz,
+    double? FramesComposedPerSec,
+    double? RefreshCountPerSec,
+    string CompositionPath,
+    string Interpretation);
+
+/// <summary>
+/// The preview swap chain as the display sees it, from its DXGI frame statistics (already sampled by the renderer).
+/// Rates are over the QPC interval between the two samples that bound the report interval. <see cref="Available"/>
+/// is false, with <see cref="Note"/> saying why, when there was no renderer, no baseline sample, a re-created swap
+/// chain or no new sample (a lifetime report has no display baseline: use a window).
+/// <see cref="PresentsPerVblank"/> is presents per display refresh (0.5 for 60 fps on a 120 Hz display).
+/// </summary>
+public sealed record PerfReportDisplay(
+    bool Available,
+    string Note,
+    double? SampleSeconds,
+    double? PresentsPerSec,
+    double? VblankPerSec,
+    double? PresentsPerVblank);
 
 public sealed record PerfReportCapture(string IngressClock, double? IngressClockMinOffsetMs);
 
-public sealed record PerfReportSensors(bool Active, string Reason);
+/// <summary>
+/// Whether demand-driven sensors are wanted now (<see cref="Active"/>) and why (<see cref="Reason"/>: <c>knob:off</c>,
+/// <c>knob:on</c>, <c>window:&lt;names&gt;</c>, <c>trace</c> or <c>idle</c>), the value of the sensors knob
+/// (<see cref="Mode"/>) and one line per sensor and for GPU timing (<see cref="Details"/>).
+/// </summary>
+public sealed record PerfReportSensors(bool Active, string Reason, string Mode, IReadOnlyList<string> Details);
 
 public sealed record PerfReportTrace(bool Running, long Events, int Capacity);
 
@@ -77,6 +117,7 @@ public sealed record PerfReport(
     PerfReportGc Gc,
     PerfReportGpu Gpu,
     PerfReportDwm Dwm,
+    PerfReportDisplay Display,
     PerfReportCapture Capture,
     PerfReportSensors Sensors,
     PerfReportTrace Trace,
@@ -85,8 +126,9 @@ public sealed record PerfReport(
 
 /// <summary>
 /// Builds the perf report from the live registry: process lifetime, or the delta of a measurement window. Time metrics
-/// recorded in microseconds are reported in milliseconds; every other metric keeps its own unit. A lifetime report and
-/// a window report have one shape so tools have one parser.
+/// recorded in microseconds are reported in milliseconds and percentages recorded in hundredths of a percent are
+/// reported in percent; every other metric keeps its own unit. A lifetime report and a window report have one shape
+/// so tools have one parser.
 /// </summary>
 public static class PerfReportBuilder
 {
@@ -96,6 +138,7 @@ public static class PerfReportBuilder
         ["gpu.engine.video_encode"] = "VideoEncode",
         ["gpu.engine.video_decode"] = "VideoDecode",
         ["gpu.engine.copy"] = "Copy",
+        ["gpu.engine.other"] = "Other",
         ["gpu.nvml.gpu_util"] = "NvmlGpu",
         ["gpu.nvml.encoder_util"] = "NvmlEncoder",
         ["gpu.nvml.decoder_util"] = "NvmlDecoder",
@@ -157,9 +200,13 @@ public static class PerfReportBuilder
         {
             if (sample.Histogram is { } histogram)
             {
+                var scale = UnitScale(sample.Info.Unit);
                 if (GpuEngineMetrics.TryGetValue(sample.Info.Name, out var engineType) && !sample.IsIdle)
                 {
-                    gpuEngines.Add(new PerfReportGpuEngine(engineType, Round(histogram.Mean), Round(histogram.Percentile(95))));
+                    gpuEngines.Add(new PerfReportGpuEngine(
+                        engineType,
+                        Round(histogram.Mean * scale),
+                        Round(histogram.Percentile(95) * scale)));
                 }
 
                 if (!Wanted(sample, prefix, includeIdle))
@@ -167,7 +214,6 @@ public static class PerfReportBuilder
                     continue;
                 }
 
-                var scale = sample.Info.Unit == PerfUnit.Microseconds ? 0.001 : 1.0;
                 metrics.Add(new PerfReportMetric(
                     sample.Info.Name,
                     UnitName(sample.Info.Unit),
@@ -210,10 +256,20 @@ public static class PerfReportBuilder
             composedPerSec = Round(Math.Max(0, composedNow - composedThen) / seconds);
         }
 
+        double? refreshCountPerSec = null;
+        if (current.DwmRefreshCount is { } refreshNow && baseline.DwmRefreshCount is { } refreshThen && seconds > 0)
+        {
+            refreshCountPerSec = Round(Math.Max(0, refreshNow - refreshThen) / seconds);
+        }
+
+        var display = BuildDisplay(baseline.Display, current.Display);
+        var composition = DwmCompositionInterpreter.Classify(composedPerSec, display.PresentsPerSec, current.DwmRefreshHz);
+
         var ingressKind = PerfIngressClock.Kind;
         var trace = FrameTrace.Recorder.GetStatus();
         var windows = PerfWindows.Set.List();
-        var (sensorsActive, sensorsReason) = SensorDemand(windows, trace.Running);
+        var sensors = TelemetrySensors.Describe(windows.Select(window => window.Name).ToList(), trace.Running);
+        var memory = GpuMemorySensor.Read();
 
         var markers = PerfMarkers.Log.Snapshot()
             .Where(marker => window is null || marker.TimestampUtc >= startedUtc)
@@ -239,10 +295,16 @@ public static class PerfReportBuilder
             BuildThreads(baseline, current),
             process,
             gc,
-            new PerfReportGpu(gpuEngines, DedicatedBytes: null, Array.Empty<string>()),
-            new PerfReportDwm(current.DwmRefreshHz is { } hz ? Round(hz) : null, composedPerSec),
+            new PerfReportGpu(gpuEngines, TelemetrySensors.GpuEngineStatus?.DedicatedBytes, memory.Adapters, memory.Error),
+            new PerfReportDwm(
+                current.DwmRefreshHz is { } hz ? Round(hz) : null,
+                composedPerSec,
+                refreshCountPerSec,
+                composition.Path,
+                composition.Interpretation),
+            display,
             new PerfReportCapture(PerfIngressClock.Name(ingressKind), PerfIngressClock.MinOffsetMs is { } offset ? Round(offset) : null),
-            new PerfReportSensors(sensorsActive, sensorsReason),
+            new PerfReportSensors(sensors.Active, sensors.Reason, sensors.Mode, sensors.Details),
             new PerfReportTrace(trace.Running, trace.Retained, trace.Capacity),
             knobs,
             markers);
@@ -285,17 +347,54 @@ public static class PerfReportBuilder
             .ToList();
     }
 
-    // Sensors that wake threads run on demand: while a window is open or a trace runs. (The always-available process,
-    // GC and DWM readings in this report cost nothing to leave idle.)
-    private static (bool Active, string Reason) SensorDemand(IReadOnlyList<PerfWindowInfo> windows, bool traceRunning)
+    // Rates come from the swap chain's DXGI frame statistics. Both counters of one sample were read together, so the
+    // QPC time of the vertical sync in each sample (not the report clock, which may be far from the last sample if
+    // the preview stopped) is the interval both rates are divided by.
+    private static PerfReportDisplay BuildDisplay(PerfDisplayCounters? baseline, PerfDisplayCounters? current)
     {
-        if (windows.Count > 0)
+        if (current is null)
         {
-            return (true, "window:" + string.Join(",", windows.Select(window => window.Name)));
+            return DisplayUnavailable("No preview renderer is sampling DXGI frame statistics.");
         }
 
-        return traceRunning ? (true, "trace") : (false, "idle");
+        if (baseline is null)
+        {
+            return DisplayUnavailable(
+                "The interval began before the preview had a DXGI frame statistics sample. A lifetime report has no display baseline: begin a measurement window with the preview running.");
+        }
+
+        if (baseline.Generation != current.Generation)
+        {
+            return DisplayUnavailable("The preview swap chain or device was re-created during the interval, so the DXGI counters restarted.");
+        }
+
+        var qpcTicks = current.SyncQpcTime - baseline.SyncQpcTime;
+        if (qpcTicks <= 0)
+        {
+            return DisplayUnavailable("No new DXGI frame statistics sample arrived during the interval (the preview was not presenting).");
+        }
+
+        var presents = current.PresentCount - baseline.PresentCount;
+        var vblanks = current.SyncRefreshCount - baseline.SyncRefreshCount;
+        if (presents < 0 || vblanks < 0)
+        {
+            return DisplayUnavailable("The DXGI counters went backwards during the interval.");
+        }
+
+        var sampleSeconds = qpcTicks / (double)Stopwatch.Frequency;
+        var presentsPerSec = presents / sampleSeconds;
+        var vblankPerSec = vblanks / sampleSeconds;
+        return new PerfReportDisplay(
+            true,
+            "Rates over the QPC interval between the first and last DXGI frame statistics sample of the report interval.",
+            Round(sampleSeconds),
+            Round(presentsPerSec),
+            Round(vblankPerSec),
+            vblankPerSec > 0 ? Round(presentsPerSec / vblankPerSec) : null);
     }
+
+    private static PerfReportDisplay DisplayUnavailable(string note) =>
+        new(false, note, null, null, null, null);
 
     private static bool Wanted(PerfMetricSample sample, string? prefix, bool includeIdle)
     {
@@ -311,8 +410,16 @@ public static class PerfReportBuilder
     {
         PerfUnit.Microseconds or PerfUnit.Milliseconds => "ms",
         PerfUnit.Bytes => "bytes",
-        PerfUnit.Percent => "percent",
+        PerfUnit.Percent or PerfUnit.CentiPercent => "percent",
         _ => "count",
+    };
+
+    // Multiplier from a histogram's recorded integer values to the reported unit.
+    private static double UnitScale(PerfUnit unit) => unit switch
+    {
+        PerfUnit.Microseconds => 0.001,
+        PerfUnit.CentiPercent => 0.01,
+        _ => 1.0,
     };
 
     private static double Rate(long count, double seconds) => seconds > 0 ? count / seconds : 0;

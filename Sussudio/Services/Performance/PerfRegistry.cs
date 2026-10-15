@@ -11,7 +11,10 @@ public enum PerfMetricKind
     Counter,
 }
 
-/// <summary>Unit of the raw recorded values. Microsecond metrics are reported in milliseconds.</summary>
+/// <summary>
+/// Unit of the raw recorded values. Microsecond metrics are reported in milliseconds and centi-percent metrics in
+/// percent. Members are appended, never reordered or renamed.
+/// </summary>
 public enum PerfUnit
 {
     Microseconds,
@@ -19,6 +22,8 @@ public enum PerfUnit
     Bytes,
     Percent,
     Count,
+    /// <summary>Hundredths of a percent (1234 is 12.34 %): a histogram records integers, and PDH utilization needs the fraction.</summary>
+    CentiPercent,
 }
 
 /// <summary>Identity of a metric: a stable dotted name (wire contract), its kind and unit, and a one-line description.</summary>

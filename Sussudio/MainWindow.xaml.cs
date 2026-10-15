@@ -15,6 +15,7 @@ using Sussudio.Controllers;
 using Sussudio.Models;
 using Sussudio.Services.Audio;
 using Sussudio.Services.Gpu;
+using Sussudio.Services.Performance;
 using Sussudio.Services.Preview;
 using Sussudio.ViewModels;
 
@@ -28,6 +29,11 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private readonly DispatcherQueue _dispatcherQueue;
     private readonly WindowAutomationHostLifecycleController _automationHostLifecycleController;
     private NvmlMonitor? _nvmlMonitor;
+
+    // The UI responsiveness probe re-enqueues one Action every 100 ms while perf demand lasts; converting it to the
+    // dispatcher's delegate type once keeps that enqueue allocation-free. Only the probe thread touches these two.
+    private Action? _telemetryProbeAction;
+    private DispatcherQueueHandler? _telemetryProbeHandler;
     private FullScreenController _fullScreenController = null!;
     private WindowShutdownCleanupController _windowShutdownCleanupController = null!;
     private int _wasapiEmergencyCloseStarted;
@@ -58,6 +64,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         InitializeWindowTitleController();
         ApplyWindowTitle();
         _nvmlMonitor = new NvmlMonitor();
+        TelemetrySensors.Configure(TryEnqueueTelemetryProbe);
         _automationHostLifecycleController = new WindowAutomationHostLifecycleController(
             ViewModel,
             GetPreviewRuntimeSnapshotAsync,
@@ -504,6 +511,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             CompleteWindowCloseRequest = () => CompleteWindowCloseRequest(),
             DetachMeterActivationHandlers = DetachMeterActivationHandlers,
             StopTimers = StopShutdownTimers,
+            StopTelemetrySensors = TelemetrySensors.Shutdown,
             StopStatsOverlay = StopStatsOverlayForShutdown,
             StopRecordingVisuals = StopRecordingVisualsForShutdown,
             DetachMainContentSizeChanged = DetachMainContentSizeChanged,
@@ -517,6 +525,18 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             DisposeNvmlMonitor = () => _nvmlMonitor?.Dispose(),
             DisposeViewModelAsync = ViewModel.DisposeAsync
         });
+    }
+
+    // Non-blocking by contract: TryEnqueue only queues. Called from the telemetry probe thread, one probe at a time.
+    private bool TryEnqueueTelemetryProbe(Action probe)
+    {
+        if (!ReferenceEquals(_telemetryProbeAction, probe))
+        {
+            _telemetryProbeHandler = new DispatcherQueueHandler(probe);
+            _telemetryProbeAction = probe;
+        }
+
+        return _dispatcherQueue.TryEnqueue(_telemetryProbeHandler!);
     }
 
     private async void MainWindow_Closed(object sender, WindowEventArgs args)

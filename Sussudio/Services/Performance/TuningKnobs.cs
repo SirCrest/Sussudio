@@ -16,6 +16,13 @@ public static class TuningKnobs
         new ProcessEnvironment(),
         message => Logger.Log(message, nameof(TuningKnobs)));
 
+    /// <summary>Raised after any knob was set or reset; see <see cref="TuningKnobStore.Changed"/>.</summary>
+    public static event Action Changed
+    {
+        add => Store.Changed += value;
+        remove => Store.Changed -= value;
+    }
+
     /// <summary>Captures every knob's launch value. Call once at startup, before any command can change one.</summary>
     public static void CaptureLaunchValues() => Store.CaptureLaunchValues();
 

@@ -18,12 +18,17 @@ public static class TuningKnobCatalog
     private const string ReadLoop = "Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs";
     private const string FlashbackPlayback = "Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs";
     private const string Hub = "Sussudio/Services/Automation/AutomationDiagnosticsHub.cs";
+    private const string GpuTiming = "Sussudio/Services/Preview/D3D11PreviewRenderer.GpuTiming.cs";
+    private const string Sensors = "Sussudio/Services/Performance/TelemetrySensors.cs";
 
     /// <summary>MMCSS task names that exist under HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks on a default install.</summary>
     private static readonly string[] MmcssTasks =
     {
         "Audio", "Capture", "Distribution", "Games", "Low Latency", "Playback", "Pro Audio", "Window Manager",
     };
+
+    /// <summary>The values of every <c>auto|on|off</c> telemetry knob (see <see cref="TelemetrySensorModes"/>).</summary>
+    private static readonly string[] AutoOnOff = { "auto", "on", "off" };
 
     public static IReadOnlyList<TuningKnobDefinition> Knobs { get; } = new[]
     {
@@ -142,6 +147,13 @@ public static class TuningKnobCatalog
             "Sussudio/Controllers/Preview/Startup/PreviewStartupControllers.cs",
             "Preview startup first-visual watchdog; read once on the first preview start of the process."),
 
+        // Telemetry sensors: auto follows demand (an open perf window or a running frame trace). Both are read at most
+        // once a second by their owners and re-evaluated at once when a window, a trace or a knob changes, so they are live.
+        AutoOnOffKnob(TelemetrySensorModes.SensorsKnob, Sensors,
+            "Demand-driven sensors (UI responsiveness probe, GPU engine counters): auto runs them while a perf window is open or a frame trace runs, on forces them on, off forces them off."),
+        AutoOnOffKnob(TelemetrySensorModes.GpuTimingKnob, GpuTiming,
+            "D3D11 GPU timestamp queries around the preview render passes: auto follows the sensor demand, on always measures, off never creates queries. Ignored on the WARP software adapter."),
+
         // Shutdown timeouts: read each time the shutdown path runs, so a change applies to the next shutdown.
         Int("SUSSUDIO_VIEWMODEL_DISPOSE_TIMEOUT_MS", 30000, 1000, 300000, TuningKnobApply.Live,
             "Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs",
@@ -182,6 +194,9 @@ public static class TuningKnobCatalog
 
     private static TuningKnobDefinition Bool(string name, bool defaultOn, TuningKnobApply apply, string owner, string description) =>
         new(name, TuningKnobType.Bool, defaultOn ? "1" : "0", 0, 1, null, apply, owner, description);
+
+    private static TuningKnobDefinition AutoOnOffKnob(string name, string owner, string description) =>
+        new(name, TuningKnobType.Choice, "auto", null, null, AutoOnOff, TuningKnobApply.Live, owner, description);
 
     private static TuningKnobDefinition Mmcss(string name, string defaultTask, TuningKnobApply apply, string owner, string description) =>
         new(name, TuningKnobType.Choice, defaultTask, null, null, MmcssTasks, apply, owner, description);

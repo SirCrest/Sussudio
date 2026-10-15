@@ -9,8 +9,10 @@ namespace Sussudio.Services.Performance;
 
 /// <summary>
 /// Process, runtime and compositor totals at one instant. Every cumulative field is a running total, so a window is
-/// the difference of two samples. <see cref="DwmFramesComposed"/> and <see cref="DwmRefreshHz"/> are null when the
-/// compositor timing call fails.
+/// the difference of two samples. <see cref="DwmFramesComposed"/> (DWM composition passes, <c>FrameNumber</c>),
+/// <see cref="DwmRefreshCount"/> (the DWM refresh counter, <c>RefreshCount</c>) and <see cref="DwmRefreshHz"/> (the
+/// nominal display rate) are null when the compositor timing call fails. <see cref="Display"/> is the preview swap
+/// chain DXGI frame statistics, null while no preview renderer is sampling them.
 /// </summary>
 public sealed record PerfSystemSample(
     long Timestamp,
@@ -28,15 +30,21 @@ public sealed record PerfSystemSample(
     double GcPauseMs,
     long GcAllocatedBytes,
     long? DwmFramesComposed,
+    long? DwmRefreshCount,
     double? DwmRefreshHz,
+    PerfDisplayCounters? Display,
     IReadOnlyList<HotThreadSample> ThreadSamples);
+
+/// <summary>One call of the DWM composition timing API: composition passes, refresh counter and nominal refresh rate.</summary>
+internal readonly record struct DwmReading(long? FramesComposed, long? RefreshCount, double? RefreshHz);
 
 /// <summary>
 /// Always-available process sensors: CPU time, memory, I/O, handle and thread counts, GC totals, per-GC pause (from a
-/// runtime EventListener that records <c>gc.pause</c> and a trace event), and DWM composition timing. Nothing here
-/// runs on a timer: <see cref="Capture"/> reads everything on demand, and the only background work is the GC event
-/// listener, which wakes once per collection. Slice-two sensors (PDH GPU engines, VRAM, UI responsiveness probe,
-/// NVML) are demand-driven and live elsewhere.
+/// runtime EventListener that records <c>gc.pause</c> and a trace event), DWM composition timing, and the preview
+/// swap chain DXGI frame statistics (through <see cref="PerfDisplaySource"/>). Nothing here runs on a timer:
+/// <see cref="Capture"/> reads everything on demand, and the only background work is the GC event listener, which
+/// wakes once per collection. The demand-driven sensors (PDH GPU engines, UI responsiveness probe) and NVML live in
+/// <c>TelemetrySensors</c> and their own files.
 /// </summary>
 public static class ProcessSensors
 {
@@ -102,6 +110,7 @@ public static class ProcessSensors
             }
 
             var age = nowUtc - startUtc;
+            var dwm = ReadDwm();
             var created = new PerfSystemSample(
                 now - (long)(age.TotalSeconds * Stopwatch.Frequency),
                 startUtc,
@@ -117,8 +126,10 @@ public static class ProcessSensors
                 Gen2Collections: 0,
                 GcPauseMs: 0,
                 GcAllocatedBytes: 0,
-                DwmFramesComposed: ReadDwm(out _),
+                DwmFramesComposed: dwm.FramesComposed,
+                DwmRefreshCount: dwm.RefreshCount,
                 DwmRefreshHz: null,
+                Display: PerfDisplaySource.Read(),
                 ThreadSamples: Array.Empty<HotThreadSample>());
             return Interlocked.CompareExchange(ref _processStartBaseline, created, null) ?? created;
         }
@@ -165,7 +176,7 @@ public static class ProcessSensors
             // Thread count is informational; a failed enumeration reports zero.
         }
 
-        var dwmFrames = ReadDwm(out var refreshHz);
+        var dwmReading = ReadDwm();
         return new PerfSystemSample(
             timestamp,
             capturedUtc,
@@ -181,33 +192,32 @@ public static class ProcessSensors
             GC.CollectionCount(2),
             GC.GetTotalPauseDuration().TotalMilliseconds,
             GC.GetTotalAllocatedBytes(precise: false),
-            dwmFrames,
-            refreshHz,
+            dwmReading.FramesComposed,
+            dwmReading.RefreshCount,
+            dwmReading.RefreshHz,
+            PerfDisplaySource.Read(),
             HotThreads.Sample());
     }
 
-    private static long? ReadDwm(out double? refreshHz)
+    private static DwmReading ReadDwm()
     {
-        refreshHz = null;
         var info = new DwmTimingInfo { Size = (uint)Marshal.SizeOf<DwmTimingInfo>() };
         try
         {
             if (DwmGetCompositionTimingInfo(IntPtr.Zero, ref info) != 0)
             {
-                return null;
+                return default;
             }
         }
         catch (Exception ex) when (ex is DllNotFoundException or EntryPointNotFoundException)
         {
-            return null;
+            return default;
         }
 
-        if (info.RateRefresh.Denominator != 0)
-        {
-            refreshHz = (double)info.RateRefresh.Numerator / info.RateRefresh.Denominator;
-        }
-
-        return (long)info.FrameNumber;
+        double? refreshHz = info.RateRefresh.Denominator != 0
+            ? (double)info.RateRefresh.Numerator / info.RateRefresh.Denominator
+            : null;
+        return new DwmReading((long)info.FrameNumber, (long)info.RefreshCount, refreshHz);
     }
 
     private static void OnGcRuntimeEvent(EventWrittenEventArgs e)
@@ -307,7 +317,7 @@ public static class ProcessSensors
     }
 
     // DWM_TIMING_INFO from dwmapi.h. The header declares it byte-packed (native cbSize is 292); the call rejects any
-    // other cbSize, so the whole structure is declared even though only RateRefresh and FrameNumber are read.
+    // other cbSize, so the whole structure is declared even though only RateRefresh, RefreshCount and FrameNumber are read.
     // Verified against the live API: Pack = 1 gives 292 and a refresh rate matching the display.
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     private struct DwmTimingInfo

@@ -128,6 +128,13 @@ public sealed class TuningKnobStore
         }
     }
 
+    /// <summary>
+    /// Raised, outside the lock and on the calling thread, after a knob was set or reset. Demand-driven sensors
+    /// subscribe so a live <c>auto|on|off</c> knob applies at once without a polling thread. Handlers must be quick
+    /// and must not throw.
+    /// </summary>
+    public event Action? Changed;
+
     /// <summary>Captures every knob's launch value now. Call once early so later changes cannot be mistaken for launch state.</summary>
     public void CaptureLaunchValues()
     {
@@ -205,13 +212,17 @@ public sealed class TuningKnobStore
             return Fail(failure, definition.Name, error);
         }
 
+        TuningKnobChangeResult result;
         lock (_gate)
         {
             CaptureLaunchLocked(definition);
             var previous = _environment.Get(definition.Name);
             _environment.Set(definition.Name, canonical);
-            return Succeed(definition, previous, canonical);
+            result = Succeed(definition, previous, canonical);
         }
+
+        RaiseChanged();
+        return result;
     }
 
     /// <summary>Restores the launch value; an unset launch value removes the variable again.</summary>
@@ -222,12 +233,29 @@ public sealed class TuningKnobStore
             return Fail(TuningKnobFailure.UnknownKnob, name ?? string.Empty, $"Unknown tuning knob '{name}'. Use the knob listing for valid names.");
         }
 
+        TuningKnobChangeResult result;
         lock (_gate)
         {
             var launch = CaptureLaunchLocked(definition);
             var previous = _environment.Get(definition.Name);
             _environment.Set(definition.Name, launch);
-            return Succeed(definition, previous, launch);
+            result = Succeed(definition, previous, launch);
+        }
+
+        RaiseChanged();
+        return result;
+    }
+
+    private void RaiseChanged()
+    {
+        // A subscriber must never turn a knob command into a failure; sensors report their own faults.
+        try
+        {
+            Changed?.Invoke();
+        }
+        catch (Exception)
+        {
+            // Intentionally swallowed: the environment variable was already written.
         }
     }
 
