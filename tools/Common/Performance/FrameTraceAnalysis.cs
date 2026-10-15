@@ -122,12 +122,20 @@ public sealed record TraceSlowFrame(
     bool Dropped,
     IReadOnlyList<string> MissingStages,
     string? DominantStage,
-    IReadOnlyList<TraceFrameStage> Stages);
+    IReadOnlyList<TraceFrameStage> Stages,
+    string? DropReason = null);
 
 /// <summary>Events with no frame (GC, UI stall, automation command, markers): count and size per name.</summary>
 public sealed record TraceAmbientStats(string Name, int Count, double TotalMs, double MaxMs);
 
-public sealed record TraceDropStats(string Name, int Count);
+/// <summary>How many drops of one kind carried a given reason (args.reason of the drop event).</summary>
+public sealed record TraceDropReason(string Reason, int Count);
+
+/// <summary>
+/// Drop events by name. <see cref="Reasons"/> breaks <see cref="Count"/> down by the reason the dump names (the preview
+/// renderer's reason); drops from a dump that predates reasons simply have none, so the reasons can sum to less than the count.
+/// </summary>
+public sealed record TraceDropStats(string Name, int Count, IReadOnlyList<TraceDropReason> Reasons);
 
 public sealed class FrameTraceAnalysis
 {
