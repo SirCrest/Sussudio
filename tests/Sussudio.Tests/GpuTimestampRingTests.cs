@@ -7,7 +7,8 @@ namespace Sussudio.Tests;
 // Failure modes of the GPU timestamp ring (docs/architecture/performance-telemetry.md sections 2.2.1 and 5): every
 // query slot still pending (the frame is skipped, never waited for), disjoint or implausible results, a result that
 // never arrives, a backend that fails or throws at any step (device removed), a span left open by an early return,
-// a second span opened over the first, results arriving out of step with the frames, and ring sizing. The D3D11
+// a second span opened over the first, results arriving out of step with the frames, ring sizing, and spans of exactly
+// zero GPU ticks (counted as unmeasured per render path, never recorded as a zero-length render). The D3D11
 // queries are a fake backend; the static PerfMetrics are read as deltas. The frame-trace span is not asserted here:
 // the trace recorder is a process-wide singleton other tests assert is off.
 public sealed class GpuTimestampRingTests
@@ -81,12 +82,16 @@ public sealed class GpuTimestampRingTests
             Results[slot] = (GpuTimestampPoll.Ready, ticks, frequency, disjoint);
     }
 
-    private readonly record struct Mark(long Recorded, double SumMicroseconds, long Skipped)
+    private readonly record struct Mark(long Recorded, double SumMicroseconds, long Skipped, long Unmeasured)
     {
         public static Mark Now()
         {
             var snapshot = PerfMetrics.PreviewGpuRender.Snapshot();
-            return new Mark(snapshot.Count, snapshot.Sum, PerfMetrics.PreviewGpuTimingSkipped.Read());
+            return new Mark(
+                snapshot.Count,
+                snapshot.Sum,
+                PerfMetrics.PreviewGpuTimingSkipped.Read(),
+                PerfMetrics.PreviewGpuTimingUnmeasured.Read());
         }
     }
 
@@ -182,6 +187,99 @@ public sealed class GpuTimestampRingTests
         Assert.Equal(250, after.SumMicroseconds - before.SumMicroseconds);
         Assert.Equal(4, after.Skipped - before.Skipped);
         Assert.False(ring.IsFailed);
+    }
+
+    [Fact]
+    public void AZeroTickSpanIsCountedAsUnmeasuredAndNeverRecordedAsAZeroLengthRender()
+    {
+        var backend = new FakeBackend(slots: 8);
+        var ring = new GpuTimestampRing(backend, () => 0);
+        var before = Mark.Now();
+
+        Frame(ring, 1);
+        backend.Ready(0, ticks: 0);
+        Frame(ring, 2);
+        backend.Ready(1, ticks: 400);
+        Frame(ring, 3);
+        backend.Ready(2, ticks: 0);
+        Frame(ring, 4);
+        ring.Drain();
+
+        var after = Mark.Now();
+        Assert.Equal(2, after.Unmeasured - before.Unmeasured);
+        Assert.Equal(1, after.Recorded - before.Recorded);
+        Assert.Equal(400, after.SumMicroseconds - before.SumMicroseconds);
+        Assert.Equal(0, after.Skipped - before.Skipped);
+        Assert.Equal(2, ring.Unmeasured);
+        Assert.Equal(1, ring.Recorded);
+        Assert.False(ring.IsFailed);
+    }
+
+    [Fact]
+    public void ARealSubMicrosecondSpanIsRecordedAsOneMicrosecondSoItIsNeverMistakenForUnmeasured()
+    {
+        var backend = new FakeBackend();
+        var ring = new GpuTimestampRing(backend, () => 0);
+        var before = Mark.Now();
+
+        // 300 ticks at 1 GHz is 0.3 us of real work.
+        Frame(ring, 1);
+        backend.Ready(0, ticks: 300, frequency: 1_000_000_000);
+        ring.Drain();
+
+        var after = Mark.Now();
+        Assert.Equal(1, after.Recorded - before.Recorded);
+        Assert.Equal(1, after.SumMicroseconds - before.SumMicroseconds);
+        Assert.Equal(0, after.Unmeasured - before.Unmeasured);
+        Assert.Equal(1, ring.SubMicrosecond);
+    }
+
+    [Fact]
+    public void ADisjointZeroTickSpanIsSkippedNotCountedAsUnmeasured()
+    {
+        var backend = new FakeBackend();
+        var ring = new GpuTimestampRing(backend, () => 0);
+        var before = Mark.Now();
+
+        Frame(ring, 1);
+        backend.Ready(0, ticks: 0, disjoint: true);
+        ring.Drain();
+
+        var after = Mark.Now();
+        Assert.Equal(1, after.Skipped - before.Skipped);
+        Assert.Equal(0, after.Unmeasured - before.Unmeasured);
+        Assert.Equal(0, ring.Unmeasured);
+    }
+
+    [Fact]
+    public void RecordedAndUnmeasuredSpansAreTalliedPerRenderPath()
+    {
+        var backend = new FakeBackend(slots: 8);
+        var ring = new GpuTimestampRing(backend, () => 0);
+
+        void Timed(GpuTimingPath path, long ticks, int slot)
+        {
+            var opened = ring.Begin(frameId: slot, submitTimestamp: 0, path);
+            Assert.Equal(slot, opened);
+            ring.End(opened);
+            backend.Ready(slot, ticks);
+        }
+
+        Timed(GpuTimingPath.VideoProcessor, ticks: 0, slot: 0);
+        Timed(GpuTimingPath.VideoProcessor, ticks: 0, slot: 1);
+        Timed(GpuTimingPath.VideoProcessor, ticks: 90, slot: 2);
+        Timed(GpuTimingPath.Nv12Shader, ticks: 250, slot: 3);
+        Timed(GpuTimingPath.HdrShader, ticks: 0, slot: 4);
+        ring.Drain();
+
+        Assert.Equal(1, ring.RecordedFor(GpuTimingPath.VideoProcessor));
+        Assert.Equal(2, ring.UnmeasuredFor(GpuTimingPath.VideoProcessor));
+        Assert.Equal(1, ring.RecordedFor(GpuTimingPath.Nv12Shader));
+        Assert.Equal(0, ring.UnmeasuredFor(GpuTimingPath.Nv12Shader));
+        Assert.Equal(0, ring.RecordedFor(GpuTimingPath.HdrShader));
+        Assert.Equal(1, ring.UnmeasuredFor(GpuTimingPath.HdrShader));
+        Assert.Equal(2, ring.Recorded);
+        Assert.Equal(3, ring.Unmeasured);
     }
 
     [Fact]

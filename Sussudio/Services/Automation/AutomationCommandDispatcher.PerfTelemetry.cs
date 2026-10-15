@@ -92,12 +92,14 @@ public sealed partial class AutomationCommandDispatcher
 
             case "end":
             {
-                var reading = PerfWindows.Set.End(name)
+                // The report is built before the window closes: closing releases the sensors the window demanded, and a
+                // report built afterwards would show them idle (GPU engine usage, VRAM, GPU timing state).
+                var report = PerfWindows.Set.End(name, reading => PerfReportBuilder.BuildWindow(reading, filter: null, includeIdle: false))
                     ?? throw new AutomationRequestValidationException(UnknownPerfWindowMessage(name));
                 return CreatePerfResponse(
                     correlationId,
                     $"Performance window '{name}' ended.",
-                    PerfReportBuilder.BuildWindow(reading, filter: null, includeIdle: false));
+                    report);
             }
 
             default:

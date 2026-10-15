@@ -112,7 +112,11 @@ public sealed record TraceFrameStage(string Stage, double StartMs, double Durati
 
 /// <summary>
 /// One of the slowest frames. <see cref="TotalMs"/> is arrival to present when the frame has a present, otherwise
-/// the frame's lifetime (arrival to its last event), so a dropped frame still ranks.
+/// the frame's lifetime (arrival to its last event), so a dropped frame still ranks. Both are measured from the
+/// frame's arrival, so a stage that ended by then (<see cref="PreArrivalStages"/>, normally capture.read, the wait for
+/// the device to deliver the frame) is not part of that interval and is never named as <see cref="DominantStage"/>;
+/// it stays in <see cref="Stages"/> with a negative start. <see cref="DominantStage"/> is the stage that spent the most
+/// time inside the interval (a stage that straddles arrival counts only the part after it); aggregate stages never win.
 /// </summary>
 public sealed record TraceSlowFrame(
     long Id,
@@ -123,7 +127,8 @@ public sealed record TraceSlowFrame(
     IReadOnlyList<string> MissingStages,
     string? DominantStage,
     IReadOnlyList<TraceFrameStage> Stages,
-    string? DropReason = null);
+    string? DropReason = null,
+    IReadOnlyList<string>? PreArrivalStages = null);
 
 /// <summary>Events with no frame (GC, UI stall, automation command, markers): count and size per name.</summary>
 public sealed record TraceAmbientStats(string Name, int Count, double TotalMs, double MaxMs);

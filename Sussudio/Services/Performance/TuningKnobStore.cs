@@ -292,7 +292,14 @@ public sealed class TuningKnobStore
     private TuningKnobChangeResult Succeed(TuningKnobDefinition definition, string? previous, string? current)
     {
         var apply = TuningKnobApplyNames.ToWire(definition.Apply);
-        _log($"TUNING_KNOB_SET name={definition.Name} old={previous ?? UnsetText} new={current ?? UnsetText} apply={apply}");
+
+        // Only a change is logged: resetting a knob that was never set, or setting the value it already has, would
+        // otherwise write an old=X new=X line that says nothing happened. The caller still gets a success result.
+        if (!string.Equals(previous, current, StringComparison.Ordinal))
+        {
+            _log($"TUNING_KNOB_SET name={definition.Name} old={previous ?? UnsetText} new={current ?? UnsetText} apply={apply}");
+        }
+
         return new TuningKnobChangeResult(
             true,
             TuningKnobFailure.None,

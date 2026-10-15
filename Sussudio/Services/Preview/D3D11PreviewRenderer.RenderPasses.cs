@@ -455,7 +455,7 @@ internal sealed partial class D3D11PreviewRenderer
 
                 _vpStreamArray[0] = new VideoProcessorStream { Enable = true, InputSurface = inputView };
                 Result bltResult;
-                var gpuTimingSlot = BeginGpuTiming(frame.ArrivalTick);
+                var gpuTimingSlot = BeginGpuTiming(frame.ArrivalTick, GpuTimingPath.VideoProcessor);
                 try
                 {
                     var renderStart = Stopwatch.GetTimestamp();
@@ -554,7 +554,7 @@ internal sealed partial class D3D11PreviewRenderer
             _deviceContext.PSSetShaderResources(0, 2, _srvArray2);
             UpdateViewportConstantBuffer(viewport);
 
-            var gpuTimingSlot = BeginGpuTiming(frame.ArrivalTick);
+            var gpuTimingSlot = BeginGpuTiming(frame.ArrivalTick, GpuTimingPath.Nv12Shader);
             try
             {
                 var renderStart = Stopwatch.GetTimestamp();
@@ -684,7 +684,7 @@ internal sealed partial class D3D11PreviewRenderer
             UpdateViewportConstantBuffer(viewport);
 
             // The HDR upload and copy above are not part of the GPU timing span (see D3D11PreviewRenderer.GpuTiming.cs).
-            var gpuTimingSlot = BeginGpuTiming(frame.ArrivalTick);
+            var gpuTimingSlot = BeginGpuTiming(frame.ArrivalTick, GpuTimingPath.HdrShader);
             try
             {
                 var renderStart = Stopwatch.GetTimestamp();

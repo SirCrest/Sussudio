@@ -81,10 +81,11 @@ public sealed class FrameTraceAnalyzerTests
             double submitMs = 0.5,
             bool present = true,
             double presentDelayMs = 0,
-            double? sampleOffsetMs = null)
+            double? sampleOffsetMs = null,
+            double readMs = 2.0)
         {
             var id = Ticks(arrivalMs);
-            Span("capture.read", arrivalMs - 2.0, 2.0, id);
+            Span("capture.read", arrivalMs - readMs, readMs, id);
             Span("capture.deliver", arrivalMs, 0.3, id);
             Span("preview.queue_dwell", arrivalMs + 0.5, queueMs, id);
             var cursor = arrivalMs + 0.5 + queueMs;
@@ -340,6 +341,70 @@ public sealed class FrameTraceAnalyzerTests
         Assert.Equal(5, Stage(analysis, "preview.present").MissingFrames);
         Assert.Equal(0, Stage(analysis, "capture.read").MissingFrames);
         Assert.Equal(2, Assert.Single(analysis.Drops, d => d.Name == "preview.drop").Count);
+    }
+
+    // Failure modes of the slowest-frames dominant stage. The total is measured from arrival, and capture.read (the wait
+    // for the device, ~one frame period at steady state) ends at arrival, so it must not win by being long: it is
+    // listed as pre-arrival instead. A stage that straddles arrival counts only the part after it, and a trace without
+    // QPC metadata places arrival at the earliest span, which makes the read part of the interval again.
+    [Fact]
+    public void AStageThatEndedAtArrivalIsListedAsPreArrivalAndNeverNamedDominant()
+    {
+        var trace = new TraceBuilder();
+        for (var i = 0; i < 60; i++)
+        {
+            // A 16.7 ms read before every frame; frame 30 then spends 4 ms in its queue.
+            trace.Frame(100 + i * 16.667, queueMs: i == 30 ? 4 : 1.0, readMs: 16.7);
+        }
+
+        var analysis = FrameTraceAnalyzer.AnalyzeJson(trace.Build(), new FrameTraceAnalysisOptions { TopFrames = 3 });
+
+        var worst = analysis.SlowestFrames[0];
+        Assert.Equal("arrival-to-present", worst.RankedBy);
+        Assert.Equal("preview.queue_dwell", worst.DominantStage);
+        Assert.Equal(new[] { "capture.read" }, worst.PreArrivalStages);
+        Assert.True(worst.TotalMs < 16.7, "the 16.7 ms read is not part of arrival-to-present: " + worst.TotalMs.ToString(CultureInfo.InvariantCulture));
+        Assert.Contains(worst.Stages, stage => stage.Stage == "capture.read" && stage.StartMs < 0);
+
+        var text = analysis.FormatSummary();
+        Assert.Contains("dominant preview.queue_dwell", text);
+        Assert.Contains("before arrival (not in the total): capture.read 16.7", text);
+    }
+
+    [Fact]
+    public void AStageStraddlingArrivalCountsOnlyItsPartAfterArrival()
+    {
+        var trace = new TraceBuilder();
+        for (var i = 0; i < 40; i++)
+        {
+            var arrival = 100 + i * 16.667;
+            var id = trace.Frame(arrival, queueMs: 2.0);
+            // 4 ms long, but only 1 ms of it after arrival: the 2 ms queue wait is what dominates the frame.
+            trace.Span("capture.straddle", arrival - 3, 4, id);
+        }
+
+        var analysis = FrameTraceAnalyzer.AnalyzeJson(trace.Build(), new FrameTraceAnalysisOptions { TopFrames = 1 });
+
+        var frame = analysis.SlowestFrames[0];
+        Assert.Equal("preview.queue_dwell", frame.DominantStage);
+        Assert.DoesNotContain("capture.straddle", frame.PreArrivalStages!);
+    }
+
+    [Fact]
+    public void WithoutQpcMetadataTheReadIsInsideTheIntervalAndCanBeDominant()
+    {
+        var trace = new TraceBuilder { IncludeMetadata = false };
+        for (var i = 0; i < 30; i++)
+        {
+            trace.Frame(100 + i * 16.667, readMs: 16.7);
+        }
+
+        var analysis = FrameTraceAnalyzer.AnalyzeJson(trace.Build(), new FrameTraceAnalysisOptions { TopFrames = 1 });
+
+        var frame = analysis.SlowestFrames[0];
+        Assert.Equal("earliest-event", analysis.Trace.ArrivalSource);
+        Assert.Equal("capture.read", frame.DominantStage);
+        Assert.Empty(frame.PreArrivalStages!);
     }
 
     [Fact]

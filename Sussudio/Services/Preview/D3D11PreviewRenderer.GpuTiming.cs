@@ -23,6 +23,13 @@ namespace Sussudio.Services.Preview;
 // from the same device. preview.gpu_render is therefore an upper bound on the render pass itself under contention, and
 // exact only on a quiet device. A renderer-owned device has no such contamination.
 //
+// What the number means per render path (GpuTimingPath, shown as path= in the Sensors gpu_timing line):
+//   VideoProcessor: the VideoProcessorBlt is the driver's own conversion and scaling work. Some drivers run or defer it
+//     outside the queue that wrote the timestamps, so the begin and end timestamps can be identical. A span of zero GPU
+//     ticks is not a measurement: it is counted in preview.gpu_timing_unmeasured and not recorded.
+//   Nv12Shader and HdrShader: a pixel-shader Draw on the renderer's context. A zero-tick span is not expected there;
+//     if one appears it is counted as unmeasured the same way.
+//
 // When it runs. Never on a WARP/software adapter (a CPU rasterizer's timestamps measure CPU emulation and the queries
 // cost real time there). While demand is off, no query object exists. On any failure the ring is disposed and the
 // renderer stays off until demand ends or the device is re-created, so a broken driver cannot be hammered every frame.
@@ -34,6 +41,8 @@ internal sealed partial class D3D11PreviewRenderer
     private D3D11TimestampQueries? _gpuTimingQueries;
     private GpuTimestampRing? _gpuTimingRing;
     private bool _gpuTimingBlocked;
+    private string _gpuTimingStateBase = string.Empty;
+    private GpuTimingPath _gpuTimingPath = GpuTimingPath.VideoProcessor;
     private Func<PerfDisplayCounters?>? _perfDisplayProvider;
 
     // Bumped by every InitializeD3D. The DXGI frame statistics remember the generation that produced them, so the
@@ -47,7 +56,7 @@ internal sealed partial class D3D11PreviewRenderer
     /// every early return of the render pass, immediately before the draw, so a span is only ever opened for a frame
     /// that will draw. With demand off this is one timestamp compare and one volatile read.
     /// </summary>
-    private int BeginGpuTiming(long frameId)
+    private int BeginGpuTiming(long frameId, GpuTimingPath path)
     {
         var now = Stopwatch.GetTimestamp();
         if (!_gpuTimingDemand.IsActive(now))
@@ -71,7 +80,14 @@ internal sealed partial class D3D11PreviewRenderer
             return -1;
         }
 
-        var slot = ring.Begin(frameId, now);
+        if (path != _gpuTimingPath)
+        {
+            // A path change is rare (an HDR toggle, the first external-texture frame): the state line follows it.
+            _gpuTimingPath = path;
+            PublishGpuTimingState();
+        }
+
+        var slot = ring.Begin(frameId, now, path);
         if (ring.IsFailed)
         {
             BlockGpuTiming("failed: " + ring.FailureReason);
@@ -141,11 +157,17 @@ internal sealed partial class D3D11PreviewRenderer
         _gpuTimingQueries = queries;
         _gpuTimingRing = new GpuTimestampRing(queries);
         var shared = Volatile.Read(ref _sharedDeviceActive) != 0;
-        var state = $"active adapter='{adapterName}' slots={queries.SlotCount} shared_device={shared} (upper bound under contention)";
-        TelemetrySensors.SetGpuTimingState(state);
+        _gpuTimingStateBase = $"adapter='{adapterName}' slots={queries.SlotCount} shared_device={shared}";
+        PublishGpuTimingState();
         Logger.Log($"D3D11_PREVIEW_GPU_TIMING enabled adapter='{adapterName}' slots={queries.SlotCount} shared={shared}.");
         return _gpuTimingRing;
     }
+
+    // The Sensors gpu_timing state line: the device facts plus the render path the spans currently bracket and what a
+    // zero-tick span means. Control-plane string, rebuilt only on enable and on a path change.
+    private void PublishGpuTimingState() =>
+        TelemetrySensors.SetGpuTimingState(
+            $"active {_gpuTimingStateBase} path={_gpuTimingPath} (upper bound under contention; zero-tick spans are counted in preview.gpu_timing_unmeasured)");
 
     // Disposes the queries and records why GPU timing is off, then stays off until demand ends or the device is re-created.
     private void BlockGpuTiming(string reason)
@@ -160,13 +182,20 @@ internal sealed partial class D3D11PreviewRenderer
     // context, so this runs before either is disposed (CleanupD3DResources) as well as when demand ends.
     private void ReleaseGpuTiming(string state)
     {
-        var existed = _gpuTimingRing is not null || _gpuTimingBlocked;
+        var ring = _gpuTimingRing;
+        var existed = ring is not null || _gpuTimingBlocked;
         DisposeGpuTimingQueries();
         _gpuTimingBlocked = false;
         if (existed)
         {
             TelemetrySensors.SetGpuTimingState(state);
-            Logger.Log($"D3D11_PREVIEW_GPU_TIMING released reason='{state}'.");
+            var tally = ring is null
+                ? string.Empty
+                : $" recorded={ring.Recorded} unmeasured={ring.Unmeasured} sub_us={ring.SubMicrosecond}" +
+                  $" vp={ring.RecordedFor(GpuTimingPath.VideoProcessor)}/{ring.UnmeasuredFor(GpuTimingPath.VideoProcessor)}" +
+                  $" nv12={ring.RecordedFor(GpuTimingPath.Nv12Shader)}/{ring.UnmeasuredFor(GpuTimingPath.Nv12Shader)}" +
+                  $" hdr={ring.RecordedFor(GpuTimingPath.HdrShader)}/{ring.UnmeasuredFor(GpuTimingPath.HdrShader)}";
+            Logger.Log($"D3D11_PREVIEW_GPU_TIMING released reason='{state}'{tally}.");
         }
     }
 

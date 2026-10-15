@@ -16,6 +16,19 @@ public enum GpuTimestampPoll
     Failed,
 }
 
+/// <summary>The render pass a GPU timing span brackets. Values index per-path tallies; append, never renumber.</summary>
+public enum GpuTimingPath : byte
+{
+    /// <summary>D3D11 <c>VideoProcessorBlt</c> (the driver's own conversion and scaling work).</summary>
+    VideoProcessor = 0,
+
+    /// <summary>The pixel-shader <c>Draw</c> of the NV12 shader path (external D3D textures).</summary>
+    Nv12Shader = 1,
+
+    /// <summary>The pixel-shader <c>Draw</c> of the HDR tone-map or passthrough path.</summary>
+    HdrShader = 2,
+}
+
 /// <summary>
 /// The D3D11 side of GPU timing, one query set per slot (a timestamp-disjoint query bracketing a begin and an end
 /// timestamp). Kept behind an interface so the ring's bookkeeping and failure handling can be verified without a
@@ -48,6 +61,13 @@ public interface IGpuTimestampBackend
 /// timestamp the frame's render pass was submitted (GPU timestamps are in the GPU's own clock domain, not QPC, so
 /// only the duration is a GPU measurement; the start is a CPU time) with the frame's arrival tick as its id.
 ///
+/// A span of exactly zero GPU ticks is not a measurement: the GPU's begin and end timestamps were identical, so as far
+/// as the queue that wrote them is concerned nothing ran between them (work executed elsewhere or was deferred, which
+/// the video-processor path does on some drivers). Such a span is counted in <c>preview.gpu_timing_unmeasured</c> and
+/// tallied per <see cref="GpuTimingPath"/>; it is never recorded as a zero-length render, which would pull the
+/// histogram's percentiles toward zero. A real but sub-microsecond span is recorded as 1 us so it can never be
+/// mistaken for an unmeasured one.
+///
 /// Rules: never wait (a pending slot that is not ready stays pending, and a ring whose slots are all pending skips
 /// the frame and counts it in <c>preview.gpu_timing_skipped</c>); never leave a query open (End on a slot that is
 /// not the open one is ignored, and the renderer closes the span in a <c>finally</c>); a disjoint result or an
@@ -62,6 +82,7 @@ public sealed class GpuTimestampRing
     public const int MinSlots = 4;
     public const int MaxSlots = 8;
     public const double StaleAfterSeconds = 1.0;
+    private const int PathCount = 3;
 
     // A span of more than ten seconds is a corrupt value (a driver reporting a bogus frequency), not a render pass.
     private const double MaxPlausibleMicroseconds = 10_000_000;
@@ -71,6 +92,9 @@ public sealed class GpuTimestampRing
     private readonly long _staleTicks;
     private readonly long[] _frameIds;
     private readonly long[] _submitTimestamps;
+    private readonly GpuTimingPath[] _paths;
+    private readonly long[] _recordedByPath = new long[PathCount];
+    private readonly long[] _unmeasuredByPath = new long[PathCount];
     private int _head;
     private int _tail;
     private int _pending;
@@ -85,6 +109,7 @@ public sealed class GpuTimestampRing
         var slots = Math.Clamp(backend.SlotCount, 1, MaxSlots);
         _frameIds = new long[slots];
         _submitTimestamps = new long[slots];
+        _paths = new GpuTimingPath[slots];
     }
 
     /// <summary>Slots in use by the ring (the backend's count, capped at <see cref="MaxSlots"/>).</summary>
@@ -98,11 +123,23 @@ public sealed class GpuTimestampRing
     /// <summary>Results received and recorded since creation.</summary>
     public long Recorded { get; private set; }
 
+    /// <summary>Spans that reported exactly zero GPU ticks since creation (counted, not recorded).</summary>
+    public long Unmeasured { get; private set; }
+
+    /// <summary>Recorded spans whose real duration was under one microsecond and were recorded as 1 us.</summary>
+    public long SubMicrosecond { get; private set; }
+
+    /// <summary>Spans of <paramref name="path"/> recorded into the histogram since creation.</summary>
+    public long RecordedFor(GpuTimingPath path) => _recordedByPath[PathIndex(path)];
+
+    /// <summary>Spans of <paramref name="path"/> that reported exactly zero GPU ticks since creation.</summary>
+    public long UnmeasuredFor(GpuTimingPath path) => _unmeasuredByPath[PathIndex(path)];
+
     /// <summary>
     /// Opens a timing span for the frame about to draw. Returns the slot to pass to <see cref="End"/>, or -1 when the
     /// frame is not timed (ring failed, every slot pending, or a span is already open).
     /// </summary>
-    public int Begin(long frameId, long submitTimestamp)
+    public int Begin(long frameId, long submitTimestamp, GpuTimingPath path = GpuTimingPath.VideoProcessor)
     {
         if (_failureReason is not null)
         {
@@ -141,6 +178,7 @@ public sealed class GpuTimestampRing
 
         _frameIds[slot] = frameId;
         _submitTimestamps[slot] = submitTimestamp;
+        _paths[slot] = path;
         _open = slot;
         return slot;
     }
@@ -214,8 +252,9 @@ public sealed class GpuTimestampRing
 
             var frameId = _frameIds[slot];
             var submitTimestamp = _submitTimestamps[slot];
+            var path = _paths[slot];
             Retire();
-            Record(frameId, submitTimestamp, gpuTicks, gpuFrequency, disjoint);
+            Record(frameId, submitTimestamp, path, gpuTicks, gpuFrequency, disjoint);
         }
     }
 
@@ -225,7 +264,7 @@ public sealed class GpuTimestampRing
         _pending--;
     }
 
-    private void Record(long frameId, long submitTimestamp, long gpuTicks, long gpuFrequency, bool disjoint)
+    private void Record(long frameId, long submitTimestamp, GpuTimingPath path, long gpuTicks, long gpuFrequency, bool disjoint)
     {
         if (disjoint || gpuFrequency <= 0 || gpuTicks < 0)
         {
@@ -233,20 +272,44 @@ public sealed class GpuTimestampRing
             return;
         }
 
-        var microseconds = gpuTicks * 1_000_000d / gpuFrequency;
-        if (microseconds > MaxPlausibleMicroseconds)
+        var pathIndex = PathIndex(path);
+        if (gpuTicks == 0)
+        {
+            Unmeasured++;
+            _unmeasuredByPath[pathIndex]++;
+            PerfMetrics.PreviewGpuTimingUnmeasured.Increment();
+            return;
+        }
+
+        var exactMicroseconds = gpuTicks * 1_000_000d / gpuFrequency;
+        if (exactMicroseconds > MaxPlausibleMicroseconds)
         {
             PerfMetrics.PreviewGpuTimingSkipped.Increment();
             return;
         }
 
+        var microseconds = (long)exactMicroseconds;
+        if (microseconds == 0)
+        {
+            // Real work shorter than the histogram's one-microsecond resolution: record the floor, never 0.
+            microseconds = 1;
+            SubMicrosecond++;
+        }
+
         Recorded++;
-        PerfMetrics.PreviewGpuRender.Record((long)microseconds);
+        _recordedByPath[pathIndex]++;
+        PerfMetrics.PreviewGpuRender.Record(microseconds);
         if (FrameTrace.IsEnabled)
         {
-            var qpcTicks = (long)(microseconds * Stopwatch.Frequency / 1_000_000d);
+            var qpcTicks = microseconds * Stopwatch.Frequency / 1_000_000;
             FrameTrace.Record(FrameTraceEventKind.PreviewGpuRender, submitTimestamp, qpcTicks, frameId);
         }
+    }
+
+    private static int PathIndex(GpuTimingPath path)
+    {
+        var index = (int)path;
+        return (uint)index < PathCount ? index : 0;
     }
 
     private void Fail(string reason)

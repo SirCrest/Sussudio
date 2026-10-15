@@ -89,6 +89,100 @@ public sealed class PerfWindowTests
     }
 
     [Fact]
+    public void EndBuildsItsReportWhileTheWindowIsStillOpenAndReleasesDemandOnlyAfterwards()
+    {
+        var (_, histogram, _, windows, _) = CreateFixture();
+        var raised = 0;
+        windows.Changed += () => raised++;
+        windows.Begin("w");
+        histogram.Record(5);
+        Assert.Equal(1, raised);
+
+        var openDuringBuild = -1;
+        var raisedDuringBuild = -1;
+        var report = windows.End("w", reading =>
+        {
+            openDuringBuild = windows.OpenCount;
+            raisedDuringBuild = raised;
+            return reading.Delta.Find("test.latency")!.Histogram!.Count.ToString();
+        });
+
+        Assert.Equal("1", report);
+        Assert.Equal(1, openDuringBuild);
+        Assert.Equal(1, raisedDuringBuild);
+        Assert.Equal(0, windows.OpenCount);
+        Assert.Equal(2, raised);
+        Assert.Empty(windows.List());
+    }
+
+    [Fact]
+    public void AReportBuilderThatThrowsLeavesTheWindowOpenAndReleasesNothing()
+    {
+        var (_, _, _, windows, _) = CreateFixture();
+        var raised = 0;
+        windows.Begin("w");
+        windows.Changed += () => raised++;
+
+        Assert.Throws<InvalidOperationException>(() =>
+            windows.End<string>("w", _ => throw new InvalidOperationException("report failed")));
+
+        Assert.Equal(1, windows.OpenCount);
+        Assert.Equal(0, raised);
+        Assert.NotNull(windows.Read("w"));
+        Assert.NotNull(windows.End("w", _ => "retry"));
+    }
+
+    [Fact]
+    public void EndingAnUnknownNameNeverRunsTheReportBuilder()
+    {
+        var (_, _, _, windows, _) = CreateFixture();
+        var calls = 0;
+
+        Assert.Null(windows.End("nope", _ => { calls++; return "x"; }));
+        Assert.Null(windows.End(null, _ => { calls++; return "x"; }));
+        Assert.Equal(0, calls);
+    }
+
+    [Fact]
+    public void WhenTwoCallersEndTheSameWindowExactlyOneOfThemGetsAReport()
+    {
+        var (_, _, _, windows, _) = CreateFixture();
+        var raised = 0;
+        windows.Begin("w");
+        windows.Changed += () => raised++;
+
+        // The second caller arrives while the first is still building its report.
+        string? inner = null;
+        var outer = windows.End("w", _ =>
+        {
+            inner = windows.End("w", _ => "inner");
+            return "outer";
+        });
+
+        Assert.Equal("inner", inner);
+        Assert.Null(outer);
+        Assert.Equal(1, raised);
+        Assert.Equal(0, windows.OpenCount);
+    }
+
+    [Fact]
+    public void AWindowRestartedWhileItsReportIsBuiltIsNotClosedByTheOlderEnd()
+    {
+        var (_, _, _, windows, _) = CreateFixture();
+        windows.Begin("w");
+
+        var ended = windows.End("w", _ =>
+        {
+            windows.Begin("w");
+            return "stale";
+        });
+
+        Assert.Null(ended);
+        Assert.Equal(1, windows.OpenCount);
+        Assert.NotNull(windows.Read("w"));
+    }
+
+    [Fact]
     public void BeginningAnExistingNameRestartsItAndSaysSo()
     {
         var (_, histogram, _, windows, _) = CreateFixture();

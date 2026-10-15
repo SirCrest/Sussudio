@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
@@ -570,10 +571,31 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
         }
 
         var rawData = NativeXuAtProtocol.StripAtFrameEnvelope(responseFrame, responseBytes);
+        LogAtResponse(name, cmdCode, responseFrameLen, rawData);
+        return new AtCommandResult(name, cmdCode, true, rawData, null, null);
+    }
+
+    // The poll re-reads every command each cycle and almost every answer is the same as the last one, so logging each
+    // read wrote thousands of identical lines. The first answer per command and every change are logged;
+    // Logger.VerboseEnabled brings back a line per read. Nothing parses these lines (they are for a person reading the log).
+    private static readonly ConcurrentDictionary<int, byte[]> LastLoggedAtResponses = new();
+
+    private static void LogAtResponse(string name, int cmdCode, int responseFrameLen, byte[] rawData)
+    {
+        var changed = !LastLoggedAtResponses.TryGetValue(cmdCode, out var last) || !last.AsSpan().SequenceEqual(rawData);
+        if (!changed && !Logger.VerboseEnabled)
+        {
+            return;
+        }
+
+        if (changed)
+        {
+            LastLoggedAtResponses[cmdCode] = rawData;
+        }
+
         Logger.Log(
             $"NATIVEXU_AT cmd={name} code=0x{cmdCode:X2} frameLen={responseFrameLen} " +
             $"rawBytes={rawData.Length} preview={GetHexPreview(rawData, rawData.Length, 32)}");
-        return new AtCommandResult(name, cmdCode, true, rawData, null, null);
     }
 
     private static bool SendAtSetCommand(

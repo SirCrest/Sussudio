@@ -251,6 +251,29 @@ public sealed class TuningKnobStoreTests
     }
 
     [Fact]
+    public void ANoOpSetOrResetSucceedsButIsNotLogged()
+    {
+        var (store, _, log) = Create(e => e.Values[IntKnob.Name] = "3");
+
+        // Resetting a knob that was never set, and setting a value the knob already has, change nothing.
+        var resetUnset = store.Reset(DoubleKnob.Name);
+        var setSame = store.Set(IntKnob.Name, "3");
+        var resetUntouched = store.Reset(IntKnob.Name);
+
+        Assert.True(resetUnset.Success);
+        Assert.Null(resetUnset.Old);
+        Assert.Null(resetUnset.New);
+        Assert.True(setSame.Success);
+        Assert.Equal("3", setSame.New);
+        Assert.True(resetUntouched.Success);
+        Assert.Empty(log);
+
+        // A real change after the no-ops is still logged once.
+        store.Set(IntKnob.Name, "5");
+        Assert.Equal(new[] { "TUNING_KNOB_SET name=SUSSUDIO_TEST_INT old=3 new=5 apply=preview-restart" }, log);
+    }
+
+    [Fact]
     public void ListFiltersByCaseInsensitiveNameSubstringAndOverridesListsOnlyChangedKnobs()
     {
         var (store, _, _) = Create();

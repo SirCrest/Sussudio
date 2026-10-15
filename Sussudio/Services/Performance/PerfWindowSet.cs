@@ -61,6 +61,10 @@ public sealed class PerfWindowReading<TSystem>
 /// captures a baseline of every metric plus a caller-defined system sample (thread CPU, process totals);
 /// <c>Read</c> returns the delta without closing, <c>End</c> returns it and closes. Windows are control-plane
 /// objects: they take a lock, but nothing on a recording path ever touches them.
+///
+/// An ending window's report is built before the window closes, because closing it is what stops the sensors the
+/// window demanded (the GPU engine sampler, the UI probe, GPU timing): a report built after the close describes an
+/// idle process. <see cref="End{TResult}"/> is that order; <see cref="End(string?)"/> takes the reading the same way.
 /// </summary>
 public sealed class PerfWindowSet<TSystem>
 {
@@ -143,21 +147,44 @@ public sealed class PerfWindowSet<TSystem>
     }
 
     /// <summary>Delta since <c>begin</c>, closing the window; null for an unknown name.</summary>
-    public PerfWindowReading<TSystem>? End(string? name)
+    public PerfWindowReading<TSystem>? End(string? name) => End(name, reading => reading);
+
+    /// <summary>
+    /// Ends a window and returns what <paramref name="build"/> made of its final reading. The reading is taken and
+    /// <paramref name="build"/> runs while the window is still open, so every sensor the window demanded is still
+    /// running and its state is part of what is reported; only then is the window closed and demand released.
+    /// Null for an unknown name, and null for the loser when two callers end the same window at once (exactly one
+    /// caller gets a report). If <paramref name="build"/> throws, the window stays open and the exception propagates,
+    /// so the caller can retry. <paramref name="build"/> must not call <c>End</c> or <c>Begin</c> for this window.
+    /// </summary>
+    public TResult? End<TResult>(string? name, Func<PerfWindowReading<TSystem>, TResult> build)
+        where TResult : class
     {
         Window? window;
         lock (_gate)
         {
-            if (name is null || !_windows.Remove(name, out window))
+            if (name is null || !_windows.TryGetValue(name, out window))
+            {
+                return null;
+            }
+        }
+
+        var result = build(Measure(window));
+
+        lock (_gate)
+        {
+            // Compared by reference: a window that was restarted or ended while the report was built is not this one.
+            if (!_windows.TryGetValue(name, out var current) || !ReferenceEquals(current, window))
             {
                 return null;
             }
 
+            _windows.Remove(name);
             Volatile.Write(ref _openCount, _windows.Count);
         }
 
         RaiseChanged();
-        return Measure(window);
+        return result;
     }
 
     /// <summary>Discards a window without a report. False when the name is unknown.</summary>

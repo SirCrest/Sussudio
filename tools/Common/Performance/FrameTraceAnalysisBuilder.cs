@@ -10,6 +10,9 @@ namespace Sussudio.Tools.Performance;
 //     counted per stage and in total, and dropped frames still rank by lifetime.
 //   - Aggregate spans (pipeline, render_total) cover other stages, so they are reported but never named as the stage
 //     that grew most or the dominant stage.
+//   - A slow frame's total is measured from its arrival, so a stage that ended by arrival (capture.read, the wait for
+//     the device) is outside it: it is listed as pre-arrival and never named dominant. A stage that straddles arrival
+//     counts only its part after it.
 internal static class FrameTraceAnalysisBuilder
 {
     private const double PlausibleArrivalSlackUs = 60_000_000; // an id further than a minute from its events is not a QPC arrival
@@ -19,6 +22,7 @@ internal static class FrameTraceAnalysisBuilder
     private const int MaxEventAttributions = 6;
     private const int MaxMarkerAttributions = 3;
     private const int MaxMarkerDetailChars = 160;
+    private const double PreArrivalToleranceUs = 5; // a span ending within 5 us after arrival ended at arrival (separately taken timestamps)
     private const string PresentStage = "preview.present";
     private const string PipelineStage = "preview.pipeline";
 
@@ -572,6 +576,7 @@ internal static class FrameTraceAnalysisBuilder
         {
             var stages = new List<TraceFrameStage>();
             var missing = new List<string>();
+            var preArrival = new List<string>();
             string? dominant = null;
             var dominantMs = double.NegativeInfinity;
             for (var s = 0; s < stageCount; s++)
@@ -592,9 +597,16 @@ internal static class FrameTraceAnalysisBuilder
                     PerfMath.Round((frame.StartUs[s] - frame.ArrivalUs) / 1000d),
                     PerfMath.Round(durationMs),
                     PerfMath.Round((frame.EndUs[s] - frame.ArrivalUs) / 1000d)));
-                if (!capture.StageAggregate[s] && durationMs > dominantMs)
+                if (frame.EndUs[s] <= frame.ArrivalUs + PreArrivalToleranceUs)
                 {
-                    dominantMs = durationMs;
+                    preArrival.Add(capture.StageNames[s]);
+                    continue;
+                }
+
+                var insideMs = (frame.EndUs[s] - Math.Max(frame.StartUs[s], frame.ArrivalUs)) / 1000d;
+                if (!capture.StageAggregate[s] && insideMs > dominantMs)
+                {
+                    dominantMs = insideMs;
                     dominant = capture.StageNames[s];
                 }
             }
@@ -609,7 +621,8 @@ internal static class FrameTraceAnalysisBuilder
                 missing,
                 dominant,
                 stages,
-                frame.DropReason));
+                frame.DropReason,
+                preArrival));
         }
 
         return slowest;
