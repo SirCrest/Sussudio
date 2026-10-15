@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Threading;
 
@@ -306,7 +307,11 @@ public sealed class GpuEngineSensor : IDemandSensor
     /// </summary>
     internal bool SampleOnce(IGpuCounterReader reader)
     {
+        // The collect expands the GPU Engine wildcard across every process's instances; its span shows what the sensor
+        // costs next to the stages it might disturb (a no-op unless a trace runs).
+        var readStart = Stopwatch.GetTimestamp();
         var result = reader.Read(_engines, _memory, out var detail);
+        FrameTrace.Record(FrameTraceEventKind.GpuEngineSample, readStart, Stopwatch.GetTimestamp() - readStart, -1);
         if (result == GpuCounterReadResult.Unavailable)
         {
             Volatile.Write(ref _lastError, detail ?? "GPU counters unavailable");
@@ -416,7 +421,9 @@ public sealed class GpuEngineSensor : IDemandSensor
         try
         {
             reader = _readerFactory();
+            var openStart = Stopwatch.GetTimestamp();
             var error = reader.Open(_processId);
+            FrameTrace.Record(FrameTraceEventKind.GpuEngineSample, openStart, Stopwatch.GetTimestamp() - openStart, -1, arg: 1);
             if (error is null)
             {
                 return reader;

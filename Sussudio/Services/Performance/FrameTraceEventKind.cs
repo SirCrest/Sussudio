@@ -58,6 +58,13 @@ public enum FrameTraceEventKind
 
     /// <summary>Diagnostics hub snapshot refresh span (id -1).</summary>
     HubRefresh = 32,
+
+    /// <summary>
+    /// One PDH GPU counter call on the <c>telemetry.gpu_engines</c> sensor thread (id -1): arg 1 is the first open of the
+    /// counters, arg 0 a sample read (the collect that expands the <c>GPU Engine</c> wildcard). It puts the sensor's own
+    /// cost on the timeline so a stall elsewhere can be compared with it.
+    /// </summary>
+    GpuEngineSample = 33,
 }
 
 /// <summary>Stage names and categories used in trace dumps.</summary>
@@ -98,6 +105,7 @@ public static class FrameTraceEventKinds
         FrameTraceEventKind.AutomationCommand => "automation.command",
         FrameTraceEventKind.CaptureSampleTime => "capture.sample_time",
         FrameTraceEventKind.HubRefresh => "telemetry.hub_refresh",
+        FrameTraceEventKind.GpuEngineSample => "telemetry.gpu_engines",
         _ => "kind-" + (int)kind,
     };
 
