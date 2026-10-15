@@ -390,6 +390,52 @@ public sealed class FrameTraceAnalyzerTests
         Assert.DoesNotContain("capture.straddle", frame.PreArrivalStages!);
     }
 
+    // With the GPU lanes carrying the frame id, the encoders' spans join the frame. They run on their own thread, so a
+    // long encode that finishes after the present cannot be what delayed the present and must not be named dominant.
+    [Fact]
+    public void AnEncoderStageThatEndedAfterThePresentIsListedAfterPresentAndNeverNamedDominant()
+    {
+        var trace = new TraceBuilder();
+        for (var i = 0; i < 60; i++)
+        {
+            var arrival = 100 + i * 16.667;
+            var id = trace.Frame(arrival, queueMs: i == 30 ? 4 : 1.0);
+            // An 8 ms encode that starts with the frame and ends after its present (a normal frame is presented ~2.5 ms in;
+            // the slow one, with its 4 ms queue wait, ~5.5 ms in).
+            trace.Span("flashback.encode_submit", arrival + 0.4, 8.0, id, tid: 2);
+        }
+
+        var analysis = FrameTraceAnalyzer.AnalyzeJson(trace.Build(), new FrameTraceAnalysisOptions { TopFrames = 3 });
+
+        var worst = analysis.SlowestFrames[0];
+        Assert.Equal("arrival-to-present", worst.RankedBy);
+        Assert.Equal("preview.queue_dwell", worst.DominantStage);
+        Assert.Equal(new[] { "flashback.encode_submit" }, worst.AfterPresentStages);
+        Assert.Contains(worst.Stages, stage => stage.Stage == "flashback.encode_submit");
+
+        var text = analysis.FormatSummary();
+        Assert.Contains("after present (not in the total): flashback.encode_submit 8.0", text);
+    }
+
+    [Fact]
+    public void AnEncoderStageThatFinishedBeforeThePresentStillCountsTowardTheDominantStage()
+    {
+        var trace = new TraceBuilder();
+        for (var i = 0; i < 40; i++)
+        {
+            var arrival = 100 + i * 16.667;
+            // The present is delayed 6 ms; a 4 ms encode that finishes inside that wait is on the frame's path.
+            var id = trace.Frame(arrival, presentDelayMs: i == 20 ? 6 : 0);
+            trace.Span("flashback.encode_submit", arrival + 0.4, i == 20 ? 4.0 : 0.2, id, tid: 2);
+        }
+
+        var analysis = FrameTraceAnalyzer.AnalyzeJson(trace.Build(), new FrameTraceAnalysisOptions { TopFrames = 1 });
+
+        var worst = analysis.SlowestFrames[0];
+        Assert.Equal("flashback.encode_submit", worst.DominantStage);
+        Assert.Empty(worst.AfterPresentStages!);
+    }
+
     [Fact]
     public void WithoutQpcMetadataTheReadIsInsideTheIntervalAndCanBeDominant()
     {

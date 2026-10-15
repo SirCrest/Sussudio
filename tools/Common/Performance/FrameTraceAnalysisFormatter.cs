@@ -88,11 +88,18 @@ internal static class FrameTraceAnalysisFormatter
                 text.AppendLine(
                     $"  frame {frame.Id} at {PerfMath.Fixed(frame.ArrivalMs / 1000d, 3)} s: {PerfMath.Fixed(frame.TotalMs, 1)} ms ({frame.RankedBy}){dropped}{dominant}{missing}");
                 var preArrival = frame.PreArrivalStages ?? Array.Empty<string>();
-                text.AppendLine("    " + string.Join("  ", frame.Stages.Where(stage => !preArrival.Contains(stage.Stage)).Select(stage =>
+                var afterPresent = frame.AfterPresentStages ?? Array.Empty<string>();
+                text.AppendLine("    " + string.Join("  ", frame.Stages.Where(stage => !preArrival.Contains(stage.Stage) && !afterPresent.Contains(stage.Stage)).Select(stage =>
                     string.Create(CultureInfo.InvariantCulture, $"{stage.Stage} {PerfMath.Fixed(stage.DurationMs, 1)}"))));
                 if (preArrival.Count > 0)
                 {
                     text.AppendLine("    before arrival (not in the total): " + string.Join("  ", frame.Stages.Where(stage => preArrival.Contains(stage.Stage)).Select(stage =>
+                        string.Create(CultureInfo.InvariantCulture, $"{stage.Stage} {PerfMath.Fixed(stage.DurationMs, 1)}"))));
+                }
+
+                if (afterPresent.Count > 0)
+                {
+                    text.AppendLine("    after present (not in the total): " + string.Join("  ", frame.Stages.Where(stage => afterPresent.Contains(stage.Stage)).Select(stage =>
                         string.Create(CultureInfo.InvariantCulture, $"{stage.Stage} {PerfMath.Fixed(stage.DurationMs, 1)}"))));
                 }
             }

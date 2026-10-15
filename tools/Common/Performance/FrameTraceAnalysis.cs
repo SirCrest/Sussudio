@@ -117,6 +117,9 @@ public sealed record TraceFrameStage(string Stage, double StartMs, double Durati
 /// the device to deliver the frame) is not part of that interval and is never named as <see cref="DominantStage"/>;
 /// it stays in <see cref="Stages"/> with a negative start. <see cref="DominantStage"/> is the stage that spent the most
 /// time inside the interval (a stage that straddles arrival counts only the part after it); aggregate stages never win.
+/// For a presented frame the interval also ends at the present, so a stage that ended after it
+/// (<see cref="AfterPresentStages"/>: the recording and Flashback encoders, which run on their own thread and cannot
+/// delay a present) is not part of it either and is never named dominant.
 /// </summary>
 public sealed record TraceSlowFrame(
     long Id,
@@ -128,7 +131,8 @@ public sealed record TraceSlowFrame(
     string? DominantStage,
     IReadOnlyList<TraceFrameStage> Stages,
     string? DropReason = null,
-    IReadOnlyList<string>? PreArrivalStages = null);
+    IReadOnlyList<string>? PreArrivalStages = null,
+    IReadOnlyList<string>? AfterPresentStages = null);
 
 /// <summary>Events with no frame (GC, UI stall, automation command, markers): count and size per name.</summary>
 public sealed record TraceAmbientStats(string Name, int Count, double TotalMs, double MaxMs);

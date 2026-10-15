@@ -12,7 +12,8 @@ namespace Sussudio.Tools.Performance;
 //     that grew most or the dominant stage.
 //   - A slow frame's total is measured from its arrival, so a stage that ended by arrival (capture.read, the wait for
 //     the device) is outside it: it is listed as pre-arrival and never named dominant. A stage that straddles arrival
-//     counts only its part after it.
+//     counts only its part after it. For a presented frame the interval ends at the present: a stage that ended after
+//     it ran beside the present (the encoders' own threads) and is listed as after-present, never named dominant.
 internal static class FrameTraceAnalysisBuilder
 {
     private const double PlausibleArrivalSlackUs = 60_000_000; // an id further than a minute from its events is not a QPC arrival
@@ -577,6 +578,8 @@ internal static class FrameTraceAnalysisBuilder
             var stages = new List<TraceFrameStage>();
             var missing = new List<string>();
             var preArrival = new List<string>();
+            var afterPresent = new List<string>();
+            var presentEndUs = presented ? frame.EndUs[presentIndex] : double.PositiveInfinity;
             string? dominant = null;
             var dominantMs = double.NegativeInfinity;
             for (var s = 0; s < stageCount; s++)
@@ -603,6 +606,12 @@ internal static class FrameTraceAnalysisBuilder
                     continue;
                 }
 
+                if (!capture.StageAggregate[s] && frame.EndUs[s] > presentEndUs + PreArrivalToleranceUs)
+                {
+                    afterPresent.Add(capture.StageNames[s]);
+                    continue;
+                }
+
                 var insideMs = (frame.EndUs[s] - Math.Max(frame.StartUs[s], frame.ArrivalUs)) / 1000d;
                 if (!capture.StageAggregate[s] && insideMs > dominantMs)
                 {
@@ -622,7 +631,8 @@ internal static class FrameTraceAnalysisBuilder
                 dominant,
                 stages,
                 frame.DropReason,
-                preArrival));
+                preArrival,
+                afterPresent));
         }
 
         return slowest;
