@@ -1,18 +1,27 @@
 using System.IO;
+using System.Text.Json;
 using Sussudio.Models;
+using Sussudio.Tools.Performance;
 
 namespace Sussudio.Tools.Ssctl;
 
-// Performance-telemetry verbs: perf report|window|mark|trace, knobs, knob set|reset, log tail. Payload shapes and help
-// text come from the automation command catalog; formatting lives in PerfFormatters. Contract:
+// Performance-telemetry verbs: perf report|window|mark|trace|experiment, knobs, knob set|reset, log tail. Payload shapes
+// and help text come from the automation command catalog; formatting lives in PerfFormatters. Contract:
 // docs/architecture/performance-telemetry.md section 3.
+//
+// Two verbs are tool-only and have no automation command behind them (section 7): `perf trace analyze` reads a dump
+// file on this machine and needs no running app, and `perf experiment` is a client of the existing commands (knobs,
+// preview and recording control, performance windows) driven by the shared runner in tools/Common/Performance.
 internal static partial class CommandHandlers
 {
-    private const string PerfUsage = "perf report|window|mark|trace ...";
+    private const string PerfUsage = "perf report|window|mark|trace|experiment ...";
     private const string PerfReportUsage = "perf report [--window NAME] [--filter PREFIX] [--idle] [--json]";
     private const string PerfWindowUsage = "perf window begin|read|end|cancel|list [NAME] [--json]";
     private const string PerfMarkUsage = "perf mark <text>";
-    private const string PerfTraceUsage = "perf trace start [--capacity N]|stop|status|dump [path]";
+    private const string PerfTraceUsage = "perf trace start [--capacity N]|stop|status|dump [path]|analyze <file> [--top N] [--json]";
+    private const string PerfTraceAnalyzeUsage = "perf trace analyze <file> [--top N] [--json]";
+    private const string PerfExperimentUsage = "perf experiment <spec.json> [--out DIR] [--json]";
+    private const int MaxAnalyzeTopFrames = 1000;
     private const string KnobsUsage = "knobs [FILTER] [--json]";
     private const string KnobUsage = "knob set <name> <value> | knob reset <name>";
     private const string LogUsage = "log tail [--max N] [--contains TEXT] [--json]";
@@ -27,6 +36,7 @@ internal static partial class CommandHandlers
             "window" => HandlePerfWindowAsync(context),
             "mark" => HandlePerfMarkAsync(context),
             "trace" => HandlePerfTraceAsync(context),
+            "experiment" => HandlePerfExperimentAsync(context),
             _ => throw new UsageException(PerfUsage),
         };
     }
@@ -109,6 +119,10 @@ internal static partial class CommandHandlers
         var json = context.GlobalJson || ConsumeFlag(context.Rest, "--json");
         var action = RequireWord(context.Rest, 0, PerfTraceUsage).ToLowerInvariant();
         context.Rest.RemoveAt(0);
+        if (action == "analyze")
+        {
+            return HandlePerfTraceAnalyze(context, json);
+        }
 
         var payload = new Dictionary<string, object?>();
         switch (action)
@@ -146,6 +160,92 @@ internal static partial class CommandHandlers
         payload[AutomationPayloadKeys.Action] = action;
         var response = await context.SendCommandAsync(AutomationCommandKind.FrameTrace, payload).ConfigureAwait(false);
         return WriteResponse(response, json, value => Formatters.FormatResult(value, includeData: true));
+    }
+
+    // Offline: reads a dump written by `perf trace dump` and prints where the frames spent their time. No pipe traffic,
+    // so it works with the app closed. A file that is not a complete trace is exit 3 with the reason, like any other
+    // failed result; the JSON form keeps stdout machine-readable with the same Success/Message envelope.
+    private static int HandlePerfTraceAnalyze(CommandContext context, bool json)
+    {
+        var top = ParseOptionalIntFlag(context.Rest, "--top");
+        if (top is < 1 or > MaxAnalyzeTopFrames)
+        {
+            throw new UsageException($"{PerfTraceAnalyzeUsage} (--top is 1 to {MaxAnalyzeTopFrames})");
+        }
+
+        var file = RequireWord(context.Rest, 0, PerfTraceAnalyzeUsage);
+        EnsureArgCount(context.Rest, 1, PerfTraceAnalyzeUsage);
+
+        try
+        {
+            var options = top is { } topFrames ? new FrameTraceAnalysisOptions { TopFrames = topFrames } : null;
+            var analysis = FrameTraceAnalyzer.AnalyzeFile(Path.GetFullPath(file), options);
+            Console.Write(json ? analysis.ToJson() + Environment.NewLine : analysis.FormatSummary());
+            return 0;
+        }
+        catch (Exception ex) when (ex is FrameTraceFormatException or ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            return WritePerfToolFailure(ex.Message, json);
+        }
+    }
+
+    // Runs a knob A/B experiment against the live app (section 7). Takes minutes: variants x repeats x (warmup +
+    // measure window) plus restarts. Progress goes to stderr so `--json` leaves stdout as one JSON document. Ctrl-C
+    // cancels the run; the runner still restores the app before it returns. Exit 0 only when every run completed and
+    // the pre-experiment state was verified restored; any other outcome, including a spec the app rejects, is exit 3.
+    private static async Task<int> HandlePerfExperimentAsync(CommandContext context)
+    {
+        var json = context.GlobalJson || ConsumeFlag(context.Rest, "--json");
+        var outputDirectory = ParseOptionalStringFlag(context.Rest, "--out");
+        var specPath = RequireWord(context.Rest, 0, PerfExperimentUsage);
+        EnsureArgCount(context.Rest, 1, PerfExperimentUsage);
+
+        PerfExperimentSpec spec;
+        string? resolvedOutput;
+        try
+        {
+            spec = PerfExperimentSpec.Load(Path.GetFullPath(specPath));
+            resolvedOutput = outputDirectory is null ? null : Path.GetFullPath(outputDirectory);
+        }
+        catch (PerfExperimentSpecException ex)
+        {
+            return WritePerfToolFailure(
+                "Invalid experiment spec:" + Environment.NewLine + string.Join(Environment.NewLine, ex.Problems.Select(problem => "  - " + problem)),
+                json);
+        }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            return WritePerfToolFailure(ex.Message, json);
+        }
+
+        var result = await PerfExperimentRunner.RunAsync(
+                spec,
+                (command, payload, responseTimeoutMs, commandToken) =>
+                    context.Transport.SendCommandAsync(command, payload, responseTimeoutMs, commandToken),
+                new PerfExperimentOptions
+                {
+                    OutputDirectory = resolvedOutput,
+                    Progress = line => Console.Error.WriteLine(line),
+                },
+                context.RequestCancellationToken)
+            .ConfigureAwait(false);
+
+        Console.Write(json ? result.ToJson() + Environment.NewLine : result.FormatSummary());
+        return result.Succeeded ? 0 : 3;
+    }
+
+    private static int WritePerfToolFailure(string message, bool json)
+    {
+        if (json)
+        {
+            Console.WriteLine(JsonSerializer.Serialize(new { Success = false, Message = message }));
+        }
+        else
+        {
+            Console.Error.WriteLine(message);
+        }
+
+        return 3;
     }
 
     private static async Task<int> HandleKnobsAsync(CommandContext context)

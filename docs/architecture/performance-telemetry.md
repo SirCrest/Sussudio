@@ -550,15 +550,124 @@ ssctl perf window end steady --json > artifacts/steady.json
 ```
 
 Explain a hitch: `ssctl perf trace start`, reproduce, `ssctl perf trace dump
-artifacts/hitch.trace.json`, `ssctl perf trace analyze
-artifacts/hitch.trace.json`. The analyzer lists the slowest frames with their
-per-stage breakdown and any GC pause, UI stall or hub refresh that
-overlapped them. Open the same file in https://ui.perfetto.dev to look.
+artifacts/hitch.trace.json`, then analyze the file:
 
-A/B a knob without relaunching: write a spec and run `ssctl perf experiment
-spec.json`. The runner interleaves variants, restarts what each knob needs,
-warms up, measures, restores every knob, and writes `result.json` and
-`summary.md`.
+```powershell
+ssctl perf trace analyze artifacts/hitch.trace.json [--top N] [--json]
+```
+
+`perf trace analyze` is tool-only: it reads the dump file on this machine and
+needs no running app (MCP: `analyze_frame_trace` with `path`, optional
+`topFrames`). `--top` (1 to 1000, default 10) sets how many of the slowest
+frames are listed with their per-stage breakdown. The report has:
+
+- per-stage durations (p50, p99, max, and where the stage ended relative to
+  frame arrival; aggregate spans such as `preview.pipeline` are marked and
+  never named as a cause);
+- derived latencies: `arrival_to_present`, `ingress_to_visible` (MF sample
+  time from `capture.sample_time` to the end of the pipeline or present) and
+  `ingress_to_arrival`; if no frame has a `capture.sample_time` the report
+  says so instead of omitting them silently;
+- present cadence with every hitch (an interval over 1.5 times the median and
+  at least 2 ms over it), each with a named likely cause: the stage that grew
+  most on that frame, a late arrival, or an overlapping event (a GC pause, UI
+  stall, automation command or Flashback segment rotation, or any other
+  non-audio event of 2 ms or more such as a `telemetry.hub_refresh`), plus any
+  marker in the interval;
+- the slowest frames, events outside frames (`id = -1`), and drops counted per
+  reason (`args.reason` of `preview.drop`, the names in `PreviewDropReasons`;
+  a dropped slow frame names its reason, and a dump without reasons reports
+  the count alone).
+
+Arrival comes from the QPC `id` and the dump's metadata. A dump with no
+metadata, or ids that are not QPC ticks (sequence numbers from an older
+build), falls back to each frame's earliest event and says so in a warning.
+Input that is not a complete trace (empty, not JSON, truncated, a missing
+file) is exit code 3 with the reason; `--json` prints the same failure as
+`{"Success":false,"Message":...}` on stdout. Open the same file in
+https://ui.perfetto.dev to look.
+
+A/B a knob without relaunching: write a spec and run it.
+
+```powershell
+ssctl perf experiment scripts/performance/experiments/example-jitter-depth.json [--out DIR] [--json]
+```
+
+`perf experiment` is also tool-only (MCP: `run_perf_experiment` with `specPath`
+or inline `specJson`, optional `outputDirectory`; it can take minutes and the
+MCP server runs one experiment at a time). It is a client of existing commands
+(`GetSnapshot`, `GetTuningKnobs`, `SetTuningKnob`, `SetPreviewEnabled`,
+`SetRecordingEnabled`, `RestartFlashback`, `PerfWindow`, `AddPerfMarker`), so a
+second experiment from another client against the same app would fight over the
+same knobs; run one at a time. Progress goes to stderr, the summary (or, with
+`--json`, `result.json`) to stdout. Exit code 0 means every run completed and
+the restore was verified; anything else, including a spec the app rejects and
+a restore that could not be verified, is exit code 3.
+
+Spec (JSON; comments and trailing commas are accepted, unknown fields are
+rejected so a misspelled `repeat` cannot run with the default):
+
+```json
+{
+  "name": "jitter depth",
+  "description": "optional",
+  "warmupSeconds": 5,
+  "measureSeconds": 20,
+  "repeats": 3,
+  "recording": false,
+  "metrics": ["preview.present_interval", "preview.jitter_drop."],
+  "verdictStatistic": "p99",
+  "variants": [
+    { "name": "baseline", "knobs": {} },
+    { "name": "deeper", "knobs": { "SUSSUDIO_PREVIEW_JITTER_TARGET_DEPTH": 5 } }
+  ]
+}
+```
+
+`name` and `variants` are required. `warmupSeconds` is 0 to 600 (default 5) and
+runs after every restart, before the measure window; `measureSeconds` is 1 to
+3600 (default 20); `repeats` is 1 to 20 runs per variant (default 3).
+`recording: true` records during every run (needed for `recording-start`
+knobs). `metrics` is an optional focus list of exact names or prefixes ending in
+`*` or `.`; without it every metric with samples is compared.
+`verdictStatistic` is `mean`, `p50`, `p90`, `p99` (default), `p999` or `max`.
+There are 1 to 8 variants; the first is the baseline every other variant is
+compared with, and a knob value may be a string, number or boolean.
+
+The runner first validates the spec against the app without changing anything
+and reports every problem together (`rejected`): an unknown knob, a wrong type,
+a value outside the range, an `app-restart` knob (the runner cannot relaunch the
+app), a `recording-start` knob without `recording: true`, a `flashback-restart`
+knob while Flashback is off, a preview that is not running, or a recording that
+is already running. Then it runs the variants interleaved, reversing the
+direction each repeat (A B, B A, A B) so slow drift lands on both. Each variant
+is applied as a difference from the previous run, knobs a variant does not name
+return to their pre-experiment value, and the preview (and Flashback, where a
+`flashback-restart` knob needs it) is restarted and read back from the snapshot
+before warmup, not trusted from the acknowledgement. Every run is one named
+performance window (at most 64 characters, unique), and a marker (`experiment
+variant <name> run <n> warmup` and `... measure`) is added at the start of the
+warmup and of the measure window so the runs can be found in a frame trace.
+
+A verdict is `better` or `worse` only when the per-repeat range of the verdict
+statistic for the variant is entirely below or above the baseline's (lower is
+better); touching or overlapping ranges, a single repeat, or a metric with no
+samples in one variant are `inconclusive`. A counter is judged only when its
+name says it counts something bad (drops, stalls, late frames, errors, ...);
+any other counter reports `changed` for a separated difference instead of
+better or worse.
+
+Whatever happens, including a failed command or Ctrl-C, the runner then restores
+the app on its own timeout: every touched knob goes back (reset to its launch
+value if it was not overridden before, set back to its previous value if it
+was), a recording it started is stopped, an open window is canceled, the
+preview is running again, and the state is read back. `result.json` says whether the restore was verified
+and lists anything that was not. Artifacts go to `--out DIR` or
+`artifacts/perf-experiments/<timestamp>-<name>`: `result.json` (settings, runs,
+per-metric statistics and verdicts, restore, warnings), `summary.md`,
+`spec.json` (the variants as run) and `reports/NN-variant-rN.json`, the raw
+window report of each run. A failure to write them is a warning and never
+changes the status or skips the restore.
 
 Hear the app: `ssctl audio listen --seconds 5 --latency --wav
 artifacts/out.wav`.

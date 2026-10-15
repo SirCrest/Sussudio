@@ -279,6 +279,7 @@ public sealed class PerfExperimentSpec
             return;
         }
 
+        var problemsBeforeVariants = problems.Count;
         var index = 0;
         foreach (var item in value.EnumerateArray())
         {
@@ -327,7 +328,8 @@ public sealed class PerfExperimentSpec
             variants.Add(new PerfExperimentVariant(name, knobs));
         }
 
-        if (variants.Count == 0 && !problems.Any(p => p.Contains("variant", StringComparison.OrdinalIgnoreCase)))
+        // An empty list is its own problem; skip it only when a variant was rejected above, which already explains it.
+        if (variants.Count == 0 && problems.Count == problemsBeforeVariants)
         {
             problems.Add("variants must list at least one variant.");
         }

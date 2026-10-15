@@ -40,6 +40,8 @@ namespace Sussudio.Tests;
 // 19. telemetry.hub_refresh carries id -1: ambient, never a frame, even many of them.
 // 20. A dump with frames but no capture.sample_time (an older app): ingress latency is absent and the report says
 //     why, instead of printing nothing.
+// 21. The app's own telemetry refresh (telemetry.hub_refresh) overlapping a hitch is named as a cause when it is long
+//     enough to matter, and a sub-millisecond one is not blamed.
 public sealed class FrameTraceAnalyzerTests
 {
     private const long Frequency = 10_000_000;
@@ -248,6 +250,26 @@ public sealed class FrameTraceAnalyzerTests
         Assert.Equal(25, gc.MaxMs, 3);
 
         Assert.Contains("gc.pause", analysis.FormatSummary());
+    }
+
+    [Fact]
+    public void AHubRefreshOverlappingAHitchIsNamedButAVeryShortOneIsNot()
+    {
+        var trace = new TraceBuilder();
+        for (var i = 0; i < 100; i++)
+        {
+            trace.Frame(100 + i * 16.667, presentDelayMs: i == 50 ? 14 : 0);
+        }
+
+        // The app's own telemetry refresh: a long one inside the hitch is a cause, a sub-millisecond one is noise.
+        trace.Span("telemetry.hub_refresh", 100 + 50 * 16.667 + 2, 9, -1, tid: 8);
+        trace.Span("telemetry.hub_refresh", 100 + 50 * 16.667 + 12, 0.4, -1, tid: 8);
+        var analysis = FrameTraceAnalyzer.AnalyzeJson(trace.Build());
+
+        var hitch = analysis.PresentCadence!.Hitches[0];
+        var named = Assert.Single(hitch.Attributions, a => a.Name == "telemetry.hub_refresh");
+        Assert.True(named.Ms >= 8, "overlap " + named.Ms.ToString(CultureInfo.InvariantCulture));
+        Assert.Equal(2, Assert.Single(analysis.AmbientEvents, e => e.Name == "telemetry.hub_refresh").Count);
     }
 
     [Fact]
