@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
@@ -49,7 +48,6 @@ public sealed partial class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
     private readonly PerformanceTimelineEntry[] _timelineBuffer = new PerformanceTimelineEntry[TimelineCapacity];
     private int _timelineHead;
     private int _timelineCount;
-    private readonly Process _currentProcess = Process.GetCurrentProcess();
     private long _lastProcessCpuSampleTimestamp;
     private double _lastProcessCpuTotalMs;
 
@@ -169,15 +167,10 @@ public sealed partial class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         // 12 s: StopAsync has two consecutive 5 s Task.WhenAny waits internally
         // (loopTask + autoVerificationTask), so 12 s covers both with margin.
         // Callers that need deterministic teardown should call DisposeAsync.
-        var stoppedCleanly = false;
         try
         {
             var stop = Task.Run(() => StopAsync());
-            if (stop.Wait(TimeSpan.FromSeconds(12)))
-            {
-                stoppedCleanly = true;
-            }
-            else
+            if (!stop.Wait(TimeSpan.FromSeconds(12)))
             {
                 Logger.Log("DIAGHUB_DISPOSE_TIMEOUT msg='StopAsync did not complete within 12 s; abandoning'");
             }
@@ -185,21 +178,6 @@ public sealed partial class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         catch (Exception ex)
         {
             Logger.Log($"DIAGHUB_DISPOSE_FAULT type={ex.GetType().Name} msg='{ex.Message}'");
-        }
-
-        if (stoppedCleanly)
-        {
-            _currentProcess.Dispose();
-        }
-        else
-        {
-            // StopAsync did not complete within the budget; the abandoned RunLoopAsync
-            // may still call _currentProcess.Refresh() / WorkingSet64. Disposing the
-            // handle here would race with those reads and produce ObjectDisposedException
-            // churn on the loop thread. Skip the dispose; the kernel reclaims the
-            // process handle when the host process exits (Dispose is only invoked from
-            // teardown paths, so the leak is bounded).
-            Logger.Log("DIAGHUB_DISPOSE_SKIPPED_PROCESS_HANDLE reason=stop_timeout");
         }
     }
 
@@ -212,7 +190,6 @@ public sealed partial class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
 
         _disposed = true;
         await StopAsync().ConfigureAwait(false);
-        _currentProcess.Dispose();
     }
 
     private async Task RunLoopAsync(CancellationToken cancellationToken)
