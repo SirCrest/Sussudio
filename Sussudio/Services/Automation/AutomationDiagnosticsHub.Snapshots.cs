@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
 using Sussudio.Services.Capture;
+using Sussudio.Services.Performance;
 using Sussudio.Services.Runtime;
 using Sussudio.Services.Telemetry;
 using Sussudio.Services.Recording;
@@ -121,12 +122,21 @@ public sealed partial class AutomationDiagnosticsHub
     private async Task<AutomationSnapshot> RefreshSnapshotAsync(CancellationToken cancellationToken)
     {
         await _refreshGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        // Telemetry starts after the gate, so waiting behind another refresh is not counted as refresh cost. The
+        // allocation figure is process-wide (async continuations hop threads, so a per-thread counter would be wrong)
+        // and therefore an upper bound on what the refresh itself allocated.
+        var refreshStartTick = Stopwatch.GetTimestamp();
+        var allocatedBefore = GC.GetTotalAllocatedBytes(false);
         try
         {
             return await RefreshSnapshotCoreAsync(cancellationToken).ConfigureAwait(false);
         }
         finally
         {
+            var refreshTicks = Stopwatch.GetTimestamp() - refreshStartTick;
+            PerfMetrics.TelemetryHubRefresh.RecordTicks(refreshTicks);
+            PerfMetrics.TelemetryHubAlloc.Record(GC.GetTotalAllocatedBytes(false) - allocatedBefore);
+            FrameTrace.Record(FrameTraceEventKind.HubRefresh, refreshStartTick, refreshTicks, -1);
             _refreshGate.Release();
         }
     }

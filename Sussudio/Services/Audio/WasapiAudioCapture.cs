@@ -1,9 +1,11 @@
 using System;
 using System.Buffers;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
+using Sussudio.Services.Performance;
 using Sussudio.Services.Recording;
 using Sussudio.Services.Runtime;
 using Sussudio.Services.Telemetry;
@@ -571,6 +573,7 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
                 WasapiComInterop.AudioMmcssTask,
                 WasapiComInterop.AudioMmcssPriority,
                 message => Logger.Log(message));
+            using var hotThread = HotThreads.Register("audio.capture", mmcss is not null);
             var captureEvent = _captureEvent;
             if (captureEvent == null)
             {
@@ -579,6 +582,8 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
 
             var waitHandle = captureEvent.SafeWaitHandle.DangerousGetHandle();
             var consecutiveWaitTimeouts = 0;
+            // QPC stamp of the previous capture event, local to this thread. A fresh worker starts without a baseline.
+            var lastEventTick = 0L;
             while (Volatile.Read(ref _stopRequested) == 0)
             {
                 var waitResult = WasapiComInterop.WaitForSingleObject(waitHandle, WaitTimeoutMs);
@@ -618,9 +623,22 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
 
                 try
                 {
+                    // Event interval and drain duration in QPC; the TickCount64 tracker below keeps feeding diagnostics
+                    // unchanged. Both ends sit outside any lock. Instances (HDMI and microphone) share the metrics.
+                    var eventTick = Stopwatch.GetTimestamp();
+                    if (lastEventTick != 0)
+                    {
+                        PerfMetrics.AudioCaptureInterval.RecordTicks(eventTick - lastEventTick);
+                    }
+
+                    lastEventTick = eventTick;
                     TrackCaptureCallback(Environment.TickCount64);
                     var framesBeforeDrain = Interlocked.Read(ref _audioFramesArrived);
+                    var drainStartTick = Stopwatch.GetTimestamp();
                     DrainCapturePackets();
+                    var drainTicks = Stopwatch.GetTimestamp() - drainStartTick;
+                    PerfMetrics.AudioCaptureDrain.RecordTicks(drainTicks);
+                    FrameTrace.Record(FrameTraceEventKind.AudioCapture, drainStartTick, drainTicks, -1);
                     if (Interlocked.Read(ref _audioFramesArrived) > framesBeforeDrain)
                     {
                         Volatile.Read(ref _recordingStartupReady)?.TrySetResult(true);

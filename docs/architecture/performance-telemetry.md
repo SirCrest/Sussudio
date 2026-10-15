@@ -116,7 +116,7 @@ Initial catalog (time unit is microseconds unless noted):
 | `mjpeg.queue_wait` | hist | compressed enqueue to worker dequeue |
 | `mjpeg.pipeline` | hist | arrival to strict-order emit |
 | `preview.jitter_residence` | hist | jitter buffer enqueue to submit |
-| `preview.queue_dwell` | hist | renderer submit to render-thread dequeue |
+| `preview.queue_dwell` | hist | renderer submit until the render thread selects the frame to render (a frame skipped as stale is a drop, not a dwell) |
 | `preview.frame_latency_wait` | hist | waitable swap-chain wait |
 | `preview.input_upload` | hist | render CPU stage |
 | `preview.render_submit` | hist | render CPU stage |
@@ -124,32 +124,86 @@ Initial catalog (time unit is microseconds unless noted):
 | `preview.render_total` | hist | total render CPU per frame |
 | `preview.gpu_render` | hist | D3D11 timestamp queries around the render passes (when GPU timing is enabled) |
 | `preview.present_interval` | hist | present-to-present on cadence frames |
-| `preview.pipeline_latency` | hist | arrival to estimated visible |
-| `preview.ingress_to_visible` | hist | MF sample time to estimated visible (QPC domain only) |
-| `recording.queue_dwell` | hist | enqueue to encode-loop dequeue, all lanes, QPC |
-| `recording.encode_submit` | hist | `avcodec_send_frame` plus receive loop |
-| `recording.mux_write` | hist | packet write including I/O |
+| `preview.pipeline_latency` | hist | arrival to estimated visible; live frames only (Flashback playback frames, source sequence below zero, are excluded) |
+| `preview.ingress_to_visible` | hist | MF sample time to estimated visible; QPC domain and live frames only; the sample time reaches the renderer through the ingress sample ledger (2.6) |
+| `recording.queue_dwell` | hist | video packet enqueue to encode-loop dequeue, all lanes (CPU, D3D11, CUDA), QPC |
+| `recording.encode_submit` | hist | `avcodec_send_frame` plus the receive/drain loop of one frame, including the nested `mux_write` time |
+| `recording.mux_write` | hist | video-packet `av_interleaved_write_frame` including I/O (nested inside `encode_submit`; audio packets are not recorded) |
 | `flashback.queue_dwell` | hist | as recording |
 | `flashback.encode_submit` | hist | as recording |
 | `flashback.mux_write` | hist | as recording |
-| `flashback.segment_rotation` | hist | rotate segment total |
-| `flashback.playback_decode` | hist | playback decode call |
-| `flashback.playback_present_interval` | hist | playback present cadence |
-| `audio.capture_interval` | hist | WASAPI capture event interval, QPC |
+| `flashback.segment_rotation` | hist | `RotateSegment` total on every exit, success or failure (flush, trailer, new segment, buffer bookkeeping) |
+| `flashback.playback_decode` | hist | steady-state continuous playback only: hardware read-ahead plus the next-frame read of one paced iteration; seek, scrub, step and pause-forward decodes are not recorded |
+| `flashback.playback_present_interval` | hist | interval between paced presents on the playback thread during continuous playback (the interval the existing cadence tracker measures) |
+| `audio.capture_interval` | hist | WASAPI capture event interval, QPC (the HDMI and microphone capture instances share the metric) |
 | `audio.capture_drain` | hist | capture packet drain duration |
-| `audio.render_interval` | hist | WASAPI render event interval, QPC |
+| `audio.render_interval` | hist | WASAPI render event interval, QPC; the baseline resets on pause and resume so a pause is never one long interval |
 | `audio.render_queue_ms` | hist (ms) | monitor queue depth in milliseconds, sampled per render event |
 | `ui.dispatcher_latency` | hist | UI responsiveness probe (2.8) |
 | `gc.pause` | hist | each GC suspension, from the runtime event listener |
 | `gpu.engine.3d` / `.video_encode` / `.video_decode` / `.copy` | hist (percent) | PDH GPU Engine utilization for this process, 1 Hz while sensors run |
 | `gpu.nvml.gpu_util` / `.encoder_util` / `.decoder_util` | hist (percent) | each NVML poll |
 | `telemetry.hub_refresh` | hist | diagnostics hub snapshot refresh |
-| `telemetry.hub_alloc` | hist (bytes) | process allocation during one refresh |
+| `telemetry.hub_alloc` | hist (bytes) | process-wide allocated bytes during one refresh; an upper bound, because other threads allocate meanwhile |
 | `automation.command` | hist | automation command dispatch |
-| `preview.drop.<reason>` | counter | renderer drops by reason |
+| `preview.drop.<reason>` | counter | renderer drops by reason, from a fixed table (2.2.1) |
+| `preview.jitter_drop.<reason>` | counter | jitter-buffer drops by reason, fixed table; a skipped run of missing sequence numbers adds its length |
+| `preview.jitter_underflow.<reason>` | counter | jitter-buffer underflows by reason, fixed table |
 | `capture.read_errors` | counter | read-loop exceptions |
 | `ui.stall_50ms` | counter | UI probe waits over 50 ms |
 | `audio.render_underrun` | counter | render events with an empty queue |
+
+### 2.2.1 Record sites and reason tables
+
+Every site is observation only: no allocation, no new lock, no blocking, and a
+stopped trace costs one volatile read. Counters are the only thing recorded
+inside an existing lock. Where each metric is recorded (by method; line numbers
+drift):
+
+| Metric (and trace stage) | Recorded in |
+|---|---|
+| `capture.readsample_wait`, `capture.arrival_interval`, `capture.ingress_lag`, `capture.deliver`, `capture.read_errors`; `capture.read`, `capture.deliver`, `capture.sample_time` | `MfSourceReaderVideoCapture.ReadLoop` through `MfReadLoopTelemetry` (one instance per read loop) |
+| `capture.visual_scan`; `capture.visual_scan` | `UnifiedVideoCapture.TrackPreviewVisualFrame`, around the tracker calls and outside their locks; recorded when the scan ran without throwing |
+| `mjpeg.queue_wait`, `mjpeg.decode`, `mjpeg.pipeline`; same stage names | `ParallelMjpegDecodePipeline`: queue wait at worker dequeue (before the shed check), decode on the success path only (`Arg` = worker index + 1), pipeline in `DrainReadyFrames` before the emit callback and outside `_reorderLock` |
+| `preview.jitter_residence`; same, `preview.jitter_drop.*`, `preview.jitter_underflow.*` | `MjpegPreviewJitterBuffer.SubmitFrame` (enqueue stamp to submit, outside `_sync`), `RecordDroppedFrame`, `RecordUnderflow`, `TryRecordResumeReprimeMiss` |
+| `preview.queue_dwell`, `preview.frame_latency_wait`, `preview.input_upload`, `preview.render_submit`, `preview.present_call`, `preview.render_total`, `preview.present_interval`, `preview.pipeline_latency`, `preview.ingress_to_visible`, `preview.drop.*`; matching stages and `preview.drop` | `D3D11PreviewRenderer` (`EnqueuePendingFrame`, the render loop, `WaitForFrameLatencySignal`, `TrackFrameDropped`, `TrackPresentCadence`, `TrackPipelineLatency`, `TrackRenderCpuTiming`) and `PresentAndTrackFrame` in `D3D11PreviewRenderer.RenderPasses.cs` |
+| `recording.*`, `flashback.queue_dwell`, `flashback.encode_submit`, `flashback.mux_write` | `LibAvRecordingSink.DrainVideoPackets`/`DrainGpuPackets`/`DrainCudaPackets` and `FlashbackEncoderSink.DrainVideoPackets`/`DrainGpuPackets` for queue dwell (QPC stamp on the packet at enqueue, recorded after dequeue and outside `_videoQueueSync`); `LibAvEncoder.SendVideoFrame`/`SendGpuVideoFrame`/`SendCudaVideoFrame` and `WritePacket` for encode and mux, through the injected `EncoderPerfMetrics` role |
+| `flashback.segment_rotation` | `FlashbackEncoderSink.RotateSegment` through `PerfScope` (covers both returns and the terminal rethrow) |
+| `flashback.playback_decode`, `flashback.playback_present_interval` | `FlashbackPlaybackController.PaceAndDecodeFrame` and `UpdateCadenceMetrics` |
+| `audio.capture_interval`, `audio.capture_drain`; `audio.capture` | `WasapiAudioCapture.CaptureThreadMain`, beside the existing `TrackCaptureCallback` (its TickCount64 trackers are unchanged) |
+| `audio.render_interval`, `audio.render_queue_ms`, `audio.render_underrun` | `WasapiAudioPlayback.RenderAvailableFrames` (interval and queue depth per render event, before `_chunkLock`); underrun counter beside each `_renderSilenceCount` increment |
+| `gpu.nvml.*` | `NvmlMonitor` poll, for each value NVML returned |
+| `telemetry.hub_refresh`, `telemetry.hub_alloc`; `telemetry.hub_refresh` | `AutomationDiagnosticsHub.RefreshSnapshotAsync`, after the refresh gate, including a failed refresh |
+| `automation.command`; `automation.command` | `AutomationCommandDispatcher.ExecuteAsync` finally block; the trace id is the command kind |
+
+Not recorded yet: `preview.gpu_render`/`preview.gpu_render` (GPU timestamp
+queries, slice 2b), the UI probe, GPU engine and GC-adjacent sensors (slice
+2b), and the reserved `audio.render` trace stage (the render interval and queue
+depth have no span to draw). Trace placement is approximate for two preview
+stages: `preview.input_upload` is anchored at the start of the render and
+`preview.render_submit` ends where `Present` begins, because the render passes
+do not carry stage start times out; durations are exact.
+
+Reason tables keep the drop and underflow counters bounded and allocation
+free. The renderer and the jitter buffer pass open-ended reason strings; each
+maps through a fixed switch to a small enum code, and anything unknown, null or
+empty lands in the last entry, `other`. A reason of the form `<x>:stale` maps to
+`stale`. Code 0 is reserved ("none"), so a trace instant with no reason is
+distinguishable.
+
+- `preview.drop.<reason>` (code = position, from 1): `renderer-stopped`,
+  `renderer-backlog`, `explicit-drain`, `live-preview-suppressed`,
+  `live-preview-resumed`, `shared-device-reset`, `stale-generation`, `stale`,
+  `render-skipped`, `render-failed`, `stale-before-render`, `renderer-exit`,
+  `renderer-stop`, `device-lost`, `other`.
+- `preview.jitter_drop.<reason>`: `queue-full`, `late-sequence`,
+  `missing-sequence`, `submit-failed`, `hard-deadline`, `soft-deadline`,
+  `cleared`, `suppressed`, `other`.
+- `preview.jitter_underflow.<reason>`: `empty-queue`, `waiting-for-sequence`,
+  `selection-blocked`, `resume-reprime`, `other`.
+
+The `preview.drop` trace instant carries the same code as its `arg`; the dump
+also writes the reason name.
 
 ### 2.3 Measurement windows
 
@@ -177,9 +231,13 @@ ring (power of two, 2^12 to 2^22 events, default 2^18), `stop` freezes it,
 open and that `ssctl perf trace analyze` reads. When disabled each record
 site costs one volatile read.
 
-- Event: `{ long Stamp; long Ts; long Dur; long Id; int Kind; int Tid }`.
-  `Ts` and `Dur` are QPC ticks; `Id` is the source sequence number for frame
-  events; `Kind` indexes `FrameTraceEventKind`.
+- Event: `{ long Stamp; long Ts; long Dur; long Id; ushort Kind; ushort Arg; int Tid }`
+  (40 bytes). `Ts` and `Dur` are QPC ticks; `Id` is the frame's arrival
+  timestamp for frame events (see Frame identity below); `Kind` indexes
+  `FrameTraceEventKind`; `Arg` is an optional 16-bit payload, zero when unused.
+  Today `Arg` carries the drop reason code on `preview.drop` and the worker
+  index plus one on `mjpeg.decode`. The dump writes `args.arg` only when it is
+  non-zero, and `args.reason` (the reason name) for `preview.drop`.
 - Writers claim a slot with `Interlocked.Increment`, write `Stamp = -1`,
   fill the fields, then publish `Stamp = index`. The dumper copies a slot and
   keeps it only if the stamp read before and after equals the expected
@@ -207,6 +265,12 @@ site costs one volatile read.
 - `capture.sample_time` is an instant event at the MF sample time converted
   to QPC (only when the ingress clock is the QPC domain), so the analyzer can
   compute per-frame ingress-to-visible exactly.
+- Stages added in slice 2a beyond the slice-1 list: `capture.sample_time`
+  (kind 31) and `telemetry.hub_refresh` (kind 32, id -1). `automation.command`
+  uses the command kind as its id. Encoder-level spans take the frame's
+  arrival timestamp as id when the packet carries it (CPU lane with a lease)
+  and -1 otherwise (raw buffers, GPU and CUDA lanes carry no identity);
+  `*.mux_write` is always -1.
 
 ### 2.5 Runtime tuning knobs
 
@@ -247,6 +311,31 @@ absolute. Otherwise ingress lag is not recorded and the report says
 `ingressClock=relative` with the observed minimum offset. Nothing in the
 pipeline consumes this classification.
 
+Details (slice 2a): `QpcMath` converts QPC ticks to 100 ns by splitting whole
+seconds from the remainder, with a saturating `Int128` fallback, because
+`ticks * 10_000_000` overflows a `long` after 25.6 hours of uptime at 10 MHz.
+`IngressClockClassifier` consumes the offsets: the first offset outside
+[0, 2 s) classifies `relative` at once, the 120th in-range offset classifies
+`qpc`, and the classification never flips. A zero or negative MF sample time is
+skipped and does not count toward the 120. The result is published through
+`PerfIngressClock` (kind and smallest observed offset); each read loop starts
+with `unknown`, so a restarted capture is classified afresh. `capture.ingress_lag`
+is recorded only once the clock is classified `qpc`, so the first 119 samples
+(the ones that decide the classification) are not in the histogram.
+
+Once the clock is `qpc`, the read loop also stores each frame's sample time as
+a QPC tick in `PerfIngressSamples`, a 1024-slot direct-mapped ledger keyed by
+the frame's arrival timestamp. The renderer looks the frame up by the same
+timestamp to compute `preview.ingress_to_visible`. This avoids adding a field
+to the capture delegates, `PooledVideoFrame`, the MJPEG work item and
+`PreviewFrameTracking`, and `SourcePtsTicks` is not repurposed. A slot is
+written by the single read-loop thread (invalidate the key, write the value,
+publish the key) and read lock-free (check the key, read the value, barrier,
+re-check the key), so a reader sees a miss or the matching pair, never another
+frame's sample. A newer frame that maps to the same slot evicts the older one;
+with 1024 slots and a handful of frames in flight this does not happen in
+steady state, and a miss records nothing rather than a wrong value.
+
 ### 2.7 Thread CPU
 
 `HotThreads.Register(role)` is called at the start of every dedicated hot
@@ -255,6 +344,12 @@ thread (beside its MMCSS registration) and disposed on exit. Reports read
 CPU percent of one core over the window, priority, and whether MMCSS
 registration succeeded. Exited threads keep their final totals in a bounded
 retired list so a window that spans a preview restart still adds up.
+
+Registered roles (slice 2a): `capture.read` (the read loop on its pool thread,
+disposed when the loop exits), `mjpeg.worker-<n>`, `mjpeg.emitter`,
+`mjpeg.jitter`, `preview.render`, `recording.encode`, `flashback.encode`,
+`flashback.playback`, `audio.capture` (one per capture instance) and
+`audio.render`. Each passes whether its MMCSS registration succeeded.
 
 ### 2.8 Sensors
 
@@ -403,6 +498,37 @@ Written before the code, per the testing policy:
   payload keys from the shared vocabulary.
 - Analyzer: malformed and truncated trace JSON produce an error, not a
   crash; frames missing stages are counted, not dropped.
+- QPC to 100 ns conversion and ingress classification (slice 2a, written
+  before the code): `ticks * 10_000_000` overflows a `long` after 25.6 hours
+  of uptime at 10 MHz, so the conversion must stay exact far beyond that;
+  non-integer frequency ratios (3 MHz, 24 MHz, 1 GHz) round-trip within one
+  tick; negative or zero input never throws; fewer than 120 usable samples
+  stay `unknown` and record no lag; one offset outside [0, 2 s) among the
+  first 120 classifies `relative` at once and permanently for that capture
+  start; 120 in-range offsets classify `qpc`; a zero or negative MF sample
+  time is skipped and does not count toward the 120; the classification never
+  flips after it is made; the smallest observed offset is the one published;
+  a reset returns to `unknown` so a restarted capture is classified afresh.
+- Ingress sample hand-off (slice 2a, written before the code): a recorded
+  frame is found by its arrival timestamp; an empty slot (arrival 0) never
+  matches, and neither does a zero or negative key; a newer frame that maps to
+  the same slot makes the older lookup miss and never returns the newer
+  frame's sample; a reader racing the single writer sees either a miss or the
+  matching pair, never a key paired with another frame's sample (the writer
+  invalidates the key before it touches the value).
+- Reason tables (slice 2a): every reason string the renderer or jitter buffer
+  passes maps to a table entry without allocating; an unknown string, null and
+  empty collapse into `other` so the counter set stays bounded; `{x}:stale`
+  maps to `stale`; every table entry has a registered counter with the wire
+  name `<prefix><name>`; out-of-range codes clamp to `other`.
+- Trace slot packing (slice 2a): the 16-bit event kind and 16-bit arg share
+  the field the kind used alone; an arg survives the ring round trip, an
+  arg of zero is omitted from the dump, and a kind never bleeds into the arg.
+
+- Packet stamps (slice 2a): a video packet built without the sink's factories
+  has no QPC enqueue stamp (zero) and is skipped by `*.queue_dwell` instead of
+  recording a dwell since process start; a dequeue stamp earlier than the
+  enqueue stamp records zero (histograms clamp negative durations).
 
 Everything else is verified end to end against the live app (section 6).
 

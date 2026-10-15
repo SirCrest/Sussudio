@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Threading;
+using Sussudio.Services.Performance;
 
 namespace Sussudio.Services.Gpu;
 
@@ -147,6 +148,22 @@ public sealed class NvmlMonitor : IDisposable
             uint? memClock = null;
             if (nvmlDeviceGetClockInfo(_device, NVML_CLOCK_MEM, out var mClock) == NVML_SUCCESS)
                 memClock = mClock;
+
+            // One utilization sample per poll into the performance histograms, only for values NVML actually returned.
+            if (gpuUtil is { } gpuUtilSample)
+            {
+                PerfMetrics.GpuNvmlGpuUtil.Record(gpuUtilSample);
+            }
+
+            if (nvencUtil is { } nvencUtilSample)
+            {
+                PerfMetrics.GpuNvmlEncoderUtil.Record(nvencUtilSample);
+            }
+
+            if (nvdecUtil is { } nvdecUtilSample)
+            {
+                PerfMetrics.GpuNvmlDecoderUtil.Record(nvdecUtilSample);
+            }
 
             Volatile.Write(ref _latestSnapshot, new NvmlSnapshot(
                 _gpuName, gpuUtil, memUtil, nvdecUtil, nvencUtil,

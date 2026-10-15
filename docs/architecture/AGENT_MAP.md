@@ -462,7 +462,48 @@ recording and audio sites call into it, never the other way round.
   `SUSSUDIO_DIAGNOSTICS_POLL_MS` is the only live knob wired in this slice
   (`AutomationDiagnosticsHub.RunLoopAsync`).
 - `HotThreads.cs` owns the dedicated-thread registry (`HotThreads.Register(role)`),
-  per-thread CPU time/cycles/priority and the bounded retired list.
+  per-thread CPU time/cycles/priority and the bounded retired list. Roles:
+  `capture.read` (`MfSourceReaderVideoCapture.ReadLoop`), `mjpeg.worker-<n>`
+  and `mjpeg.emitter` (`ParallelMjpegDecodePipeline`), `mjpeg.jitter`
+  (`MjpegPreviewJitterBuffer.EmitLoop`), `preview.render`
+  (`D3D11PreviewRenderer.RenderThreadMain`), `recording.encode`
+  (`LibAvRecordingSink.EncodingLoop`), `flashback.encode`
+  (`FlashbackEncoderSink.EncodingLoop`), `flashback.playback`
+  (`FlashbackPlaybackController.PlaybackThreadEntry`), `audio.capture`
+  (`WasapiAudioCapture.CaptureThreadMain`) and `audio.render`
+  (`WasapiAudioPlayback.RenderThreadMain`). Register beside the MMCSS
+  registration and pass whether it succeeded.
+- `PerfScope.cs` is a readonly-struct `using` helper that times a block with
+  several exits into a histogram plus one trace span without re-indenting it
+  (used for `flashback.segment_rotation`). Per-frame sites record explicitly
+  beside their own QPC stamps instead.
+- `IngressClockClassifier.cs` owns `QpcMath` (overflow-safe QPC to 100 ns
+  conversion) and the 120-sample ingress clock classifier; `PerfIngressSamples.cs`
+  is the direct-mapped ledger that hands each frame's MF sample time (as QPC)
+  from the read loop to the renderer, keyed by the frame's arrival timestamp,
+  for `preview.ingress_to_visible`. `PerfReasons.cs` owns the fixed reason
+  tables (`PreviewDropReasons`, `JitterReasons`) and `PerfReasonCounters`, so
+  `preview.drop.*`, `preview.jitter_drop.*` and `preview.jitter_underflow.*`
+  stay bounded and allocation free.
+- Record sites, by owner (the spec lists every metric to its method):
+  `Sussudio/Services/Capture/MfReadLoopTelemetry.cs` owns the per-read-loop
+  state for the capture metrics (readsample wait, arrival interval, ingress
+  clock and lag, deliver) and the `capture.sample_time` trace instant;
+  `UnifiedVideoCapture.TrackPreviewVisualFrame` times the visual scan;
+  `ParallelMjpegDecodePipeline` records queue wait, decode and pipeline;
+  `MjpegPreviewJitterBuffer` records residence and the jitter drop/underflow
+  counters; `D3D11PreviewRenderer` (and `.RenderPasses.cs`) records every
+  `preview.*` stage and the drop reasons;
+  `Sussudio/Services/Recording/EncoderPerfMetrics.cs` carries the recording or
+  Flashback role (histograms and trace kinds) injected into `LibAvEncoder`, which
+  records `encode_submit` and video `mux_write`, while `LibAvRecordingSink` and
+  `FlashbackEncoderSink` stamp packets at enqueue and record `queue_dwell` after
+  dequeue; `FlashbackPlaybackController` records playback decode and present
+  interval; `WasapiAudioCapture` and `WasapiAudioPlayback` record the audio
+  intervals, drain, queue depth and underruns; `NvmlMonitor` records NVML
+  utilization; `AutomationDiagnosticsHub.RefreshSnapshotAsync` records hub
+  refresh time and allocation; `AutomationCommandDispatcher.ExecuteAsync`
+  records command time. Sensors and GPU timestamp queries are not wired yet.
 - `ProcessSensors.cs` owns process CPU/memory/IO/handle sensors, GC counters and
   the runtime GC-pause `EventListener`, and `DwmGetCompositionTimingInfo`.
   `PerfIngressClock.cs` holds the capture ingress clock classification the

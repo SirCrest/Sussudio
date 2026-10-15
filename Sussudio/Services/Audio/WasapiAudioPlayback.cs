@@ -7,6 +7,7 @@ using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using Sussudio.Services.Performance;
 using Sussudio.Services.Runtime;
 
 namespace Sussudio.Services.Audio;
@@ -79,6 +80,9 @@ internal sealed class WasapiAudioPlayback : IDisposable
     private long _renderCallbackCount;
     private int _renderSilenceCount;
     private long _lastRenderCallbackTickMs;
+    // QPC stamp of the previous render event, for audio.render_interval. Touched only by the render thread; zero means
+    // no baseline (thread start, or right after a pause or resume, so a pause is never recorded as one long interval).
+    private long _lastRenderEventTick;
     private long _renderingPtsTicks; // PTS of chunk currently being rendered
     private const float VolumeRampPerFrame = 1.0f / (0.3f * OutputSampleRate); // 300ms ramp at 48kHz
     private float _renderVolumeRampPerFrame = VolumeRampPerFrame;
@@ -725,6 +729,8 @@ internal sealed class WasapiAudioPlayback : IDisposable
                 WasapiComInterop.AudioMmcssTask,
                 WasapiComInterop.AudioMmcssPriority,
                 message => Logger.Log(message));
+            using var hotThread = HotThreads.Register("audio.render", mmcss is not null);
+            _lastRenderEventTick = 0;
             var renderEvent = _renderEvent;
             if (renderEvent == null)
             {
@@ -769,6 +775,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
                     }
 
                     Flush();
+                    _lastRenderEventTick = 0;
                     Interlocked.Exchange(ref _renderingPaused, 1);
                     _renderRunningAcknowledged.Reset();
                     _renderPausedAcknowledged.Set();
@@ -803,6 +810,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
                         return;
                     }
 
+                    _lastRenderEventTick = 0;
                     Interlocked.Exchange(ref _renderingPaused, 0);
                     _renderPausedAcknowledged.Reset();
                     _renderRunningAcknowledged.Set();
@@ -908,6 +916,18 @@ internal sealed class WasapiAudioPlayback : IDisposable
         Interlocked.Increment(ref _renderCallbackCount);
         Interlocked.Exchange(ref _lastRenderCallbackTickMs, Environment.TickCount64);
 
+        // Per render event, before any lock: the QPC interval since the previous event and the monitor queue depth
+        // (queued frames only, not the active chunk or the endpoint buffer) as it stands on arrival.
+        var renderEventTick = Stopwatch.GetTimestamp();
+        var previousRenderEventTick = _lastRenderEventTick;
+        _lastRenderEventTick = renderEventTick;
+        if (previousRenderEventTick != 0)
+        {
+            PerfMetrics.AudioRenderInterval.RecordTicks(renderEventTick - previousRenderEventTick);
+        }
+
+        PerfMetrics.AudioRenderQueueMs.Record((long)PlaybackQueueDurationMs);
+
         WasapiComInterop.ThrowIfFailed(
             _audioClient.GetCurrentPadding(out var paddingFrames),
             "IAudioClient.GetCurrentPadding(render)");
@@ -969,6 +989,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
                 if (!TryDequeueChunk(out _activeChunk))
                 {
                     Interlocked.Increment(ref _renderSilenceCount);
+                    PerfMetrics.AudioRenderUnderrun.Increment();
                     Volatile.Write(ref _activeChunkRemainingFrames, 0);
                     destination[written..].Clear();
                     return;
@@ -1047,6 +1068,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
         if (wroteSilence)
         {
             Interlocked.Increment(ref _renderSilenceCount);
+            PerfMetrics.AudioRenderUnderrun.Increment();
         }
 
         _lastOutputPeak = peak;

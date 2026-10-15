@@ -1876,14 +1876,6 @@ public partial class CaptureService
         StartTelemetryPollCoreLocked();
     }
 
-    private void StartTelemetryPollCore()
-    {
-        lock (_telemetryPollSync)
-        {
-            EnsureTelemetryPollStartedLocked();
-        }
-    }
-
     private void StartTelemetryPollCoreLocked()
     {
         var generation = Interlocked.Increment(ref _telemetryPollGeneration);

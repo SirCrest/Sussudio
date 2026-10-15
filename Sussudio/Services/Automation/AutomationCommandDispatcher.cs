@@ -14,6 +14,7 @@ using Sussudio.Models;
 using Sussudio.Services.Capture;
 using Sussudio.Services.Contracts;
 using Sussudio.Services.Flashback;
+using Sussudio.Services.Performance;
 using Sussudio.Services.Runtime;
 using Sussudio.Tools;
 
@@ -213,6 +214,14 @@ public sealed partial class AutomationCommandDispatcher : IAutomationCommandDisp
                 success: false,
                 status: AutomationResponseStatus.Error,
                 elapsedMs: (long)Math.Round(Stopwatch.GetElapsedTime(commandStartedAt).TotalMilliseconds));
+        }
+        finally
+        {
+            // Every exit of ExecuteAsync (preflight reject, handler result, each catch) lands here exactly once.
+            // The trace id is the command kind, so a dump shows which command a slow span was.
+            var commandTicks = Stopwatch.GetTimestamp() - commandStartedAt;
+            PerfMetrics.AutomationCommand.RecordTicks(commandTicks);
+            FrameTrace.Record(FrameTraceEventKind.AutomationCommand, commandStartedAt, commandTicks, (long)request.Command);
         }
     }
 
