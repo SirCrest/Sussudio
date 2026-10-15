@@ -492,6 +492,10 @@ recording and audio sites call into it, never the other way round.
   reset, log tap bounds. Pure pieces are linked into
   `tests/Sussudio.Tests/Sussudio.Tests.csproj`; the rest is verified end to end
   against the live app with artifacts under `artifacts/perf-overhaul/`.
+  `scripts/performance/Verify-PerfTelemetry.ps1` is the repeatable end-to-end
+  check for this surface: it drives ssctl through report, window, marker,
+  trace, knob and log-tail, saves each raw response and writes
+  `verify-result.json`. It starts no preview or recording.
 
 ## Capture Runtime
 
