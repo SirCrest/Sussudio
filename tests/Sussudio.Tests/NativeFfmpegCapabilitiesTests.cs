@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using Xunit;
 
@@ -149,15 +150,26 @@ public sealed class NativeFfmpegCapabilitiesTests
         var task = (Task)method.Invoke(null, new object[] { RuntimeRoot, RuntimeVersions, @"C:\app\Sussudio.exe", @"C:\probe logs", proxy })!;
         await task;
         Assert.Equal(2, control.Requests.Count);
+        var parsedModes = new List<int>();
         foreach (var request in control.Requests)
         {
             Assert.Equal(@"C:\app\Sussudio.exe", request.GetType().GetProperty("FileName")!.GetValue(request));
-            Assert.True((int)request.GetType().GetProperty("TimeoutMs")!.GetValue(request)! > 0,
-                "each hardware trial must be bounded by a deadline");
+            // Long enough for a cold driver open, short enough that a stalled driver
+            // cannot hold the serialized refresh indefinitely.
+            Assert.InRange((int)request.GetType().GetProperty("TimeoutMs")!.GetValue(request)!, 1_000, 60_000);
             var arguments = (string)request.GetType().GetProperty("Arguments")!.GetValue(request)!;
-            Assert.Contains("--runtime-root \"C:\\native runtime\"", arguments);
             Assert.DoesNotContain("ffmpeg.exe", arguments, StringComparison.OrdinalIgnoreCase);
+
+            // The child's own parser must accept what the locator produced; a drifted
+            // header would send the child into normal app startup instead.
+            var argv = SplitCommandLine(arguments);
+            Assert.Equal(ProbeType.GetField("ChildFlag", Static)!.GetValue(null), argv[0]);
+            var parsed = new object?[] { argv, null, null, null };
+            Assert.True((bool)ProbeType.GetMethod("TryParseArguments", Static)!.Invoke(null, parsed)!, arguments);
+            Assert.Equal(RuntimeRoot, parsed[1]);
+            parsedModes.Add((int)parsed[2]!);
         }
+        Assert.Equal(new[] { 2, 3 }, parsedModes.Order());
     }
 
     [Fact]
@@ -218,6 +230,10 @@ public sealed class NativeFfmpegCapabilitiesTests
         Assert.True(child.ExitCode == 0, child.Output + child.Errors);
         using var payload = JsonDocument.Parse(child.Output);
         Assert.Equal(runtimeRoot, payload.RootElement.GetProperty("RuntimeRoot").GetString(), ignoreCase: true);
+        // The shipped bundle must carry every NVENC encoder the recording format list offers.
+        Assert.True(payload.RootElement.GetProperty("Support").GetProperty("HasH264Nvenc").GetBoolean());
+        Assert.True(payload.RootElement.GetProperty("Support").GetProperty("HasHevcNvenc").GetBoolean());
+        Assert.True(payload.RootElement.GetProperty("Support").GetProperty("HasAv1Nvenc").GetBoolean());
     }
 
     [Fact]
@@ -355,6 +371,30 @@ public sealed class NativeFfmpegCapabilitiesTests
     private static Type RequireType(string name) => SussudioAssembly.Load().GetType(name, throwOnError: true)!;
     private static void Set(object instance, string property, object? value) => instance.GetType().GetProperty(property, Instance)!.SetValue(instance, value);
     private static bool ReadResult(object process) => (bool)ProbeType.GetMethod("ReadAcceptedResult", Static)!.Invoke(null, new[] { process, RuntimeRoot, RuntimeVersions, 2 })!;
+
+    // Splits a process argument string the way the child's argv receives it.
+    // CommandLineToArgvW treats its first token as a program path, so a placeholder fills it.
+    private static string[] SplitCommandLine(string arguments)
+    {
+        var argv = CommandLineToArgvW("child.exe " + arguments, out var count);
+        if (argv == IntPtr.Zero) throw new InvalidOperationException($"CommandLineToArgvW failed: {Marshal.GetLastWin32Error()}");
+        try
+        {
+            return Enumerable.Range(1, count - 1)
+                .Select(index => Marshal.PtrToStringUni(Marshal.ReadIntPtr(argv, index * IntPtr.Size))!)
+                .ToArray();
+        }
+        finally
+        {
+            LocalFree(argv);
+        }
+    }
+
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern IntPtr CommandLineToArgvW(string commandLine, out int count);
+
+    [DllImport("kernel32.dll")]
+    private static extern IntPtr LocalFree(IntPtr memory);
 
     private static Dictionary<string, object> Payload(int outcome = 1, int packets = 1) => new()
     {

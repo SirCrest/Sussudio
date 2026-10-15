@@ -304,9 +304,8 @@ public sealed class PreviewAudioTransitionControllersTests
     {
         using var h = new ControllerHarness(0.5);
         await h.Controller.RampDownForStopAsync(CancellationToken.None);
-        Assert.True(
-            h.Logs.FindAll(log => log.Contains("PREVIEW_AUDIO_STOP_RAMP")).Count >= 2,
-            "the stop ramp must log both its start and its completion");
+        Assert.Contains(h.Logs, log => log.Contains("PREVIEW_AUDIO_STOP_RAMP_STARTED"));
+        Assert.Contains(h.Logs, log => log.Contains("PREVIEW_AUDIO_STOP_RAMP_COMPLETED"));
         Assert.Equal(0.5, h.Controller.RequestedVolume, 6);
     }
 

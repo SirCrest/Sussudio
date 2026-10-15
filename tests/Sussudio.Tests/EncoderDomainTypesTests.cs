@@ -63,6 +63,22 @@ public sealed class EncoderDomainTypesTests
         Assert.IsType(RequireType("Sussudio.Services.Automation.AutomationRequestValidationException"), exception.InnerException);
     }
 
+    // Disabled is managed value 1 but NVENC value 15, so a direct enum cast would
+    // silently apply the wrong split policy.
+    [Theory]
+    [InlineData("Auto", 0L)]
+    [InlineData("Disabled", 15L)]
+    [InlineData("TwoWay", 2L)]
+    [InlineData("ThreeWay", 3L)]
+    public void SplitModesMapToTheirNativeValues(string modeName, long expected)
+    {
+        var mode = Enum.Parse(RequireType("Sussudio.Models.SplitEncodeMode"), modeName);
+        var arguments = new object?[] { mode, null };
+        var mapped = EncoderMethod("TryMapSplitEncodeMode").Invoke(null, arguments);
+        Assert.Equal(true, mapped);
+        Assert.Equal(expected, Assert.IsType<long>(arguments[1]));
+    }
+
     [Theory]
     [InlineData("ForcedOn")]
     [InlineData("999")]
