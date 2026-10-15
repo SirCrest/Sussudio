@@ -62,6 +62,10 @@
     <Compile Include="..\..\Sussudio\Services\Performance\PerfReasons.cs" Link="Production\PerfReasons.cs" />
   </ItemGroup>
   <ItemGroup>
+    <!-- Tool-side performance analysis (frame trace analyzer, experiment runner): pure code shared with ssctl and McpServer. -->
+    <Compile Include="..\..\tools\Common\Performance\*.cs" Link="Production\ToolsPerformance\%(Filename)%(Extension)" />
+  </ItemGroup>
+  <ItemGroup>
     <None Update="Fixtures\RecordingStructure\*.mp4" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Fixtures\RecordingStructure\manifest.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
