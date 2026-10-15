@@ -827,7 +827,8 @@ Entry points:
   context creation, temp/final output file naming, HDR-active context fields,
   final-output validation, sink-failure preservation, rollback,
   preserved temp-artifact discovery, unresolved-finalization marker writing and
-  restart restoration, the stable LocalApplicationData recovery mirror, the
+  restart restoration, the stable LocalApplicationData recovery mirror (its
+  root is redirected by `SUSSUDIO_RECOVERY_DIRECTORY`, unset in production), the
   write-ahead active-recording journal and Flashback artifact-root recovery,
   legacy `audio_temp` journal compatibility, newest-first recoverable-media
   selection, journal retirement, and best-effort
@@ -1827,6 +1828,13 @@ Primary current owners:
 - `tests/Sussudio.Tests/HarnessCore.cs` owns the assembly-load smoke entry point
   and xUnit target-assembly bootstrap; regression checks live in focused xUnit
   slices and contract files rather than a second harness catalog.
+- `tests/Sussudio.Tests/TestProcessRecoveryRoot.cs` owns recording-recovery
+  isolation for every process that loads the test assembly: a module initializer
+  points `SUSSUDIO_RECOVERY_DIRECTORY` at a private temp root (keeping one a parent
+  process already passed) before any test runs, so tests never write markers into,
+  or restore them from, the user's `%LOCALAPPDATA%\Sussudio\RecordingRecovery`.
+  Tests that need their own root push and restore it inside
+  `RecoveryEnvironmentCollection`.
 - `tests/Sussudio.Tests/XUnit.CoreRuntimeContractsTests.cs` owns the former
   core-runtime registration group for runtime telemetry, capture-service
   snapshot, recording-integrity, NativeXu, frame-ledger, and basic app contract
