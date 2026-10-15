@@ -1267,12 +1267,14 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
 
             emittedAny = true;
 
-            RecordTimingSample(_reorderLatencyMs, ref _reorderLatencyCount, ref _reorderLatencyIndex, GetElapsedMilliseconds(frame.DecodedTick, Stopwatch.GetTimestamp()));
-            RecordTimingSample(_pipelineLatencyMs, ref _pipelineLatencyCount, ref _pipelineLatencyIndex, GetElapsedMilliseconds(frame.Frame.ArrivalTick, Stopwatch.GetTimestamp()));
+            // One emit-time stamp serves the reorder and pipeline latency windows and the pipeline metric below.
+            var emitTick = Stopwatch.GetTimestamp();
+            RecordTimingSample(_reorderLatencyMs, ref _reorderLatencyCount, ref _reorderLatencyIndex, GetElapsedMilliseconds(frame.DecodedTick, emitTick));
+            RecordTimingSample(_pipelineLatencyMs, ref _pipelineLatencyCount, ref _pipelineLatencyIndex, GetElapsedMilliseconds(frame.Frame.ArrivalTick, emitTick));
 
             // Arrival to strict-order emit, recorded outside _reorderLock (TryTakeNextDecodedFrame has released it).
             var pipelineStartTick = frame.Frame.ArrivalTick;
-            var pipelineTicks = Stopwatch.GetTimestamp() - pipelineStartTick;
+            var pipelineTicks = emitTick - pipelineStartTick;
             PerfMetrics.MjpegPipeline.RecordTicks(pipelineTicks);
             FrameTrace.Record(FrameTraceEventKind.MjpegPipeline, pipelineStartTick, pipelineTicks, pipelineStartTick);
             var emitted = false;

@@ -5,8 +5,9 @@ using Xunit;
 namespace Sussudio.Tests;
 
 // Failure modes of the read-loop to renderer sample-time hand-off (docs/architecture/performance-telemetry.md
-// sections 2.6 and 5): a miss for a key that was never recorded, empty-slot and non-positive keys, a colliding newer
-// frame evicting an older one without ever leaking its sample, and a reader racing the writer.
+// sections 2.6 and 5): a miss for a key that was never recorded, empty-entry and non-positive keys, set-associative
+// retention (four frames per set survive, the fifth evicts the smallest arrival tick without leaking its sample),
+// re-recording a key in place, and a reader racing the writer.
 public sealed class PerfIngressSamplesTests
 {
     [Fact]
@@ -33,24 +34,135 @@ public sealed class PerfIngressSamplesTests
         Assert.False(PerfIngressSamples.TryGet(0, out _));
     }
 
-    [Fact]
-    public void NewerFrameInTheSameSlotEvictsTheOlderOneWithoutLeakingItsSample()
+    // The table is process-wide and never cleared, so an earlier test's entries stay in it. The writer evicts the
+    // smallest arrival tick in a set, so a test whose keys are smaller than a leftover would evict its own keys.
+    // Each test therefore takes a key base above everything recorded before it (real QPC ticks are far below 1e18).
+    private static long _nextKeyBase = 1_000_000_000_000_000_000;
+
+    private static long NextKeyBase() => Interlocked.Add(ref _nextKeyBase, 1_000_000_000);
+
+    private static long[] KeysInOneSet(int count, long start)
     {
-        const long older = 5_000_000_011;
-        var slot = PerfIngressSamples.SlotIndex(older);
-        long newer = older + 1;
-        while (PerfIngressSamples.SlotIndex(newer) != slot)
+        var keys = new long[count];
+        var set = PerfIngressSamples.SetIndex(start);
+        keys[0] = start;
+        var next = start;
+        for (var i = 1; i < count; i++)
         {
-            newer++;
+            do
+            {
+                next++;
+            }
+            while (PerfIngressSamples.SetIndex(next) != set);
+            keys[i] = next;
         }
 
-        PerfIngressSamples.Record(older, 111);
-        PerfIngressSamples.Record(newer, 222);
+        return keys;
+    }
 
-        Assert.False(PerfIngressSamples.TryGet(older, out var leaked));
+    [Fact]
+    public void FourFramesThatShareASetAreAllRetained()
+    {
+        // A direct-mapped ledger lost every one of these but the last; the tail frames are the ones that stay in
+        // flight longest, so losing them biases p99.9 and max low.
+        var keys = KeysInOneSet(PerfIngressSamples.Ways, NextKeyBase());
+        for (var i = 0; i < keys.Length; i++)
+        {
+            PerfIngressSamples.Record(keys[i], 1_000 + i);
+        }
+
+        for (var i = 0; i < keys.Length; i++)
+        {
+            Assert.True(PerfIngressSamples.TryGet(keys[i], out var sample), $"way {i} was lost");
+            Assert.Equal(1_000 + i, sample);
+        }
+    }
+
+    [Fact]
+    public void AFifthFrameInASetEvictsTheOldestAndNeverLeaksItsSample()
+    {
+        var keys = KeysInOneSet(PerfIngressSamples.Ways + 1, NextKeyBase());
+        for (var i = 0; i < keys.Length; i++)
+        {
+            PerfIngressSamples.Record(keys[i], 2_000 + i);
+        }
+
+        Assert.False(PerfIngressSamples.TryGet(keys[0], out var leaked));
         Assert.Equal(0, leaked);
-        Assert.True(PerfIngressSamples.TryGet(newer, out var sample));
-        Assert.Equal(222, sample);
+        for (var i = 1; i < keys.Length; i++)
+        {
+            Assert.True(PerfIngressSamples.TryGet(keys[i], out var sample), $"key {i} should survive");
+            Assert.Equal(2_000 + i, sample);
+        }
+    }
+
+    [Fact]
+    public void EvictionTakesTheSmallestArrivalTickNotTheLeastRecentlyWritten()
+    {
+        // Written out of order: the oldest frame (smallest tick) is written second, so a first-written or
+        // round-robin policy would evict the wrong entry.
+        var keys = KeysInOneSet(PerfIngressSamples.Ways + 1, NextKeyBase());
+        PerfIngressSamples.Record(keys[3], 33);
+        PerfIngressSamples.Record(keys[0], 30);
+        PerfIngressSamples.Record(keys[2], 32);
+        PerfIngressSamples.Record(keys[1], 31);
+        PerfIngressSamples.Record(keys[4], 34);
+
+        Assert.False(PerfIngressSamples.TryGet(keys[0], out _));
+        Assert.True(PerfIngressSamples.TryGet(keys[1], out var s1));
+        Assert.Equal(31, s1);
+        Assert.True(PerfIngressSamples.TryGet(keys[2], out var s2));
+        Assert.Equal(32, s2);
+        Assert.True(PerfIngressSamples.TryGet(keys[3], out var s3));
+        Assert.Equal(33, s3);
+        Assert.True(PerfIngressSamples.TryGet(keys[4], out var s4));
+        Assert.Equal(34, s4);
+    }
+
+    [Fact]
+    public void RecordingAFrameAgainReplacesItInPlaceAndDoesNotCostAWay()
+    {
+        var keys = KeysInOneSet(PerfIngressSamples.Ways, NextKeyBase());
+        PerfIngressSamples.Record(keys[0], 1);
+        PerfIngressSamples.Record(keys[0], 2);
+        PerfIngressSamples.Record(keys[0], 3);
+        for (var i = 1; i < keys.Length; i++)
+        {
+            PerfIngressSamples.Record(keys[i], 10 + i);
+        }
+
+        Assert.True(PerfIngressSamples.TryGet(keys[0], out var first));
+        Assert.Equal(3, first);
+        for (var i = 1; i < keys.Length; i++)
+        {
+            Assert.True(PerfIngressSamples.TryGet(keys[i], out var sample));
+            Assert.Equal(10 + i, sample);
+        }
+    }
+
+    [Fact]
+    public void FramesInFlightAcrossManySetsAreRetainedThroughAHundredNewerFrames()
+    {
+        // 60 fps over about 1.7 s of a slow frame's life: a direct-mapped table lost roughly one in ten of these at
+        // 100 newer frames; with four ways a set needs four newer arrivals to evict, so none are lost here.
+        var start = NextKeyBase();
+        const int total = 2_000;
+        const int inFlight = 100;
+        for (var i = 0; i < total; i++)
+        {
+            PerfIngressSamples.Record(start + i * 166_667L, i + 1);
+        }
+
+        var lost = 0;
+        for (var i = total - inFlight; i < total; i++)
+        {
+            if (!PerfIngressSamples.TryGet(start + i * 166_667L, out var sample) || sample != i + 1)
+            {
+                lost++;
+            }
+        }
+
+        Assert.Equal(0, lost);
     }
 
     [Fact]

@@ -49,13 +49,16 @@ public static class HotThreads
     /// </summary>
     public static Registration Register(string role, bool mmcss = false)
     {
-        FrameTrace.NameCurrentThread(role);
+        var managedThreadId = Environment.CurrentManagedThreadId;
+        var nameEntry = FrameTrace.NameCurrentThread(role);
         var registration = new Registration(
             role,
             (int)GetCurrentThreadId(),
             OpenThread(ThreadQueryLimitedInformation, false, GetCurrentThreadId()),
             mmcss,
-            Stopwatch.GetTimestamp());
+            Stopwatch.GetTimestamp(),
+            managedThreadId,
+            nameEntry);
         lock (Gate)
         {
             registration.Serial = ++_nextSerial;
@@ -98,6 +101,7 @@ public static class HotThreads
             }
 
             registration.ReleaseHandle();
+            registration.RetireTraceName();
         }
     }
 
@@ -107,13 +111,20 @@ public static class HotThreads
         private IntPtr _handle;
         private volatile bool _mmcss;
 
-        internal Registration(string role, int threadId, IntPtr handle, bool mmcss, long startTimestamp)
+        // The trace labels threads by managed id; this registration's label is removed when it retires, and only if the
+        // id still maps to it (managed ids are recycled).
+        private readonly int _managedThreadId;
+        private readonly ThreadNameEntry _nameEntry;
+
+        internal Registration(string role, int threadId, IntPtr handle, bool mmcss, long startTimestamp, int managedThreadId, ThreadNameEntry nameEntry)
         {
             Role = role;
             ThreadId = threadId;
             _handle = handle;
             _mmcss = mmcss;
             StartTimestamp = startTimestamp;
+            _managedThreadId = managedThreadId;
+            _nameEntry = nameEntry;
         }
 
         internal long Serial { get; set; }
@@ -147,11 +158,13 @@ public static class HotThreads
                     cycles = 0;
                 }
 
-                priority = PriorityName(GetThreadPriority(_handle));
+                priority = PriorityName(GetThreadPriority(_handle), _mmcss);
             }
 
             return new HotThreadSample(Serial, Role, ThreadId, cpuTicks, cycles, priority, _mmcss, alive, StartTimestamp, endTimestamp);
         }
+
+        internal void RetireTraceName() => FrameTrace.RetireThreadName(_managedThreadId, _nameEntry);
 
         internal void ReleaseHandle()
         {
@@ -164,7 +177,12 @@ public static class HotThreads
         }
     }
 
-    private static string PriorityName(int priority) => priority switch
+    /// <summary>
+    /// The report's priority label. The seven Win32 base priorities keep their names; any other value is a priority the
+    /// MMCSS scheduler (or the kernel) set, shown as <c>mmcss/&lt;n&gt;</c> for a thread registered with MMCSS and
+    /// <c>raw/&lt;n&gt;</c> otherwise, so the raw number is always in the label and the form never varies by value.
+    /// </summary>
+    internal static string PriorityName(int priority, bool mmcss) => priority switch
     {
         PriorityErrorReturn => "Unknown",
         -15 => "Idle",
@@ -174,7 +192,7 @@ public static class HotThreads
         1 => "AboveNormal",
         2 => "Highest",
         15 => "TimeCritical",
-        _ => priority.ToString(System.Globalization.CultureInfo.InvariantCulture),
+        _ => (mmcss ? "mmcss/" : "raw/") + priority.ToString(System.Globalization.CultureInfo.InvariantCulture),
     };
 
     [DllImport("kernel32.dll")]

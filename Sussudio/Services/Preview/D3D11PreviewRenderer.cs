@@ -569,52 +569,73 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
 
     private void EnqueuePendingFrame(PendingFrame frame)
     {
-        lock (_lifecycleLock)
+        // A drop is counted under _lifecycleLock (interlocked adds, no string classification) but its trace instant is
+        // recorded after the lock is released, in the finally block. The trim below drops one frame per submit at most,
+        // so one deferred stamp covers it; a second drop in the same call (not reachable while the trim runs on every
+        // submit) traces inline.
+        DroppedFrameStamp deferredDrop = default;
+        try
         {
-            if (Volatile.Read(ref _disposed) != 0 ||
-                Volatile.Read(ref _stopRequested) != 0 ||
-                _renderThread == null)
+            lock (_lifecycleLock)
             {
-                TrackFrameDropped(frame, "renderer-stopped");
-                frame.Dispose();
-                return;
+                if (Volatile.Read(ref _disposed) != 0 ||
+                    Volatile.Read(ref _stopRequested) != 0 ||
+                    _renderThread == null)
+                {
+                    deferredDrop = CountFrameDropped(frame, "renderer-stopped", PreviewDropReason.RendererStopped);
+                    frame.Dispose();
+                    return;
+                }
+
+                frame.SubmissionGeneration = Interlocked.Read(ref _submissionGeneration);
+                var pendingFrameCount = Interlocked.Increment(ref _pendingFrameCount);
+
+                // One QPC read serves both the frame's queue-dwell stamp and the submitted-frame snapshot. The stamp
+                // must be on the frame before it is visible to the render thread.
+                var submitTick = Stopwatch.GetTimestamp();
+                frame.EnqueueTick = submitTick;
+                _pendingFrames.Enqueue(frame);
+                TrackFrameSubmitted(frame, submitTick);
+
+                // Trim oldest frames if the queue exceeds the elastic limit.
+                // Under normal operation the render thread keeps up and the queue
+                // stays at 0-1 (no added latency). The extra slots only absorb
+                // brief render hiccups instead of dropping frames.
+                while (pendingFrameCount > _maxPendingFrames)
+                {
+                    if (TryDequeuePendingFrame(out var oldest))
+                    {
+                        var stamp = CountFrameDropped(oldest, "renderer-backlog", PreviewDropReason.RendererBacklog);
+                        if (deferredDrop.DroppedTick == 0)
+                        {
+                            deferredDrop = stamp;
+                        }
+                        else
+                        {
+                            TraceFrameDropped(stamp);
+                        }
+
+                        oldest.Dispose();
+                        pendingFrameCount = PendingFrameCount;
+                    }
+                    else
+                    {
+                        Interlocked.Exchange(ref _pendingFrameCount, 0);
+                        break;
+                    }
+                }
+
+                Volatile.Write(ref _naturalWidth, frame.Width);
+                Volatile.Write(ref _naturalHeight, frame.Height);
+                Interlocked.Increment(ref _framesSubmitted);
             }
 
-            frame.SubmissionGeneration = Interlocked.Read(ref _submissionGeneration);
-            var pendingFrameCount = Interlocked.Increment(ref _pendingFrameCount);
-
-            // One QPC read serves both the frame's queue-dwell stamp and the submitted-frame snapshot. The stamp
-            // must be on the frame before it is visible to the render thread.
-            var submitTick = Stopwatch.GetTimestamp();
-            frame.EnqueueTick = submitTick;
-            _pendingFrames.Enqueue(frame);
-            TrackFrameSubmitted(frame, submitTick);
-
-            // Trim oldest frames if the queue exceeds the elastic limit.
-            // Under normal operation the render thread keeps up and the queue
-            // stays at 0-1 (no added latency). The extra slots only absorb
-            // brief render hiccups instead of dropping frames.
-            while (pendingFrameCount > _maxPendingFrames)
-            {
-                if (TryDequeuePendingFrame(out var oldest))
-                {
-                    TrackFrameDropped(oldest, "renderer-backlog");
-                    oldest.Dispose();
-                    pendingFrameCount = PendingFrameCount;
-                }
-                else
-                {
-                    Interlocked.Exchange(ref _pendingFrameCount, 0);
-                    break;
-                }
-            }
-
-            Volatile.Write(ref _naturalWidth, frame.Width);
-            Volatile.Write(ref _naturalHeight, frame.Height);
-            Interlocked.Increment(ref _framesSubmitted);
+            SignalFrameReady("pending_frame");
         }
-
-        SignalFrameReady("pending_frame");
+        finally
+        {
+            TraceFrameDropped(deferredDrop);
+        }
     }
 
     private void SignalFrameReady(string operation)
@@ -662,14 +683,35 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         var dropped = 0;
         Volatile.Write(ref _submissionGenerationDropReason, normalizedReason);
         Interlocked.Increment(ref _submissionGeneration);
+
+        // Classified once, before the lock, so the string match is not repeated per frame inside it. Each dropped
+        // frame is counted under _lifecycleLock; the trace instants are recorded after it is released. A drain holds at
+        // most _maxPendingFrames + 1 frames (8 + 1 at the largest configurable depth); a frame past the stamp buffer
+        // would trace inline.
+        var dropCode = PreviewDropReasons.Classify(normalizedReason);
+        Span<DroppedFrameStamp> stamps = stackalloc DroppedFrameStamp[MaxDeferredDropStamps];
         lock (_lifecycleLock)
         {
             while (TryDequeuePendingFrame(out var stale))
             {
-                TrackFrameDropped(stale, normalizedReason);
+                var stamp = CountFrameDropped(stale, normalizedReason, dropCode);
+                if (dropped < stamps.Length)
+                {
+                    stamps[dropped] = stamp;
+                }
+                else
+                {
+                    TraceFrameDropped(stamp);
+                }
+
                 stale.Dispose();
                 dropped++;
             }
+        }
+
+        for (var i = 0; i < Math.Min(dropped, stamps.Length); i++)
+        {
+            TraceFrameDropped(stamps[i]);
         }
 
         if (dropped > 0)
@@ -798,7 +840,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
     {
         while (TryDequeuePendingFrame(out var stale))
         {
-            TrackFrameDropped(stale, "shared-device-reset");
+            TrackFrameDropped(stale, "shared-device-reset", PreviewDropReason.SharedDeviceReset);
             stale.Dispose();
         }
 
@@ -892,15 +934,9 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
 
         frame = SkipStalePendingFrames(frame);
 
-        // Queue dwell of the frame that will be rendered (frames skipped as stale are drops, not dwell). Runs on the
-        // render thread, outside _lifecycleLock.
-        var dwellTicks = Stopwatch.GetTimestamp() - frame.EnqueueTick;
-        PerfMetrics.PreviewQueueDwell.RecordTicks(dwellTicks);
-        FrameTrace.Record(FrameTraceEventKind.PreviewQueueDwell, frame.EnqueueTick, dwellTicks, frame.ArrivalTick);
-
         if (Volatile.Read(ref _stopRequested) != 0)
         {
-            TrackFrameDropped(frame, "renderer-stopped");
+            TrackFrameDropped(frame, "renderer-stopped", PreviewDropReason.RendererStopped);
             frame.Dispose();
             return false;
         }
@@ -910,15 +946,30 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             if (frame.SubmissionGeneration != Interlocked.Read(ref _submissionGeneration))
             {
                 var reason = Volatile.Read(ref _submissionGenerationDropReason);
-                TrackFrameDropped(frame, string.IsNullOrWhiteSpace(reason) ? "stale-generation" : $"{reason}:stale");
+                if (string.IsNullOrWhiteSpace(reason))
+                {
+                    TrackFrameDropped(frame, "stale-generation", PreviewDropReason.StaleGeneration);
+                }
+                else
+                {
+                    TrackFrameDropped(frame, $"{reason}:stale", PreviewDropReason.Stale);
+                }
+
                 return true;
             }
+
+            // Queue dwell of a frame that is about to be rendered: recorded only after every drop check above (skipped
+            // as stale, renderer stopping, superseded generation), because a dropped frame is a drop, not a dwell. A
+            // frame the render pass then skips is still recorded. Runs on the render thread, outside _lifecycleLock.
+            var dwellTicks = Stopwatch.GetTimestamp() - frame.EnqueueTick;
+            PerfMetrics.PreviewQueueDwell.RecordTicks(dwellTicks);
+            FrameTrace.Record(FrameTraceEventKind.PreviewQueueDwell, frame.EnqueueTick, dwellTicks, frame.ArrivalTick);
 
             var framesRenderedBefore = Interlocked.Read(ref _framesRendered);
             RenderFrame(frame);
             if (Interlocked.Read(ref _framesRendered) == framesRenderedBefore)
             {
-                TrackFrameDropped(frame, "render-skipped");
+                TrackFrameDropped(frame, "render-skipped", PreviewDropReason.RenderSkipped);
             }
 
             // Keep the event set while more frames are queued so the
@@ -939,7 +990,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
                 Logger.Log($"D3D11_PREVIEW_RENDER_FAILED type={ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
             }
 
-            TrackFrameDropped(frame, "render-failed");
+            TrackFrameDropped(frame, "render-failed", PreviewDropReason.RenderFailed);
         }
         finally
         {
@@ -1006,7 +1057,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
                 break;
             }
 
-            TrackFrameDropped(frame, "stale-before-render");
+            TrackFrameDropped(frame, "stale-before-render", PreviewDropReason.StaleBeforeRender);
             frame.Dispose();
             frame = newer;
         }
@@ -1086,7 +1137,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
     {
         while (TryDequeuePendingFrame(out var stale))
         {
-            TrackFrameDropped(stale, "renderer-exit");
+            TrackFrameDropped(stale, "renderer-exit", PreviewDropReason.RendererExit);
             stale.Dispose();
         }
 
@@ -1173,7 +1224,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
 
         while (TryDequeuePendingFrame(out var stale))
         {
-            TrackFrameDropped(stale, "renderer-stop");
+            TrackFrameDropped(stale, "renderer-stop", PreviewDropReason.RendererStop);
             stale.Dispose();
         }
 
@@ -2188,7 +2239,26 @@ public readonly record struct PresentCadenceMetrics(
         Interlocked.Exchange(ref _lastRenderedPipelineLatencyTicks, pipelineLatencyTicks);
     }
 
-    private void TrackFrameDropped(PendingFrame frame, string reason)
+    // Capacity of the deferred-trace stamp buffer in DropPendingFrames: a drain holds at most _maxPendingFrames + 1
+    // frames, and the configurable depth tops out at 8.
+    private const int MaxDeferredDropStamps = 16;
+
+    /// <summary>What a dropped frame's trace instant needs, captured while the frame is still in hand.</summary>
+    private readonly record struct DroppedFrameStamp(long ArrivalTick, long DroppedTick, PreviewDropReason Reason);
+
+    /// <summary>
+    /// Counts a dropped frame and records its trace instant. <paramref name="code"/> is the reason's table entry,
+    /// chosen by the call site (a literal there) so nothing classifies a string per drop.
+    /// </summary>
+    private void TrackFrameDropped(PendingFrame frame, string reason, PreviewDropReason code) =>
+        TraceFrameDropped(CountFrameDropped(frame, reason, code));
+
+    /// <summary>
+    /// Drop bookkeeping and the per-reason counter: interlocked writes only, no string switch, no trace write. This is
+    /// the part that may run inside <c>_lifecycleLock</c>; the caller records the trace instant from the returned
+    /// stamp once the lock is released. The frame may be disposed after this returns.
+    /// </summary>
+    private DroppedFrameStamp CountFrameDropped(PendingFrame frame, string reason, PreviewDropReason code)
     {
         var droppedTick = Stopwatch.GetTimestamp();
         Interlocked.Increment(ref _framesDropped);
@@ -2198,12 +2268,17 @@ public readonly record struct PresentCadenceMetrics(
         Interlocked.Exchange(ref _lastDroppedQpc, droppedTick);
         Interlocked.Exchange(ref _lastDroppedUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
         Volatile.Write(ref _lastDropReason, reason);
+        PerfMetrics.PreviewDrops.Increment((int)code);
+        return new DroppedFrameStamp(frame.ArrivalTick, droppedTick, code);
+    }
 
-        // Some callers hold _lifecycleLock: the per-reason counter is a plain interlocked add and the trace write is
-        // lock-free, so neither extends the critical section.
-        var dropReason = PreviewDropReasons.Classify(reason);
-        PerfMetrics.PreviewDrops.Increment((int)dropReason);
-        FrameTrace.RecordInstant(FrameTraceEventKind.PreviewDrop, droppedTick, frame.ArrivalTick, (ushort)dropReason);
+    /// <summary>Records the trace instant of a counted drop. A default stamp (no drop) is ignored. Lock-free.</summary>
+    private static void TraceFrameDropped(in DroppedFrameStamp stamp)
+    {
+        if (stamp.DroppedTick != 0)
+        {
+            FrameTrace.RecordInstant(FrameTraceEventKind.PreviewDrop, stamp.DroppedTick, stamp.ArrivalTick, (ushort)stamp.Reason);
+        }
     }
 
     private double TrackPresentCadence(bool countSample)
@@ -2283,9 +2358,18 @@ public readonly record struct PresentCadenceMetrics(
             PerfMetrics.PreviewPipelineLatency.RecordTicks(estimatedVisibleTick - arrivalTick);
 
             // The read loop published this frame's MF sample time (as QPC) when the ingress clock is QPC-domain.
-            if (PerfIngressSamples.TryGet(arrivalTick, out var sampleQpcTick) && estimatedVisibleTick > sampleQpcTick)
+            if (PerfIngressSamples.TryGet(arrivalTick, out var sampleQpcTick))
             {
-                PerfMetrics.PreviewIngressToVisible.RecordTicks(estimatedVisibleTick - sampleQpcTick);
+                if (estimatedVisibleTick > sampleQpcTick)
+                {
+                    PerfMetrics.PreviewIngressToVisible.RecordTicks(estimatedVisibleTick - sampleQpcTick);
+                }
+            }
+            else if (PerfIngressClock.Kind == PerfIngressClockKind.Qpc)
+            {
+                // The clock is QPC-domain, so a sample time was expected: the frame was evicted from the ledger (or
+                // was read before the classification completed). Count it so a thin tail is visible, not silent.
+                PerfMetrics.PreviewIngressLookupMiss.Increment();
             }
         }
 

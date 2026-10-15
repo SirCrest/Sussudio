@@ -26,13 +26,13 @@ public static class PerfMetrics
 
     // preview
     public static readonly PerfHistogram PreviewJitterResidence = Time("preview.jitter_residence", "jitter buffer enqueue to submit to the renderer");
-    public static readonly PerfHistogram PreviewQueueDwell = Time("preview.queue_dwell", "renderer submit until the render thread selects the frame for rendering (frames skipped as stale are dropped, not recorded)");
+    public static readonly PerfHistogram PreviewQueueDwell = Time("preview.queue_dwell", "renderer submit until the render thread starts rendering the frame; recorded only for frames that reach the render pass (frames dropped before it, as stale, for a stopping renderer or a superseded generation, are drops and are not recorded)");
     public static readonly PerfHistogram PreviewFrameLatencyWait = Time("preview.frame_latency_wait", "waitable swap-chain wait");
     public static readonly PerfHistogram PreviewInputUpload = Time("preview.input_upload", "render CPU stage: input upload");
     public static readonly PerfHistogram PreviewRenderSubmit = Time("preview.render_submit", "render CPU stage: render submit");
     public static readonly PerfHistogram PreviewPresentCall = Time("preview.present_call", "Present call duration");
     public static readonly PerfHistogram PreviewRenderTotal = Time("preview.render_total", "total render CPU per frame");
-    public static readonly PerfHistogram PreviewGpuRender = Time("preview.gpu_render", "D3D11 timestamp queries around the render passes (when GPU timing is enabled)");
+    public static readonly PerfHistogram PreviewGpuRender = Time("preview.gpu_render", "D3D11 timestamp queries around the render passes (when GPU timing is enabled); spans of zero GPU ticks are not recorded, see preview.gpu_timing_unmeasured");
     public static readonly PerfHistogram PreviewPresentInterval = Time("preview.present_interval", "present-to-present on cadence frames");
     public static readonly PerfHistogram PreviewPipelineLatency = Time("preview.pipeline_latency", "arrival to estimated visible (live frames only; Flashback playback frames are excluded)");
     public static readonly PerfHistogram PreviewIngressToVisible = Time("preview.ingress_to_visible", "MF sample time to estimated visible (QPC domain only)");
@@ -89,7 +89,9 @@ public static class PerfMetrics
     public static readonly PerfCounter CaptureReadErrors = Registry.Counter("capture.read_errors", "read-loop exceptions");
     public static readonly PerfCounter UiStall50Ms = Registry.Counter("ui.stall_50ms", "UI probe waits over 50 ms");
     public static readonly PerfCounter PreviewGpuTimingSkipped = Registry.Counter("preview.gpu_timing_skipped", "frames not GPU-timed while timing was enabled: every query slot still pending, or the GPU reported a disjoint timestamp range");
+    public static readonly PerfCounter PreviewGpuTimingUnmeasured = Registry.Counter("preview.gpu_timing_unmeasured", "GPU timing spans whose begin and end timestamps were identical (zero GPU ticks): the timed pass was not measurable on this queue, so the span is counted here and not recorded in preview.gpu_render");
     public static readonly PerfCounter AudioRenderUnderrun = Registry.Counter("audio.render_underrun", "render events with an empty queue");
+    public static readonly PerfCounter PreviewIngressLookupMiss = Registry.Counter("preview.ingress_lookup_miss", "live frames presented while the ingress clock was classified QPC whose MF sample time was no longer in the ingress sample ledger (evicted, or read before the clock was classified); such a frame has no preview.ingress_to_visible sample");
 
     /// <summary>
     /// Counter <c>preview.drop.&lt;reason&gt;</c> for a renderer drop reason string. The reason maps into the fixed

@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 
 namespace Sussudio.Services.Performance;
 
@@ -16,6 +17,11 @@ public static class QpcMath
     // is 10 MHz on current Windows, so the fast path covers every realistic input.
     private const long MaxSplitFrequency = 900_000_000_000;
     private const long MaxSplitWholeSeconds = 900_000_000_000;
+
+    // The read loop converts every frame at the process's own QPC frequency, so the 64-bit-split bound for that
+    // frequency is computed once instead of dividing per call. Any other frequency (tests, odd inputs) computes it.
+    private static readonly long ProcessFrequency = Stopwatch.Frequency;
+    private static readonly long ProcessFrequencyWholeLimit = WholeSecondLimit(ProcessFrequency);
 
     public static long TicksToHundredNs(long ticks, long frequency)
     {
@@ -42,7 +48,8 @@ public static class QpcMath
         }
 
         var whole = hundredNs / HundredNsPerSecond;
-        if (frequency <= MaxSplitFrequency && Math.Abs(whole) <= long.MaxValue / (frequency + 1) - 1)
+        var wholeLimit = frequency == ProcessFrequency ? ProcessFrequencyWholeLimit : WholeSecondLimit(frequency);
+        if (frequency <= MaxSplitFrequency && Math.Abs(whole) <= wholeLimit)
         {
             var remainder = hundredNs - whole * HundredNsPerSecond;
             return whole * frequency + remainder * frequency / HundredNsPerSecond;
@@ -50,6 +57,11 @@ public static class QpcMath
 
         return Saturate((Int128)hundredNs * frequency / HundredNsPerSecond);
     }
+
+    // Largest whole-second count whose product with (frequency + 1) still fits a long; only meaningful for a
+    // positive frequency (the caller has already rejected the rest).
+    private static long WholeSecondLimit(long frequency) =>
+        frequency > 0 ? long.MaxValue / (frequency + 1) - 1 : -1;
 
     private static long Saturate(Int128 value)
     {

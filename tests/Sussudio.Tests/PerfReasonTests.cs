@@ -101,7 +101,7 @@ public sealed class PerfReasonTests
         buffer.Record(FrameTraceEventKind.HubRefresh, 300, 10, -1);
         buffer.RecordInstant(FrameTraceEventKind.CaptureSampleTime, 400, 44, ushort.MaxValue);
 
-        var events = buffer.Copy();
+        var events = buffer.ReadAll();
         Assert.Equal(4, events.Count);
         Assert.Equal((FrameTraceEventKind.PreviewDrop, (int)PreviewDropReason.DeviceLost), (events[0].Kind, events[0].Arg));
         Assert.True(events[0].IsInstant);

@@ -344,13 +344,18 @@ internal sealed partial class FlashbackPlaybackController
     private void UpdateCadenceMetrics(Stopwatch pacingStopwatch, double expectedFrameMs)
     {
         var frameNum = Interlocked.Increment(ref _playbackFrameCount);
+        // One read of the stopwatch serves the metric, the trace span and the cadence tracker, so the three agree.
         var intervalTicks = pacingStopwatch.ElapsedTicks;
-        var intervalMs = pacingStopwatch.Elapsed.TotalMilliseconds;
+        var intervalMs = intervalTicks * 1000.0 / Stopwatch.Frequency;
         pacingStopwatch.Restart();
         // The paced present interval of continuous playback. Its only caller is PaceAndDecodeFrame, so seek, scrub
-        // and step presents never reach it. The trace span ends now and is not tied to one frame (id -1).
+        // and step presents never reach it. The trace span ends now and is not tied to one frame (id -1). The guard
+        // keeps the extra QPC read (an argument is evaluated before Record can see the disabled flag) off a stopped trace.
         PerfMetrics.FlashbackPlaybackPresentInterval.RecordTicks(intervalTicks);
-        FrameTrace.Record(FrameTraceEventKind.FlashbackPlaybackPresent, Stopwatch.GetTimestamp() - intervalTicks, intervalTicks, -1);
+        if (FrameTrace.IsEnabled)
+        {
+            FrameTrace.Record(FrameTraceEventKind.FlashbackPlaybackPresent, Stopwatch.GetTimestamp() - intervalTicks, intervalTicks, -1);
+        }
         TrackPlaybackCadence(intervalMs, expectedFrameMs);
 
         if (frameNum % 60 == 0)
