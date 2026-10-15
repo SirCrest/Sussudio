@@ -1025,7 +1025,7 @@ internal sealed class StatsDiagnosticRowsController
         TextBlock GroupHeader);
 }
 
-internal sealed record StatsDockRowChromeSlot(Border Row, TextBlock Label, TextBlock Value);
+internal sealed record StatsDockRowChromeSlot(Border Row, TextBlock Label, TextBlock Value, ToolTip ValueToolTip);
 
 internal sealed class StatsDockRowChromePresenter
 {
@@ -1057,7 +1057,10 @@ internal sealed class StatsDockRowChromePresenter
             HorizontalAlignment = HorizontalAlignment.Right,
             TextTrimming = TextTrimming.CharacterEllipsis
         };
-        ToolTipService.SetToolTip(valueBlock, value);
+        // One ToolTip per pooled row, updated through Content. Calling SetToolTip again on
+        // every value change would close an open tooltip and allocate a new control per tick.
+        var valueToolTip = new ToolTip { Content = value };
+        ToolTipService.SetToolTip(valueBlock, valueToolTip);
         Grid.SetColumn(valueBlock, 1);
 
         grid.Children.Add(labelBlock);
@@ -1068,7 +1071,7 @@ internal sealed class StatsDockRowChromePresenter
             Style = GetRowStyle(alt),
             Child = grid
         };
-        return new StatsDockRowChromeSlot(row, labelBlock, valueBlock);
+        return new StatsDockRowChromeSlot(row, labelBlock, valueBlock, valueToolTip);
     }
 
     public void UpdateRowSlot(StatsDockRowChromeSlot slot, string label, string value, bool alt)
@@ -1077,7 +1080,7 @@ internal sealed class StatsDockRowChromePresenter
         if (!string.Equals(slot.Value.Text, value, StringComparison.Ordinal))
         {
             slot.Value.Text = value;
-            ToolTipService.SetToolTip(slot.Value, value);
+            slot.ValueToolTip.Content = value;
         }
 
         var targetStyle = GetRowStyle(alt);
