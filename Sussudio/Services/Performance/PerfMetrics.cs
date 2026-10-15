@@ -1,5 +1,3 @@
-using System.Collections.Concurrent;
-
 namespace Sussudio.Services.Performance;
 
 /// <summary>
@@ -14,8 +12,6 @@ public static class PerfMetrics
     /// <summary>The registry every field below is registered in; reports and windows enumerate it.</summary>
     public static readonly PerfRegistry Registry = new();
 
-    private static readonly ConcurrentDictionary<string, PerfCounter> PreviewDropCounters = new(System.StringComparer.Ordinal);
-
     // capture
     public static readonly PerfHistogram CaptureIngressLag = Time("capture.ingress_lag", "read loop: now minus MF sample time, only when the sample clock is the QPC domain");
     public static readonly PerfHistogram CaptureReadSampleWait = Time("capture.readsample_wait", "read loop: time blocked in ReadSample");
@@ -29,8 +25,8 @@ public static class PerfMetrics
     public static readonly PerfHistogram MjpegPipeline = Time("mjpeg.pipeline", "arrival to strict-order emit");
 
     // preview
-    public static readonly PerfHistogram PreviewJitterResidence = Time("preview.jitter_residence", "jitter buffer enqueue to submit");
-    public static readonly PerfHistogram PreviewQueueDwell = Time("preview.queue_dwell", "renderer submit to render-thread dequeue");
+    public static readonly PerfHistogram PreviewJitterResidence = Time("preview.jitter_residence", "jitter buffer enqueue to submit to the renderer");
+    public static readonly PerfHistogram PreviewQueueDwell = Time("preview.queue_dwell", "renderer submit until the render thread selects the frame for rendering (frames skipped as stale are dropped, not recorded)");
     public static readonly PerfHistogram PreviewFrameLatencyWait = Time("preview.frame_latency_wait", "waitable swap-chain wait");
     public static readonly PerfHistogram PreviewInputUpload = Time("preview.input_upload", "render CPU stage: input upload");
     public static readonly PerfHistogram PreviewRenderSubmit = Time("preview.render_submit", "render CPU stage: render submit");
@@ -38,21 +34,21 @@ public static class PerfMetrics
     public static readonly PerfHistogram PreviewRenderTotal = Time("preview.render_total", "total render CPU per frame");
     public static readonly PerfHistogram PreviewGpuRender = Time("preview.gpu_render", "D3D11 timestamp queries around the render passes (when GPU timing is enabled)");
     public static readonly PerfHistogram PreviewPresentInterval = Time("preview.present_interval", "present-to-present on cadence frames");
-    public static readonly PerfHistogram PreviewPipelineLatency = Time("preview.pipeline_latency", "arrival to estimated visible");
+    public static readonly PerfHistogram PreviewPipelineLatency = Time("preview.pipeline_latency", "arrival to estimated visible (live frames only; Flashback playback frames are excluded)");
     public static readonly PerfHistogram PreviewIngressToVisible = Time("preview.ingress_to_visible", "MF sample time to estimated visible (QPC domain only)");
 
     // recording
-    public static readonly PerfHistogram RecordingQueueDwell = Time("recording.queue_dwell", "enqueue to encode-loop dequeue, all lanes, QPC");
-    public static readonly PerfHistogram RecordingEncodeSubmit = Time("recording.encode_submit", "avcodec_send_frame plus receive loop");
-    public static readonly PerfHistogram RecordingMuxWrite = Time("recording.mux_write", "packet write including I/O");
+    public static readonly PerfHistogram RecordingQueueDwell = Time("recording.queue_dwell", "video packet enqueue to encode-loop dequeue, all lanes (CPU, D3D11, CUDA), QPC");
+    public static readonly PerfHistogram RecordingEncodeSubmit = Time("recording.encode_submit", "avcodec_send_frame plus the receive/drain loop, including the nested mux_write time");
+    public static readonly PerfHistogram RecordingMuxWrite = Time("recording.mux_write", "video-packet av_interleaved_write_frame including I/O (nested inside encode_submit; audio packets are not recorded)");
 
     // flashback
-    public static readonly PerfHistogram FlashbackQueueDwell = Time("flashback.queue_dwell", "enqueue to encode-loop dequeue, QPC");
-    public static readonly PerfHistogram FlashbackEncodeSubmit = Time("flashback.encode_submit", "avcodec_send_frame plus receive loop");
-    public static readonly PerfHistogram FlashbackMuxWrite = Time("flashback.mux_write", "packet write including I/O");
-    public static readonly PerfHistogram FlashbackSegmentRotation = Time("flashback.segment_rotation", "rotate segment total");
-    public static readonly PerfHistogram FlashbackPlaybackDecode = Time("flashback.playback_decode", "playback decode call");
-    public static readonly PerfHistogram FlashbackPlaybackPresentInterval = Time("flashback.playback_present_interval", "playback present cadence");
+    public static readonly PerfHistogram FlashbackQueueDwell = Time("flashback.queue_dwell", "video packet enqueue to encode-loop dequeue, QPC");
+    public static readonly PerfHistogram FlashbackEncodeSubmit = Time("flashback.encode_submit", "avcodec_send_frame plus the receive/drain loop, including the nested mux_write time");
+    public static readonly PerfHistogram FlashbackMuxWrite = Time("flashback.mux_write", "video-packet av_interleaved_write_frame including I/O (nested inside encode_submit; audio packets are not recorded)");
+    public static readonly PerfHistogram FlashbackSegmentRotation = Time("flashback.segment_rotation", "RotateSegment total, success or failure (flush, trailer, new segment open, buffer bookkeeping)");
+    public static readonly PerfHistogram FlashbackPlaybackDecode = Time("flashback.playback_decode", "steady-state continuous playback: hardware read-ahead plus next-frame read per paced iteration; seek, scrub, step and pause-forward decodes are not recorded");
+    public static readonly PerfHistogram FlashbackPlaybackPresentInterval = Time("flashback.playback_present_interval", "interval between paced presents on the playback thread during continuous playback");
 
     // audio
     public static readonly PerfHistogram AudioCaptureInterval = Time("audio.capture_interval", "WASAPI capture event interval, QPC");
@@ -73,29 +69,33 @@ public static class PerfMetrics
 
     // telemetry and automation self-cost
     public static readonly PerfHistogram TelemetryHubRefresh = Time("telemetry.hub_refresh", "diagnostics hub snapshot refresh");
-    public static readonly PerfHistogram TelemetryHubAlloc = Registry.Histogram("telemetry.hub_alloc", PerfUnit.Bytes, "process allocation during one hub refresh");
+    public static readonly PerfHistogram TelemetryHubAlloc = Registry.Histogram("telemetry.hub_alloc", PerfUnit.Bytes, "process-wide allocated bytes during one hub refresh (an upper bound: other threads allocate meanwhile)");
     public static readonly PerfHistogram AutomationCommand = Time("automation.command", "automation command dispatch");
 
     // counters
+    /// <summary><c>preview.drop.&lt;reason&gt;</c>: renderer drops by reason (fixed table, see <see cref="PreviewDropReasons"/>).</summary>
+    public static readonly PerfReasonCounters PreviewDrops =
+        PerfReasonCounters.Create(Registry, "preview.drop.", "renderer drops with reason", PreviewDropReasons.CounterNames);
+
+    /// <summary><c>preview.jitter_drop.&lt;reason&gt;</c>: MJPEG jitter-buffer drops by reason.</summary>
+    public static readonly PerfReasonCounters PreviewJitterDrops =
+        PerfReasonCounters.Create(Registry, "preview.jitter_drop.", "jitter buffer drops with reason", JitterReasons.DropCounterNames);
+
+    /// <summary><c>preview.jitter_underflow.&lt;reason&gt;</c>: jitter-buffer emit misses by reason.</summary>
+    public static readonly PerfReasonCounters PreviewJitterUnderflows =
+        PerfReasonCounters.Create(Registry, "preview.jitter_underflow.", "jitter buffer underflows with reason", JitterReasons.UnderflowCounterNames);
+
     public static readonly PerfCounter CaptureReadErrors = Registry.Counter("capture.read_errors", "read-loop exceptions");
     public static readonly PerfCounter UiStall50Ms = Registry.Counter("ui.stall_50ms", "UI probe waits over 50 ms");
     public static readonly PerfCounter AudioRenderUnderrun = Registry.Counter("audio.render_underrun", "render events with an empty queue");
 
     /// <summary>
-    /// Counter <c>preview.drop.&lt;reason&gt;</c> for a renderer drop reason. The first call for a reason registers the
-    /// counter; later calls are one dictionary lookup. Pass constant strings so the call site stays allocation-free.
+    /// Counter <c>preview.drop.&lt;reason&gt;</c> for a renderer drop reason string. The reason maps into the fixed
+    /// <see cref="PreviewDropReasons"/> table (unknown strings land in <c>other</c>), so the set stays bounded.
+    /// Hot paths should classify once and call <c>PreviewDrops.Increment</c> with the code.
     /// </summary>
-    public static PerfCounter PreviewDrop(string reason)
-    {
-        if (PreviewDropCounters.TryGetValue(reason, out var counter))
-        {
-            return counter;
-        }
-
-        return PreviewDropCounters.GetOrAdd(
-            reason,
-            static r => Registry.GetOrAddCounter("preview.drop." + r, "renderer drops with reason '" + r + "'"));
-    }
+    public static PerfCounter PreviewDrop(string reason) =>
+        PreviewDrops.Counter((int)PreviewDropReasons.Classify(reason));
 
     private static PerfHistogram Time(string name, string description) =>
         Registry.Histogram(name, PerfUnit.Microseconds, description);

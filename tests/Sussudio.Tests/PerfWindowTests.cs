@@ -40,19 +40,10 @@ public sealed class PerfWindowTests
         Assert.Equal(names.Count, names.Distinct(StringComparer.Ordinal).Count());
         foreach (var info in PerfMetrics.Registry.Catalog)
         {
-            // Dynamic names (preview.drop.<reason>) may contain hyphens.
+            // Reason-table names (preview.drop.<reason>) contain hyphens.
             Assert.Matches("^[a-z0-9_]+(\\.[a-z0-9_-]+)+$", info.Name);
             Assert.False(string.IsNullOrWhiteSpace(info.Description), info.Name);
         }
-    }
-
-    [Fact]
-    public void DynamicDropCountersAreCreatedOnceAndShowUpInTheCatalog()
-    {
-        var first = PerfMetrics.PreviewDrop("unit-test-reason");
-        first.Increment();
-        Assert.Same(first, PerfMetrics.PreviewDrop("unit-test-reason"));
-        Assert.Contains(PerfMetrics.Registry.Catalog, info => info.Name == "preview.drop.unit-test-reason");
     }
 
     [Fact]

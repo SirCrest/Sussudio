@@ -7,8 +7,12 @@ using System.Threading;
 
 namespace Sussudio.Services.Performance;
 
-/// <summary>One validated event copied out of the ring. <see cref="Dur"/> is negative for an instant event.</summary>
-public readonly record struct FrameTraceEvent(long Ts, long Dur, long Id, FrameTraceEventKind Kind, int Tid)
+/// <summary>
+/// One validated event copied out of the ring. <see cref="Dur"/> is negative for an instant event. <see cref="Arg"/>
+/// is an optional 16-bit stage argument (zero when absent): the drop-reason code on a preview drop, the worker
+/// number plus one on an MJPEG decode.
+/// </summary>
+public readonly record struct FrameTraceEvent(long Ts, long Dur, long Id, FrameTraceEventKind Kind, int Tid, int Arg = 0)
 {
     public bool IsInstant => Dur < 0;
 }
@@ -84,12 +88,12 @@ public sealed class FrameTraceBuffer
     }
 
     /// <summary>Records a duration event that began at <paramref name="startTimestamp"/> (Stopwatch ticks).</summary>
-    public void Record(FrameTraceEventKind kind, long startTimestamp, long durationTicks, long id) =>
-        Write(kind, startTimestamp, durationTicks < 0 ? 0 : durationTicks, id);
+    public void Record(FrameTraceEventKind kind, long startTimestamp, long durationTicks, long id, ushort arg = 0) =>
+        Write(kind, startTimestamp, durationTicks < 0 ? 0 : durationTicks, id, arg);
 
     /// <summary>Records an instant event at <paramref name="timestamp"/> (Stopwatch ticks).</summary>
-    public void RecordInstant(FrameTraceEventKind kind, long timestamp, long id) =>
-        Write(kind, timestamp, -1, id);
+    public void RecordInstant(FrameTraceEventKind kind, long timestamp, long id, ushort arg = 0) =>
+        Write(kind, timestamp, -1, id, arg);
 
     internal void Freeze()
     {
@@ -118,6 +122,7 @@ public sealed class FrameTraceBuffer
             var dur = slot.Dur;
             var id = slot.Id;
             var kind = slot.Kind;
+            var arg = slot.Arg;
             var tid = slot.Tid;
             afterFieldsCopied?.Invoke(index);
             Interlocked.MemoryBarrier();
@@ -126,13 +131,13 @@ public sealed class FrameTraceBuffer
                 continue;
             }
 
-            events.Add(new FrameTraceEvent(ts, dur, id, (FrameTraceEventKind)kind, tid));
+            events.Add(new FrameTraceEvent(ts, dur, id, (FrameTraceEventKind)kind, tid, arg));
         }
 
         return events;
     }
 
-    private void Write(FrameTraceEventKind kind, long timestamp, long duration, long id)
+    private void Write(FrameTraceEventKind kind, long timestamp, long duration, long id, ushort arg)
     {
         var index = Interlocked.Increment(ref _head) - 1;
         ref var slot = ref _slots[(int)(index & _mask)];
@@ -143,7 +148,8 @@ public sealed class FrameTraceBuffer
         slot.Ts = timestamp;
         slot.Dur = duration;
         slot.Id = id;
-        slot.Kind = (int)kind;
+        slot.Kind = (ushort)kind;
+        slot.Arg = arg;
         slot.Tid = Environment.CurrentManagedThreadId;
         Volatile.Write(ref slot.Stamp, index + 1);
     }
@@ -155,7 +161,8 @@ public sealed class FrameTraceBuffer
         public long Ts;
         public long Dur;
         public long Id;
-        public int Kind;
+        public ushort Kind;
+        public ushort Arg;
         public int Tid;
     }
 }

@@ -56,6 +56,10 @@
     <Compile Include="..\..\Sussudio\Services\Performance\TuningKnobStore.cs" Link="Production\TuningKnobStore.cs" />
     <Compile Include="..\..\Sussudio\Services\Performance\TuningKnobCatalog.cs" Link="Production\TuningKnobCatalog.cs" />
     <Compile Include="..\..\Sussudio\Services\Performance\LogTapBuffer.cs" Link="Production\LogTapBuffer.cs" />
+    <Compile Include="..\..\Sussudio\Services\Performance\PerfIngressClock.cs" Link="Production\PerfIngressClock.cs" />
+    <Compile Include="..\..\Sussudio\Services\Performance\IngressClockClassifier.cs" Link="Production\IngressClockClassifier.cs" />
+    <Compile Include="..\..\Sussudio\Services\Performance\PerfIngressSamples.cs" Link="Production\PerfIngressSamples.cs" />
+    <Compile Include="..\..\Sussudio\Services\Performance\PerfReasons.cs" Link="Production\PerfReasons.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Update="Fixtures\RecordingStructure\*.mp4" CopyToOutputDirectory="PreserveNewest" />

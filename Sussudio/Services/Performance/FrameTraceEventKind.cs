@@ -1,10 +1,10 @@
 namespace Sussudio.Services.Performance;
 
 /// <summary>
-/// Stage that produced a frame-trace event. The numeric value is internal to the ring (append, never reuse);
-/// a dump always emits the stage name from <see cref="FrameTraceEventKinds"/>, never the number. Stages that
-/// belong to one frame share the source sequence number as the event id so an analyzer can join a frame from the
-/// read loop to the present.
+/// Stage that produced a frame-trace event. The numeric value is internal to the ring (append, never reuse; it
+/// must fit 16 bits, the ring packs it beside a 16-bit arg); a dump always emits the stage name from
+/// <see cref="FrameTraceEventKinds"/>, never the number. Stages that belong to one frame share the frame's arrival
+/// QPC timestamp as the event id so an analyzer can join a frame from the read loop to the present.
 /// </summary>
 public enum FrameTraceEventKind
 {
@@ -29,7 +29,7 @@ public enum FrameTraceEventKind
     PreviewGpuRender = 14,
     PreviewPipeline = 15,
 
-    /// <summary>Instant event: a frame dropped by the renderer. The drop reason is a counter, not part of the event.</summary>
+    /// <summary>Instant event: a frame dropped by the renderer. The arg is the <see cref="PreviewDropReason"/> code; the dump also names it.</summary>
     PreviewDrop = 16,
 
     RecordingQueueDwell = 17,
@@ -49,6 +49,15 @@ public enum FrameTraceEventKind
     UiDispatcherLatency = 28,
     GcPause = 29,
     AutomationCommand = 30,
+
+    /// <summary>
+    /// Instant event at the Media Foundation sample time converted to QPC (only while the ingress clock is the QPC
+    /// domain), with the frame's arrival timestamp as the id. Lets an analyzer compute ingress-to-visible exactly.
+    /// </summary>
+    CaptureSampleTime = 31,
+
+    /// <summary>Diagnostics hub snapshot refresh span (id -1).</summary>
+    HubRefresh = 32,
 }
 
 /// <summary>Stage names and categories used in trace dumps.</summary>
@@ -87,6 +96,8 @@ public static class FrameTraceEventKinds
         FrameTraceEventKind.UiDispatcherLatency => "ui.dispatcher_latency",
         FrameTraceEventKind.GcPause => "gc.pause",
         FrameTraceEventKind.AutomationCommand => "automation.command",
+        FrameTraceEventKind.CaptureSampleTime => "capture.sample_time",
+        FrameTraceEventKind.HubRefresh => "telemetry.hub_refresh",
         _ => "kind-" + (int)kind,
     };
 

@@ -9,6 +9,7 @@ using Sussudio.Services.Capture.Mjpeg;
 using Sussudio.Services.Contracts;
 using Sussudio.Services.Flashback;
 using Sussudio.Services.Gpu;
+using Sussudio.Services.Performance;
 using Sussudio.Services.Preview;
 using Sussudio.Services.Recording;
 using Sussudio.Services.Runtime;
@@ -1321,6 +1322,10 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
         try
         {
             Interlocked.Exchange(ref _visualCadenceCpuDataUnavailable, 0);
+
+            // Timed here, outside the trackers' locks. Runs on the read thread (raw and dual paths) or the MJPEG
+            // emitter (decoded paths), so the trace attributes it to whichever thread did the work.
+            var scanStartTick = Stopwatch.GetTimestamp();
             _visualCadenceTracker.RecordFrame(
                 frameData,
                 width,
@@ -1333,6 +1338,9 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
                 height,
                 pixelFormat,
                 timestampTick: arrivalTick);
+            var scanTicks = Stopwatch.GetTimestamp() - scanStartTick;
+            PerfMetrics.CaptureVisualScan.RecordTicks(scanTicks);
+            FrameTrace.Record(FrameTraceEventKind.CaptureVisualScan, scanStartTick, scanTicks, arrivalTick);
         }
         catch (Exception ex)
         {

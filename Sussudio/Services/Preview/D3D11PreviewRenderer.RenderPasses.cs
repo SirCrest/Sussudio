@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
+using Sussudio.Services.Performance;
 using Vortice.Direct3D;
 using Vortice.Direct3D11;
 using Vortice.DXGI;
@@ -718,10 +719,34 @@ internal sealed partial class D3D11PreviewRenderer
         TrackDxgiFrameStatistics();
         var estimatedVisibleTick = EstimateVisibleTick(presentEnd);
         TrackFramePresented(frame, presentEnd, estimatedVisibleTick);
-        TrackPipelineLatency(frame.ArrivalTick, estimatedVisibleTick);
+        TrackPipelineLatency(frame, estimatedVisibleTick);
         var totalTicks = Stopwatch.GetTimestamp() - totalStart;
         TrackRenderCpuTiming(inputUploadTicks, renderTicks, presentTicks, totalTicks);
+        TraceRenderedFrame(frame.ArrivalTick, totalStart, totalTicks, inputUploadTicks, renderTicks, presentStart, presentEnd - presentStart);
         RecordSlowFrameDiagnostic(frame, presentIntervalMs, inputUploadTicks, renderTicks, presentTicks, totalTicks, presentEnd, estimatedVisibleTick);
+    }
+
+    // Frame-trace spans for one presented frame. Stage durations are exact; the render-stage starts are not carried
+    // out of the render passes, so input upload is anchored at the start of the render and render submit ends where
+    // Present begins. Joined to the other stages by the frame's arrival timestamp.
+    private static void TraceRenderedFrame(
+        long arrivalTick,
+        long totalStart,
+        long totalTicks,
+        long inputUploadTicks,
+        long renderTicks,
+        long presentStart,
+        long presentTicks)
+    {
+        if (!FrameTrace.IsEnabled)
+        {
+            return;
+        }
+
+        FrameTrace.Record(FrameTraceEventKind.PreviewRenderTotal, totalStart, totalTicks, arrivalTick);
+        FrameTrace.Record(FrameTraceEventKind.PreviewInputUpload, totalStart, inputUploadTicks, arrivalTick);
+        FrameTrace.Record(FrameTraceEventKind.PreviewRenderSubmit, presentStart - renderTicks, renderTicks, arrivalTick);
+        FrameTrace.Record(FrameTraceEventKind.PreviewPresent, presentStart, presentTicks, arrivalTick);
     }
 
     public Task<PreviewFrameCaptureResult> CaptureNextFrameAsync(string outputPath)

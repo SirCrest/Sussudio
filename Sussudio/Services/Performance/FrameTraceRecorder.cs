@@ -43,7 +43,7 @@ public sealed class FrameTraceRecorder
     /// <summary>True while a trace is recording. One volatile read.</summary>
     public bool IsEnabled => _active is not null;
 
-    public void Record(FrameTraceEventKind kind, long startTimestamp, long durationTicks, long id)
+    public void Record(FrameTraceEventKind kind, long startTimestamp, long durationTicks, long id, ushort arg = 0)
     {
         var buffer = _active;
         if (buffer is null)
@@ -51,10 +51,10 @@ public sealed class FrameTraceRecorder
             return;
         }
 
-        buffer.Record(kind, startTimestamp, durationTicks, id);
+        buffer.Record(kind, startTimestamp, durationTicks, id, arg);
     }
 
-    public void RecordInstant(FrameTraceEventKind kind, long timestamp, long id)
+    public void RecordInstant(FrameTraceEventKind kind, long timestamp, long id, ushort arg = 0)
     {
         var buffer = _active;
         if (buffer is null)
@@ -62,7 +62,7 @@ public sealed class FrameTraceRecorder
             return;
         }
 
-        buffer.RecordInstant(kind, timestamp, id);
+        buffer.RecordInstant(kind, timestamp, id, arg);
     }
 
     /// <summary>Starts a trace with the requested capacity (rounded and clamped). Rejected while one is running.</summary>
@@ -108,8 +108,9 @@ public sealed class FrameTraceRecorder
 
     /// <summary>
     /// Writes Chrome Trace Event JSON for the running or last frozen trace. Names, not numbers: every event carries
-    /// its stage name, category and the source sequence in <c>args.id</c>; thread names and agent markers are emitted
-    /// as metadata and instant events. Returns false (and writes nothing) when no trace has been started.
+    /// its stage name, category and the frame's arrival timestamp in <c>args.id</c> (-1 for events with no frame);
+    /// a non-zero stage arg is written as <c>args.arg</c> and a preview drop also names it in <c>args.reason</c>;
+    /// thread names and agent markers are emitted as metadata and instant events. Returns false (and writes nothing) when no trace has been started.
     /// </summary>
     public bool TryWriteChromeTrace(Stream stream, out string? error)
     {
@@ -180,6 +181,15 @@ public sealed class FrameTraceRecorder
                 writer.WriteNumber("tid", e.Tid);
                 writer.WriteStartObject("args");
                 writer.WriteNumber("id", e.Id);
+                if (e.Arg != 0)
+                {
+                    writer.WriteNumber("arg", e.Arg);
+                    if (e.Kind == FrameTraceEventKind.PreviewDrop)
+                    {
+                        writer.WriteString("reason", PreviewDropReasons.Name((PreviewDropReason)e.Arg));
+                    }
+                }
+
                 writer.WriteEndObject();
                 writer.WriteEndObject();
             }
@@ -266,11 +276,11 @@ public static class FrameTrace
 
     public static bool IsEnabled => Recorder.IsEnabled;
 
-    public static void Record(FrameTraceEventKind kind, long startTimestamp, long durationTicks, long id) =>
-        Recorder.Record(kind, startTimestamp, durationTicks, id);
+    public static void Record(FrameTraceEventKind kind, long startTimestamp, long durationTicks, long id, ushort arg = 0) =>
+        Recorder.Record(kind, startTimestamp, durationTicks, id, arg);
 
-    public static void RecordInstant(FrameTraceEventKind kind, long timestamp, long id) =>
-        Recorder.RecordInstant(kind, timestamp, id);
+    public static void RecordInstant(FrameTraceEventKind kind, long timestamp, long id, ushort arg = 0) =>
+        Recorder.RecordInstant(kind, timestamp, id, arg);
 
     /// <summary>Labels the calling thread in trace dumps (called by <c>HotThreads.Register</c>).</summary>
     public static void NameCurrentThread(string name) =>

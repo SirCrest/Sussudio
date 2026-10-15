@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
 using Sussudio.Services.Contracts;
+using Sussudio.Services.Performance;
 using Sussudio.Services.Runtime;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml.Controls;
@@ -187,6 +188,9 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         public long SchedulerSubmitTick { get; }
         public bool CountForPresentCadence { get; }
         public long SubmissionGeneration { get; set; }
+
+        /// <summary>QPC stamp taken as the frame joined the render queue; read on dequeue for preview.queue_dwell.</summary>
+        public long EnqueueTick { get; set; }
 
         public void Dispose()
         {
@@ -578,8 +582,13 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
 
             frame.SubmissionGeneration = Interlocked.Read(ref _submissionGeneration);
             var pendingFrameCount = Interlocked.Increment(ref _pendingFrameCount);
+
+            // One QPC read serves both the frame's queue-dwell stamp and the submitted-frame snapshot. The stamp
+            // must be on the frame before it is visible to the render thread.
+            var submitTick = Stopwatch.GetTimestamp();
+            frame.EnqueueTick = submitTick;
             _pendingFrames.Enqueue(frame);
-            TrackFrameSubmitted(frame);
+            TrackFrameSubmitted(frame, submitTick);
 
             // Trim oldest frames if the queue exceeds the elastic limit.
             // Under normal operation the render thread keeps up and the queue
@@ -740,6 +749,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
     {
         Interlocked.Exchange(ref _isRendering, 1);
         using var mmcss = MmcssThreadRegistration.TryRegister(_renderMmcssTask, _renderMmcssPriority, message => Logger.Log(message));
+        using var hotThread = HotThreads.Register("preview.render", mmcss is not null);
         try
         {
             InitializeD3D();
@@ -880,6 +890,12 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         }
 
         frame = SkipStalePendingFrames(frame);
+
+        // Queue dwell of the frame that will be rendered (frames skipped as stale are drops, not dwell). Runs on the
+        // render thread, outside _lifecycleLock.
+        var dwellTicks = Stopwatch.GetTimestamp() - frame.EnqueueTick;
+        PerfMetrics.PreviewQueueDwell.RecordTicks(dwellTicks);
+        FrameTrace.Record(FrameTraceEventKind.PreviewQueueDwell, frame.EnqueueTick, dwellTicks, frame.ArrivalTick);
 
         if (Volatile.Read(ref _stopRequested) != 0)
         {
@@ -1048,7 +1064,10 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
 
         var waitStart = Stopwatch.GetTimestamp();
         var result = WaitForSingleObject(waitHandle, 8);
-        TrackFrameLatencyWait(result, Stopwatch.GetTimestamp() - waitStart);
+        var waitTicks = Stopwatch.GetTimestamp() - waitStart;
+        TrackFrameLatencyWait(result, waitTicks);
+        // Happens before a frame is chosen, so the span carries no frame id.
+        FrameTrace.Record(FrameTraceEventKind.PreviewFrameLatencyWait, waitStart, waitTicks, -1);
         if (result != WaitObject0 && result != WaitTimeout)
         {
             Logger.Log($"D3D11_PREVIEW_WAITABLE_SWAPCHAIN_WAIT result={result}.");
@@ -2140,12 +2159,12 @@ public readonly record struct PresentCadenceMetrics(
         return lastPresentTick > 0;
     }
 
-    private void TrackFrameSubmitted(PendingFrame frame)
+    private void TrackFrameSubmitted(PendingFrame frame, long submitTick)
     {
         Interlocked.Exchange(ref _lastSubmittedPreviewPresentId, frame.PreviewPresentId);
         Interlocked.Exchange(ref _lastSubmittedSourceSequenceNumber, frame.SourceSequenceNumber);
         Interlocked.Exchange(ref _lastSubmittedSourcePtsTicks, frame.SourcePtsTicks);
-        Interlocked.Exchange(ref _lastSubmittedQpc, Stopwatch.GetTimestamp());
+        Interlocked.Exchange(ref _lastSubmittedQpc, submitTick);
         Interlocked.Exchange(ref _lastSubmittedUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
     }
 
@@ -2168,13 +2187,20 @@ public readonly record struct PresentCadenceMetrics(
 
     private void TrackFrameDropped(PendingFrame frame, string reason)
     {
+        var droppedTick = Stopwatch.GetTimestamp();
         Interlocked.Increment(ref _framesDropped);
         Interlocked.Exchange(ref _lastDroppedPreviewPresentId, frame.PreviewPresentId);
         Interlocked.Exchange(ref _lastDroppedSourceSequenceNumber, frame.SourceSequenceNumber);
         Interlocked.Exchange(ref _lastDroppedSourcePtsTicks, frame.SourcePtsTicks);
-        Interlocked.Exchange(ref _lastDroppedQpc, Stopwatch.GetTimestamp());
+        Interlocked.Exchange(ref _lastDroppedQpc, droppedTick);
         Interlocked.Exchange(ref _lastDroppedUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
         Volatile.Write(ref _lastDropReason, reason);
+
+        // Some callers hold _lifecycleLock: the per-reason counter is a plain interlocked add and the trace write is
+        // lock-free, so neither extends the critical section.
+        var dropReason = PreviewDropReasons.Classify(reason);
+        PerfMetrics.PreviewDrops.Increment((int)dropReason);
+        FrameTrace.RecordInstant(FrameTraceEventKind.PreviewDrop, droppedTick, frame.ArrivalTick, (ushort)dropReason);
     }
 
     private double TrackPresentCadence(bool countSample)
@@ -2207,6 +2233,8 @@ public readonly record struct PresentCadenceMetrics(
             return 0;
         }
 
+        PerfMetrics.PreviewPresentInterval.RecordTicks(nowTick - previousTick);
+
         lock (_presentCadenceLock)
         {
             _presentFrameTimeHistory.Append(nowTick, intervalMs);
@@ -2229,8 +2257,9 @@ public readonly record struct PresentCadenceMetrics(
         }
     }
 
-    private void TrackPipelineLatency(long arrivalTick, long estimatedVisibleTick)
+    private void TrackPipelineLatency(PendingFrame frame, long estimatedVisibleTick)
     {
+        var arrivalTick = frame.ArrivalTick;
         if (arrivalTick <= 0 || estimatedVisibleTick <= arrivalTick)
         {
             return;
@@ -2240,6 +2269,21 @@ public readonly record struct PresentCadenceMetrics(
         if (latencyMs < 0 || latencyMs > 10000)
         {
             return;
+        }
+
+        FrameTrace.Record(FrameTraceEventKind.PreviewPipeline, arrivalTick, estimatedVisibleTick - arrivalTick, arrivalTick);
+
+        // Live capture frames only. Flashback playback frames carry no source sequence (their "arrival" is the
+        // playback submit tick), so they would pollute a capture-to-visible distribution.
+        if (frame.SourceSequenceNumber >= 0)
+        {
+            PerfMetrics.PreviewPipelineLatency.RecordTicks(estimatedVisibleTick - arrivalTick);
+
+            // The read loop published this frame's MF sample time (as QPC) when the ingress clock is QPC-domain.
+            if (PerfIngressSamples.TryGet(arrivalTick, out var sampleQpcTick) && estimatedVisibleTick > sampleQpcTick)
+            {
+                PerfMetrics.PreviewIngressToVisible.RecordTicks(estimatedVisibleTick - sampleQpcTick);
+            }
         }
 
         lock (_pipelineLatencyLock)
@@ -2267,6 +2311,24 @@ public readonly record struct PresentCadenceMetrics(
         if (!IsValidRenderCpuStageMs(totalMs))
         {
             return;
+        }
+
+        // Each stage is recorded only when its own value is plausible, so a bad stage reading does not enter its
+        // distribution as zero.
+        PerfMetrics.PreviewRenderTotal.RecordTicks(totalTicks);
+        if (IsValidRenderCpuStageMs(inputUploadMs))
+        {
+            PerfMetrics.PreviewInputUpload.RecordTicks(inputUploadTicks);
+        }
+
+        if (IsValidRenderCpuStageMs(renderSubmitMs))
+        {
+            PerfMetrics.PreviewRenderSubmit.RecordTicks(renderSubmitTicks);
+        }
+
+        if (IsValidRenderCpuStageMs(presentCallMs))
+        {
+            PerfMetrics.PreviewPresentCall.RecordTicks(presentCallTicks);
         }
 
         lock (_renderCpuTimingLock)
@@ -2306,6 +2368,8 @@ public readonly record struct PresentCadenceMetrics(
         {
             return;
         }
+
+        PerfMetrics.PreviewFrameLatencyWait.RecordTicks(waitTicks);
 
         lock (_frameLatencyWaitTimingLock)
         {
