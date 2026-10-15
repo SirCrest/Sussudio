@@ -1578,22 +1578,22 @@ static partial class Program
             BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("ThrowIfError not found.");
 
+        // Load the bundled runtime before formatting a native error. FFmpeg.AutoGen
+        // resolves av_strerror lazily and caches a NotSupportedException stub for the
+        // whole process when the first call finds no runtime, which then breaks every
+        // later native-failure test that formats an error.
+        RequireType("Sussudio.Services.Runtime.FfmpegRuntimeInit")
+            .GetMethod("EnsureInitialized", BindingFlags.Static | BindingFlags.Public)!
+            .Invoke(null, new object[] { true });
+
         // Non-negative should not throw
         method.Invoke(null, new object[] { 0, "test" });
         method.Invoke(null, new object[] { 1, "test" });
 
-        // Negative should throw (may throw InvalidOperationException or
-        // DllNotFoundException if FFmpeg runtime isn't loaded for GetErrorString)
-        var threw = false;
-        try
-        {
-            method.Invoke(null, new object[] { -1, "test operation" });
-        }
-        catch (TargetInvocationException)
-        {
-            threw = true;
-        }
-        AssertEqual(true, threw, "ThrowIfError throws on negative error code");
+        var failure = Assert.Throws<TargetInvocationException>(
+            () => method.Invoke(null, new object[] { -1, "test operation" }));
+        var error = Assert.IsType<InvalidOperationException>(failure.InnerException);
+        Assert.Contains("operation=test operation code=-1", error.Message, StringComparison.Ordinal);
 
         return Task.CompletedTask;
     }
