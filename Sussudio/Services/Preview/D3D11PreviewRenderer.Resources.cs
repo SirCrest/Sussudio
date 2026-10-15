@@ -817,6 +817,7 @@ internal sealed partial class D3D11PreviewRenderer
     private void InitializeD3D()
     {
         CleanupD3DResources();
+        Interlocked.Increment(ref _displayGeneration);
 
         var sharedDeviceActive = TryInitializeWithSharedDevice(out var featureLevel);
         if (!sharedDeviceActive)
@@ -1569,6 +1570,9 @@ internal sealed partial class D3D11PreviewRenderer
 
     private void CleanupD3DResources()
     {
+        // The timestamp queries belong to the device and context disposed below; release them first.
+        ReleaseGpuTiming("released: device or swap chain reset");
+
         // Keep every native owner intact until the panel acknowledges detach.
         UnbindSwapChainFromPanel();
         DisposeProcessorResources();

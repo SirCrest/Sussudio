@@ -750,6 +750,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         Interlocked.Exchange(ref _isRendering, 1);
         using var mmcss = MmcssThreadRegistration.TryRegister(_renderMmcssTask, _renderMmcssPriority, message => Logger.Log(message));
         using var hotThread = HotThreads.Register("preview.render", mmcss is not null);
+        RegisterPerfDisplaySource();
         try
         {
             InitializeD3D();
@@ -1090,6 +1091,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         }
 
         FailPendingFrameCapture("Render thread exited before frame capture completed.");
+        UnregisterPerfDisplaySource();
         try
         {
             CleanupD3DResources();
@@ -1957,6 +1959,7 @@ public readonly record struct PresentCadenceMetrics(
 
                 _dxgiFrameStatisticsSuccessCount++;
                 _dxgiFrameStatisticsLastError = string.Empty;
+                _dxgiFrameStatisticsGeneration = Volatile.Read(ref _displayGeneration);
 
                 var presentCount = (long)stats.PresentCount;
                 var presentRefreshCount = (long)stats.PresentRefreshCount;

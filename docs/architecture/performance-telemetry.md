@@ -50,6 +50,8 @@ RTX 4090 and Ryzen 9 7950X. Artifacts: `artifacts/perf-overhaul/baseline/`.
 | D10 | Every automation acknowledgement embeds the cached snapshot (`CreateResponse(includeSnapshot: true)` by default), so a burst of control commands serializes about 120 KB each. | `AutomationCommandDispatcher.CreateResponse` |
 | D11 | Full-rate frame data never reaches the agent: the frame-time graph's 10 s QPC history is UI-only, and the hub exposes only the latest 64 of 4,096 frame-ledger events every 500 ms. The 2-minute performance timeline omits audio, A/V sync, recording, encoder, NVML and MJPEG fields. | `PreviewFrameTimeHistory`, `FrameLedger`, `PerformanceTimelineEntry` |
 | D12 | The agent cannot read UI state (overlay, settings, InfoBars, section expansion, window rect) or press controls that have no purpose-built command (Flashback nudge and keyboard transport, timeline scrubbing). | Automation surface survey |
+| D13 | The DWM composed-frame rate was read as the display rate. With the preview presenting 4K60 on a 120 Hz display (independent flip or an overlay plane, so DWM does not compose it), `DwmGetCompositionTimingInfo` showed 0.057 composed frames per second, which looks like a stalled display. DWM's refresh counter is not a hardware vblank counter either: it advances with composition activity. **Fixed in slice 2b:** the report adds a `Display` section from the swap chain's DXGI frame statistics and classifies the DWM rate against the present rate (2.8.5). | Live: `Dwm.FramesComposedPerSec = 0.057` at 4K60 on a 120 Hz display; an idle 120 Hz desktop measured 0.2 refresh-counter increments per second |
+| D14 | `ssctl --json timeline --max N` printed N + 1 timestamps with the last one repeated. The timeline held exactly N entries; the response envelope embedded the cached snapshot (D10), and the snapshot's `TimestampUtc` equals the newest timeline entry's. **Fixed in slice 2b:** the timeline response carries no snapshot. | `AutomationCommandDispatcher.ExecuteGetPerformanceTimelineCommand`; `CreateResponse` default `includeSnapshot: true` |
 
 ### 1.3 Gaps an agent cannot work around today
 
@@ -62,6 +64,8 @@ RTX 4090 and Ryzen 9 7950X. Artifacts: `artifacts/perf-overhaul/baseline/`.
 - No runtime control of tuning knobs, so no A/B experiment without a relaunch.
 - No generic UI access: a human can read and press any control; the agent can
   only use the 57 purpose-built commands.
+
+Slice 2b closes GPU execution time, GPU engine utilization, VRAM, DWM and display truth, and UI-thread responsiveness (2.8).
 
 ## 2. Telemetry core
 
@@ -122,7 +126,7 @@ Initial catalog (time unit is microseconds unless noted):
 | `preview.render_submit` | hist | render CPU stage |
 | `preview.present_call` | hist | `Present` call duration |
 | `preview.render_total` | hist | total render CPU per frame |
-| `preview.gpu_render` | hist | D3D11 timestamp queries around the render passes (when GPU timing is enabled) |
+| `preview.gpu_render` | hist | GPU execution time of the preview render pass from D3D11 timestamp queries: the shader `Draw` or the `VideoProcessorBlt`, not the HDR input upload; recorded only while GPU timing is wanted, an upper bound on a shared device (2.8.4) |
 | `preview.present_interval` | hist | present-to-present on cadence frames |
 | `preview.pipeline_latency` | hist | arrival to estimated visible; live frames only (Flashback playback frames, source sequence below zero, are excluded) |
 | `preview.ingress_to_visible` | hist | MF sample time to estimated visible; QPC domain and live frames only; the sample time reaches the renderer through the ingress sample ledger (2.6) |
@@ -139,9 +143,9 @@ Initial catalog (time unit is microseconds unless noted):
 | `audio.capture_drain` | hist | capture packet drain duration |
 | `audio.render_interval` | hist | WASAPI render event interval, QPC; the baseline resets on pause and resume so a pause is never one long interval |
 | `audio.render_queue_ms` | hist (ms) | monitor queue depth in milliseconds, sampled per render event |
-| `ui.dispatcher_latency` | hist | UI responsiveness probe (2.8) |
+| `ui.dispatcher_latency` | hist | UI responsiveness probe: a no-op enqueued on the UI dispatcher every 100 ms, enqueue to run (2.8.2) |
 | `gc.pause` | hist | each GC suspension, from the runtime event listener |
-| `gpu.engine.3d` / `.video_encode` / `.video_decode` / `.copy` | hist (percent) | PDH GPU Engine utilization for this process, 1 Hz while sensors run |
+| `gpu.engine.3d` / `.video_encode` / `.video_decode` / `.copy` / `.other` | hist (percent) | PDH GPU Engine utilization for this process, summed over its engine instances of that type, 1 Hz while sensors run (2.8.3). Recorded in hundredths of a percent (`CentiPercent`, so the integer histogram keeps two decimals) and reported as percent; `other` is every remaining engine type |
 | `gpu.nvml.gpu_util` / `.encoder_util` / `.decoder_util` | hist (percent) | each NVML poll |
 | `telemetry.hub_refresh` | hist | diagnostics hub snapshot refresh |
 | `telemetry.hub_alloc` | hist (bytes) | process-wide allocated bytes during one refresh; an upper bound, because other threads allocate meanwhile |
@@ -151,6 +155,7 @@ Initial catalog (time unit is microseconds unless noted):
 | `preview.jitter_underflow.<reason>` | counter | jitter-buffer underflows by reason, fixed table |
 | `capture.read_errors` | counter | read-loop exceptions |
 | `ui.stall_50ms` | counter | UI probe waits over 50 ms |
+| `preview.gpu_timing_skipped` | counter | frames not GPU-timed while timing was wanted: every query slot still pending, or a disjoint or implausible timestamp result |
 | `audio.render_underrun` | counter | render events with an empty queue |
 
 ### 2.2.1 Record sites and reason tables
@@ -167,6 +172,9 @@ drift):
 | `mjpeg.queue_wait`, `mjpeg.decode`, `mjpeg.pipeline`; same stage names | `ParallelMjpegDecodePipeline`: queue wait at worker dequeue (before the shed check), decode on the success path only (`Arg` = worker index + 1), pipeline in `DrainReadyFrames` before the emit callback and outside `_reorderLock` |
 | `preview.jitter_residence`; same, `preview.jitter_drop.*`, `preview.jitter_underflow.*` | `MjpegPreviewJitterBuffer.SubmitFrame` (enqueue stamp to submit, outside `_sync`), `RecordDroppedFrame`, `RecordUnderflow`, `TryRecordResumeReprimeMiss` |
 | `preview.queue_dwell`, `preview.frame_latency_wait`, `preview.input_upload`, `preview.render_submit`, `preview.present_call`, `preview.render_total`, `preview.present_interval`, `preview.pipeline_latency`, `preview.ingress_to_visible`, `preview.drop.*`; matching stages and `preview.drop` | `D3D11PreviewRenderer` (`EnqueuePendingFrame`, the render loop, `WaitForFrameLatencySignal`, `TrackFrameDropped`, `TrackPresentCadence`, `TrackPipelineLatency`, `TrackRenderCpuTiming`) and `PresentAndTrackFrame` in `D3D11PreviewRenderer.RenderPasses.cs` |
+| `preview.gpu_render`, `preview.gpu_timing_skipped`; `preview.gpu_render` | `GpuTimestampRing` records a finished query when a later frame reads it back. The renderer opens and closes the span with `BeginGpuTiming`/`EndGpuTiming` (`D3D11PreviewRenderer.GpuTiming.cs`) around the `Draw` of the NV12 and HDR shader paths and the `VideoProcessorBlt` of the video-processor path in `D3D11PreviewRenderer.RenderPasses.cs`. The trace span starts at the CPU submit time, lasts the GPU duration, and uses the frame's arrival tick as its id (2.8.4) |
+| `ui.dispatcher_latency`, `ui.stall_50ms`; `ui.dispatcher_latency` | `UiResponsivenessProbe.OnDispatcher`, on the UI thread when the probe's no-op runs; the trace span (UI thread track, id -1) only for waits above 16 ms |
+| `gpu.engine.*` | `GpuEngineSensor.SampleOnce` on its sensor thread, once a second, from the second PDH sample on (rate counters need two) |
 | `recording.*`, `flashback.queue_dwell`, `flashback.encode_submit`, `flashback.mux_write` | `LibAvRecordingSink.DrainVideoPackets`/`DrainGpuPackets`/`DrainCudaPackets` and `FlashbackEncoderSink.DrainVideoPackets`/`DrainGpuPackets` for queue dwell (QPC stamp on the packet at enqueue, recorded after dequeue and outside `_videoQueueSync`); `LibAvEncoder.SendVideoFrame`/`SendGpuVideoFrame`/`SendCudaVideoFrame` and `WritePacket` for encode and mux, through the injected `EncoderPerfMetrics` role |
 | `flashback.segment_rotation` | `FlashbackEncoderSink.RotateSegment` through `PerfScope` (covers both returns and the terminal rethrow) |
 | `flashback.playback_decode`, `flashback.playback_present_interval` | `FlashbackPlaybackController.PaceAndDecodeFrame` and `UpdateCadenceMetrics` |
@@ -176,10 +184,8 @@ drift):
 | `telemetry.hub_refresh`, `telemetry.hub_alloc`; `telemetry.hub_refresh` | `AutomationDiagnosticsHub.RefreshSnapshotAsync`, after the refresh gate, including a failed refresh |
 | `automation.command`; `automation.command` | `AutomationCommandDispatcher.ExecuteAsync` finally block; the trace id is the command kind |
 
-Not recorded yet: `preview.gpu_render`/`preview.gpu_render` (GPU timestamp
-queries, slice 2b), the UI probe, GPU engine and GC-adjacent sensors (slice
-2b), and the reserved `audio.render` trace stage (the render interval and queue
-depth have no span to draw). Trace placement is approximate for two preview
+Not recorded yet: the reserved `audio.render` trace stage (the render interval
+and queue depth have no span to draw). Trace placement is approximate for two preview
 stages: `preview.input_upload` is anchored at the start of the render and
 `preview.render_submit` ends where `Present` begins, because the render passes
 do not carry stage start times out; durations are exact.
@@ -299,8 +305,10 @@ New live knobs added on this branch:
 | Knob | Default | Effect |
 |---|---|---|
 | `SUSSUDIO_DIAGNOSTICS_POLL_MS` | 500 | diagnostics hub poll interval, 100-10000 (slice 1) |
-| `SUSSUDIO_TELEMETRY_SENSORS` | auto | `auto`: sensors run while a window is open or a trace runs; `on`; `off` |
-| `SUSSUDIO_PREVIEW_GPU_TIMING` | auto | GPU timestamp queries; `auto` follows sensor demand |
+| `SUSSUDIO_TELEMETRY_SENSORS` | auto | live, `auto\|on\|off`: `auto` runs the demand-driven sensors (UI probe, GPU engine counters) while a perf window is open or a frame trace runs; `on` always; `off` never (2.8.1) |
+| `SUSSUDIO_PREVIEW_GPU_TIMING` | auto | live, `auto\|on\|off`: D3D11 timestamp queries around the preview render pass; `on` and `off` win, `auto` follows the sensor demand, `off` creates no query objects, and the WARP software adapter never runs them (2.8.4) |
+
+Both are read as parsed modes. Text set by hand is case-insensitive, `1` and `true` mean `on`, `0` and `false` mean `off`, and anything unrecognised means `auto`; the knob store itself accepts only the three choices. The report's `Sensors` section states the mode in force.
 
 ### 2.6 Ingress clock
 
@@ -353,26 +361,128 @@ disposed when the loop exits), `mjpeg.worker-<n>`, `mjpeg.emitter`,
 
 ### 2.8 Sensors
 
-Run only while demanded (an open window, a running trace, or the knob set
-to `on`):
+Demand-driven sensors start a thread or create GPU objects, so they run only while someone wants the numbers (2.8.1). Everything
+else is read on demand or at an existing poll and costs nothing while nobody asks. The report's `Sensors` section states whether
+demand exists and what each sensor is doing (3.1).
 
-- UI responsiveness: every 100 ms, enqueue a no-op on the UI dispatcher and
-  record the wait (`ui.dispatcher_latency`, `ui.stall_50ms`).
-- GPU engines: PDH `\GPU Engine(pid_<pid>*)\Utilization Percentage` grouped
-  by engine type, and `\GPU Process Memory(pid_<pid>*)\Dedicated Usage`,
-  sampled at 1 Hz.
+#### 2.8.1 Demand and the supervisor
 
-Always on, read on demand:
+`SUSSUDIO_TELEMETRY_SENSORS` (`auto|on|off`, default `auto`, live) decides. `off` wins over everything, `on` wins over demand, and
+`auto` is active while any perf window is open or a frame trace is running. `Sensors.Reason` says which: `knob:off`, `knob:on`,
+`window:<names>`, `trace` or `idle` (a window is named in preference to a trace). `SUSSUDIO_PREVIEW_GPU_TIMING` (same values) has
+the last word for GPU timing: `on` and `off` win, and `auto` follows the sensor demand, including the sensors knob (sensors `off`
+also quiets automatic GPU timing).
 
-- Process: `GetProcessTimes`, `GetProcessMemoryInfo`, `GetProcessIoCounters`,
-  handle and thread counts.
-- GC: collection counts, `GC.GetTotalPauseDuration`, allocated bytes, and a
-  runtime `EventListener` for per-GC pause (`gc.pause`, trace events).
-- DWM: `DwmGetCompositionTimingInfo` refresh period and composed-frame count.
-- VRAM: `IDXGIAdapter3.QueryVideoMemoryInfo` for adapters this process uses.
+`TelemetrySensorSupervisor` (`SensorDemand.cs`) starts and stops the thread sensors (`IDemandSensor`: the UI probe and the GPU
+engine sensor) and has no timer or poll of its own. The owners of the three demand inputs raise `Changed` after a real change,
+outside their locks, with handler exceptions swallowed: `PerfWindowSet`, `FrameTraceRecorder` and `TuningKnobStore`. The
+`TelemetrySensors` facade (configured by `MainWindow` at startup, stopped by window shutdown cleanup) subscribes once and calls
+`Reevaluate()`. Start and stop are idempotent. A sensor that throws on start or stop is reported as `supervisor: <error>` in
+`Sensors.Details` and does not stop the others. An idle app has no sensor thread and no timer.
+
+The render thread cannot read the environment or take a lock per frame, so GPU timing asks a `CachedDemand`, which re-evaluates
+from cached integer modes at most once a second (a probe that throws keeps the previous answer). Between evaluations the question
+costs one timestamp compare and one volatile read. GPU timing therefore reacts to a window opening within about a second.
+
+#### 2.8.2 UI responsiveness
+
+`UiResponsivenessProbe` (`UiResponsivenessProbe.cs`, thread `telemetry.ui_probe`) wakes every 100 ms and enqueues a no-op through an
+injected `Func<Action,bool>`; `MainWindow` supplies `DispatcherQueue.TryEnqueue` with one cached handler, so the probe has no WinUI
+dependency. When the no-op runs on the UI thread it records the enqueue-to-run wait into `ui.dispatcher_latency`, increments
+`ui.stall_50ms` above 50 ms, and, while a frame trace runs, draws a `UiDispatcherLatency` span on the UI thread's track for waits
+above 16 ms (one 60 Hz frame). At most one probe is outstanding, so a blocked UI thread gets no backlog and the probe measures the
+stall instead of adding to it. A rejected or throwing enqueue is counted, never raised. The details line reads
+`ui_probe: running enqueued=.. completed=.. skipped_busy=.. enqueue_failures=..`.
+
+#### 2.8.3 GPU engines, dedicated memory and VRAM
+
+`GpuEngineSensor` (`GpuEngineSensor.cs`, thread `telemetry.gpu_engines`) samples PDH once a second through `NativePdh`, behind the
+`IGpuCounterReader` seam: `\GPU Engine(*)\Utilization Percentage` and `\GPU Process Memory(*)\Dedicated Usage`. Instances are
+filtered to this process by the exact prefix `pid_<pid>_` (a bare `pid_N*` also matches every longer pid that starts with N) and
+summed per engine type into `gpu.engine.3d`, `.video_encode`, `.video_decode`, `.copy` and `.other`. A sum can exceed 100 when the
+process uses several engines or adapters of one type. `Gpu.DedicatedBytes` is the process's dedicated GPU memory from the same
+sample.
+
+A missing sample is never recorded as 0 %. Rate counters need two samples, so the first tick records nothing. A tick in which PDH has
+no instance for this process (it has not touched the GPU yet, or just released its device) records nothing and counts as pending.
+PDH that cannot open or read is `unavailable`: the sensor retries with backoff and reopens the counters if they fail later, and
+every reader it abandons is disposed. A genuine 0 % is recorded as 0. The details line reads `gpu_engines: stopped`,
+`gpu_engines: unavailable, retrying (open_failures=.., last_error=..)` or `gpu_engines: running samples=N`, with a note after three
+pending ticks. `Gpu.DedicatedBytes` is null whenever the sensor is stopped, pending or unavailable.
+
+VRAM is not a thread. `GpuMemorySensor.Read()` runs when a report is built: it enumerates the DXGI adapters and calls
+`IDXGIAdapter3.QueryVideoMemoryInfo` on the local and non-local segment groups, so `Gpu.Adapters` holds instantaneous per-process
+budget and usage (the budget is what the OS allows this process now and shrinks under pressure from other applications). An adapter
+that cannot report is skipped; a failed enumeration leaves `Adapters` empty and `AdaptersError` says why. The WARP adapter appears
+with `Software: true`.
+
+#### 2.8.4 GPU render timing
+
+`preview.gpu_render` is the GPU execution time of the preview render pass, from D3D11 timestamp queries
+(`D3D11TimestampQueries.cs`: a disjoint query plus begin and end timestamps per slot, behind the `IGpuTimestampBackend` seam;
+`GpuTimestampRing.cs`: the ring; `D3D11PreviewRenderer.GpuTiming.cs`: the renderer side).
+
+- **Span.** The `Draw` of the NV12 and HDR shader paths, or the `VideoProcessorBlt` of the video-processor path. The HDR pre-draw
+  input upload is deliberately not in the span: it is input transfer and is already `preview.input_upload` on the CPU side, and
+  folding it in would make the metric mean "copy plus draw" and stop it isolating what the shader costs. Clear, state binding and
+  `Present` are outside it too.
+- **Ring.** Six slots (cap eight). A frame opens a slot immediately before its draw, after every early return of the render pass, so a
+  query is never opened for a frame that does not draw, and the draw sits in a `try/finally` so an exception cannot leave one open.
+  Results are read on later frames with a non-blocking `GetData(..., DoNotFlush)` (`S_FALSE` means not ready). A frame never waits for
+  the GPU: with every slot still pending the frame is skipped and counted in `preview.gpu_timing_skipped`. A disjoint result (the GPU
+  clock changed during the span) and an implausible one (negative, or a zero frequency) are skipped and counted; a result that has not
+  arrived after a second is abandoned so the ring keeps cycling.
+- **Failure.** A backend that fails or throws (a removed device) fails the ring. Timing then stays off and costs nothing until demand
+  ends or the device is re-created, and the exception never reaches the render loop.
+- **Clock.** GPU timestamps are in the GPU's own clock, not QPC, so only the duration is a GPU measurement. The `PreviewGpuRender`
+  trace span is anchored at the CPU time the commands were submitted, lasts the GPU duration, and carries the frame's arrival tick as
+  its id, so the analyzer can join it to that frame's CPU stages. It is written when the result is read back, a few frames later; its
+  position is the submit time, not a claim about when the GPU ran.
+- **Shared device.** The preview usually runs on the capture pipeline's shared device and its multithread-protected immediate
+  context. Commands from other threads that the context accepts between the span's begin and end are inside it, and the GPU may be
+  draining other queued work, so `preview.gpu_render` is an upper bound under contention and exact only on a quiet device. A
+  renderer-owned device has no such contamination. The state line says `shared_device=`.
+- **WARP.** Never on the software adapter: a CPU rasterizer's timestamps measure CPU emulation and the queries cost real time there.
+  The state reads `disabled: software (WARP) adapter <name>` and no query object exists.
+- **Off.** With demand off, no query object exists; the cost is the cached demand check per frame.
+- **Device lost and re-initialisation.** `CleanupD3DResources` releases the queries (state `released: device or swap chain reset`)
+  before it disposes the context. They are re-created lazily on the first frame after `InitializeD3D` if demand still exists.
+- **State.** `Sensors.Details` carries `gpu_timing: mode=<mode> wanted=<yes|no> state=<state>` where the state is `not created`,
+  `active adapter=<name> slots=<n> shared_device=<bool> (upper bound under contention)`, `off: no demand`,
+  `disabled: software (WARP) adapter <name>`, `unavailable: <reason>`, `failed: <reason>` or
+  `released: device or swap chain reset`.
+
+#### 2.8.5 DWM and display truth
+
+`Dwm.FramesComposedPerSec` is DWM's composition pass rate (`DwmGetCompositionTimingInfo` `FrameNumber`), not the rate at which frames
+reach the display. A preview that reaches the screen by independent flip, direct flip or an overlay plane is scanned out without DWM
+composing it, so a 4K60 preview on a 120 Hz display read 0.057 composed frames per second while presenting normally. As a display
+rate that looks like a stalled display; it is not. DWM's `RefreshCount` is not a hardware vblank counter either: it advances with
+composition activity (an idle 120 Hz desktop measured 0.2 per second), so it is reported only as `Dwm.RefreshCountPerSec`.
+
+The display truth is the preview swap chain's own DXGI frame statistics. The renderer already samples them every N presents
+(`SUSSUDIO_PREVIEW_DXGI_FRAME_STATS`, default on; `..._SAMPLE_INTERVAL`, default 2); slice 2b adds no per-present call, only a
+generation counter bumped by each device re-creation. The report's `Display` section differences two samples and divides both
+counters by the QPC time between their `SyncQPCTime` stamps (not by the report clock, which may be far from the last sample if the
+preview stopped): `PresentsPerSec` (the swap chain's `PresentCount`), `VblankPerSec` (`SyncRefreshCount`, the display's vertical sync
+count) and `PresentsPerVblank` (0.5 for 60 fps on a 120 Hz display). `Display.Available` is false, with a `Note`, when no renderer is
+sampling, when a lifetime report is asked for (no baseline: begin a window with the preview running), when the swap chain or device
+was re-created during the interval (the counters restarted), when no new sample arrived (the preview was not presenting), or when a
+counter went backwards.
+
+`Dwm.CompositionPath` reads the DWM rate against `Display.PresentsPerSec`: `idle` (under one present a second, so unrelated screen
+activity says nothing about the preview), `bypass` (composed under a quarter of presents, so the preview skips DWM), `composed` (at
+least three quarters), `mixed` (between) and `unknown` (a reading is missing; a missing reading is never assumed to be zero).
+`Dwm.Interpretation` says the same in words with the refresh and present rates.
+
+#### 2.8.6 Always on, read on demand
+
+- Process: `GetProcessTimes`, `GetProcessMemoryInfo`, `GetProcessIoCounters`, handle and thread counts.
+- GC: collection counts, `GC.GetTotalPauseDuration`, allocated bytes, and a runtime `EventListener` for per-GC pause (`gc.pause`,
+  trace events).
+- DWM: `DwmGetCompositionTimingInfo` refresh period, composed-pass count and refresh counter (2.8.5).
 - NVML values recorded at each existing NVML poll.
-- Log tap: the logger writer keeps the last 4,096 lines and per-caller and
-  per-tag line counts for spam detection.
+- Log tap: the logger writer keeps the last 4,096 lines and per-caller and per-tag line counts for spam detection.
 
 ### 2.9 Ears: audio output probe
 
@@ -440,10 +550,19 @@ Tool-side only (no app command): `ssctl perf trace analyze <file>`,
                "IoReadBytes": 0, "IoWriteBytes": 0, "Handles": 0, "Threads": 0 },
   "Gc": { "Gen0": 0, "Gen1": 0, "Gen2": 0, "PauseMs": 0.0, "AllocatedBytes": 0 },
   "Gpu": { "Engines": [ { "Type": "VideoEncode", "MeanPercent": 31.0, "P95Percent": 35.0 } ],
-           "DedicatedBytes": null, "Adapters": [ ] },
-  "Dwm": { "RefreshHz": 59.94, "FramesComposedPerSec": 59.9 },
+           "DedicatedBytes": 412356608,
+           "Adapters": [ { "Name": "<adapter>", "Luid": "0x00000000_0x0000F5A2", "Software": false,
+                           "DedicatedVideoMemoryBytes": 0, "LocalBudgetBytes": 0, "LocalUsageBytes": 0,
+                           "NonLocalBudgetBytes": 0, "NonLocalUsageBytes": 0 } ],
+           "AdaptersError": null },
+  "Dwm": { "RefreshHz": 120.0, "FramesComposedPerSec": 0.06, "RefreshCountPerSec": 0.2,
+           "CompositionPath": "bypass", "Interpretation": "..." },
+  "Display": { "Available": true, "Note": "...", "SampleSeconds": 29.9, "PresentsPerSec": 60.0,
+               "VblankPerSec": 120.0, "PresentsPerVblank": 0.5 },
   "Capture": { "IngressClock": "qpc|relative|unknown", "IngressClockMinOffsetMs": null },
-  "Sensors": { "Active": true, "Reason": "window:baseline" },
+  "Sensors": { "Active": true, "Reason": "window:baseline", "Mode": "auto",
+               "Details": [ "ui_probe: running ...", "gpu_engines: running ...", "gpu_timing: mode=auto wanted=yes state=active ...",
+                            "vram: on demand at report time" ] },
   "Trace": { "Running": false, "Events": 0, "Capacity": 0 },
   "Knobs": [ { "Name": "SUSSUDIO_PREVIEW_JITTER_TARGET_DEPTH", "Value": "1", "Launch": null, "Apply": "preview-restart" } ],
   "Markers": [ { "TimestampUtc": "...", "Text": "variant B" } ]
@@ -452,13 +571,25 @@ Tool-side only (no app command): `ssctl perf trace analyze <file>`,
 
 Time metrics are reported in milliseconds; percent and byte metrics in their
 own units. `filter` is a name prefix (case-insensitive). Metrics with zero
-count are omitted unless `includeIdle` is true. `Gpu.DedicatedBytes` is null
-and `Gpu.Adapters` empty until the GPU/VRAM sensors land; `Gpu.Engines` is
-built from the `gpu.*` percent metrics that have samples. `Sensors.Active`
-means demand exists (an open window or a running trace), with `Reason`
-`window:<names>`, `trace` or `idle`. `Dwm` values are null when DWM timing is
-unavailable. `Threads` is empty until dedicated threads call
-`HotThreads.Register`. `Capture.IngressClockMinOffsetMs` is the smallest
+count are omitted unless `includeIdle` is true. `Gpu.Engines` is built from
+the `gpu.*` percent metrics that have samples. `Gpu.DedicatedBytes` is this
+process's dedicated GPU memory from the PDH sensor, null while that sensor is
+stopped, pending or unavailable. `Gpu.Adapters` is read when the report is
+built (one object per DXGI adapter: name, LUID, `Software`, dedicated memory,
+and this process's local and non-local budget and usage in bytes);
+`AdaptersError` says why it is empty when the read failed. The `Adapters`
+element type changed from string (it was always empty) to an object.
+`Sensors.Active` means demand exists, with `Reason` `knob:off`, `knob:on`,
+`window:<names>`, `trace` or `idle`; `Mode` is the sensors knob in force; each
+`Details` line is one sensor or `gpu_timing` state (2.8). `Dwm` values are
+null when DWM timing is unavailable; `FramesComposedPerSec` counts
+composition passes, not frames shown, and `CompositionPath` and
+`Interpretation` read it against `Display.PresentsPerSec` (2.8.5). Prefer
+`Display.VblankPerSec` to `Dwm.RefreshCountPerSec` as the display's refresh
+rate. `Display` comes from the preview swap chain's DXGI frame statistics and
+is `Available: false` with a `Note` when there is no baseline (a lifetime
+report), no renderer or no new sample. `Threads` is empty until dedicated
+threads call `HotThreads.Register`. `Capture.IngressClockMinOffsetMs` is the smallest
 observed sample-time offset the ingress classification used.
 
 The command-catalog payload shapes use `string` for `action` (the allowed
@@ -475,7 +606,9 @@ the `invalid-request` error code.
   are unchanged; new knobs default to current behavior.
 - Wire names (command names, metric names, knob names, report fields) are
   appended, never renamed.
-- Sensors that wake threads (UI probe, PDH) run only on demand.
+- Sensors that wake threads (UI probe, PDH) run only on demand, and an idle app has no sensor thread and no timer.
+- GPU timestamp queries exist only while wanted, never on the WARP adapter, and the render thread never waits on them: a frame
+  that cannot get a slot is skipped.
 - File outputs go through the catalog path policy (`WriteFile`).
 
 ## 5. Failure modes covered by isolated tests
@@ -529,6 +662,36 @@ Written before the code, per the testing policy:
   has no QPC enqueue stamp (zero) and is skipped by `*.queue_dwell` instead of
   recording a dwell since process start; a dequeue stamp earlier than the
   enqueue stamp records zero (histograms clamp negative durations).
+
+- Sensor demand and supervisor (slice 2b, written before the code): one answer for every combination of knob mode, open windows
+  and trace; the GPU timing knob wins when `on` or `off` and follows the sensors rule in `auto`, including sensors `off`;
+  unrecognised knob text means `auto`; the report reason names a window in preference to the trace; the cached demand check
+  re-evaluates at most once per interval and keeps its last answer when the probe throws; the supervisor starts sensors on
+  demand, stops them when it ends, tolerates a sensor that throws on start or stop (the others still run and the error is
+  reported), stops everything on shutdown, and survives concurrent re-evaluation; `Changed` fires on a real change of the window
+  set, the trace and the knob store, outside the owner's lock, and a throwing or re-entrant handler cannot fail or deadlock the
+  change; both knobs are `auto|on|off` live choices in the real catalog.
+- UI probe (slice 2b): at most one probe outstanding, so a stalled dispatcher gets no backlog; a rejected or throwing enqueue is
+  counted and the next tick retries; the stall counter and the latency histogram agree on the 50 ms threshold; a clock that moves
+  backwards records zero; `Stop` is prompt, harmless when repeated or never started, and the probe restarts.
+- GPU engine sensor (slice 2b): an instance of another pid that shares a numeric prefix is not counted; instances sum per engine
+  type; NaN, infinite and negative values are ignored; a dedicated figure beyond the `long` range saturates; a pending read and a
+  tick with no instance for this process record nothing (never 0 %), while a genuine zero is recorded; unavailable keeps its
+  reason and records nothing; counters that become unavailable or throw are reopened with every abandoned reader disposed; open
+  failures retry with backoff and a throwing factory is a state, not an exception; `Stop` during a backoff is prompt; `Start` and
+  `Stop` are idempotent and a stopped sensor forgets its dedicated figure.
+- GPU timestamp ring (slice 2b): every slot still pending skips the frame without waiting or opening a query; disjoint and
+  implausible results are skipped and counted; a result that never arrives is abandoned after about a second; a backend that
+  refuses, fails or throws at begin, end or poll fails the ring and is never called again; a span left open by an early close
+  never dangles, and a second span cannot open over the first; results come back oldest first across many wrap-arounds; slot
+  counts are clamped to the cap and to at least one.
+- DWM and display (slice 2b): 0.057 composed per second against 60 presents per second on a 120 Hz display classifies as bypass,
+  not dropped frames; the boundaries between `bypass`, `mixed` and `composed` are stable; a preview that presented nothing is
+  `idle` whatever DWM composed for other windows; a missing reading is `unknown`, never zero; an unknown refresh rate still
+  classifies; the renderer-to-report hook survives a provider that throws, a second renderer replacing the first, and an old
+  renderer unregistering late.
+- Timeline envelope (slice 2b): not an isolated test. The cause was a response-shape default (the envelope embedded the cached
+  snapshot), not logic, so it is checked live: `timeline --max N` returns exactly N entries and no envelope snapshot.
 
 Everything else is verified end to end against the live app (section 6).
 

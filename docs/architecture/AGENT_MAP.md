@@ -90,7 +90,7 @@ tests that pin which file owns a symbol; see AGENTS.md § Testing Policy.
 | Portable release tooling | `tools/reliability-gates.ps1`, `tools/package-github-release.ps1`, `tools/release/release-helpers.ps1`, `Sussudio/ffmpeg/manifest.json` | Reliability gates, package assembly, shared release helpers, and native-runtime manifest. |
 | Flashback | `FlashbackDecoder.cs`, `FlashbackPlaybackController.cs`, `FlashbackPlaybackCommandMailbox.cs`, `FlashbackPlaybackController.PlaybackFrames.cs`, `FlashbackPlaybackController.ThreadCommands.cs`, `FlashbackEncoderSink.cs`, `FlashbackBufferManager.cs`, `FlashbackStartupCacheCleanup.cs`, `FlashbackExporter.cs`, `FlashbackExportOutputTransaction.cs`, `FlashbackExportPlanner.cs` | Buffer retention, encoding, playback, and transactional export. See [Flashback](#flashback) for per-owner lifetimes and invariants. |
 | Flashback playback command handlers | `FlashbackPlaybackController.ThreadCommands.cs` | Playback-thread dispatch, seek/scrub transitions, frame stepping, and terminal live restore. |
-| Preview rendering | `D3D11PreviewRenderer.cs`, `D3D11PreviewRenderer.RenderPasses.cs`, `D3D11PreviewRenderer.Resources.cs`, `PreviewOutputSizePolicy.cs`, `PreviewScreenshotCapture.cs` | Render-thread scheduling with waitable presentation, render passes, GPU resource lifetime, and screenshots. See [UI and presentation](#ui-shell-and-presentation). |
+| Preview rendering | `D3D11PreviewRenderer.cs`, `D3D11PreviewRenderer.RenderPasses.cs`, `D3D11PreviewRenderer.Resources.cs`, `D3D11PreviewRenderer.GpuTiming.cs`, `PreviewOutputSizePolicy.cs`, `PreviewScreenshotCapture.cs` | Render-thread scheduling with waitable presentation, render passes, GPU resource lifetime, GPU render timing, and screenshots. See [UI and presentation](#ui-shell-and-presentation). |
 | UI shell | `Sussudio/MainWindow.xaml.cs` composition root and XAML adapter; feature behavior lives in controllers under `Sussudio/Controllers/` | The single code-behind file wires XAML to feature controllers. See [UI and presentation](#ui-shell-and-presentation). |
 | Presentation | `MainViewModel.*.cs` facade/feature partial family, `Sussudio/ViewModels/MainViewModel.cs`, plus focused `Sussudio/ViewModels` policy/presentation helpers | View-model facade, feature state, and presentation policies. See [UI and presentation](#ui-shell-and-presentation). |
 
@@ -116,7 +116,7 @@ do not use these rows as permission for cosmetic file-count churn.
 | CaptureService | Leave As-Is For Now | `Sussudio/Services/Capture/CaptureService.cs`, `Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs`, `Sussudio/Services/Capture/CaptureService.Flashback.cs`, `Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs`, `Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs`, and `Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs` form a six-file family in the generated baseline. The files now map to transition serialization/root state, preview lifecycle, Flashback backend/export/recording, health snapshots, recording lifecycle, and runtime snapshots. | Do not merge this family just to reduce partial count. A future boundary pass should happen only if one named behavior, such as Flashback export or snapshot assembly, can move behind an independently testable collaborator without changing capture/preview/recording hot-path ordering. |
 | AutomationDiagnosticsHub | Ready | `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs` owns the single `BuildAutomationSnapshot` initializer: captured domain inputs supply copy-only fields directly, while twelve computed/stateful projection helpers preserve normalization and sampling order. Flashback export, recording and playback fields share that initializer, including runtime-first null fallback for backend diagnostics. `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`, `Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs`, and `Sussudio/Services/Automation/AutomationDiagnosticsHub.Evaluation.cs` remain the polling/timeline, stateful refresh/alerts, and diagnostic verdict owners. `tests/Sussudio.Tests/AutomationSnapshotRegressionTests.cs` protects every serialized field against populated/default input fixtures; ownership tests protect the collector/initializer boundary. | Preserve the 18 captured inputs, computation/sampling order, JSON field names and CLI/MCP/tool contracts. Keep raw mapping in the existing initializer and retain helpers only for computation or state sampling. |
 | FlashbackPlaybackController | Ready | `Sussudio/Services/Flashback/FlashbackPlaybackController.cs`, `Sussudio/Services/Flashback/FlashbackPlaybackCommandMailbox.cs`, `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs`, and `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs` align to public playback state/command admission/metrics, a per-generation bounded command mailbox, playback-thread command execution, and frame decode/submit pacing. Existing Flashback contract tests and this map document command, frame, audio-master, marker, and lifecycle ownership. | Treat the mailbox and three controller partials as intentional. Keep the mailbox bounded and state-free: it owns queue admission, drop/coalescing, generation completion, yield, and queue telemetry; the controller owns public command/state admission; `ThreadCommands` owns decoder/state execution. Preserve playback command names, capacity, queue telemetry, live-restore behavior, A/V drift policy, and segment-edge recovery. |
-| D3D11PreviewRenderer | Ready | `Sussudio/Services/Preview/D3D11PreviewRenderer.cs`, `Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs`, and `Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs` now align to renderer facade/thread/submission/metrics, render-pass execution plus screenshot staging, and D3D resource/device/swap-chain/shader ownership. Presentation preview tests guard removed renderer shards, diagnostics contracts, device-lost recovery, present accounting, screenshots, and frame-ready signaling. | Treat the three-file split as intentional. Reopen only if a named resource/pass collaborator gains an independent test seam. Preserve preview pacing, swap-chain binding, device-lost recovery, screenshot capture, HDR pass behavior, and GPU synchronization boundaries. |
+| D3D11PreviewRenderer | Ready | `Sussudio/Services/Preview/D3D11PreviewRenderer.cs`, `Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs`, and `Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs` now align to renderer facade/thread/submission/metrics, render-pass execution plus screenshot staging, and D3D resource/device/swap-chain/shader ownership; `D3D11PreviewRenderer.GpuTiming.cs` adds GPU render timing and the perf display-statistics hook. Presentation preview tests guard removed renderer shards, diagnostics contracts, device-lost recovery, present accounting, screenshots, and frame-ready signaling. | Treat the four-file split as intentional. Reopen only if a named resource/pass collaborator gains an independent test seam. Preserve preview pacing, swap-chain binding, device-lost recovery, screenshot capture, HDR pass behavior, and GPU synchronization boundaries. |
 
 Preview renderer notes:
 
@@ -173,6 +173,15 @@ Preview renderer notes:
   Family-specific teardown stays next to creation: input texture cleanup in
   `D3D11PreviewRenderer.Resources.cs` and preview-frame capture staging cleanup
   in `D3D11PreviewRenderer.RenderPasses.cs`.
+- `Sussudio/Services/Preview/D3D11PreviewRenderer.GpuTiming.cs` owns when the renderer
+  creates, uses, blocks and releases the GPU timestamp queries behind
+  `preview.gpu_render` (`BeginGpuTiming`/`EndGpuTiming` around the draw or video-processor
+  blit, the WARP/software-adapter policy, the once-a-second cached demand check, and release
+  before the immediate context is disposed in `CleanupD3DResources`) and
+  `ReadPerfDisplayCounters`, which hands the swap chain's DXGI frame statistics to the perf
+  report. `Sussudio/Services/Preview/D3D11TimestampQueries.cs` owns the D3D11 query objects
+  behind `IGpuTimestampBackend`; the ring policy (skip, never wait, disjoint, stale) is
+  `Sussudio/Services/Performance/GpuTimestampRing.cs`.
 - `Sussudio/Services/Preview/D3D11PreviewRenderer.cs` owns native
   SwapChainPanel COM interface, bind/unbind dispatch, stale-chain guards, panel size,
   rasterization scale, dirty-transform signaling, and swap-chain composition
@@ -459,8 +468,9 @@ recording and audio sites call into it, never the other way round.
   `TUNING_KNOB_SET` log line. A new knob is one catalog row; read it at its
   consumer through the environment as before. `SUSSUDIO_AUTOMATION_TOKEN`,
   the pipe name, log root and recovery directory are excluded by design.
-  `SUSSUDIO_DIAGNOSTICS_POLL_MS` is the only live knob wired in this slice
-  (`AutomationDiagnosticsHub.RunLoopAsync`).
+  `SUSSUDIO_DIAGNOSTICS_POLL_MS` (`AutomationDiagnosticsHub.RunLoopAsync`) and the two
+  `auto|on|off` sensor knobs `SUSSUDIO_TELEMETRY_SENSORS` and `SUSSUDIO_PREVIEW_GPU_TIMING`
+  (read through `TelemetrySensorModes`) are the live knobs wired so far.
 - `HotThreads.cs` owns the dedicated-thread registry (`HotThreads.Register(role)`),
   per-thread CPU time/cycles/priority and the bounded retired list. Roles:
   `capture.read` (`MfSourceReaderVideoCapture.ReadLoop`), `mjpeg.worker-<n>`
@@ -503,16 +513,33 @@ recording and audio sites call into it, never the other way round.
   intervals, drain, queue depth and underruns; `NvmlMonitor` records NVML
   utilization; `AutomationDiagnosticsHub.RefreshSnapshotAsync` records hub
   refresh time and allocation; `AutomationCommandDispatcher.ExecuteAsync`
-  records command time. Sensors and GPU timestamp queries are not wired yet.
+  records command time; `GpuTimestampRing` records `preview.gpu_render` for the renderer,
+  `UiResponsivenessProbe` records `ui.dispatcher_latency` and `ui.stall_50ms`, and
+  `GpuEngineSensor` records `gpu.engine.*`.
 - `ProcessSensors.cs` owns process CPU/memory/IO/handle sensors, GC counters and
   the runtime GC-pause `EventListener`, and `DwmGetCompositionTimingInfo`.
   `PerfIngressClock.cs` holds the capture ingress clock classification the
   report states.
+- Sensors are demand-driven (spec 2.8). `SensorDemand.cs` owns the `auto|on|off` demand
+  rule (`SensorDemandPolicy`), `CachedDemand` (the render thread's once-a-second check) and
+  `TelemetrySensorSupervisor`, which starts and stops the thread sensors from the `Changed`
+  events of `PerfWindowSet`, `FrameTraceRecorder` and `TuningKnobStore`.
+  `TelemetrySensors.cs` is the process-wide facade: `Configure` (from `MainWindow`, with the
+  UI enqueue delegate), `Shutdown` (from window shutdown cleanup) and the `Sensors` report
+  section. `UiResponsivenessProbe.cs` owns the UI dispatcher probe. `GpuEngineSensor.cs` owns
+  PDH engine and dedicated-memory sampling and its aggregation, with `NativePdh.cs` as the
+  production PDH reader behind `IGpuCounterReader`. `GpuMemorySensor.cs` owns the on-demand
+  `QueryVideoMemoryInfo` read behind `Gpu.Adapters`. `PerfDisplaySource.cs` owns the
+  renderer-to-report hook for the swap chain's DXGI frame statistics and
+  `DwmCompositionInterpreter`, which classifies the DWM composed rate
+  (`Dwm.CompositionPath`). `GpuTimestampRing.cs` owns the GPU timestamp query ring policy
+  (spec 2.8.4); the renderer side is `D3D11PreviewRenderer.GpuTiming.cs` (Preview rendering).
 - `LogTapBuffer.cs` and `LogTap.cs` own the 4,096-line log ring with per-caller
   and per-tag counts, fed by the logger's writer task.
 - `PerfReportBuilder.cs` owns the perf report DTOs and builds lifetime and
   window reports (microseconds reported as milliseconds, idle metrics omitted
-  unless asked).
+  unless asked), including the `Gpu`, `Dwm` and `Display` sections and the `Sensors`
+  section.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.PerfTelemetry.cs`
   owns the seven handlers for commands 58-64 (`GetPerfReport`, `PerfWindow`,
   `AddPerfMarker`, `FrameTrace`, `GetTuningKnobs`, `SetTuningKnob`,
@@ -530,7 +557,8 @@ recording and audio sites call into it, never the other way round.
   no per-command code.
 - Tests are isolated and cover failure modes only: histogram boundaries and
   concurrency, window limits, trace wraparound/torn slots, knob validation and
-  reset, log tap bounds. Pure pieces are linked into
+  reset, log tap bounds, sensor demand, the UI probe, GPU engine aggregation, the GPU
+  timestamp ring and DWM classification. Pure pieces are linked into
   `tests/Sussudio.Tests/Sussudio.Tests.csproj`; the rest is verified end to end
   against the live app with artifacts under `artifacts/perf-overhaul/`.
   `scripts/performance/Verify-PerfTelemetry.ps1` is the repeatable end-to-end

@@ -5,6 +5,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using SharpGen.Runtime;
 using Sussudio.Models;
 using Sussudio.Services.Performance;
 using Vortice.Direct3D;
@@ -453,9 +454,19 @@ internal sealed partial class D3D11PreviewRenderer
                 }
 
                 _vpStreamArray[0] = new VideoProcessorStream { Enable = true, InputSurface = inputView };
-                var renderStart = Stopwatch.GetTimestamp();
-                var bltResult = _videoContext.VideoProcessorBlt(_videoProcessor, _outputView, _outputFrameIndex++, 1, _vpStreamArray);
-                renderTicks += Stopwatch.GetTimestamp() - renderStart;
+                Result bltResult;
+                var gpuTimingSlot = BeginGpuTiming(frame.ArrivalTick);
+                try
+                {
+                    var renderStart = Stopwatch.GetTimestamp();
+                    bltResult = _videoContext.VideoProcessorBlt(_videoProcessor, _outputView, _outputFrameIndex++, 1, _vpStreamArray);
+                    renderTicks += Stopwatch.GetTimestamp() - renderStart;
+                }
+                finally
+                {
+                    EndGpuTiming(gpuTimingSlot);
+                }
+
                 if (bltResult.Failure)
                 {
                     throw new InvalidOperationException($"VideoProcessorBlt failed: 0x{bltResult.Code:X8}.");
@@ -543,9 +554,18 @@ internal sealed partial class D3D11PreviewRenderer
             _deviceContext.PSSetShaderResources(0, 2, _srvArray2);
             UpdateViewportConstantBuffer(viewport);
 
-            var renderStart = Stopwatch.GetTimestamp();
-            _deviceContext.Draw(3, 0);
-            renderTicks += Stopwatch.GetTimestamp() - renderStart;
+            var gpuTimingSlot = BeginGpuTiming(frame.ArrivalTick);
+            try
+            {
+                var renderStart = Stopwatch.GetTimestamp();
+                _deviceContext.Draw(3, 0);
+                renderTicks += Stopwatch.GetTimestamp() - renderStart;
+            }
+            finally
+            {
+                EndGpuTiming(gpuTimingSlot);
+            }
+
             _deviceContext.PSSetShaderResources(0, 2, _srvNullArray2);
 
             PresentAndTrackFrame(
@@ -663,9 +683,19 @@ internal sealed partial class D3D11PreviewRenderer
 
             UpdateViewportConstantBuffer(viewport);
 
-            var renderStart = Stopwatch.GetTimestamp();
-            _deviceContext.Draw(3, 0);
-            renderTicks += Stopwatch.GetTimestamp() - renderStart;
+            // The HDR upload and copy above are not part of the GPU timing span (see D3D11PreviewRenderer.GpuTiming.cs).
+            var gpuTimingSlot = BeginGpuTiming(frame.ArrivalTick);
+            try
+            {
+                var renderStart = Stopwatch.GetTimestamp();
+                _deviceContext.Draw(3, 0);
+                renderTicks += Stopwatch.GetTimestamp() - renderStart;
+            }
+            finally
+            {
+                EndGpuTiming(gpuTimingSlot);
+            }
+
             _deviceContext.PSSetShaderResources(0, 2, _srvNullArray2);
 
             var passthrough = ReferenceEquals(pixelShader, _hdrPassthroughPS);
