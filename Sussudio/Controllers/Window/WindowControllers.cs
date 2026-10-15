@@ -22,6 +22,7 @@ namespace Sussudio.Controllers;
 internal sealed class WindowAutomationHostLifecycleController : IAsyncDisposable
 {
     private readonly IAutomationDiagnosticsHub _diagnosticsHub;
+    private readonly AutomationDiagnosticsHub _diagnosticsHubImpl;
     private readonly NamedPipeAutomationServer _pipeServer;
     private readonly bool _tokenRequired;
     private readonly string _pipeName;
@@ -40,10 +41,11 @@ internal sealed class WindowAutomationHostLifecycleController : IAsyncDisposable
         }
 
         var automationPorts = AutomationViewModelPorts.From(viewModel);
-        _diagnosticsHub = new AutomationDiagnosticsHub(
+        _diagnosticsHubImpl = new AutomationDiagnosticsHub(
             automationPorts.SnapshotQuery,
             previewSnapshotProvider,
             new RecordingVerifier());
+        _diagnosticsHub = _diagnosticsHubImpl;
         var automationDispatcher = new AutomationCommandDispatcher(
             automationPorts,
             _diagnosticsHub,
@@ -56,6 +58,15 @@ internal sealed class WindowAutomationHostLifecycleController : IAsyncDisposable
             automationDispatcher,
             _pipeName,
             _tokenRequired);
+    }
+
+    /// <summary>
+    /// Cheap producer-epoch probe for the preview runtime snapshot. Without it the hub
+    /// builds the full preview snapshot three times per tick (before, value, after).
+    /// </summary>
+    public Func<CancellationToken, Task<long>>? PreviewRuntimeEpochProvider
+    {
+        set => _diagnosticsHubImpl.PreviewRuntimeEpochProvider = value;
     }
 
     public void Start()

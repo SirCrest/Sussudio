@@ -8,7 +8,10 @@ namespace Sussudio.Services.Preview;
 // New resources transfer to the cache only after native creation succeeds.
 internal sealed class PreviewInputViewCache<TResource> where TResource : class, IDisposable
 {
-    internal const int Capacity = 8;
+    // Flashback GPU playback submits decoder-pool textures (array slices of a pool of
+    // up to a few dozen surfaces) while the live ring keeps its own entries; eight
+    // entries thrashed, recreating views every frame. Entries are small (one view each).
+    internal const int Capacity = 32;
     private readonly Entry[] _entries = new Entry[Capacity];
     private long _accessOrder;
 

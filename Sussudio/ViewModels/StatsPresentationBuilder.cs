@@ -116,7 +116,13 @@ namespace Sussudio.ViewModels
             var captureCardFormat = health.ReaderSourceSubtype ?? health.NegotiatedPixelFormat;
             if (!string.IsNullOrWhiteSpace(captureCardFormat))
             {
-                telemetryDetails.Add(new SourceTelemetryDetailEntry("Capture Card / UVC", "Capture Format", captureCardFormat));
+                // Lead the provider's capture-card group rather than appending, so the group
+                // stays contiguous and the dock does not repeat its header at the bottom.
+                var captureCardGroupStart = telemetryDetails.FindIndex(
+                    detail => detail.Group == TelemetryLabels.GroupCaptureCard);
+                telemetryDetails.Insert(
+                    captureCardGroupStart >= 0 ? captureCardGroupStart : telemetryDetails.Count,
+                    new SourceTelemetryDetailEntry(TelemetryLabels.GroupCaptureCard, "Capture Format", captureCardFormat));
             }
 
             return new StatsSnapshot(

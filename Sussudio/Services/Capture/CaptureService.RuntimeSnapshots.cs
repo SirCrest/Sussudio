@@ -1883,6 +1883,7 @@ public partial class CaptureService
         _telemetryPollCts = cts;
         _telemetryPollTask = Task.Run(async () =>
         {
+            var sourceTelemetryTick = 0;
             while (!cts.Token.IsCancellationRequested)
             {
                 try
@@ -1893,7 +1894,8 @@ public partial class CaptureService
                         break;
                     }
 
-                    if (Volatile.Read(ref _sourceTelemetryPollingRequested))
+                    if (Volatile.Read(ref _sourceTelemetryPollingRequested) &&
+                        sourceTelemetryTick++ % SourceTelemetryRefreshEveryTicks == 0)
                     {
                         await RefreshSourceTelemetryAsync(cts.Token, generation, requirePollingDemand: true).ConfigureAwait(false);
                     }

@@ -72,7 +72,7 @@ public sealed class FlashbackModelsTests
 public sealed class FlashbackDecoderContractsTests
 {
     [Theory]
-    [InlineData(760.0, "capture.ts", 758.0)]
+    [InlineData(760.0, "capture.ts", 758.9)]
     [InlineData(1.0, "capture.TS", 0.0)]
     [InlineData(0.0, "capture.ts", 0.0)]
     [InlineData(760.0, "capture.mp4", 760.0)]

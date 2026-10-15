@@ -2,6 +2,7 @@ using System;
 using System.Numerics;
 using System.Threading.Tasks;
 using Microsoft.UI.Composition;
+using System.Diagnostics;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -593,10 +594,19 @@ internal sealed class FlashbackPlaybackUiCoordinator
     {
         var state = _context.ViewModel.FlashbackState;
         var bufferDuration = _context.ViewModel.FlashbackBufferFilledDuration;
+        var gapFromLive = _context.ViewModel.FlashbackGapFromLive;
+        if (_context.IsScrubbing() || state == FlashbackPlaybackState.Scrubbing)
+        {
+            // The pointer owns the label while it is down. The controller's gap is the
+            // last decoded frame, which trails the pointer by a decode.
+            var pointerGap = bufferDuration - _context.ViewModel.FlashbackPlaybackPosition;
+            gapFromLive = pointerGap < TimeSpan.Zero ? TimeSpan.Zero : pointerGap;
+        }
+
         _context.PlaybackPresentation.UpdatePosition(
             state,
             bufferDuration,
-            _context.ViewModel.FlashbackGapFromLive);
+            gapFromLive);
 
         if (!_context.IsScrubbing()
             && state != FlashbackPlaybackState.Playing
@@ -1019,21 +1029,36 @@ internal sealed class FlashbackScrubInteractionControllerContext
 {
     public required MainViewModel ViewModel { get; init; }
     public required FrameworkElement ScrubArea { get; init; }
+    public required DispatcherQueue DispatcherQueue { get; init; }
     public required Action<double, double> PositionMagneticPlayhead { get; init; }
     public required Action<string> RefreshPlayheadMotion { get; init; }
-    public required Func<long> GetTickCount64 { get; init; }
+    public required Func<long> GetTimestamp { get; init; }
 }
 
 internal sealed class FlashbackScrubInteractionController
 {
+    // Pointer moves arrive at the device rate (125 to 1000 Hz). The engine coalesces
+    // queued scrub updates, so this window only bounds command traffic. A move that
+    // lands inside the window is kept and flushed when the window closes, so the
+    // last pointer position is always sent even when the pointer stops mid-drag.
+    private const double MinUpdateIntervalMs = 8.0;
+
     private readonly FlashbackScrubInteractionControllerContext _context;
+    private readonly long _minUpdateIntervalTicks;
     private bool _isScrubbing;
     private TimeSpan? _lastPointerPosition;
     private long _lastUpdateTick;
+    private UIElement? _captureElement;
+    private Pointer? _capturePointer;
+    private bool _hasPendingMove;
+    private TimeSpan _pendingPosition;
+    private double _pendingPointerX;
+    private DispatcherQueueTimer? _trailingTimer;
 
     public FlashbackScrubInteractionController(FlashbackScrubInteractionControllerContext context)
     {
         _context = context;
+        _minUpdateIntervalTicks = (long)(Stopwatch.Frequency * MinUpdateIntervalMs / 1000.0);
     }
 
     public bool IsScrubbing => _isScrubbing;
@@ -1048,23 +1073,35 @@ internal sealed class FlashbackScrubInteractionController
             return;
         }
 
+        ClearPendingMove();
+        _captureElement = element;
+        _capturePointer = e.Pointer;
         _isScrubbing = true;
         _lastPointerPosition = targetPosition;
         _lastUpdateTick = 0;
         element?.CapturePointer(e.Pointer);
-        UpdateVisual(e);
+        UpdateVisual(GetPointerX(e));
     }
 
     public void PointerMoved(UIElement? element, PointerRoutedEventArgs e)
     {
         if (!_isScrubbing) return;
 
-        // Throttle scrub updates to ~60fps to avoid flooding the decoder.
-        var now = _context.GetTickCount64();
-        if (now - _lastUpdateTick < 16) return;
-        _lastUpdateTick = now;
-
         var targetPosition = ComputeScrubPosition(e);
+        var pointerX = GetPointerX(e);
+        var now = _context.GetTimestamp();
+        if (now - _lastUpdateTick < _minUpdateIntervalTicks)
+        {
+            // Keep the newest move; the trailing flush sends it when the window closes.
+            _hasPendingMove = true;
+            _pendingPosition = targetPosition;
+            _pendingPointerX = pointerX;
+            ScheduleTrailingUpdate(now);
+            return;
+        }
+
+        ClearPendingMove();
+        _lastUpdateTick = now;
         if (!_context.ViewModel.FlashbackUpdateScrub(targetPosition))
         {
             _context.ViewModel.ReportFlashbackPlaybackRejection("scrub update", "FLASHBACK_UI_SCRUB_UPDATE_REJECTED");
@@ -1073,7 +1110,7 @@ internal sealed class FlashbackScrubInteractionController
         }
 
         _lastPointerPosition = targetPosition;
-        UpdateVisual(e);
+        UpdateVisual(pointerX);
     }
 
     public void PointerReleased(UIElement? element, PointerRoutedEventArgs e)
@@ -1081,6 +1118,8 @@ internal sealed class FlashbackScrubInteractionController
         TimeSpan? releasePosition = null;
         if (_isScrubbing)
         {
+            // The release position supersedes any move still waiting for its window.
+            ClearPendingMove();
             var targetPosition = ComputeScrubPosition(e);
             releasePosition = targetPosition;
             _lastPointerPosition = targetPosition;
@@ -1090,7 +1129,7 @@ internal sealed class FlashbackScrubInteractionController
             }
             else
             {
-                UpdateVisual(e);
+                UpdateVisual(GetPointerX(e));
             }
         }
 
@@ -1160,21 +1199,81 @@ internal sealed class FlashbackScrubInteractionController
 
     private void ClearLocalState()
     {
+        ClearPendingMove();
         _isScrubbing = false;
         _lastUpdateTick = 0;
         _lastPointerPosition = null;
+        _captureElement = null;
+        _capturePointer = null;
     }
 
-    private void UpdateVisual(PointerRoutedEventArgs e)
+    private void ScheduleTrailingUpdate(long now)
     {
-        var pos = e.GetCurrentPoint(_context.ScrubArea).Position;
+        var timer = _trailingTimer ??= CreateTrailingTimer();
+        if (timer.IsRunning)
+        {
+            return;
+        }
+
+        var remainingTicks = Math.Max(1L, _minUpdateIntervalTicks - (now - _lastUpdateTick));
+        var remaining = TimeSpan.FromTicks(Math.Max(TimeSpan.TicksPerMillisecond, remainingTicks * TimeSpan.TicksPerSecond / Stopwatch.Frequency));
+        timer.Interval = remaining;
+        timer.Start();
+    }
+
+    private DispatcherQueueTimer CreateTrailingTimer()
+    {
+        var timer = _context.DispatcherQueue.CreateTimer();
+        timer.IsRepeating = false;
+        timer.Tick += (_, _) => FlushPendingMove();
+        return timer;
+    }
+
+    private void FlushPendingMove()
+    {
+        if (!_isScrubbing || !_hasPendingMove)
+        {
+            ClearPendingMove();
+            return;
+        }
+
+        var targetPosition = _pendingPosition;
+        var pointerX = _pendingPointerX;
+        ClearPendingMove();
+        _lastUpdateTick = _context.GetTimestamp();
+        if (!_context.ViewModel.FlashbackUpdateScrub(targetPosition))
+        {
+            _context.ViewModel.ReportFlashbackPlaybackRejection("scrub update", "FLASHBACK_UI_SCRUB_UPDATE_REJECTED reason=trailing");
+            if (_captureElement != null && _capturePointer != null)
+            {
+                End(_captureElement, _capturePointer, "update_rejected");
+            }
+            else
+            {
+                ClearLocalState();
+            }
+
+            return;
+        }
+
+        _lastPointerPosition = targetPosition;
+        UpdateVisual(pointerX);
+    }
+
+    private void ClearPendingMove()
+    {
+        _hasPendingMove = false;
+        _trailingTimer?.Stop();
+    }
+
+    private void UpdateVisual(double pointerX)
+    {
         var width = _context.ScrubArea.ActualWidth;
-        if (!FlashbackTimelineGeometry.TryComputeFraction(pos.X, width, out var fraction)) return;
+        if (!FlashbackTimelineGeometry.TryComputeFraction(pointerX, width, out var fraction)) return;
 
         var x = Math.Clamp(fraction * width, 0, width);
-        // Magnetic = ease-out toward the pointer; longer than the 16ms pointer
-        // throttle so successive events overlap into a single smooth trail
-        // rather than 16ms-stepped jitter.
+        // Magnetic = ease-out toward the pointer; longer than the pointer throttle so
+        // successive events overlap into a single smooth trail rather than stepped jitter.
         _context.PositionMagneticPlayhead(x, width);
 
         var bufferDuration = _context.ViewModel.FlashbackBufferFilledDuration;
@@ -1183,6 +1282,9 @@ internal sealed class FlashbackScrubInteractionController
             _context.ViewModel.FlashbackPlaybackPosition = FlashbackTimelineGeometry.ComputePosition(fraction, bufferDuration);
         }
     }
+
+    private double GetPointerX(PointerRoutedEventArgs e)
+        => e.GetCurrentPoint(_context.ScrubArea).Position.X;
 
     private TimeSpan ComputeScrubPosition(PointerRoutedEventArgs e)
     {
