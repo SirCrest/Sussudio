@@ -112,8 +112,9 @@ without an embedded automation snapshot, and use the extended response timeout.
   1 to 64 (default 10). The output is capped and says when it truncated.
 - `InvokeUiElement` (67) `{ target, action?, value?, force? }` operates a control
   through its automation peer. A request the agent can fix by rewording
-  (`not-found`, `ambiguous`, `invalid-action`, `invalid-value`,
-  `action-unsupported`) is `invalid-request`; a state of the live UI it cannot
+  (`not-found`, `ambiguous`, `invalid-action`, `invalid-value` (including a
+  list `select` whose value matches no item or several), `action-unsupported`)
+  is `invalid-request`; a state of the live UI it cannot
   change by rewording (`hidden`, `disabled`, `action-failed`,
   `window-unavailable`) is `command-failed`. Both carry the full result in `Data`.
   The `accelerator` action is not supported: WinUI has no public API to raise a

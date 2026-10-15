@@ -311,7 +311,39 @@ internal sealed class UiAutomationBridge
                 element: Describe(target, matched.Path, xamlRoot)));
         }
 
-        var outcome = Perform(target, plan);
+        // A list selection that matches no item (or several) is a request the agent can fix by rewording, like an
+        // out-of-range slider value, so it is rejected with the item list before anything runs.
+        ListSelection? listSelection = null;
+        if (plan.Action == UiActions.Select && plan.SelectionValue is not null)
+        {
+            if (target is not Selector selector)
+            {
+                return Done(Result(
+                    UiActionStatus.ActionFailed,
+                    $"Action 'select' on {matched.Path} failed: the element supports Selection but is not a Selector, so its items cannot be enumerated.",
+                    request,
+                    matchedBy: resolution.MatchedBy,
+                    action: plan.Action,
+                    element: Describe(target, matched.Path, xamlRoot)));
+            }
+
+            var items = UiElementReader.ItemTexts(selector, selector.Items.Count);
+            var match = UiSelectionMatcher.Match(items, plan.SelectionValue);
+            if (!match.Ok)
+            {
+                return Done(Result(
+                    UiActionStatus.InvalidValue,
+                    match.Error!,
+                    request,
+                    matchedBy: resolution.MatchedBy,
+                    action: plan.Action,
+                    element: Describe(target, matched.Path, xamlRoot)));
+            }
+
+            listSelection = new ListSelection(selector, match.Index, items[match.Index]);
+        }
+
+        var outcome = Perform(target, plan, listSelection);
         var overridden = resolution.Overridden.Count > 0 ? resolution.Overridden : null;
         Logger.LogEvent(
             "AUTO-UI-INVOKE",
@@ -344,7 +376,9 @@ internal sealed class UiAutomationBridge
 
     private readonly record struct ActionOutcome(string? Via, string? Error);
 
-    private static ActionOutcome Perform(UIElement element, UiActionPlan plan)
+    private readonly record struct ListSelection(Selector Selector, int Index, string ItemText);
+
+    private static ActionOutcome Perform(UIElement element, UiActionPlan plan, ListSelection? listSelection)
     {
         try
         {
@@ -384,11 +418,14 @@ internal sealed class UiAutomationBridge
                 case UiActions.SetValue:
                     Pattern<IValueProvider>(peer, PatternInterface.Value).SetValue(plan.TextValue ?? string.Empty);
                     return new ActionOutcome("peer:Value", null);
+                case UiActions.Select when plan.SelectionValue is null && UiElementReader.OwnerOf(element) is { } owner:
+                    // A ComboBoxItem/ListViewItem container: its own peer has no SelectionItem, so select it through its owner.
+                    return SelectIndex(owner.Owner, owner.Index, UiElementReader.ItemText(owner.Owner, owner.Index), element);
                 case UiActions.Select when plan.SelectionValue is null:
                     Pattern<ISelectionItemProvider>(peer, PatternInterface.SelectionItem).Select();
                     return new ActionOutcome("peer:SelectionItem", null);
                 case UiActions.Select:
-                    return SelectFromList(element, plan.SelectionValue!);
+                    return SelectIndex(listSelection!.Value.Selector, listSelection.Value.Index, listSelection.Value.ItemText, null);
                 default:
                     return new ActionOutcome(null, $"unhandled action '{plan.Action}'");
             }
@@ -414,33 +451,42 @@ internal sealed class UiAutomationBridge
         return new ActionOutcome("UIElement.StartBringIntoView (the element has no ScrollItem pattern)", null);
     }
 
-    // Selecting from a list or combo box by item text or #index. The item's own peer is used when its container exists;
-    // a closed combo box may not have realized containers, in which case Selector.SelectedIndex is the same selection a
-    // click produces and the response says that is how it was done.
-    private static ActionOutcome SelectFromList(UIElement element, string value)
+    // Selecting one item of a list or combo box (by item text or #index, or because the agent picked its container). Three
+    // routes in order, and the response says which one ran and, for the last, why the earlier ones were not usable:
+    //   1. the item-data peer: the selector's own peer creates one per item, it carries the SelectionItem pattern, and it
+    //      works whether or not a container exists (a closed combo box realizes none);
+    //   2. the realized container's own peer, when it happens to expose SelectionItem;
+    //   3. Selector.SelectedIndex, the same selection a click produces.
+    private static ActionOutcome SelectIndex(Selector selector, int index, string itemText, UIElement? knownContainer)
     {
-        if (element is not Selector selector)
+        var dataPeer = UiElementReader.FindItemDataPeer(selector, index);
+        if (dataPeer.Provider is { } dataProvider)
         {
-            return new ActionOutcome(null, "the element supports Selection but is not a Selector, so its items cannot be enumerated");
+            dataProvider.Select();
+            return new ActionOutcome(UiSelectionVia.ItemDataPeer(index, itemText), null);
         }
 
-        var items = UiElementReader.ItemTexts(selector, selector.Items.Count);
-        var match = UiSelectionMatcher.Match(items, value);
-        if (!match.Ok)
+        var container = knownContainer ?? selector.ContainerFromIndex(index) as UIElement;
+        var containerState = UiItemContainerState.NotRealized;
+        if (container is not null)
         {
-            return new ActionOutcome(null, match.Error);
+            if (UiElementReader.TryCreatePeer(container) is not { } containerPeer)
+            {
+                containerState = UiItemContainerState.NoPeer;
+            }
+            else if (UiElementReader.TryGetPattern(containerPeer, PatternInterface.SelectionItem) is ISelectionItemProvider containerProvider)
+            {
+                containerProvider.Select();
+                return new ActionOutcome(UiSelectionVia.ContainerPeer(index, itemText), null);
+            }
+            else
+            {
+                containerState = UiItemContainerState.PeerLacksSelectionItem;
+            }
         }
 
-        if (selector.ContainerFromIndex(match.Index) is UIElement container
-            && UiElementReader.TryCreatePeer(container) is { } itemPeer
-            && UiElementReader.TryGetPattern(itemPeer, PatternInterface.SelectionItem) is ISelectionItemProvider itemProvider)
-        {
-            itemProvider.Select();
-            return new ActionOutcome($"peer:SelectionItem (item #{match.Index} \"{items[match.Index]}\")", null);
-        }
-
-        selector.SelectedIndex = match.Index;
-        return new ActionOutcome($"Selector.SelectedIndex (item #{match.Index} \"{items[match.Index]}\" has no realized container to select through its peer)", null);
+        selector.SelectedIndex = index;
+        return new ActionOutcome(UiSelectionVia.SelectedIndex(index, itemText, dataPeer.Lookup, dataPeer.Error, containerState), null);
     }
 
     private static T Pattern<T>(AutomationPeer peer, PatternInterface pattern) where T : class
