@@ -363,14 +363,14 @@ internal static class PerfFormatters
         return min is null && max is null ? "-" : $"{min ?? "..."}..{max ?? "..."}";
     }
 
-    private static string FormatFailure(JsonElement response, string fallback)
+    internal static string FormatFailure(JsonElement response, string fallback)
     {
         var message = AutomationSnapshotFormatter.Get(response, "Message", fallback);
         var errorCode = AutomationSnapshotFormatter.Get(response, "ErrorCode", string.Empty);
         return string.IsNullOrWhiteSpace(errorCode) ? message : $"{message}{Environment.NewLine}ErrorCode: {errorCode}";
     }
 
-    private static bool TryGetData(JsonElement response, out JsonElement data)
+    internal static bool TryGetData(JsonElement response, out JsonElement data)
     {
         if (response.ValueKind == JsonValueKind.Object &&
             response.TryGetProperty("Data", out data) &&
@@ -383,10 +383,10 @@ internal static class PerfFormatters
         return false;
     }
 
-    private static string Text(JsonElement element, string property)
+    internal static string Text(JsonElement element, string property)
         => AutomationSnapshotFormatter.Get(element, property, "-");
 
-    private static string Num(JsonElement element, string property, int decimals, double divisor = 1)
+    internal static string Num(JsonElement element, string property, int decimals, double divisor = 1)
     {
         var value = AutomationSnapshotFormatter.GetDouble(element, property, double.NaN);
         return double.IsFinite(value)
