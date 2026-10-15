@@ -1598,7 +1598,13 @@ public sealed partial class AutomationCommandDispatcher : IAutomationCommandDisp
     {
         var maxEntries = GetInt(payload, AutomationPayloadKeys.MaxEntries) ?? 240;
         var timeline = _diagnosticsHub.GetPerformanceTimeline(maxEntries);
-        return CreateResponse(correlationId, "Performance timeline retrieved.", data: timeline);
+
+        // No embedded snapshot: the latest snapshot's TimestampUtc is, by construction, the final timeline entry's
+        // timestamp (each refresh appends one entry built from it). Attached to this response it made the JSON
+        // carry max+1 "TimestampUtc" values with a zero delta at the end for any consumer that scanned the raw
+        // text, and it added a full snapshot to a payload that is already hundreds of entries. The ring itself
+        // returns exactly min(count, max) entries; Data is the only payload consumers read from this command.
+        return CreateResponse(correlationId, "Performance timeline retrieved.", data: timeline, includeSnapshot: false);
     }
 
     private async Task<AutomationCommandResponse> ExecuteGetAudioRampTraceCommandAsync(
