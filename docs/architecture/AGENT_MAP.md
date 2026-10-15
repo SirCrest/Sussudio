@@ -83,7 +83,7 @@ tests that pin which file owns a symbol; see AGENTS.md § Testing Policy.
 | Recording models | `Sussudio/Models/Recording/RecordingModels.cs` | Encoder capabilities, recording statistics, and integrity DTOs. `RecordingIntegrityStatus` and `RecordingIntegrityAudioStatus` define the typed integrity vocabulary; only the `AutomationSnapshot` projection turns these values into wire text. `EncoderSupport` owns recording-format-to-NVENC codec-name mapping. |
 | Flashback models | `Sussudio/Models/Flashback/FlashbackModels.cs` | Buffer options, session context, playback state, export progress/segments/requests, and force-rotation results. These types retain the `Sussudio.Models` namespace. |
 | Status messages | `Sussudio/Models/StatusMessages.cs` | Owns footer status-line wording (`MainViewModel.StatusText`) and the `CaptureService.StatusChanged` text that feeds it, plus the style rules: sentence-case fragments without a trailing period, `...` only for work in flight, `{Subject} failed: {reason}`, `; ` before a consequence, ASCII only. `Failed` does not double a `{Subject} failed` prefix; `Detail` collapses whitespace and drops trailing periods from exception and service text; `OperationFailed` maps internal UI operation names (log tokens) to readable subjects. Service result messages (`FinalizeResult.StatusMessage`, Flashback export results) are data read by automation and diagnostics tools and stay with their producers. Add a new footer message here rather than inline. |
-| Source telemetry | `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs`, `NativeXuAtProtocol.cs` | Native XU AT-command transport and source-signal protocol parsing. |
+| Source telemetry | `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs`, `NativeXuAtProtocol.cs` | Native XU AT-command transport and source-signal protocol parsing. `LogAtResponse` and `LogTopology` log an AT answer or a node layout on first sight and on change only (plus a 30 s heartbeat per command under verbose logging), so the rolling poll does not flood the log tap. |
 | Performance telemetry | `Sussudio/Services/Performance/` (histograms, windows, frame trace, tuning knobs, hot threads, process sensors, log tap, report builder), `Sussudio/Services/Automation/AutomationCommandDispatcher.PerfTelemetry.cs` | Agent-facing latency/CPU/GC/trace telemetry and runtime tuning knobs. See [performance telemetry](#performance-telemetry) and `docs/architecture/performance-telemetry.md`. |
 | App service contracts | `Sussudio/Services/Contracts/ServiceContracts.cs`, `Sussudio/Services/Contracts/ISourceSignalTelemetryProvider.cs` | Shared source, recording, preview, and telemetry interfaces, separate from `Sussudio.Automation.Contracts` wire/protocol contracts. |
 | Recording | `Sussudio/Services/Recording/LibAvEncoder.cs`, `LibAvEncoder.Audio.cs`, `LibAvEncoder.VideoFrames.cs`, `LibAvRecordingSink.cs`, `Sussudio/Services/Recording/Verification/RecordingVerifier.cs`, `InProcessRecordingStructureVerifier.cs` | Encoder lifecycle, audio/video input, sink queues, and verification. See [recording](#recording). |
@@ -457,22 +457,30 @@ recording and audio sites call into it, never the other way round.
   Metric names are wire names: append, never rename.
 - `PerfWindowSet.cs` and `PerfWindows.cs` own named measurement windows (at most
   16): begin/read/end/cancel/list as registry deltas plus the system samples at
-  both ends.
+  both ends. `End(name, build)` runs the report builder while the window is still
+  open and releases it (and so the sensor demand) only afterwards; the
+  `PerfWindow end` handler uses it so the report sees the sensors that measured
+  the interval.
 - `FrameTraceBuffer.cs`, `FrameTraceRecorder.cs`, `FrameTraceEventKind.cs` and
-  `PerfMarkers.cs` own the opt-in frame trace flight recorder (seqlock ring,
-  Chrome Trace JSON dump) and the marker log. A stopped recorder costs one
-  volatile read per record site.
+  `PerfMarkers.cs` own the opt-in frame trace flight recorder (seqlock ring with
+  slot ownership by compare-exchange, a chunked reader, Chrome Trace JSON dump
+  streamed through a pooled chunk, ring reuse across traces of one capacity), the
+  marker log and `PerfThreadNames` (live thread labels plus bounded
+  `<role> (retired)` labels). A stopped recorder costs one volatile read per
+  record site.
 - `TuningKnobCatalog.cs`, `TuningKnobStore.cs` and `TuningKnobs.cs` own the
   `SUSSUDIO_*` knob catalog (type, default, range, apply scope, owner file),
   validation (reject, never clamp), launch-value capture and reset, and the
-  `TUNING_KNOB_SET` log line. A new knob is one catalog row; read it at its
+  `TUNING_KNOB_SET` log line (written only when a set or reset changes the value). A new knob is one catalog row; read it at its
   consumer through the environment as before. `SUSSUDIO_AUTOMATION_TOKEN`,
   the pipe name, log root and recovery directory are excluded by design.
   `SUSSUDIO_DIAGNOSTICS_POLL_MS` (`AutomationDiagnosticsHub.RunLoopAsync`) and the two
   `auto|on|off` sensor knobs `SUSSUDIO_TELEMETRY_SENSORS` and `SUSSUDIO_PREVIEW_GPU_TIMING`
   (read through `TelemetrySensorModes`) are the live knobs wired so far.
 - `HotThreads.cs` owns the dedicated-thread registry (`HotThreads.Register(role)`),
-  per-thread CPU time/cycles/priority and the bounded retired list. Roles:
+  per-thread CPU time/cycles/priority (a name, `mmcss/<n>` or `raw/<n>`) and the
+  bounded retired list; retiring a registration also retires its trace thread
+  label. Roles:
   `capture.read` (`MfSourceReaderVideoCapture.ReadLoop`), `mjpeg.worker-<n>`
   and `mjpeg.emitter` (`ParallelMjpegDecodePipeline`), `mjpeg.jitter`
   (`MjpegPreviewJitterBuffer.EmitLoop`), `preview.render`
@@ -489,9 +497,9 @@ recording and audio sites call into it, never the other way round.
   beside their own QPC stamps instead.
 - `IngressClockClassifier.cs` owns `QpcMath` (overflow-safe QPC to 100 ns
   conversion) and the 120-sample ingress clock classifier; `PerfIngressSamples.cs`
-  is the direct-mapped ledger that hands each frame's MF sample time (as QPC)
+  is the 4-way set-associative ledger that hands each frame's MF sample time (as QPC)
   from the read loop to the renderer, keyed by the frame's arrival timestamp,
-  for `preview.ingress_to_visible`. `PerfReasons.cs` owns the fixed reason
+  for `preview.ingress_to_visible` (a lookup miss is `preview.ingress_lookup_miss`). `PerfReasons.cs` owns the fixed reason
   tables (`PreviewDropReasons`, `JitterReasons`) and `PerfReasonCounters`, so
   `preview.drop.*`, `preview.jitter_drop.*` and `preview.jitter_underflow.*`
   stay bounded and allocation free.
@@ -507,13 +515,15 @@ recording and audio sites call into it, never the other way round.
   `Sussudio/Services/Recording/EncoderPerfMetrics.cs` carries the recording or
   Flashback role (histograms and trace kinds) injected into `LibAvEncoder`, which
   records `encode_submit` and video `mux_write`, while `LibAvRecordingSink` and
-  `FlashbackEncoderSink` stamp packets at enqueue and record `queue_dwell` after
-  dequeue; `FlashbackPlaybackController` records playback decode and present
+  `FlashbackEncoderSink` stamp packets at enqueue (the GPU packet also carries the
+  frame's arrival tick from `UnifiedVideoCapture`, the trace id) and record
+  `queue_dwell` after dequeue; `FlashbackPlaybackController` records playback decode and present
   interval; `WasapiAudioCapture` and `WasapiAudioPlayback` record the audio
   intervals, drain, queue depth and underruns; `NvmlMonitor` records NVML
   utilization; `AutomationDiagnosticsHub.RefreshSnapshotAsync` records hub
   refresh time and allocation; `AutomationCommandDispatcher.ExecuteAsync`
-  records command time; `GpuTimestampRing` records `preview.gpu_render` for the renderer,
+  records command time; `GpuTimestampRing` records `preview.gpu_render` for the renderer (zero-tick
+  spans go to `preview.gpu_timing_unmeasured`, tallied per render path),
   `UiResponsivenessProbe` records `ui.dispatcher_latency` and `ui.stall_50ms`, and
   `GpuEngineSensor` records `gpu.engine.*`.
 - `ProcessSensors.cs` owns process CPU/memory/IO/handle sensors, GC counters and
@@ -527,7 +537,8 @@ recording and audio sites call into it, never the other way round.
   `TelemetrySensors.cs` is the process-wide facade: `Configure` (from `MainWindow`, with the
   UI enqueue delegate), `Shutdown` (from window shutdown cleanup) and the `Sensors` report
   section. `UiResponsivenessProbe.cs` owns the UI dispatcher probe. `GpuEngineSensor.cs` owns
-  PDH engine and dedicated-memory sampling and its aggregation, with `NativePdh.cs` as the
+  PDH engine and dedicated-memory sampling and its aggregation (each PDH open and read is a
+  `telemetry.gpu_engines` trace span), with `NativePdh.cs` as the
   production PDH reader behind `IGpuCounterReader`. `GpuMemorySensor.cs` owns the on-demand
   `QueryVideoMemoryInfo` read behind `Gpu.Adapters`. `PerfDisplaySource.cs` owns the
   renderer-to-report hook for the swap chain's DXGI frame statistics and
@@ -535,7 +546,8 @@ recording and audio sites call into it, never the other way round.
   (`Dwm.CompositionPath`). `GpuTimestampRing.cs` owns the GPU timestamp query ring policy
   (spec 2.8.4); the renderer side is `D3D11PreviewRenderer.GpuTiming.cs` (Preview rendering).
 - `LogTapBuffer.cs` and `LogTap.cs` own the 4,096-line log ring with per-caller
-  and per-tag counts, fed by the logger's writer task.
+  and per-tag counts, fed by the logger's writer task (`AppRuntime.RunLogWriterAsync`
+  isolates a tap failure so it never ends the writer loop).
 - `PerfReportBuilder.cs` owns the perf report DTOs and builds lifetime and
   window reports (microseconds reported as milliseconds, idle metrics omitted
   unless asked), including the `Gpu`, `Dwm` and `Display` sections and the `Sensors`
@@ -557,7 +569,8 @@ recording and audio sites call into it, never the other way round.
   no per-command code.
 - Tool-side analysis is in `tools/Common/Performance/`, compiled into ssctl,
   McpServer and the test project: `FrameTraceAnalyzer` (with its reader,
-  builder and formatter) reads a trace dump offline, and `PerfExperimentRunner`
+  builder and formatter; a slow frame's pre-arrival and after-present stages are listed apart
+  and never dominant) reads a trace dump offline, and `PerfExperimentRunner`
   (spec, session, statistics, result) runs a knob A/B experiment through the
   existing automation commands and restores the app. Neither adds an app
   command: ssctl `perf trace analyze` and `perf experiment` are in

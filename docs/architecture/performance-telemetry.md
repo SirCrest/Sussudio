@@ -120,13 +120,13 @@ Initial catalog (time unit is microseconds unless noted):
 | `mjpeg.queue_wait` | hist | compressed enqueue to worker dequeue |
 | `mjpeg.pipeline` | hist | arrival to strict-order emit |
 | `preview.jitter_residence` | hist | jitter buffer enqueue to submit |
-| `preview.queue_dwell` | hist | renderer submit until the render thread selects the frame to render (a frame skipped as stale is a drop, not a dwell) |
+| `preview.queue_dwell` | hist | renderer submit until the render thread starts rendering the frame. Recorded only for a frame that reaches the render pass, after every drop check: a frame skipped as stale, dropped by a stopping renderer or dropped for a superseded generation is a drop, not a dwell. A frame the render pass then skips is recorded (it did wait) |
 | `preview.frame_latency_wait` | hist | waitable swap-chain wait |
 | `preview.input_upload` | hist | render CPU stage |
 | `preview.render_submit` | hist | render CPU stage |
 | `preview.present_call` | hist | `Present` call duration |
 | `preview.render_total` | hist | total render CPU per frame |
-| `preview.gpu_render` | hist | GPU execution time of the preview render pass from D3D11 timestamp queries: the shader `Draw` or the `VideoProcessorBlt`, not the HDR input upload; recorded only while GPU timing is wanted, an upper bound on a shared device (2.8.4) |
+| `preview.gpu_render` | hist | GPU execution time of the preview render pass from D3D11 timestamp queries: the shader `Draw` or the `VideoProcessorBlt`, not the HDR input upload; recorded only while GPU timing is wanted, an upper bound on a shared device. A span of zero GPU ticks is counted in `preview.gpu_timing_unmeasured` instead of being recorded as a 0 us render, and a real span under 1 us is recorded as 1 us, so the histogram holds no zeros (2.8.4) |
 | `preview.present_interval` | hist | present-to-present on cadence frames |
 | `preview.pipeline_latency` | hist | arrival to estimated visible; live frames only (Flashback playback frames, source sequence below zero, are excluded) |
 | `preview.ingress_to_visible` | hist | MF sample time to estimated visible; QPC domain and live frames only; the sample time reaches the renderer through the ingress sample ledger (2.6) |
@@ -156,6 +156,8 @@ Initial catalog (time unit is microseconds unless noted):
 | `capture.read_errors` | counter | read-loop exceptions |
 | `ui.stall_50ms` | counter | UI probe waits over 50 ms |
 | `preview.gpu_timing_skipped` | counter | frames not GPU-timed while timing was wanted: every query slot still pending, or a disjoint or implausible timestamp result |
+| `preview.gpu_timing_unmeasured` | counter | GPU timing spans whose begin and end timestamps were identical (zero GPU ticks): the timed pass was not measurable on this queue (2.8.4); counted here and not recorded in `preview.gpu_render` |
+| `preview.ingress_lookup_miss` | counter | live frames presented while the ingress clock was classified QPC whose MF sample time was no longer in the ingress sample ledger (evicted, or read before the clock was classified); such a frame has no `preview.ingress_to_visible` sample, so a rising count says the percentiles of that metric are computed from fewer frames than were presented (2.6) |
 | `audio.render_underrun` | counter | render events with an empty queue |
 
 ### 2.2.1 Record sites and reason tables
@@ -170,12 +172,12 @@ drift):
 | `capture.readsample_wait`, `capture.arrival_interval`, `capture.ingress_lag`, `capture.deliver`, `capture.read_errors`; `capture.read`, `capture.deliver`, `capture.sample_time` | `MfSourceReaderVideoCapture.ReadLoop` through `MfReadLoopTelemetry` (one instance per read loop) |
 | `capture.visual_scan`; `capture.visual_scan` | `UnifiedVideoCapture.TrackPreviewVisualFrame`, around the tracker calls and outside their locks; recorded when the scan ran without throwing |
 | `mjpeg.queue_wait`, `mjpeg.decode`, `mjpeg.pipeline`; same stage names | `ParallelMjpegDecodePipeline`: queue wait at worker dequeue (before the shed check), decode on the success path only (`Arg` = worker index + 1), pipeline in `DrainReadyFrames` before the emit callback and outside `_reorderLock` |
-| `preview.jitter_residence`; same, `preview.jitter_drop.*`, `preview.jitter_underflow.*` | `MjpegPreviewJitterBuffer.SubmitFrame` (enqueue stamp to submit, outside `_sync`), `RecordDroppedFrame`, `RecordUnderflow`, `TryRecordResumeReprimeMiss` |
+| `preview.jitter_residence`; same, `preview.jitter_drop.*`, `preview.jitter_underflow.*` | `MjpegPreviewJitterBuffer.SubmitFrame` (enqueue stamp to submit, outside `_sync`), `RecordDroppedFrame` (the counter add only, under `_sync` when the caller holds it; the trace instant outside it), `RecordUnderflow`, `TryRecordResumeReprimeMiss` |
 | `preview.queue_dwell`, `preview.frame_latency_wait`, `preview.input_upload`, `preview.render_submit`, `preview.present_call`, `preview.render_total`, `preview.present_interval`, `preview.pipeline_latency`, `preview.ingress_to_visible`, `preview.drop.*`; matching stages and `preview.drop` | `D3D11PreviewRenderer` (`EnqueuePendingFrame`, the render loop, `WaitForFrameLatencySignal`, `TrackFrameDropped`, `TrackPresentCadence`, `TrackPipelineLatency`, `TrackRenderCpuTiming`) and `PresentAndTrackFrame` in `D3D11PreviewRenderer.RenderPasses.cs` |
-| `preview.gpu_render`, `preview.gpu_timing_skipped`; `preview.gpu_render` | `GpuTimestampRing` records a finished query when a later frame reads it back. The renderer opens and closes the span with `BeginGpuTiming`/`EndGpuTiming` (`D3D11PreviewRenderer.GpuTiming.cs`) around the `Draw` of the NV12 and HDR shader paths and the `VideoProcessorBlt` of the video-processor path in `D3D11PreviewRenderer.RenderPasses.cs`. The trace span starts at the CPU submit time, lasts the GPU duration, and uses the frame's arrival tick as its id (2.8.4) |
+| `preview.gpu_render`, `preview.gpu_timing_skipped`, `preview.gpu_timing_unmeasured`; `preview.gpu_render` | `GpuTimestampRing` records a finished query when a later frame reads it back. The renderer opens and closes the span with `BeginGpuTiming(frameId, path)`/`EndGpuTiming` (`D3D11PreviewRenderer.GpuTiming.cs`; the path names the render path so counts can be split per path) around the `Draw` of the NV12 and HDR shader paths and the `VideoProcessorBlt` of the video-processor path in `D3D11PreviewRenderer.RenderPasses.cs`. The trace span starts at the CPU submit time, lasts the GPU duration, and uses the frame's arrival tick as its id (2.8.4) |
 | `ui.dispatcher_latency`, `ui.stall_50ms`; `ui.dispatcher_latency` | `UiResponsivenessProbe.OnDispatcher`, on the UI thread when the probe's no-op runs; the trace span (UI thread track, id -1) only for waits above 16 ms |
 | `gpu.engine.*` | `GpuEngineSensor.SampleOnce` on its sensor thread, once a second, from the second PDH sample on (rate counters need two) |
-| `recording.*`, `flashback.queue_dwell`, `flashback.encode_submit`, `flashback.mux_write` | `LibAvRecordingSink.DrainVideoPackets`/`DrainGpuPackets`/`DrainCudaPackets` and `FlashbackEncoderSink.DrainVideoPackets`/`DrainGpuPackets` for queue dwell (QPC stamp on the packet at enqueue, recorded after dequeue and outside `_videoQueueSync`); `LibAvEncoder.SendVideoFrame`/`SendGpuVideoFrame`/`SendCudaVideoFrame` and `WritePacket` for encode and mux, through the injected `EncoderPerfMetrics` role |
+| `recording.*`, `flashback.queue_dwell`, `flashback.encode_submit`, `flashback.mux_write` | `LibAvRecordingSink.DrainVideoPackets`/`DrainGpuPackets`/`DrainCudaPackets` and `FlashbackEncoderSink.DrainVideoPackets`/`DrainGpuPackets` for queue dwell (QPC stamp on the packet at enqueue, recorded after dequeue and outside `_videoQueueSync`; the GPU packet also carries the frame's arrival tick, passed by the UVC call site through `TryEnqueueGpuVideoFrame`, and uses it as the trace id); `LibAvEncoder.SendVideoFrame`/`SendGpuVideoFrame`/`SendCudaVideoFrame` and `WritePacket` for encode and mux, through the injected `EncoderPerfMetrics` role |
 | `flashback.segment_rotation` | `FlashbackEncoderSink.RotateSegment` through `PerfScope` (covers both returns and the terminal rethrow) |
 | `flashback.playback_decode`, `flashback.playback_present_interval` | `FlashbackPlaybackController.PaceAndDecodeFrame` and `UpdateCadenceMetrics` |
 | `audio.capture_interval`, `audio.capture_drain`; `audio.capture` | `WasapiAudioCapture.CaptureThreadMain`, beside the existing `TrackCaptureCallback` (its TickCount64 trackers are unchanged) |
@@ -196,6 +198,17 @@ maps through a fixed switch to a small enum code, and anything unknown, null or
 empty lands in the last entry, `other`. A reason of the form `<x>:stale` maps to
 `stale`. Code 0 is reserved ("none"), so a trace instant with no reason is
 distinguishable.
+
+Classification never runs inside a lock. A call site that knows its reason
+passes the code as a literal beside the string (`PreviewDropReason.RendererBacklog`,
+`JitterDropReason.QueueFull`), so under `_lifecycleLock` (renderer) and `_sync`
+(jitter buffer) a drop costs only the interlocked counter add. A loop that
+drops many frames under the lock (the renderer's pending drain, the jitter
+buffer's `ClearQueue`) counts inside the lock and adds the total once after it
+(`ClearQueue` records one `RecordDroppedFrame` for the whole run), and the
+trace instants are recorded after the lock is released. The counter is a plain
+interlocked add; it is not "free of cost" under the lock, it is bounded and
+never blocks.
 
 - `preview.drop.<reason>` (code = position, from 1): `renderer-stopped`,
   `renderer-backlog`, `explicit-drain`, `live-preview-suppressed`,
@@ -218,6 +231,18 @@ every histogram and counter plus thread CPU, process CPU, I/O and GC totals.
 `read` returns the delta without closing; `end` returns it and closes.
 Beginning an existing name restarts it and says so. The delta report is the
 same shape as the lifetime report, so tools have one parser.
+
+`end` builds its report before it closes the window. Closing a window can
+release the sensor demand (the UI probe and the GPU engine sensor stop, GPU
+timing goes idle), so a report built afterwards read the interval it described
+from sensors that had already stopped: `Sensors` said `idle`, the GPU timing
+line said `wanted=no` while still `active`, and `Gpu.DedicatedBytes` was null.
+`PerfWindowSet.End(name, build)` runs the builder with the window still open,
+then removes it only if it is still that window (two callers ending one name:
+exactly one gets a report; a window restarted meanwhile is left open) and only
+then raises `Changed`. A builder that throws leaves the window open and
+releases nothing. The experiment runner closes each run's window through the
+same `PerfWindow end` command, so its per-run reports have the same property.
 
 Report semantics (slice 1): a lifetime report is measured from a zero baseline
 taken at process creation (cumulative counters start at zero; DWM frame counts
@@ -244,12 +269,41 @@ site costs one volatile read.
   Today `Arg` carries the drop reason code on `preview.drop` and the worker
   index plus one on `mjpeg.decode`. The dump writes `args.arg` only when it is
   non-zero, and `args.reason` (the reason name) for `preview.drop`.
-- Writers claim a slot with `Interlocked.Increment`, write `Stamp = -1`,
-  fill the fields, then publish `Stamp = index`. The dumper copies a slot and
-  keeps it only if the stamp read before and after equals the expected
-  index, so a torn slot is dropped, never emitted.
+- Writers claim an index with `Interlocked.Increment` on the head, take
+  ownership of the slot by compare-exchanging its last published stamp for the
+  in-progress mark (-1), fill the fields, then publish `Stamp = index + 1`
+  (zero means never written). The reader copies a slot and keeps it only if
+  the stamp read before and after equals `index + 1`, so a slot that is
+  mid-write or was overwritten during the copy is skipped, never emitted torn.
+  A writer that was preempted between claiming its index and storing, long
+  enough for the ring to wrap, finds the slot owned by a newer lap (a newer
+  stamp, or the in-progress mark): it drops its own, stale event instead of
+  storing fields a reader could pair with the other writer's stamp, and counts
+  it as `abandoned`. This costs the writers one compare-exchange (a fence they
+  already paid in the old protocol's first store) and no extra memory.
+- The dump streams the ring and never copies it. `BeginRead` fixes the range
+  (the newest `capacity` indices), `ReadChunk` fills a caller buffer of 1024
+  events at a time, and the recorder walks the ring twice through one pooled
+  chunk: the first pass finds the time origin (the earliest retained
+  timestamp) and the set of thread ids that appear, the second writes. A dump
+  therefore allocates tens of kilobytes however large the ring is (a default
+  2^18-event ring is 10.5 MB and the largest 168 MB, which an array copy would
+  have placed on the large object heap on every dump). The dump's `sussudio`
+  object reports `recorded`, `retained`, `overwritten` (events that left the
+  ring) and `abandoned` (events dropped by the stale-writer rule above).
+- `start` reuses the previous trace's ring when its capacity is unchanged and
+  no dump is reading it (the slots are cleared, so no old stamp can match a new
+  index); otherwise it allocates. Repeated traces therefore do not each
+  allocate a ring on the large object heap.
 - Markers (`perf mark`) and thread names are kept beside the ring and
-  emitted as instant and metadata events.
+  emitted as instant and metadata events. Thread names are labels by managed
+  thread id, set by `HotThreads.Register`. When a registration retires its label
+  is removed only if the id still maps to that registration (managed ids are
+  recycled, so a newer thread that took the id keeps its own name), and a
+  bounded list of 256 retired labels keeps `<role> (retired)` so the events a
+  finished thread left in the ring are still named, honestly marked. The dump
+  names a thread that was alive during the traced interval, not only the ones
+  alive at dump time.
 - Lifecycle (slice 1): `start` while a trace is running is an error (stop it
   first); `stop` freezes the ring and the frozen buffer stays readable until
   the next `start`; `dump` with no trace ever recorded is an error and `dump`
@@ -272,11 +326,14 @@ site costs one volatile read.
   to QPC (only when the ingress clock is the QPC domain), so the analyzer can
   compute per-frame ingress-to-visible exactly.
 - Stages added in slice 2a beyond the slice-1 list: `capture.sample_time`
-  (kind 31) and `telemetry.hub_refresh` (kind 32, id -1). `automation.command`
+  (kind 31), `telemetry.hub_refresh` (kind 32, id -1) and `telemetry.gpu_engines` (kind 33, id -1, 2.8.3). `automation.command`
   uses the command kind as its id. Encoder-level spans take the frame's
-  arrival timestamp as id when the packet carries it (CPU lane with a lease)
-  and -1 otherwise (raw buffers, GPU and CUDA lanes carry no identity);
-  `*.mux_write` is always -1.
+  arrival timestamp as id when the packet carries it: the CPU lane with a
+  lease, and the D3D11 GPU lane, whose packet carries the arrival tick the UVC
+  call site passes to `TryEnqueueGpuVideoFrame` (its `queue_dwell` and
+  `encode_submit` therefore join to the frame's other stages). The id is -1
+  otherwise (raw buffers, the CUDA lane, and a GPU frame whose producer gave
+  no tick); `*.mux_write` is always -1.
 
 ### 2.5 Runtime tuning knobs
 
@@ -290,7 +347,10 @@ at first use and `reset` restores it. Overrides are never persisted.
 `recording-start`, `flashback-restart`, `app-restart` (read in a static
 initializer). Responses state what must restart. Values outside the range
 or of the wrong type are rejected, not clamped. Every change logs
-`TUNING_KNOB_SET name= old= new= apply=` and appears in the next report.
+`TUNING_KNOB_SET name= old= new= apply=` and appears in the next report. A
+call that changes nothing (a reset of a knob that is already unset, or a set
+to the value it already has) succeeds but writes no line, so the log never
+says `old=<unset> new=<unset>`.
 
 The catalog (slice 1) lists 51 `SUSSUDIO_*` knobs. `SUSSUDIO_AUTOMATION_TOKEN`
 (credential), `SUSSUDIO_AUTOMATION_PIPE` (the pipe the command arrives on),
@@ -332,17 +392,29 @@ is recorded only once the clock is classified `qpc`, so the first 119 samples
 (the ones that decide the classification) are not in the histogram.
 
 Once the clock is `qpc`, the read loop also stores each frame's sample time as
-a QPC tick in `PerfIngressSamples`, a 1024-slot direct-mapped ledger keyed by
-the frame's arrival timestamp. The renderer looks the frame up by the same
-timestamp to compute `preview.ingress_to_visible`. This avoids adding a field
-to the capture delegates, `PooledVideoFrame`, the MJPEG work item and
-`PreviewFrameTracking`, and `SourcePtsTicks` is not repurposed. A slot is
-written by the single read-loop thread (invalidate the key, write the value,
-publish the key) and read lock-free (check the key, read the value, barrier,
+a QPC tick in `PerfIngressSamples`, a 4-way set-associative ledger keyed by
+the frame's arrival timestamp: 256 sets of four 16-byte (arrival, sample)
+entries, one 64-byte cache line per set (the table is pinned and aligned to a
+cache line). The renderer looks the frame up by the same timestamp to compute
+`preview.ingress_to_visible`. This avoids adding a field to the capture
+delegates, `PooledVideoFrame`, the MJPEG work item and `PreviewFrameTracking`,
+and `SourcePtsTicks` is not repurposed. An entry is written by the single
+read-loop thread (invalidate the key, write the value, publish the key) and
+read lock-free (probe the four ways for the key, read the value, barrier,
 re-check the key), so a reader sees a miss or the matching pair, never another
-frame's sample. A newer frame that maps to the same slot evicts the older one;
-with 1024 slots and a handful of frames in flight this does not happen in
-steady state, and a miss records nothing rather than a wrong value.
+frame's sample.
+
+A frame hashes to one set. The writer takes the way that already holds the key,
+else an empty way, else evicts the OLDEST entry in the set (the smallest arrival
+tick). A frame is therefore evicted only when four newer frames land in its set
+while it is still in flight. Eviction does happen: the frames that stay in
+flight longest are the slow tail, and a direct-mapped table lost roughly one
+frame in ten of those at 100 newer frames, which biased `p99.9` and `max` of
+`preview.ingress_to_visible` low. A lookup that misses records nothing rather
+than a wrong value, and the renderer counts it in `preview.ingress_lookup_miss`
+(a live frame presented while the clock was `qpc` that had no sample), so the
+number of frames behind that metric's percentiles can be checked against
+`preview.present_interval`.
 
 ### 2.7 Thread CPU
 
@@ -352,6 +424,13 @@ thread (beside its MMCSS registration) and disposed on exit. Reports read
 CPU percent of one core over the window, priority, and whether MMCSS
 registration succeeded. Exited threads keep their final totals in a bounded
 retired list so a window that spans a preview restart still adds up.
+
+`Priority` is one consistent label. The Win32 base priorities keep their names
+(`Idle`, `Lowest`, `BelowNormal`, `Normal`, `AboveNormal`, `Highest`,
+`TimeCritical`); any other value is a priority the MMCSS scheduler set and is
+shown as `mmcss/<n>` for a thread registered with MMCSS (`raw/<n>` for any other
+thread), with the raw number kept in the label. It was a bare `13` or `19`
+before, in the same field as the names.
 
 Registered roles (slice 2a): `capture.read` (the read loop on its pool thread,
 disposed when the loop exits), `mjpeg.worker-<n>`, `mjpeg.emitter`,
@@ -403,6 +482,16 @@ summed per engine type into `gpu.engine.3d`, `.video_encode`, `.video_decode`, `
 process uses several engines or adapters of one type. `Gpu.DedicatedBytes` is the process's dedicated GPU memory from the same
 sample.
 
+Each PDH call is a `telemetry.gpu_engines` trace span on the sensor thread (kind 33, id -1; arg 1 is the open of the counters, arg 0
+a sample read, which is the collect that expands the `GPU Engine` wildcard), so the sensor's cost sits on the timeline beside the
+stages it might disturb. Measured on the RTX 4090 (SDR preview, Flashback on, Debug build): the first open in a process took about
+250 ms, every later open about 0.5 ms and a read 0.4 to 2.3 ms, all on the sensor thread, and neither the open nor the reads lined up
+with a stall in the encoder, mux, UI dispatcher or hub-refresh spans (6 cycles of sensor start, 8 s trace and stop: no encoder or
+mux span past 15 ms, the UI dispatcher at most 24 ms, `telemetry.hub_refresh` at most 67 ms). The same 6 cycles with
+`SUSSUDIO_TELEMETRY_SENSORS` off, where no PDH ran at all, had two Flashback `mux_write` spans of 33 to 41 ms (most likely
+segment-file writes) and `telemetry.hub_refresh` up to 49 ms, so spans of that size are baseline and not sensor cost. The one-off 1 s
+stall seen in the first live window was not reproduced in either series and is not attributed to PDH.
+
 A missing sample is never recorded as 0 %. Rate counters need two samples, so the first tick records nothing. A tick in which PDH has
 no instance for this process (it has not touched the GPU yet, or just released its device) records nothing and counts as pending.
 PDH that cannot open or read is `unavailable`: the sensor retries with backoff and reopens the counters if they fail later, and
@@ -434,6 +523,21 @@ with `Software: true`.
   arrived after a second is abandoned so the ring keeps cycling.
 - **Failure.** A backend that fails or throws (a removed device) fails the ring. Timing then stays off and costs nothing until demand
   ends or the device is re-created, and the exception never reaches the render loop.
+- **Zero-tick spans.** A begin and an end timestamp that are identical (zero GPU ticks) cannot be told from a pass that was not
+  timed on that queue, and they were 11.5 % of frames with Flashback on and 59 % with it off, recorded as exact 0 us renders. They
+  are not a measurement, so `GpuTimestampRing` counts them in `preview.gpu_timing_unmeasured`, does not record them in
+  `preview.gpu_render` and does not draw a trace span for them. A span that really is shorter than 1 us is recorded as 1 us, so the
+  histogram never holds a zero and an unmeasured span can never be confused with a fast one. The ring keeps recorded and unmeasured
+  counts per render path (`GpuTimingPath`: `VideoProcessor`, `Nv12Shader`, `HdrShader`), logs them when it is released
+  (`D3D11_PREVIEW_GPU_TIMING released ... vp=rec/unm nv12=rec/unm hdr=rec/unm`) and the state line names the path in use.
+  *Evidenced:* in the live runs on the RTX 4090 (SDR source, `PreviewRendererMode: D3D11VideoProcessor`) every unmeasured span came
+  from the `VideoProcessorBlt` path (`vp=433/48 nv12=0/0 hdr=0/0`, 8 to 12 % of its frames, scattered at random rather than periodic,
+  and not tied to any other stage's duration). They are not sub-microsecond spans: the timestamps were identical. The shader paths were
+  not exercised in those runs, so how they behave is not measured. *Hypothesis, not verified:* the blit can complete on a
+  hardware video-processing queue that does not write the timestamps the query reads. Nothing in the app can repair that reading, so
+  the meaning per path is: on the shader paths a span brackets a `Draw` the same context executes, and a zero would be a pass that did
+  not reach the GPU timer; on the `VideoProcessorBlt` path `preview.gpu_render` is the subset of frames the timer could see. Treat it
+  as a sample of those frames and read `preview.gpu_timing_unmeasured` beside it.
 - **Clock.** GPU timestamps are in the GPU's own clock, not QPC, so only the duration is a GPU measurement. The `PreviewGpuRender`
   trace span is anchored at the CPU time the commands were submitted, lasts the GPU duration, and carries the frame's arrival tick as
   its id, so the analyzer can join it to that frame's CPU stages. It is written when the result is read back, a few frames later; its
@@ -448,7 +552,7 @@ with `Software: true`.
 - **Device lost and re-initialisation.** `CleanupD3DResources` releases the queries (state `released: device or swap chain reset`)
   before it disposes the context. They are re-created lazily on the first frame after `InitializeD3D` if demand still exists.
 - **State.** `Sensors.Details` carries `gpu_timing: mode=<mode> wanted=<yes|no> state=<state>` where the state is `not created`,
-  `active adapter=<name> slots=<n> shared_device=<bool> (upper bound under contention)`, `off: no demand`,
+  `active adapter=<name> slots=<n> shared_device=<bool> path=<VideoProcessor|Nv12Shader|HdrShader> (upper bound under contention; zero-tick spans are counted in preview.gpu_timing_unmeasured)`, `off: no demand`,
   `disabled: software (WARP) adapter <name>`, `unavailable: <reason>`, `failed: <reason>` or
   `released: device or swap chain reset`.
 
@@ -482,7 +586,13 @@ least three quarters), `mixed` (between) and `unknown` (a reading is missing; a 
   trace events).
 - DWM: `DwmGetCompositionTimingInfo` refresh period, composed-pass count and refresh counter (2.8.5).
 - NVML values recorded at each existing NVML poll.
-- Log tap: the logger writer keeps the last 4,096 lines and per-caller and per-tag line counts for spam detection.
+- Log tap: the logger writer keeps the last 4,096 lines and per-caller and per-tag line counts for spam detection. A tap that
+  throws never ends the writer loop: the failure is reported once through the logger's fallback trace and the next line is
+  written normally. `NATIVEXU_AT` (the capture card's AT-command answers) is logged when a command's answer is first seen or
+  changes in the bytes the line shows (its first 32), and, only with `Logger.VerboseEnabled`, once per 30 s per command as a
+  sign that the poll is still reading. `NATIVEXU_TOPOLOGY` is logged when a path's node layout is first seen or changes. The
+  rolling poll re-reads every command and the topology each cycle and used to write 7,678 of 10,043 tap lines in one live window
+  with identical text. Nothing parses these lines.
 
 ### 2.9 Ears: audio output probe
 
@@ -693,6 +803,24 @@ Written before the code, per the testing policy:
 - Timeline envelope (slice 2b): not an isolated test. The cause was a response-shape default (the envelope embedded the cached
   snapshot), not logic, so it is checked live: `timeline --max N` returns exactly N entries and no envelope snapshot.
 
+- Hardening pass (listed before the code): in the ingress ledger four frames that share a set all survive, the fifth evicts the smallest arrival
+  tick (not the least recently written) and never leaks its sample, rewriting a key replaces it in place, and a reader racing the
+  writer sees a miss or the matching pair; a ring read in chunks of any size returns the same events as one big chunk across a wrap;
+  a slot lapped mid-read is skipped without shortening its chunk or ending the read; a writer that was preempted across a full
+  ring wrap drops its own event, counts it as `abandoned` and never leaves a torn slot a reader accepts; a dump streams through a
+  fixed chunk with the origin and the thread set from its first pass, and a ring is reused only for the same capacity and never
+  while a dump reads it; a retired registration removes its thread label only if the id still maps to it, and the dump still names
+  a thread that ended during the traced interval; a window `end` builds its report before releasing demand, a throwing builder
+  leaves the window open, two concurrent ends give exactly one report, a window restarted during the build is not closed; a
+  zero-tick GPU span is counted as unmeasured and never recorded as a 0 us render, a disjoint zero-tick span stays skipped, a real
+  span under 1 us is recorded as 1 us, and counts are kept per render path; a priority maps to a name or to `mmcss/<n>` and
+  `raw/<n>`, never a bare number; a stage that ended at frame arrival is listed as before arrival and never named dominant, a
+  stage straddling arrival counts only its part after arrival, a stage that ended after the present is listed after present and never
+  named dominant while one that finished before it still counts, and a trace without QPC metadata keeps the read inside the interval;
+  a set or reset that changes nothing is not logged. Not isolated-tested: that each drop call site's literal reason code matches its
+  reason string (the string-to-code table is tested; a test of the call sites would assert on source text), which was checked by
+  reading every pair.
+
 Everything else is verified end to end against the live app (section 6).
 
 ## 6. Validation
@@ -740,7 +868,17 @@ frames are listed with their per-stage breakdown. The report has:
 - the slowest frames, events outside frames (`id = -1`), and drops counted per
   reason (`args.reason` of `preview.drop`, the names in `PreviewDropReasons`;
   a dropped slow frame names its reason, and a dump without reasons reports
-  the count alone).
+  the count alone). For an `arrival_to_present` slow frame the dominant stage
+  is the longest part of a stage that lies after the frame arrived: a stage
+  that ended at arrival (`capture.read`, which is the wait for this frame to
+  arrive, so it always came first and always looked longest) is listed on its
+  own `before arrival (not in the total)` line and never named; a stage that
+  straddles arrival counts only the part after it; for a presented frame a
+  stage that ended after the present (the recording and Flashback encoders run
+  on their own thread, beside the present) is listed on an `after present (not
+  in the total)` line and never named; aggregate spans such as
+  `preview.pipeline` never win. Without the dump's QPC metadata arrival cannot
+  be placed, so every stage counts as inside the interval.
 
 Arrival comes from the QPC `id` and the dump's metadata. A dump with no
 metadata, or ids that are not QPC ticks (sequence numbers from an older
