@@ -604,6 +604,7 @@ internal sealed class FlashbackBufferManager : IDisposable
                     _completedSegmentBytes = SubtractNonNegative(_completedSegmentBytes, oldest.SizeBytes);
                     _totalDiskBytes = SubtractNonNegative(_totalDiskBytes, oldest.SizeBytes);
                     _completedSegments.RemoveAt(0);
+                    RemoveKeyframeIndexUnsafe(oldest.Path);
                 }
 
                 if (reclaimed > 0)
@@ -890,6 +891,7 @@ internal sealed class FlashbackBufferManager : IDisposable
                 if (TryDeleteFile(_completedSegments[i].Path))
                 {
                     freedBytes = AddNonNegativeSaturated(freedBytes, _completedSegments[i].SizeBytes);
+                    RemoveKeyframeIndexUnsafe(_completedSegments[i].Path);
                     _completedSegments.RemoveAt(i);
                 }
             }
@@ -904,6 +906,7 @@ internal sealed class FlashbackBufferManager : IDisposable
                 if (TryDeleteFile(_activeSegmentPath))
                 {
                     freedBytes = AddNonNegativeSaturated(freedBytes, activeSegmentBytes);
+                    RemoveKeyframeIndexUnsafe(_activeSegmentPath);
                     _activeSegmentPath = null;
                     Interlocked.Exchange(ref _activeSegmentStartPtsTicks, -1);
                     _previousActiveSegmentBytes = 0;

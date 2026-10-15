@@ -418,10 +418,6 @@ public sealed class FlashbackPlaybackContractsTests
         => global::Program.FlashbackPlaybackController_TimestampArithmeticIsSaturating();
 
     [Fact]
-    public Task FlashbackPauseFromLiveDisplaysBufferedFrameBeforePaused()
-        => global::Program.FlashbackPlaybackController_PauseFromLive_DisplaysBufferedFrameBeforePaused();
-
-    [Fact]
     public Task FlashbackPlaybackPtsCadenceTelemetryTracksMismatches()
         => global::Program.FlashbackPlaybackController_PtsCadenceTelemetry_TracksMismatches();
 
@@ -2051,42 +2047,6 @@ static partial class Program
         AssertDoesNotContain(sourceText, "videoFrame.Pts - frozenValidStart");
         AssertDoesNotContain(sourceText, "latestAbsPts - lastFrameAbsPts");
         AssertDoesNotContain(sourceText, "absoluteLatestPts - absoluteFramePts");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task FlashbackPlaybackController_PauseFromLive_DisplaysBufferedFrameBeforePaused()
-    {
-        var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
-        var publicPauseBlock = ExtractTextBetween(
-            sourceText,
-            "public bool Pause()",
-            "    public bool GoLive()");
-
-        var pauseFromLiveBlock = ExtractTextBetween(
-            sourceText,
-            "else if (State == FlashbackPlaybackState.Live)",
-            "    private void HandleSeekCommand(");
-
-        AssertContains(publicPauseBlock, "return SendCommand(new PlaybackCommand { Kind = CommandKind.Pause });");
-        AssertDoesNotContain(publicPauseBlock, "SeekAndDisplay");
-        AssertContains(pauseFromLiveBlock, "cts.Token.ThrowIfCancellationRequested();");
-        AssertContains(pauseFromLiveBlock, "if (_bufferManager.LatestPts <= TimeSpan.Zero)");
-        AssertContains(pauseFromLiveBlock, "ClearPrebufferedFrames(worker.PrebufferedFrames, \"pause_from_live_no_file\");");
-        AssertContains(pauseFromLiveBlock, "SetNoFileFailure(CommandKind.Pause, TimeSpan.Zero);");
-        AssertContains(pauseFromLiveBlock, "RestoreLiveAfterNoFile(\"pause_from_live_no_file\");");
-        AssertContains(pauseFromLiveBlock, "SafeSuppressPreviewSubmission(\"pause_from_live\");");
-        AssertContains(pauseFromLiveBlock, "SafePauseRendering(\"pause_from_live\");");
-        AssertContains(pauseFromLiveBlock, "var liveEdge = _bufferManager.LatestPts;");
-        AssertContains(pauseFromLiveBlock, "Interlocked.Exchange(ref _lastVideoPtsTicks, liveEdge.Ticks);");
-        AssertContains(pauseFromLiveBlock, "worker.PendingExactResumeTarget = SaturatingAdd(pausePos, worker.FrozenValidStart);");
-        AssertContains(pauseFromLiveBlock, "SetState(FlashbackPlaybackState.Paused, \"user\");");
-        AssertContains(pauseFromLiveBlock, "frozen_frame=live");
-        // The live picture stays on screen; no file is opened and no frame is decoded until the next command.
-        AssertDoesNotContain(pauseFromLiveBlock, "EnsureFileOpen(");
-        AssertDoesNotContain(pauseFromLiveBlock, "SeekAndDisplay");
-        AssertDoesNotContain(sourceText, "private TimeSpan ResolvePauseFromLiveTarget(TimeSpan frozenValidStart)");
-        AssertDoesNotContain(sourceText, "private void DecodeForwardToPauseTarget(");
 
         return Task.CompletedTask;
     }

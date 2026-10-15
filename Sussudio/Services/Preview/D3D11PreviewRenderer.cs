@@ -899,6 +899,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
 
             var framesRenderedBefore = Interlocked.Read(ref _framesRendered);
             RenderFrame(frame);
+            EndRenderFailureStreak();
             if (Interlocked.Read(ref _framesRendered) == framesRenderedBefore)
             {
                 TrackFrameDropped(frame, "render-skipped");
@@ -917,10 +918,10 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             {
                 HandleDeviceLost(ex);
             }
-            else if (ShouldLogRenderFailure(out var renderFailureCount))
+            else if (ShouldLogRenderFailure(out var renderFailureStreak))
             {
                 // A persistent failure would otherwise log once per frame at the capture rate.
-                Logger.Log($"D3D11_PREVIEW_RENDER_FAILED count={renderFailureCount} type={ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
+                Logger.Log($"D3D11_PREVIEW_RENDER_FAILED streak={renderFailureStreak} type={ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
             }
 
             TrackFrameDropped(frame, "render-failed");
@@ -1586,12 +1587,28 @@ public readonly record struct PresentCadenceMetrics(
     private double[] _renderTotalCpuTimingWindowMs = new double[1200];
     private int _renderCpuTimingCount;
     private int _renderCpuTimingIndex;
-    private long _renderFailureCount;
+    // Consecutive non-device-loss render failures. A rendered frame ends the streak, so a
+    // later, unrelated failure logs in full instead of being absorbed by an earlier storm.
+    private long _renderFailureStreak;
 
-    private bool ShouldLogRenderFailure(out long count)
+    private bool ShouldLogRenderFailure(out long streak)
     {
-        count = Interlocked.Increment(ref _renderFailureCount);
-        return count <= 5 || count % 300 == 0;
+        streak = Interlocked.Increment(ref _renderFailureStreak);
+        return streak <= 5 || streak % 300 == 0;
+    }
+
+    private void EndRenderFailureStreak()
+    {
+        if (Volatile.Read(ref _renderFailureStreak) == 0)
+        {
+            return;
+        }
+
+        var streak = Interlocked.Exchange(ref _renderFailureStreak, 0);
+        if (streak > 5)
+        {
+            Logger.Log($"D3D11_PREVIEW_RENDER_RECOVERED failed_frames={streak}");
+        }
     }
 
     private readonly object _frameLatencyWaitTimingLock = new();

@@ -403,7 +403,7 @@ Not done in this phase: inserting silence at WASAPI `DATA_DISCONTINUITY` gaps
 | Automation hub probes the preview producer epoch through a signature read; the full preview snapshot is built once per tick instead of three times | `AutomationDiagnosticsHub.PreviewRuntimeEpochProvider`, `PreviewRuntimeSnapshotSamplingController.GetEpochAsync` |
 | `DriveInfo.AvailableFreeSpace` probed on the pool, one in flight, result posted to the UI thread | `MainViewModel.UpdateDiskSpace` |
 | Waitable swap-chain wait = 1.5 measured refresh intervals (4..20 ms; 8 ms until measured) | `D3D11PreviewRenderer.ResolveFrameLatencyWaitTimeoutMs` |
-| DEVICE_HUNG and DRIVER_INTERNAL_ERROR classified as device loss; other render failures log the first five then every 300th | `D3D11PreviewRenderer.Resources.cs` `IsDeviceLostException`, `ShouldLogRenderFailure` |
+| DEVICE_HUNG and DRIVER_INTERNAL_ERROR classified as device loss; other render failures log the first five of a consecutive streak then every 300th, and a rendered frame ends the streak | `D3D11PreviewRenderer.Resources.cs` `IsDeviceLostException`, `D3D11PreviewRenderer.cs` `ShouldLogRenderFailure` |
 | Shader bytecode compiled once per process | `D3D11PreviewRenderer.Resources.cs` `ShaderBytecodeCache` |
 | `PreviewInputViewCache.Capacity` 8 to 32 | `PreviewInputViewCache.cs` |
 
