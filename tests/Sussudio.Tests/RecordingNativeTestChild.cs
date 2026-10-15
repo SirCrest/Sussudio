@@ -6,6 +6,7 @@ using Xunit;
 
 namespace Sussudio.Tests;
 
+// Test harness, not app code: runs native recording scenarios in a disposable child.
 // Child processes own native workers and process-wide recovery paths until exit.
 // The parent alone owns deadlines, kill confirmation, and temporary-file cleanup.
 internal static class RecordingNativeTestChild
