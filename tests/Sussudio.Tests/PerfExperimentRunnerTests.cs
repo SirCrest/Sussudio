@@ -33,6 +33,9 @@ namespace Sussudio.Tests;
 // 10. Window names stay within the app's 64-character limit and carry no control characters.
 // 11. The recording option brackets each measure window and is stopped even on failure.
 // 12. An artifact write failure never changes the status or skips the knob restore.
+// 13. The shipped example spec drifting from the real knob catalog (a renamed knob, a value the knob now rejects, a
+//     knob that needs an app restart): it would only fail at preflight on a live app, so check it offline against the
+//     real catalog and the real store validation.
 public sealed class PerfExperimentRunnerTests : IDisposable
 {
     private const string Depth = "SUSSUDIO_PREVIEW_JITTER_TARGET_DEPTH";
@@ -519,6 +522,17 @@ public sealed class PerfExperimentRunnerTests : IDisposable
         var error = Assert.Throws<PerfExperimentSpecException>(() => PerfExperimentSpec.Parse(
             "{\"name\":\"\",\"repeats\":0,\"measureSeconds\":0,\"variants\":[{\"name\":\"A\"},{\"name\":\"A\"}]}"));
         Assert.True(error.Problems.Count >= 4, string.Join("; ", error.Problems));
+    }
+
+    [Fact]
+    public void AnUnknownFieldDoesNotHideAnEmptyVariantList()
+    {
+        // The unknown-field problem lists the allowed field names, "variants" among them; it must not be mistaken for
+        // a problem about the variant list and suppress that one.
+        var error = Assert.Throws<PerfExperimentSpecException>(() => PerfExperimentSpec.Parse(
+            "{\"name\":\"x\",\"repeat\":3,\"variants\":[]}"));
+        Assert.Contains(error.Problems, problem => problem.Contains("repeat", StringComparison.Ordinal));
+        Assert.Contains(error.Problems, problem => problem.Contains("at least one variant", StringComparison.Ordinal));
     }
 
     // ---- schedule ---------------------------------------------------------------------------------------------
@@ -1120,6 +1134,35 @@ public sealed class PerfExperimentRunnerTests : IDisposable
         Assert.Equal(PerfExperimentStatus.Completed, result.Status);
         Assert.Contains(result.Warnings, w => w.Contains("artifact", StringComparison.OrdinalIgnoreCase));
         AssertKnobsAtBaseline(app);
+    }
+
+    private sealed class ScratchKnobEnvironment : Sussudio.Services.Performance.ITuningKnobEnvironment
+    {
+        private readonly Dictionary<string, string?> _values = new(StringComparer.Ordinal);
+
+        public string? Get(string name) => _values.TryGetValue(name, out var value) ? value : null;
+
+        public void Set(string name, string? value) => _values[name] = value;
+    }
+
+    [Fact]
+    public void TheShippedExampleSpecIsValidAgainstTheRealKnobCatalog()
+    {
+        var path = Path.Combine(RuntimeContractSource.GetRepoRoot(), "scripts", "performance", "experiments", "example-jitter-depth.json");
+        var spec = PerfExperimentSpec.Load(path);
+        var catalog = Sussudio.Services.Performance.TuningKnobCatalog.Knobs;
+        var store = new Sussudio.Services.Performance.TuningKnobStore(catalog, new ScratchKnobEnvironment(), _ => { });
+
+        Assert.True(spec.Variants.Count >= 2);
+        foreach (var knob in spec.Variants.SelectMany(variant => variant.Knobs))
+        {
+            var definition = catalog.SingleOrDefault(candidate => candidate.Name == knob.Key);
+            Assert.True(definition is not null, $"{knob.Key} is not in the knob catalog.");
+            Assert.NotEqual(Sussudio.Services.Performance.TuningKnobApply.AppRestart, definition!.Apply);
+
+            var change = store.Set(knob.Key, knob.Value);
+            Assert.True(change.Success, $"{knob.Key}={knob.Value} was rejected: {change.Error}");
+        }
     }
 
     [Fact]

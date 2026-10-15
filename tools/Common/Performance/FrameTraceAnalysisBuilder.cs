@@ -111,7 +111,7 @@ internal static class FrameTraceAnalysisBuilder
         var cadence = BuildCadence(capture, frames, options, stageCount, medianDuration, presentIndex);
         var slowest = BuildSlowest(capture, frames, options, stageCount, expected, presentIndex);
 
-        AddWarnings(capture, frames.Count, warnings);
+        AddWarnings(capture, frames.Count, frames.Any(frame => frame.HasSample), warnings);
 
         var info = new FrameTraceInfo(
             capture.ParsedEvents,
@@ -139,7 +139,16 @@ internal static class FrameTraceAnalysisBuilder
             .ThenBy(stat => stat.Name, StringComparer.Ordinal)
             .ToList();
         var drops = capture.Drops
-            .Select(pair => new TraceDropStats(pair.Key, pair.Value))
+            .Select(pair => new TraceDropStats(
+                pair.Key,
+                pair.Value,
+                capture.DropReasons.TryGetValue(pair.Key, out var reasons)
+                    ? reasons
+                        .Select(reason => new TraceDropReason(reason.Key, reason.Value))
+                        .OrderByDescending(reason => reason.Count)
+                        .ThenBy(reason => reason.Reason, StringComparer.Ordinal)
+                        .ToList()
+                    : new List<TraceDropReason>()))
             .OrderByDescending(stat => stat.Count)
             .ThenBy(stat => stat.Name, StringComparer.Ordinal)
             .ToList();
@@ -222,8 +231,15 @@ internal static class FrameTraceAnalysisBuilder
     private static double FirstEventUs(FrameAcc frame)
         => double.IsFinite(frame.FirstSpanUs) ? frame.FirstSpanUs : frame.FirstAnyUs;
 
-    private static void AddWarnings(FrameTraceCapture capture, int frameCount, List<string> warnings)
+    private static void AddWarnings(FrameTraceCapture capture, int frameCount, bool anyFrameHasSampleTime, List<string> warnings)
     {
+        if (frameCount > 0 && !anyFrameHasSampleTime)
+        {
+            warnings.Add(
+                "No frame has a capture.sample_time event, so ingress_to_visible and ingress_to_arrival are not reported "
+                + "(the capture clock is not in the performance-counter domain, or the app predates that event).");
+        }
+
         if (frameCount == 0)
         {
             warnings.Add(
@@ -592,7 +608,8 @@ internal static class FrameTraceAnalysisBuilder
                 frame.Drops > 0,
                 missing,
                 dominant,
-                stages));
+                stages,
+                frame.DropReason));
         }
 
         return slowest;

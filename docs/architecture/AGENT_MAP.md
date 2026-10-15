@@ -555,6 +555,15 @@ recording and audio sites call into it, never the other way round.
   `tools/McpServer/Tools/PerfTelemetryTools.cs`. AutomationClient and
   `tools/send-automation-command.ps1` resolve commands by catalog name and need
   no per-command code.
+- Tool-side analysis is in `tools/Common/Performance/`, compiled into ssctl,
+  McpServer and the test project: `FrameTraceAnalyzer` (with its reader,
+  builder and formatter) reads a trace dump offline, and `PerfExperimentRunner`
+  (spec, session, statistics, result) runs a knob A/B experiment through the
+  existing automation commands and restores the app. Neither adds an app
+  command: ssctl `perf trace analyze` and `perf experiment` are in
+  `tools/ssctl/CommandHandlers.Perf.cs`, the MCP tools `analyze_frame_trace` and
+  `run_perf_experiment` are in `tools/McpServer/Tools/PerfAnalysisTools.cs`, and
+  the example spec is `scripts/performance/experiments/example-jitter-depth.json`.
 - Tests are isolated and cover failure modes only: histogram boundaries and
   concurrency, window limits, trace wraparound/torn slots, knob validation and
   reset, log tap bounds, sensor demand, the UI probe, GPU engine aggregation, the GPU
@@ -3008,9 +3017,11 @@ Primary owners:
   validation, on/off and show/hide parsing, recording format normalization,
   snap action mapping, and assertion value parsing. It is a partial class: the
   performance-telemetry verbs live in `tools/ssctl/CommandHandlers.Perf.cs`
-  (`perf report|window|mark|trace`, `knobs`, `knob set|reset`, `log tail`;
-  `perf trace dump` resolves its path client-side because the app does not share
-  the CLI working directory) and render through `tools/ssctl/PerfFormatters.cs`.
+  (`perf report|window|mark|trace|experiment`, `knobs`, `knob set|reset`,
+  `log tail`; `perf trace dump` resolves its path client-side because the app
+  does not share the CLI working directory, and `perf trace analyze` and
+  `perf experiment` are tool-only) and render through
+  `tools/ssctl/PerfFormatters.cs`.
 - `tools/ssctl/Formatters.cs` owns CLI result formatting:
   shared result/JSON helpers, recent diagnostic-event output, standalone
   memory/GC summaries, capture option summaries, device-list output,

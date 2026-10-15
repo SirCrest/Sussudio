@@ -82,7 +82,7 @@ internal static class FrameTraceAnalysisFormatter
             text.AppendLine($"Slowest frames (ranked by {analysis.SlowestFrames[0].RankedBy}, worst first)");
             foreach (var frame in analysis.SlowestFrames)
             {
-                var dropped = frame.Dropped ? ", dropped" : string.Empty;
+                var dropped = frame.Dropped ? (frame.DropReason is null ? ", dropped" : $", dropped ({frame.DropReason})") : string.Empty;
                 var dominant = frame.DominantStage is null ? string.Empty : $", dominant {frame.DominantStage}";
                 var missing = frame.MissingStages.Count == 0 ? string.Empty : $", missing {string.Join(", ", frame.MissingStages)}";
                 text.AppendLine(
@@ -111,6 +111,16 @@ internal static class FrameTraceAnalysisFormatter
             foreach (var drop in analysis.Drops)
             {
                 text.AppendLine(string.Create(CultureInfo.InvariantCulture, $"  {drop.Name.PadRight(StageNameWidth)} {drop.Count}"));
+                foreach (var reason in drop.Reasons)
+                {
+                    text.AppendLine(string.Create(CultureInfo.InvariantCulture, $"    {reason.Reason.PadRight(StageNameWidth - 2)} {reason.Count}"));
+                }
+
+                var unexplained = drop.Count - drop.Reasons.Sum(reason => reason.Count);
+                if (drop.Reasons.Count > 0 && unexplained > 0)
+                {
+                    text.AppendLine(string.Create(CultureInfo.InvariantCulture, $"    {"(no reason recorded)".PadRight(StageNameWidth - 2)} {unexplained}"));
+                }
             }
         }
 

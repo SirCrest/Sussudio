@@ -30,6 +30,18 @@ namespace Sussudio.Tests;
 //     be named when they are the cause; aggregate stages (pipeline, render_total) must not win the "grew most".
 // 13. A token larger than the reader's first buffer (a long marker): the chunked reader must grow, not fail.
 // 14. Instants that are drops: counted and tied to their frame; the frame is still reported.
+// Added with the slice 2a dump (args.reason on preview.drop, args.arg on any event, capture.sample_time):
+// 15. A drop with args.reason: counted per reason, and the slowest-frame entry names the reason. A drop from an older
+//     dump has no reason: still counted, no reasons listed, no invented "unknown" bucket.
+// 16. A reason that is not a string (a number, an object) or is blank: ignored without skipping the event.
+// 17. An open-ended reason vocabulary: past 32 distinct reasons per drop name the extras fold into "other", so the
+//     report and its JSON stay bounded however hostile the dump is. Long reasons are truncated.
+// 18. args.arg on an event (written when non-zero): tolerated and never mistaken for the frame id.
+// 19. telemetry.hub_refresh carries id -1: ambient, never a frame, even many of them.
+// 20. A dump with frames but no capture.sample_time (an older app): ingress latency is absent and the report says
+//     why, instead of printing nothing.
+// 21. The app's own telemetry refresh (telemetry.hub_refresh) overlapping a hitch is named as a cause when it is long
+//     enough to matter, and a sub-millisecond one is not blamed.
 public sealed class FrameTraceAnalyzerTests
 {
     private const long Frequency = 10_000_000;
@@ -37,7 +49,8 @@ public sealed class FrameTraceAnalyzerTests
 
     private static long Ticks(double ms) => Origin + (long)Math.Round(ms * Frequency / 1000d);
 
-    private sealed record Ev(string Name, string Phase, double TsUs, double DurUs, int Tid, long? Id, string? Text = null);
+    // ExtraArgs is a raw JSON fragment appended to args after id (for example "\"reason\":\"stale\"").
+    private sealed record Ev(string Name, string Phase, double TsUs, double DurUs, int Tid, long? Id, string? Text = null, string? ExtraArgs = null);
 
     // Builds the same Chrome Trace Event JSON FrameTraceRecorder writes, in integer ticks, so the tests state
     // times in milliseconds and the analyzer has to recover them from `id` and `ts`.
@@ -50,8 +63,8 @@ public sealed class FrameTraceAnalyzerTests
         public void Span(string name, double startMs, double durMs, long? id, int tid = 1)
             => _events.Add(new Ev(name, "X", startMs * 1000d, durMs * 1000d, tid, id));
 
-        public void Instant(string name, double atMs, long? id, int tid = 1)
-            => _events.Add(new Ev(name, "i", atMs * 1000d, 0, tid, id));
+        public void Instant(string name, double atMs, long? id, int tid = 1, string? extraArgs = null)
+            => _events.Add(new Ev(name, "i", atMs * 1000d, 0, tid, id, null, extraArgs));
 
         public void Marker(double atMs, string text)
             => _events.Add(new Ev("marker", "i", atMs * 1000d, 0, 0, null, text));
@@ -123,6 +136,10 @@ public sealed class FrameTraceAnalyzerTests
                 else
                 {
                     json.Append("\"id\":").Append((e.Id ?? -1).ToString(CultureInfo.InvariantCulture));
+                    if (e.ExtraArgs is not null)
+                    {
+                        json.Append(',').Append(e.ExtraArgs);
+                    }
                 }
 
                 json.Append("}}");
@@ -236,6 +253,26 @@ public sealed class FrameTraceAnalyzerTests
     }
 
     [Fact]
+    public void AHubRefreshOverlappingAHitchIsNamedButAVeryShortOneIsNot()
+    {
+        var trace = new TraceBuilder();
+        for (var i = 0; i < 100; i++)
+        {
+            trace.Frame(100 + i * 16.667, presentDelayMs: i == 50 ? 14 : 0);
+        }
+
+        // The app's own telemetry refresh: a long one inside the hitch is a cause, a sub-millisecond one is noise.
+        trace.Span("telemetry.hub_refresh", 100 + 50 * 16.667 + 2, 9, -1, tid: 8);
+        trace.Span("telemetry.hub_refresh", 100 + 50 * 16.667 + 12, 0.4, -1, tid: 8);
+        var analysis = FrameTraceAnalyzer.AnalyzeJson(trace.Build());
+
+        var hitch = analysis.PresentCadence!.Hitches[0];
+        var named = Assert.Single(hitch.Attributions, a => a.Name == "telemetry.hub_refresh");
+        Assert.True(named.Ms >= 8, "overlap " + named.Ms.ToString(CultureInfo.InvariantCulture));
+        Assert.Equal(2, Assert.Single(analysis.AmbientEvents, e => e.Name == "telemetry.hub_refresh").Count);
+    }
+
+    [Fact]
     public void TheStageThatGrewMostIsNamedAndAggregateStagesNeverWin()
     {
         var trace = new TraceBuilder();
@@ -326,6 +363,185 @@ public sealed class FrameTraceAnalyzerTests
         Assert.True(worst.Dropped);
         Assert.Contains("preview.present", worst.MissingStages);
         Assert.Equal("preview.queue_dwell", worst.DominantStage);
+    }
+
+    private static string ReasonArg(string reason) => "\"reason\":" + JsonSerializer.Serialize(reason);
+
+    [Fact]
+    public void DropReasonsAreCountedPerReasonAndNamedOnTheSlowFrame()
+    {
+        var trace = new TraceBuilder();
+        for (var i = 0; i < 40; i++)
+        {
+            var arrival = 100 + i * 16.667;
+            var id = trace.Frame(arrival, present: i is not (20 or 25 or 30), queueMs: i == 20 ? 200 : 1.0);
+            if (i == 20)
+            {
+                trace.Instant("preview.drop", arrival + 201, id, extraArgs: ReasonArg("renderer-backlog"));
+            }
+            else if (i is 25 or 30)
+            {
+                trace.Instant("preview.drop", arrival + 3, id, extraArgs: ReasonArg("stale"));
+            }
+        }
+
+        // One drop from a build that did not write reasons yet.
+        trace.Instant("preview.drop", 900, Ticks(100 + 3 * 16.667));
+
+        var analysis = FrameTraceAnalyzer.AnalyzeJson(trace.Build(), new FrameTraceAnalysisOptions { TopFrames = 3 });
+
+        var drops = Assert.Single(analysis.Drops, d => d.Name == "preview.drop");
+        Assert.Equal(4, drops.Count);
+        Assert.Equal(2, Assert.Single(drops.Reasons, r => r.Reason == "stale").Count);
+        Assert.Equal(1, Assert.Single(drops.Reasons, r => r.Reason == "renderer-backlog").Count);
+        Assert.Equal(3, drops.Reasons.Sum(r => r.Count));
+
+        var worst = analysis.SlowestFrames[0];
+        Assert.True(worst.Dropped);
+        Assert.Equal("renderer-backlog", worst.DropReason);
+        Assert.Contains("renderer-backlog", analysis.FormatSummary());
+        Assert.Contains("(no reason recorded)", analysis.FormatSummary());
+
+        using var json = JsonDocument.Parse(analysis.ToJson());
+        Assert.True(json.RootElement.GetProperty("drops")[0].GetProperty("reasons").GetArrayLength() >= 2);
+    }
+
+    [Fact]
+    public void DropsFromADumpWithoutReasonsAreCountedWithNoReasonBuckets()
+    {
+        var trace = new TraceBuilder();
+        for (var i = 0; i < 30; i++)
+        {
+            var arrival = 100 + i * 16.667;
+            var id = trace.Frame(arrival);
+            if (i is 5 or 6)
+            {
+                trace.Instant("preview.drop", arrival + 2, id);
+            }
+        }
+
+        var analysis = FrameTraceAnalyzer.AnalyzeJson(trace.Build());
+
+        var drops = Assert.Single(analysis.Drops);
+        Assert.Equal(2, drops.Count);
+        Assert.Empty(drops.Reasons);
+        Assert.DoesNotContain("(no reason recorded)", analysis.FormatSummary());
+        Assert.All(analysis.SlowestFrames, frame => Assert.Null(frame.DropReason));
+    }
+
+    [Theory]
+    [InlineData("\"reason\":5")]
+    [InlineData("\"reason\":{\"a\":1}")]
+    [InlineData("\"reason\":[\"stale\"]")]
+    [InlineData("\"reason\":true")]
+    [InlineData("\"reason\":null")]
+    [InlineData("\"reason\":\"\"")]
+    [InlineData("\"reason\":\"   \"")]
+    public void AReasonThatIsNotAUsableStringIsIgnoredWithoutSkippingTheDrop(string extraArgs)
+    {
+        var trace = new TraceBuilder();
+        for (var i = 0; i < 20; i++)
+        {
+            var arrival = 100 + i * 16.667;
+            var id = trace.Frame(arrival);
+            if (i == 7)
+            {
+                trace.Instant("preview.drop", arrival + 2, id, extraArgs: extraArgs);
+            }
+        }
+
+        var analysis = FrameTraceAnalyzer.AnalyzeJson(trace.Build());
+
+        Assert.Equal(0, analysis.Trace.SkippedEvents);
+        var drops = Assert.Single(analysis.Drops);
+        Assert.Equal(1, drops.Count);
+        Assert.Empty(drops.Reasons);
+        Assert.Equal(1, analysis.Frames.WithDrop);
+    }
+
+    [Fact]
+    public void MoreThanThirtyTwoDistinctReasonsFoldIntoOtherAndLongReasonsAreTruncated()
+    {
+        var trace = new TraceBuilder();
+
+        // The long reason comes first so it is kept (truncated) rather than folded into "other".
+        var longId = trace.Frame(50);
+        var longReason = new string('x', 500);
+        trace.Instant("preview.drop", 52, longId, extraArgs: ReasonArg(longReason));
+        trace.Instant("preview.drop", 53, longId, extraArgs: ReasonArg(longReason));
+
+        for (var i = 0; i < 40; i++)
+        {
+            var arrival = 100 + i * 16.667;
+            var id = trace.Frame(arrival);
+            trace.Instant("preview.drop", arrival + 2, id, extraArgs: ReasonArg("reason-" + i.ToString(CultureInfo.InvariantCulture)));
+        }
+
+        var analysis = FrameTraceAnalyzer.AnalyzeJson(trace.Build());
+
+        var drops = Assert.Single(analysis.Drops);
+        Assert.Equal(42, drops.Count);
+        Assert.Equal(2, Assert.Single(drops.Reasons, r => r.Reason == new string('x', 64)).Count);
+        // 32 distinct reasons are kept (the long one plus reason-0..reason-30), then the nine extras share one
+        // "other" bucket; no count is lost.
+        Assert.True(drops.Reasons.Count <= 33, "reasons stay bounded: " + drops.Reasons.Count.ToString(CultureInfo.InvariantCulture));
+        Assert.Equal(9, Assert.Single(drops.Reasons, r => r.Reason == "other").Count);
+        Assert.Equal(42, drops.Reasons.Sum(r => r.Count));
+        Assert.All(drops.Reasons, r => Assert.True(r.Reason.Length <= 64));
+    }
+
+    [Fact]
+    public void AnArgFieldOnAnEventIsToleratedAndNeverTheFrameId()
+    {
+        var trace = Steady(20);
+        var id = Ticks(100);
+        trace.Instant("preview.drop", 104, id, extraArgs: "\"arg\":9999999999999," + ReasonArg("stale"));
+        trace.Instant("capture.sample_time", 98, id, extraArgs: "\"arg\":3");
+        trace.Raw("{\"name\":\"preview.render_submit\",\"cat\":\"x\",\"ph\":\"X\",\"ts\":100500,\"dur\":10,\"pid\":1,\"tid\":1,\"args\":{\"arg\":42,\"id\":"
+            + id.ToString(CultureInfo.InvariantCulture) + "}}");
+
+        var analysis = FrameTraceAnalyzer.AnalyzeJson(trace.Build());
+
+        Assert.Equal(0, analysis.Trace.SkippedEvents);
+        Assert.Equal(20, analysis.Frames.Total);
+        Assert.Equal(1, analysis.Frames.WithDrop);
+        Assert.Equal("qpc-id", analysis.Trace.ArrivalSource);
+    }
+
+    [Fact]
+    public void HubRefreshSpansWithIdMinusOneAreAmbientAndNeverFrames()
+    {
+        var trace = Steady(20);
+        for (var i = 0; i < 25; i++)
+        {
+            trace.Span("telemetry.hub_refresh", 120 + i * 100, 2.5, -1, tid: 3);
+        }
+
+        var analysis = FrameTraceAnalyzer.AnalyzeJson(trace.Build());
+
+        Assert.Equal(20, analysis.Frames.Total);
+        var hub = Assert.Single(analysis.AmbientEvents, e => e.Name == "telemetry.hub_refresh");
+        Assert.Equal(25, hub.Count);
+        Assert.Equal(2.5, hub.MaxMs, 3);
+        Assert.DoesNotContain(analysis.Stages, stage => stage.Stage == "telemetry.hub_refresh");
+    }
+
+    [Fact]
+    public void FramesWithoutAnySampleTimeEventGetAWarningNamingTheMissingEvent()
+    {
+        var withoutSampleTime = FrameTraceAnalyzer.AnalyzeJson(Steady(30).Build());
+        Assert.DoesNotContain(withoutSampleTime.Derived, d => d.Name == "ingress_to_visible");
+        Assert.Contains(withoutSampleTime.Warnings, w => w.Contains("capture.sample_time", StringComparison.Ordinal));
+
+        var trace = new TraceBuilder();
+        for (var i = 0; i < 30; i++)
+        {
+            trace.Frame(100 + i * 16.667, sampleOffsetMs: 4);
+        }
+
+        var withSampleTime = FrameTraceAnalyzer.AnalyzeJson(trace.Build());
+        Assert.Contains(withSampleTime.Derived, d => d.Name == "ingress_to_visible");
+        Assert.DoesNotContain(withSampleTime.Warnings, w => w.Contains("capture.sample_time", StringComparison.Ordinal));
     }
 
     [Fact]

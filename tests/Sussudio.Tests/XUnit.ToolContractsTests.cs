@@ -5448,6 +5448,8 @@ static partial class Program
             HelpLine(AutomationCommandKind.GetTuningKnobs, "[--json]"),
             HelpLine(AutomationCommandKind.SetTuningKnob),
             HelpLine(AutomationCommandKind.GetLogTail, "[--json]"),
+            "  perf trace analyze <file> [--top N] [--json]   (offline: analyzes a dump from 'perf trace dump'; no app needed)",
+            "  perf experiment <spec.json> [--out DIR] [--json]   (knob A/B run; takes minutes; restores the app afterward)",
             "",
             "Flags:",
             "  --json            Print raw JSON responses where supported",

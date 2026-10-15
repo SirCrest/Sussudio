@@ -137,6 +137,9 @@ internal sealed class FrameAcc
 
     public int Drops { get; set; }
 
+    /// <summary>The first drop reason recorded for this frame (args.reason of its preview.drop instant), if any.</summary>
+    public string? DropReason { get; set; }
+
     public double ArrivalUs { get; set; }
 
     public double ArrivalIdUs { get; set; }
@@ -319,10 +322,34 @@ internal sealed class FrameTraceCapture
         }
     }
 
-    public void AddDrop(string name)
+    /// <summary>Distinct reasons kept per drop name; a trace with more folds the rest into "other" so memory stays bounded.</summary>
+    public const int MaxDropReasonsPerName = 32;
+
+    public Dictionary<string, Dictionary<string, int>> DropReasons { get; } = new(StringComparer.Ordinal);
+
+    public void AddDrop(string name, string? reason)
     {
         Drops.TryGetValue(name, out var count);
         Drops[name] = count + 1;
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            return;
+        }
+
+        if (!DropReasons.TryGetValue(name, out var reasons))
+        {
+            reasons = new Dictionary<string, int>(StringComparer.Ordinal);
+            DropReasons[name] = reasons;
+        }
+
+        var key = reason.Length > 64 ? reason[..64] : reason;
+        if (!reasons.ContainsKey(key) && reasons.Count >= MaxDropReasonsPerName)
+        {
+            key = "other";
+        }
+
+        reasons.TryGetValue(key, out var reasonCount);
+        reasons[key] = reasonCount + 1;
     }
 }
 
@@ -522,6 +549,7 @@ internal static class FrameTraceReader
         None,
         Id,
         Text,
+        Reason,
         Other,
     }
 
@@ -559,6 +587,7 @@ internal static class FrameTraceReader
         private bool _hasDur;
         private long _id = -1;
         private string? _text;
+        private string? _reason;
 
         public FrameTraceCapture Capture { get; } = new();
 
@@ -725,9 +754,13 @@ internal static class FrameTraceReader
             {
                 if (token == JsonTokenType.PropertyName)
                 {
+                    // args.arg (the numeric stage arg) is deliberately not read: the dump also writes the name of every
+                    // arg that has a vocabulary (args.reason for a preview drop), and a number alone cannot be explained here.
                     _argKey = reader.ValueTextEquals("id"u8)
                         ? ArgKey.Id
-                        : reader.ValueTextEquals("text"u8) ? ArgKey.Text : ArgKey.Other;
+                        : reader.ValueTextEquals("text"u8)
+                            ? ArgKey.Text
+                            : reader.ValueTextEquals("reason"u8) ? ArgKey.Reason : ArgKey.Other;
                 }
                 else
                 {
@@ -828,6 +861,7 @@ internal static class FrameTraceReader
             _dur = 0;
             _id = -1;
             _text = null;
+            _reason = null;
         }
 
         private static EventKey ClassifyEventKey(ref Utf8JsonReader reader)
@@ -913,6 +947,14 @@ internal static class FrameTraceReader
                     }
 
                     break;
+                case ArgKey.Reason:
+                    // A reason that is not a string is ignored: the drop is still counted, just without a reason.
+                    if (token == JsonTokenType.String)
+                    {
+                        _reason = reader.GetString();
+                    }
+
+                    break;
             }
         }
 
@@ -988,11 +1030,12 @@ internal static class FrameTraceReader
 
                 if (info.IsDrop)
                 {
-                    Capture.AddDrop(info.Name);
+                    Capture.AddDrop(info.Name, _reason);
                     if (id >= 0 && !info.IsAmbient)
                     {
                         var dropped = Capture.GetFrame(id);
                         dropped.Drops++;
+                        dropped.DropReason ??= string.IsNullOrWhiteSpace(_reason) ? null : _reason;
                         dropped.TouchInstant(startUs);
                     }
 
