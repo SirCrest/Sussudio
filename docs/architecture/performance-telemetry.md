@@ -46,7 +46,7 @@ RTX 4090 and Ryzen 9 7950X. Artifacts: `artifacts/perf-overhaul/baseline/`.
 | D6 | Measured but never exported: NVML GPU/NVENC/NVDEC utilization, clocks, power (stats UI only); input-view cache statistics (log only); mux and rotation phase timings (log only); WASAPI engine period (init log only); per-reason renderer drops (only the last reason is kept). | `NvmlMonitor`, `D3D11PreviewRenderer.RenderPasses.cs`, `LibAvEncoder.LastMuxPhaseTiming` |
 | D7 | Misleading values: encoder `_droppedFrameCount` counts failures, not load drops; byte counters are packet bytes, not disk writes; `SourceReaderFrameChannelDepth` is the recording queue depth; integrity `AudioFramesArrived`, `AudioFramesWrittenToSink` and `AudioSamplesEncoded` are the same number; `EstimatedPipelineLatencyMs` is truncated to a `long`; capture A/V drift is frame-count based with hard-coded 48 kHz and nominal fps; the MJPEG summary reports an interop-copy time that is never measured. | Survey, section 1 notes |
 | D8 | PresentMon, the only display-truth source, needs administrator rights or the Performance Log Users group. Without it the agent has no OS-level present data. | Live: `failed to start trace session: access denied` |
-| D9 | The diagnostics hub polls every 500 ms whether or not anyone reads it, building an 807-field, 121 KB snapshot with about four UI-thread dispatches per tick (the preview runtime snapshot is requested three times by overload shape) and copying and sorting about seven 1,200-sample rings. Its own cost is not measured, so the observer effect is unknown. `SnapshotUpdated` has no subscribers. | Live: `ssctl --json state` = 121,261 bytes; about 0.4 MB/s steady allocation; `PreviewRuntimeSnapshotControllers.cs`, `MainViewModel.cs` snapshot dispatch |
+| D9 | The diagnostics hub polls every 500 ms whether or not anyone reads it, building an 807-field, 121 KB snapshot with about four UI-thread dispatches per tick (the preview runtime snapshot is requested three times by overload shape) and copying and sorting about seven 1,200-sample rings. Its own cost is not measured, so the observer effect is unknown. `SnapshotUpdated` has no subscribers. **Measured and reduced in the hub observer-cost slice (2.11):** a refresh cost 22 ms (p50) and 324 KB; it now costs 1.8 ms and 133 KB. | Live: `ssctl --json state` = 121,261 bytes; about 0.4 MB/s steady allocation; `PreviewRuntimeSnapshotControllers.cs`, `MainViewModel.cs` snapshot dispatch |
 | D10 | Every automation acknowledgement embeds the cached snapshot (`CreateResponse(includeSnapshot: true)` by default), so a burst of control commands serializes about 120 KB each. | `AutomationCommandDispatcher.CreateResponse` |
 | D11 | Full-rate frame data never reaches the agent: the frame-time graph's 10 s QPC history is UI-only, and the hub exposes only the latest 64 of 4,096 frame-ledger events every 500 ms. The 2-minute performance timeline omits audio, A/V sync, recording, encoder, NVML and MJPEG fields. | `PreviewFrameTimeHistory`, `FrameLedger`, `PerformanceTimelineEntry` |
 | D12 | The agent cannot read UI state (overlay, settings, InfoBars, section expansion, window rect) or press controls that have no purpose-built command (Flashback nudge and keyboard transport, timeline scrubbing). | Automation surface survey |
@@ -598,31 +598,251 @@ least three quarters), `mixed` (between) and `unknown` (a reading is missing; a 
 
 ### 2.9 Ears: audio output probe
 
-`AudioOutputProbe` captures this process's rendered audio through Windows
-process loopback (`ActivateAudioInterfaceAsync` with
-`AUDIOCLIENT_ACTIVATION_TYPE_PROCESS_LOOPBACK`, Windows 10 2004+), at 48 kHz
-float stereo, for 0.5-30 s. It reports per-channel RMS and peak dBFS,
-silent-block percent, clicks (sample-to-sample jumps far above the local
-envelope), and dropouts (exact-zero runs inside otherwise active audio), and
-optionally writes a WAV. With `latency` it arms a tap on the program capture
-path (48 kHz float stereo after conversion) for the same interval and
-cross-correlates input with output: coarse 1 ms envelopes over 0-1000 ms,
-then sample-level refinement. The result is the in-app monitoring latency
-from capture delivery to the mixer; it excludes device input and endpoint
-output latency, which the report states. Silent input reports
-`insufficient-signal` rather than a number.
+`CaptureAudioOutput` (command 65) hears what Sussudio actually plays: it records
+this process's own rendered audio and returns an analysis. Owner:
+`AudioOutputProbe` (probe), `AudioSignalAnalyzer` and `AudioLatencyAnalyzer`
+(pure analysis), `AudioMonitorTap` (the tap ring), `AudioWavWriter`, and
+`WasapiProcessLoopbackInterop` (activation). Payload
+`{ seconds?, outputPath?, measureLatency? }`: `seconds` is 0.5 to 30 (default 5)
+and out-of-range values are rejected, never clamped; `outputPath` is a
+`WriteFile` path that must end in `.wav`.
+
+**Capture.** The stream is the audio the app sends to the mixer, taken with
+`ActivateAudioInterfaceAsync("VAD\Process_Loopback")` in include-process-tree
+mode for this process id, so system sounds and other applications are excluded
+and the endpoint volume does not apply. It needs Windows build 20348 or later
+on x64 (`unsupported-os` otherwise). The activation completion handler is agile
+(a 5 s timeout bounds it). The capture runs on its own MTA thread
+(`AudioOutputProbe.Capture`, above-normal priority), event driven in 50 ms wait
+slices, draining at most 256 packets per pass, at 48 kHz float32 stereo. The
+analysis and the WAV write run on a worker after the capture stopped. The app's
+audio threads are never blocked and never allocate for the probe; the only code
+on them is the tap hook below, and only while armed. A capture buffer that fills
+before the requested time elapses stops the capture early and sets
+`Diagnostics.BufferTruncated`.
+
+**Silence.** While the process renders nothing, the loopback stream delivers
+continuous 10 ms packets of exact zeros (observed with a scratch harness against
+the live Windows mixer, not yet through the running app), so silence is judged
+from the analysis, not from the absence of packets. Verdict `silent`, or a
+capture with no packets at all (an endpoint change, for example), is status
+`no-audio-rendered`.
+That is a failed response (`command-failed`) that still carries the analysis and
+diagnostics: silent output is never reported as a pass, because it usually means
+the preview audio is off or muted.
+
+**Status.** `captured` is the only success. The failures are `unsupported-os`,
+`tap-busy` (another latency measurement has the tap), `activation-failed`,
+`initialize-failed`, `capture-failed`, `no-audio-rendered` and `wav-write-failed`
+(the analysis is still returned, `FailureStage` is `wav`). Activation,
+initialize and capture failures carry `FailureStage` and `FailureHResult`. Every
+failure is visible; nothing falls back to another source.
+
+**Analysis** (`Data.Analysis`, 10 ms blocks, dBFS floored at -120): RMS and peak
+per channel and the channel balance; the share of blocks below -60 dBFS;
+clipping (runs of at least two samples at or above 0.999, counted as samples and
+events); clicks (a second difference of at least 0.05 and at least ten times the
+local RMS second difference, with a cooldown, and neighbours that stay quiet, so
+bright tones, noise and level steps do not count while an isolated spike or a DC
+step does); dropouts (exact-zero runs of 0.5 to 100 ms with audio above -50 dBFS
+for at least 10 ms on both sides, so leading, trailing and between-sound silence
+is not a dropout); non-finite samples (counted and neutralised); and the packet
+flags (discontinuity, silent, timestamp error) and the largest timestamp gap.
+`Verdict` is `empty`, `silent`, `ok` or `issues`, and `Findings` states each
+issue in words.
+
+**Latency** (`measureLatency`). A measurement arms `AudioMonitorTap` for the
+capture plus two seconds: a preallocated single-writer ring of 48 kHz stereo
+with a QPC drain stamp per packet (500 packets per second budgeted). The hook is
+`WasapiAudioCapture.OfferToMonitorTap`, called on the capture-delivery thread
+after sample conversion and before the packet is handed to playback; only a
+capture instance that feeds a preview playback offers (the microphone instance
+never does). Disarmed it costs one volatile read of a static reference; armed it
+is a QPC stamp and a copy into the ring, with no lock and no allocation. The
+reader validates what it copied, so a snapshot that raced the writer loses the
+overwritten prefix and never returns torn samples; a packet larger than the
+ring is rejected and counted (`Diagnostics.TapRejectedPackets`). Both streams
+are laid on a common 48 kHz QPC timeline and reduced to 1 ms RMS envelopes,
+cross-correlated over -20 to +1000 ms, and the best lag is refined within 3 ms
+at sample level when the raw waveforms correlate (`Resolution` is `sample`, else
+`envelope-1ms`). A result is `ok` only with an envelope correlation of at least
+0.6, a second distinct peak of at most 0.9 of the best, at least 200 overlapping
+bins, both inputs above -60 dBFS and the peak inside the window. Otherwise
+`insufficient-signal` (silent input or output, unrelated or repeating audio, a
+peak at the window edge) or `unavailable` (no tap packets) with a `Reason`;
+the tool never reports a plausible guess.
+
+The measured latency is capture-delivery-to-mixer: from a capture packet being
+handed to the app until the same audio appears in the app's process loopback
+stream. It excludes device input latency and endpoint output latency, and every
+result echoes that in `Latency.Scope`.
+
+CLI: `ssctl audio listen [--seconds N] [--wav PATH] [--latency] [--json]`. MCP:
+`listen_audio_output`.
 
 ### 2.10 Fingers: UI tree and invoke
 
-`GetUiTree` walks the live XAML tree on the UI thread and returns named or
-interactive elements with type, name, automation id and name, visible text,
-enabled, effective visibility, toggle state, range value, selection, bounds
-in window DIPs, and the automation patterns each supports.
-`InvokeUiElement` resolves a target by `x:Name`, then automation id, then
-automation name (must be unique, otherwise the candidates are returned), and
-performs `invoke`, `toggle`, `set-value`, `select`, `expand`, `collapse` or
-`focus` through the element's automation peer, exactly as UI Automation
-would. Hidden or disabled targets are rejected unless `force` is set.
+`GetUiTree` (66) and `InvokeUiElement` (67) let an agent read and operate any
+control as an assistive technology would, through automation peers. Both run on
+the UI thread through the window's dispatch controller: owners are
+`UiAutomationBridge` (walk and actions, `Sussudio/Controllers/Window`) and
+`UiElementReader` (element state), with the decisions that need no visual tree in
+pure, unit-tested types (`UiTargetResolver`, `UiActionPlanner`,
+`UiSelectionMatcher`, `UiVisibilityRules`) and the wire types in
+`UiAutomationModels`.
+
+**Tree.** The walk starts at the window content and at the child of every open
+popup (`VisualTreeHelper.GetOpenPopupsForXamlRoot`), so flyouts and menus are
+visible. Each node reports its path, type, `x:Name`, `AutomationId`, automation
+name, visible text, enabled state and reason, effective visibility and reason,
+bounds in window DIPs, the automation patterns its peer supports (invoke,
+toggle, value, range-value, selection, selection-item, expand-collapse,
+scroll-item), toggle state, range value, text value, selected item and index,
+item texts (up to 50, with the full count), expand state, and its
+`KeyboardAccelerator`s. A path such as `window/Grid[0]/Button#RecordButton[3]`
+selects exactly one element. Passwords are never reported.
+*Visibility* is effective: collapsed or opacity at or below 0.01 on the element
+or any ancestor, or a zero-sized element, is hidden, and the reason names the
+root-most culprit. *Disabled* includes disabled ancestors. `interactiveOnly`
+(default true) lists only elements whose peer exposes invoke, toggle, value,
+range-value, selection-item, selection or expand-collapse, flattening the layout
+containers around them; `false` lists every element. The output is bounded:
+`maxDepth` 1 to 64 (default 10; nodes at the limit are listed without children and
+their descendants are counted), at most 1500 emitted nodes and 20000 visited
+elements; `Truncated` and `TruncationReason` say when a cap stopped the walk, so a
+partial tree is never mistaken for the whole UI. `root` limits the walk to one
+element, resolved like an invoke target.
+
+**Resolving a target.** In order: a path from the tree, then `x:Name`, then
+`AutomationId`, then automation name, then visible text. `x:Name` and
+`AutomationId` match exactly and case-sensitively; automation name and text are
+trimmed, whole-string and case-insensitive. The first level that matches decides;
+a lower level is never consulted. Among the matches, hidden ones are dropped
+when a visible one exists, then disabled ones, then non-interactive ones (so a
+label inside a button does not make the button ambiguous). If more than one
+element remains the call is `ambiguous`: the error lists the candidates (up to
+10, with the total) each with the path that selects exactly it, and `force` never
+picks among them. No match is `not-found` with near-miss suggestions. A single
+hidden element is `hidden` and a single disabled one is `disabled` unless `force`
+is true; the response lists what `force` overrode.
+
+**Actions.** `action` is `invoke`, `toggle`, `set-value`, `select`, `expand`,
+`collapse`, `focus` or `scroll-into-view`; omitted, the control's natural action
+is used (a value implies `set-value`). The planner rejects before touching the UI
+what the element's facts rule out: an unknown action (listing the valid ones), an
+action the element has no pattern for (listing what it supports), `set-value`
+without a value or with a non-numeric or out-of-range value on a range control
+(rejected, never clamped) or on a read-only text control, `select` with the wrong
+value arity, `expand` or `collapse` on a leaf, and a value passed to an action
+that takes none. Actions go through the peer's pattern providers
+(`IInvokeProvider`, `IToggleProvider`, `IValueProvider`, `IRangeValueProvider`,
+`ISelectionItemProvider`, `IExpandCollapseProvider`, `IScrollItemProvider`);
+`focus` uses `Focus(FocusState.Programmatic)`. `select` on a container takes the
+item text (exact, case-insensitive, trimmed) or `#N` for a zero-based index; a
+bare number is text, because labels such as "60" are common. Duplicate item text
+is ambiguous and lists the indexes. `Via` names the mechanism used
+(`peer:Invoke`, `peer:Toggle`, ...); for a combo item with no realized container
+it is `Selector.SelectedIndex`. Item text of non-string items is best effort
+(`ToString()`).
+
+**Not supported: `accelerator`.** WinUI has no public API to raise a
+`KeyboardAccelerator`, so the action is rejected with a specific message. The
+tree lists each element's accelerators; the agent invokes the element that owns
+one.
+
+**Response.** The action is performed in one UI-thread dispatch; after a 100 ms
+settle delay a second dispatch re-reads the element, and `Element` is its state
+after the action (an element that left the tree, such as a flyout item whose
+flyout closed, is reported as such). `invoked` means the peer accepted the call;
+`force` skips only the pre-check, so a peer may still refuse (a disabled control
+usually does), which is `action-failed` with the reason. Statuses: `invoked`,
+`not-found`, `ambiguous`, `hidden`, `disabled`, `invalid-action`,
+`action-unsupported`, `invalid-value`, `action-failed`, `window-unavailable`.
+Every attempt is logged as `AUTO-UI-INVOKE`.
+
+CLI: `ssctl ui tree [--root NAME] [--depth N] [--all] [--json]` and
+`ssctl ui invoke <target> [action] [value] [--force] [--json]`. MCP:
+`get_ui_tree`, `invoke_ui_element`.
+
+### 2.11 Hub observer cost
+
+The diagnostics hub is the app's largest observer. Before this slice one refresh cost 22.4 ms (p50, mean 27.5 ms) and 324 KB, which is
+603 KB/s of the process's 820 KB/s allocation (73 %) at steady preview (the hub figure is process-wide during the refresh, so an upper bound). The 500 ms interval, the alert rules and the snapshot wire
+contract are unchanged; only what a refresh costs changed.
+
+Where the cost was (a throwaway per-stage probe over 700 ticks; the patch is kept at
+`artifacts/perf-overhaul/hub-cost/stage-probe.patch` and the raw table at `stage-probe-raw.json`):
+
+| Stage | Wall per tick | Allocated per tick |
+|---|---|---|
+| Process resources (`Process.Refresh`, `WorkingSet64`, `PrivateMemorySize64`, `TotalProcessorTime`) | 22.3 ms | 14.2 KB |
+| Preview runtime snapshot, requested three times (three UI dispatches, three full builds) | 1.4 ms wall, 3 x 0.33 ms on the UI thread | 225.7 KB |
+| Health fragment | 0.69 ms | 23.1 KB |
+| Capture runtime fragment | 0.12 ms | 17.9 KB |
+| Alerts | 0.06 ms | 8.0 KB |
+| Lane strings, projection, timeline, counters, the rest | 0.3 ms | about 16 KB |
+| `IntervalCadenceStatistics.Compute` clone and sort (4.07 calls, inside the preview and health rows) | 0.17 ms | 37.4 KB |
+
+The sorts are cheap (0.17 ms a tick); the clones and the process enumeration are what cost.
+
+Three changes, each measured:
+
+- `HubProcessCounters` reads working set, private bytes and kernel plus user time with `K32GetProcessMemoryInfo` and `GetProcessTimes`
+  on the current-process pseudo-handle, instead of `Process.Refresh()`, which enumerates every process on the machine. The values
+  are the same counters (`WorkingSetSize`, `PrivateUsage`, kernel plus user ticks); the hub's working set and private bytes now match
+  the perf report's `ProcessSensors` reading to 0.1 MB in both after runs (421.9 and 550.7 MB in one of them). It removed the 22 ms and 14 KB.
+- The preview fragment makes one provider call. The old overload shape called the provider as producer-epoch probe, value and
+  producer-epoch probe, so every tick built the full preview snapshot three times and hopped to the UI thread three times to watch a
+  window of about 2 ms. One UI work item is consistent by construction, like the view-model fragment, so the before and after
+  epochs the old bracket compared are now equal by definition and `preview_runtime_producer_changed` cannot fire; the cross-fragment
+  checks in `BuildSnapshotMixedEpochReasons` (for example `view_model_preview_runtime`) are unchanged. The provider has no
+  epoch-only read; adding one would change the constructor wiring that two source-text tests pin, for a check that watched a window
+  the single hop no longer has. It removed about 150 KB and two UI dispatches a tick.
+- `IntervalCadenceStatistics.Compute` sorts in a pooled scratch instead of cloning the window. Callers still pass the array they
+  also publish as `RecentIntervalsMs`, so the order must survive; it does (tested).
+
+A/B, interleaved ABBA (before-a, after-a, after-b, before-b), the base build 9dcc8993e against this branch, three 30 s perf windows
+each after 15 s of warm-up, steady preview at about 60 fps, same `ssctl`, every window followed by a graceful `window close`.
+Mean of six windows per build, range in brackets:
+
+| | Before | After |
+|---|---|---|
+| `telemetry.hub_refresh` p50 | 22.4 ms (20.7-24.8) | 1.8 ms (1.6-2.1) |
+| `telemetry.hub_refresh` mean | 27.5 ms | 3.6 ms |
+| `telemetry.hub_refresh` p99 | 80.8 ms (64-103) | 28.2 ms (16-54) |
+| `telemetry.hub_refresh` max | 81.8 ms | 28.5 ms |
+| `telemetry.hub_alloc` per refresh | 323.8 KB (320-328) | 133.2 KB (132-136) |
+| Hub allocation rate | 603 KB/s | 262 KB/s |
+| Process allocation rate (`Gc.AllocatedBytes`) | 820 KB/s | 443 KB/s |
+| Process CPU, perf report | 47.7 % of a core (44.3-50.8) | 41.5 % (38.5-43.1) |
+| `ui.dispatcher_latency` p99 | 19.6 ms | 18.8 ms |
+
+`ui.dispatcher_latency` did not move: that is the UI thread's own stalls, and the refresh p99 that remains (16-54 ms) is the hub
+waiting on a UI hop during one of them. GC counts are too small to compare (1 to 3 gen0 collections per window).
+
+The machine was not idle. About 10 of 32 logical cores outside Sussudio were busy in every window (other applications; recorded per
+window in `artifacts/perf-overhaul/hub-cost/raw/*-load.json`, with the build-tooling CPU sampled before each window and the window held
+until it was under 10 % of a core). An earlier before run that overlapped another worktree's full validation is kept under
+`raw/overlapped-with-other-validate/` and not used. The deterministic numbers (allocation) are robust to that; the timing numbers
+carry the noise their ranges show.
+
+What is left (133 KB a tick): the preview build is about 66 KB of it (derived from the probe: 75 KB a build minus the 9 KB sort clone), almost all ring copies in `D3D11PreviewRenderer.Get*Metrics`
+(about nine copies of a 1,200-sample ring per snapshot, each 9.6 KB, plus the caller's own copy that `Compute` no longer clones). A
+`Compute(ReadOnlySpan<double>)` overload fed from pooled scratch filled under the ring lock would remove most of it; it is the
+renderer's file and the existing contract test resolves `Compute(double[], double)` by reflection, so it was left. Health (23 KB) and
+capture runtime (18 KB) are the next two. Alert message strings (8 KB, about 0.06 ms) are built eagerly each tick; making them lazy
+touches about thirty call sites of the alert path for 2.5 % of the allocation, so it was not done.
+
+Demand gating (not done; recommendation only). Pausing the hub while no automation client is connected is not safe as an on/off
+switch. The loop is also the app's own observer, not only a cache for clients: auto-verification of a finished recording runs from the
+tick that sees `IsRecording` fall, and `LastVerification` then feeds `verify_recording`, the `VerificationReady` wait condition, the HDR
+parity alert and the truth verdict; the alert, event and recent-counter baselines, the 2-minute timeline and the audio-mute and
+recording-growth timers need continuous sampling; `wait_for_condition` and every control acknowledgement read the cached snapshot
+(`GetLatestSnapshot`), which would be stale or empty after an idle gap (only `GetSnapshot`, `AssertSnapshot` and the
+recording toggle call `RefreshSnapshotNowAsync`). Pipe clients are also one-shot connections, so "connected" is not a signal; the only available one is "a
+request in the last N seconds". With the refresh now about 2 ms and 133 KB, the saving from a slower idle tick is small; live2 had
+already shown a 2,000 ms poll against 500 ms at noise level in CPU. If gating is still wanted, gate on recent request or an active
+recording and keep a floor tick, and decide that policy explicitly.
 
 ## 3. Automation commands
 
@@ -644,6 +864,17 @@ Appended after `SetFlashbackGpuDecode = 57`; manifest revision 2 to 3.
 Tool-side only (no app command): `ssctl perf trace analyze <file>`,
 `ssctl perf experiment <spec.json>`, MCP `analyze_frame_trace`,
 `run_perf_experiment`.
+
+Commands 65-67 are ready-independent, return `Data` without an automation
+snapshot and use the extended response timeout. A failed `CaptureAudioOutput`
+(`command-failed`) or `InvokeUiElement` (`invalid-request` for `not-found`,
+`ambiguous`, `invalid-action`, `invalid-value` and `action-unsupported`;
+`command-failed` for `hidden`, `disabled`, `action-failed` and
+`window-unavailable`) still carries the full result in `Data`, because the
+candidates, element state or analysis are how the agent recovers. The MCP tools
+return that `Data` as structured content on failure too, unlike the query tools.
+The ssctl `audio` and `ui` verbs and the three MCP tools are projections of these
+commands only.
 
 ### 3.1 Perf report shape
 
@@ -804,6 +1035,84 @@ Written before the code, per the testing policy:
   renderer unregistering late.
 - Timeline envelope (slice 2b): not an isolated test. The cause was a response-shape default (the envelope embedded the cached
   snapshot), not logic, so it is checked live: `timeline --max N` returns exactly N entries and no envelope snapshot.
+- Ears (slice 4, written before the code): digital silence reads `silent` with
+  floor levels and never as healthy audio or an error; an empty capture says
+  `empty`; a clean tone has no findings; clipping sample and event counts
+  agree; a single-sample click is found once at the right time; a short
+  exact-zero run inside audio is one dropout and not two clicks; leading,
+  trailing and between-sound silence is not a dropout; bright tones, white noise
+  and broadband level steps are not clicks, an isolated spike and a DC step are;
+  a dropout inside noise is found; one silent channel is an imbalance finding;
+  NaN and infinity are counted and neutralised; packet flags and timestamp gaps
+  are counted; the silent-block percentage follows the 10 ms blocks; the WAV is
+  a valid IEEE-float file that round-trips exactly.
+- Latency (slice 4): a delayed, gain-changed copy is measured within 1 ms with
+  the right gain; delays near both ends of the window are measured and a delay
+  outside it is refused, never reported as another lag; silent input and silent
+  output are refused with their own reasons; unrelated audio is refused as low
+  confidence; steady or exactly repeating audio is refused as ambiguous; missing
+  packets or timestamps are `unavailable`; delivery jitter does not move the
+  result; a gap in the loopback stream does not break alignment around it; a
+  mismatched waveform (inverted polarity) falls back to `envelope-1ms` and says
+  so.
+- Tap ring (slice 4): an unwritten ring snapshots to nothing; packets round-trip
+  exactly with their start times; a ring written past capacity returns only the
+  newest whole packets, contiguous and uncorrupted; a write that laps the ring
+  during a snapshot costs it the overwritten prefix and never returns torn
+  samples (a test seam makes the race deterministic); a packet table smaller
+  than the sample ring still yields a gapless run; a packet larger than the ring
+  is rejected and counted; a concurrent writer and snapshotting reader never see
+  a corrupted sample; the process-wide tap is a no-op while disarmed, arms
+  exactly once, re-arms after disarm, and only the arming ring may disarm it.
+- Fingers, target resolution (slice 4): an empty target is rejected before any
+  search; no match lists capped near-miss suggestions and never picks a close
+  one; precedence is path, `x:Name`, `AutomationId`, automation name, text, and
+  a lower level is never consulted after a higher one matched (even unusably);
+  `x:Name` and `AutomationId` are exact and case-sensitive, automation name and
+  text trimmed and case-insensitive, text never a substring; two usable matches
+  are ambiguous with capped candidates whose paths each resolve to exactly that
+  element; a hidden twin never blocks the visible element and a label inside a
+  button never makes the button ambiguous; a single hidden or disabled element
+  is rejected with its reason (both reasons when both), `force` overrides the
+  pre-check and says what it overrode, and `force` never picks among ambiguous
+  elements.
+- Fingers, actions and selection (slice 4): an unknown action lists the valid
+  ones and `accelerator` says plainly it is unsupported; an omitted action
+  resolves to the natural one and a control with none says so; an action with no
+  pattern lists what the element supports; `set-value` needs a value, a range
+  value must be finite and inside its limits (rejected, never clamped), a
+  read-only text control is rejected; `select` takes no value on an item and
+  needs one on a container; `expand` and `collapse` on a leaf are rejected;
+  a value on an action that takes none is rejected and an empty value counts as
+  absent; `focus` and `scroll-into-view` need no pattern. Item selection matches
+  exact text or `#N` and treats a bare number as text; duplicate text is
+  ambiguous and lists indexes; no match lists capped items; an out-of-range
+  index and an empty list are errors.
+- Fingers, visibility (slice 4): a collapsed element or ancestor is hidden and
+  the reason names the root-most culprit; opacity at or below 0.01 on the element
+  or any ancestor is hidden; a zero-sized element is hidden and a zero-sized
+  ancestor alone is not; dim but visible chains stay visible with no reason.
+- Wire to tools (slice 4): the real DTOs, serialized as the pipe server does,
+  render every field the ssctl formatter reads (a renamed field would otherwise
+  print "-" silently); failed responses still print candidates, element state,
+  analysis and failure stage; a response without data prints the message and error
+  code; null optional blocks do not crash; a truncated tree says so; nesting is
+  kept. The MCP factory keeps a failed call's object payload as structured content
+  and still marks the call an error; a failure without an object payload is a
+  plain error; success is unchanged; the result owns its data after the response
+  document is disposed.
+
+- Hub observer cost (written before the code): the pooled sort scratch is longer than the window and holds an earlier renter's
+  values, so a window must use its own length (a 1,024-sample window of 1000 ms followed by a 600-sample window of 1 ms in the same
+  size class reports 1 ms, not 1000); window sizes at and around the pool's size classes (1, 15, 16, 17, 1,023 to 1,025) match a
+  sort of a private copy; a wrapped ring window (full, write index mid-ring, from `RingBufferHelpers.Copy`) keeps its chronological
+  order and matches a sort of a copy; eight concurrent callers on different value bands never see each other's window; an empty window
+  is still rejected before a buffer is rented. A concurrent writer to the live ring is not a `Compute` failure mode, because
+  `Compute` only sees the private copy made under the owner's lock. `HubProcessCounters` reports the same working set, private
+  bytes and CPU time as the `Process` properties it replaced, in the same process (a unit slip or the wrong struct member would be
+  silent in a live snapshot).
+- Hub snapshot contract (not an isolated test): the 807 snapshot keys, their order and their value kinds are identical before and
+  after, compared live (`artifacts/perf-overhaul/hub-cost/contract-compare.json`).
 
 - Hardening pass (listed before the code): in the ingress ledger four frames that share a set all survive, the fifth evicts the smallest arrival
   tick (not the least recently written) and never leaks its sample, rewriting a key replaces it in place, and a reader racing the

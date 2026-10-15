@@ -816,6 +816,15 @@ public sealed partial class AutomationCommandDispatcher : IAutomationCommandDisp
             case AutomationCommandKind.GetLogTail:
                 return ExecuteGetLogTailCommand(payload, correlationId);
 
+            case AutomationCommandKind.CaptureAudioOutput:
+                return await ExecuteCaptureAudioOutputCommandAsync(payload, correlationId, cancellationToken).ConfigureAwait(false);
+
+            case AutomationCommandKind.GetUiTree:
+                return await ExecuteGetUiTreeCommandAsync(payload, correlationId, cancellationToken).ConfigureAwait(false);
+
+            case AutomationCommandKind.InvokeUiElement:
+                return await ExecuteInvokeUiElementCommandAsync(payload, correlationId, cancellationToken).ConfigureAwait(false);
+
             default:
                 return CreateResponse(
                     correlationId,

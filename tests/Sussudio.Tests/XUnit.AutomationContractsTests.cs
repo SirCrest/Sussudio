@@ -2265,6 +2265,11 @@ static partial class Program
             "FrameTrace" => "{\"action\":\"status\"}",
             // Unknown name: the handler must reject it without touching the process environment.
             "SetTuningKnob" => "{\"name\":\"SUSSUDIO_NOT_A_KNOB\",\"value\":\"1\"}",
+            // The agent senses have real side effects (a loopback capture, UI actions), so the harness sends payloads that
+            // validation rejects before any port is touched; the test only proves the readiness gate is bypassed.
+            "CaptureAudioOutput" => $"{{\"outputPath\":{JsonString(Path.Combine(tempRoot, "harness-not-a-wav.txt"))}}}",
+            "GetUiTree" => "{\"maxDepth\":0}",
+            "InvokeUiElement" => "{}",
             "Authenticate" or
             "GetSnapshot" or
             "GetDiagnostics" or

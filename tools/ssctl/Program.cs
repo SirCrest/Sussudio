@@ -197,6 +197,7 @@ internal static class SsctlHelpWriter
         WriteWindowSection(writer);
         WriteWaitVerifySection(writer);
         WritePerformanceSection(writer);
+        WriteSensesSection(writer);
         WriteFlagsSection(writer);
     }
 
@@ -338,6 +339,16 @@ internal static class SsctlHelpWriter
         WriteCatalogHelpLine(writer, AutomationCommandKind.GetLogTail, "[--json]");
         writer.WriteLine("  perf trace analyze <file> [--top N] [--json]   (offline: analyzes a dump from 'perf trace dump'; no app needed)");
         writer.WriteLine("  perf experiment <spec.json> [--out DIR] [--json]   (knob A/B run; takes minutes; restores the app afterward)");
+        writer.WriteLine();
+    }
+
+    private static void WriteSensesSection(TextWriter writer)
+    {
+        writer.WriteLine("Senses (hear the app's own audio output; read and operate its UI):");
+        WriteCatalogHelpLine(writer, AutomationCommandKind.CaptureAudioOutput, "[--json]");
+        WriteCatalogHelpLine(writer, AutomationCommandKind.GetUiTree, "[--json]");
+        WriteCatalogHelpLine(writer, AutomationCommandKind.InvokeUiElement, "[--json]");
+        writer.WriteLine("    ui invoke actions: invoke|toggle|set-value|select|expand|collapse|focus|scroll-into-view (keyboard accelerators are listed by 'ui tree' but cannot be raised)");
         writer.WriteLine();
     }
 

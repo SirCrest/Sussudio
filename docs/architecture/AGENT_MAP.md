@@ -77,7 +77,7 @@ tests that pin which file owns a symbol; see AGENTS.md § Testing Policy.
 | MJPEG decode pipeline | `Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.cs`, `Sussudio/Services/Capture/Mjpeg/FrameFingerprintCadenceTracker.cs` | Bounded compressed input, CPU decode workers, output ordering, and source-packet cadence metrics. |
 | GPU telemetry | `Sussudio/Services/Gpu/NvmlMonitor.cs` | Optional NVML sampling and graceful unavailable telemetry. |
 | FFmpeg D3D11 ownership | `Sussudio/Services/Gpu/FfmpegD3D11Ownership.cs` | Atomic device/context reference transfer to FFmpeg with rollback before publication. |
-| Automation diagnostics | `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`, `AutomationDiagnosticsHub.Evaluation.cs`, `AutomationDiagnosticsHub.FlashbackEvaluation.cs`, `AutomationDiagnosticsHub.Snapshots.cs`, `AutomationDiagnosticsHub.SnapshotProjection.cs` | Snapshot assembly and health evaluation. See [automation](#automation) for collector/assembly boundaries. |
+| Automation diagnostics | `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`, `AutomationDiagnosticsHub.Evaluation.cs`, `AutomationDiagnosticsHub.FlashbackEvaluation.cs`, `AutomationDiagnosticsHub.Snapshots.cs`, `AutomationDiagnosticsHub.SnapshotProjection.cs`, `HubProcessCounters.cs` | Snapshot assembly and health evaluation. See [automation](#automation) for collector/assembly boundaries. |
 | Automation snapshot models | `Sussudio/Models/Automation/AutomationSnapshot.cs`, `AutomationModels.cs` | Flattened evidence snapshots and command/runtime DTOs; preserve wire shape. |
 | Capture models | `Sussudio/Models/Capture/CaptureModels.cs` | Capture configuration, input media formats, health, cadence, and runtime DTOs. `MediaFormat` owns input frame-rate and pixel-format behavior beside `CaptureDevice`. |
 | Recording models | `Sussudio/Models/Recording/RecordingModels.cs` | Encoder capabilities, recording statistics, and integrity DTOs. `RecordingIntegrityStatus` and `RecordingIntegrityAudioStatus` define the typed integrity vocabulary; only the `AutomationSnapshot` projection turns these values into wire text. `EncoderSupport` owns recording-format-to-NVENC codec-name mapping. |
@@ -85,6 +85,7 @@ tests that pin which file owns a symbol; see AGENTS.md § Testing Policy.
 | Status messages | `Sussudio/Models/StatusMessages.cs` | Owns footer status-line wording (`MainViewModel.StatusText`) and the `CaptureService.StatusChanged` text that feeds it, plus the style rules: sentence-case fragments without a trailing period, `...` only for work in flight, `{Subject} failed: {reason}`, `; ` before a consequence, ASCII only. `Failed` does not double a `{Subject} failed` prefix; `Detail` collapses whitespace and drops trailing periods from exception and service text; `OperationFailed` maps internal UI operation names (log tokens) to readable subjects. Service result messages (`FinalizeResult.StatusMessage`, Flashback export results) are data read by automation and diagnostics tools and stay with their producers. Add a new footer message here rather than inline. |
 | Source telemetry | `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs`, `NativeXuAtProtocol.cs` | Native XU AT-command transport and source-signal protocol parsing. `LogAtResponse` and `LogTopology` log an AT answer or a node layout on first sight and on change only (plus a 30 s heartbeat per command under verbose logging), so the rolling poll does not flood the log tap. |
 | Performance telemetry | `Sussudio/Services/Performance/` (histograms, windows, frame trace, tuning knobs, hot threads, process sensors, log tap, report builder), `Sussudio/Services/Automation/AutomationCommandDispatcher.PerfTelemetry.cs` | Agent-facing latency/CPU/GC/trace telemetry and runtime tuning knobs. See [performance telemetry](#performance-telemetry) and `docs/architecture/performance-telemetry.md`. |
+| Agent senses (ears and fingers) | `Sussudio/Services/Performance/AudioOutputProbe.cs`, `Sussudio/Services/Automation/UiTargetResolver.cs`, `Sussudio/Controllers/Window/UiAutomationBridge.cs` | Hearing the app's own audio output (process loopback plus the capture-delivery tap) and reading and operating live UI controls through automation peers. See [agent senses](#agent-senses-ears-and-fingers) and `docs/architecture/performance-telemetry.md` sections 2.9 and 2.10. |
 | App service contracts | `Sussudio/Services/Contracts/ServiceContracts.cs`, `Sussudio/Services/Contracts/ISourceSignalTelemetryProvider.cs` | Shared source, recording, preview, and telemetry interfaces, separate from `Sussudio.Automation.Contracts` wire/protocol contracts. |
 | Recording | `Sussudio/Services/Recording/LibAvEncoder.cs`, `LibAvEncoder.Audio.cs`, `LibAvEncoder.VideoFrames.cs`, `LibAvRecordingSink.cs`, `Sussudio/Services/Recording/Verification/RecordingVerifier.cs`, `InProcessRecordingStructureVerifier.cs` | Encoder lifecycle, audio/video input, sink queues, and verification. See [recording](#recording). |
 | Portable release tooling | `tools/reliability-gates.ps1`, `tools/package-github-release.ps1`, `tools/release/release-helpers.ps1`, `Sussudio/ffmpeg/manifest.json` | Reliability gates, package assembly, shared release helpers, and native-runtime manifest. |
@@ -287,10 +288,14 @@ Automation diagnostics ownership:
   `AutomationViewModelPorts`; this dispatcher root should not expose or store
   the aggregate automation ViewModel dependency. Keep the dispatcher in a
   single class body unless a command group becomes a named injected
-  collaborator rather than an in-file section; the one deliberate partial is
+  collaborator rather than an in-file section; the deliberate partials are
   `AutomationCommandDispatcher.PerfTelemetry.cs` (see
   [performance telemetry](#performance-telemetry)), whose handlers touch only
-  process-wide telemetry state and share the payload/path helpers in this file.
+  process-wide telemetry state, and the agent-sense pair
+  `AutomationCommandDispatcher.AudioProbe.cs` and
+  `AutomationCommandDispatcher.UiAutomation.cs` (see
+  [agent senses](#agent-senses-ears-and-fingers)); all three share the
+  payload/path helpers in this file.
   Required string and boolean extraction have one owner in the dispatcher,
   shared by custom routes and table handlers. Its narrow request-validation
   exception maps existing caller rejections to `invalid-request`; invoked port
@@ -439,6 +444,13 @@ Automation diagnostics ownership:
   performance-timeline ring reads, append mechanics and the direct159field
   `AutomationSnapshot` to `PerformanceTimelineEntry` initializer, grouped by
   capture, preview, Flashback playback/export and process resources.
+- `Sussudio/Services/Automation/HubProcessCounters.cs` owns the hub's current-process
+  working set, private bytes and CPU time read (two kernel32 calls, no process
+  enumeration); `AutomationDiagnosticsHub.Snapshots.cs` owns when it is sampled.
+  `ProcessSensors.cs` stays the full sensor read for perf reports. The preview
+  fragment in `AutomationDiagnosticsHub.Snapshots.cs` is one provider call (one UI
+  work item), so it has no producer-epoch bracket; see
+  `performance-telemetry.md` 2.11 for the cost evidence.
   `AutomationSnapshotRegressionTests.TimelinePreservesEveryCapturedField`
   checks independent default/populated timeline fixtures captured before the
   copy-only projection layers were removed. No providers or devices start.
@@ -587,6 +599,82 @@ recording and audio sites call into it, never the other way round.
   check for this surface: it drives ssctl through report, window, marker,
   trace, knob and log-tail, saves each raw response and writes
   `verify-result.json`. It starts no preview or recording.
+
+## Agent Senses (Ears And Fingers)
+
+Contract and rationale: `docs/architecture/performance-telemetry.md` sections 2.9
+(ears) and 2.10 (fingers). Commands 65-67 (`CaptureAudioOutput`, `GetUiTree`,
+`InvokeUiElement`) are ready-independent, return `Data` without an automation
+snapshot, and keep a failed result's `Data` so the agent can recover.
+
+Ears (all under `Sussudio/Services/Performance/`, no UI or capture-device
+dependency):
+
+- `AudioOutputProbe.cs` owns one `CaptureAudioOutput` run: process loopback
+  activation of this process id (include-process-tree), the dedicated MTA capture
+  thread `AudioOutputProbe.Capture` (event driven, 50 ms wait slices, at most 256
+  packets per drain), the optional WAV write and the status mapping
+  (`captured` is the only success; `no-audio-rendered`, `unsupported-os`,
+  `tap-busy`, `activation-failed`, `initialize-failed`, `capture-failed` and
+  `wav-write-failed` are visible failures). `AudioOutputProbeModels.cs` holds its
+  response DTOs (`AudioOutputProbeResult`, `AudioProbeDiagnostics`), separate so the
+  test project can link them without the Windows interop.
+- `WasapiProcessLoopbackInterop.cs` owns the `ActivateAudioInterfaceAsync`
+  process loopback activation, its agile completion handler and the 5 s timeout.
+- `AudioSignalAnalysis.cs` and `AudioLatencyAnalysis.cs` are the pure analysis
+  (levels, clipping, clicks, dropouts, verdict; envelope cross-correlation with the
+  confidence gates). Every threshold is a named constant. `AudioWavWriter.cs` writes
+  the float WAV.
+- `AudioMonitorTap.cs` owns the single-writer snapshot ring (`AudioMonitorRing`)
+  and the process-wide arm/disarm point (`AudioMonitorTap`). Its only producer is
+  `WasapiAudioCapture.OfferToMonitorTap` in `Sussudio/Services/Audio/`, called on the
+  capture-delivery thread for an instance that feeds a preview playback: one volatile
+  read when disarmed, a QPC stamp and a copy when armed, no lock, no allocation.
+- `Sussudio/Services/Automation/AutomationCommandDispatcher.AudioProbe.cs` owns
+  the command 65 handler (payload validation, `.wav` and `WriteFile` path policy,
+  response and error mapping).
+
+Fingers:
+
+- `Sussudio/Controllers/Window/UiAutomationBridge.cs` owns the UI-thread work for
+  commands 66 and 67: the bounded tree walk (window content plus open popups),
+  target resolution against live elements, the peer pattern calls and the post-action
+  re-read. `Sussudio/Controllers/Window/UiElementReader.cs` reads one element's state
+  (patterns, text, bounds, accelerators, effective visibility and enabled state).
+  `MainWindow` exposes both through `IAutomationWindowControl` (`GetUiTreeAsync`,
+  `InvokeUiElementAsync`) and creates the bridge lazily.
+- The decisions that need no visual tree are pure and unit tested in
+  `Sussudio/Services/Automation/`: `UiTargetResolver` (path, `x:Name`,
+  `AutomationId`, automation name, text; ambiguity, hidden and disabled handling),
+  `UiActionPlanner` (action and value validation against what the element
+  supports), `UiSelectionMatcher` (item text or `#N`) and `UiVisibilityRules`
+  (effective visibility). `UiAutomationModels.cs` owns the wire DTOs and status
+  constants.
+- `Sussudio/Services/Automation/AutomationCommandDispatcher.UiAutomation.cs` owns
+  the command 66 and 67 handlers and the status to error-code mapping
+  (`invalid-request` for what rewording fixes, `command-failed` for live UI state).
+- `accelerator` is not an invokable action: WinUI has no public API to raise a
+  `KeyboardAccelerator`, so the tree lists them and the agent invokes the owning
+  element.
+
+Wire surface: command IDs 65-67 (manifest revision 3, no bump) in
+`Sussudio.Automation.Contracts/AutomationCommandCatalog.cs`. ssctl verbs are
+`audio listen`, `ui tree` and `ui invoke` in `tools/ssctl/CommandHandlers.Senses.cs`
+(rendering in `tools/ssctl/SenseFormatters.cs`); MCP tools `listen_audio_output`,
+`get_ui_tree` and `invoke_ui_element` are in `tools/McpServer/Tools/AgentSenseTools.cs`
+and return a failed call's `Data` through
+`McpToolResultFactory.FromStructuredResponseKeepingFailureData` in
+`tools/McpServer/Tools/ToolCommandFormatter.cs`. AutomationClient and
+`tools/send-automation-command.ps1` resolve commands by catalog name and need no
+per-command code.
+
+Tests are isolated and cover failure modes only: audio analysis, latency, tap ring
+and WAV (`AudioSignalAnalysisTests`, `AudioLatencyAnalysisTests`, `AudioMonitorTapTests`), the
+pure UI resolver, planner, selection and visibility rules, the formatter field
+contracts and the MCP failure-data factory. Pure pieces are linked into
+`tests/Sussudio.Tests/Sussudio.Tests.csproj`. Process loopback activation, the
+visual tree walk, peer patterns and every UI action are verified only against the
+live app.
 
 ## Capture Runtime
 
@@ -3034,7 +3122,11 @@ Primary owners:
   `log tail`; `perf trace dump` resolves its path client-side because the app
   does not share the CLI working directory, and `perf trace analyze` and
   `perf experiment` are tool-only) and render through
-  `tools/ssctl/PerfFormatters.cs`.
+  `tools/ssctl/PerfFormatters.cs`. The agent-sense verbs (`audio listen`,
+  `ui tree`, `ui invoke`) live in `tools/ssctl/CommandHandlers.Senses.cs`
+  (`audio listen --wav` resolves its path client-side like `perf trace dump`) and
+  render through `tools/ssctl/SenseFormatters.cs`, which reuses the failure and
+  data helpers of `PerfFormatters`.
 - `tools/ssctl/Formatters.cs` owns CLI result formatting:
   shared result/JSON helpers, recent diagnostic-event output, standalone
   memory/GC summaries, capture option summaries, device-list output,
