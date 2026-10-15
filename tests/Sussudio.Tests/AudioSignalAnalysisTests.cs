@@ -14,6 +14,7 @@ namespace Sussudio.Tests;
 //   6. A short exact-zero run inside active audio is a dropout and must not also be counted as two clicks.
 //   7. Leading, trailing and long inter-sound digital silence is silence, not a dropout.
 //   8. Bright tones and white noise (large but legitimate second differences) must not trigger the click detector.
+//   8b. A level step in broadband audio must not be a click, but an isolated spike and a DC step must be.
 //   9. A dropout inside broadband noise must still be found.
 //  10. One silent channel against an active one is a channel imbalance finding, not a silent verdict.
 //  11. NaN and infinity must be counted and neutralised, never propagated into the statistics.
@@ -171,6 +172,37 @@ public sealed class AudioSignalAnalysisTests
 
         Assert.Equal(0, result.Clicks);
         Assert.Equal("ok", result.Verdict);
+    }
+
+    [Fact]
+    public void ALevelStepInBroadbandAudioIsNotAClick()
+    {
+        // 200 ms of quiet noise, then 200 ms of noise five times louder, repeated: the loud segments raise the second
+        // difference everywhere, so the first loud samples are not isolated spikes.
+        var quiet = AudioTestSignals.WhiteNoise(AudioTestSignals.Rate / 5, 0.004, seed: 21);
+        var loud = AudioTestSignals.WhiteNoise(AudioTestSignals.Rate / 5, 0.02, seed: 22);
+        var samples = new float[(quiet.Length + loud.Length) * 3];
+        for (var repeat = 0; repeat < 3; repeat++)
+        {
+            Array.Copy(quiet, 0, samples, repeat * (quiet.Length + loud.Length), quiet.Length);
+            Array.Copy(loud, 0, samples, repeat * (quiet.Length + loud.Length) + quiet.Length, loud.Length);
+        }
+
+        Assert.Equal(0, Analyze(samples).Clicks);
+    }
+
+    [Fact]
+    public void ADcStepIsAClick()
+    {
+        var samples = AudioTestSignals.Sine(AudioTestSignals.Rate, 100, 0.2);
+        for (var frame = 30_000; frame < 30_050; frame++)
+        {
+            samples[frame * 2] += 0.3f;
+            samples[frame * 2 + 1] += 0.3f;
+        }
+
+        // Both edges of the 50-frame offset are isolated discontinuities.
+        Assert.Equal(2, Analyze(samples).Clicks);
     }
 
     [Fact]

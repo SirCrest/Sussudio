@@ -727,6 +727,9 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
                 var convertedBuffer = converted.Buffer;
                 RaiseAudioLevelIfDue(convertedBuffer.AsSpan(0, converted.Length));
 
+                // Before the handoff: once playback owns the buffer it may return it to the pool at any moment.
+                OfferToMonitorTap(convertedBuffer, converted.Length, flags);
+
                 handoffToPlayback = DispatchConvertedAudioPacket(converted);
             }
             finally
@@ -741,6 +744,23 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
                     "IAudioCaptureClient.ReleaseBuffer");
             }
         }
+    }
+
+    // Capture-delivery tap for CaptureAudioOutput latency measurement (performance-telemetry.md section 2.9). Only a capture
+    // that feeds a preview playback is the program audio the probe correlates against, so the microphone instance never
+    // offers. Disarmed cost: one volatile read of the static tap reference. Armed: a stamp and a copy into the
+    // preallocated ring, no lock and no allocation.
+    private void OfferToMonitorTap(byte[] convertedBuffer, int convertedLength, uint packetFlags)
+    {
+        if (!AudioMonitorTap.IsArmed || Volatile.Read(ref _playback) is null)
+        {
+            return;
+        }
+
+        AudioMonitorTap.Offer(
+            MemoryMarshal.Cast<byte, float>(convertedBuffer.AsSpan(0, convertedLength)),
+            Stopwatch.GetTimestamp(),
+            packetFlags);
     }
 
     private ConvertedAudioPacket ConvertToOutputFormat(IntPtr dataPtr, int inputFrames, bool silent)

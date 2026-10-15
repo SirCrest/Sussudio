@@ -81,6 +81,12 @@ public static class AudioSignalAnalyzer
 
     public const int ClickCooldownFrames = 48;
 
+    /// <summary>The neighbours at 3 to 8 frames either side of a click must stay below this fraction of its second difference.</summary>
+    public const float ClickIsolationRatio = 0.4f;
+
+    private const int ClickIsolationNearFrames = 3;
+    private const int ClickIsolationFarFrames = 8;
+
     /// <summary>Discontinuities within this many frames of an exact-zero run edge belong to that run, not to the click count.</summary>
     public const int ClickZeroRunGuardFrames = 4;
 
@@ -404,7 +410,7 @@ public static class AudioSignalAnalyzer
                 var next = Finite(interleavedStereo[(frame + 1) * 2 + channel]);
                 var magnitude = Math.Abs(next - 2f * current + previous);
                 var threshold = Math.Max(ClickMinSecondDifference, ClickSigmaFactor * MathF.Sqrt(scaleSquared));
-                if (cooldown == 0 && magnitude >= threshold)
+                if (cooldown == 0 && magnitude >= threshold && IsIsolatedSpike(interleavedStereo, frames, channel, frame, magnitude))
                 {
                     raw.Add(frame);
                     cooldown = ClickCooldownFrames;
@@ -437,6 +443,37 @@ public static class AudioSignalAnalyzer
         }
 
         return merged;
+    }
+
+    // A click stands out from its own neighbourhood: the samples just beyond the three it spans (offsets 3 to 8 either side)
+    // must have a clearly smaller second difference. A level step in broadband audio raises the second difference
+    // everywhere after the step, so it is not isolated and is not a click.
+    private static bool IsIsolatedSpike(ReadOnlySpan<float> interleavedStereo, int frames, int channel, int frame, float magnitude)
+    {
+        var limit = ClickIsolationRatio * magnitude;
+        for (var offset = ClickIsolationNearFrames; offset <= ClickIsolationFarFrames; offset++)
+        {
+            if (SecondDifferenceMagnitude(interleavedStereo, frames, channel, frame - offset) >= limit ||
+                SecondDifferenceMagnitude(interleavedStereo, frames, channel, frame + offset) >= limit)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static float SecondDifferenceMagnitude(ReadOnlySpan<float> interleavedStereo, int frames, int channel, int frame)
+    {
+        if (frame < 1 || frame >= frames - 1)
+        {
+            return 0f;
+        }
+
+        var previous = Finite(interleavedStereo[(frame - 1) * 2 + channel]);
+        var current = Finite(interleavedStereo[frame * 2 + channel]);
+        var next = Finite(interleavedStereo[(frame + 1) * 2 + channel]);
+        return Math.Abs(next - 2f * current + previous);
     }
 
     private static float Finite(float value) => float.IsFinite(value) ? value : 0f;
