@@ -170,9 +170,13 @@ public sealed partial class AutomationDiagnosticsHub
             token => _snapshotQueryPort.GetRecordingStatsSnapshotAsync(token),
             snapshot => snapshot.CaptureSessionEpoch,
             cancellationToken).ConfigureAwait(false);
+        // One provider call, no producer-epoch bracket: the preview snapshot is a single UI work item, so its fields and
+        // epoch are consistent by construction, exactly like the view-model fragment above. The provider has no
+        // epoch-only read, so the old before/value/after bracket cost three full builds (about 225 KB and three UI
+        // dispatches per tick) to watch a window of about 2 ms; the cross-fragment checks in
+        // BuildSnapshotMixedEpochReasons (for example view_model_preview_runtime) are unchanged.
         var previewRuntimeFragment = await CaptureSnapshotFragmentAsync(
             collectionEpoch,
-            _previewSnapshotProvider,
             _previewSnapshotProvider,
             snapshot => snapshot.PreviewRuntimeEpoch,
             cancellationToken).ConfigureAwait(false);
@@ -317,28 +321,6 @@ public sealed partial class AutomationDiagnosticsHub
             producerEpoch,
             ProducerChangedDuringCapture: false,
             DateTimeOffset.UtcNow);
-    }
-
-    private static async Task<SnapshotFragment<T>> CaptureSnapshotFragmentAsync<T>(
-        long collectionEpoch,
-        Func<CancellationToken, Task<T>> captureCurrentProducerState,
-        Func<CancellationToken, Task<T>> capture,
-        Func<T, long> getProducerEpoch,
-        CancellationToken cancellationToken)
-    {
-        var producerEpochBefore = getProducerEpoch(await captureCurrentProducerState(cancellationToken).ConfigureAwait(false));
-        var value = await capture(cancellationToken).ConfigureAwait(false);
-        var collectedUtc = DateTimeOffset.UtcNow;
-        var producerEpochAfter = getProducerEpoch(await captureCurrentProducerState(cancellationToken).ConfigureAwait(false));
-        var producerEpoch = getProducerEpoch(value);
-        return new SnapshotFragment<T>(
-            value,
-            collectionEpoch,
-            producerEpoch,
-            producerEpochBefore,
-            producerEpochAfter,
-            ProducerChangedDuringCapture(producerEpoch, producerEpochBefore, producerEpochAfter),
-            collectedUtc);
     }
 
     private static async Task<SnapshotFragment<T>> CaptureSnapshotFragmentAsync<T>(
@@ -896,17 +878,21 @@ public sealed partial class AutomationDiagnosticsHub
 
     private ProcessResourceSnapshot CaptureProcessResourceSnapshot()
     {
-        // Memory & GC metrics are thread-safe and microsecond-cheap.
-        _currentProcess.Refresh();
-        var processCpuTotalMs = _currentProcess.TotalProcessorTime.TotalMilliseconds;
+        // Two kernel32 calls on the current-process pseudo-handle. Process.Refresh() plus WorkingSet64 and
+        // TotalProcessorTime re-enumerated every process on the machine: about 21 ms per tick. A failed read reports
+        // zero memory and an unchanged CPU total, so it cannot look like a CPU spike on the next good read.
+        var counters = HubProcessCounters.Read();
+        var processCpuTotalMs = counters.Valid
+            ? counters.CpuTicks / HubProcessCounters.TicksPerMillisecond
+            : _lastProcessCpuTotalMs;
         var processCpuPercent = CalculateProcessCpuPercent(processCpuTotalMs);
         var gcMemoryInfo = GC.GetGCMemoryInfo();
         ThreadPool.GetAvailableThreads(out var threadPoolWorkerAvailable, out var threadPoolIoAvailable);
         ThreadPool.GetMaxThreads(out var threadPoolWorkerMax, out var threadPoolIoMax);
 
         return new ProcessResourceSnapshot(
-            MemoryWorkingSetMb: _currentProcess.WorkingSet64 / (1024.0 * 1024.0),
-            MemoryPrivateBytesMb: _currentProcess.PrivateMemorySize64 / (1024.0 * 1024.0),
+            MemoryWorkingSetMb: counters.WorkingSetBytes / (1024.0 * 1024.0),
+            MemoryPrivateBytesMb: counters.PrivateBytes / (1024.0 * 1024.0),
             MemoryManagedHeapMb: GC.GetTotalMemory(false) / (1024.0 * 1024.0),
             MemoryTotalAllocatedMb: GC.GetTotalAllocatedBytes(precise: false) / (1024.0 * 1024.0),
             ProcessCpuPercent: processCpuPercent,

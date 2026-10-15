@@ -77,7 +77,7 @@ tests that pin which file owns a symbol; see AGENTS.md § Testing Policy.
 | MJPEG decode pipeline | `Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.cs`, `Sussudio/Services/Capture/Mjpeg/FrameFingerprintCadenceTracker.cs` | Bounded compressed input, CPU decode workers, output ordering, and source-packet cadence metrics. |
 | GPU telemetry | `Sussudio/Services/Gpu/NvmlMonitor.cs` | Optional NVML sampling and graceful unavailable telemetry. |
 | FFmpeg D3D11 ownership | `Sussudio/Services/Gpu/FfmpegD3D11Ownership.cs` | Atomic device/context reference transfer to FFmpeg with rollback before publication. |
-| Automation diagnostics | `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`, `AutomationDiagnosticsHub.Evaluation.cs`, `AutomationDiagnosticsHub.FlashbackEvaluation.cs`, `AutomationDiagnosticsHub.Snapshots.cs`, `AutomationDiagnosticsHub.SnapshotProjection.cs` | Snapshot assembly and health evaluation. See [automation](#automation) for collector/assembly boundaries. |
+| Automation diagnostics | `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`, `AutomationDiagnosticsHub.Evaluation.cs`, `AutomationDiagnosticsHub.FlashbackEvaluation.cs`, `AutomationDiagnosticsHub.Snapshots.cs`, `AutomationDiagnosticsHub.SnapshotProjection.cs`, `HubProcessCounters.cs` | Snapshot assembly and health evaluation. See [automation](#automation) for collector/assembly boundaries. |
 | Automation snapshot models | `Sussudio/Models/Automation/AutomationSnapshot.cs`, `AutomationModels.cs` | Flattened evidence snapshots and command/runtime DTOs; preserve wire shape. |
 | Capture models | `Sussudio/Models/Capture/CaptureModels.cs` | Capture configuration, input media formats, health, cadence, and runtime DTOs. `MediaFormat` owns input frame-rate and pixel-format behavior beside `CaptureDevice`. |
 | Recording models | `Sussudio/Models/Recording/RecordingModels.cs` | Encoder capabilities, recording statistics, and integrity DTOs. `RecordingIntegrityStatus` and `RecordingIntegrityAudioStatus` define the typed integrity vocabulary; only the `AutomationSnapshot` projection turns these values into wire text. `EncoderSupport` owns recording-format-to-NVENC codec-name mapping. |
@@ -444,6 +444,13 @@ Automation diagnostics ownership:
   performance-timeline ring reads, append mechanics and the direct159field
   `AutomationSnapshot` to `PerformanceTimelineEntry` initializer, grouped by
   capture, preview, Flashback playback/export and process resources.
+- `Sussudio/Services/Automation/HubProcessCounters.cs` owns the hub's current-process
+  working set, private bytes and CPU time read (two kernel32 calls, no process
+  enumeration); `AutomationDiagnosticsHub.Snapshots.cs` owns when it is sampled.
+  `ProcessSensors.cs` stays the full sensor read for perf reports. The preview
+  fragment in `AutomationDiagnosticsHub.Snapshots.cs` is one provider call (one UI
+  work item), so it has no producer-epoch bracket; see
+  `performance-telemetry.md` 2.11 for the cost evidence.
   `AutomationSnapshotRegressionTests.TimelinePreservesEveryCapturedField`
   checks independent default/populated timeline fixtures captured before the
   copy-only projection layers were removed. No providers or devices start.
