@@ -1016,7 +1016,7 @@ internal sealed class StatsDiagnosticRowsController
         {
             Text = title,
             Margin = new Thickness(0, 8, 0, 2),
-            Style = _rowChrome.GetStyle("DockStatsSectionHeaderStyle")
+            Style = _rowChrome.GetStyle("DockStatsSubgroupHeaderStyle")
         };
     }
 
@@ -1025,7 +1025,7 @@ internal sealed class StatsDiagnosticRowsController
         TextBlock GroupHeader);
 }
 
-internal sealed record StatsDockRowChromeSlot(Border Row, TextBlock Label, TextBlock Value);
+internal sealed record StatsDockRowChromeSlot(Border Row, TextBlock Label, TextBlock Value, ToolTip ValueToolTip);
 
 internal sealed class StatsDockRowChromePresenter
 {
@@ -1038,7 +1038,7 @@ internal sealed class StatsDockRowChromePresenter
 
     public StatsDockRowChromeSlot CreateRowSlot(string label = "", string value = "", bool alt = false)
     {
-        var grid = new Grid();
+        var grid = new Grid { ColumnSpacing = 12 };
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
@@ -1048,12 +1048,19 @@ internal sealed class StatsDockRowChromePresenter
             Style = GetStyle("DockStatsLabelStyle")
         };
 
+        // Device telemetry can carry long hex dumps and firmware strings; trim them in the
+        // row instead of letting them run into the label, and keep the full text on hover.
         var valueBlock = new TextBlock
         {
             Text = value,
             Style = GetStyle("DockStatsValueStyle"),
-            HorizontalAlignment = HorizontalAlignment.Right
+            HorizontalAlignment = HorizontalAlignment.Right,
+            TextTrimming = TextTrimming.CharacterEllipsis
         };
+        // One ToolTip per pooled row, updated through Content. Calling SetToolTip again on
+        // every value change would close an open tooltip and allocate a new control per tick.
+        var valueToolTip = new ToolTip { Content = value };
+        ToolTipService.SetToolTip(valueBlock, valueToolTip);
         Grid.SetColumn(valueBlock, 1);
 
         grid.Children.Add(labelBlock);
@@ -1064,13 +1071,18 @@ internal sealed class StatsDockRowChromePresenter
             Style = GetRowStyle(alt),
             Child = grid
         };
-        return new StatsDockRowChromeSlot(row, labelBlock, valueBlock);
+        return new StatsDockRowChromeSlot(row, labelBlock, valueBlock, valueToolTip);
     }
 
     public void UpdateRowSlot(StatsDockRowChromeSlot slot, string label, string value, bool alt)
     {
         SetTextIfChanged(slot.Label, label);
-        SetTextIfChanged(slot.Value, value);
+        if (!string.Equals(slot.Value.Text, value, StringComparison.Ordinal))
+        {
+            slot.Value.Text = value;
+            slot.ValueToolTip.Content = value;
+        }
+
         var targetStyle = GetRowStyle(alt);
         if (!ReferenceEquals(slot.Row.Style, targetStyle))
         {
