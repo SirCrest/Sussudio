@@ -192,8 +192,21 @@ site costs one volatile read.
   overwrites an existing file. GC pauses (runtime `EventListener`, GC keyword)
   are recorded as `GcPause` spans when a trace is running and always feed the
   `gc.pause` histogram.
-- Frame events use the source sequence as `Id` in every stage, so the
-  analyzer joins a frame from read loop to present.
+- Frame identity: every frame-stage event uses the frame's **arrival QPC
+  timestamp** (`arrivalTick`, taken in the MF read loop right after
+  `ReadSample` returns) as `Id`. It is unique per frame and already travels
+  with the frame through the raw, MJPEG, preview, recording and Flashback
+  paths. Sequence numbers do not work as a join key: the MJPEG pipeline
+  assigns its own sequence, which diverges from the source sequence after a
+  startup drop, and the GPU lanes carry none. Flashback playback frames use
+  their submit tick, which is also unique. Events with no frame (GC, UI
+  stall, hub refresh, automation command, mux write after encoder lookahead)
+  use `Id = -1`; the analyzer attributes them by time overlap. The dump's
+  `originQpc` and `qpcFrequency` let the analyzer place `Id` on the trace
+  time axis, so `ts - (Id - originQpc)` is a stage's latency from arrival.
+- `capture.sample_time` is an instant event at the MF sample time converted
+  to QPC (only when the ingress clock is the QPC domain), so the analyzer can
+  compute per-frame ingress-to-visible exactly.
 
 ### 2.5 Runtime tuning knobs
 
