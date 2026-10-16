@@ -2227,10 +2227,11 @@ Primary current owners:
   is the XAML-facing adapter. `Sussudio/ViewModels/ViewModelBuilders.cs` owns
   the view-model live-signal label formatting and pixel-format/codec suffix
   policy.
-- `Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs` owns preview-volume
-  fade-in/fade-out state, saved target volume, storyboard lifetime, volume
-  save suppression, preview start/stop/reinit event routing, and preview button
-  presentation/fade-in timing. `Sussudio/MainWindow.xaml.cs`
+- `Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs` owns when the
+  preview audio fades run (armed at prime, released once on first visual,
+  faded out on the stop button), preview start/stop/reinit event routing, and
+  preview button presentation/fade-in timing. The fades themselves are
+  volume-owner ramps, not XAML storyboards. `Sussudio/MainWindow.xaml.cs`
   is the XAML-facing adapter.
 - `Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs` owns preview
   reinit animation active state, first-visual transition clears, startup-reset
@@ -2426,8 +2427,10 @@ Primary current owners:
   delayed sampler shutdown, requested/effective preview volume, operation and
   writer generations, cancellation, teardown, priming, restoring, trace adapters,
   preview-audio ramp constants, easing, and async ramp-down/ramp-up execution.
-  `PreviewAudioFadeController` in `PreviewLifecycleControllers.cs` drives WinUI
-  animation through a private dependency property and a writer lease.
+  `PreviewAudioFadeController` in `PreviewLifecycleControllers.cs` runs the
+  preview-start and stop-button fades through that owner's ramp-up/ramp-down;
+  a storyboard cannot target a code-only dependency property (no XAML type
+  metadata), so do not reintroduce one for audio.
   `AudioControlBindingController` owns explicit user input and guards synchronous
   projection updates so animation readback cannot become a user request.
   `SetupBindings` initializes meters and the three audio selections directly.
