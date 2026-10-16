@@ -820,9 +820,14 @@ Important entry points:
   Cleanup awaits the renderer handoff before capture ownership is transferred or
   released. UI cancellation limits admission; admitted stop work remains awaited.
   Failed cleanup retains capture, renderer registrations, and coordination locks,
-  blocks new session/sink admission, and can be retried. Disposal callers share
-  one owned task; a caller timeout does not retire its resources or start a second
-  cleanup operation. The original fatal capture cause remains the published error.
+  blocks new session/sink admission, and can be retried. Apart from explicit cleanup,
+  only a video-preview stop retries it, and that retry is the full cleanup, which
+  leaves capture uninitialized (`CAPTURE_RETAINED_CLEANUP_*`).
+  `SUSSUDIO_CAPTURE_FAULT_PRE_CLEANUP_FAILURES` fails the first N renderer handoffs
+  for the live check `scripts/performance/Test-CaptureLateCleanupRecovery.ps1`.
+  Disposal callers share one owned task; a caller timeout does not retire its
+  resources or start a second cleanup operation. The original fatal capture cause
+  remains the published error.
 - `CaptureService.Flashback.cs` owns Flashback public state, segment
   access, enable/disable transition gating, restart entry points, committed
   restart orchestration after preview backend teardown, buffer/GPU settings

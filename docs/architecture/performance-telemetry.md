@@ -377,6 +377,8 @@ at startup) are deliberately not settable at runtime; `knobs` lists them under
 `Excluded` with the reason. MMCSS task-name knobs are string choices. `apply`
 scopes are read from each consumer's read site; where the read site could not
 be confirmed from source the catalog uses the stricter scope.
+`SUSSUDIO_CAPTURE_FAULT_PRE_CLEANUP_FAILURES` (fault injection that fails capture
+teardown for a live check) is excluded the same way.
 
 New live knobs added on this branch:
 

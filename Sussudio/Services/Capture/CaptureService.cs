@@ -86,6 +86,10 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private int _isDisposed;
     private int _disposeRequested;
     private int _cleanupRequired;
+    // Fault injection for the late-cleanup live check: the first N pre-cleanup renderer handoffs fail before any
+    // handler runs, as a renderer stop timeout does, and leave capture cleanup half done. 0 (default) is off.
+    private readonly int _preCleanupFaultFailures = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_CAPTURE_FAULT_PRE_CLEANUP_FAILURES", 0, 0, 100);
+    private int _preCleanupFaultCount;
     private readonly object _disposalLock = new();
     private Task? _disposalTask;
     private bool _isInitialized;
@@ -287,9 +291,13 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                     throw new InvalidOperationException("Capture cleanup must complete before starting another session transition.");
                 }
 
+                // Finishing the half-done teardown is a full cleanup: it uninitializes capture
+                // instead of running the requested transition.
+                Logger.Log($"CAPTURE_RETAINED_CLEANUP_BEGIN requested={transitionState}");
                 EnterCleanupState();
                 await CleanupCoreAsync(cancellationToken).ConfigureAwait(false);
                 ResolveSessionSteadyState();
+                Logger.Log($"CAPTURE_RETAINED_CLEANUP_COMPLETED requested={transitionState} initialized={_isInitialized}");
                 return;
             }
 
@@ -608,6 +616,16 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
 
         try
         {
+            if (_preCleanupFaultFailures > 0)
+            {
+                var faultCount = Interlocked.Increment(ref _preCleanupFaultCount);
+                if (faultCount <= _preCleanupFaultFailures)
+                {
+                    Logger.Log($"CAPTURE_FAULT_PRE_CLEANUP_FAILED count={faultCount} of={_preCleanupFaultFailures}");
+                    throw new InvalidOperationException("Injected fault: the pre-cleanup renderer handoff failed.");
+                }
+            }
+
             // The deadline only cancels admission to the UI queue. Once the UI
             // starts stopping the renderer, await the actual native fence/join.
             using var admission = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);

@@ -182,6 +182,9 @@ public static class TuningKnobCatalog
             "SUSSUDIO_AUTOMATION_TOKEN",
             "Automation secret; never listed or settable through the tool."),
         new TuningKnobExclusion(
+            "SUSSUDIO_CAPTURE_FAULT_PRE_CLEANUP_FAILURES",
+            "Fault injection for the late capture cleanup live check; it deliberately fails capture teardown."),
+        new TuningKnobExclusion(
             "SUSSUDIO_RECOVERY_DIRECTORY",
             "Recording recovery directory path; changing it at run time could orphan recovery markers."),
     };
