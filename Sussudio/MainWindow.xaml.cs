@@ -479,7 +479,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 ViewModel.IsFlashbackEnabled,
                 ViewModel.FlashbackBitrateInfo,
                 ViewModel.RecordingBitrateInfo),
-            IsFlashbackEnabled = () => ViewModel.IsFlashbackEnabled,
             UpdateFlashbackKeepAliveHint = UpdateFlashbackKeepAliveHint,
             UpdateState = UpdateFlashbackStateUI,
             UpdateBuffer = UpdateFlashbackBufferPresentation,
@@ -1152,7 +1151,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         AttachAudioMeterActivationBindings();
 
         ApplyInitialFlashbackSettings();
-        FlashbackKeepAliveHintText.Visibility = Visibility.Collapsed;
+        UpdateFlashbackKeepAliveHint();
 
         AttachCaptureSelectionBindings();
         InitializeCaptureOptionCollections();
@@ -2137,8 +2136,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             StopPreviewStartupOverlay = StopPreviewStartupOverlay,
             FadeOutVideoFrameShadow = FadeOutVideoFrameShadow,
             FadeInVideoFrameShadow = FadeInVideoFrameShadow,
-            GetIsFlashbackEnabled = () => ViewModel.IsFlashbackEnabled,
-            UpdateFlashbackKeepAliveHint = UpdateFlashbackKeepAliveHint,
         });
     }
 
@@ -2157,10 +2154,13 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private void RevealPreviewUnavailablePlaceholder()
         => _previewTransitionAnimationController.RevealUnavailablePlaceholder();
 
-    // Shown only while Flashback really holds the device; enabled-but-idle Flashback
-    // (no device, or never previewed) keeps nothing open.
-    private void UpdateFlashbackKeepAliveHint(bool isFlashbackEnabled)
-        => FlashbackKeepAliveHintText.Visibility = isFlashbackEnabled && ViewModel.IsFlashbackBuffering
+    // Shown only while the Flashback backend is buffering, which keeps capture open after preview
+    // stops; enabled-but-idle Flashback (no device, never previewed, or a failed start) holds
+    // nothing. The enabled setting hides it the moment Flashback is turned off, before the
+    // lifecycle tick sees the backend stop. It follows those two properties alone, not the
+    // placeholder reveal, so its state is already current whenever the placeholder shows.
+    private void UpdateFlashbackKeepAliveHint()
+        => FlashbackKeepAliveHintText.Visibility = ViewModel.IsFlashbackEnabled && ViewModel.IsFlashbackBuffering
             ? Visibility.Visible
             : Visibility.Collapsed;
 

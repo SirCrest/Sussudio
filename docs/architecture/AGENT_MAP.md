@@ -2465,8 +2465,15 @@ Primary current owners:
   health message exists (the not-buffering fault needs Flashback enabled and
   video capture open, which includes the pipeline a normal preview stop keeps
   for Flashback), and publishes `IsFlashbackBuffering` from the
-  one-second lifecycle tick; it drives the "capture device stays in use" hint
-  and clears the status-strip Flashback rate when buffering stops.
+  one-second lifecycle tick (`MainViewModel.OnIsPreviewingChanged` also
+  republishes it as a preview start or stop commits); the tick clears the
+  status-strip Flashback rate when buffering stops.
+- The "capture device stays in use" hint on the unavailable-preview placeholder
+  shows only while `IsFlashbackEnabled && IsFlashbackBuffering`; the rule is
+  `MainWindow.UpdateFlashbackKeepAliveHint()`, and the Flashback property-change
+  controller in `FlashbackUiControllers.cs` reapplies it when either property
+  changes. Placeholder reveals in `PreviewLifecycleControllers.cs` do not touch
+  it, so a failed start (no Flashback capture) leaves it hidden.
 - `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs` owns Flashback
   settings-control initialization, enable toggle sync from
   `IsFlashbackEnabled`, GPU decode toggle binding/sync, buffer duration combo

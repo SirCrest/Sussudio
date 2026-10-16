@@ -76,8 +76,8 @@ public partial class MainViewModel
 
     /// <summary>
     /// True while the Flashback backend is buffering capture. It can outlive preview, so
-    /// the window shows that the capture device stays in use; the one-second lifecycle
-    /// tick keeps it current.
+    /// the window shows that the capture device stays in use. Preview start and stop
+    /// republish it as they commit; the one-second lifecycle tick catches backend changes.
     /// </summary>
     [ObservableProperty]
     public partial bool IsFlashbackBuffering { get; set; }

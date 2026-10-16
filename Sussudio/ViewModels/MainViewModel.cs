@@ -2117,6 +2117,10 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
     partial void OnIsPreviewingChanged(bool value)
     {
+        // A committed preview start or stop is where capture opens, closes, or stays open only
+        // for Flashback, so buffering is republished here, before the window reacts to the
+        // preview change, rather than up to a second later on the lifecycle tick.
+        IsFlashbackBuffering = _sessionCoordinator.IsFlashbackActive;
         if (!value && !IsRecording)
         {
             ResetLiveCaptureInfo();
