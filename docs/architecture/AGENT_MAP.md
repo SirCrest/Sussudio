@@ -35,6 +35,11 @@ native handle/resource lifetime).
 `scripts/performance/Measure-PreviewScenario.ps1` records comparable observation
 runs through existing ssctl diagnostics; it does not reconfigure capture or
 start recording.
+`tests/Sussudio.Tests/XUnit.PreviewRendererSharedDeviceRaceTests.cs` injects the
+capture-device hand-over into the renderer's device-selection window.
+`scripts/performance/Test-PreviewFrameRateRestarts.ps1` is its live counterpart:
+it launches the app and checks that every `set fps` restart renders on the
+capture-shared device and reaches first visual.
 
 `Sussudio/Services/Preview/PreviewInputViewCache.cs` owns the eight-entry texture
 identity/subresource lookup and disposable-entry eviction policy. The renderer's
