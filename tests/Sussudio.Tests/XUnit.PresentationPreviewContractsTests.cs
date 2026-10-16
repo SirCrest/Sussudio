@@ -3304,7 +3304,6 @@ internal static Task MainViewModelPresentationControllers_UseDependencyCompositi
         AssertContains(controllerGraphText, "ShouldStartAudioPreview = () => viewModel.IsAudioPreviewEnabled && viewModel.IsAudioEnabled,");
         AssertContains(controllerGraphText, "IsAudioPreviewActive = () => viewModel._captureService.IsAudioPreviewActive,");
         AssertContains(controllerGraphText, "SetStatusText = value => viewModel.StatusText = value,");
-        AssertContains(controllerGraphText, "RaisePreviewStartRequested = request => viewModel.PreviewStartRequested?.Invoke(viewModel, request),");
         AssertContains(controllerGraphText, "RaisePreviewStopRequested = () => viewModel.PreviewStopRequested?.Invoke(viewModel, EventArgs.Empty),");
         AssertContains(controllerGraphText, "ApplyLatestSourceTelemetryForPreviewStart = () =>");
 
@@ -3324,7 +3323,6 @@ internal static Task MainViewModelPresentationControllers_UseDependencyCompositi
         AssertContains(previewReinitializeControllerText, "private readonly SemaphoreSlim _previewReinitializeGate = new(1, 1);");
         AssertContains(previewReinitializeControllerText, "private int _previewReinitializeGeneration;");
         AssertContains(previewReinitializeControllerText, "private bool _cancelPreviewRestartAfterReinitialize;");
-        AssertContains(previewStateText, "public event EventHandler<PreviewStartRequest>? PreviewStartRequested;");
         AssertContains(previewStateText, "public event EventHandler? PreviewStopRequested;");
         AssertContains(previewStateText, "public event Func<string, Task>? PreviewReinitRequested;");
         AssertContains(previewStateText, "public event Func<Task>? PreviewRendererStopRequested;");
@@ -3352,7 +3350,6 @@ internal static Task MainViewModelPresentationControllers_UseDependencyCompositi
         AssertContains(previewLifecycleControllerText, "public required Func<bool> ShouldStartAudioPreview { get; init; }");
         AssertContains(previewLifecycleControllerText, "public required Func<bool> IsAudioPreviewActive { get; init; }");
         AssertContains(previewLifecycleControllerText, "public required Action<string> SetStatusText { get; init; }");
-        AssertContains(previewLifecycleControllerText, "public required Action<PreviewStartRequest> RaisePreviewStartRequested { get; init; }");
         AssertContains(previewLifecycleControllerText, "public required Action RaisePreviewStopRequested { get; init; }");
         AssertContains(previewLifecycleControllerText, "public required Action ApplyLatestSourceTelemetryForPreviewStart { get; init; }");
         AssertContains(previewLifecycleControllerText, "public async Task InitializeDeviceAsync(CancellationToken cancellationToken = default)");
