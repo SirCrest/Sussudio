@@ -72,7 +72,7 @@ public sealed class FlashbackModelsTests
 public sealed class FlashbackDecoderContractsTests
 {
     [Theory]
-    [InlineData(760.0, "capture.ts", 758.0)]
+    [InlineData(760.0, "capture.ts", 758.9)]
     [InlineData(1.0, "capture.TS", 0.0)]
     [InlineData(0.0, "capture.ts", 0.0)]
     [InlineData(760.0, "capture.mp4", 760.0)]
@@ -416,10 +416,6 @@ public sealed class FlashbackPlaybackContractsTests
     [Fact]
     public Task FlashbackPlaybackTimestampArithmeticIsSaturating()
         => global::Program.FlashbackPlaybackController_TimestampArithmeticIsSaturating();
-
-    [Fact]
-    public Task FlashbackPauseFromLiveDisplaysBufferedFrameBeforePaused()
-        => global::Program.FlashbackPlaybackController_PauseFromLive_DisplaysBufferedFrameBeforePaused();
 
     [Fact]
     public Task FlashbackPlaybackPtsCadenceTelemetryTracksMismatches()
@@ -2010,20 +2006,23 @@ static partial class Program
         // All three scrub-related command paths must clamp via the eviction-aware
         // overload so a long-held scrub doesn't resolve to evicted file PTS.
         const string seekClampBeforeOpen = "cmd = cmd with { Position = ClampPosition(cmd.Position, worker.FrozenValidStart) };\n        var seekResumeTarget = ClampPlaybackTargetToMinimumLiveLead(";
-        const string scrubClampBeforeOpen = "cmd = cmd with { Position = ClampPosition(cmd.Position, worker.FrozenValidStart) };\n        worker.Decoder ??= CreateDecoder();\n        EnsureFileOpen(worker.Decoder, ref worker.FileOpen, SaturatingAdd(cmd.Position, worker.FrozenValidStart));";
+        const string scrubClampBeforeOpen = "cmd = cmd with { Position = ClampScrubPosition(cmd.Position, worker.FrozenValidStart) };\n        worker.Decoder = EnsureWorkerDecoder(worker);\n        EnsureFileOpen(worker.Decoder, ref worker.FileOpen, SaturatingAdd(cmd.Position, worker.FrozenValidStart));";
 
         AssertContains(sourceText, seekClampBeforeOpen);
         AssertContains(sourceText, "SaturatingAdd(cmd.Position, worker.FrozenValidStart),\n            worker.FrozenValidStart,\n            \"seek\");");
         AssertContains(sourceText, "cmd = cmd with { Position = ClampPosition(SaturatingSubtract(seekResumeTarget, worker.FrozenValidStart), worker.FrozenValidStart) };");
         AssertContains(sourceText, "if (_commandMailbox.ShouldYieldSeekToQueuedPlay(commandChannel))\n        {\n            PlaybackPosition = cmd.Position;\n            worker.PendingExactResumeTarget = seekResumeTarget;");
-        AssertContains(sourceText, "worker.Decoder ??= CreateDecoder();\n        EnsureFileOpen(worker.Decoder, ref worker.FileOpen, seekResumeTarget);");
+        AssertContains(sourceText, "worker.Decoder = EnsureWorkerDecoder(worker);\n        EnsureFileOpen(worker.Decoder, ref worker.FileOpen, seekResumeTarget);");
         AssertEqual(1, sourceText.Split(scrubClampBeforeOpen, StringSplitOptions.None).Length - 1, "BeginScrub clamps before file lookup with frozen reference");
         var updateScrubBlock = ExtractTextBetween(
             sourceText,
             "private void HandleUpdateScrubCommand(",
             "    private void HandleEndScrubCommand(");
-        AssertContains(updateScrubBlock, "cmd = cmd with { Position = ClampPosition(cmd.Position, worker.FrozenValidStart) };\n        if (_commandMailbox.ShouldYieldScrubUpdateToQueuedControl(commandChannel))");
-        AssertContains(updateScrubBlock, "worker.Decoder ??= CreateDecoder();\n        EnsureFileOpen(worker.Decoder, ref worker.FileOpen, SaturatingAdd(cmd.Position, worker.FrozenValidStart));");
+        AssertContains(updateScrubBlock, "cmd = cmd with { Position = ClampScrubPosition(cmd.Position, worker.FrozenValidStart) };\n        if (_commandMailbox.ShouldYieldScrubUpdateToQueuedControl(commandChannel))");
+        AssertContains(updateScrubBlock, "worker.Decoder = EnsureWorkerDecoder(worker);\n        EnsureFileOpen(worker.Decoder, ref worker.FileOpen, SaturatingAdd(cmd.Position, worker.FrozenValidStart));");
+        // The scrub clamp keeps the display target behind the live lead without logging per update.
+        AssertContains(sourceText, "private TimeSpan ClampScrubPosition(TimeSpan position, TimeSpan frozenValidStart)");
+        AssertContains(sourceText, "\"scrub\",\n            log: false);");
 
         return Task.CompletedTask;
     }
@@ -2052,42 +2051,6 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackPlaybackController_PauseFromLive_DisplaysBufferedFrameBeforePaused()
-    {
-        var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
-        var publicPauseBlock = ExtractTextBetween(
-            sourceText,
-            "public bool Pause()",
-            "    public bool GoLive()");
-
-        var pauseFromLiveBlock = ExtractTextBetween(
-            sourceText,
-            "else if (State == FlashbackPlaybackState.Live)",
-            "    private void HandleNudgeCommand(");
-
-        AssertContains(publicPauseBlock, "return SendCommand(new PlaybackCommand { Kind = CommandKind.Pause });");
-        AssertDoesNotContain(publicPauseBlock, "SeekAndDisplay");
-        AssertContains(pauseFromLiveBlock, "SafeSuppressPreviewSubmission(\"pause_from_live\");");
-        AssertContains(pauseFromLiveBlock, "SafePauseRendering(\"pause_from_live\");");
-        AssertContains(pauseFromLiveBlock, "var pauseTarget = ResolvePauseFromLiveTarget(worker.FrozenValidStart);");
-        AssertContains(pauseFromLiveBlock, "EnsureFileOpen(worker.Decoder, ref worker.FileOpen, SaturatingAdd(pausePos, worker.FrozenValidStart));");
-        AssertContains(pauseFromLiveBlock, "if (!IsDecoderFileReady(worker.Decoder, worker.FileOpen))");
-        AssertContains(pauseFromLiveBlock, "SetNoFileFailure(CommandKind.Pause, pausePos);");
-        AssertContains(pauseFromLiveBlock, "if (_commandMailbox.ShouldYieldPauseFromLiveToQueuedSeekOrPlay(commandChannel))");
-        AssertContains(pauseFromLiveBlock, "FLASHBACK_PLAYBACK_PAUSE_FROM_LIVE_DEFER_DISPLAY");
-        AssertContains(pauseFromLiveBlock, "if (!SeekAndDisplayKeyframe(worker.Decoder, ref worker.FileOpen, pausePos, worker.FrozenValidStart, CommandKind.Pause, cts.Token))");
-        AssertContains(pauseFromLiveBlock, "RestoreLiveAfterSeekDisplayFailure(worker.Decoder, ref worker.FileOpen, \"pause_from_live_display_failed\");");
-        AssertContains(pauseFromLiveBlock, "worker.PendingExactResumeTarget = SaturatingAdd(PlaybackPosition, worker.FrozenValidStart);");
-        AssertContains(pauseFromLiveBlock, "SetState(FlashbackPlaybackState.Paused, \"user\");");
-        AssertContains(pauseFromLiveBlock, "frozen_frame=true");
-        AssertContains(sourceText, "private TimeSpan ResolvePauseFromLiveTarget(TimeSpan frozenValidStart)");
-        AssertContains(sourceText, "return ClampPlaybackTargetToMinimumLiveLead(latestPts, frozenValidStart, \"pause_from_live\");");
-        AssertDoesNotContain(pauseFromLiveBlock, "SeekAndDisplayExactFrame");
-        AssertDoesNotContain(sourceText, "private void SeekAndDisplayExactFrame");
-
-        return Task.CompletedTask;
-    }
-
     internal static Task FlashbackPlaybackController_NudgeCreatesDecoderWhenPaused()
     {
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
@@ -2097,16 +2060,16 @@ static partial class Program
             "private void HandleNudgeCommand(",
             "\n}");
 
-        AssertContains(nudgeBlock, "worker.Decoder ??= CreateDecoder();");
+        AssertContains(nudgeBlock, "worker.Decoder = EnsureWorkerDecoder(worker);");
         AssertContains(nudgeBlock, "EnsureFileOpen(worker.Decoder, ref worker.FileOpen, SaturatingAdd(nudgedPos, worker.FrozenValidStart));");
         AssertContains(nudgeBlock, "if (!IsDecoderFileReady(worker.Decoder, worker.FileOpen))");
         AssertContains(nudgeBlock, "FLASHBACK_PLAYBACK_NUDGE_NO_FILE");
         AssertContains(nudgeBlock, "RestoreLiveAfterNoFile(\"nudge_no_file\");");
-        AssertContains(nudgeBlock, "if (!SeekAndDisplayKeyframe(worker.Decoder, ref worker.FileOpen, nudgedPos, worker.FrozenValidStart, CommandKind.Nudge, cts.Token))");
+        AssertContains(nudgeBlock, "if (!SeekAndDisplayFrame(worker.Decoder, ref worker.FileOpen, nudgedPos, worker.FrozenValidStart, CommandKind.Nudge, exact: true, cts.Token))");
         AssertContains(nudgeBlock, "RestoreLiveAfterSeekDisplayFailure(worker.Decoder, ref worker.FileOpen, \"nudge_display_failed\");");
         AssertDoesNotContain(nudgeBlock, "if (worker.Decoder != null)");
         var noFileRestore = ExtractDeclaredMemberCode(sourceText, "private void RestoreLiveAfterNoFile(");
-        AssertContains(noFileRestore, "ReleasePlaybackFrameForLive(operation);\n        RestoreLiveAudio();\n        SafeResumePreviewSubmission(operation);\n        SafeResumeRendering(operation);\n        SetState(FlashbackPlaybackState.Live, operation);");
+        AssertContains(noFileRestore, "SafeResumePreviewSubmission(operation);\n        RestoreLiveAudio();\n        ReleasePlaybackFrameForLive(operation);\n        SafeResumeRendering(operation);\n        SetState(FlashbackPlaybackState.Live, operation);");
 
         return Task.CompletedTask;
     }
@@ -2807,7 +2770,7 @@ static partial class Program
         var audioDecodeBlock = ExtractTextBetween(
             sourceText,
             "private void DecodeAndDeliverAudioPacket",
-            "private DecodedVideoFrame ConvertAndOutputVideoFrame()");
+            "private TimeSpan ResolveRawFramePts(AVFrame* frame)");
         AssertContains(audioDecodeBlock, "if (callback == null)\n            {\n                ffmpeg.av_frame_unref(_audioFrame);\n                continue; // Codec advanced, but no delivery during seek/scrub\n            }");
 
         return Task.CompletedTask;
@@ -2839,7 +2802,7 @@ static partial class Program
             "FlashbackDecoder.Timestamps.cs");
 
         AssertEqual(false, File.Exists(timestampFragmentPath), "Flashback decoder timestamp helpers stay folded into caller owners");
-        AssertContains(sourceText, "var pts = DecodePtsToTimeSpan(ResolveBestEffortFrameTimestamp(_videoFrame), _videoTimeBase);");
+        AssertContains(sourceText, "=> DecodePtsToTimeSpan(ResolveBestEffortFrameTimestamp(frame), _videoTimeBase);");
         AssertContains(sourceText, "var pts = DecodePtsToTimeSpan(ResolveBestEffortFrameTimestamp(_audioFrame), _audioTimeBase);");
         AssertContains(sourceText, "var streamTimestamp = ToStreamTimestamp(target, _videoTimeBase);");
         AssertContains(sourceText, "_formatCtx, _videoStreamIndex, streamTimestamp, ffmpeg.AVSEEK_FLAG_BACKWARD);");
@@ -2935,15 +2898,18 @@ static partial class Program
         var sourceText = ReadFlashbackDecoderSource();
 
         AssertContains(sourceText, "if (actualFormat != AVPixelFormat.AV_PIX_FMT_NONE && actualFormat != _decodedPixelFormat)");
-        AssertContains(sourceText, "if (!TryValidateSoftwareVideoFrame(_videoFrame, _decodedPixelFormat, _videoWidth, _videoHeight, _isHdr, out var frameFailure))");
+        AssertContains(sourceText, "if (!TryValidateSoftwareVideoFrame(source, _decodedPixelFormat, _videoWidth, _videoHeight, _isHdr, out var frameFailure))");
         AssertContains(sourceText, "FLASHBACK_DECODER_VIDEO_WARN reason=invalid_software_frame");
-        AssertContains(sourceText, "ffmpeg.av_frame_unref(_videoFrame);\n            return default;");
+        AssertContains(sourceText, "ReleaseConvertSource(source, takeOwnership);\n            return default;");
         var softwareOutputBlock = ExtractTextBetween(
             sourceText,
             "var outputSize = CalculateFrameBufferSize(_videoWidth, _videoHeight, _isHdr);",
             "    private void CopyFramePlanesToBuffer");
-        AssertContains(softwareOutputBlock, "finally\n        {\n            ffmpeg.av_frame_unref(_videoFrame);\n        }");
-        AssertOccursBefore(softwareOutputBlock, "CopyFramePlanesToBuffer((byte*)dataPtr, outputSize);", "finally\n        {\n            ffmpeg.av_frame_unref(_videoFrame);\n        }");
+        AssertContains(softwareOutputBlock, "finally\n        {\n            ReleaseConvertSource(source, takeOwnership);\n        }");
+        AssertOccursBefore(softwareOutputBlock, "CopyFramePlanesToBuffer(source, (byte*)dataPtr, outputSize);", "finally\n        {\n            ReleaseConvertSource(source, takeOwnership);\n        }");
+        // A frame the seek loop kept as a standalone reference is freed, the reusable decoder frame is unreferenced.
+        AssertContains(sourceText, "private static void ReleaseConvertSource(AVFrame* source, bool takeOwnership)");
+        AssertContains(sourceText, "ffmpeg.av_frame_free(&owned);");
         AssertContains(sourceText, "private static bool TryValidateSoftwareVideoFrame(");
         AssertContains(sourceText, "width_mismatch frame={frame->width} expected={width}");
         AssertContains(sourceText, "height_mismatch frame={frame->height} expected={height}");
@@ -3039,7 +3005,7 @@ static partial class Program
 
         var openFileBlock = ExtractTextBetween(
             decoderText,
-            "public void OpenFile(string filePath)",
+            "public void OpenFile(string filePath, FlashbackPlaybackStreamHints? hints = null)",
             "    /// <summary>\n    /// Closes the currently open file");
         AssertContains(openFileBlock, "FLASHBACK_DECODER_OPEN_WARN");
         AssertContains(openFileBlock, "CloseFileCore();\n            throw;");

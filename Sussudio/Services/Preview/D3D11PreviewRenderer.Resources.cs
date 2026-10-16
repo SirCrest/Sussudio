@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
@@ -647,7 +648,17 @@ internal sealed partial class D3D11PreviewRenderer
         }
     }
 
+    // Bytecode is a pure function of (source, entry point, profile). D3DCompile costs
+    // milliseconds per shader and InitializeD3D runs on every device loss and reinit,
+    // so each shader is compiled once per process.
+    private static readonly ConcurrentDictionary<(string Source, string EntryPoint, string Profile), byte[]> ShaderBytecodeCache = new();
+
     private static byte[] CompileShader(string hlslSource, string entryPoint, string profile)
+        => ShaderBytecodeCache.GetOrAdd(
+            (hlslSource, entryPoint, profile),
+            static key => CompileShaderUncached(key.Source, key.EntryPoint, key.Profile));
+
+    private static byte[] CompileShaderUncached(string hlslSource, string entryPoint, string profile)
     {
         var sourceBytes = System.Text.Encoding.UTF8.GetBytes(hlslSource);
         var shaderBlob = IntPtr.Zero;
@@ -1167,13 +1178,19 @@ internal sealed partial class D3D11PreviewRenderer
         if (ex is SharpGenException sharpGenException)
         {
             return sharpGenException.ResultCode == Vortice.DXGI.ResultCode.DeviceRemoved ||
-                   sharpGenException.ResultCode == Vortice.DXGI.ResultCode.DeviceReset;
+                   sharpGenException.ResultCode == Vortice.DXGI.ResultCode.DeviceReset ||
+                   sharpGenException.ResultCode == Vortice.DXGI.ResultCode.DeviceHung ||
+                   sharpGenException.ResultCode == Vortice.DXGI.ResultCode.DriverInternalError;
         }
 
         if (ex is COMException comException)
         {
+            // DEVICE_REMOVED, DEVICE_HUNG, DEVICE_RESET, DRIVER_INTERNAL_ERROR: the driver
+            // treats a hung GPU as a TDR and the device must be recreated either way.
             return comException.HResult == unchecked((int)0x887A0005) ||
-                   comException.HResult == unchecked((int)0x887A0007);
+                   comException.HResult == unchecked((int)0x887A0006) ||
+                   comException.HResult == unchecked((int)0x887A0007) ||
+                   comException.HResult == unchecked((int)0x887A0020);
         }
 
         return false;

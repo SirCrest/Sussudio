@@ -141,6 +141,9 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
     private readonly List<BufferedFrame> _frames = new();
     private readonly AutoResetEvent _signal = new(false);
     private readonly Func<IPreviewFrameSink?> _getPreviewSink;
+    private const int UnprimedIdleWaitMs = 20;
+    private const int SuppressedIdleWaitMs = 250;
+
     private readonly Func<bool> _isPreviewSuppressed;
     private readonly PreviewFrameProbe? _previewFrameProbe;
     private readonly long _frameIntervalTicks;
@@ -299,7 +302,14 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
                 var targetDepth = Volatile.Read(ref _targetDepth);
                 if (GetDepth() < targetDepth)
                 {
-                    _signal.WaitOne(2);
+                    // Every Enqueue, ReprimeAfterPreviewResume and Dispose sets the
+                    // signal, so the timeout is only a safety net. While preview
+                    // submission is suppressed (Flashback playback) input is dropped
+                    // at Enqueue and nothing arrives to wait for, so the idle wait is
+                    // long instead of a 500 Hz poll.
+                    _signal.WaitOne(Volatile.Read(ref _previewSubmissionSuppressed) != 0
+                        ? SuppressedIdleWaitMs
+                        : UnprimedIdleWaitMs);
                     continue;
                 }
 

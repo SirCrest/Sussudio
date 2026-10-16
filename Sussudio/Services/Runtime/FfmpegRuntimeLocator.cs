@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using FFmpeg.AutoGen;
 using Sussudio.Models;
@@ -290,34 +292,96 @@ internal static unsafe class FfmpegRuntimeInit
     private static bool _initialized;
     private static string? _selectedRuntimeRoot;
     private static string? _initializedRuntimeVersions;
-    // Must be a static field to prevent GC collection while FFmpeg holds the delegate pointer.
-    private static av_log_set_callback_callback? _logCallback;
+    private const int LogLineCapacity = 1024;
+    // Error lines per wall-clock second forwarded to the app log; the rest of that second is
+    // counted and reported once a later second admits a line again.
+    private const int MaxLogLinesPerSecond = 40;
+    private static readonly object LogRateSync = new();
+    private static long _logWindowStartTicks;
+    private static int _logLinesInWindow;
+    private static int _logLinesSuppressedInWindow;
 
-    internal static unsafe void FfmpegLogCallbackImpl(void* avcl, int level, string fmt, byte* vl)
+    /// <summary>
+    /// Native log sink. libav invokes the callback for every message at every level, so the
+    /// common case must cost one integer compare and no marshalling. Errors are formatted with
+    /// the original va_list and forwarded, rate limited.
+    /// </summary>
+    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
+    private static unsafe void NativeLogCallback(void* avcl, int level, byte* fmt, byte* vl)
     {
-        // Only capture errors and above to avoid flooding.
-        if (level > ffmpeg.AV_LOG_ERROR)
+        if (level > ffmpeg.AV_LOG_ERROR || fmt == null)
         {
             return;
         }
 
         try
         {
-            // Log the raw format string; va_list formatting is unreliable across platforms.
-            var msg = fmt?.TrimEnd('\n', '\r');
-            if (!string.IsNullOrEmpty(msg))
-            {
-                if (FfmpegLogSuppressionScope.TryConsumeRecoverableSeekFfmpegLog(msg))
-                {
-                    return;
-                }
-
-                Logger.Log($"FFMPEG_LOG [{level}] {msg}");
-            }
+            FfmpegLogCallbackImpl(avcl, level, fmt, vl);
         }
         catch
         {
-            // Best effort: never crash in a log callback.
+            // Best effort: never throw back into native code.
+        }
+    }
+
+    internal static unsafe void FfmpegLogCallbackImpl(void* avcl, int level, byte* fmt, byte* vl)
+    {
+        var format = Marshal.PtrToStringUTF8((IntPtr)fmt);
+        if (string.IsNullOrEmpty(format))
+        {
+            return;
+        }
+
+        string? message = null;
+        var line = stackalloc byte[LogLineCapacity];
+        var printPrefix = 1;
+        var written = ffmpeg.av_log_format_line2(avcl, level, format, vl, line, LogLineCapacity, &printPrefix);
+        if (written > 0)
+        {
+            message = Marshal.PtrToStringUTF8((IntPtr)line);
+        }
+
+        message = (message ?? format).TrimEnd('\n', '\r');
+        if (message.Length == 0 || FfmpegLogSuppressionScope.TryConsumeRecoverableSeekFfmpegLog(message))
+        {
+            return;
+        }
+
+        if (!TryAdmitLogLine(out var suppressedInPreviousWindow))
+        {
+            return;
+        }
+
+        if (suppressedInPreviousWindow > 0)
+        {
+            Logger.Log($"FFMPEG_LOG_RATE_LIMITED suppressed={suppressedInPreviousWindow}");
+        }
+
+        Logger.Log($"FFMPEG_LOG [{level}] {message}");
+    }
+
+    private static bool TryAdmitLogLine(out int suppressedInPreviousWindow)
+    {
+        suppressedInPreviousWindow = 0;
+        var now = Environment.TickCount64;
+        lock (LogRateSync)
+        {
+            if (now - _logWindowStartTicks >= 1000)
+            {
+                suppressedInPreviousWindow = _logLinesSuppressedInWindow;
+                _logWindowStartTicks = now;
+                _logLinesInWindow = 0;
+                _logLinesSuppressedInWindow = 0;
+            }
+
+            if (_logLinesInWindow >= MaxLogLinesPerSecond)
+            {
+                _logLinesSuppressedInWindow++;
+                return false;
+            }
+
+            _logLinesInWindow++;
+            return true;
         }
     }
 
@@ -428,9 +492,14 @@ internal static unsafe class FfmpegRuntimeInit
             }
 
             _initializedRuntimeVersions = $"{avcodecVersion}/{avformatVersion}/{avutilVersion}/{swresampleVersion}";
-            _logCallback = FfmpegLogCallbackImpl;
-            ffmpeg.av_log_set_level(ffmpeg.AV_LOG_VERBOSE);
-            ffmpeg.av_log_set_callback(_logCallback);
+            // Error level only. The native callback already filters by level without
+            // marshalling; the level itself matters for codecs that consult
+            // av_log_get_level() before building diagnostics.
+            ffmpeg.av_log_set_level(ffmpeg.AV_LOG_ERROR);
+            ffmpeg.av_log_set_callback(new av_log_set_callback_callback_func
+            {
+                Pointer = (IntPtr)(delegate* unmanaged[Cdecl]<void*, int, byte*, byte*, void>)&NativeLogCallback
+            });
             _initialized = true;
             Logger.Log($"LIBAV_INIT root_path='{root}' versions='{_initializedRuntimeVersions}'");
         }

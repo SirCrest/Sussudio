@@ -318,6 +318,19 @@
                         <Setter Property="FontWeight" Value="SemiBold" />
                         <Setter Property="Foreground" Value="{ThemeResource TextFillColorPrimaryBrush}" />
                     </Style>
+                    <Style x:Key="DockStatsGroupLabelStyle" TargetType="TextBlock">
+                        <Setter Property="FontSize" Value="10" />
+                        <Setter Property="CharacterSpacing" Value="140" />
+                        <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+                        <!-- Pulls the label toward the sections it names and away from the previous group. -->
+                        <Setter Property="Margin" Value="0,8,0,-8" />
+                    </Style>
+                    <Style x:Key="DockStatsSubgroupHeaderStyle" TargetType="TextBlock">
+                        <Setter Property="FontSize" Value="11" />
+                        <Setter Property="FontWeight" Value="SemiBold" />
+                        <Setter Property="CharacterSpacing" Value="40" />
+                        <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </Style>
                     <Style x:Key="DockStatsRowStyle" TargetType="Border">
                         <Setter Property="Padding" Value="8,6" />
                         <Setter Property="CornerRadius" Value="4" />
@@ -382,8 +395,7 @@
                             </Border>
                         </StackPanel>
 
-                        <TextBlock Text="DETAILS" FontSize="10" CharacterSpacing="140"
-                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        <TextBlock Text="CAPTURE" Style="{StaticResource DockStatsGroupLabelStyle}" />
 
                         <StackPanel Spacing="2">
                             <Grid x:Name="SourceSignal_Header" AutomationProperties.AutomationId="SourceSignal_Header" Margin="0,0,0,4" Background="Transparent" Tapped="StatsSectionHeader_Tapped" Tag="SourceSignal_Content">
@@ -403,126 +415,82 @@
 
                             <StackPanel x:Name="SourceSignal_Content" Spacing="2" Visibility="Collapsed">
                                 <Border Style="{StaticResource DockStatsRowAltStyle}">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Resolution" Style="{StaticResource DockStatsLabelStyle}" />
-                                    <TextBlock x:Name="Stats_SourceResolutionValue" AutomationProperties.AutomationId="Stats_SourceResolutionValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
-                                </Grid>
-                            </Border>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="Resolution" Style="{StaticResource DockStatsLabelStyle}" />
+                                        <TextBlock x:Name="Stats_SourceResolutionValue" AutomationProperties.AutomationId="Stats_SourceResolutionValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
+                                    </Grid>
+                                </Border>
 
-                            <Border Style="{StaticResource DockStatsRowStyle}">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Frame Rate" Style="{StaticResource DockStatsLabelStyle}" />
-                                    <TextBlock x:Name="Stats_SourceFrameRateValue" AutomationProperties.AutomationId="Stats_SourceFrameRateValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
-                                </Grid>
-                            </Border>
+                                <Border Style="{StaticResource DockStatsRowStyle}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="Frame Rate" Style="{StaticResource DockStatsLabelStyle}" />
+                                        <TextBlock x:Name="Stats_SourceFrameRateValue" AutomationProperties.AutomationId="Stats_SourceFrameRateValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
+                                    </Grid>
+                                </Border>
 
-                            <Border Style="{StaticResource DockStatsRowAltStyle}">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="HDR" Style="{StaticResource DockStatsLabelStyle}" />
-                                    <TextBlock x:Name="Stats_SourceHdrValue" AutomationProperties.AutomationId="Stats_SourceHdrValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
-                                </Grid>
-                            </Border>
+                                <Border Style="{StaticResource DockStatsRowAltStyle}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="Video Format" Style="{StaticResource DockStatsLabelStyle}" />
+                                        <TextBlock x:Name="Stats_SourceFormatValue" AutomationProperties.AutomationId="Stats_SourceFormatValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
+                                    </Grid>
+                                </Border>
 
-                            <Border Style="{StaticResource DockStatsRowStyle}">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Video Format" Style="{StaticResource DockStatsLabelStyle}" />
-                                    <TextBlock x:Name="Stats_SourceFormatValue" AutomationProperties.AutomationId="Stats_SourceFormatValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
-                                </Grid>
-                            </Border>
+                                <Border Style="{StaticResource DockStatsRowStyle}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="HDR" Style="{StaticResource DockStatsLabelStyle}" />
+                                        <TextBlock x:Name="Stats_SourceHdrValue" AutomationProperties.AutomationId="Stats_SourceHdrValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
+                                    </Grid>
+                                </Border>
 
-                            <Border Style="{StaticResource DockStatsRowAltStyle}">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Telemetry" Style="{StaticResource DockStatsLabelStyle}" />
-                                    <TextBlock x:Name="Stats_TelemetryOriginValue" AutomationProperties.AutomationId="Stats_TelemetryOriginValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
-                                </Grid>
-                            </Border>
+                                <Border Style="{StaticResource DockStatsRowAltStyle}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="ADC" Style="{StaticResource DockStatsLabelStyle}" />
+                                        <TextBlock x:Name="Stats_AdcOnOffValue" AutomationProperties.AutomationId="Stats_AdcOnOffValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
+                                    </Grid>
+                                </Border>
 
-                            <Border Style="{StaticResource DockStatsRowStyle}">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="ADC" Style="{StaticResource DockStatsLabelStyle}" />
-                                    <TextBlock x:Name="Stats_AdcOnOffValue" AutomationProperties.AutomationId="Stats_AdcOnOffValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
-                                </Grid>
-                            </Border>
+                                <Border Style="{StaticResource DockStatsRowStyle}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="Analog Gain" Style="{StaticResource DockStatsLabelStyle}" />
+                                        <TextBlock x:Name="Stats_AdcGainValue" AutomationProperties.AutomationId="Stats_AdcGainValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
+                                    </Grid>
+                                </Border>
 
-                            <Border Style="{StaticResource DockStatsRowAltStyle}">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Analog Gain" Style="{StaticResource DockStatsLabelStyle}" />
-                                    <TextBlock x:Name="Stats_AdcGainValue" AutomationProperties.AutomationId="Stats_AdcGainValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
-                                </Grid>
-                            </Border>
+                                <Border Style="{StaticResource DockStatsRowAltStyle}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="Telemetry" Style="{StaticResource DockStatsLabelStyle}" />
+                                        <TextBlock x:Name="Stats_TelemetryOriginValue" AutomationProperties.AutomationId="Stats_TelemetryOriginValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
+                                    </Grid>
+                                </Border>
                             </StackPanel>
-                        </StackPanel>
-
-                        <StackPanel x:Name="EncoderSection" Spacing="2" Visibility="Collapsed">
-                            <TextBlock Text="Encoder" Style="{StaticResource DockStatsSectionHeaderStyle}" Margin="0,0,0,4" />
-                            <Border Style="{StaticResource DockStatsRowAltStyle}">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Codec" Style="{StaticResource DockStatsLabelStyle}" />
-                                    <TextBlock x:Name="Stats_EncoderCodecValue" AutomationProperties.AutomationId="Stats_EncoderCodecValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
-                                </Grid>
-                            </Border>
-                            <Border Style="{StaticResource DockStatsRowStyle}">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Resolution" Style="{StaticResource DockStatsLabelStyle}" />
-                                    <TextBlock x:Name="Stats_EncoderResolutionValue" AutomationProperties.AutomationId="Stats_EncoderResolutionValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
-                                </Grid>
-                            </Border>
-                            <Border Style="{StaticResource DockStatsRowAltStyle}">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Frame Rate" Style="{StaticResource DockStatsLabelStyle}" />
-                                    <TextBlock x:Name="Stats_EncoderFrameRateValue" AutomationProperties.AutomationId="Stats_EncoderFrameRateValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
-                                </Grid>
-                            </Border>
-                            <Border Style="{StaticResource DockStatsRowStyle}">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Target Bitrate" Style="{StaticResource DockStatsLabelStyle}" />
-                                    <TextBlock x:Name="Stats_EncoderBitrateValue" AutomationProperties.AutomationId="Stats_EncoderBitrateValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
-                                </Grid>
-                            </Border>
                         </StackPanel>
 
                         <StackPanel Spacing="2">
@@ -608,10 +576,65 @@
                                 <TextBlock Text="MJPEG Decode" Style="{StaticResource DockStatsSectionHeaderStyle}" />
                                 <FontIcon x:Name="Decode_Chevron" Grid.Column="1" Glyph="&#xE70D;"
                                           FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                          VerticalAlignment="Center" />
+                                          VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                                    <FontIcon.RenderTransform>
+                                        <RotateTransform Angle="-90" />
+                                    </FontIcon.RenderTransform>
+                                </FontIcon>
                             </Grid>
                             <StackPanel x:Name="Decode_Content" Spacing="2" Visibility="Collapsed" />
                         </StackPanel>
+
+                        <StackPanel Spacing="2">
+                            <Grid x:Name="AvSync_Header" AutomationProperties.AutomationId="AvSync_Header" Margin="0,0,0,4" Background="Transparent" Tapped="StatsSectionHeader_Tapped" Tag="AvSync_Content">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="AV Sync" Style="{StaticResource DockStatsSectionHeaderStyle}" />
+                                <FontIcon x:Name="AvSync_Chevron" Grid.Column="1" Glyph="&#xE70D;"
+                                          FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                          VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                                    <FontIcon.RenderTransform>
+                                        <RotateTransform Angle="-90" />
+                                    </FontIcon.RenderTransform>
+                                </FontIcon>
+                            </Grid>
+                            <StackPanel x:Name="AvSync_Content" Spacing="2" Visibility="Collapsed">
+                                <Border Padding="8,3" CornerRadius="4" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="Drift" Style="{StaticResource DockStatsLabelStyle}" />
+                                        <TextBlock x:Name="Stats_AvSyncDriftValue" AutomationProperties.AutomationId="Stats_AvSyncDriftValue" Grid.Column="1" Text="&#x2014;" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
+                                    </Grid>
+                                </Border>
+                                <Border Padding="8,3" CornerRadius="4">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="Drift Rate" Style="{StaticResource DockStatsLabelStyle}" />
+                                        <TextBlock x:Name="Stats_AvSyncDriftRateValue" AutomationProperties.AutomationId="Stats_AvSyncDriftRateValue" Grid.Column="1" Text="&#x2014;" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
+                                    </Grid>
+                                </Border>
+                                <Border x:Name="Stats_AvSyncEncoderRow" Padding="8,3" CornerRadius="4" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" Visibility="Collapsed">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="Encoder" Style="{StaticResource DockStatsLabelStyle}" />
+                                        <TextBlock x:Name="Stats_AvSyncEncoderValue" AutomationProperties.AutomationId="Stats_AvSyncEncoderValue" Grid.Column="1" Text="&#x2014;" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <TextBlock Text="PREVIEW" Style="{StaticResource DockStatsGroupLabelStyle}" />
 
                         <StackPanel Spacing="2">
                             <Grid x:Name="PreviewCadence_Header" AutomationProperties.AutomationId="PreviewCadence_Header" Margin="0,0,0,4" Background="Transparent" Tapped="StatsSectionHeader_Tapped" Tag="PreviewCadence_Content">
@@ -758,6 +781,92 @@
                             </StackPanel>
                         </StackPanel>
 
+                        <StackPanel x:Name="EncoderSection" Spacing="16" Visibility="Collapsed">
+                            <!-- Recording and the Flashback buffer share this encoder readout, so the group is not "RECORDING". -->
+                            <TextBlock Text="ENCODING" Style="{StaticResource DockStatsGroupLabelStyle}" />
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="Encoder" Style="{StaticResource DockStatsSectionHeaderStyle}" Margin="0,0,0,4" />
+                                <Border Style="{StaticResource DockStatsRowAltStyle}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="Codec" Style="{StaticResource DockStatsLabelStyle}" />
+                                        <TextBlock x:Name="Stats_EncoderCodecValue" AutomationProperties.AutomationId="Stats_EncoderCodecValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
+                                    </Grid>
+                                </Border>
+                                <Border Style="{StaticResource DockStatsRowStyle}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="Resolution" Style="{StaticResource DockStatsLabelStyle}" />
+                                        <TextBlock x:Name="Stats_EncoderResolutionValue" AutomationProperties.AutomationId="Stats_EncoderResolutionValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
+                                    </Grid>
+                                </Border>
+                                <Border Style="{StaticResource DockStatsRowAltStyle}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="Frame Rate" Style="{StaticResource DockStatsLabelStyle}" />
+                                        <TextBlock x:Name="Stats_EncoderFrameRateValue" AutomationProperties.AutomationId="Stats_EncoderFrameRateValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
+                                    </Grid>
+                                </Border>
+                                <Border Style="{StaticResource DockStatsRowStyle}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="Target Bitrate" Style="{StaticResource DockStatsLabelStyle}" />
+                                        <TextBlock x:Name="Stats_EncoderBitrateValue" AutomationProperties.AutomationId="Stats_EncoderBitrateValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <TextBlock Text="SYSTEM" Style="{StaticResource DockStatsGroupLabelStyle}" />
+
+                        <StackPanel Spacing="2">
+                            <Grid x:Name="GPU_Header" AutomationProperties.AutomationId="GPU_Header" Margin="0,0,0,4" Background="Transparent" Tapped="StatsSectionHeader_Tapped" Tag="GPU_Content">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="GPU" Style="{StaticResource DockStatsSectionHeaderStyle}" />
+                                <FontIcon x:Name="GPU_Chevron" Grid.Column="1" Glyph="&#xE70D;"
+                                          FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                          VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                                    <FontIcon.RenderTransform>
+                                        <RotateTransform Angle="-90" />
+                                    </FontIcon.RenderTransform>
+                                </FontIcon>
+                            </Grid>
+                            <StackPanel x:Name="GPU_Content" Spacing="2" Visibility="Collapsed" />
+                        </StackPanel>
+
+                        <StackPanel Spacing="2">
+                            <Grid x:Name="Diagnostics_Header" AutomationProperties.AutomationId="Diagnostics_Header" Margin="0,0,0,4" Background="Transparent" Tapped="StatsSectionHeader_Tapped" Tag="Diagnostics_Content">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Diagnostics and evidence" Style="{StaticResource DockStatsSectionHeaderStyle}" />
+                                <FontIcon x:Name="Diagnostics_Chevron" Grid.Column="1" Glyph="&#xE70D;"
+                                          FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                          VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                                    <FontIcon.RenderTransform>
+                                        <RotateTransform Angle="-90" />
+                                    </FontIcon.RenderTransform>
+                                </FontIcon>
+                            </Grid>
+                            <StackPanel x:Name="Diagnostics_Content" Spacing="2" Visibility="Collapsed" />
+                        </StackPanel>
+
                         <StackPanel Spacing="2">
                             <Grid x:Name="Performance_Header" AutomationProperties.AutomationId="Performance_Header" Margin="0,0,0,4" Background="Transparent" Tapped="StatsSectionHeader_Tapped" Tag="Performance_Content">
                                 <Grid.ColumnDefinitions>
@@ -786,91 +895,6 @@
                                 </Grid>
                             </Border>
                             </StackPanel>
-                        </StackPanel>
-
-                        <StackPanel Spacing="2">
-                            <Grid x:Name="Diagnostics_Header" AutomationProperties.AutomationId="Diagnostics_Header" Margin="0,0,0,4" Background="Transparent" Tapped="StatsSectionHeader_Tapped" Tag="Diagnostics_Content">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="Diagnostics and evidence" Style="{StaticResource DockStatsSectionHeaderStyle}" />
-                                <FontIcon x:Name="Diagnostics_Chevron" Grid.Column="1" Glyph="&#xE70D;"
-                                          FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                          VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
-                                    <FontIcon.RenderTransform>
-                                        <RotateTransform Angle="-90" />
-                                    </FontIcon.RenderTransform>
-                                </FontIcon>
-                            </Grid>
-                            <StackPanel x:Name="Diagnostics_Content" Spacing="2" Visibility="Collapsed" />
-                        </StackPanel>
-
-                        <StackPanel Spacing="2">
-                            <Grid x:Name="AvSync_Header" AutomationProperties.AutomationId="AvSync_Header" Margin="0,0,0,4" Background="Transparent" Tapped="StatsSectionHeader_Tapped" Tag="AvSync_Content">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="AV Sync" Style="{StaticResource DockStatsSectionHeaderStyle}" />
-                                <FontIcon x:Name="AvSync_Chevron" Grid.Column="1" Glyph="&#xE70D;"
-                                          FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                          VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
-                                    <FontIcon.RenderTransform>
-                                        <RotateTransform Angle="-90" />
-                                    </FontIcon.RenderTransform>
-                                </FontIcon>
-                            </Grid>
-                            <StackPanel x:Name="AvSync_Content" Spacing="2" Visibility="Collapsed">
-                                <Border Padding="8,3" CornerRadius="4" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto" />
-                                            <ColumnDefinition Width="*" />
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Text="Drift" Style="{StaticResource DockStatsLabelStyle}" />
-                                        <TextBlock x:Name="Stats_AvSyncDriftValue" AutomationProperties.AutomationId="Stats_AvSyncDriftValue" Grid.Column="1" Text="&#x2014;" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
-                                    </Grid>
-                                </Border>
-                                <Border Padding="8,3" CornerRadius="4">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto" />
-                                            <ColumnDefinition Width="*" />
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Text="Drift Rate" Style="{StaticResource DockStatsLabelStyle}" />
-                                        <TextBlock x:Name="Stats_AvSyncDriftRateValue" AutomationProperties.AutomationId="Stats_AvSyncDriftRateValue" Grid.Column="1" Text="&#x2014;" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
-                                    </Grid>
-                                </Border>
-                                <Border x:Name="Stats_AvSyncEncoderRow" Padding="8,3" CornerRadius="4" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" Visibility="Collapsed">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto" />
-                                            <ColumnDefinition Width="*" />
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Text="Encoder" Style="{StaticResource DockStatsLabelStyle}" />
-                                        <TextBlock x:Name="Stats_AvSyncEncoderValue" AutomationProperties.AutomationId="Stats_AvSyncEncoderValue" Grid.Column="1" Text="&#x2014;" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
-                                    </Grid>
-                                </Border>
-                            </StackPanel>
-                        </StackPanel>
-
-                        <StackPanel Spacing="2">
-                            <Grid x:Name="GPU_Header" AutomationProperties.AutomationId="GPU_Header" Margin="0,0,0,4" Background="Transparent" Tapped="StatsSectionHeader_Tapped" Tag="GPU_Content">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="GPU" Style="{StaticResource DockStatsSectionHeaderStyle}" />
-                                <FontIcon x:Name="GPU_Chevron" Grid.Column="1" Glyph="&#xE70D;"
-                                          FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                          VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
-                                    <FontIcon.RenderTransform>
-                                        <RotateTransform Angle="-90" />
-                                    </FontIcon.RenderTransform>
-                                </FontIcon>
-                            </Grid>
-                            <StackPanel x:Name="GPU_Content" Spacing="2" Visibility="Collapsed" />
                         </StackPanel>
                     </StackPanel>
                 </ScrollViewer>

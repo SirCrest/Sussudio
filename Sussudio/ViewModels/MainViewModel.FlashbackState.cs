@@ -353,6 +353,17 @@ public partial class MainViewModel
 
         UpdateFlashbackBitrate();
 
+        RefreshFlashbackPlaybackState();
+    }
+
+    /// <summary>
+    /// Copies the playback controller's state into the bound properties. Runs on the
+    /// UI thread from the status poll and from the pushed refresh that follows every
+    /// controller state transition, so the play/pause glyph, Go Live enablement and
+    /// position label do not wait for the next poll tick.
+    /// </summary>
+    private void RefreshFlashbackPlaybackState()
+    {
         var playback = _sessionCoordinator.GetFlashbackPlaybackSnapshot();
         if (playback.IsActive)
         {
@@ -367,6 +378,32 @@ public partial class MainViewModel
         {
             if (FlashbackState != FlashbackPlaybackState.Live)
                 FlashbackState = FlashbackPlaybackState.Live;
+        }
+    }
+
+    // One pushed refresh in flight at a time; a burst of transitions collapses into it.
+    private int _flashbackPlaybackRefreshQueued;
+
+    private void QueueFlashbackPlaybackStateRefresh()
+    {
+        if (Interlocked.CompareExchange(ref _flashbackPlaybackRefreshQueued, 1, 0) != 0)
+        {
+            return;
+        }
+
+        var enqueued = _dispatcherQueue.TryEnqueue(() =>
+        {
+            Interlocked.Exchange(ref _flashbackPlaybackRefreshQueued, 0);
+            if (Volatile.Read(ref _disposeState) != 0 || !_sessionCoordinator.IsFlashbackActive)
+            {
+                return;
+            }
+
+            RefreshFlashbackPlaybackState();
+        });
+        if (!enqueued)
+        {
+            Interlocked.Exchange(ref _flashbackPlaybackRefreshQueued, 0);
         }
     }
 
@@ -398,6 +435,9 @@ public partial class MainViewModel
     /// </summary>
     private void OnFlashbackPlaybackStateChanged(FlashbackPlaybackStateChange change)
     {
+        // Every transition reaches the UI now rather than on the 250 ms status poll.
+        QueueFlashbackPlaybackStateRefresh();
+
         if (change.NewState != FlashbackPlaybackState.Live || !change.IsInvoluntaryLiveReturn)
         {
             return;

@@ -182,7 +182,7 @@ drift):
 | `flashback.playback_decode`, `flashback.playback_present_interval` | `FlashbackPlaybackController.PaceAndDecodeFrame` and `UpdateCadenceMetrics` |
 | `audio.capture_interval`, `audio.capture_drain`; `audio.capture` | `WasapiAudioCapture.CaptureThreadMain`, beside the existing `TrackCaptureCallback` (its TickCount64 trackers are unchanged) |
 | `audio.render_interval`, `audio.render_queue_ms`, `audio.render_underrun` | `WasapiAudioPlayback.RenderAvailableFrames` (interval and queue depth per render event, before `_chunkLock`); underrun counter beside each `_renderSilenceCount` increment |
-| `gpu.nvml.*` | `NvmlMonitor` poll, for each value NVML returned |
+| `gpu.nvml.*` | `NvmlMonitor` poll, for each value NVML returned; the poll runs while the stats dock or the sensor demand wants it (2.8.6) |
 | `telemetry.hub_refresh`, `telemetry.hub_alloc`; `telemetry.hub_refresh` | `AutomationDiagnosticsHub.RefreshSnapshotAsync`, after the refresh gate, including a failed refresh |
 | `automation.command`; `automation.command` | `AutomationCommandDispatcher.ExecuteAsync` finally block; the trace id is the command kind |
 
@@ -365,7 +365,7 @@ New live knobs added on this branch:
 | Knob | Default | Effect |
 |---|---|---|
 | `SUSSUDIO_DIAGNOSTICS_POLL_MS` | 500 | diagnostics hub poll interval, 100-10000 (slice 1) |
-| `SUSSUDIO_TELEMETRY_SENSORS` | auto | live, `auto\|on\|off`: `auto` runs the demand-driven sensors (UI probe, GPU engine counters) while a perf window is open or a frame trace runs; `on` always; `off` never (2.8.1) |
+| `SUSSUDIO_TELEMETRY_SENSORS` | auto | live, `auto\|on\|off`: `auto` runs the demand-driven sensors (UI probe, GPU engine counters, the NVML poll's sensor demand) while a perf window is open or a frame trace runs; `on` always; `off` never (2.8.1) |
 | `SUSSUDIO_PREVIEW_GPU_TIMING` | auto | live, `auto\|on\|off`: D3D11 timestamp queries around the preview render pass; `on` and `off` win, `auto` follows the sensor demand, `off` creates no query objects, and the WARP software adapter never runs them (2.8.4) |
 
 Both are read as parsed modes. Text set by hand is case-insensitive, `1` and `true` mean `on`, `0` and `false` mean `off`, and anything unrecognised means `auto`; the knob store itself accepts only the three choices. The report's `Sensors` section states the mode in force.
@@ -452,8 +452,8 @@ demand exists and what each sensor is doing (3.1).
 the last word for GPU timing: `on` and `off` win, and `auto` follows the sensor demand, including the sensors knob (sensors `off`
 also quiets automatic GPU timing).
 
-`TelemetrySensorSupervisor` (`SensorDemand.cs`) starts and stops the thread sensors (`IDemandSensor`: the UI probe and the GPU
-engine sensor) and has no timer or poll of its own. The owners of the three demand inputs raise `Changed` after a real change,
+`TelemetrySensorSupervisor` (`SensorDemand.cs`) starts and stops the demand sensors (`IDemandSensor`: the UI probe, the GPU
+engine sensor and `NvmlDemandSensor`) and has no timer or poll of its own. The owners of the three demand inputs raise `Changed` after a real change,
 outside their locks, with handler exceptions swallowed: `PerfWindowSet`, `FrameTraceRecorder` and `TuningKnobStore`. The
 `TelemetrySensors` facade (configured by `MainWindow` at startup, stopped by window shutdown cleanup) subscribes once and calls
 `Reevaluate()`. Start and stop are idempotent. A sensor that throws on start or stop is reported as `supervisor: <error>` in
@@ -587,7 +587,10 @@ least three quarters), `mixed` (between) and `unknown` (a reading is missing; a 
 - GC: collection counts, `GC.GetTotalPauseDuration`, allocated bytes, and a runtime `EventListener` for per-GC pause (`gc.pause`,
   trace events).
 - DWM: `DwmGetCompositionTimingInfo` refresh period, composed-pass count and refresh counter (2.8.5).
-- NVML values recorded at each existing NVML poll.
+- NVML values recorded at each NVML poll. The poll timer runs while any `NvmlPollingDemand` source holds it: `StatsDock` while
+  the stats dock shows the GPU rows, and `TelemetrySensors` while the sensor demand above is active (`NvmlDemandSensor`, details
+  line `nvml: parked`, `nvml: polling for <sources>` or `nvml: unavailable ...`). Neither source can park the timer the other
+  still needs, so a perf window fills `gpu.nvml.*` with the dock hidden, and an idle app with the dock hidden makes no NVML call.
 - Log tap: the logger writer keeps the last 4,096 lines and per-caller and per-tag line counts for spam detection. A tap that
   throws never ends the writer loop: the failure is reported once through the logger's fallback trace and the next line is
   written normally. `NATIVEXU_AT` (the capture card's AT-command answers) is logged when a command's answer is first seen or

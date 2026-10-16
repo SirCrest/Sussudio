@@ -65,7 +65,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         InitializeWindowTitleController();
         ApplyWindowTitle();
         _nvmlMonitor = new NvmlMonitor();
-        TelemetrySensors.Configure(TryEnqueueTelemetryProbe);
+        TelemetrySensors.Configure(TryEnqueueTelemetryProbe, new NvmlDemandSensor(_nvmlMonitor));
         _automationHostLifecycleController = new WindowAutomationHostLifecycleController(
             ViewModel,
             GetPreviewRuntimeSnapshotAsync,
@@ -327,7 +327,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             ScrubArea = FlashbackScrubArea,
             PositionMagneticPlayhead = (x, trackWidth) => _flashbackPlayheadMotionController.PositionMagneticPlayhead(x, trackWidth),
             RefreshPlayheadMotion = reason => _flashbackPlayheadMotionController.RefreshPlayheadMotion(reason),
-            GetTickCount64 = () => Environment.TickCount64,
+            DispatcherQueue = DispatcherQueue,
+            GetTimestamp = System.Diagnostics.Stopwatch.GetTimestamp,
         });
     }
 
@@ -1633,6 +1634,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             GetMjpegPipelineTimingDetails = ViewModel.GetMjpegPipelineTimingDetails,
             GetPendingPreviewFrameCount = () => _previewRendererHostController.PendingFrameCount,
             GetNvmlSnapshot = () => _nvmlMonitor?.GetLatestSnapshot(),
+            SetHardwareSamplingDemand = active => _nvmlMonitor?.SetPollingDemand(NvmlPollingDemand.StatsDock, active),
         };
 
     private StatsOverlayFrameTimeTargetsContext CreateStatsOverlayFrameTimeTargetsContext()
