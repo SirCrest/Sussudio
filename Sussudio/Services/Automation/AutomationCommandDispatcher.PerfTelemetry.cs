@@ -190,7 +190,7 @@ public sealed partial class AutomationCommandDispatcher
                 }
 
                 cancellationToken.ThrowIfCancellationRequested();
-                var (bytes, error) = await Task.Run(() => WriteFrameTrace(recorder, outputPath), CancellationToken.None).ConfigureAwait(false);
+                var (bytes, error) = await Task.Run(() => WriteFrameTrace(recorder, outputPath, cancellationToken), CancellationToken.None).ConfigureAwait(false);
                 if (error is not null)
                 {
                     throw new AutomationStateConflictException(error);
@@ -387,7 +387,9 @@ public sealed partial class AutomationCommandDispatcher
     private AutomationCommandResponse CreatePerfResponse(string correlationId, string message, object data)
         => CreateResponse(correlationId, message, data: data, includeSnapshot: false);
 
-    private static (long Bytes, string? Error) WriteFrameTrace(FrameTraceRecorder recorder, string outputPath)
+    // The request token reaches the dump walk, so a request that times out or an app shutting down stops a large dump
+    // within a chunk instead of holding the connection (and the ring) until every event is written.
+    private static (long Bytes, string? Error) WriteFrameTrace(FrameTraceRecorder recorder, string outputPath, CancellationToken cancellationToken)
     {
         try
         {
@@ -395,7 +397,7 @@ public sealed partial class AutomationCommandDispatcher
             string? error;
             using (var stream = new FileStream(outputPath, FileMode.Create, FileAccess.Write, FileShare.Read))
             {
-                var written = recorder.TryWriteChromeTrace(stream, out error);
+                var written = recorder.TryWriteChromeTrace(stream, out error, cancellationToken);
                 stream.Flush();
                 bytes = stream.Length;
                 if (written)
@@ -406,6 +408,12 @@ public sealed partial class AutomationCommandDispatcher
 
             TryDeletePartialTrace(outputPath);
             return (0, error ?? "Frame trace could not be written.");
+        }
+        catch (OperationCanceledException)
+        {
+            // A canceled dump left a truncated JSON file; it is not a trace.
+            TryDeletePartialTrace(outputPath);
+            throw;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {

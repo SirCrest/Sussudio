@@ -293,10 +293,18 @@ site costs one volatile read.
   (the newest `capacity` indices), `ReadChunk` fills a caller buffer of 1024
   events at a time, and the recorder walks the ring twice through one pooled
   chunk: the first pass finds the time origin (the earliest retained
-  timestamp) and the set of thread ids that appear, the second writes. A dump
-  therefore allocates tens of kilobytes however large the ring is (a default
-  2^18-event ring is 10.5 MB and the largest 168 MB, which an array copy would
-  have placed on the large object heap on every dump). The dump's `sussudio`
+  timestamp) and the set of thread ids that appear, the second writes. The
+  JSON writer hands the stream about 32 KB at a time (`Utf8JsonWriter` never
+  flushes by itself, so a full ring's several hundred megabytes of JSON would
+  otherwise sit in its buffer until the end), and an event's category is a
+  cached string, not a substring of its name. A dump therefore allocates tens
+  of kilobytes however large the ring is (a default 2^18-event ring is 10.5 MB
+  and the largest 168 MB, which an array copy would have placed on the large
+  object heap on every dump). The request's cancellation token is checked once
+  per chunk of each walk: a dump whose request times out, or that app shutdown
+  cancels, stops within a chunk, releases the ring and deletes its partial
+  file, instead of holding the pipe connection and the ring until every event
+  is written. The dump's `sussudio`
   object reports `recorded`, `retained`, `overwritten` (events that left the
   ring) and `abandoned` (events dropped by the stale-writer rule above).
 - `start` reuses the previous trace's ring when its capacity is unchanged and
@@ -1297,7 +1305,9 @@ Written before the code, per the testing policy:
   a slot lapped mid-read is skipped without shortening its chunk or ending the read; a writer that was preempted across a full
   ring wrap drops its own event, counts it as `abandoned` and never leaves a torn slot a reader accepts; a dump streams through a
   fixed chunk with the origin and the thread set from its first pass, and a ring is reused only for the same capacity and never
-  while a dump reads it; a retired registration removes its thread label only if the id still maps to it, and the dump still names
+  while a dump reads it; a dump of a 65,536-event ring writes in pieces of at most 256 KB and allocates under 1 MB in all, and a
+  dump canceled mid-walk throws at the next chunk, writes nothing more and lets the next trace reuse its ring (both written
+  before the fix; the dispatcher's deletion of the partial file is checked by reading, not by a test); a retired registration removes its thread label only if the id still maps to it, and the dump still names
   a thread that ended during the traced interval; a window `end` builds its report before releasing demand, a throwing builder
   leaves the window open, two concurrent ends give exactly one report, a window restarted during the build is not closed; a
   zero-tick GPU span is counted as unmeasured and never recorded as a 0 us render, a disjoint zero-tick span stays skipped, a real
