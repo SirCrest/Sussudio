@@ -2424,7 +2424,9 @@ Primary current owners:
   Flashback health banner: its severity (only the not-buffering fault is a
   warning; the snap-to-live notice is informational), Restart Flashback action
   visibility, and open state. `MainViewModel.FlashbackState.cs` decides when a
-  health message exists.
+  health message exists, and publishes `IsFlashbackBuffering` from the
+  one-second lifecycle tick; it drives the "capture device stays in use" hint
+  and clears the status-strip Flashback rate when buffering stops.
 - `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs` owns Flashback
   settings-control initialization, GPU decode toggle binding/sync, buffer
   duration combo selection/sync, and buffer-duration change logging.

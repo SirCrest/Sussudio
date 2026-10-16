@@ -70,6 +70,14 @@ public partial class MainViewModel
     [ObservableProperty]
     public partial string FlashbackBitrateInfo { get; set; } = LiveInfoUnavailable;
 
+    /// <summary>
+    /// True while the Flashback backend is buffering capture. It can outlive preview, so
+    /// the window shows that the capture device stays in use; the one-second lifecycle
+    /// tick keeps it current.
+    /// </summary>
+    [ObservableProperty]
+    public partial bool IsFlashbackBuffering { get; set; }
+
     [ObservableProperty]
     public partial double FlashbackExportProgress { get; set; }
 
@@ -525,6 +533,27 @@ public partial class MainViewModel
     /// </summary>
     public void PreWarmFlashbackPlayback() => _sessionCoordinator.PreWarmFlashbackPlayback();
 
+    /// <summary>
+    /// One-second lifecycle tick: publishes whether the backend is buffering and, while it
+    /// is and nothing is recording, its write rate. A stopped backend clears the rate
+    /// rather than leaving its last value on the status strip.
+    /// </summary>
+    private void UpdateFlashbackBuffering()
+    {
+        IsFlashbackBuffering = _sessionCoordinator.IsFlashbackActive;
+        if (!IsFlashbackBuffering)
+        {
+            FlashbackBitrateInfo = LiveInfoUnavailable;
+            _flashbackBitrateSamples.Clear();
+            return;
+        }
+
+        if (!IsRecording)
+        {
+            UpdateFlashbackBitrate();
+        }
+    }
+
     private void UpdateFlashbackBitrate()
     {
         var diskBytes = _sessionCoordinator.FlashbackTotalBytesWritten;
@@ -920,9 +949,6 @@ public partial class MainViewModel
 
         return Path.Combine(directory, $"{baseName}.{Guid.NewGuid():N}{extension}");
     }
-
-    /// <summary>True while the Flashback backend is buffering capture.</summary>
-    internal bool IsFlashbackBuffering => _sessionCoordinator.IsFlashbackActive;
 
     private bool EnsureFlashbackActiveForExport(string operation)
     {

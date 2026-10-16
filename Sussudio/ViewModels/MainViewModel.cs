@@ -2133,7 +2133,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private void UpdateTargetSummary()
     {
         SourceTargetSummaryText = SourceTelemetryPresentationBuilder.BuildTargetSummary(
-            GetSelectedResolutionDisplayText(),
+            GetSelectedResolutionTargetText(),
             SelectedFrameRate,
             SelectedExactFrameRate,
             HdrRuntimeState);
@@ -2163,6 +2163,21 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         }
 
         return AutoResolutionValue;
+    }
+
+    // The target summary appends the exact frame rate itself, so an auto selection names
+    // only the resolved size here rather than the rounded rate the picker label shows.
+    private string GetSelectedResolutionTargetText()
+    {
+        if (!string.IsNullOrWhiteSpace(SelectedResolution) &&
+            IsAutoResolutionValue(SelectedResolution) &&
+            AutoResolvedWidth.HasValue &&
+            AutoResolvedHeight.HasValue)
+        {
+            return $"{AutoResolutionValue} ({GetResolutionKey(AutoResolvedWidth.Value, AutoResolvedHeight.Value)})";
+        }
+
+        return GetSelectedResolutionDisplayText();
     }
 
     private void ResetFrameRateSelectionState()
@@ -2982,11 +2997,10 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                     RefreshSourceTelemetrySummaryAge = sourceTelemetryController.RefreshSourceTelemetrySummaryAge,
                     IsRecording = () => viewModel.IsRecording,
                     IsPreviewing = () => viewModel.IsPreviewing,
-                    IsFlashbackActive = () => viewModel._captureService.IsFlashbackActive,
                     GetRecordingElapsed = () => viewModel._recordingStopwatch.Elapsed,
                     SetRecordingTime = value => viewModel.RecordingTime = value,
                     UpdateRecordingStats = viewModel.UpdateRecordingStats,
-                    UpdateFlashbackBitrate = viewModel.UpdateFlashbackBitrate,
+                    UpdateFlashbackBuffering = viewModel.UpdateFlashbackBuffering,
                     UpdateFlashbackHealthStatus = viewModel.UpdateFlashbackHealthStatus,
                     StopFlashbackHealthPresentation = viewModel.StopFlashbackHealthPresentation,
                     DisposeAudioDeviceWatcher = viewModel._audioDeviceWatcher.Dispose,

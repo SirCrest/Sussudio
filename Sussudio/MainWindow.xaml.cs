@@ -1732,8 +1732,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             ViewModel.RecordingBitrateInfo,
             ViewModel.FlashbackBitrateInfo,
             ViewModel.IsDiskWarningActive,
-            ViewModel.IsRecording,
-            ViewModel.IsFlashbackEnabled);
+            ViewModel.IsRecording);
 
     private void ApplyWindowTitle()
         => Title = _windowTitleController.BuildTitle(ViewModel.IsRecording, ViewModel.RecordingTime);

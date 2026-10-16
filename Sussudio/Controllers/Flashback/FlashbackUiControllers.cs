@@ -725,6 +725,10 @@ internal sealed class FlashbackPropertyChangedController
                 _context.UpdateFlashbackKeepAliveHint(_context.IsFlashbackEnabled());
                 return true;
 
+            case nameof(MainViewModel.IsFlashbackBuffering):
+                _context.UpdateFlashbackKeepAliveHint(_context.IsFlashbackEnabled());
+                return true;
+
             case nameof(MainViewModel.FlashbackState):
                 _context.UpdateState();
                 return true;

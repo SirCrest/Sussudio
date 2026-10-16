@@ -89,7 +89,8 @@ internal static class StatusMessages
 
     /// <summary>
     /// Recovery banner message from a stored failure reason. The banner title already says
-    /// the recording did not finish, so a leading "Recording failed" is dropped.
+    /// the recording did not finish, so a leading "Recording failed" is dropped, along with
+    /// the parentheses some services wrap the remaining reason in.
     /// </summary>
     public static string RecordingRecoveryNotice(string? reason)
     {
@@ -98,6 +99,11 @@ internal static class StatusMessages
         if (StartsWithFailure(text, prefix))
         {
             text = text[prefix.Length..].TrimStart(':', ' ');
+        }
+
+        if (text.Length > 1 && text[0] == '(' && text[^1] == ')')
+        {
+            text = text[1..^1].Trim();
         }
 
         return text.Length == 0

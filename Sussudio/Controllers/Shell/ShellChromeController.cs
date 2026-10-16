@@ -329,8 +329,7 @@ internal readonly record struct StatusStripPresentationSnapshot(
     string RecordingBitrateInfo,
     string FlashbackBitrateInfo,
     bool IsDiskWarningActive,
-    bool IsRecording,
-    bool IsFlashbackEnabled);
+    bool IsRecording);
 
 internal sealed class StatusStripPresentationController
 {
@@ -385,7 +384,7 @@ internal sealed class StatusStripPresentationController
                 return true;
 
             case nameof(MainViewModel.FlashbackBitrateInfo):
-                UpdateFlashbackBitrate(snapshot.FlashbackBitrateInfo, snapshot.IsRecording, snapshot.IsFlashbackEnabled);
+                UpdateFlashbackBitrate(snapshot.FlashbackBitrateInfo, snapshot.IsRecording);
                 return true;
 
             case nameof(MainViewModel.IsDiskWarningActive):
@@ -433,9 +432,12 @@ internal sealed class StatusStripPresentationController
         _context.RecordingBitrateTextBlock.Text = recordingBitrateInfo;
     }
 
-    public void UpdateFlashbackBitrate(string flashbackBitrateInfo, bool isRecording, bool isFlashbackEnabled)
+    // While not recording, the bitrate slot shows Flashback's write rate. The view model
+    // resets that rate to the no-value mark whenever Flashback stops buffering, including
+    // when it is turned off, so no enabled check is needed here.
+    public void UpdateFlashbackBitrate(string flashbackBitrateInfo, bool isRecording)
     {
-        if (!isRecording && isFlashbackEnabled)
+        if (!isRecording)
         {
             _context.RecordingBitrateTextBlock.Text = flashbackBitrateInfo;
         }

@@ -193,7 +193,7 @@
                                    Style="{ThemeResource SubtitleTextBlockStyle}"
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                    HorizontalAlignment="Center"/>
-                        <TextBlock Text="Pick a device in settings (Ctrl+D), then start preview (Ctrl+P)"
+                        <TextBlock Text="Start preview (Ctrl+P), or choose a device in settings (Ctrl+D)"
                                    Style="{ThemeResource CaptionTextBlockStyle}"
                                    Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                                    HorizontalAlignment="Center"/>
