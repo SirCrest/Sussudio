@@ -194,7 +194,8 @@ internal static class MainViewModelSettingsPersistenceProjection
 public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDisposable, IAutomationViewModel
 {
     private IntPtr _windowHandle;
-    private const string LiveInfoUnavailable = "\u2014";
+    // The one "no value" mark for status-strip and live readouts.
+    internal const string LiveInfoUnavailable = "\u2014";
     private const int BitrateWindowMs = 10000;
     private const string DefaultRecordingFormat = "H.264";
     private const string HevcRecordingFormat = "HEVC";
@@ -272,7 +273,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             RecoveredRecordingFailurePath = recoveredRecording.PreservedArtifacts.FirstOrDefault(path =>
                 !RecordingFinalizationRecoveryArtifacts.IsUnresolvedMarkerPath(path))
                 ?? recoveredRecording.MarkerPath;
-            RecoveredRecordingFailureMessage = recoveredRecording.Reason;
+            RecoveredRecordingFailureMessage = StatusMessages.RecordingRecoveryNotice(recoveredRecording.Reason);
             StatusText = StatusMessages.RecordingFailed(recoveredRecording.Reason);
         }
         StartRecordingCapabilityRefresh();
@@ -2081,10 +2082,10 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     public partial string RecordingTime { get; set; } = "00:00:00";
 
     [ObservableProperty]
-    public partial string RecordingSizeInfo { get; set; } = "--";
+    public partial string RecordingSizeInfo { get; set; } = LiveInfoUnavailable;
 
     [ObservableProperty]
-    public partial string RecordingBitrateInfo { get; set; } = "--";
+    public partial string RecordingBitrateInfo { get; set; } = LiveInfoUnavailable;
 
     [ObservableProperty]
     public partial bool IsRecording { get; set; }
@@ -2133,11 +2134,9 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private void UpdateTargetSummary()
     {
         SourceTargetSummaryText = SourceTelemetryPresentationBuilder.BuildTargetSummary(
-            GetSelectedResolutionDisplayText(),
+            GetSelectedResolutionTargetText(),
             SelectedFrameRate,
-            SelectedFriendlyFrameRate,
             SelectedExactFrameRate,
-            SelectedExactFrameRateArg,
             HdrRuntimeState);
     }
 
@@ -2165,6 +2164,21 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         }
 
         return AutoResolutionValue;
+    }
+
+    // The target summary appends the exact frame rate itself, so an auto selection names
+    // only the resolved size here rather than the rounded rate the picker label shows.
+    private string GetSelectedResolutionTargetText()
+    {
+        if (!string.IsNullOrWhiteSpace(SelectedResolution) &&
+            IsAutoResolutionValue(SelectedResolution) &&
+            AutoResolvedWidth.HasValue &&
+            AutoResolvedHeight.HasValue)
+        {
+            return $"{AutoResolutionValue} ({GetResolutionKey(AutoResolvedWidth.Value, AutoResolvedHeight.Value)})";
+        }
+
+        return GetSelectedResolutionDisplayText();
     }
 
     private void ResetFrameRateSelectionState()
@@ -2258,8 +2272,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         if (!value)
         {
             ResetAudioMeter();
-            RecordingSizeInfo = "--";
-            RecordingBitrateInfo = "--";
+            RecordingSizeInfo = LiveInfoUnavailable;
+            RecordingBitrateInfo = LiveInfoUnavailable;
             _recordingBitrateSamples.Clear();
 
             if (_pendingModeOptionsRefreshForceRetarget is bool forceSourceAutoRetarget)
@@ -2278,7 +2292,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
         var now = Environment.TickCount64;
         var smoothed = _recordingBitrateSamples.AddSampleAndCompute(now, totalBytes);
-        RecordingBitrateInfo = smoothed.HasValue ? DisplayFormatters.FormatBitrate(smoothed.Value) : "--";
+        RecordingBitrateInfo = smoothed.HasValue ? DisplayFormatters.FormatBitrate(smoothed.Value) : LiveInfoUnavailable;
     }
 
     private int _diskSpaceProbeInFlight;
@@ -2940,10 +2954,13 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                     RestoreCaptureSelectionSnapshotIfUnchanged = viewModel.RestoreCaptureSelectionSnapshotIfUnchanged,
                     IsInitialized = () => viewModel.IsInitialized,
                     SetIsInitialized = value => viewModel.IsInitialized = value,
+                    IsCaptureInitialized = () => viewModel._captureService.IsInitialized,
                     IsPreviewing = () => viewModel.IsPreviewing,
                     SetIsPreviewing = value => viewModel.IsPreviewing = value,
                     IsPreviewReinitializing = () => viewModel.IsPreviewReinitializing,
                     IsRecording = () => viewModel.IsRecording,
+                    SetIsRecording = value => viewModel.IsRecording = value,
+                    IsCaptureRecording = () => viewModel._captureService.IsRecording,
                     ShouldStartAudioPreview = () => viewModel.IsAudioPreviewEnabled && viewModel.IsAudioEnabled,
                     IsAudioPreviewActive = () => viewModel._captureService.IsAudioPreviewActive,
                     SetStatusText = value => viewModel.StatusText = value,
@@ -2985,11 +3002,10 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                     RefreshSourceTelemetrySummaryAge = sourceTelemetryController.RefreshSourceTelemetrySummaryAge,
                     IsRecording = () => viewModel.IsRecording,
                     IsPreviewing = () => viewModel.IsPreviewing,
-                    IsFlashbackActive = () => viewModel._captureService.IsFlashbackActive,
                     GetRecordingElapsed = () => viewModel._recordingStopwatch.Elapsed,
                     SetRecordingTime = value => viewModel.RecordingTime = value,
                     UpdateRecordingStats = viewModel.UpdateRecordingStats,
-                    UpdateFlashbackBitrate = viewModel.UpdateFlashbackBitrate,
+                    UpdateFlashbackBuffering = viewModel.UpdateFlashbackBuffering,
                     UpdateFlashbackHealthStatus = viewModel.UpdateFlashbackHealthStatus,
                     StopFlashbackHealthPresentation = viewModel.StopFlashbackHealthPresentation,
                     DisposeAudioDeviceWatcher = viewModel._audioDeviceWatcher.Dispose,

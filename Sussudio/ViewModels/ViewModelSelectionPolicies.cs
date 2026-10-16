@@ -30,7 +30,7 @@ internal static class CaptureModeOptionsBuilder
                     IsEnabled = enabled,
                     DisableReason = enabled
                         ? string.Empty
-                        : "HDR mode is not supported at this resolution."
+                        : "HDR is not supported at this resolution."
                 };
             })
             .OrderByDescending(option => (long)option.Width * option.Height)

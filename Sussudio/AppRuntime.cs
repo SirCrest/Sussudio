@@ -5,7 +5,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
@@ -14,6 +13,7 @@ using System.Threading.Tasks;
 using Microsoft.Win32;
 using Sussudio.Models;
 using Sussudio.Services.Performance;
+using Sussudio.Services.Runtime;
 using Vortice.DXGI;
 
 namespace Sussudio;
@@ -297,7 +297,6 @@ public static class Logger
 
     private static volatile LoggerInitState _initState;
     public static LoggerInitState InitState => _initState;
-    private static long DroppedMessageCount => Interlocked.Read(ref _droppedLogMessages);
 
     static Logger()
     {
@@ -468,30 +467,15 @@ public static class Logger
         {
             while (await LogChannel.Reader.WaitToReadAsync())
             {
-                var batch = new StringBuilder();
-                var entries = 0;
-                while (entries < MaxDrainBatchEntries && LogChannel.Reader.TryRead(out var entry))
-                {
-                    batch.Append(entry);
-                    AddToLogTap(entry);
-                    entries++;
-                }
-
-                var droppedInBatch = Interlocked.Exchange(ref _unreportedDroppedLogMessages, 0);
-                if (droppedInBatch > 0)
-                {
-                    batch.Append('[')
-                        .Append(DateTime.Now.ToString("HH:mm:ss.fff"))
-                        .Append("] [Logger] Warning: log channel saturated, dropped_in_batch=")
-                        .Append(droppedInBatch)
-                        .Append(" dropped_total=")
-                        .Append(DroppedMessageCount)
-                        .Append('\n');
-                }
-
+                var batch = LogWriterBatch.Drain(
+                    LogChannel.Reader,
+                    MaxDrainBatchEntries,
+                    ref _unreportedDroppedLogMessages,
+                    ref _droppedLogMessages,
+                    AddToLogTap);
                 if (batch.Length > 0)
                 {
-                    WriteDirect(batch.ToString());
+                    WriteDirect(batch);
                 }
             }
         }

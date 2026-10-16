@@ -1,3 +1,5 @@
+using System;
+
 namespace Sussudio.Services.Performance;
 
 /// <summary>
@@ -109,9 +111,32 @@ public static class FrameTraceEventKinds
         _ => "kind-" + (int)kind,
     };
 
-    public static string Category(FrameTraceEventKind kind)
+    // A dump asks for the category of every event, so the declared kinds' categories are derived once instead of cut
+    // out of the name (a new string) each time.
+    private static readonly string[] CategoryByKind = BuildCategories();
+
+    public static string Category(FrameTraceEventKind kind) =>
+        (uint)kind < (uint)CategoryByKind.Length ? CategoryByKind[(int)kind] : CategoryOf(Name(kind));
+
+    private static string[] BuildCategories()
     {
-        var name = Name(kind);
+        var highest = 0;
+        foreach (var kind in Enum.GetValues<FrameTraceEventKind>())
+        {
+            highest = Math.Max(highest, (int)kind);
+        }
+
+        var categories = new string[highest + 1];
+        for (var value = 0; value < categories.Length; value++)
+        {
+            categories[value] = CategoryOf(Name((FrameTraceEventKind)value));
+        }
+
+        return categories;
+    }
+
+    private static string CategoryOf(string name)
+    {
         var dot = name.IndexOf('.');
         return dot > 0 ? name.Substring(0, dot) : "perf";
     }

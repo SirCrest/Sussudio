@@ -122,11 +122,14 @@ public static class TuningKnobCatalog
         Int("SUSSUDIO_FLASHBACK_PLAYBACK_MMCSS_PRIORITY", 1, -2, 2, TuningKnobApply.FlashbackRestart, FlashbackPlayback,
             "MMCSS thread priority for the Flashback playback thread."),
 
-        // HDR: consulted when preview, reinit, recording or Flashback start (and by health snapshots). The override is
-        // loud: the policy logs that HDR was requested but forced off, never a silent fallback.
+        // HDR: consulted when preview, reinit, recording or Flashback start (and by health snapshots, which compare two
+        // settings under the same value). Those parts share the capture's pixel format: a preview start with no recording
+        // rebuilds the capture and Flashback when it changes, and a recording or Flashback started on a capture of the
+        // other format refuses to run. The override is loud: the policy logs that HDR was requested but forced off,
+        // never a silent fallback.
         new TuningKnobDefinition(
             "SUSSUDIO_HDR_OUTPUT_FORCE_OFF", TuningKnobType.Bool, "0", 0, 1, null,
-            TuningKnobApply.PreviewRestart, "Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs",
+            TuningKnobApply.PipelineRestart, "Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs",
             "Force the HDR pipeline off even when HDR10 output is requested (logged at each decision)."),
 
         // Automation and diagnostics.
@@ -185,8 +188,17 @@ public static class TuningKnobCatalog
             "SUSSUDIO_CAPTURE_FAULT_PREVIEW_START_FAILURES",
             "Fault injection for the preview start failure live check; it deliberately fails video preview starts."),
         new TuningKnobExclusion(
+            "SUSSUDIO_CAPTURE_FAULT_PRE_CLEANUP_FAILURES",
+            "Fault injection for the late capture cleanup live check; it deliberately fails capture teardown."),
+        new TuningKnobExclusion(
+            "SUSSUDIO_CAPTURE_FAULT_PREVIEW_INSTALL_FAILURES",
+            "Fault injection for the start-rollback live check; it deliberately fails fresh preview starts."),
+        new TuningKnobExclusion(
             "SUSSUDIO_RECOVERY_DIRECTORY",
             "Recording recovery directory path; changing it at run time could orphan recovery markers."),
+        new TuningKnobExclusion(
+            "SUSSUDIO_PREVIEW_FAULT_WEDGE_RENDERER_START",
+            "Fault injection for the wedged-renderer live check; it deliberately holds a preview render thread."),
     };
 
     private static TuningKnobDefinition Int(string name, int defaultValue, int min, int max, TuningKnobApply apply, string owner, string description) =>

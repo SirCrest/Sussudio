@@ -1531,6 +1531,11 @@ internal sealed partial class D3D11PreviewRenderer
 
         if (needRecreate)
         {
+            if (_wedgeFaultArmed)
+            {
+                HoldRenderThreadForWedgeFault();
+            }
+
             DisposeProcessorResources();
 
             var fps = Math.Max(1.0, _startupFps);

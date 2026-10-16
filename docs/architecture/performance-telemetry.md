@@ -298,10 +298,18 @@ site costs one volatile read.
   (the newest `capacity` indices), `ReadChunk` fills a caller buffer of 1024
   events at a time, and the recorder walks the ring twice through one pooled
   chunk: the first pass finds the time origin (the earliest retained
-  timestamp) and the set of thread ids that appear, the second writes. A dump
-  therefore allocates tens of kilobytes however large the ring is (a default
-  2^18-event ring is 10.5 MB and the largest 168 MB, which an array copy would
-  have placed on the large object heap on every dump). The dump's `sussudio`
+  timestamp) and the set of thread ids that appear, the second writes. The
+  JSON writer hands the stream about 32 KB at a time (`Utf8JsonWriter` never
+  flushes by itself, so a full ring's several hundred megabytes of JSON would
+  otherwise sit in its buffer until the end), and an event's category is a
+  cached string, not a substring of its name. A dump therefore allocates tens
+  of kilobytes however large the ring is (a default 2^18-event ring is 10.5 MB
+  and the largest 168 MB, which an array copy would have placed on the large
+  object heap on every dump). The request's cancellation token is checked once
+  per chunk of each walk: a dump whose request times out, or that app shutdown
+  cancels, stops within a chunk, releases the ring and deletes its partial
+  file, instead of holding the pipe connection and the ring until every event
+  is written. The dump's `sussudio`
   object reports `recorded`, `retained`, `overwritten` (events that left the
   ring) and `abandoned` (events dropped by the stale-writer rule above).
 - `start` reuses the previous trace's ring when its capacity is unchanged and
@@ -362,8 +370,13 @@ it up at its next read without code changes. The launch value is captured
 at first use and `reset` restores it. Overrides are never persisted.
 
 `apply` values: `live` (read continuously), `preview-restart`,
-`recording-start`, `flashback-restart`, `app-restart` (read in a static
-initializer). Responses state what must restart. Values outside the range
+`recording-start`, `flashback-restart`, `pipeline-restart`, `app-restart` (read
+in a static initializer). `pipeline-restart` is a knob that preview, recordings
+and Flashback each read as they start and that sets the format of the capture
+they share (`SUSSUDIO_HDR_OUTPUT_FORCE_OFF`): it takes effect when preview
+restarts with no recording running, which rebuilds the capture and Flashback
+with it; a recording or Flashback started on a capture of the other format
+refuses to run. Responses state what must restart. Values outside the range
 or of the wrong type are rejected, not clamped. Every change logs
 `TUNING_KNOB_SET name= old= new= apply=` and appears in the next report. A
 call that changes nothing (a reset of a knob that is already unset, or a set
@@ -373,12 +386,18 @@ says `old=<unset> new=<unset>`.
 The catalog (slice 1) lists 51 `SUSSUDIO_*` knobs. `SUSSUDIO_AUTOMATION_TOKEN`
 (credential), `SUSSUDIO_AUTOMATION_PIPE` (the pipe the command arrives on),
 `SUSSUDIO_LOG_ROOT` and `SUSSUDIO_RECOVERY_DIRECTORY` (storage roots read once
-at startup) are deliberately not settable at runtime; `knobs` lists them under
+at startup), and `SUSSUDIO_PREVIEW_FAULT_WEDGE_RENDERER_START` (fault injection
+that holds one preview render thread for 30 s) are deliberately not settable at
+runtime; `knobs` lists them under
 `Excluded` with the reason. MMCSS task-name knobs are string choices. `apply`
 scopes are read from each consumer's read site; where the read site could not
 be confirmed from source the catalog uses the stricter scope.
 `SUSSUDIO_CAPTURE_FAULT_PREVIEW_START_FAILURES` (fault injection that fails video
 preview starts for a live check) is excluded the same way.
+`SUSSUDIO_CAPTURE_FAULT_PRE_CLEANUP_FAILURES` (fault injection that fails capture
+teardown for a live check) is excluded the same way, as is
+`SUSSUDIO_CAPTURE_FAULT_PREVIEW_INSTALL_FAILURES` (fails fresh preview starts after
+their capture is running, so the start rollback runs).
 
 New live knobs added on this branch:
 
@@ -623,7 +642,8 @@ least three quarters), `mixed` (between) and `unknown` (a reading is missing; a 
   still needs, so a perf window fills `gpu.nvml.*` with the dock hidden, and an idle app with the dock hidden makes no NVML call.
 - Log tap: the logger writer keeps the last 4,096 lines and per-caller and per-tag line counts for spam detection. A tap that
   throws never ends the writer loop: the failure is reported once through the logger's fallback trace and the next line is
-  written normally. `NATIVEXU_AT` (the capture card's AT-command answers) is logged when a command's answer is first seen or
+  written normally. Lines the logger drops because its queue is full never reach the tap, so the tap gets the same
+  `[Logger] Warning: log channel saturated, dropped_in_batch=N dropped_total=M` line the file gets. `NATIVEXU_AT` (the capture card's AT-command answers) is logged when a command's answer is first seen or
   changes in the bytes the line shows (its first 32), and, only with `Logger.VerboseEnabled`, once per 30 s per command as a
   sign that the poll is still reading. `NATIVEXU_TOPOLOGY` is logged when a path's node layout is first seen or changes. The
   rolling poll re-reads every command and the topology each cycle and used to write 7,678 of 10,043 tap lines in one live window
@@ -740,7 +760,12 @@ never does). Disarmed it costs one volatile read of a static reference; armed it
 is a QPC stamp and a copy into the ring, with no lock and no allocation. The
 reader validates what it copied, so a snapshot that raced the writer loses the
 overwritten prefix and never returns torn samples; a packet larger than the
-ring is rejected and counted (`Diagnostics.TapRejectedPackets`). Both streams
+ring is rejected and counted (`Diagnostics.TapRejectedPackets`). A loopback
+packet is placed by the engine's QPC position unless that is zero or flagged
+`AUDCLNT_BUFFERFLAGS_TIMESTAMP_ERROR` (a flagged position can hold any value):
+such a packet continues the previous one sample-exactly, and packets before the
+first trusted position are placed back from it (`LoopbackPacketTimeline`). A
+capture with no trusted position is `unavailable`, not guessed. Both streams
 are laid on a common 48 kHz QPC timeline and reduced to 1 ms RMS envelopes,
 cross-correlated over -20 to +1000 ms, and the best lag is refined within 3 ms
 at sample level when the raw waveforms correlate (`Resolution` is `sample`, else
@@ -818,7 +843,8 @@ is used (a value implies `set-value`). The planner rejects before touching the U
 what the element's facts rule out: an unknown action (listing the valid ones), an
 action the element has no pattern for (listing what it supports), `set-value`
 without a value or with a non-numeric or out-of-range value on a range control
-(rejected, never clamped) or on a read-only text control, `select` with the wrong
+(rejected, never clamped) or on a read-only text or range control (a
+`ProgressBar`, which is not offered `set-value` either), `select` with the wrong
 value arity, `expand` or `collapse` on a leaf, and a value passed to an action
 that takes none. Actions go through the peer's pattern providers
 (`IInvokeProvider`, `IToggleProvider`, `IValueProvider`, `IRangeValueProvider`,
@@ -875,7 +901,9 @@ usually does), which is `action-failed` with the reason. Statuses: `invoked`,
 `not-found`, `ambiguous`, `hidden`, `disabled`, `invalid-action`,
 `action-unsupported`, `invalid-value` (a bad value, including a select that
 matches no item or several), `action-failed`, `window-unavailable`. Every attempt
-is logged as `AUTO-UI-INVOKE`.
+is logged as `AUTO-UI-INVOKE`. The request's timeout stops an action only before
+the UI thread starts it; once started, the settle and re-read still run and the
+reply says the action ran, never that it was canceled.
 
 CLI: `ssctl ui tree [--root NAME] [--depth N] [--all] [--json]` and
 `ssctl ui invoke <target> [action] [value] [--force] [--json]`. MCP:
@@ -1023,7 +1051,11 @@ taken before the knob store's.
   killed tool) loses the lease at expiry: a timer restores every leased knob
   that is not already at its baseline (a reset when the baseline was the launch
   value, a set otherwise), logs `PERF_EXPERIMENT_LEASE_EXPIRED` and frees the
-  lease. A timer callback that races a renew re-arms instead of ending it.
+  lease. A timer callback that races a renew re-arms instead of ending it. The
+  timer can run late (it needs a thread-pool thread, and the pool is starved by
+  the load an experiment measures), so every lease command and knob change first
+  ends a lease past its deadline the same way: an overdue lease is never renewed,
+  never refuses another client and never shows as held.
 - `release` with the holder's id frees the lease and leaves the knobs alone,
   because the holder restores them itself. `release` with `force` ends anyone's
   lease and restores its knobs the same way (`PERF_EXPERIMENT_LEASE_FORCED`).
@@ -1048,9 +1080,9 @@ reported as not verified with the reason.
 
 Limits. The app restores knobs, not the rest of a dead runner's state: a
 recording the runner started keeps running and its open window stays open until
-someone ends or cancels them. A restored `preview-restart` or
-`flashback-restart` knob takes effect at the next restart of that part; the app
-does not restart the preview by itself. `ssctl perf lease` shows the lease and
+someone ends or cancels them. A restored `preview-restart`,
+`flashback-restart` or `pipeline-restart` knob takes effect at the next restart
+of that part; the app does not restart the preview by itself. `ssctl perf lease` shows the lease and
 `ssctl perf lease release --force` breaks a stuck one (MCP
 `perf_experiment_lease`).
 
@@ -1131,8 +1163,9 @@ and the forced `release`; `acquire` and `renew` belong to the experiment runner.
 ```
 
 Time metrics are reported in milliseconds; percent and byte metrics in their
-own units. `filter` is a name prefix (case-insensitive). Metrics with zero
-count are omitted unless `includeIdle` is true. `Gpu.Engines` is built from
+own units. `filter` is a name prefix (case-insensitive). Histograms with zero
+count and counters that counted nothing are omitted unless `includeIdle` is
+true. `Gpu.Engines` is built from
 the `gpu.*` percent metrics that have samples. `Gpu.DedicatedBytes` is this
 process's dedicated GPU memory from the PDH sensor, null while that sensor is
 stopped, pending or unavailable. `Gpu.Adapters` is read when the report is
@@ -1284,7 +1317,9 @@ Written before the code, per the testing policy:
   packets or timestamps are `unavailable`; delivery jitter does not move the
   result; a gap in the loopback stream does not break alignment around it; a
   mismatched waveform (inverted polarity) falls back to `envelope-1ms` and says
-  so.
+  so; loopback positions flagged as timestamp errors (10 s off, or beyond a
+  signed 64-bit time, first and mid-stream) do not place their packets, and a
+  stream with no trusted position is `unavailable` (written before the fix).
 - Tap ring (slice 4): an unwritten ring snapshots to nothing; packets round-trip
   exactly with their start times; a ring written past capacity returns only the
   newest whole packets, contiguous and uncorrupted; a write that laps the ring
@@ -1311,7 +1346,7 @@ Written before the code, per the testing policy:
   resolves to the natural one and a control with none says so; an action with no
   pattern lists what the element supports; `set-value` needs a value, a range
   value must be finite and inside its limits (rejected, never clamped), a
-  read-only text control is rejected; `select` takes no value on an item and
+  read-only text or range control is rejected; `select` takes no value on an item and
   needs one on a container; `expand` and `collapse` on a leaf are rejected;
   a value on an action that takes none is rejected and an empty value counts as
   absent; `focus` and `scroll-into-view` need no pattern. Item selection matches
@@ -1380,7 +1415,9 @@ Written before the code, per the testing policy:
   a slot lapped mid-read is skipped without shortening its chunk or ending the read; a writer that was preempted across a full
   ring wrap drops its own event, counts it as `abandoned` and never leaves a torn slot a reader accepts; a dump streams through a
   fixed chunk with the origin and the thread set from its first pass, and a ring is reused only for the same capacity and never
-  while a dump reads it; a retired registration removes its thread label only if the id still maps to it, and the dump still names
+  while a dump reads it; a dump of a 65,536-event ring writes in pieces of at most 256 KB and allocates under 1 MB in all, and a
+  dump canceled mid-walk throws at the next chunk, writes nothing more and lets the next trace reuse its ring (both written
+  before the fix; the dispatcher's deletion of the partial file is checked by reading, not by a test); a retired registration removes its thread label only if the id still maps to it, and the dump still names
   a thread that ended during the traced interval; a window `end` builds its report before releasing demand, a throwing builder
   leaves the window open, two concurrent ends give exactly one report, a window restarted during the build is not closed; a
   zero-tick GPU span is counted as unmeasured and never recorded as a 0 us render, a disjoint zero-tick span stays skipped, a real
@@ -1399,8 +1436,10 @@ Written before the code, per the testing policy:
   baseline, nothing written for a knob already there) and the lease is free; a renew after expiry, after a forced release or
   with an id that never held it is refused with the reason; the holder's release leaves knobs alone and is harmless twice, another
   client's release is refused unless forced, and a forced release restores the knobs; an expiry timer that fires just after a
-  renew does not end the lease; a TTL out of range, an unknown knob, or an empty, over-long or control-character id or holder is
-  rejected, never truncated, and takes no lease.
+  renew does not end the lease; with the deadline passed and the timer not yet run (written before the fix), the lease cannot be
+  renewed, status shows it expired with its knobs restored, the next experiment acquires against the restored values, a hand
+  change goes through, and the late callback neither ends the next lease nor restores again; a TTL out of range, an unknown
+  knob, or an empty, over-long or control-character id or holder is rejected, never truncated, and takes no lease.
 - Experiment lease, runner side (written before the runner used it): a foreign lease rejects the run before any change and
   sends no release; a lost acquire reply is released under the runner's own id; a lease lost mid-run fails the run, drops the
   window that was open and still restores (restarting the preview the app's restore left stale), while a lease taken over by
@@ -1548,21 +1587,31 @@ The runner first validates the spec against the app without changing anything
 and reports every problem together (`rejected`): an unknown knob, a wrong type,
 a value outside the range, an `app-restart` knob (the runner cannot relaunch the
 app), a `recording-start` knob without `recording: true`, a `flashback-restart`
-knob while Flashback is off, a preview that is not running, or a recording that
-is already running. Then it runs the variants interleaved, reversing the
+knob while Flashback is off, a `pipeline-restart` knob while a recording the
+runner did not start holds the capture, a preview that is not running, or a
+recording that is already running. Then it runs the variants interleaved, reversing the
 direction each repeat (A B, B A, A B) so slow drift lands on both. Each variant
 is applied as a difference from the previous run, knobs a variant does not name
 return to their pre-experiment value, and the preview (and Flashback, where a
-`flashback-restart` knob needs it) is restarted and read back from the snapshot
-before warmup, not trusted from the acknowledgement. Every run is one named
+`flashback-restart` knob, or a `pipeline-restart` knob while Flashback is
+running, needs it) is restarted and read back from the snapshot before warmup,
+not trusted from the acknowledgement. The restore restarts the same parts. Every run is one named
 performance window (at most 64 characters, unique), and a marker (`experiment
 variant <name> run <n> warmup` and `... measure`) is added at the start of the
 warmup and of the measure window so the runs can be found in a frame trace.
+With `recording: true` the runner reads the state before it starts each run's
+recording: the app treats a start while recording as done, so a recording
+someone started after preflight would otherwise be measured as the runner's and
+stopped at the end of the run. That run fails instead and the recording is left
+running. A start landing between that read and the runner's own command can
+still be taken.
 
 A verdict is `better` or `worse` only when the per-repeat range of the verdict
 statistic for the variant is entirely below or above the baseline's (lower is
 better); touching or overlapping ranges, a single repeat, or a metric with no
-samples in one variant are `inconclusive`. A counter is judged only when its
+samples in one variant are `inconclusive`. A window report leaves out a counter
+that counted nothing, so a run whose report lists counters without it counted 0
+for it; a report with no counter list at all leaves that run out. A counter is judged only when its
 name says it counts something bad (drops, stalls, late frames, errors, ...);
 any other counter reports `changed` for a separated difference instead of
 better or worse.

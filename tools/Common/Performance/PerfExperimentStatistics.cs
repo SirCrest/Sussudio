@@ -36,7 +36,11 @@ public sealed record PerfExperimentMetric(
 
 internal sealed record PerfMetricSample(string Name, string Unit, string Kind, IReadOnlyDictionary<string, double> Stats);
 
-internal sealed record PerfRunSamples(int VariantIndex, int Repeat, IReadOnlyList<PerfMetricSample> Samples);
+/// <summary>
+/// One run's samples. <see cref="CountersListed"/> is true when its report carried a counter list, so a counter
+/// missing from that list counted nothing in the run.
+/// </summary>
+internal sealed record PerfRunSamples(int VariantIndex, int Repeat, IReadOnlyList<PerfMetricSample> Samples, bool CountersListed);
 
 public static class PerfExperimentStatistics
 {
@@ -247,6 +251,10 @@ public static class PerfExperimentStatistics
         return samples;
     }
 
+    /// <summary>True when a window report carries a counter list, so a counter missing from it counted nothing.</summary>
+    internal static bool ListsCounters(JsonElement report)
+        => PerfJson.TryGet(report, "Counters", out var counters) && counters.ValueKind == JsonValueKind.Array;
+
     /// <summary>
     /// Builds the per-metric comparison from every completed run. <paramref name="focus"/> (when not empty) limits the
     /// compared metrics; entries that matched nothing are reported through <paramref name="warnings"/>.
@@ -289,11 +297,16 @@ public static class PerfExperimentStatistics
             var first = info[name];
             var statistic = StatisticFor(first.Kind, histogramStatistic);
             var perVariant = new List<IReadOnlyList<PerfMetricSample?>>(variants.Count);
+            // The app leaves a counter out of a window report when it counted nothing in the window, so a run whose
+            // report listed counters without this one counted zero. Skipping that run would compare only the runs
+            // that counted something. A report with no counter list says nothing, so its run stays a gap.
+            var idleCounter = first.Kind == CounterKind ? IdleCounter(first) : null;
             for (var v = 0; v < variants.Count; v++)
             {
                 perVariant.Add(runs
                     .Where(run => run.VariantIndex == v)
-                    .Select(run => run.Samples.FirstOrDefault(sample => sample.Name == name))
+                    .Select(run => run.Samples.FirstOrDefault(sample => sample.Name == name)
+                        ?? (run.CountersListed ? idleCounter : null))
                     .Where(sample => sample is not null)
                     .ToList());
             }
@@ -390,6 +403,9 @@ public static class PerfExperimentStatistics
         CounterKind => "delta",
         _ => "value",
     };
+
+    private static PerfMetricSample IdleCounter(PerfMetricSample counter)
+        => new(counter.Name, counter.Unit, CounterKind, new Dictionary<string, double>(StringComparer.Ordinal) { ["delta"] = 0, ["ratePerSec"] = 0 });
 
     private static PerfMetricSample Gauge(string name, string unit, string kind, double value)
         => new(name, unit, kind, new Dictionary<string, double>(StringComparer.Ordinal) { ["value"] = value });

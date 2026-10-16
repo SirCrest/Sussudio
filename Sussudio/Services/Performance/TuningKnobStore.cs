@@ -23,6 +23,11 @@ public enum TuningKnobApply
     PreviewRestart,
     RecordingStart,
     FlashbackRestart,
+    /// <summary>
+    /// Read by each part of the capture pipeline as it starts: preview, a recording, Flashback. They share one capture,
+    /// so a change takes effect when preview restarts with no recording running, and Flashback restarts with it.
+    /// </summary>
+    PipelineRestart,
     /// <summary>Read once (constructor, static initializer or startup); needs a relaunch.</summary>
     AppRestart,
 }
@@ -35,6 +40,7 @@ public static class TuningKnobApplyNames
         TuningKnobApply.PreviewRestart => "preview-restart",
         TuningKnobApply.RecordingStart => "recording-start",
         TuningKnobApply.FlashbackRestart => "flashback-restart",
+        TuningKnobApply.PipelineRestart => "pipeline-restart",
         TuningKnobApply.AppRestart => "app-restart",
         _ => "unknown",
     };
@@ -45,6 +51,8 @@ public static class TuningKnobApplyNames
         TuningKnobApply.PreviewRestart => "Takes effect the next time preview starts or reinitializes.",
         TuningKnobApply.RecordingStart => "Takes effect the next time a recording starts.",
         TuningKnobApply.FlashbackRestart => "Takes effect the next time the Flashback backend starts.",
+        TuningKnobApply.PipelineRestart =>
+            "Takes effect the next time preview starts with no recording running; preview, recordings and Flashback share that capture.",
         TuningKnobApply.AppRestart => "Read once at startup: requires an app restart to take effect.",
         _ => string.Empty,
     };

@@ -30,6 +30,7 @@ internal sealed class PerfExperimentSession
     private const string ApplyPreviewRestart = "preview-restart";
     private const string ApplyRecordingStart = "recording-start";
     private const string ApplyFlashbackRestart = "flashback-restart";
+    private const string ApplyPipelineRestart = "pipeline-restart";
     private const string ApplyAppRestart = "app-restart";
 
     private sealed record KnobInfo(
@@ -182,8 +183,11 @@ internal sealed class PerfExperimentSession
                     _baselines[name] = new KnobBaseline(name, info.Apply, info.Value, mode);
                 }
 
-                _restartPreview = _touched.Any(name => _baselines[name].Apply == ApplyPreviewRestart);
-                _restartFlashback = _touched.Any(name => _baselines[name].Apply == ApplyFlashbackRestart);
+                // A pipeline knob is read by every part as it starts, so a run restarts the preview (which rebuilds the
+                // capture) and, when it is running, Flashback; the runner's own recording starts after both.
+                _restartPreview = _touched.Any(name => _baselines[name].Apply is ApplyPreviewRestart or ApplyPipelineRestart);
+                _restartFlashback = _touched.Any(name => _baselines[name].Apply == ApplyFlashbackRestart
+                    || (_baselines[name].Apply == ApplyPipelineRestart && state.FlashbackActive));
             }
         }
         else
@@ -205,10 +209,14 @@ internal sealed class PerfExperimentSession
                 return $"{info.Name} takes effect when a recording starts (Apply recording-start). Set \"recording\": true so the runner starts a recording for every run.";
             case ApplyFlashbackRestart when !state.FlashbackActive:
                 return $"{info.Name} takes effect when Flashback restarts (Apply flashback-restart), but Flashback is not active. Enable Flashback first.";
+            case ApplyPipelineRestart when state.Recording && !_spec.Recording:
+                return $"{info.Name} is read by preview, recordings and Flashback as each starts, and they share one capture (Apply pipeline-restart). "
+                    + "A recording the runner did not start holds that capture, so restarting the preview would not apply the knob. Stop the recording first.";
             case ApplyLive:
             case ApplyPreviewRestart:
             case ApplyRecordingStart:
             case ApplyFlashbackRestart:
+            case ApplyPipelineRestart:
                 return null;
             default:
                 return $"{info.Name} has an unknown apply scope '{info.Apply}', so the runner cannot tell how to apply it.";
@@ -630,6 +638,11 @@ internal sealed class PerfExperimentSession
             case ApplyFlashbackRestart:
                 _flashbackStale = true;
                 break;
+            case ApplyPipelineRestart:
+                // Flashback read it too if it was running at preflight, which is when a pipeline knob sets _restartFlashback.
+                _pipelineStale = true;
+                _flashbackStale |= _restartFlashback;
+                break;
         }
     }
 
@@ -693,6 +706,16 @@ internal sealed class PerfExperimentSession
 
     private async Task StartRecordingAsync(CancellationToken cancellationToken)
     {
+        // The app treats a start while recording as done, so a recording someone started after preflight would be taken
+        // for the runner's own: measured, then stopped at the end of the run. Read the state first and leave that one
+        // alone. A start landing between this read and the command below can still be taken; the app's start does not
+        // say whether it started anything.
+        if (!_recordingStarted && (await _app.GetStateAsync(cancellationToken).ConfigureAwait(false)).Recording)
+        {
+            throw new PerfExperimentCommandException(
+                "A recording the runner did not start is running, so this run cannot record its own. The runner leaves that recording running.");
+        }
+
         // Marked before the command: if the request reaches the app and the reply is lost, restore still stops it.
         _recordingStarted = true;
         var reply = await _app.RequireAsync("SetRecordingEnabled", new Dictionary<string, object?> { ["enabled"] = true }, cancellationToken, "SetRecordingEnabled true").ConfigureAwait(false);

@@ -346,7 +346,7 @@ internal sealed class FrameTimeGraphController : IDisposable
             _root.Children.InsertAtTop(_data);
             _lineBrush = compositor.CreateColorBrush(panel == FrameTimeGraphPanel.FrameTime
                 ? Color.FromArgb(255, 85, 214, 255) : Color.FromArgb(255, 255, 213, 79));
-            _warningBrush = compositor.CreateColorBrush(Color.FromArgb(255, 255, 183, 77));
+            _warningBrush = compositor.CreateColorBrush(Color.FromArgb(255, 255, 200, 87));
             _gridBrush = compositor.CreateColorBrush(Color.FromArgb(75, 255, 255, 255));
             for (var i = 0; i < _budgetLines.Length; i++)
             {

@@ -9,6 +9,7 @@ using Sussudio.Models;
 using Sussudio.Services.Capture;
 using Sussudio.Services.Flashback;
 using Sussudio.Services.Runtime;
+using Sussudio.ViewModels;
 
 namespace Sussudio.Controllers;
 
@@ -153,11 +154,10 @@ internal sealed class MainViewModelRuntimeLifecycleControllerContext
     public required Action RefreshSourceTelemetrySummaryAge { get; init; }
     public required Func<bool> IsRecording { get; init; }
     public required Func<bool> IsPreviewing { get; init; }
-    public required Func<bool> IsFlashbackActive { get; init; }
     public required Func<TimeSpan> GetRecordingElapsed { get; init; }
     public required Action<string> SetRecordingTime { get; init; }
     public required Action UpdateRecordingStats { get; init; }
-    public required Action UpdateFlashbackBitrate { get; init; }
+    public required Action UpdateFlashbackBuffering { get; init; }
     public required Action UpdateFlashbackHealthStatus { get; init; }
     public required Action StopFlashbackHealthPresentation { get; init; }
     public required Action DisposeAudioDeviceWatcher { get; init; }
@@ -220,10 +220,7 @@ internal sealed class MainViewModelRuntimeLifecycleController
                 _context.UpdateRecordingStats();
             }
 
-            if (!_context.IsRecording() && _context.IsFlashbackActive())
-            {
-                _context.UpdateFlashbackBitrate();
-            }
+            _context.UpdateFlashbackBuffering();
 
             if (_context.IsPreviewing() || _context.IsRecording())
             {
@@ -556,10 +553,13 @@ internal sealed class MainViewModelPreviewLifecycleControllerContext
     public required Func<MainViewModelCaptureSelectionSnapshot, MainViewModelCaptureSelectionSnapshot, bool> RestoreCaptureSelectionSnapshotIfUnchanged { get; init; }
     public required Func<bool> IsInitialized { get; init; }
     public required Action<bool> SetIsInitialized { get; init; }
+    public required Func<bool> IsCaptureInitialized { get; init; }
     public required Func<bool> IsPreviewing { get; init; }
     public required Action<bool> SetIsPreviewing { get; init; }
     public required Func<bool> IsPreviewReinitializing { get; init; }
     public required Func<bool> IsRecording { get; init; }
+    public required Action<bool> SetIsRecording { get; init; }
+    public required Func<bool> IsCaptureRecording { get; init; }
     public required Func<bool> ShouldStartAudioPreview { get; init; }
     public required Func<bool> IsAudioPreviewActive { get; init; }
     public required Action<string> SetStatusText { get; init; }
@@ -847,6 +847,8 @@ internal sealed class MainViewModelPreviewLifecycleController
             {
                 _context.SetIsPreviewing(false);
             }
+
+            ReconcileWithCompletedCaptureCleanup();
         }
 
         if (_context.IsAudioPreviewActive())
@@ -864,6 +866,33 @@ internal sealed class MainViewModelPreviewLifecycleController
         if (!_context.IsPreviewReinitializing())
         {
             _context.SetStatusText(StatusMessages.PreviewStopped);
+        }
+    }
+
+    // A stop that finds an earlier full capture cleanup half done (a fatal capture error whose
+    // cleanup failed) finishes it, which uninitializes the capture service and finalizes any
+    // recording that error interrupted; a half-done preview teardown is finished as a teardown
+    // and keeps it initialized. That stop succeeds, or is cancelled, without a capture error, so
+    // nothing else tells this view model. Only ever clear flags, and only once capture is
+    // uninitialized: false while capture is still initialized is a deliberate re-init request
+    // (device apply, reinit) and must stand, and a recording stop owns its own transition.
+    private void ReconcileWithCompletedCaptureCleanup()
+    {
+        if (_context.IsCaptureInitialized())
+        {
+            return;
+        }
+
+        if (_context.IsInitialized())
+        {
+            Logger.Log("PREVIEW_STOP_CAPTURE_UNINITIALIZED: the stop completed capture cleanup; the next start initializes.");
+            _context.SetIsInitialized(false);
+        }
+
+        if (_context.IsRecording() && !_context.IsCaptureRecording())
+        {
+            Logger.Log("PREVIEW_STOP_CAPTURE_RECORDING_ENDED: the stop completed capture cleanup, which finalized the recording.");
+            _context.SetIsRecording(false);
         }
     }
 
@@ -1085,13 +1114,6 @@ internal sealed class MainViewModelPreviewReinitializeController
                 shouldRestartPreview,
                 logFatalBreadcrumbs: true,
                 reportSuccessfulPreview: true).ConfigureAwait(true);
-        }
-        catch (PreviewRendererReinitStopTimeoutException ex)
-        {
-            Logger.LogException(ex);
-            Logger.Log($"REINIT_ABORT_RENDERER_STOP_TIMEOUT reason='{reason}' msg='{ex.InnerException?.Message ?? ex.Message}'");
-            _context.SetStatusText(StatusMessages.CaptureSettingsUpdateFailed(ex.Message));
-            success = false;
         }
         catch (Exception ex) when (IsDeviceBusyException(ex) && shouldRestartPreview)
         {
@@ -1479,7 +1501,7 @@ internal sealed class MainViewModelRecordingTransitionController
             _context.RestartRecordingStopwatch();
             _context.ClearRecordingBitrateSamples();
             _context.SetRecordingSizeInfo("0 B");
-            _context.SetRecordingBitrateInfo("--");
+            _context.SetRecordingBitrateInfo(MainViewModel.LiveInfoUnavailable);
             _context.SetStatusText(StatusMessages.Recording);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)

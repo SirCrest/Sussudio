@@ -64,7 +64,7 @@ tests that pin which file owns a symbol; see AGENTS.md § Testing Policy.
 | Capture runtime | `Sussudio/Services/Capture/CaptureService.cs`, `CaptureService.PreviewLifecycle.cs`, `CaptureService.Flashback.cs`, `CaptureService.HealthSnapshots.cs`, `CaptureService.RecordingLifecycle.cs`, `CaptureService.RuntimeSnapshots.cs` | Lifecycle transitions, resource ownership, recording/Flashback orchestration, and snapshots. See [capture](#capture-runtime) for the responsibility split. |
 | App shell | `Sussudio/Program.cs`, `Sussudio/Services/Runtime/AppProcessStartup.cs`, `Sussudio/App.xaml.cs` | Private native probe routing, single-instance admission before explicit app logging initialization, WinUI startup, and recoverable/fatal exception policy. |
 | App surface helpers | `Sussudio/AppSurface.cs` | Display formatters and XAML converters; preserve public binding type names. |
-| App runtime | `Sussudio/AppRuntime.cs` | Repository/log paths and an explicit idempotent Logger.Initialize(logRoot) lifetime; getters and early diagnostics do not start shared-file logging. The admitted App and validated private probe select their own roots before bounded asynchronous logging, rotation, fatal breadcrumbs, and best-effort system diagnostics. |
+| App runtime | `Sussudio/AppRuntime.cs`, `Sussudio/Services/Runtime/LogWriterBatch.cs` | Repository/log paths and an explicit idempotent Logger.Initialize(logRoot) lifetime; getters and early diagnostics do not start shared-file logging. The admitted App and validated private probe select their own roots before bounded asynchronous logging, rotation, fatal breadcrumbs, and best-effort system diagnostics. `LogWriterBatch` is one pass of the writer task: a bounded drain into the file text that hands the log tap every line the file gets, the dropped-lines warning included. |
 | App project build workflow | `Sussudio/Sussudio.csproj`, `Sussudio/Sussudio.Build.targets` | Project identity and dependencies in the project; publish/staging policy and deferred Windows App SDK initialization in imported targets. The SDK initializer body is retained in an obj copy, with its module hook removed so `Program` invokes it only after normal process admission. |
 | Device discovery | `Sussudio/Services/Capture/DeviceService.cs`, `Sussudio/Services/Capture/MfInterop.cs`, `Sussudio/Services/Capture/MfDeviceEnumerator.cs` | Enumeration, capability/format probing, endpoint association, and shared Media Foundation helpers. |
 | Native XU KS bridge | `Sussudio/Services/NativeXu/KsExtensionUnitNative.cs` | KS interface discovery, topology parsing, native transfers, and transport gates. |
@@ -87,7 +87,8 @@ tests that pin which file owns a symbol; see AGENTS.md § Testing Policy.
 | Capture models | `Sussudio/Models/Capture/CaptureModels.cs` | Capture configuration, input media formats, health, cadence, and runtime DTOs. `MediaFormat` owns input frame-rate and pixel-format behavior beside `CaptureDevice`. |
 | Recording models | `Sussudio/Models/Recording/RecordingModels.cs` | Encoder capabilities, recording statistics, and integrity DTOs. `RecordingIntegrityStatus` and `RecordingIntegrityAudioStatus` define the typed integrity vocabulary; only the `AutomationSnapshot` projection turns these values into wire text. `EncoderSupport` owns recording-format-to-NVENC codec-name mapping. |
 | Flashback models | `Sussudio/Models/Flashback/FlashbackModels.cs` | Buffer options, session context, playback state, export progress/segments/requests, and force-rotation results. These types retain the `Sussudio.Models` namespace. |
-| Status messages | `Sussudio/Models/StatusMessages.cs` | Owns footer status-line wording (`MainViewModel.StatusText`) and the `CaptureService.StatusChanged` text that feeds it, plus the style rules: sentence-case fragments without a trailing period, `...` only for work in flight, `{Subject} failed: {reason}`, `; ` before a consequence, ASCII only. `Failed` does not double a `{Subject} failed` prefix; `Detail` collapses whitespace and drops trailing periods from exception and service text; `OperationFailed` maps internal UI operation names (log tokens) to readable subjects. Service result messages (`FinalizeResult.StatusMessage`, Flashback export results) are data read by automation and diagnostics tools and stay with their producers. Add a new footer message here rather than inline. |
+| Status messages | `Sussudio/Models/StatusMessages.cs` | Owns footer status-line wording (`MainViewModel.StatusText`) and the `CaptureService.StatusChanged` text that feeds it, plus the style rules: sentence-case fragments without a trailing period, `...` only for work in flight, `{Subject} failed: {reason}`, `; ` before a consequence, ASCII only. Notice-banner sentences (`*Notice`) also live here and, unlike footer fragments, are full sentences ending in a period. `Failed` does not double a `{Subject} failed` prefix; `Detail` collapses whitespace and drops trailing periods from exception and service text; `OperationFailed` maps internal UI operation names (log tokens) to readable subjects. Service result messages (`FinalizeResult.StatusMessage`, Flashback export results) are data read by automation and diagnostics tools and stay with their producers. Add a new footer message here rather than inline. |
+| Notice banners | `Sussudio/Themes/AppResources.xaml` (`NoticeBannerStyle`, severity palette), `Sussudio/MainWindow.xaml` (`NoticeStack`) | The app's InfoBar look: dark acrylic glass, per-severity wash, rail and glyph, an uppercase eyebrow `Title`, and the entrance animation in the `InfoBarVisible` state. `NoticeStack` stacks open banners, so none needs a hand-placed margin. `RecordingStatePresentationController` opens `RecordingUnavailableInfoBar` from `IsFfmpegMissing` (the loaded FFmpeg has no NVENC encoder, so the record button is disabled and cannot show a tooltip) and owns its Open FFmpeg folder action. Add a new warning as an InfoBar in `NoticeStack` with `NoticeBannerStyle`, not a stock InfoBar. The severity colors are repeated in code by `StatsOverlayCompositionController` and `FrameTimeGraphController`; change them together. |
 | Source telemetry | `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs`, `NativeXuAtProtocol.cs` | Native XU AT-command transport and source-signal protocol parsing. `LogAtResponse` and `LogTopology` log an AT answer or a node layout on first sight and on change only (plus a 30 s heartbeat per command under verbose logging), so the rolling poll does not flood the log tap. |
 | Performance telemetry | `Sussudio/Services/Performance/` (histograms, windows, frame trace, tuning knobs, hot threads, process sensors, log tap, report builder), `Sussudio/Services/Automation/AutomationCommandDispatcher.PerfTelemetry.cs` | Agent-facing latency/CPU/GC/trace telemetry and runtime tuning knobs. See [performance telemetry](#performance-telemetry) and `docs/architecture/performance-telemetry.md`. |
 | Agent senses (ears and fingers) | `Sussudio/Services/Performance/AudioOutputProbe.cs`, `Sussudio/Services/Automation/UiTargetResolver.cs`, `Sussudio/Controllers/Window/UiAutomationBridge.cs` | Hearing the app's own audio output (process loopback plus the capture-delivery tap) and reading and operating live UI controls through automation peers. See [agent senses](#agent-senses-ears-and-fingers) and `docs/architecture/performance-telemetry.md` sections 2.9 and 2.10. |
@@ -584,7 +585,8 @@ recording and audio sites call into it, never the other way round.
   (spec 2.8.4); the renderer side is `D3D11PreviewRenderer.GpuTiming.cs` (Preview rendering).
 - `LogTapBuffer.cs` and `LogTap.cs` own the 4,096-line log ring with per-caller
   and per-tag counts, fed by the logger's writer task (`AppRuntime.RunLogWriterAsync`
-  isolates a tap failure so it never ends the writer loop).
+  isolates a tap failure so it never ends the writer loop; `LogWriterBatch` gives the
+  tap the dropped-lines warning as well).
 - `PerfReportBuilder.cs` owns the perf report DTOs and builds lifetime and
   window reports (microseconds reported as milliseconds, idle metrics omitted
   unless asked), including the `Gpu`, `Dwm` and `Display` sections and the `Sensors`
@@ -681,9 +683,11 @@ Fingers:
   supports), `UiSelectionMatcher` (item text or `#N`), `UiSelectionVia` (the
   truthful `Via` text of the three select routes: item-data peer, container peer,
   `Selector.SelectedIndex`), `UiDisplayMemberPath` (item text from
-  `ItemsControl.DisplayMemberPath`) and `UiVisibilityRules` (effective
-  visibility). `UiAutomationModels.cs` owns the wire DTOs and status
-  constants.
+  `ItemsControl.DisplayMemberPath`), `UiVisibilityRules` (effective
+  visibility) and `UiInvokeSequence` (the order of one invoke: perform, settle,
+  read back; the request's cancellation stops the action only before the UI
+  thread starts it, and the result reports an action that ran).
+  `UiAutomationModels.cs` owns the wire DTOs and status constants.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.UiAutomation.cs` owns
   the command 66 and 67 handlers and the status to error-code mapping
   (`invalid-request` for what rewording fixes, `command-failed` for live UI state).
@@ -820,9 +824,22 @@ Important entry points:
   Cleanup awaits the renderer handoff before capture ownership is transferred or
   released. UI cancellation limits admission; admitted stop work remains awaited.
   Failed cleanup retains capture, renderer registrations, and coordination locks,
-  blocks new session/sink admission, and can be retried. Disposal callers share
-  one owned task; a caller timeout does not retire its resources or start a second
-  cleanup operation. The original fatal capture cause remains the published error.
+  blocks new session/sink admission, and can be retried. It also records its scope:
+  a preview pipeline teardown or a full capture cleanup. A retry re-runs that scope,
+  so a finished teardown keeps capture initialized and retires Flashback segments
+  (kept on disk for bounded startup cleanup) exactly as a teardown stop does; only
+  a finished full cleanup uninitializes capture and purges them. Apart from explicit
+  cleanup, a video-preview stop or an initialize finishes either scope and a
+  video-preview start finishes a teardown, each then running its own transition
+  under the same lock hold; every other transition refuses (`CAPTURE_RETAINED_CLEANUP_*`).
+  A teardown stop that fails still commits preview stopped, and stops the audio
+  monitor with it, so a published capture error never mirrors preview back on over
+  retained resources and no audio plays behind a stopped preview.
+  `SUSSUDIO_CAPTURE_FAULT_PRE_CLEANUP_FAILURES` fails the first N renderer handoffs
+  for the live check `scripts/performance/Test-CaptureLateCleanupRecovery.ps1`.
+  Disposal callers share one owned task; a caller timeout does not retire its
+  resources or start a second cleanup operation. The original fatal capture cause
+  remains the published error.
 - `CaptureService.Flashback.cs` owns Flashback public state, segment
   access, enable/disable transition gating, restart entry points, committed
   restart orchestration after preview backend teardown, buffer/GPU settings
@@ -918,6 +935,15 @@ Important entry points:
   rollback, fresh preview backend startup ordering, keep-pipeline-alive detach
   semantics, stopped-state/telemetry commit, preview pipeline disposal ordering,
   Flashback backend disposal, WASAPI disposal, and microphone cleanup.
+  The start rollback is a pending preview pipeline teardown from its first step to
+  its last, and `_videoPipeline` owns the half-started capture before the renderer
+  handoff. A rollback that stops part way (the renderer never acknowledged) leaves
+  the capture, Flashback backend and audio to the retained teardown instead of
+  orphaning a running capture in the failed start's frame.
+  `SUSSUDIO_CAPTURE_FAULT_PREVIEW_INSTALL_FAILURES` fails the first N fresh starts
+  after their capture is running and before the pipeline installs it
+  (`CAPTURE_FAULT_PREVIEW_INSTALL_FAILED`), for the `StartRollback` scenarios of
+  `scripts/performance/Test-CaptureLateCleanupRecovery.ps1`.
   `SUSSUDIO_CAPTURE_FAULT_PREVIEW_START_FAILURES` fails the first N video-preview
   starts (`CAPTURE_FAULT_PREVIEW_START_FAILED`) for the live check
   `scripts/performance/Test-PreviewStartFailureResolution.ps1`.
@@ -1458,7 +1484,9 @@ Primary current owners:
   `Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.cs` owns hosted preview
   renderer context, public runtime state, counters, start/stop/shutdown flow,
   renderer startup dimension/fps/HDR/min-present-interval planning, CPU fallback
-  attachment, D3D renderer startup and event/failure handling, cleanup, D3D reinit renderer-stop/timeout policy,
+  attachment, D3D renderer startup and event/failure handling, cleanup, the renderer-stop timeout policy for
+  every stop including capture pre-teardown and reinit (a renderer whose stop timed out is abandoned: its swap
+  chain stays on the old panel and the next start gets a fresh one),
   disposal, unsafe-window telemetry, stop tick accounting, and fresh
   SwapChainPanel replacement.
   `Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs` owns preview
@@ -1497,9 +1525,10 @@ Primary current owners:
   changes, plus bottom status-strip projection: status text, recording time, disk warning,
   disk-space text, recording size, recording bitrate, the status-line tooltip that
   shows the full message only while it is ellipsis-trimmed, the status-strip
-  `PropertyChanged` router, the recording-only title-refresh callback, and the
+  `PropertyChanged` router, the recording-only title-refresh callback, the
   Flashback bitrate fallback used while Flashback is enabled and recording is
-  idle. `Sussudio/MainWindow.xaml.cs` is the XAML-facing
+  idle, and the re-projection of that idle bitrate slot when Flashback is
+  turned on or off (called from the Flashback `IsFlashbackEnabled` route). `Sussudio/MainWindow.xaml.cs` is the XAML-facing
   adapter and builds the ViewModel snapshot passed into the controller.
 - `Sussudio/Controllers/Window/WindowControllers.cs` owns window close
   request flags, completion TCS, cleanup latch, recording-stop handoff flags,
@@ -2416,18 +2445,30 @@ Primary current owners:
 - `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs` also owns
   Flashback command semantics for in/out points, clear, play/pause, Go Live,
   fullscreen keyboard shortcuts including left/right nudge rejection logging,
-  export, save-last-5m, enable-toggle rollback, apply/restart, and the XAML
-  command event-handler surface adapter.
+  export, save-last-5m, forwarding enable-toggle changes that differ from
+  `IsFlashbackEnabled`, apply/restart, and the XAML command event-handler
+  surface adapter.
 - `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs` also owns
   Flashback export progress-bar value, visibility, and reset-on-complete
   semantics. `Sussudio/MainWindow.xaml.cs` wires the
   export progress presentation controller.
+- `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs` also owns the
+  Flashback health banner: its severity (only the not-buffering fault is a
+  warning; the snap-to-live notice is informational), Restart Flashback action
+  visibility, and open state. `MainViewModel.FlashbackState.cs` decides when a
+  health message exists (the not-buffering fault needs Flashback enabled and
+  video capture open, which includes the pipeline a normal preview stop keeps
+  for Flashback), and publishes `IsFlashbackBuffering` from the
+  one-second lifecycle tick; it drives the "capture device stays in use" hint
+  and clears the status-strip Flashback rate when buffering stops.
 - `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs` owns Flashback
-  settings-control initialization, GPU decode toggle binding/sync, buffer
-  duration combo selection/sync, and buffer-duration change logging.
+  settings-control initialization, enable toggle sync from
+  `IsFlashbackEnabled`, GPU decode toggle binding/sync, buffer duration combo
+  selection/sync, and buffer-duration change logging.
   `Sussudio/MainWindow.xaml.cs` is the XAML-facing settings
-  adapter; enable toggle rollback and apply/restart command behavior live in
-  `FlashbackUiControllers.cs`.
+  adapter; apply/restart command behavior lives in `FlashbackUiControllers.cs`,
+  and the enable transition with its rollback lives in
+  `MainViewModel.FlashbackState.cs`.
 - `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs` owns Flashback status
   and playback-position polling timers. `Sussudio/MainWindow.xaml.cs`
   is the XAML-facing adapter; playhead anchor timing lives with Flashback UI
@@ -2483,7 +2524,8 @@ Primary current owners:
   property-change routing, ViewModel-derived lockout/HDR/title/audio-meter
   policy application, delegated record-button chrome, recording glow, Rec pulse,
   starting spinner, normal/recording content, padding, enabled-state
-  application, and the circle/pill width morph. `MainWindow.xaml.cs`
+  application, the circle/pill width morph, and the recording-unavailable
+  banner that explains a record button disabled for missing NVENC encoders. `MainWindow.xaml.cs`
   wires the chrome controller, recording action adapter, and recording-state
   presentation adapter.
 - `Sussudio/Controllers/Recording/RecordingControlsControllers.cs` owns the recording
@@ -2817,6 +2859,9 @@ Primary current owners:
   before the capture session runs raises `PreviewStartFailed` for that request
   (`PREVIEW_START_ABORTED`) before the exception propagates, so every start path
   (button, automation, device scan, reinitialize) resolves its startup attempt.
+  A preview stop that leaves capture uninitialized (it finished a half-done full
+  capture cleanup) clears the initialized flag, and the recording flag when that
+  cleanup finalized the recording; it never sets either flag from capture state.
   It also owns the preview lifecycle graph-port contract for preview
   state/events, capture/session operations, source telemetry refresh, UI
   dispatch, audio-preview activity, and preview-volume ramp-down.
@@ -3023,8 +3068,13 @@ Primary current owners:
   `MainViewModel.cs` owns automation HDR and true-HDR
   preview recording-time guard enforcement and availability checks alongside
   HDR mode change side effects.
-  `MainViewModel.FlashbackState.cs` owns automation Flashback
-  enable/restart routing through the capture session coordinator alongside
+  `MainViewModel.FlashbackState.cs` owns the one Flashback enable transition
+  shared by the settings toggle and automation: it publishes
+  `IsFlashbackEnabled`, applies it through the capture session coordinator,
+  and, when the last in-flight request settles, adopts the backend's enabled
+  state (`CaptureService.IsFlashbackEnabled`), reopens a timeline that a
+  refused disable closed, and runs the buffer-status inactive pass if the
+  backend stopped buffering. It also owns automation restart routing alongside
   buffer/GPU setting reactions.
   `MainViewModel.cs` owns automation device refresh,
   capture-device selection, audio-input selection, and custom audio-input

@@ -17,6 +17,10 @@ namespace Sussudio.Tests;
 //   9. A gap in the loopback stream must not break the alignment of the audio around it.
 //  10. An output the waveform of which no longer matches (inverted polarity) must fall back to the 1 ms envelope
 //      resolution and say so, not report sample precision it does not have.
+//  11. A loopback timestamp the engine flagged as unreliable (AUDCLNT_BUFFERFLAGS_TIMESTAMP_ERROR) can hold any value,
+//      including one beyond a signed 64-bit time. The probe must not place the packet by it: the packet continues the
+//      previous one, packets before the first trusted timestamp are placed back from it, and a stream with no trusted
+//      timestamp is refused, not guessed.
 public sealed class AudioLatencyAnalysisTests
 {
     private const long Origin = 5_000_000_000; // 500 s of QPC, in 100 ns units
@@ -221,5 +225,59 @@ public sealed class AudioLatencyAnalysisTests
         Assert.Equal("envelope-1ms", result.Resolution);
         Assert.Equal(37.29, result.LatencyMs!.Value, 1.5);
         Assert.Equal(-6.02, result.GainDifferenceDb!.Value, 0.3);
+    }
+
+    [Fact]
+    public void ALoopbackTimestampFlaggedAsUnreliableDoesNotPlaceItsPacket()
+    {
+        var input = AudioTestSignals.BurstNoise(Frames5s, seed: 71);
+        var output = AudioTestSignals.Delayed(input, 2_400, 1.0f); // 50 ms
+        var engine = AudioTestSignals.Packets(Frames5s, PacketFrames, Origin);
+
+        // Packets 0, 1 and 7 report a flagged position 10 s off; packet 9 one beyond a signed 64-bit time.
+        var placed = PlaceLoopback(engine, index => index switch
+        {
+            0 or 1 or 7 => ((ulong)engine[index].StartTime100Ns + 100_000_000UL, AudioPacketFlags.TimestampError),
+            9 => (ulong.MaxValue, AudioPacketFlags.TimestampError),
+            _ => ((ulong)engine[index].StartTime100Ns, 0u),
+        });
+
+        Assert.Equal(engine.Select(packet => packet.StartTime100Ns), placed.Select(packet => packet.StartTime100Ns));
+        Assert.Equal(4, placed.Count(packet => packet.Flags == AudioPacketFlags.TimestampError));
+        var result = AudioLatencyAnalyzer.Measure(input, AudioTestSignals.Packets(Frames5s, PacketFrames, Origin), output, placed);
+        AssertOk(result);
+        Assert.Equal(50.0, result.LatencyMs!.Value, 1.0);
+    }
+
+    [Fact]
+    public void ALoopbackStreamWithNoTrustedTimestampIsRefusedNotGuessed()
+    {
+        var input = AudioTestSignals.BurstNoise(Frames5s, seed: 73);
+        var output = AudioTestSignals.Delayed(input, 2_400, 1.0f);
+        var engine = AudioTestSignals.Packets(Frames5s, PacketFrames, Origin);
+
+        var placed = PlaceLoopback(engine, index => index % 2 == 0
+            ? ((ulong)engine[index].StartTime100Ns, AudioPacketFlags.TimestampError)
+            : (0UL, 0u));
+
+        Assert.All(placed, packet => Assert.Equal(0, packet.StartTime100Ns));
+        var result = AudioLatencyAnalyzer.Measure(input, AudioTestSignals.Packets(Frames5s, PacketFrames, Origin), output, placed);
+        Assert.Equal("unavailable", result.Status);
+        Assert.Contains("timestamps", result.Reason);
+    }
+
+    // The engine's loopback packets as (QPC position, GetBuffer flags), placed the way the probe places them.
+    private static AudioPacket[] PlaceLoopback(AudioPacket[] engine, Func<int, (ulong Qpc, uint Flags)> report)
+    {
+        var timeline = new LoopbackPacketTimeline(AudioTestSignals.Rate);
+        var placed = new AudioPacket[engine.Length];
+        for (var index = 0; index < engine.Length; index++)
+        {
+            var (qpc, flags) = report(index);
+            placed[index] = engine[index] with { StartTime100Ns = timeline.Place(qpc, flags, engine[index].Frames), Flags = flags };
+        }
+
+        timeline.FillLeading(placed);
+        return placed;
     }
 }

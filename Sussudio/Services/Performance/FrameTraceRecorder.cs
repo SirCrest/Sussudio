@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Threading;
 
 namespace Sussudio.Services.Performance;
 
@@ -33,6 +34,10 @@ public sealed class FrameTraceRecorder
 {
     // Events per chunk of a dump walk: 1,024 x 40 bytes = 40 KB, well under the large object heap threshold.
     private const int DumpChunkEvents = 1024;
+
+    // A dump hands its JSON to the stream whenever this much is pending. Utf8JsonWriter never flushes by itself, so
+    // without this a full ring's hundreds of megabytes of JSON would sit in its buffer until the end.
+    private const int DumpFlushBytes = 32 * 1024;
 
     private readonly object _gate = new();
     private readonly PerfMarkerLog _markers;
@@ -159,10 +164,12 @@ public sealed class FrameTraceRecorder
     /// thread names and agent markers are emitted as metadata and instant events. A thread that exited keeps its role
     /// with a "(retired)" suffix. Returns false (and writes nothing) when no trace has been started.
     /// The ring is streamed, never copied: two walks in fixed chunks through one pooled buffer (the first finds the
-    /// time origin and the threads that appear, the second writes), so a dump allocates a few tens of kilobytes however
-    /// large the ring is.
+    /// time origin and the threads that appear, the second writes, handing the stream about 32 KB at a time), so a dump
+    /// allocates a few tens of kilobytes however large the ring is. <paramref name="cancellationToken"/> is checked once
+    /// per chunk of each walk: a canceled dump throws <see cref="OperationCanceledException"/>, releases the ring and
+    /// leaves a partial trace in <paramref name="stream"/> for the caller to discard.
     /// </summary>
-    public bool TryWriteChromeTrace(Stream stream, out string? error)
+    public bool TryWriteChromeTrace(Stream stream, out string? error, CancellationToken cancellationToken = default)
     {
         FrameTraceBuffer? buffer;
         lock (_gate)
@@ -182,7 +189,7 @@ public sealed class FrameTraceRecorder
 
         try
         {
-            WriteChromeTrace(buffer, stream);
+            WriteChromeTrace(buffer, stream, cancellationToken);
         }
         finally
         {
@@ -196,7 +203,7 @@ public sealed class FrameTraceRecorder
         return true;
     }
 
-    private void WriteChromeTrace(FrameTraceBuffer buffer, Stream stream)
+    private void WriteChromeTrace(FrameTraceBuffer buffer, Stream stream, CancellationToken cancellationToken)
     {
         var chunk = ArrayPool<FrameTraceEvent>.Shared.Rent(DumpChunkEvents);
         try
@@ -215,6 +222,7 @@ public sealed class FrameTraceRecorder
             int count;
             while ((count = buffer.ReadChunk(ref cursor, chunkSpan)) > 0)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 for (var i = 0; i < count; i++)
                 {
                     ref readonly var e = ref chunk[i];
@@ -255,6 +263,7 @@ public sealed class FrameTraceRecorder
                 cursor = range;
                 while ((count = buffer.ReadChunk(ref cursor, chunkSpan)) > 0)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     for (var i = 0; i < count; i++)
                     {
                         ref readonly var e = ref chunk[i];
@@ -265,6 +274,10 @@ public sealed class FrameTraceRecorder
 
                         WriteEvent(writer, e, pid, origin, toMicroseconds);
                         retained++;
+                        if (writer.BytesPending >= DumpFlushBytes)
+                        {
+                            writer.Flush();
+                        }
                     }
                 }
 

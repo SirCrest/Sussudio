@@ -8,7 +8,8 @@ namespace Sussudio.Tests;
 // instance names of another process that share a pid prefix, malformed instance names, NaN/negative/infinite
 // counter values, a first sample or an absent instance that must never read as 0 %, counters that become unavailable
 // or throw mid-run, open failures with backoff, Stop during a backoff, restart, a stale memory figure surviving
-// a stop, and a stop that times out on a blocked read. The counters are a fake reader; the static PerfMetrics
+// a stop or a read with no figure for this process (pending, or no instance of it), and a stop that times out on a
+// blocked read. The counters are a fake reader; the static PerfMetrics
 // histograms are read as deltas.
 public sealed class GpuEngineSensorTests
 {
@@ -199,6 +200,26 @@ public sealed class GpuEngineSensorTests
         Assert.True(sensor.SampleOnce(ValidReader(Engine(Pid, "3D", 0))));
         Assert.Equal(0, sensor.Status.ConsecutivePending);
         Assert.Equal(1, EngineMark.Now().Count3d - before.Count3d);
+    }
+
+    // The report reads the figure as this process's memory now, so a read with no figure for this process must not
+    // leave the last one standing.
+    [Fact]
+    public void ADedicatedFigureIsForgottenByAReadWithNoFigureForThisProcess()
+    {
+        var sensor = new GpuEngineSensor(() => ValidReader(), Pid);
+        var pending = new FakeReader((_, _) => (GpuCounterReadResult.Pending, null));
+        var strangers = ValidReader(Engine(Pid * 10, "3D", 50));
+
+        Assert.True(sensor.SampleOnce(ValidReader(Engine(Pid, "3D", 10))));
+        Assert.Equal(512L * 1024 * 1024, sensor.Status.DedicatedBytes);
+        Assert.True(sensor.SampleOnce(pending));
+        Assert.Null(sensor.Status.DedicatedBytes);
+
+        Assert.True(sensor.SampleOnce(ValidReader(Engine(Pid, "3D", 10))));
+        Assert.NotNull(sensor.Status.DedicatedBytes);
+        Assert.True(sensor.SampleOnce(strangers));
+        Assert.Null(sensor.Status.DedicatedBytes);
     }
 
     [Fact]

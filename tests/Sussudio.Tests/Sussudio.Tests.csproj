@@ -58,6 +58,7 @@
     <Compile Include="..\..\Sussudio\Services\Performance\PerfExperimentLease.cs" Link="Production\PerfExperimentLease.cs" />
     <Compile Include="..\..\Sussudio\Services\Performance\TuningKnobCatalog.cs" Link="Production\TuningKnobCatalog.cs" />
     <Compile Include="..\..\Sussudio\Services\Performance\LogTapBuffer.cs" Link="Production\LogTapBuffer.cs" />
+    <Compile Include="..\..\Sussudio\Services\Runtime\LogWriterBatch.cs" Link="Production\LogWriterBatch.cs" />
     <Compile Include="..\..\Sussudio\Services\Performance\PerfIngressClock.cs" Link="Production\PerfIngressClock.cs" />
     <Compile Include="..\..\Sussudio\Services\Performance\IngressClockClassifier.cs" Link="Production\IngressClockClassifier.cs" />
     <Compile Include="..\..\Sussudio\Services\Performance\PerfIngressSamples.cs" Link="Production\PerfIngressSamples.cs" />
@@ -77,6 +78,7 @@
     <Compile Include="..\..\Sussudio\Services\Automation\UiAutomationModels.cs" Link="Production\UiAutomationModels.cs" />
     <Compile Include="..\..\Sussudio\Services\Automation\UiTargetResolver.cs" Link="Production\UiTargetResolver.cs" />
     <Compile Include="..\..\Sussudio\Services\Automation\UiActionPlanner.cs" Link="Production\UiActionPlanner.cs" />
+    <Compile Include="..\..\Sussudio\Services\Automation\UiInvokeSequence.cs" Link="Production\UiInvokeSequence.cs" />
     <Compile Include="..\..\Sussudio\Services\Automation\UiSelectionMatcher.cs" Link="Production\UiSelectionMatcher.cs" />
     <Compile Include="..\..\Sussudio\Services\Automation\UiVisibilityRules.cs" Link="Production\UiVisibilityRules.cs" />
     <Compile Include="..\..\Sussudio\Services\Automation\UiDisplayMemberPath.cs" Link="Production\UiDisplayMemberPath.cs" />

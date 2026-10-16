@@ -386,7 +386,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             FlashbackTrackBackground = FlashbackTrackBackground,
             FlashbackScrubArea = FlashbackScrubArea,
             FlashbackPlayhead = FlashbackPlayhead,
-            FlashbackLiveEdge = FlashbackLiveEdge,
             SnapPlayheadOnNextOpen = () => _flashbackPlayheadMotionController.RequestSnapOnNextUpdate(),
             StartStatusPolling = () => _flashbackPollingController.StartStatusPolling(),
             StopStatusPolling = StopFlashbackStatusPolling,
@@ -474,6 +473,12 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             IsExporting = () => ViewModel.IsFlashbackExporting,
             ApplyTimelineVisibility = show => _flashbackTimelineController.ApplyVisibility(show),
             ApplyTimelineLockout = () => _flashbackTimelineController.ApplyLockout(),
+            SyncEnabledSetting = () => _flashbackSettingsBindingController.SyncEnabledToggle(),
+            RefreshStatusStripBitrate = () => _statusStripPresentationController.RefreshIdleBitrateSlot(
+                ViewModel.IsRecording,
+                ViewModel.IsFlashbackEnabled,
+                ViewModel.FlashbackBitrateInfo,
+                ViewModel.RecordingBitrateInfo),
             IsFlashbackEnabled = () => ViewModel.IsFlashbackEnabled,
             UpdateFlashbackKeepAliveHint = UpdateFlashbackKeepAliveHint,
             UpdateState = UpdateFlashbackStateUI,
@@ -494,6 +499,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             new FlashbackHealthPresentationControllerContext
             {
                 FlashbackHealthInfoBar = FlashbackHealthInfoBar,
+                FlashbackHealthRestartButton = FlashbackHealthRestartButton,
             });
     }
 
@@ -562,10 +568,10 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
     private async Task RunWasapiEmergencyCloseAsync(WasapiWorkerQuarantinedEventArgs args)
     {
-        var role = args.Role.ToString().ToLowerInvariant();
+        var audioPath = args.Role == WasapiWorkerRole.Playback ? "Audio monitoring" : "Audio capture";
         var message =
-            $"The {role} audio worker did not stop safely. Sussudio must close so its native audio resources are not reused. " +
-            "Recording recovery is being attempted; the app will close when you acknowledge this message or after ten seconds.";
+            $"{audioPath} did not shut down safely, so Sussudio must close before its audio resources are reused. " +
+            "Sussudio is trying to save any recording in progress. The app closes when you select Close now, or after 10 seconds.";
         ViewModel.StatusText = StatusMessages.AudioShutdownTimedOut;
 
         Task emergencyCleanup;
@@ -619,7 +625,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         }
 
         Logger.LogFatalBreadcrumb(
-            $"WASAPI_WORKER_QUARANTINE_PROCESS_EXIT role={role} timeout_event={args.TimeoutEvent}");
+            $"WASAPI_WORKER_QUARANTINE_PROCESS_EXIT role={args.Role.ToString().ToLowerInvariant()} timeout_event={args.TimeoutEvent}");
         await Logger.ShutdownAsync(TimeSpan.FromSeconds(1));
         Environment.Exit(1);
     }
@@ -653,7 +659,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         StopMicMeterRowAnimation();
         RecordingGlowPulseStoryboard.Stop();
         RecordingGlowBorder.Opacity = 0;
-        RecPulseStoryboard.Stop();
     }
 
     private void DetachMainContentSizeChanged()
@@ -854,7 +859,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         {
             RecordingGlowBorder = RecordingGlowBorder,
             RecordingGlowPulseStoryboard = RecordingGlowPulseStoryboard,
-            RecPulseStoryboard = RecPulseStoryboard,
             RecordButton = RecordButton,
             RecordButtonNormalContent = RecordButtonNormalContent,
             RecordButtonStartingContent = RecordButtonStartingContent,
@@ -868,6 +872,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         {
             ViewModel = ViewModel,
             RecordingButtonChrome = _recordingButtonChromeController,
+            RecordingUnavailableInfoBar = RecordingUnavailableInfoBar,
             AudioRecordToggle = AudioRecordToggle,
             CustomAudioToggle = CustomAudioToggle,
             MicrophoneToggle = MicrophoneToggle,
@@ -1111,6 +1116,11 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     {
         _ = RunUiEventHandlerAsync(() => OpenRecordingsFolderFromButtonAsync(), nameof(OpenRecordingsButton_Click));
     }
+
+    private void RecordingUnavailableOpenFfmpegFolderButton_Click(object sender, RoutedEventArgs e)
+        => _ = RunUiEventHandlerAsync(
+            _recordingStatePresentationController.OpenFfmpegFolderAsync,
+            nameof(RecordingUnavailableOpenFfmpegFolderButton_Click));
 
     private void ScreenshotButton_Click(object sender, RoutedEventArgs e)
     {
@@ -1736,8 +1746,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             ViewModel.RecordingBitrateInfo,
             ViewModel.FlashbackBitrateInfo,
             ViewModel.IsDiskWarningActive,
-            ViewModel.IsRecording,
-            ViewModel.IsFlashbackEnabled);
+            ViewModel.IsRecording);
 
     private void ApplyWindowTitle()
         => Title = _windowTitleController.BuildTitle(ViewModel.IsRecording, ViewModel.RecordingTime);
@@ -2148,8 +2157,12 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private void RevealPreviewUnavailablePlaceholder()
         => _previewTransitionAnimationController.RevealUnavailablePlaceholder();
 
+    // Shown only while Flashback really holds the device; enabled-but-idle Flashback
+    // (no device, or never previewed) keeps nothing open.
     private void UpdateFlashbackKeepAliveHint(bool isFlashbackEnabled)
-        => FlashbackKeepAliveHintText.Visibility = isFlashbackEnabled ? Visibility.Visible : Visibility.Collapsed;
+        => FlashbackKeepAliveHintText.Visibility = isFlashbackEnabled && ViewModel.IsFlashbackBuffering
+            ? Visibility.Visible
+            : Visibility.Collapsed;
 
     private void InitializePreviewReinitTransitionController()
         => _previewReinitTransitionController = new PreviewReinitTransitionController();

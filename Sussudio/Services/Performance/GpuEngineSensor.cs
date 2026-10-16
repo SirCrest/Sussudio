@@ -384,9 +384,12 @@ public sealed class GpuEngineSensor : IDemandSensor
             return false;
         }
 
+        // No data for this process this tick. The report reads the dedicated figure as this process's memory now, so the
+        // last one goes too: the figure is null while the sensor is pending, as it is while stopped or reopening.
         if (result == GpuCounterReadResult.Pending)
         {
             Interlocked.Increment(ref _consecutivePending);
+            Volatile.Write(ref _dedicatedBytes, -1);
             return true;
         }
 
@@ -396,6 +399,7 @@ public sealed class GpuEngineSensor : IDemandSensor
             // The reader returned instances, but none of them is this process (a longer pid sharing the prefix, for
             // example): the same "no data" as an empty read, never a recorded 0 %.
             Interlocked.Increment(ref _consecutivePending);
+            Volatile.Write(ref _dedicatedBytes, -1);
             return true;
         }
 
