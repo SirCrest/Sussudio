@@ -418,7 +418,7 @@ Automation diagnostics ownership:
   and HDR policy. Keep those computations beside the initializer.
 - Direct mappings in that initializer own capture command counters, requested
   and observed media formats, AV-sync, source and visual cadence, capture/recording
-  ingest, WASAPI state, recording integrity, recording and GPU/CUDA queues,
+  ingest, WASAPI state, recording integrity, recording and GPU queues,
   preview surface/display/D3D telemetry, MJPEG packet/jitter counters, recording
   output/verification evidence and process-resource fields. Recording integrity
   reads `CaptureRuntimeSnapshot` directly; there is no intermediate integrity
@@ -890,8 +890,8 @@ Important entry points:
   Flashback audio/video queue, force-rotate, backpressure, and GPU queue field
   projection; Flashback playback state/frame/segment/PTS/seek-cap/
   submit-failure/A/V drift, cadence, decode timing, audio-master, and command
-  telemetry sampling; and recording health orchestration, LibAv-only CUDA queue
-  projection, active recording backend selection, LibAv-vs-Flashback sink
+  telemetry sampling; and recording health orchestration, active recording
+  backend selection, LibAv-vs-Flashback sink
   fallback, failure precedence, backend-specific queue/counter normalization,
   and their private field records.
 - `CaptureService.PreviewLifecycle.cs` owns the video-preview start/stop transition
@@ -1067,8 +1067,8 @@ Entry points:
   encoder open/setup, open-state guards, FFmpeg error strings, structured libav
   exceptions, and D3D11 device-removed checks.
 - `LibAvEncoder.VideoFrames.cs` owns D3D11 hardware frame setup,
-  CUDA hardware frame context adoption, ArraySize=1 texture-pool creation,
-  hardware-frame fallback cleanup, D3D11 and CUDA hardware-frame submission,
+  ArraySize=1 texture-pool creation,
+  hardware-frame fallback cleanup, D3D11 hardware-frame submission,
   CPU packed-frame submission, packed-frame copy, forced-keyframe handling,
   GPU device-removed checks, hardware/software frame PTS/keyframe assignment,
   per-frame HDR side-data attachment/removal, HDR mastering-display metadata
@@ -3416,7 +3416,7 @@ Primary owners:
   selected-device and initialized/preview/recording text, audio enablement,
   capture option, recording format, HDR, pipeline, compact UI setting text,
   preview, signal, clipping, reader and audio-frame text, video reader, encoder
-  queue, queue-latency, backpressure, failure, GPU/CUDA queue, freshness,
+  queue, queue-latency, backpressure, failure, GPU queue, freshness,
   diagnostics, thread-health row text, recording output, backend, integrity,
   audio-integrity and last-finalize text, diagnostic health, summary, evidence
   and frame-lane text, legacy performance, process CPU, memory, GC, thread-pool

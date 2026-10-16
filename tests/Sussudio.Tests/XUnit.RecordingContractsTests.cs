@@ -43,9 +43,9 @@ public sealed class LibAvRecordingResetTests
         {
             "_droppedVideoFrames", "_encodedVideoFrames", "_videoFramesEnqueued",
             "_videoFramesSubmittedToEncoder", "_videoDropsQueueSaturated", "_videoDropsBacklogEviction",
-            "_gpuFramesEnqueued", "_gpuFramesDropped", "_cudaFramesEnqueued", "_cudaFramesDropped",
-            "_videoQueueMaxDepth", "_gpuQueueMaxDepth", "_cudaQueueMaxDepth",
-            "_videoQueueDepth", "_gpuQueueDepth", "_cudaQueueDepth",
+            "_gpuFramesEnqueued", "_gpuFramesDropped",
+            "_videoQueueMaxDepth", "_gpuQueueMaxDepth",
+            "_videoQueueDepth", "_gpuQueueDepth",
             "_lastVideoEnqueueTick", "_lastVideoWriteTick"
         };
         foreach (var name in fields)
@@ -88,8 +88,8 @@ public sealed class LibAvRecordingResetTests
             foreach (var name in new[]
             {
                 "DroppedVideoFrames", "EncodedVideoFrames", "VideoFramesEnqueuedCount", "VideoFramesSubmittedToEncoder",
-                "VideoQueueCount", "VideoQueueMaxDepth", "GpuQueueCount", "GpuQueueMaxDepth", "CudaQueueCount", "CudaQueueMaxDepth",
-                "GpuFramesEnqueued", "GpuFramesDropped", "CudaFramesEnqueued", "CudaFramesDropped",
+                "VideoQueueCount", "VideoQueueMaxDepth", "GpuQueueCount", "GpuQueueMaxDepth",
+                "GpuFramesEnqueued", "GpuFramesDropped",
                 "LastVideoEnqueueTick", "LastVideoWriteTick", "LastVideoQueueLatencyMs", "VideoSequenceGaps",
                 "VideoBackpressureWaitMs", "VideoBackpressureEvents", "LastVideoBackpressureWaitMs", "MaxVideoBackpressureWaitMs"
             })
@@ -735,8 +735,6 @@ public class RecordingContractsTests
 
         Assert.Equal(System.IntPtr.Zero, (System.IntPtr)handlesType.GetProperty("D3D11DevicePtr")!.GetValue(none)!);
         Assert.Equal(System.IntPtr.Zero, (System.IntPtr)handlesType.GetProperty("D3D11DeviceContextPtr")!.GetValue(none)!);
-        Assert.Equal(System.IntPtr.Zero, (System.IntPtr)handlesType.GetProperty("CudaHwDeviceCtxPtr")!.GetValue(none)!);
-        Assert.Equal(System.IntPtr.Zero, (System.IntPtr)handlesType.GetProperty("CudaHwFramesCtxPtr")!.GetValue(none)!);
     }
 
     [Fact]
@@ -1002,10 +1000,6 @@ static partial class Program
         var libAvGpuEnqueue = ExtractSourceBlock(
             libAvSource,
             "private VideoEnqueueResult TryEnqueueGpuPacket",
-            "private unsafe VideoEnqueueResult TryEnqueueCudaPacket");
-        var libAvCudaEnqueue = ExtractSourceBlock(
-            libAvSource,
-            "private unsafe VideoEnqueueResult TryEnqueueCudaPacket",
             "private bool TryWriteVideoPacket");
         var flashbackVideoEnqueue = ExtractSourceBlock(
             flashbackSource,
@@ -1018,7 +1012,6 @@ static partial class Program
 
         AssertDoesNotContain(libAvVideoEnqueue, "while (true)");
         AssertDoesNotContain(libAvGpuEnqueue, "while (true)");
-        AssertDoesNotContain(libAvCudaEnqueue, "while (true)");
         AssertDoesNotContain(flashbackVideoEnqueue, "while (true)");
         AssertDoesNotContain(flashbackGpuEnqueue, "while (true)");
         AssertDoesNotContain(libAvSource, "Thread.Sleep(");
@@ -1031,8 +1024,6 @@ static partial class Program
         AssertContains(libAvVideoEnqueue, "ReturnVideoPacket(packet);");
         AssertContains(libAvGpuEnqueue, "FailEncoding(new InvalidOperationException(");
         AssertContains(libAvGpuEnqueue, "Marshal.Release(packet.Texture);");
-        AssertContains(libAvCudaEnqueue, "FailEncoding(new InvalidOperationException(");
-        AssertContains(libAvCudaEnqueue, "ffmpeg.av_frame_free(&overloadedFrame);");
         AssertContains(flashbackVideoEnqueue, "TrackVideoQueueRejected(\"queue_full\");");
         AssertContains(flashbackGpuEnqueue, "TrackGpuQueueRejected(\"queue_full\");");
 
@@ -2279,9 +2270,9 @@ static partial class Program
         encoderType.GetField("_audioSamplesReceived", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(encoder, 576000L);
         encoderType.GetField("_micSamplesReceived", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(encoder, 575520L);
         var cleanup = encoderType.GetMethod("ReleaseNativeResources", BindingFlags.Instance | BindingFlags.NonPublic)!;
-        var args = new object?[] { false, null };
+        var args = new object?[] { null };
         AssertEqual(575520L, (long)cleanup.Invoke(encoder, args)!, "Cleanup microphone evidence");
-        Assert.Null(args[1]);
+        Assert.Null(args[0]);
         AssertEqual(576000L, (long)encoderType.GetProperty("AudioSamplesReceived")!.GetValue(encoder)!, "Final game-audio samples");
         AssertEqual(575520L, (long)encoderType.GetProperty("MicrophoneSamplesReceived")!.GetValue(encoder)!, "Final microphone samples");
         cleanup.Invoke(encoder, args);

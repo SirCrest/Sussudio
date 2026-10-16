@@ -54,7 +54,6 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
     private AVBufferRef* _hwFramesCtx;
     private AVFrame* _hwFrame;
     private bool _useHardwareFrames;
-    private bool _useCudaHardwareFrames;
     private volatile bool _forceNextKeyframe;
     private IntPtr[]? _hwPoolTextures; // individual ArraySize=1 D3D11 textures for the hw frames pool
     private int _hwPoolIndex; // round-robin index into _hwPoolTextures
@@ -91,7 +90,6 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
     public string VideoCodecName => _options?.CodecName ?? string.Empty;
     public string OutputPath => _options?.OutputPath ?? string.Empty;
     public bool UseHardwareFrames => _useHardwareFrames;
-    public bool UseCudaHardwareFrames => _useCudaHardwareFrames;
     public long NextVideoPts => _nextVideoPts;
 
     /// <summary>
@@ -493,7 +491,6 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
             // After avcodec_open2, NVENC creates its own hw_frames_ctx if we only provided hw_device_ctx.
             // Grab the reference so we can use av_hwframe_get_buffer later.
             if (_useHardwareFrames &&
-                !_useCudaHardwareFrames &&
                 _hwFramesCtx == null &&
                 _videoCodecCtx->hw_frames_ctx != null)
             {
@@ -510,7 +507,6 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
                 }
             }
             else if (_useHardwareFrames &&
-                     !_useCudaHardwareFrames &&
                      _videoCodecCtx->hw_frames_ctx == null)
             {
                 Logger.Log("LIBAV_ENCODER_HW_FRAMES_WARN stage=post_open2 msg='NVENC did not create hw_frames_ctx' fallback=software");
@@ -553,7 +549,7 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
                     throw CreateLibAvException("LIBAV_ENCODER_ERROR operation=av_frame_alloc(hw) msg=Hardware frame allocation returned null.");
                 }
 
-                _hwFrame->format = (int)(_useCudaHardwareFrames ? AVPixelFormat.AV_PIX_FMT_CUDA : AVPixelFormat.AV_PIX_FMT_D3D11);
+                _hwFrame->format = (int)AVPixelFormat.AV_PIX_FMT_D3D11;
                 _hwFrame->width = options.Width;
                 _hwFrame->height = options.Height;
 
@@ -1113,10 +1109,7 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
         }
         finally
         {
-            var useCudaHardwareFrames = _useCudaHardwareFrames;
-            var finalMicSamplesReceived = ReleaseNativeResources(
-                useCudaHardwareFrames,
-                out var outputCloseFailure);
+            var finalMicSamplesReceived = ReleaseNativeResources(out var outputCloseFailure);
             nativeCloseFailure ??= outputCloseFailure;
 
             var outputBytes = 0L;
@@ -1181,9 +1174,7 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
             $"close_io_ms={timing.CloseIoMs:F1} open_output_ms={timing.OpenOutputMs:F1} header_ms={timing.HeaderMs:F1} total_ms={timing.TotalMs:F1}");
     }
 
-    private long ReleaseNativeResources(
-        bool useCudaHardwareFrames,
-        out Exception? outputCloseFailure)
+    private long ReleaseNativeResources(out Exception? outputCloseFailure)
     {
         outputCloseFailure = null;
         if (_formatCtx != null && _formatCtx->pb != null)
@@ -1222,9 +1213,8 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
         ReleaseRetainedHardwareContexts();
 
         _useHardwareFrames = false;
-        _useCudaHardwareFrames = false;
 
-        if (!useCudaHardwareFrames && _hwPoolTextures != null)
+        if (_hwPoolTextures != null)
         {
             for (var i = 0; i < _hwPoolTextures.Length; i++)
             {
@@ -1404,8 +1394,6 @@ internal sealed record LibAvEncoderOptions
     public int HdrMaxFall { get; init; }
     public IntPtr D3D11DevicePtr { get; init; }
     public IntPtr D3D11DeviceContextPtr { get; init; }
-    public IntPtr CudaHwDeviceCtxPtr { get; init; }
-    public IntPtr CudaHwFramesCtxPtr { get; init; }
 }
 
 internal readonly record struct RotateOutputResult(string PreviousPath, long PreviousEncodedFrames, long PreviousTotalBytes);

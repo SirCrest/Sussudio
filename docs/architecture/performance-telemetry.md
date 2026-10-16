@@ -132,7 +132,7 @@ Initial catalog (time unit is microseconds unless noted):
 | `preview.present_interval` | hist | present-to-present on cadence frames |
 | `preview.pipeline_latency` | hist | arrival to estimated visible; live frames only (Flashback playback frames, source sequence below zero, are excluded) |
 | `preview.ingress_to_visible` | hist | MF sample time to estimated visible; QPC domain and live frames only; the sample time reaches the renderer through the ingress sample ledger (2.6) |
-| `recording.queue_dwell` | hist | video packet enqueue to encode-loop dequeue, all lanes (CPU, D3D11, CUDA), QPC |
+| `recording.queue_dwell` | hist | video packet enqueue to encode-loop dequeue, both lanes (CPU, D3D11), QPC |
 | `recording.encode_submit` | hist | `avcodec_send_frame` plus the receive/drain loop of one frame, including the nested `mux_write` time |
 | `recording.mux_write` | hist | video-packet `av_interleaved_write_frame` including I/O (nested inside `encode_submit`; audio packets are not recorded) |
 | `flashback.queue_dwell` | hist | as recording |
@@ -179,7 +179,7 @@ drift):
 | `preview.gpu_render`, `preview.gpu_timing_skipped`, `preview.gpu_timing_unmeasured`; `preview.gpu_render` | `GpuTimestampRing` records a finished query when a later frame reads it back. The renderer opens and closes the span with `BeginGpuTiming(frameId, path)`/`EndGpuTiming` (`D3D11PreviewRenderer.GpuTiming.cs`; the path names the render path so counts can be split per path) around the `Draw` of the NV12 and HDR shader paths and the `VideoProcessorBlt` of the video-processor path in `D3D11PreviewRenderer.RenderPasses.cs`. The trace span starts at the CPU submit time, lasts the GPU duration, and uses the frame's arrival tick as its id (2.8.4) |
 | `ui.dispatcher_latency`, `ui.stall_50ms`; `ui.dispatcher_latency` | `UiResponsivenessProbe.OnDispatcher`, on the UI thread when the probe's no-op runs; the trace span (UI thread track, id -1) only for waits above 16 ms |
 | `gpu.engine.*` | `GpuEngineSensor.SampleOnce` on its sensor thread, once a second, from the second PDH sample on (rate counters need two) |
-| `recording.*`, `flashback.queue_dwell`, `flashback.encode_submit`, `flashback.mux_write` | `LibAvRecordingSink.DrainVideoPackets`/`DrainGpuPackets`/`DrainCudaPackets` and `FlashbackEncoderSink.DrainVideoPackets`/`DrainGpuPackets` for queue dwell (QPC stamp on the packet at enqueue, recorded after dequeue and outside `_videoQueueSync`; the GPU packet also carries the frame's arrival tick, passed by the UVC call site through `TryEnqueueGpuVideoFrame`, and uses it as the trace id); `LibAvEncoder.SendVideoFrame`/`SendGpuVideoFrame`/`SendCudaVideoFrame` and `WritePacket` for encode and mux, through the injected `EncoderPerfMetrics` role |
+| `recording.*`, `flashback.queue_dwell`, `flashback.encode_submit`, `flashback.mux_write` | `LibAvRecordingSink.DrainVideoPackets`/`DrainGpuPackets` and `FlashbackEncoderSink.DrainVideoPackets`/`DrainGpuPackets` for queue dwell (QPC stamp on the packet at enqueue, recorded after dequeue and outside `_videoQueueSync`; the GPU packet also carries the frame's arrival tick, passed by the UVC call site through `TryEnqueueGpuVideoFrame`, and uses it as the trace id); `LibAvEncoder.SendVideoFrame`/`SendGpuVideoFrame` and `WritePacket` for encode and mux, through the injected `EncoderPerfMetrics` role |
 | `flashback.segment_rotation` | `FlashbackEncoderSink.RotateSegment` through `PerfScope` (covers both returns and the terminal rethrow) |
 | `flashback.playback_decode`, `flashback.playback_present_interval` | `FlashbackPlaybackController.PaceAndDecodeFrame` and `UpdateCadenceMetrics` |
 | `audio.capture_interval`, `audio.capture_drain`; `audio.capture` | `WasapiAudioCapture.CaptureThreadMain`, beside the existing `TrackCaptureCallback` (its TickCount64 trackers are unchanged) |
@@ -334,7 +334,7 @@ site costs one volatile read.
   lease, and the D3D11 GPU lane, whose packet carries the arrival tick the UVC
   call site passes to `TryEnqueueGpuVideoFrame` (its `queue_dwell` and
   `encode_submit` therefore join to the frame's other stages). The id is -1
-  otherwise (raw buffers, the CUDA lane, and a GPU frame whose producer gave
+  otherwise (raw buffers, and a GPU frame whose producer gave
   no tick); `*.mux_write` is always -1.
 
 ### 2.5 Runtime tuning knobs

@@ -370,11 +370,6 @@ public sealed class AutomationSnapshot
     public int RecordingGpuQueueMaxDepth { get; init; }
     public long RecordingGpuFramesEnqueued { get; init; }
     public long RecordingGpuFramesDropped { get; init; }
-    public int RecordingCudaQueueDepth { get; init; }
-    public int RecordingCudaQueueCapacity { get; init; }
-    public int RecordingCudaQueueMaxDepth { get; init; }
-    public long RecordingCudaFramesEnqueued { get; init; }
-    public long RecordingCudaFramesDropped { get; init; }
     public bool FlashbackEncodingFailed { get; init; }
     public string? FlashbackEncodingFailureType { get; init; }
     public string? FlashbackEncodingFailureMessage { get; init; }

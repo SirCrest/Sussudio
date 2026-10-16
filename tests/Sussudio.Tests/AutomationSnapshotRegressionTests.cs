@@ -15,7 +15,7 @@ public sealed class AutomationSnapshotRegressionTests
             RuntimeContractSource.GetRepoRoot(), "tests", "Sussudio.Tests", "Fixtures", "AutomationSnapshot", fixtureName)));
         var actual = AutomationSnapshotRegressionFixture.BuildResult(SussudioAssembly.Load(), populated);
 
-        Assert.Equal(807, expected.RootElement.EnumerateObject().Count());
+        Assert.Equal(802, expected.RootElement.EnumerateObject().Count());
         AssertJsonEquivalent(expected.RootElement, actual, "$");
     }
 

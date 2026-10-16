@@ -8,7 +8,6 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-using FFmpeg.AutoGen;
 using Sussudio.Models;
 using Sussudio.Services.Contracts;
 using Sussudio.Services.Performance;
@@ -17,18 +16,16 @@ using Sussudio.Services.Runtime;
 namespace Sussudio.Services.Recording;
 
 // Bounded-queue recording sink that isolates capture callbacks from libav.
-// Capture threads enqueue raw/GPU/CUDA video and audio quickly; one encoding
+// Capture threads enqueue raw/GPU video and audio quickly; one encoding
 // task drains the queues and serializes every LibAvEncoder call.
 public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameTryEncoder, IRawVideoFrameLeaseTryEncoder, IGpuVideoFrameTryEncoder
 {
     private const int VideoQueueCapacity = 360;
     private const int AudioQueueCapacity = 3600;
     private const int GpuQueueCapacity = 4;
-    private const int CudaQueueCapacity = 12;
     private const int VideoDrainBatchLimit = 24;
     private const int AudioDrainBatchLimit = 128;
     private const int GpuDrainBatchLimit = 16;
-    private const int CudaDrainBatchLimit = 16;
     private const int FinalizationNoProgressTimeoutMs = 30_000;
     private const int FinalizationAbsoluteTimeoutMs = 120_000;
     private const int FinalizationPollIntervalMs = 250;
@@ -56,7 +53,6 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameTryEncode
     private Channel<AudioSamplePacket>? _audioQueue;
     private Channel<AudioSamplePacket>? _microphoneQueue;
     private Channel<GpuFramePacket>? _gpuQueue;
-    private Channel<CudaFramePacket>? _cudaQueue;
 
     // The work semaphore is a wake-up signal, not a count of queued packets.
     // The encoding loop drains audio around bounded video batches so video
@@ -87,8 +83,6 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameTryEncode
     private long _workSignalAlreadySignaled;
     private long _gpuFramesEnqueued;
     private long _gpuFramesDropped;
-    private long _cudaFramesEnqueued;
-    private long _cudaFramesDropped;
     private int _videoQueueDepth;
     private int _videoQueueMaxDepth;
     private int _audioQueueDepth;
@@ -97,13 +91,10 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameTryEncode
     private readonly AudioChannelState _microphoneChannel;
     private int _gpuQueueDepth;
     private int _gpuQueueMaxDepth;
-    private int _cudaQueueDepth;
-    private int _cudaQueueMaxDepth;
     private long _lastVideoEnqueueTick;
     private long _lastVideoWriteTick;
     private readonly VideoQueueLatencyTracker _videoLatencyTracker;
     private bool _gpuEncodingEnabled;
-    private bool _cudaEncodingEnabled;
     private long _finalizationStartedTick;
     private long _lastFinalizationProgressTick;
     private long _finalizationProgressVersion;
@@ -241,14 +232,11 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameTryEncode
             CompleteWriter(_audioQueue);
             CompleteWriter(_microphoneQueue);
             CompleteWriter(_gpuQueue);
-            CompleteWriter(_cudaQueue);
             _videoQueue = null;
             _audioQueue = null;
             _microphoneQueue = null;
             _gpuQueue = null;
-            _cudaQueue = null;
             _gpuEncodingEnabled = false;
-            _cudaEncodingEnabled = false;
             _cts?.Dispose();
             _cts = null;
             _encodingTask = null;
@@ -269,18 +257,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameTryEncode
 
     private void InitializeVideoSessionQueues()
     {
-        if (_encoder.UseCudaHardwareFrames)
-        {
-            _cudaQueue = Channel.CreateBounded<CudaFramePacket>(new BoundedChannelOptions(CudaQueueCapacity)
-            {
-                FullMode = BoundedChannelFullMode.Wait,
-                SingleReader = true,
-                SingleWriter = true
-            });
-            _cudaEncodingEnabled = true;
-            Logger.Log("LIBAV_SINK_CUDA_QUEUE_INIT capacity=" + CudaQueueCapacity);
-        }
-        else if (_encoder.UseHardwareFrames)
+        if (_encoder.UseHardwareFrames)
         {
             _gpuQueue = Channel.CreateBounded<GpuFramePacket>(new BoundedChannelOptions(GpuQueueCapacity)
             {
@@ -317,14 +294,10 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameTryEncode
         Interlocked.Exchange(ref _videoDropsBacklogEviction, 0);
         Interlocked.Exchange(ref _gpuFramesEnqueued, 0);
         Interlocked.Exchange(ref _gpuFramesDropped, 0);
-        Interlocked.Exchange(ref _cudaFramesEnqueued, 0);
-        Interlocked.Exchange(ref _cudaFramesDropped, 0);
         Interlocked.Exchange(ref _videoQueueMaxDepth, 0);
         Interlocked.Exchange(ref _gpuQueueMaxDepth, 0);
-        Interlocked.Exchange(ref _cudaQueueMaxDepth, 0);
         Interlocked.Exchange(ref _videoQueueDepth, 0);
         Interlocked.Exchange(ref _gpuQueueDepth, 0);
-        Interlocked.Exchange(ref _cudaQueueDepth, 0);
         Interlocked.Exchange(ref _lastVideoEnqueueTick, 0);
         Interlocked.Exchange(ref _lastVideoWriteTick, 0);
         ResetVideoDiagnostics();
@@ -378,8 +351,6 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameTryEncode
             HdrMaxFall = context.Settings.HdrMaxFall,
             D3D11DevicePtr = context.D3D11DevicePtr,
             D3D11DeviceContextPtr = context.D3D11DeviceContextPtr,
-            CudaHwDeviceCtxPtr = context.CudaHwDeviceCtxPtr,
-            CudaHwFramesCtxPtr = context.CudaHwFramesCtxPtr,
             AudioEnabled = context.AudioEnabled,
             AudioSampleRate = 48_000,
             AudioChannels = 2,
@@ -394,7 +365,6 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameTryEncode
     public long DroppedVideoFrames =>
         Interlocked.Read(ref _droppedVideoFrames) +
         Interlocked.Read(ref _gpuFramesDropped) +
-        Interlocked.Read(ref _cudaFramesDropped) +
         _encoder.DroppedFrameCount;
     public long EncodedVideoFrames => Interlocked.Read(ref _encodedVideoFrames);
     public long AudioSamplesReceived => _encoder.AudioSamplesReceived;
@@ -429,17 +399,11 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameTryEncode
     public long LastVideoBackpressureWaitMs => _videoLatencyTracker.LastBackpressureWaitMs;
     public long MaxVideoBackpressureWaitMs => _videoLatencyTracker.MaxBackpressureWaitMs;
     public bool GpuEncodingEnabled => Volatile.Read(ref _gpuEncodingEnabled);
-    public bool CudaEncodingEnabled => Volatile.Read(ref _cudaEncodingEnabled);
     public int GpuQueueCount => Volatile.Read(ref _gpuQueueDepth);
     public int GpuQueueCapacityFrames => GpuQueueCapacity;
     public int GpuQueueMaxDepth => Volatile.Read(ref _gpuQueueMaxDepth);
     public long GpuFramesEnqueued => Interlocked.Read(ref _gpuFramesEnqueued);
     public long GpuFramesDropped => Interlocked.Read(ref _gpuFramesDropped);
-    public int CudaQueueCount => Volatile.Read(ref _cudaQueueDepth);
-    public int CudaQueueCapacityFrames => CudaQueueCapacity;
-    public int CudaQueueMaxDepth => Volatile.Read(ref _cudaQueueMaxDepth);
-    public long CudaFramesEnqueued => Interlocked.Read(ref _cudaFramesEnqueued);
-    public long CudaFramesDropped => Interlocked.Read(ref _cudaFramesDropped);
     public bool EncodingFailed => Volatile.Read(ref _encodingFailure) != null;
     public string? EncodingFailureType => Volatile.Read(ref _encodingFailure)?.GetType().Name;
     public string? EncodingFailureMessage => Volatile.Read(ref _encodingFailure)?.Message;
@@ -467,7 +431,6 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameTryEncode
             var audioQueue = _audioQueue ?? throw new InvalidOperationException("Audio queue is not initialized.");
             var microphoneQueue = _microphoneQueue;
             var gpuQueue = _gpuQueue;
-            var cudaQueue = _cudaQueue;
 
             while (true)
             {
@@ -479,10 +442,6 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameTryEncode
                     madeProgress = DrainChannelPackets(microphoneQueue.Reader, ref _microphoneQueueDepth, _microphoneChannel) || madeProgress;
                 }
 
-                if (cudaQueue != null)
-                {
-                    madeProgress = DrainCudaPackets(cudaQueue.Reader, CudaDrainBatchLimit) || madeProgress;
-                }
                 if (gpuQueue != null)
                 {
                     madeProgress = DrainGpuPackets(gpuQueue.Reader, GpuDrainBatchLimit) || madeProgress;
@@ -502,12 +461,10 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameTryEncode
                     audioQueue.Reader.Completion.IsCompleted &&
                     (microphoneQueue == null || microphoneQueue.Reader.Completion.IsCompleted) &&
                     (gpuQueue == null || gpuQueue.Reader.Completion.IsCompleted) &&
-                    (cudaQueue == null || cudaQueue.Reader.Completion.IsCompleted) &&
                     Volatile.Read(ref _videoQueueDepth) == 0 &&
                     Volatile.Read(ref _audioQueueDepth) == 0 &&
                     Volatile.Read(ref _microphoneQueueDepth) == 0 &&
-                    Volatile.Read(ref _gpuQueueDepth) == 0 &&
-                    Volatile.Read(ref _cudaQueueDepth) == 0)
+                    Volatile.Read(ref _gpuQueueDepth) == 0)
                 {
                     break;
                 }
@@ -552,7 +509,6 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameTryEncode
             ReturnRemainingBuffers(_audioQueue, ref _audioQueueDepth);
             ReturnRemainingBuffers(_microphoneQueue, ref _microphoneQueueDepth);
             ReturnRemainingGpuBuffers(_gpuQueue, ref _gpuQueueDepth);
-            ReturnRemainingCudaFrames(_cudaQueue, ref _cudaQueueDepth);
         }
         catch (Exception ex)
         {
@@ -563,7 +519,6 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameTryEncode
             ReturnRemainingBuffers(_audioQueue, ref _audioQueueDepth);
             ReturnRemainingBuffers(_microphoneQueue, ref _microphoneQueueDepth);
             ReturnRemainingGpuBuffers(_gpuQueue, ref _gpuQueueDepth);
-            ReturnRemainingCudaFrames(_cudaQueue, ref _cudaQueueDepth);
             try
             {
                 _encoder.Dispose();
@@ -757,7 +712,6 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameTryEncode
         CompleteWriter(_audioQueue);
         CompleteWriter(_microphoneQueue);
         CompleteWriter(_gpuQueue);
-        CompleteWriter(_cudaQueue);
 
         var finalizationTimeoutMs = emergency
             ? EmergencyStopTimeoutMs
@@ -942,7 +896,6 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameTryEncode
         CompleteWriter(_audioQueue);
         CompleteWriter(_microphoneQueue);
         CompleteWriter(_gpuQueue);
-        CompleteWriter(_cudaQueue);
         _cts?.Cancel();
 
         if (_encodingTask == null)
@@ -999,12 +952,10 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameTryEncode
         ReturnRemainingBuffers(_audioQueue);
         ReturnRemainingBuffers(_microphoneQueue);
         ReturnRemainingGpuBuffers(_gpuQueue, ref _gpuQueueDepth);
-        ReturnRemainingCudaFrames(_cudaQueue, ref _cudaQueueDepth);
         Interlocked.Exchange(ref _videoQueueDepth, 0);
         Interlocked.Exchange(ref _audioQueueDepth, 0);
         Interlocked.Exchange(ref _microphoneQueueDepth, 0);
         Interlocked.Exchange(ref _gpuQueueDepth, 0);
-        Interlocked.Exchange(ref _cudaQueueDepth, 0);
 
         _cts?.Dispose();
         _cts = null;
@@ -1012,9 +963,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameTryEncode
         _audioQueue = null;
         _microphoneQueue = null;
         _gpuQueue = null;
-        _cudaQueue = null;
         _gpuEncodingEnabled = false;
-        _cudaEncodingEnabled = false;
         _microphoneEnabled = false;
         _encodingTask = null;
         _workAvailable.Dispose();
@@ -1116,46 +1065,6 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameTryEncode
             finally
             {
                 Marshal.Release(packet.Texture);
-            }
-
-            drainedAny = true;
-            drainedCount++;
-        }
-
-        return drainedAny;
-    }
-
-    private unsafe bool DrainCudaPackets(ChannelReader<CudaFramePacket> reader, int maxPackets = int.MaxValue)
-    {
-        var drainedAny = false;
-        var drainedCount = 0;
-        while (drainedCount < maxPackets && reader.TryRead(out var packet))
-        {
-            DecrementQueueDepth(ref _cudaQueueDepth, "cuda");
-            EncoderPerfMetrics.Recording.RecordQueueDwell(packet.EnqueueQpc, -1);
-            var frame = (AVFrame*)packet.Frame;
-            try
-            {
-                _encoder.PerfFrameId = -1;
-                _encoder.SendCudaVideoFrame(frame);
-                Interlocked.Increment(ref _videoFramesSubmittedToEncoder);
-                Interlocked.Exchange(ref _lastVideoWriteTick, Environment.TickCount64);
-                var encoded = Interlocked.Increment(ref _encodedVideoFrames);
-                try
-                {
-                    FrameEncoded?.Invoke(this, encoded);
-                }
-                catch (Exception ex)
-                {
-                    Logger.Log($"LIBAV_SINK_FRAME_EVENT_FAIL type={ex.GetType().Name} msg={ex.Message}");
-                }
-            }
-            finally
-            {
-                if (frame != null)
-                {
-                    ffmpeg.av_frame_free(&frame);
-                }
             }
 
             drainedAny = true;
@@ -1274,52 +1183,6 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameTryEncode
         return VideoEnqueueResult.Overloaded;
     }
 
-    private unsafe VideoEnqueueResult TryEnqueueCudaPacket(Channel<CudaFramePacket> queue, CudaFramePacket packet)
-    {
-        if (!_started ||
-            _cts?.IsCancellationRequested == true ||
-            Volatile.Read(ref _encodingFailure) != null)
-        {
-            var rejectedFrame = (AVFrame*)packet.Frame;
-            if (rejectedFrame != null)
-            {
-                ffmpeg.av_frame_free(&rejectedFrame);
-            }
-
-            return VideoEnqueueResult.Rejected;
-        }
-
-        if (TryWriteCudaPacket(queue, packet))
-        {
-            Interlocked.Increment(ref _cudaFramesEnqueued);
-            SignalWork("cuda_enqueue");
-            return VideoEnqueueResult.Accepted;
-        }
-
-        if (!_started ||
-            _cts?.IsCancellationRequested == true ||
-            Volatile.Read(ref _encodingFailure) != null)
-        {
-            var frame = (AVFrame*)packet.Frame;
-            if (frame != null)
-            {
-                ffmpeg.av_frame_free(&frame);
-            }
-
-            return VideoEnqueueResult.Rejected;
-        }
-
-        var overloadedFrame = (AVFrame*)packet.Frame;
-        if (overloadedFrame != null)
-        {
-            ffmpeg.av_frame_free(&overloadedFrame);
-        }
-
-        FailEncoding(new InvalidOperationException(
-            $"LibAv CUDA recording queue overloaded: capacity={CudaQueueCapacity} depth={Volatile.Read(ref _cudaQueueDepth)}"));
-        return VideoEnqueueResult.Overloaded;
-    }
-
     // QueueAdmission owns the claim/high-water/rollback sequence shared with
     // FlashbackEncoderSink; these lanes supply only their own counters and log tag.
     private bool TryWriteVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)
@@ -1327,9 +1190,6 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameTryEncode
 
     private bool TryWriteGpuPacket(Channel<GpuFramePacket> queue, GpuFramePacket packet)
         => QueueAdmission.TryWrite(queue, packet, ref _gpuQueueDepth, ref _gpuQueueMaxDepth, "gpu", DecrementQueueDepth);
-
-    private bool TryWriteCudaPacket(Channel<CudaFramePacket> queue, CudaFramePacket packet)
-        => QueueAdmission.TryWrite(queue, packet, ref _cudaQueueDepth, ref _cudaQueueMaxDepth, "cuda", DecrementQueueDepth);
 
     private void ReturnRemainingVideoBuffers(Channel<VideoFramePacket>? queue)
     {
@@ -1361,25 +1221,6 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameTryEncode
         while (queue.Reader.TryRead(out var packet))
         {
             Marshal.Release(packet.Texture);
-        }
-
-        Interlocked.Exchange(ref queueDepth, 0);
-    }
-
-    private static unsafe void ReturnRemainingCudaFrames(Channel<CudaFramePacket>? queue, ref int queueDepth)
-    {
-        if (queue == null)
-        {
-            return;
-        }
-
-        while (queue.Reader.TryRead(out var packet))
-        {
-            var frame = (AVFrame*)packet.Frame;
-            if (frame != null)
-            {
-                ffmpeg.av_frame_free(&frame);
-            }
         }
 
         Interlocked.Exchange(ref queueDepth, 0);
@@ -1431,11 +1272,6 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameTryEncode
         public long ArrivalTick { get; init; }
     }
 
-    private readonly record struct CudaFramePacket(IntPtr Frame)
-    {
-        public long EnqueueQpc { get; init; }
-    }
-
     public bool TryEnqueueGpuVideoFrame(IntPtr d3d11Texture2D, int subresourceIndex, long arrivalTick = -1)
     {
         var queue = _gpuQueue;
@@ -1460,36 +1296,6 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameTryEncode
         }
 
         return false;
-    }
-
-    public unsafe void EnqueueCudaVideoFrame(AVFrame* cudaFrame)
-    {
-        var queue = _cudaQueue;
-        if (_disposed || !_started || queue == null || cudaFrame == null)
-        {
-            return;
-        }
-
-        var cloned = ffmpeg.av_frame_clone(cudaFrame);
-        if (cloned == null)
-        {
-            FailEncoding(new InvalidOperationException("LibAv CUDA frame clone failed."));
-            Interlocked.Increment(ref _cudaFramesDropped);
-            return;
-        }
-
-        var packet = new CudaFramePacket((IntPtr)cloned) { EnqueueQpc = Stopwatch.GetTimestamp() };
-        var enqueueResult = TryEnqueueCudaPacket(queue, packet);
-        if (enqueueResult != VideoEnqueueResult.Overloaded)
-        {
-            return;
-        }
-
-        var dropped = Interlocked.Increment(ref _cudaFramesDropped);
-        if (dropped == 1 || dropped % 30 == 0)
-        {
-            Logger.Log($"LIBAV_SINK_CUDA_OVERLOAD count={dropped}");
-        }
     }
 
     public bool TryEnqueueRawVideoFrame(ReadOnlySpan<byte> data, int expectedSize)
@@ -1623,7 +1429,6 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameTryEncode
         CompleteWriter(_audioQueue);
         CompleteWriter(_microphoneQueue);
         CompleteWriter(_gpuQueue);
-        CompleteWriter(_cudaQueue);
 
         try
         {

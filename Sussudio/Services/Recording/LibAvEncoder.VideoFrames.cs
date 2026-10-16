@@ -51,12 +51,6 @@ internal sealed unsafe partial class LibAvEncoder
 
     private void InitializeHardwareFramesIfNeeded(LibAvEncoderOptions options)
     {
-        if (options.CudaHwDeviceCtxPtr != IntPtr.Zero && options.CudaHwFramesCtxPtr != IntPtr.Zero)
-        {
-            InitializeCudaHardwareFrames(options);
-            return;
-        }
-
         if (options.D3D11DevicePtr == IntPtr.Zero)
         {
             Logger.Log("LIBAV_ENCODER_HW_FRAMES skip=no_device");
@@ -181,7 +175,6 @@ internal sealed unsafe partial class LibAvEncoder
             _hwFramesCtx = hwFramesCtx;
             hwFramesCtx = null;
             _useHardwareFrames = true;
-            _useCudaHardwareFrames = false;
             Logger.Log(
                 $"LIBAV_ENCODER_HW_FRAMES mode=d3d11va sw_format={(options.IsP010 ? "p010le" : "nv12")} " +
                 $"pool_size=8 width={options.Width} height={options.Height}");
@@ -223,83 +216,6 @@ internal sealed unsafe partial class LibAvEncoder
 
             _videoCodecCtx->pix_fmt = options.IsP010 ? AVPixelFormat.AV_PIX_FMT_P010LE : AVPixelFormat.AV_PIX_FMT_NV12;
             _useHardwareFrames = false;
-            _useCudaHardwareFrames = false;
-            Logger.Log($"LIBAV_ENCODER_HW_FRAMES_WARN stage={stage} msg='{ex.Message}' fallback=software");
-        }
-    }
-
-    private void InitializeCudaHardwareFrames(LibAvEncoderOptions options)
-    {
-        AVBufferRef* codecHwDeviceCtx = null;
-        AVBufferRef* codecHwFramesCtx = null;
-        var stage = "av_buffer_ref(cuda_device)";
-
-        try
-        {
-            codecHwDeviceCtx = ffmpeg.av_buffer_ref((AVBufferRef*)options.CudaHwDeviceCtxPtr);
-            if (codecHwDeviceCtx == null)
-            {
-                throw new InvalidOperationException("Failed to reference CUDA device context for encoder.");
-            }
-
-            stage = "av_buffer_ref(cuda_frames)";
-            codecHwFramesCtx = ffmpeg.av_buffer_ref((AVBufferRef*)options.CudaHwFramesCtxPtr);
-            if (codecHwFramesCtx == null)
-            {
-                throw new InvalidOperationException("Failed to reference CUDA frames context for encoder.");
-            }
-
-            _videoCodecCtx->hw_device_ctx = codecHwDeviceCtx;
-            codecHwDeviceCtx = null;
-            _videoCodecCtx->hw_frames_ctx = codecHwFramesCtx;
-            codecHwFramesCtx = null;
-            _videoCodecCtx->pix_fmt = AVPixelFormat.AV_PIX_FMT_CUDA;
-
-            _hwDeviceCtx = ffmpeg.av_buffer_ref((AVBufferRef*)options.CudaHwDeviceCtxPtr);
-            if (_hwDeviceCtx == null)
-            {
-                throw new InvalidOperationException("Failed to retain CUDA device context for encoder.");
-            }
-
-            _hwFramesCtx = ffmpeg.av_buffer_ref((AVBufferRef*)options.CudaHwFramesCtxPtr);
-            if (_hwFramesCtx == null)
-            {
-                throw new InvalidOperationException("Failed to retain CUDA frames context for encoder.");
-            }
-
-            _useHardwareFrames = true;
-            _useCudaHardwareFrames = true;
-
-            Logger.Log(
-                $"LIBAV_ENCODER_HW_FRAMES mode=cuda sw_format=nv12 width={options.Width} height={options.Height}");
-        }
-        catch (Exception ex)
-        {
-            if (_videoCodecCtx->hw_frames_ctx != null)
-            {
-                ffmpeg.av_buffer_unref(&_videoCodecCtx->hw_frames_ctx);
-            }
-
-            if (_videoCodecCtx->hw_device_ctx != null)
-            {
-                ffmpeg.av_buffer_unref(&_videoCodecCtx->hw_device_ctx);
-            }
-
-            if (codecHwFramesCtx != null)
-            {
-                ffmpeg.av_buffer_unref(&codecHwFramesCtx);
-            }
-
-            if (codecHwDeviceCtx != null)
-            {
-                ffmpeg.av_buffer_unref(&codecHwDeviceCtx);
-            }
-
-            ReleaseRetainedHardwareContexts();
-
-            _videoCodecCtx->pix_fmt = options.IsP010 ? AVPixelFormat.AV_PIX_FMT_P010LE : AVPixelFormat.AV_PIX_FMT_NV12;
-            _useHardwareFrames = false;
-            _useCudaHardwareFrames = false;
             Logger.Log($"LIBAV_ENCODER_HW_FRAMES_WARN stage={stage} msg='{ex.Message}' fallback=software");
         }
     }
@@ -313,7 +229,7 @@ internal sealed unsafe partial class LibAvEncoder
             throw new ArgumentException("D3D11 texture pointer is null.", nameof(d3d11Texture));
         }
 
-        if (!_useHardwareFrames || _useCudaHardwareFrames || _hwFramesCtx == null || _hwFrame == null || _hwPoolTextures == null)
+        if (!_useHardwareFrames || _hwFramesCtx == null || _hwFrame == null || _hwPoolTextures == null)
         {
             throw new InvalidOperationException("Hardware frames are not initialized. Use SendVideoFrame for CPU path.");
         }
@@ -388,76 +304,6 @@ internal sealed unsafe partial class LibAvEncoder
             }
 
             ThrowIfError(sendResult, "avcodec_send_frame(hw)");
-            DrainEncoderPackets();
-            EndEncodeSubmit(submitStartTick);
-            _encodedFrameCount++;
-        }
-        catch
-        {
-            _droppedFrameCount++;
-            throw;
-        }
-        finally
-        {
-            if (attachedHdrSideData)
-            {
-                ffmpeg.av_frame_remove_side_data(_hwFrame, AVFrameSideDataType.AV_FRAME_DATA_MASTERING_DISPLAY_METADATA);
-                ffmpeg.av_frame_remove_side_data(_hwFrame, AVFrameSideDataType.AV_FRAME_DATA_CONTENT_LIGHT_LEVEL);
-            }
-
-            ffmpeg.av_frame_unref(_hwFrame);
-        }
-    }
-
-    public void SendCudaVideoFrame(AVFrame* decodedFrame)
-    {
-        EnsureOpen();
-
-        if (!_useCudaHardwareFrames || _hwFrame == null)
-        {
-            throw new InvalidOperationException("CUDA hardware frames are not initialized.");
-        }
-
-        if (decodedFrame == null)
-        {
-            throw new ArgumentNullException(nameof(decodedFrame));
-        }
-
-        var options = _options ?? throw new InvalidOperationException("Encoder options are not initialized.");
-
-        ffmpeg.av_frame_unref(_hwFrame);
-        var refResult = ffmpeg.av_frame_ref(_hwFrame, decodedFrame);
-        if (refResult < 0)
-        {
-            throw new InvalidOperationException($"av_frame_ref(cuda) failed: code={refResult} msg='{GetErrorString(refResult)}'");
-        }
-
-        if (_forceNextKeyframe)
-        {
-            _hwFrame->pict_type = AVPictureType.AV_PICTURE_TYPE_I;
-            _forceNextKeyframe = false;
-        }
-
-        _hwFrame->pts = Interlocked.Increment(ref _nextVideoPts) - 1;
-        LogAvSyncIfDue();
-
-        var attachedHdrSideData = false;
-        if (options.HdrEnabled && _encodedFrameCount == 0)
-        {
-            attachedHdrSideData = AttachHdrFrameSideDataToHwFrame(options);
-        }
-
-        var submitStartTick = BeginEncodeSubmit();
-        try
-        {
-            var sendResult = ffmpeg.avcodec_send_frame(_videoCodecCtx, _hwFrame);
-            if (sendResult == ffmpeg.AVERROR(ffmpeg.EAGAIN))
-            {
-                DrainEncoderPackets();
-                sendResult = ffmpeg.avcodec_send_frame(_videoCodecCtx, _hwFrame);
-            }
-
-            ThrowIfError(sendResult, "avcodec_send_frame(cuda)");
             DrainEncoderPackets();
             EndEncodeSubmit(submitStartTick);
             _encodedFrameCount++;
@@ -698,8 +544,8 @@ internal sealed unsafe partial class LibAvEncoder
         _totalBytesWritten += packetSize;
     }
 
-    // encode_submit spans one frame's avcodec_send_frame through the receive/drain loop on all three lanes (CPU, D3D11
-    // hardware frames, CUDA). It records on success only; a failed send ends the encode anyway. mux_write above is
+    // encode_submit spans one frame's avcodec_send_frame through the receive/drain loop on both lanes (CPU and D3D11
+    // hardware frames). It records on success only; a failed send ends the encode anyway. mux_write above is
     // nested inside it and covers video packets only (audio packets are written by LibAvEncoder.Audio.cs).
     private long BeginEncodeSubmit() => _perf is null ? 0 : Stopwatch.GetTimestamp();
 
