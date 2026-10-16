@@ -160,8 +160,7 @@ Preview renderer notes:
   device/swap-chain/video-processor fields, shared source-reader D3D manager
   lifecycle plus the `ILiveVideoSource` handoff contract, `InitializeD3D` orchestration,
   shared-vs-owned device setup, shared-device COM reference handoff/reinit
-  retirement/reset scheduling (including a hand-over that lands while the render
-  thread is still selecting its device), device-lost classification and recovery, video
+  retirement/reset scheduling, device-lost classification and recovery, video
   interface acquisition, media present duration setup, composition swap-chain
   creation, startup dimensions, HDR swap-chain capability probing, SDR
   swap-chain fallback, initial color-space selection, configured output size
