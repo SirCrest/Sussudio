@@ -36,16 +36,6 @@ internal sealed class PreviewRuntimeSnapshotSamplingController
             "Failed to enqueue preview snapshot operation.",
             cancellationToken);
 
-    /// <summary>
-    /// The producer epoch alone: the same signature read as a snapshot, without the
-    /// renderer percentile passes that <see cref="GetSnapshotAsync"/> pays for.
-    /// </summary>
-    public Task<long> GetEpochAsync(CancellationToken cancellationToken = default)
-        => _context.UiDispatchController.InvokeWithRetryAsync(
-            () => GetOrAdvancePreviewRuntimeSnapshotEpoch(BuildSignature()),
-            "Failed to enqueue preview snapshot epoch operation.",
-            cancellationToken);
-
     private PreviewRuntimeSnapshot BuildSnapshot()
     {
         var signature = BuildSignature();
@@ -69,17 +59,13 @@ internal sealed class PreviewRuntimeSnapshotSamplingController
             StartupAttemptId = signature.StartupAttemptId,
             StartupRequestedUtc = signature.StartupRequestedUtc,
             StartupTimeoutMs = signature.StartupTimeoutMs,
-            StartupGpuSignalMediaOpened = signature.StartupGpuSignalMediaOpened,
-            StartupGpuSignalFirstFrame = signature.StartupGpuSignalFirstFrame,
-            StartupGpuSignalPlaybackAdvancing = signature.StartupGpuSignalPlaybackAdvancing,
             StartupRequiredSignals = signature.StartupRequiredSignals,
             StartupReceivedSignals = signature.StartupReceivedSignals,
             StartupStrategy = signature.StartupStrategy,
             StartupMissingSignals = signature.StartupMissingSignals,
             StartupRecoveryAttemptCount = signature.StartupRecoveryAttemptCount,
             StartupLastFailureReason = signature.StartupLastFailureReason,
-            FirstVisualConfirmed = signature.FirstVisualConfirmed,
-            GpuPositionEventCount = signature.GpuPositionEventCount
+            FirstVisualConfirmed = signature.FirstVisualConfirmed
         });
     }
 
@@ -111,17 +97,13 @@ internal sealed class PreviewRuntimeSnapshotSamplingController
             startupSession.AttemptId,
             startupSession.RequestedUtc,
             startupSession.VisualTimeoutMs,
-            startupSignalSnapshot.GpuSignalMediaOpened,
-            startupSignalSnapshot.GpuSignalFirstFrame,
-            startupSignalSnapshot.GpuSignalPlaybackAdvancing,
             startupSignalSnapshot.RequiredSignals,
             startupSignalSnapshot.ReceivedSignals,
             startupSignalSnapshot.Strategy,
             startupMissingSignals,
             startupSession.RecoveryAttemptCount,
             startupSession.LastFailureReason,
-            startupSession.FirstVisualConfirmed,
-            startupSession.PositionEventCount);
+            startupSession.FirstVisualConfirmed);
     }
 
     private long GetOrAdvancePreviewRuntimeSnapshotEpoch(PreviewRuntimeSnapshotSignature signature)
@@ -155,17 +137,13 @@ internal readonly record struct PreviewRuntimeSnapshotSignature(
     string? StartupAttemptId,
     DateTimeOffset? StartupRequestedUtc,
     int StartupTimeoutMs,
-    bool StartupGpuSignalMediaOpened,
-    bool StartupGpuSignalFirstFrame,
-    bool StartupGpuSignalPlaybackAdvancing,
     PreviewStartupSignalFlags StartupRequiredSignals,
     PreviewStartupSignalFlags StartupReceivedSignals,
     PreviewStartupStrategy StartupStrategy,
     string? StartupMissingSignals,
     int StartupRecoveryAttemptCount,
     string? StartupLastFailureReason,
-    bool FirstVisualConfirmed,
-    long GpuPositionEventCount);
+    bool FirstVisualConfirmed);
 
 internal sealed class PreviewRuntimeSnapshotInput
 {
@@ -186,9 +164,6 @@ internal sealed class PreviewRuntimeSnapshotInput
     public string? StartupAttemptId { get; init; }
     public DateTimeOffset? StartupRequestedUtc { get; init; }
     public int StartupTimeoutMs { get; init; }
-    public bool StartupGpuSignalMediaOpened { get; init; }
-    public bool StartupGpuSignalFirstFrame { get; init; }
-    public bool StartupGpuSignalPlaybackAdvancing { get; init; }
     public PreviewStartupSignalFlags StartupRequiredSignals { get; init; }
     public PreviewStartupSignalFlags StartupReceivedSignals { get; init; }
     public PreviewStartupStrategy StartupStrategy { get; init; }
@@ -196,7 +171,6 @@ internal sealed class PreviewRuntimeSnapshotInput
     public int StartupRecoveryAttemptCount { get; init; }
     public string? StartupLastFailureReason { get; init; }
     public bool FirstVisualConfirmed { get; init; }
-    public long GpuPositionEventCount { get; init; }
 }
 
 internal static class PreviewRuntimeSnapshotController
@@ -237,9 +211,6 @@ internal static class PreviewRuntimeSnapshotMapper
             StartupAttemptId = input.StartupAttemptId,
             StartupElapsedMs = health.StartupElapsedMs,
             StartupTimeoutMs = input.StartupTimeoutMs,
-            StartupGpuSignalMediaOpened = input.StartupGpuSignalMediaOpened,
-            StartupGpuSignalFirstFrame = input.StartupGpuSignalFirstFrame,
-            StartupGpuSignalPlaybackAdvancing = input.StartupGpuSignalPlaybackAdvancing,
             StartupRequiredSignals = input.StartupRequiredSignals,
             StartupReceivedSignals = input.StartupReceivedSignals,
             StartupStrategy = input.StartupStrategy,
@@ -350,9 +321,7 @@ internal static class PreviewRuntimeSnapshotMapper
             EstimatedPipelineLatencyMs = d3dProjection.EstimatedPipelineLatencyMs,
             GpuPlaybackState = d3dProjection.GpuPlaybackState,
             GpuNaturalVideoWidth = d3dProjection.GpuNaturalVideoWidth,
-            GpuNaturalVideoHeight = d3dProjection.GpuNaturalVideoHeight,
-            GpuPositionMs = d3dProjection.GpuPositionMs,
-            GpuPositionEventCount = input.GpuPositionEventCount
+            GpuNaturalVideoHeight = d3dProjection.GpuNaturalVideoHeight
         };
     }
 }
@@ -455,7 +424,6 @@ internal sealed class PreviewRuntimeD3DProjection
     public string GpuPlaybackState { get; private set; } = "None";
     public int GpuNaturalVideoWidth { get; private set; }
     public int GpuNaturalVideoHeight { get; private set; }
-    public double GpuPositionMs { get; private set; }
     public int DisplayCadenceSampleCount { get; private set; }
     public double DisplayCadenceObservedFps { get; private set; }
     public double DisplayCadenceExpectedIntervalMs { get; private set; }
@@ -591,7 +559,6 @@ internal sealed class PreviewRuntimeD3DProjection
         GpuPlaybackState = rendererState.GpuPlaybackState;
         GpuNaturalVideoWidth = rendererState.NaturalVideoWidth;
         GpuNaturalVideoHeight = rendererState.NaturalVideoHeight;
-        GpuPositionMs = rendererState.PositionMs;
     }
 
     private void ApplyDisplayCadence(D3D11PreviewRenderer.PresentCadenceMetrics? displayCadence)
@@ -747,8 +714,7 @@ internal readonly record struct PreviewRuntimeD3DRendererState(
     PreviewSlowFrameDiagnostic[] RecentSlowFrames,
     string GpuPlaybackState,
     int NaturalVideoWidth,
-    int NaturalVideoHeight,
-    double PositionMs);
+    int NaturalVideoHeight);
 
 internal static class PreviewRuntimeD3DRendererStatePolicy
 {
@@ -769,6 +735,5 @@ internal static class PreviewRuntimeD3DRendererStatePolicy
             RecentSlowFrames: d3d?.GetRecentSlowFrameDiagnostics() ?? Array.Empty<PreviewSlowFrameDiagnostic>(),
             GpuPlaybackState: d3d == null ? "None" : (d3d.IsRendering ? "Rendering" : "Idle"),
             NaturalVideoWidth: d3d?.NaturalWidth ?? 0,
-            NaturalVideoHeight: d3d?.NaturalHeight ?? 0,
-            PositionMs: 0);
+            NaturalVideoHeight: d3d?.NaturalHeight ?? 0);
 }

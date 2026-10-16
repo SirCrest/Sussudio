@@ -69,8 +69,8 @@ implementations and shared fixtures out of the oversized `Program` helper namesp
 - `tests/Sussudio.Tests/XUnit.RecordingSettingsApplicationTests.cs` and
   `tests/Sussudio.Tests/XUnit.RecordingSettingsRuntimeTests.cs` cover the shared
   settings owner and complete selection application through the capture coordinator.
-- `tests/Sussudio.Tests/XUnit.LibAvCudaFailureTests.cs` executes sink failure and
-  native frame cleanup. `InProcessRecordingStructureVerifierTests.cs` verifies
+- `tests/Sussudio.Tests/LibAvRecordingSinkFailureTests.cs` executes sink failure and
+  native texture-reference cleanup. `InProcessRecordingStructureVerifierTests.cs` verifies
   committed media fixtures, and `LibAvRecordingDrainBehaviorTests.cs` exercises
   actual queued video and audio encoding into a verified file.
   It also drives real CaptureService recording start, source ingress, stop,

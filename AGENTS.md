@@ -86,7 +86,7 @@ Run before starting work in an area, and after finishing a cleanup slice:
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\architecture\Report-DeadSurface.ps1
 ```
 
-It writes `artifacts/dead-surface.json` and reports production code that nothing uses: environment variables read but never set or documented, private fields assigned but never read, and private methods with no call site.
+It writes `artifacts/dead-surface.json` and reports production code that nothing uses: environment variables read but never set or documented, private fields assigned but never read, private methods with no call site, and public, internal or protected methods that nothing in the repo names except their own declarations. The last category skips methods a framework or the runtime can call without naming them: overrides, virtual, abstract, extern and partial methods, attributed methods, pattern-bound names such as `GetEnumerator`, and every method of a type whose partial family derives from a type the repo does not declare.
 
 **Every reported item is either deleted, or annotated in place with a comment saying why it must stay.** There is no third option. A report that is read and then ignored is worse than no report, because the next agent cannot tell a deliberate keeper from an oversight.
 

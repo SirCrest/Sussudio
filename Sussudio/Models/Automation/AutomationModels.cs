@@ -822,9 +822,6 @@ public sealed class PreviewRuntimeSnapshot
     public string? StartupAttemptId { get; init; }
     public double? StartupElapsedMs { get; init; }
     public int StartupTimeoutMs { get; init; }
-    public bool StartupGpuSignalMediaOpened { get; init; }
-    public bool StartupGpuSignalFirstFrame { get; init; }
-    public bool StartupGpuSignalPlaybackAdvancing { get; init; }
     public PreviewStartupSignalFlags StartupRequiredSignals { get; init; }
     public PreviewStartupSignalFlags StartupReceivedSignals { get; init; }
     public PreviewStartupStrategy StartupStrategy { get; init; }
@@ -938,8 +935,6 @@ public sealed class PreviewRuntimeSnapshot
     public string GpuPlaybackState { get; init; } = "None";
     public int GpuNaturalVideoWidth { get; init; }
     public int GpuNaturalVideoHeight { get; init; }
-    public double GpuPositionMs { get; init; }
-    public long GpuPositionEventCount { get; init; }
 }
 
 public sealed class PerformanceTimelineEntry

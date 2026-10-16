@@ -43,6 +43,47 @@
     <Compile Include="..\..\Sussudio\Controllers\Stats\FrameTimeGraphGeometry.cs" Link="Production\FrameTimeGraphGeometry.cs" />
     <Compile Include="..\..\Sussudio\Services\Preview\PreviewInputViewCache.cs" Link="Production\PreviewInputViewCache.cs" />
     <Compile Include="..\..\Sussudio\Controllers\ViewModel\PreviewAudioTransitionControllers.cs" Link="Production\PreviewAudioTransitionControllers.cs" />
+    <!-- Performance telemetry core: pure types with no WinUI, Win32 or logger dependency. -->
+    <Compile Include="..\..\Sussudio\Services\Performance\PerfHistogram.cs" Link="Production\PerfHistogram.cs" />
+    <Compile Include="..\..\Sussudio\Services\Performance\PerfCounter.cs" Link="Production\PerfCounter.cs" />
+    <Compile Include="..\..\Sussudio\Services\Performance\PerfRegistry.cs" Link="Production\PerfRegistry.cs" />
+    <Compile Include="..\..\Sussudio\Services\Performance\PerfWindowSet.cs" Link="Production\PerfWindowSet.cs" />
+    <Compile Include="..\..\Sussudio\Services\Performance\PerfMetrics.cs" Link="Production\PerfMetrics.cs" />
+    <Compile Include="..\..\Sussudio\Services\Performance\FrameTraceEventKind.cs" Link="Production\FrameTraceEventKind.cs" />
+    <Compile Include="..\..\Sussudio\Services\Performance\FrameTraceBuffer.cs" Link="Production\FrameTraceBuffer.cs" />
+    <Compile Include="..\..\Sussudio\Services\Performance\PerfMarkers.cs" Link="Production\PerfMarkers.cs" />
+    <Compile Include="..\..\Sussudio\Services\Performance\FrameTraceRecorder.cs" Link="Production\FrameTraceRecorder.cs" />
+    <Compile Include="..\..\Sussudio\Services\Performance\TuningKnobStore.cs" Link="Production\TuningKnobStore.cs" />
+    <Compile Include="..\..\Sussudio\Services\Performance\PerfExperimentLease.cs" Link="Production\PerfExperimentLease.cs" />
+    <Compile Include="..\..\Sussudio\Services\Performance\TuningKnobCatalog.cs" Link="Production\TuningKnobCatalog.cs" />
+    <Compile Include="..\..\Sussudio\Services\Performance\LogTapBuffer.cs" Link="Production\LogTapBuffer.cs" />
+    <Compile Include="..\..\Sussudio\Services\Performance\PerfIngressClock.cs" Link="Production\PerfIngressClock.cs" />
+    <Compile Include="..\..\Sussudio\Services\Performance\IngressClockClassifier.cs" Link="Production\IngressClockClassifier.cs" />
+    <Compile Include="..\..\Sussudio\Services\Performance\PerfIngressSamples.cs" Link="Production\PerfIngressSamples.cs" />
+    <Compile Include="..\..\Sussudio\Services\Performance\PerfReasons.cs" Link="Production\PerfReasons.cs" />
+    <Compile Include="..\..\Sussudio\Services\Performance\HotThreads.cs" Link="Production\HotThreads.cs" />
+    <Compile Include="..\..\Sussudio\Services\Performance\SensorDemand.cs" Link="Production\SensorDemand.cs" />
+    <Compile Include="..\..\Sussudio\Services\Performance\UiResponsivenessProbe.cs" Link="Production\UiResponsivenessProbe.cs" />
+    <Compile Include="..\..\Sussudio\Services\Performance\GpuEngineSensor.cs" Link="Production\GpuEngineSensor.cs" />
+    <Compile Include="..\..\Sussudio\Services\Performance\GpuTimestampRing.cs" Link="Production\GpuTimestampRing.cs" />
+    <Compile Include="..\..\Sussudio\Services\Performance\PerfDisplaySource.cs" Link="Production\PerfDisplaySource.cs" />
+    <!-- Agent hearing: pure audio analysis, the capture-delivery tap ring and the WAV writer (section 2.9). -->
+    <Compile Include="..\..\Sussudio\Services\Performance\AudioSignalAnalysis.cs" Link="Production\AudioSignalAnalysis.cs" />
+    <Compile Include="..\..\Sussudio\Services\Performance\AudioLatencyAnalysis.cs" Link="Production\AudioLatencyAnalysis.cs" />
+    <Compile Include="..\..\Sussudio\Services\Performance\AudioMonitorTap.cs" Link="Production\AudioMonitorTap.cs" />
+    <Compile Include="..\..\Sussudio\Services\Performance\AudioWavWriter.cs" Link="Production\AudioWavWriter.cs" />
+    <Compile Include="..\..\Sussudio\Services\Performance\AudioOutputProbeModels.cs" Link="Production\AudioOutputProbeModels.cs" />
+    <Compile Include="..\..\Sussudio\Services\Automation\UiAutomationModels.cs" Link="Production\UiAutomationModels.cs" />
+    <Compile Include="..\..\Sussudio\Services\Automation\UiTargetResolver.cs" Link="Production\UiTargetResolver.cs" />
+    <Compile Include="..\..\Sussudio\Services\Automation\UiActionPlanner.cs" Link="Production\UiActionPlanner.cs" />
+    <Compile Include="..\..\Sussudio\Services\Automation\UiSelectionMatcher.cs" Link="Production\UiSelectionMatcher.cs" />
+    <Compile Include="..\..\Sussudio\Services\Automation\UiVisibilityRules.cs" Link="Production\UiVisibilityRules.cs" />
+    <Compile Include="..\..\Sussudio\Services\Automation\UiDisplayMemberPath.cs" Link="Production\UiDisplayMemberPath.cs" />
+    <Compile Include="..\..\Sussudio\Services\Automation\UiSelectionVia.cs" Link="Production\UiSelectionVia.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Tool-side performance analysis (frame trace analyzer, experiment runner): pure code shared with ssctl and McpServer. -->
+    <Compile Include="..\..\tools\Common\Performance\*.cs" Link="Production\ToolsPerformance\%(Filename)%(Extension)" />
   </ItemGroup>
   <ItemGroup>
     <None Update="Fixtures\RecordingStructure\*.mp4" CopyToOutputDirectory="PreserveNewest" />

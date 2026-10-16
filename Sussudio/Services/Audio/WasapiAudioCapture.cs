@@ -1,9 +1,11 @@
 using System;
 using System.Buffers;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
+using Sussudio.Services.Performance;
 using Sussudio.Services.Recording;
 using Sussudio.Services.Runtime;
 using Sussudio.Services.Telemetry;
@@ -571,6 +573,7 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
                 WasapiComInterop.AudioMmcssTask,
                 WasapiComInterop.AudioMmcssPriority,
                 message => Logger.Log(message));
+            using var hotThread = HotThreads.Register("audio.capture", mmcss is not null);
             var captureEvent = _captureEvent;
             if (captureEvent == null)
             {
@@ -579,6 +582,8 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
 
             var waitHandle = captureEvent.SafeWaitHandle.DangerousGetHandle();
             var consecutiveWaitTimeouts = 0;
+            // QPC stamp of the previous capture event, local to this thread. A fresh worker starts without a baseline.
+            var lastEventTick = 0L;
             while (Volatile.Read(ref _stopRequested) == 0)
             {
                 var waitResult = WasapiComInterop.WaitForSingleObject(waitHandle, WaitTimeoutMs);
@@ -618,9 +623,22 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
 
                 try
                 {
+                    // Event interval and drain duration in QPC; the TickCount64 tracker below keeps feeding diagnostics
+                    // unchanged. Both ends sit outside any lock. Instances (HDMI and microphone) share the metrics.
+                    var eventTick = Stopwatch.GetTimestamp();
+                    if (lastEventTick != 0)
+                    {
+                        PerfMetrics.AudioCaptureInterval.RecordTicks(eventTick - lastEventTick);
+                    }
+
+                    lastEventTick = eventTick;
                     TrackCaptureCallback(Environment.TickCount64);
                     var framesBeforeDrain = Interlocked.Read(ref _audioFramesArrived);
+                    var drainStartTick = Stopwatch.GetTimestamp();
                     DrainCapturePackets();
+                    var drainTicks = Stopwatch.GetTimestamp() - drainStartTick;
+                    PerfMetrics.AudioCaptureDrain.RecordTicks(drainTicks);
+                    FrameTrace.Record(FrameTraceEventKind.AudioCapture, drainStartTick, drainTicks, -1);
                     if (Interlocked.Read(ref _audioFramesArrived) > framesBeforeDrain)
                     {
                         Volatile.Read(ref _recordingStartupReady)?.TrySetResult(true);
@@ -709,6 +727,9 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
                 var convertedBuffer = converted.Buffer;
                 RaiseAudioLevelIfDue(convertedBuffer.AsSpan(0, converted.Length));
 
+                // Before the handoff: once playback owns the buffer it may return it to the pool at any moment.
+                OfferToMonitorTap(convertedBuffer, converted.Length, flags);
+
                 handoffToPlayback = DispatchConvertedAudioPacket(converted);
             }
             finally
@@ -723,6 +744,23 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
                     "IAudioCaptureClient.ReleaseBuffer");
             }
         }
+    }
+
+    // Capture-delivery tap for CaptureAudioOutput latency measurement (performance-telemetry.md section 2.9). Only a capture
+    // that feeds a preview playback is the program audio the probe correlates against, so the microphone instance never
+    // offers. Disarmed cost: one volatile read of the static tap reference. Armed: a stamp and a copy into the
+    // preallocated ring, no lock and no allocation.
+    private void OfferToMonitorTap(byte[] convertedBuffer, int convertedLength, uint packetFlags)
+    {
+        if (!AudioMonitorTap.IsArmed || Volatile.Read(ref _playback) is null)
+        {
+            return;
+        }
+
+        AudioMonitorTap.Offer(
+            MemoryMarshal.Cast<byte, float>(convertedBuffer.AsSpan(0, convertedLength)),
+            Stopwatch.GetTimestamp(),
+            packetFlags);
     }
 
     private ConvertedAudioPacket ConvertToOutputFormat(IntPtr dataPtr, int inputFrames, bool silent)

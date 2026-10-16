@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using FFmpeg.AutoGen;
 using Sussudio.Models;
+using Sussudio.Services.Automation;
 
 namespace Sussudio.Services.Contracts
 {
@@ -33,6 +34,8 @@ namespace Sussudio.Services.Contracts
         Task ResizeToAsync(int width, int height, CancellationToken cancellationToken = default);
         Task SnapToRegionAsync(AutomationWindowAction region, CancellationToken cancellationToken = default);
         Task<WindowScreenshotResult> CaptureWindowScreenshotAsync(string outputPath, CancellationToken cancellationToken = default);
+        Task<UiTreeResult> GetUiTreeAsync(UiTreeRequest request, CancellationToken cancellationToken = default);
+        Task<UiInvokeResult> InvokeUiElementAsync(UiInvokeRequest request, CancellationToken cancellationToken = default);
     }
 
     // Diagnostics facade consumed by the command dispatcher and MCP/ssctl tools.
@@ -140,9 +143,7 @@ namespace Sussudio.Services.Contracts
 
     public readonly record struct GpuPipelineHandles(
         IntPtr D3D11DevicePtr,
-        IntPtr D3D11DeviceContextPtr,
-        IntPtr CudaHwDeviceCtxPtr,
-        IntPtr CudaHwFramesCtxPtr)
+        IntPtr D3D11DeviceContextPtr)
     {
         public static GpuPipelineHandles None => default;
     }
@@ -197,8 +198,6 @@ namespace Sussudio.Services.Contracts
 
         public IntPtr D3D11DevicePtr => GpuHandles.D3D11DevicePtr;
         public IntPtr D3D11DeviceContextPtr => GpuHandles.D3D11DeviceContextPtr;
-        public IntPtr CudaHwDeviceCtxPtr => GpuHandles.CudaHwDeviceCtxPtr;
-        public IntPtr CudaHwFramesCtxPtr => GpuHandles.CudaHwFramesCtxPtr;
     }
 
     // Shared P010 boundary check so the HDR pipeline's "is this stream P010" test
@@ -369,10 +368,12 @@ namespace Sussudio.Services.Contracts
     /// Accepted work retains the callee's own AddRef until consumption or cleanup.
     /// Rejected admission releases any reference the callee acquired. The caller
     /// keeps its own reference until return and may release it after either normal return.
+    /// <paramref name="arrivalTick"/> is the frame's arrival QPC tick (the id the frame trace uses for the frame), or -1
+    /// when the caller has none; the sink carries it to its queue-dwell and encode-submit trace events.
     /// </summary>
     public interface IGpuVideoFrameTryEncoder
     {
-        bool TryEnqueueGpuVideoFrame(IntPtr d3d11Texture2D, int subresourceIndex);
+        bool TryEnqueueGpuVideoFrame(IntPtr d3d11Texture2D, int subresourceIndex, long arrivalTick = -1);
     }
 
     public interface IRawVideoFrameTryEncoder

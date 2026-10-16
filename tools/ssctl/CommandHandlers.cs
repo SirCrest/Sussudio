@@ -9,7 +9,7 @@ namespace Sussudio.Tools.Ssctl;
 // parsing, command payload shape, human-readable output, and the ssctl-specific
 // transport envelope policy together while leaving shared pipe details in
 // AutomationPipeClient.
-internal static class CommandHandlers
+internal static partial class CommandHandlers
 {
     public static Task<int> ExecuteAsync(
         PipeTransport transport,
@@ -45,6 +45,12 @@ internal static class CommandHandlers
             "frametime" or "frame-time" => HandleFrameTimeAsync(context),
             "settings" => HandleSettingsAsync(context),
             "flashback" => HandleFlashbackAsync(context),
+            "perf" => HandlePerfAsync(context),
+            "knobs" => HandleKnobsAsync(context),
+            "knob" => HandleKnobAsync(context),
+            "log" => HandleLogAsync(context),
+            "audio" => HandleAudioAsync(context),
+            "ui" => HandleUiAsync(context),
             _ => throw new UsageException($"Unknown command '{arguments[0]}'.")
         };
     }

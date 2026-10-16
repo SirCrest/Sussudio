@@ -246,9 +246,7 @@ public partial class CaptureService
                 IsFullRangeInput = isMjpegMode,
                 GpuHandles = new GpuPipelineHandles(
                     isMjpegMode ? IntPtr.Zero : (d3dManager?.Device.NativePointer ?? IntPtr.Zero),
-                    isMjpegMode ? IntPtr.Zero : (d3dManager?.ImmediateContext.NativePointer ?? IntPtr.Zero),
-                    IntPtr.Zero,
-                    IntPtr.Zero)
+                    isMjpegMode ? IntPtr.Zero : (d3dManager?.ImmediateContext.NativePointer ?? IntPtr.Zero))
             }).ConfigureAwait(false);
     }
 
@@ -1482,10 +1480,9 @@ public partial class CaptureService
             EncoderDroppedFrames: sink.VideoEncoderDroppedFrames,
             QueueDroppedFrames: SumNonNegative(
                 sink.VideoDropsQueueSaturated,
-                sink.GpuFramesDropped,
-                sink.CudaFramesDropped),
+                sink.GpuFramesDropped),
             SequenceGaps: sink.VideoSequenceGaps,
-            QueueMaxDepth: Math.Max(sink.VideoQueueMaxDepth, Math.Max(sink.GpuQueueMaxDepth, sink.CudaQueueMaxDepth)),
+            QueueMaxDepth: Math.Max(sink.VideoQueueMaxDepth, sink.GpuQueueMaxDepth),
             QueueOldestFrameAgeMs: sink.VideoQueueOldestFrameAgeMs,
             BackpressureWaitMs: sink.VideoBackpressureWaitMs,
             BackpressureEvents: sink.VideoBackpressureEvents,

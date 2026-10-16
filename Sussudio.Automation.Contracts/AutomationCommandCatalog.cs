@@ -94,7 +94,18 @@ namespace Sussudio.Models
         SelectMicrophoneDevice = 54,
         SetMicrophoneVolume = 55,
         SetFlashbackBufferMinutes = 56,
-        SetFlashbackGpuDecode = 57
+        SetFlashbackGpuDecode = 57,
+        GetPerfReport = 58,
+        PerfWindow = 59,
+        AddPerfMarker = 60,
+        FrameTrace = 61,
+        GetTuningKnobs = 62,
+        SetTuningKnob = 63,
+        GetLogTail = 64,
+        CaptureAudioOutput = 65,
+        GetUiTree = 66,
+        InvokeUiElement = 67,
+        PerfExperimentLease = 68
     }
 }
 
@@ -109,23 +120,35 @@ namespace Sussudio.Tools
         public const string Assertions = "assertions";
         public const string AuthToken = "authToken";
         public const string BitrateMbps = "bitrateMbps";
+        public const string Capacity = "capacity";
         public const string Condition = "condition";
+        public const string Contains = "contains";
         public const string DecoderCount = "decoderCount";
         public const string DeviceId = "deviceId";
         public const string DeviceName = "deviceName";
         public const string Enabled = "enabled";
+        public const string Exclude = "exclude";
         public const string Field = "field";
         public const string FilePath = "filePath";
+        public const string Filter = "filter";
         public const string Force = "force";
         public const string Format = "format";
         public const string FrameRate = "frameRate";
         public const string Gain = "gain";
         public const string Height = "height";
+        public const string Holder = "holder";
+        public const string IncludeIdle = "includeIdle";
+        public const string InteractiveOnly = "interactiveOnly";
+        public const string Knobs = "knobs";
+        public const string Lease = "lease";
+        public const string MaxDepth = "maxDepth";
         public const string MaxEntries = "maxEntries";
         public const string MaxEvents = "maxEvents";
+        public const string MeasureLatency = "measureLatency";
         public const string MicrophoneVolumePercent = "microphoneVolumePercent";
         public const string Minutes = "minutes";
         public const string Mode = "mode";
+        public const string Name = "name";
         public const string Op = "op";
         public const string OutputPath = "outputPath";
         public const string PollMs = "pollMs";
@@ -133,17 +156,23 @@ namespace Sussudio.Tools
         public const string Preset = "preset";
         public const string PreviewVolumePercent = "previewVolumePercent";
         public const string Quality = "quality";
+        public const string Reset = "reset";
         public const string Resolution = "resolution";
+        public const string Root = "root";
         public const string Seconds = "seconds";
         public const string Section = "section";
         public const string SplitEncodeMode = "splitEncodeMode";
+        public const string Target = "target";
+        public const string Text = "text";
         public const string TimeoutMs = "timeoutMs";
+        public const string TtlSeconds = "ttlSeconds";
         public const string UseSelectionRange = "useSelectionRange";
         public const string Value = "value";
         public const string VerificationProfile = "verificationProfile";
         public const string VideoFormat = "videoFormat";
         public const string Visible = "visible";
         public const string Width = "width";
+        public const string Window = "window";
         public const string X = "x";
         public const string Y = "y";
     }
@@ -406,6 +435,8 @@ namespace Sussudio.Tools
             RegisterUiEntries(entries);
             RegisterFlashbackEntries(entries);
             RegisterVerificationEntries(entries);
+            RegisterPerfTelemetryEntries(entries);
+            RegisterAgentSenseEntries(entries);
 
             return entries.Values.ToArray();
         }
@@ -486,6 +517,25 @@ namespace Sussudio.Tools
         {
             Set(entries, AutomationCommandKind.VerifyLastRecording, "{}", ready: false, timeoutMs: AutomationPipeProtocol.ExtendedResponseTimeoutMs, pathPolicy: AutomationCommandPathPolicy.None, "verify", "Verify the last recording.");
             Set(entries, AutomationCommandKind.VerifyFile, "{ filePath: string, verificationProfile?: string }", ready: false, timeoutMs: AutomationPipeProtocol.ExtendedResponseTimeoutMs, pathPolicy: AutomationCommandPathPolicy.ReadFile, "verify <path> [--profile NAME]", "Verify an arbitrary media file.", Required(AutomationPayloadKeys.FilePath, AutomationPayloadFieldType.String), Optional(AutomationPayloadKeys.VerificationProfile, AutomationPayloadFieldType.String));
+        }
+
+        private static void RegisterPerfTelemetryEntries(Dictionary<AutomationCommandKind, AutomationCommandMetadata> entries)
+        {
+            Set(entries, AutomationCommandKind.GetPerfReport, "{ window?: string, filter?: string, includeIdle?: bool }", ready: false, timeoutMs: DefaultTimeout, pathPolicy: AutomationCommandPathPolicy.None, "perf report [--window NAME] [--filter PREFIX] [--idle]", "Get the performance report: latency histograms, counters, hot-thread CPU, process, GC, DWM and active tuning overrides. Without window it covers the whole process lifetime; with window it returns the delta since that window began without closing it. filter is a metric-name prefix; metrics with no samples are omitted unless includeIdle is true.", Optional(AutomationPayloadKeys.Window, AutomationPayloadFieldType.String), Optional(AutomationPayloadKeys.Filter, AutomationPayloadFieldType.String), Optional(AutomationPayloadKeys.IncludeIdle, AutomationPayloadFieldType.Boolean));
+            Set(entries, AutomationCommandKind.PerfWindow, "{ action: string, name?: string }", ready: false, timeoutMs: DefaultTimeout, pathPolicy: AutomationCommandPathPolicy.None, "perf window begin|read|end|cancel|list [NAME]", "Manage named performance measurement windows (up to 16). action is begin, read, end, cancel or list. begin starts or restarts a window, read returns its report without closing it, end returns the report and closes it, cancel discards it, list shows open windows. name is required except for list.", Required(AutomationPayloadKeys.Action, AutomationPayloadFieldType.String), Optional(AutomationPayloadKeys.Name, AutomationPayloadFieldType.String));
+            Set(entries, AutomationCommandKind.AddPerfMarker, "{ text: string }", ready: false, timeoutMs: DefaultTimeout, pathPolicy: AutomationCommandPathPolicy.None, "perf mark <text>", "Add an annotation to the performance timeline, recorded with the time it was added; it appears in perf reports and in frame trace dumps.", Required(AutomationPayloadKeys.Text, AutomationPayloadFieldType.String));
+            Set(entries, AutomationCommandKind.FrameTrace, "{ action: string, capacity?: int, outputPath?: string }", ready: false, timeoutMs: AutomationPipeProtocol.ExtendedResponseTimeoutMs, pathPolicy: AutomationCommandPathPolicy.WriteFile, "perf trace start [--capacity N]|stop|status|dump [path]", "Control the frame trace flight recorder (off by default). action is start, stop, status or dump. start allocates the ring (capacity is rounded to a power of two between 4096 and 4194304 events), stop freezes it, status reports it, dump writes Chrome Trace Event JSON that Perfetto opens; dump without outputPath writes to a temporary file and returns its path.", Required(AutomationPayloadKeys.Action, AutomationPayloadFieldType.String), Optional(AutomationPayloadKeys.Capacity, AutomationPayloadFieldType.Integer), Optional(AutomationPayloadKeys.OutputPath, AutomationPayloadFieldType.String));
+            Set(entries, AutomationCommandKind.GetTuningKnobs, "{ filter?: string }", ready: false, timeoutMs: DefaultTimeout, pathPolicy: AutomationCommandPathPolicy.None, "knobs [FILTER]", "List the SUSSUDIO_* tuning knobs with type, default, range, current and launch value, owner file and when a change takes effect. filter is a case-insensitive substring of the knob name.", Optional(AutomationPayloadKeys.Filter, AutomationPayloadFieldType.String));
+            Set(entries, AutomationCommandKind.SetTuningKnob, "{ name: string, value?: string, reset?: bool, lease?: string }", ready: false, timeoutMs: DefaultTimeout, pathPolicy: AutomationCommandPathPolicy.None, "knob set <name> <value> | knob reset <name>", "Set a tuning knob (process environment variable) or, with reset true, restore its launch value. Values of the wrong type or outside the range are rejected, never clamped. The response states what must restart for the change to take effect; overrides are not persisted. While a perf experiment holds the knob (PerfExperimentLease), the change is refused with invalid-state unless lease is that experiment's lease id.", Required(AutomationPayloadKeys.Name, AutomationPayloadFieldType.String), Optional(AutomationPayloadKeys.Value, AutomationPayloadFieldType.String), Optional(AutomationPayloadKeys.Reset, AutomationPayloadFieldType.Boolean), Optional(AutomationPayloadKeys.Lease, AutomationPayloadFieldType.String));
+            Set(entries, AutomationCommandKind.GetLogTail, "{ maxEntries?: int, contains?: string, exclude?: string }", ready: false, timeoutMs: DefaultTimeout, pathPolicy: AutomationCommandPathPolicy.None, "log tail [--max N] [--contains TEXT] [--exclude TEXT]", "Get the most recent app log lines (up to 4096 retained) plus per-caller and per-tag line counts for spotting log spam. contains keeps only lines with that text and exclude drops lines with that text, both case-insensitive substrings; maxEntries counts the lines kept, so excluded spam does not use it up.", Optional(AutomationPayloadKeys.MaxEntries, AutomationPayloadFieldType.Integer), Optional(AutomationPayloadKeys.Contains, AutomationPayloadFieldType.String), Optional(AutomationPayloadKeys.Exclude, AutomationPayloadFieldType.String));
+            Set(entries, AutomationCommandKind.PerfExperimentLease, "{ action: string, lease?: string, holder?: string, knobs?: array, ttlSeconds?: int, force?: bool }", ready: false, timeoutMs: DefaultTimeout, pathPolicy: AutomationCommandPathPolicy.None, "perf lease [status|release --force]", "The perf experiment lease: one experiment at a time holds the tuning knobs it varies. action is status, acquire, renew or release. acquire takes lease (the client's own id, 1 to 64 characters), holder (who runs the experiment, 1 to 200 characters), knobs (names) and ttlSeconds (10 to 600, default 60); it is refused with invalid-state while another experiment holds the lease, and a retry with the same id renews it. While the lease is held, SetTuningKnob refuses its knobs without the lease id. renew moves the expiry; a holder that stops renewing loses the lease at expiry and the app restores every leased knob to its value when the lease began. release with the holder's id frees the lease and leaves the knobs alone; force ends anyone's lease and restores its knobs. ssctl perf experiment and MCP run_perf_experiment take, renew and release it themselves.", Required(AutomationPayloadKeys.Action, AutomationPayloadFieldType.String), Optional(AutomationPayloadKeys.Lease, AutomationPayloadFieldType.String), Optional(AutomationPayloadKeys.Holder, AutomationPayloadFieldType.String), Optional(AutomationPayloadKeys.Knobs, AutomationPayloadFieldType.Array), Optional(AutomationPayloadKeys.TtlSeconds, AutomationPayloadFieldType.Integer), Optional(AutomationPayloadKeys.Force, AutomationPayloadFieldType.Boolean));
+        }
+
+        private static void RegisterAgentSenseEntries(Dictionary<AutomationCommandKind, AutomationCommandMetadata> entries)
+        {
+            Set(entries, AutomationCommandKind.CaptureAudioOutput, "{ seconds?: double, outputPath?: string, measureLatency?: bool }", ready: false, timeoutMs: AutomationPipeProtocol.ExtendedResponseTimeoutMs, pathPolicy: AutomationCommandPathPolicy.WriteFile, "audio listen [--seconds N] [--wav PATH] [--latency]", "Listen to what Sussudio actually renders: records the app's own audio output (Windows process loopback, mixed before the endpoint) for seconds (0.5 to 30, default 5) and returns an analysis (RMS and peak dBFS per channel, clipping, clicks, dropouts, packet discontinuities, verdict). outputPath writes the captured audio as a float WAV. measureLatency also estimates capture-delivery-to-mixer latency by correlating the capture-delivery tap with the loopback signal; it excludes device input latency and endpoint output latency. Silent output is reported as status no-audio-rendered, never as a pass.", Optional(AutomationPayloadKeys.Seconds, AutomationPayloadFieldType.Number), Optional(AutomationPayloadKeys.OutputPath, AutomationPayloadFieldType.String), Optional(AutomationPayloadKeys.MeasureLatency, AutomationPayloadFieldType.Boolean));
+            Set(entries, AutomationCommandKind.GetUiTree, "{ root?: string, maxDepth?: int, interactiveOnly?: bool }", ready: false, timeoutMs: AutomationPipeProtocol.ExtendedResponseTimeoutMs, pathPolicy: AutomationCommandPathPolicy.None, "ui tree [--root NAME] [--depth N] [--all]", "Read the live WinUI visual tree (window content plus open popups and flyouts) as JSON: per element the type, x:Name, AutomationId, automation name, visible text, enabled state, effective visibility, toggle state, range value, selected item, expand state, bounds in window DIPs, supported automation patterns and keyboard accelerators. root limits the walk to one element, resolved like an invoke target (x:Name, AutomationId, automation name, visible text or a path from an earlier tree); maxDepth bounds depth (1 to 64, default 10); interactiveOnly (default true) lists only elements that expose an operable automation pattern (buttons, toggles, sliders, text boxes, selectors, expanders) without the layout containers around them, and false lists every element. The node count is capped and the response says when it truncated.", Optional(AutomationPayloadKeys.Root, AutomationPayloadFieldType.String), Optional(AutomationPayloadKeys.MaxDepth, AutomationPayloadFieldType.Integer), Optional(AutomationPayloadKeys.InteractiveOnly, AutomationPayloadFieldType.Boolean));
+            Set(entries, AutomationCommandKind.InvokeUiElement, "{ target: string, action?: string, value?: string, force?: bool }", ready: false, timeoutMs: AutomationPipeProtocol.ExtendedResponseTimeoutMs, pathPolicy: AutomationCommandPathPolicy.None, "ui invoke <target> [action] [value] [--force]", "Operate a UI control through its automation peer. target is resolved by x:Name, then AutomationId, then automation name, then visible text; an ambiguous target is rejected with the candidate paths. action is invoke (default for buttons), toggle, set-value, select, expand, collapse, focus or scroll-into-view; the action must be supported by the element. Hidden or disabled elements are rejected unless force is true. The response carries the element state re-read after the action. Keyboard accelerators cannot be raised through a public API: invoke the element that owns the accelerator instead.", Required(AutomationPayloadKeys.Target, AutomationPayloadFieldType.String), Optional(AutomationPayloadKeys.Action, AutomationPayloadFieldType.String), Optional(AutomationPayloadKeys.Value, AutomationPayloadFieldType.String), Optional(AutomationPayloadKeys.Force, AutomationPayloadFieldType.Boolean));
         }
 
         private static int DefaultTimeout => AutomationPipeProtocol.DefaultResponseTimeoutMs;

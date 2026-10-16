@@ -11,7 +11,22 @@ internal static class AutomationSnapshotRegressionFixture
 {
     private const BindingFlags InstanceMembers = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
     private static readonly DateTimeOffset FixtureTime = new(2026, 9, 12, 0, 0, 0, TimeSpan.Zero);
-    private static readonly string[] RetiredCaptureRuntimeFixtureFields = { "MuxAttempted", "MuxSucceeded" };
+    // Fields removed since the fixtures were captured, in ordinal order per input type. Each still consumes its sequence
+    // number so every remaining populated value matches the captured JSON.
+    private static readonly Dictionary<string, string[]> RetiredFixtureFields = new(StringComparer.Ordinal)
+    {
+        ["Sussudio.Models.CaptureRuntimeSnapshot"] = new[] { "MuxAttempted", "MuxSucceeded" },
+        ["Sussudio.Models.CaptureHealthSnapshot"] = new[]
+        {
+            "RecordingCudaFramesDropped", "RecordingCudaFramesEnqueued", "RecordingCudaQueueCapacity",
+            "RecordingCudaQueueDepth", "RecordingCudaQueueMaxDepth"
+        },
+        ["Sussudio.Models.PreviewRuntimeSnapshot"] = new[]
+        {
+            "GpuPositionEventCount", "GpuPositionMs",
+            "StartupGpuSignalFirstFrame", "StartupGpuSignalMediaOpened", "StartupGpuSignalPlaybackAdvancing"
+        },
+    };
 
     internal static JsonElement BuildResult(Assembly assembly, bool populated, object? healthOverride = null)
     {
@@ -123,8 +138,8 @@ internal static class AutomationSnapshotRegressionFixture
         var instance = Empty(type)!;
         var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
             .OrderBy(property => property.Name, StringComparer.Ordinal).ToArray();
-        var retiredFields = type.FullName == "Sussudio.Models.CaptureRuntimeSnapshot"
-            ? RetiredCaptureRuntimeFixtureFields
+        var retiredFields = type.FullName is not null && RetiredFixtureFields.TryGetValue(type.FullName, out var retired)
+            ? retired
             : Array.Empty<string>();
         var retiredFieldIndex = 0;
         foreach (var property in properties)

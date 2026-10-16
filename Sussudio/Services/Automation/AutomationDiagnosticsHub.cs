@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
@@ -19,13 +18,6 @@ public sealed partial class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
 {
     private readonly IAutomationSnapshotQueryPort _snapshotQueryPort;
     private readonly Func<CancellationToken, Task<PreviewRuntimeSnapshot>> _previewSnapshotProvider;
-
-    /// <summary>
-    /// Optional cheap epoch probe for the preview runtime producer. When set, the
-    /// before/after producer-change check reads the epoch instead of building the
-    /// whole preview snapshot (percentile passes over the renderer's sample rings) twice more per tick.
-    /// </summary>
-    public Func<CancellationToken, Task<long>>? PreviewRuntimeEpochProvider { get; set; }
     private readonly RecordingVerifier _recordingVerifier;
     private readonly object _stateLock = new();
     private readonly List<DiagnosticsEvent> _recentEvents = new();
@@ -52,16 +44,23 @@ public sealed partial class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
 
     // Fixed-size timeline ring used by long diagnostic sessions. It keeps the
     // last few minutes of high-level performance evidence in memory without
-    // requiring every poll to become an unbounded event.
+    // requiring every poll to become an unbounded event. Only poll ticks append,
+    // so it is a cadence timeline: one entry per poll interval, whatever the
+    // clients read in between (see SnapshotRefreshKind).
     private readonly PerformanceTimelineEntry[] _timelineBuffer = new PerformanceTimelineEntry[TimelineCapacity];
     private int _timelineHead;
     private int _timelineCount;
-    private readonly Process _currentProcess = Process.GetCurrentProcess();
     private long _lastProcessCpuSampleTimestamp;
     private double _lastProcessCpuTotalMs;
+    private HubProcessCounters.Reading _lastGoodProcessCounters;
+    private double _lastProcessCpuPercent;
 
     private const int MaxRecentEvents = 500;
-    private const int PollIntervalMs = 500;
+    // Live tuning knob (see TuningKnobCatalog): read again each tick so a runtime change applies on the next delay.
+    private const string PollIntervalEnvVar = "SUSSUDIO_DIAGNOSTICS_POLL_MS";
+    private const int DefaultPollIntervalMs = 500;
+    private const int MinPollIntervalMs = 100;
+    private const int MaxPollIntervalMs = 10000;
     private const int LowSignalMuteThresholdMs = 8000;
     private const int RecordingNoGrowthThresholdMs = 4000;
     private const double AudioSignalThreshold = 0.008;
@@ -172,15 +171,10 @@ public sealed partial class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         // 12 s: StopAsync has two consecutive 5 s Task.WhenAny waits internally
         // (loopTask + autoVerificationTask), so 12 s covers both with margin.
         // Callers that need deterministic teardown should call DisposeAsync.
-        var stoppedCleanly = false;
         try
         {
             var stop = Task.Run(() => StopAsync());
-            if (stop.Wait(TimeSpan.FromSeconds(12)))
-            {
-                stoppedCleanly = true;
-            }
-            else
+            if (!stop.Wait(TimeSpan.FromSeconds(12)))
             {
                 Logger.Log("DIAGHUB_DISPOSE_TIMEOUT msg='StopAsync did not complete within 12 s; abandoning'");
             }
@@ -188,21 +182,6 @@ public sealed partial class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         catch (Exception ex)
         {
             Logger.Log($"DIAGHUB_DISPOSE_FAULT type={ex.GetType().Name} msg='{ex.Message}'");
-        }
-
-        if (stoppedCleanly)
-        {
-            _currentProcess.Dispose();
-        }
-        else
-        {
-            // StopAsync did not complete within the budget; the abandoned RunLoopAsync
-            // may still call _currentProcess.Refresh() / WorkingSet64. Disposing the
-            // handle here would race with those reads and produce ObjectDisposedException
-            // churn on the loop thread. Skip the dispose; the kernel reclaims the
-            // process handle when the host process exits (Dispose is only invoked from
-            // teardown paths, so the leak is bounded).
-            Logger.Log("DIAGHUB_DISPOSE_SKIPPED_PROCESS_HANDLE reason=stop_timeout");
         }
     }
 
@@ -215,7 +194,6 @@ public sealed partial class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
 
         _disposed = true;
         await StopAsync().ConfigureAwait(false);
-        _currentProcess.Dispose();
     }
 
     private async Task RunLoopAsync(CancellationToken cancellationToken)
@@ -224,7 +202,7 @@ public sealed partial class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         {
             try
             {
-                await RefreshSnapshotAsync(cancellationToken).ConfigureAwait(false);
+                await RefreshSnapshotAsync(SnapshotRefreshKind.PollTick, cancellationToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
@@ -238,7 +216,7 @@ public sealed partial class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
 
             try
             {
-                await Task.Delay(PollIntervalMs, cancellationToken).ConfigureAwait(false);
+                await Task.Delay(EnvironmentHelpers.GetIntFromEnv(PollIntervalEnvVar, DefaultPollIntervalMs, MinPollIntervalMs, MaxPollIntervalMs), cancellationToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {

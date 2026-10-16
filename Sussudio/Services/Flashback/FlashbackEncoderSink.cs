@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -8,6 +9,7 @@ using System.Threading.Channels;
 using System.Threading.Tasks;
 using Sussudio.Services.Contracts;
 using Sussudio.Models;
+using Sussudio.Services.Performance;
 using Sussudio.Services.Preview;
 using Sussudio.Services.Recording;
 using Sussudio.Services.Runtime;
@@ -41,7 +43,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameTryEn
 
     private readonly object _sync = new();
     private readonly object _videoQueueSync = new();
-    private readonly LibAvEncoder _encoder = new();
+    private readonly LibAvEncoder _encoder = new(EncoderPerfMetrics.Flashback);
     private readonly Func<string, RotateOutputResult>? _rotateOutputOverride;
     private readonly FlashbackBufferManager _bufferManager;
     private readonly ManualResetEventSlim _workAvailable = new(false, 100);
@@ -1261,7 +1263,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameTryEn
         return false;
     }
 
-    public bool TryEnqueueGpuVideoFrame(IntPtr d3d11Texture2D, int subresourceIndex)
+    public bool TryEnqueueGpuVideoFrame(IntPtr d3d11Texture2D, int subresourceIndex, long arrivalTick = -1)
     {
         var queue = _gpuQueue;
         var rejectReason = GetGpuInputRejectReason(queue, d3d11Texture2D);
@@ -1279,7 +1281,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameTryEn
         }
 
         Marshal.AddRef(d3d11Texture2D);
-        var packet = new GpuFramePacket(d3d11Texture2D, subresourceIndex);
+        var packet = new GpuFramePacket(d3d11Texture2D, subresourceIndex) { EnqueueQpc = Stopwatch.GetTimestamp(), ArrivalTick = arrivalTick };
         var enqueueResult = TryEnqueueGpuPacket(queue!, packet);
         if (enqueueResult != VideoEnqueueResult.Overloaded)
         {
@@ -1636,8 +1638,12 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameTryEn
 
     private readonly record struct VideoFramePacket(byte[]? Buffer, PooledVideoFrameLease? Lease, int Length, long EnqueueTick, long? SequenceNumber, bool IsP010)
     {
-        public static VideoFramePacket Frame(byte[] buffer, int length, long enqueueTick, bool isP010) => new(buffer, null, length, enqueueTick, null, isP010);
-        public static VideoFramePacket Frame(PooledVideoFrameLease lease, long enqueueTick) => new(null, lease, lease.Length, enqueueTick, lease.SequenceNumber, lease.PixelFormat == PooledVideoPixelFormat.P010);
+        // QPC enqueue stamp for the queue_dwell metric, stamped by the factories beside the TickCount64 EnqueueTick.
+        // Zero means unstamped (a packet built without the factories) and is skipped by the metric.
+        public long EnqueueQpc { get; init; }
+
+        public static VideoFramePacket Frame(byte[] buffer, int length, long enqueueTick, bool isP010) => new(buffer, null, length, enqueueTick, null, isP010) { EnqueueQpc = Stopwatch.GetTimestamp() };
+        public static VideoFramePacket Frame(PooledVideoFrameLease lease, long enqueueTick) => new(null, lease, lease.Length, enqueueTick, lease.SequenceNumber, lease.PixelFormat == PooledVideoPixelFormat.P010) { EnqueueQpc = Stopwatch.GetTimestamp() };
     }
 
     private enum VideoEnqueueResult
@@ -1648,7 +1654,14 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameTryEn
     }
 
     private readonly record struct AudioSamplePacket(byte[] Buffer, int Length);
-    private readonly record struct GpuFramePacket(IntPtr Texture, int Subresource);
+    private readonly record struct GpuFramePacket(IntPtr Texture, int Subresource)
+    {
+        // QPC enqueue stamp for queue_dwell and the frame's arrival tick (the frame-trace id); init properties so the
+        // packet keeps its original constructor. An unset arrival tick is read as -1 (no frame identity).
+        public long EnqueueQpc { get; init; }
+
+        public long ArrivalTick { get; init; }
+    }
     private sealed class RecordingBoundaryFence
     {
         private const long UnresolvedPtsTicks = long.MinValue;
@@ -1922,6 +1935,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameTryEn
                 EncodeMmcssTask,
                 EncodeMmcssPriority,
                 message => Logger.Log(message));
+            using var hotThread = HotThreads.Register("flashback.encode", mmcss is not null);
             var videoQueue = _videoQueue ?? throw new InvalidOperationException("Video queue is not initialized.");
             var audioQueue = _audioQueue ?? throw new InvalidOperationException("Audio queue is not initialized.");
             var microphoneQueue = _microphoneQueue;
@@ -2106,6 +2120,10 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameTryEn
             }
 
             _videoLatencyTracker.RecordPacketDequeued(packet.EnqueueTick, packet.SequenceNumber);
+            // Telemetry runs here, after _videoQueueSync is released. The trace id is the frame arrival timestamp when
+            // the packet carries a lease (the raw-buffer overload has none, so -1).
+            var perfFrameId = packet.Lease?.ArrivalTick ?? -1;
+            EncoderPerfMetrics.Flashback.RecordQueueDwell(packet.EnqueueQpc, perfFrameId);
             try
             {
                 var expectedFrameSize = PooledVideoFrame.GetFrameSizeBytes(w, h, packet.IsP010);
@@ -2123,6 +2141,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameTryEn
                 var frameData = packet.Lease != null
                     ? packet.Lease.Memory.Span
                     : packet.Buffer!.AsSpan(0, packet.Length);
+                _encoder.PerfFrameId = perfFrameId;
                 _encoder.SendVideoFrame(frameData, w, h);
                 Interlocked.Increment(ref _videoFramesSubmittedToEncoder);
                 var pts = AdvanceEncodedVideoFrameAndGetPts();
@@ -2147,8 +2166,12 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameTryEn
         while (drainedCount < maxPackets && reader.TryRead(out var packet))
         {
             DecrementQueueDepth(ref _gpuQueueDepth, "gpu");
+            // The trace id is the frame's arrival tick when the producer supplied it, otherwise -1.
+            var perfFrameId = packet.ArrivalTick > 0 ? packet.ArrivalTick : -1;
+            EncoderPerfMetrics.Flashback.RecordQueueDwell(packet.EnqueueQpc, perfFrameId);
             try
             {
+                _encoder.PerfFrameId = perfFrameId;
                 _encoder.SendGpuVideoFrame(packet.Texture, packet.Subresource);
                 Interlocked.Increment(ref _videoFramesSubmittedToEncoder);
                 var pts = AdvanceEncodedVideoFrameAndGetPts();
@@ -2307,6 +2330,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameTryEn
 
     private bool RotateSegment(TimeSpan currentPts, string? preparedPath = null)
     {
+        // Spans the whole rotation on every exit: success, a retained-output failure and the terminal rethrow.
+        using var rotationScope = new PerfScope(PerfMetrics.FlashbackSegmentRotation, FrameTraceEventKind.FlashbackSegmentRotation);
         var completedPath = _tsFilePath;
         var completedStartPts = _segmentStartPts;
         var completedStartBytes = Interlocked.Read(ref _segmentStartBytes);

@@ -14,7 +14,9 @@ using Microsoft.UI.Xaml.Media.Animation;
 using Sussudio.Controllers;
 using Sussudio.Models;
 using Sussudio.Services.Audio;
+using Sussudio.Services.Automation;
 using Sussudio.Services.Gpu;
+using Sussudio.Services.Performance;
 using Sussudio.Services.Preview;
 using Sussudio.ViewModels;
 
@@ -28,6 +30,11 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private readonly DispatcherQueue _dispatcherQueue;
     private readonly WindowAutomationHostLifecycleController _automationHostLifecycleController;
     private NvmlMonitor? _nvmlMonitor;
+
+    // The UI responsiveness probe re-enqueues one Action every 100 ms while perf demand lasts; converting it to the
+    // dispatcher's delegate type once keeps that enqueue allocation-free. Only the probe thread touches these two.
+    private Action? _telemetryProbeAction;
+    private DispatcherQueueHandler? _telemetryProbeHandler;
     private FullScreenController _fullScreenController = null!;
     private WindowShutdownCleanupController _windowShutdownCleanupController = null!;
     private int _wasapiEmergencyCloseStarted;
@@ -58,11 +65,11 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         InitializeWindowTitleController();
         ApplyWindowTitle();
         _nvmlMonitor = new NvmlMonitor();
+        TelemetrySensors.Configure(TryEnqueueTelemetryProbe, new NvmlDemandSensor(_nvmlMonitor));
         _automationHostLifecycleController = new WindowAutomationHostLifecycleController(
             ViewModel,
             GetPreviewRuntimeSnapshotAsync,
             this);
-        _automationHostLifecycleController.PreviewRuntimeEpochProvider = GetPreviewRuntimeEpochAsync;
         InitializePreviewReinitTransitionController();
         InitializePreviewRendererHostController();
         InitializeStatsOverlayCompositionController();
@@ -506,6 +513,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             CompleteWindowCloseRequest = () => CompleteWindowCloseRequest(),
             DetachMeterActivationHandlers = DetachMeterActivationHandlers,
             StopTimers = StopShutdownTimers,
+            StopTelemetrySensors = TelemetrySensors.Shutdown,
             StopStatsOverlay = StopStatsOverlayForShutdown,
             StopRecordingVisuals = StopRecordingVisualsForShutdown,
             DetachMainContentSizeChanged = DetachMainContentSizeChanged,
@@ -519,6 +527,18 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             DisposeNvmlMonitor = () => _nvmlMonitor?.Dispose(),
             DisposeViewModelAsync = ViewModel.DisposeAsync
         });
+    }
+
+    // Non-blocking by contract: TryEnqueue only queues. Called from the telemetry probe thread, one probe at a time.
+    private bool TryEnqueueTelemetryProbe(Action probe)
+    {
+        if (!ReferenceEquals(_telemetryProbeAction, probe))
+        {
+            _telemetryProbeHandler = new DispatcherQueueHandler(probe);
+            _telemetryProbeAction = probe;
+        }
+
+        return _dispatcherQueue.TryEnqueue(_telemetryProbeHandler!);
     }
 
     private async void MainWindow_Closed(object sender, WindowEventArgs args)
@@ -1188,6 +1208,15 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 ViewModel = ViewModel
             });
 
+    private UiAutomationBridge? _uiAutomationBridge;
+
+    private UiAutomationBridge UiAutomationBridge =>
+        _uiAutomationBridge ??= new UiAutomationBridge(new UiAutomationBridgeContext
+        {
+            GetContent = () => Content,
+            InvokeOnUiThreadAsync = InvokeOnUiThreadAsync
+        });
+
     private AppWindow InitializeNativeShellWindow()
     {
         var result = _nativeWindowBootstrapController.Initialize(this, ViewModel.SetWindowHandle);
@@ -1306,6 +1335,12 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         string outputPath,
         CancellationToken cancellationToken = default)
         => _windowScreenshotController.CaptureAsync(outputPath, cancellationToken);
+
+    public Task<UiTreeResult> GetUiTreeAsync(UiTreeRequest request, CancellationToken cancellationToken = default)
+        => UiAutomationBridge.GetTreeAsync(request, cancellationToken);
+
+    public Task<UiInvokeResult> InvokeUiElementAsync(UiInvokeRequest request, CancellationToken cancellationToken = default)
+        => UiAutomationBridge.InvokeAsync(request, cancellationToken);
 
     private void InitializeControlBarAnimationController()
     {
@@ -1599,7 +1634,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             GetMjpegPipelineTimingDetails = ViewModel.GetMjpegPipelineTimingDetails,
             GetPendingPreviewFrameCount = () => _previewRendererHostController.PendingFrameCount,
             GetNvmlSnapshot = () => _nvmlMonitor?.GetLatestSnapshot(),
-            SetHardwareSamplingDemand = active => _nvmlMonitor?.SetPollingDemand(active),
+            SetHardwareSamplingDemand = active => _nvmlMonitor?.SetPollingDemand(NvmlPollingDemand.StatsDock, active),
         };
 
     private StatsOverlayFrameTimeTargetsContext CreateStatsOverlayFrameTimeTargetsContext()
@@ -1985,9 +2020,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private async Task<PreviewRuntimeSnapshot> GetPreviewRuntimeSnapshotAsync(CancellationToken cancellationToken = default)
         => await _previewRuntimeSnapshotSamplingController.GetSnapshotAsync(cancellationToken).ConfigureAwait(false);
 
-    private async Task<long> GetPreviewRuntimeEpochAsync(CancellationToken cancellationToken = default)
-        => await _previewRuntimeSnapshotSamplingController.GetEpochAsync(cancellationToken).ConfigureAwait(false);
-
     private bool IsPreviewStopRequestedByUser
         => _previewLifecycleEventController.StopRequestedByUser;
 
@@ -2004,7 +2036,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     {
         _previewAudioFadeController = new PreviewAudioFadeController(new PreviewAudioFadeControllerContext
         {
-            DispatcherQueue = _dispatcherQueue,
             VolumeController = ViewModel.PreviewVolumeController,
         });
     }
@@ -2012,11 +2043,11 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private void PrimePreviewAudioFadeIn()
         => _previewAudioFadeController.PrimeFadeIn();
 
-    private void StartPreviewAudioFadeIn(int durationMs = 900)
-        => _previewAudioFadeController.StartFadeIn(durationMs);
+    private void StartPreviewAudioFadeIn()
+        => _previewAudioFadeController.StartFadeIn();
 
-    private Task StartPreviewAudioFadeOutAsync(int durationMs = 450)
-        => _previewAudioFadeController.StartFadeOutAsync(durationMs);
+    private Task StartPreviewAudioFadeOutAsync()
+        => _previewAudioFadeController.StartFadeOutAsync();
 
     private void InitializePreviewButtonActionController()
     {
@@ -2026,7 +2057,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             SetPreviewStopRequestedByUser = SetPreviewStopRequestedByUser,
             GetPreviewStartupAttemptId = () => PreviewStartupAttemptId,
             StopPreviewFadeInTimer = StopPreviewFadeInTimer,
-            StartPreviewAudioFadeOutAsync = () => StartPreviewAudioFadeOutAsync(),
+            StartPreviewAudioFadeOutAsync = StartPreviewAudioFadeOutAsync,
             AnimatePreviewOutAsync = AnimatePreviewOutAsync,
             ClearPreviewReinitAnimation = operationName =>
             {
@@ -2052,7 +2083,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             DispatcherQueue = _dispatcherQueue,
             GetRenderer = () => _previewRendererHostController.Renderer,
             AnimatePreviewInAsync = AnimatePreviewInAsync,
-            StartPreviewAudioFadeIn = () => StartPreviewAudioFadeIn(),
+            StartPreviewAudioFadeIn = StartPreviewAudioFadeIn,
         });
     }
 

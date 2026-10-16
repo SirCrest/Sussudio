@@ -867,11 +867,6 @@ private RecordingHealthSnapshotFields CaptureRecordingHealthSnapshotFields(
             activeRecording.GpuQueueMaxDepth,
             activeRecording.GpuFramesEnqueued,
             activeRecording.GpuFramesDropped,
-            sink?.CudaQueueCount ?? 0,
-            sink?.CudaQueueCapacityFrames ?? 0,
-            sink?.CudaQueueMaxDepth ?? 0,
-            sink?.CudaFramesEnqueued ?? 0,
-            sink?.CudaFramesDropped ?? 0,
             activeRecording.FlashbackVideoQueueLatencyMetrics);
     }
 
@@ -912,11 +907,6 @@ private RecordingHealthSnapshotFields CaptureRecordingHealthSnapshotFields(
         int GpuQueueMaxDepth,
         long GpuFramesEnqueued,
         long GpuFramesDropped,
-        int CudaQueueDepth,
-        int CudaQueueCapacity,
-        int CudaQueueMaxDepth,
-        long CudaFramesEnqueued,
-        long CudaFramesDropped,
         (int SampleCount, double AverageMs, double P95Ms, double P99Ms, double MaxMs) FlashbackVideoQueueLatencyMetrics);
 
     private ActiveRecordingBackendHealthSnapshotFields CaptureActiveRecordingBackendHealthSnapshotFields(
@@ -1364,11 +1354,6 @@ private RecordingHealthSnapshotFields CaptureRecordingHealthSnapshotFields(
                 RecordingGpuQueueMaxDepth = recordingHealth.GpuQueueMaxDepth,
                 RecordingGpuFramesEnqueued = recordingHealth.GpuFramesEnqueued,
                 RecordingGpuFramesDropped = recordingHealth.GpuFramesDropped,
-                RecordingCudaQueueDepth = recordingHealth.CudaQueueDepth,
-                RecordingCudaQueueCapacity = recordingHealth.CudaQueueCapacity,
-                RecordingCudaQueueMaxDepth = recordingHealth.CudaQueueMaxDepth,
-                RecordingCudaFramesEnqueued = recordingHealth.CudaFramesEnqueued,
-                RecordingCudaFramesDropped = recordingHealth.CudaFramesDropped,
                 FlashbackEncodingFailed = recordingHealth.FlashbackEncodingFailed,
                 FlashbackEncodingFailureType = recordingHealth.FlashbackFailureType,
                 FlashbackEncodingFailureMessage = recordingHealth.FlashbackFailureMessage,

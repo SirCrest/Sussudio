@@ -15,7 +15,7 @@ automation clients:
   "command": 1,
   "correlationId": "<guid>",
   "authToken": "<token-or-null>",
-  "manifestRevision": 2,
+  "manifestRevision": 3,
   "payload": {}
 }
 ```

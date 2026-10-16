@@ -57,9 +57,9 @@ public sealed class PreviewPacingSlowStageClassifierTests
 
     [Theory]
     // Too few samples, even with a full-duration window.
-    [InlineData(59, 30_000)]
-    // Enough samples, but the window is shorter than the 30s minimum.
-    [InlineData(600, 29_999)]
+    [InlineData(59, 15_000)]
+    // Enough samples, but the window is shorter than the 15s minimum.
+    [InlineData(600, 14_999)]
     [InlineData(0, 0)]
     public void AnUnderfilledSampleWindowIsNotDiagnosed(int sampleCount, double durationMs)
     {
@@ -79,14 +79,14 @@ public sealed class PreviewPacingSlowStageClassifierTests
     }
 
     [Fact]
-    public void TheSampleWindowIsExactlySixtyFramesAndThirtySecondsBelowOneHundredFps()
+    public void TheSampleWindowIsExactlySixtyFramesAndFifteenSecondsBelowOneHundredFps()
     {
         var atThreshold = new PreviewPacingClassificationInput
         {
             IsPreviewing = true,
             TargetFrameRate = 60,
             PreviewCadenceSampleCount = 60,
-            PreviewCadenceSampleDurationMs = 30_000,
+            PreviewCadenceSampleDurationMs = 15_000,
             PreviewCadenceOnePercentLowFps = 10,
         };
 
@@ -137,7 +137,7 @@ public sealed class PreviewPacingSlowStageClassifierTests
     [InlineData("RecentD3DFrameLatencyWaitTimeoutCount")]
     public void AnyHardIncidentBypassesTheSampleWindowGate(string counter)
     {
-        // Dropped or failed frames are proof of a problem on their own; waiting 30s
+        // Dropped or failed frames are proof of a problem on their own; waiting 15s
         // for a cadence window before reporting them would hide real incidents.
         var input = new PreviewPacingClassificationInput
         {

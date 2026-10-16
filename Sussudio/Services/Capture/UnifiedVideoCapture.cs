@@ -9,6 +9,7 @@ using Sussudio.Services.Capture.Mjpeg;
 using Sussudio.Services.Contracts;
 using Sussudio.Services.Flashback;
 using Sussudio.Services.Gpu;
+using Sussudio.Services.Performance;
 using Sussudio.Services.Preview;
 using Sussudio.Services.Recording;
 using Sussudio.Services.Runtime;
@@ -218,9 +219,6 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
         var capture = _capture;
         return capture?.GetSourceCadenceMetrics() ?? MfSourceReaderVideoCapture.SourceCadenceMetrics.Empty;
     }
-
-    public MjpegPipelineTimingMetrics GetMjpegPipelineTimingMetrics()
-        => GetMjpegPipelineTimingSnapshot().Summary;
 
     public MjpegPipelineTimingSnapshot GetMjpegPipelineTimingSnapshot()
     {
@@ -1019,7 +1017,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
         var gpuEncoder = Volatile.Read(ref _gpuRecordingEncoder);
         if (gpuEncoder != null && gpuTexture != IntPtr.Zero)
         {
-            EnqueueGpuRecordingFrame(gpuEncoder, gpuTexture, gpuSubresource, sourceSequence);
+            EnqueueGpuRecordingFrame(gpuEncoder, gpuTexture, gpuSubresource, sourceSequence, arrivalTick);
         }
         else
         {
@@ -1028,7 +1026,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
 
         if (gpuTexture != IntPtr.Zero)
         {
-            EnqueueFlashbackGpuFrame(gpuTexture, gpuSubresource, sourceSequence);
+            EnqueueFlashbackGpuFrame(gpuTexture, gpuSubresource, sourceSequence, arrivalTick);
         }
         else
         {
@@ -1321,6 +1319,10 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
         try
         {
             Interlocked.Exchange(ref _visualCadenceCpuDataUnavailable, 0);
+
+            // Timed here, outside the trackers' locks. Runs on the read thread (raw and dual paths) or the MJPEG
+            // emitter (decoded paths), so the trace attributes it to whichever thread did the work.
+            var scanStartTick = Stopwatch.GetTimestamp();
             _visualCadenceTracker.RecordFrame(
                 frameData,
                 width,
@@ -1333,6 +1335,9 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
                 height,
                 pixelFormat,
                 timestampTick: arrivalTick);
+            var scanTicks = Stopwatch.GetTimestamp() - scanStartTick;
+            PerfMetrics.CaptureVisualScan.RecordTicks(scanTicks);
+            FrameTrace.Record(FrameTraceEventKind.CaptureVisualScan, scanStartTick, scanTicks, arrivalTick);
         }
         catch (Exception ex)
         {
@@ -1481,12 +1486,12 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
         }
     }
 
-    private void EnqueueGpuRecordingFrame(IGpuVideoFrameTryEncoder encoder, IntPtr texture, int subresource, long sourceSequence)
+    private void EnqueueGpuRecordingFrame(IGpuVideoFrameTryEncoder encoder, IntPtr texture, int subresource, long sourceSequence, long arrivalTick)
     {
         Interlocked.Increment(ref _recordingFramesDelivered);
         try
         {
-            var accepted = encoder.TryEnqueueGpuVideoFrame(texture, subresource);
+            var accepted = encoder.TryEnqueueGpuVideoFrame(texture, subresource, arrivalTick);
             if (accepted)
             {
                 Interlocked.Increment(ref _videoFramesWrittenToSink);
@@ -1598,7 +1603,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
         }
     }
 
-    private void EnqueueFlashbackGpuFrame(IntPtr texture, int subresource, long sourceSequence)
+    private void EnqueueFlashbackGpuFrame(IntPtr texture, int subresource, long sourceSequence, long arrivalTick)
     {
         var sink = Volatile.Read(ref _flashbackSink);
         if (sink == null)
@@ -1608,7 +1613,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
 
         try
         {
-            var accepted = sink.TryEnqueueGpuVideoFrame(texture, subresource);
+            var accepted = sink.TryEnqueueGpuVideoFrame(texture, subresource, arrivalTick);
             RecordFlashbackOutcome(sink, sourceSequence, accepted);
         }
         catch (Exception ex)

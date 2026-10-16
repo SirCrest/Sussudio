@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
 using Sussudio.Services.Capture;
+using Sussudio.Services.Performance;
 using Sussudio.Services.Runtime;
 using Sussudio.Services.Telemetry;
 using Sussudio.Services.Recording;
@@ -116,24 +117,45 @@ public sealed partial class AutomationDiagnosticsHub
     }
 
     public Task<AutomationSnapshot> RefreshSnapshotNowAsync(CancellationToken cancellationToken = default)
-        => RefreshSnapshotAsync(cancellationToken);
+        => RefreshSnapshotAsync(SnapshotRefreshKind.OnDemand, cancellationToken);
 
-    private async Task<AutomationSnapshot> RefreshSnapshotAsync(CancellationToken cancellationToken)
+    // Who asked for a refresh. The poll tick owns everything measured over an interval: the performance timeline
+    // (one entry per tick) and the baselines behind the "recent" counters and process CPU percent. An on-demand
+    // refresh (GetSnapshot, AssertSnapshot, the recording toggle, a verification) measures against the last tick's
+    // baselines and leaves them alone, so a client polling the snapshot can neither add timeline entries nor shorten
+    // the next tick's interval and hide the events in it from that tick's entry.
+    private enum SnapshotRefreshKind
+    {
+        PollTick,
+        OnDemand,
+    }
+
+    private async Task<AutomationSnapshot> RefreshSnapshotAsync(SnapshotRefreshKind kind, CancellationToken cancellationToken)
     {
         await _refreshGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        // Telemetry starts after the gate, so waiting behind another refresh is not counted as refresh cost. The
+        // allocation figure is process-wide (async continuations hop threads, so a per-thread counter would be wrong)
+        // and therefore an upper bound on what the refresh itself allocated.
+        var refreshStartTick = Stopwatch.GetTimestamp();
+        var allocatedBefore = GC.GetTotalAllocatedBytes(false);
         try
         {
-            return await RefreshSnapshotCoreAsync(cancellationToken).ConfigureAwait(false);
+            return await RefreshSnapshotCoreAsync(kind, cancellationToken).ConfigureAwait(false);
         }
         finally
         {
+            var refreshTicks = Stopwatch.GetTimestamp() - refreshStartTick;
+            PerfMetrics.TelemetryHubRefresh.RecordTicks(refreshTicks);
+            PerfMetrics.TelemetryHubAlloc.Record(GC.GetTotalAllocatedBytes(false) - allocatedBefore);
+            FrameTrace.Record(FrameTraceEventKind.HubRefresh, refreshStartTick, refreshTicks, -1);
             _refreshGate.Release();
         }
     }
 
-    private async Task<AutomationSnapshot> RefreshSnapshotCoreAsync(CancellationToken cancellationToken)
+    private async Task<AutomationSnapshot> RefreshSnapshotCoreAsync(SnapshotRefreshKind kind, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        var pollTick = kind == SnapshotRefreshKind.PollTick;
 
         var collectionEpoch = Interlocked.Increment(ref _snapshotCollectionEpoch);
         var collectionStartedUtc = DateTimeOffset.UtcNow;
@@ -160,19 +182,16 @@ public sealed partial class AutomationDiagnosticsHub
             token => _snapshotQueryPort.GetRecordingStatsSnapshotAsync(token),
             snapshot => snapshot.CaptureSessionEpoch,
             cancellationToken).ConfigureAwait(false);
-        var previewRuntimeFragment = PreviewRuntimeEpochProvider is { } previewEpochProvider
-            ? await CaptureSnapshotFragmentAsync(
-                collectionEpoch,
-                previewEpochProvider,
-                _previewSnapshotProvider,
-                snapshot => snapshot.PreviewRuntimeEpoch,
-                cancellationToken).ConfigureAwait(false)
-            : await CaptureSnapshotFragmentAsync(
-                collectionEpoch,
-                _previewSnapshotProvider,
-                _previewSnapshotProvider,
-                snapshot => snapshot.PreviewRuntimeEpoch,
-                cancellationToken).ConfigureAwait(false);
+        // One provider call, no producer-epoch bracket: the preview snapshot is a single UI work item, so its fields and
+        // epoch are consistent by construction, exactly like the view-model fragment above. The provider has no
+        // epoch-only read, so the old before/value/after bracket cost three full builds (about 225 KB and three UI
+        // dispatches per tick) to watch a window of about 2 ms; the cross-fragment checks in
+        // BuildSnapshotMixedEpochReasons (for example view_model_preview_runtime) are unchanged.
+        var previewRuntimeFragment = await CaptureSnapshotFragmentAsync(
+            collectionEpoch,
+            _previewSnapshotProvider,
+            snapshot => snapshot.PreviewRuntimeEpoch,
+            cancellationToken).ConfigureAwait(false);
         var viewModelSnapshot = viewModelFragment.Value;
         var captureRuntime = captureRuntimeFragment.Value;
         var health = healthFragment.Value;
@@ -206,12 +225,12 @@ public sealed partial class AutomationDiagnosticsHub
             recordingFileGrowing,
             visualCadenceHealthy,
             lastVerification);
-        var recentPreviewJitter = UpdatePreviewJitterRecentCounters(health, nowTick);
-        var recentMjpeg = UpdateMjpegRecentCounters(health, nowTick);
-        var recentRenderer = UpdateD3DRendererRecentCounters(previewRuntime, nowTick);
-        var (recentD3DMissedRefreshes, recentD3DStatsFailures) = UpdateD3DFrameStatsRecentCounters(previewRuntime, nowTick);
-        var recentD3DFrameLatencyWaitTimeouts = UpdateD3DFrameLatencyWaitRecentCounters(previewRuntime, nowTick);
-        var recentFlashbackRecording = UpdateFlashbackRecordingRecentCounters(health, nowTick);
+        var recentPreviewJitter = UpdatePreviewJitterRecentCounters(health, nowTick, pollTick);
+        var recentMjpeg = UpdateMjpegRecentCounters(health, nowTick, pollTick);
+        var recentRenderer = UpdateD3DRendererRecentCounters(previewRuntime, nowTick, pollTick);
+        var (recentD3DMissedRefreshes, recentD3DStatsFailures) = UpdateD3DFrameStatsRecentCounters(previewRuntime, nowTick, pollTick);
+        var recentD3DFrameLatencyWaitTimeouts = UpdateD3DFrameLatencyWaitRecentCounters(previewRuntime, nowTick, pollTick);
+        var recentFlashbackRecording = UpdateFlashbackRecordingRecentCounters(health, nowTick, pollTick);
         var diagnostic = BuildDiagnosticEvaluation(
             health,
             captureRuntime,
@@ -246,7 +265,7 @@ public sealed partial class AutomationDiagnosticsHub
             snapshot => snapshot.OutputEpoch);
         var processResourcesFragment = CaptureSnapshotFragment(
             collectionEpoch,
-            CaptureProcessResourceSnapshot,
+            () => CaptureProcessResourceSnapshot(advance: pollTick),
             _ => 0L);
         var snapshotCollection = BuildSnapshotCollectionStamp(
             collectionEpoch,
@@ -287,7 +306,10 @@ public sealed partial class AutomationDiagnosticsHub
         lock (_stateLock)
         {
             _latestSnapshot = snapshot;
-            AppendPerformanceTimelineEntry(snapshot);
+            if (pollTick)
+            {
+                AppendPerformanceTimelineEntry(snapshot);
+            }
         }
 
         SnapshotUpdated?.Invoke(this, snapshot);
@@ -314,28 +336,6 @@ public sealed partial class AutomationDiagnosticsHub
             producerEpoch,
             ProducerChangedDuringCapture: false,
             DateTimeOffset.UtcNow);
-    }
-
-    private static async Task<SnapshotFragment<T>> CaptureSnapshotFragmentAsync<T>(
-        long collectionEpoch,
-        Func<CancellationToken, Task<T>> captureCurrentProducerState,
-        Func<CancellationToken, Task<T>> capture,
-        Func<T, long> getProducerEpoch,
-        CancellationToken cancellationToken)
-    {
-        var producerEpochBefore = getProducerEpoch(await captureCurrentProducerState(cancellationToken).ConfigureAwait(false));
-        var value = await capture(cancellationToken).ConfigureAwait(false);
-        var collectedUtc = DateTimeOffset.UtcNow;
-        var producerEpochAfter = getProducerEpoch(await captureCurrentProducerState(cancellationToken).ConfigureAwait(false));
-        var producerEpoch = getProducerEpoch(value);
-        return new SnapshotFragment<T>(
-            value,
-            collectionEpoch,
-            producerEpoch,
-            producerEpochBefore,
-            producerEpochAfter,
-            ProducerChangedDuringCapture(producerEpoch, producerEpochBefore, producerEpochAfter),
-            collectedUtc);
     }
 
     private static async Task<SnapshotFragment<T>> CaptureSnapshotFragmentAsync<T>(
@@ -622,22 +622,31 @@ public sealed partial class AutomationDiagnosticsHub
             ? additionalEvidence
             : $"{existingEvidence}; {additionalEvidence}";
 
+    // Interval baselines belong to the poll tick (see SnapshotRefreshKind): an on-demand refresh reads them to report
+    // "since the last poll tick" and leaves them for the next tick.
+    private static long SwapIntervalBaseline(ref long baseline, long current, bool advance)
+        => advance ? Interlocked.Exchange(ref baseline, current) : Interlocked.Read(ref baseline);
+
     private PreviewJitterRecentCounters UpdatePreviewJitterRecentCounters(
         CaptureHealthSnapshot health,
-        long nowTick)
+        long nowTick,
+        bool advance)
     {
         var totalDropped = Math.Max(0, health.MjpegPreviewJitterTotalDropped);
         var underflows = Math.Max(0, health.MjpegPreviewJitterUnderflowCount);
         var deadlineDrops = Math.Max(0, health.MjpegPreviewJitterDeadlineDropCount);
         var scheduleLateCount = Math.Max(0, health.MjpegPreviewJitterScheduleLateCount);
         var lastScheduleLateMs = Math.Max(0, health.MjpegPreviewJitterLastScheduleLateMs);
-        var previousTick = Interlocked.Exchange(ref _lastPreviewJitterEvalTick, nowTick);
-        var previousTotalDropped = Interlocked.Exchange(ref _lastPreviewJitterTotalDropped, totalDropped);
-        var previousUnderflows = Interlocked.Exchange(ref _lastPreviewJitterUnderflows, underflows);
-        var previousDeadlineDrops = Interlocked.Exchange(ref _lastPreviewJitterDeadlineDrops, deadlineDrops);
-        var previousScheduleLateCount = Interlocked.Exchange(ref _lastPreviewJitterScheduleLateCount, scheduleLateCount);
+        var previousTick = SwapIntervalBaseline(ref _lastPreviewJitterEvalTick, nowTick, advance);
+        var previousTotalDropped = SwapIntervalBaseline(ref _lastPreviewJitterTotalDropped, totalDropped, advance);
+        var previousUnderflows = SwapIntervalBaseline(ref _lastPreviewJitterUnderflows, underflows, advance);
+        var previousDeadlineDrops = SwapIntervalBaseline(ref _lastPreviewJitterDeadlineDrops, deadlineDrops, advance);
+        var previousScheduleLateCount = SwapIntervalBaseline(ref _lastPreviewJitterScheduleLateCount, scheduleLateCount, advance);
         var previousLastScheduleLateMs = _lastPreviewJitterLastScheduleLateMs;
-        _lastPreviewJitterLastScheduleLateMs = lastScheduleLateMs;
+        if (advance)
+        {
+            _lastPreviewJitterLastScheduleLateMs = lastScheduleLateMs;
+        }
 
         if (previousTick == 0 || nowTick < previousTick)
         {
@@ -655,17 +664,18 @@ public sealed partial class AutomationDiagnosticsHub
 
     private MjpegRecentCounters UpdateMjpegRecentCounters(
         CaptureHealthSnapshot health,
-        long nowTick)
+        long nowTick,
+        bool advance)
     {
         var totalDropped = Math.Max(0, health.MjpegTotalDropped);
         var decodeFailures = Math.Max(0, health.MjpegDecodeFailures);
         var emitFailures = Math.Max(0, health.MjpegEmitFailures);
         var compressedQueueDrops = Math.Max(0, health.MjpegCompressedDropsQueueFull);
-        var previousTick = Interlocked.Exchange(ref _lastMjpegEvalTick, nowTick);
-        var previousTotalDropped = Interlocked.Exchange(ref _lastMjpegTotalDropped, totalDropped);
-        var previousDecodeFailures = Interlocked.Exchange(ref _lastMjpegDecodeFailures, decodeFailures);
-        var previousEmitFailures = Interlocked.Exchange(ref _lastMjpegEmitFailures, emitFailures);
-        var previousCompressedQueueDrops = Interlocked.Exchange(ref _lastMjpegCompressedDropsQueueFull, compressedQueueDrops);
+        var previousTick = SwapIntervalBaseline(ref _lastMjpegEvalTick, nowTick, advance);
+        var previousTotalDropped = SwapIntervalBaseline(ref _lastMjpegTotalDropped, totalDropped, advance);
+        var previousDecodeFailures = SwapIntervalBaseline(ref _lastMjpegDecodeFailures, decodeFailures, advance);
+        var previousEmitFailures = SwapIntervalBaseline(ref _lastMjpegEmitFailures, emitFailures, advance);
+        var previousCompressedQueueDrops = SwapIntervalBaseline(ref _lastMjpegCompressedDropsQueueFull, compressedQueueDrops, advance);
 
         if (previousTick == 0 || nowTick < previousTick)
         {
@@ -681,15 +691,16 @@ public sealed partial class AutomationDiagnosticsHub
 
     private D3DRendererRecentCounters UpdateD3DRendererRecentCounters(
         PreviewRuntimeSnapshot previewRuntime,
-        long nowTick)
+        long nowTick,
+        bool advance)
     {
         var submitted = Math.Max(0, previewRuntime.D3DFramesSubmitted);
         var rendered = Math.Max(0, previewRuntime.D3DFramesRendered);
         var dropped = Math.Max(0, previewRuntime.D3DFramesDropped);
-        var previousTick = Interlocked.Exchange(ref _lastD3DRendererEvalTick, nowTick);
-        var previousSubmitted = Interlocked.Exchange(ref _lastD3DFramesSubmitted, submitted);
-        var previousRendered = Interlocked.Exchange(ref _lastD3DFramesRendered, rendered);
-        var previousDropped = Interlocked.Exchange(ref _lastD3DFramesDropped, dropped);
+        var previousTick = SwapIntervalBaseline(ref _lastD3DRendererEvalTick, nowTick, advance);
+        var previousSubmitted = SwapIntervalBaseline(ref _lastD3DFramesSubmitted, submitted, advance);
+        var previousRendered = SwapIntervalBaseline(ref _lastD3DFramesRendered, rendered, advance);
+        var previousDropped = SwapIntervalBaseline(ref _lastD3DFramesDropped, dropped, advance);
 
         if (previousTick <= 0)
         {
@@ -704,13 +715,14 @@ public sealed partial class AutomationDiagnosticsHub
 
     private (long RecentMissedRefreshes, long RecentFailures) UpdateD3DFrameStatsRecentCounters(
         PreviewRuntimeSnapshot previewRuntime,
-        long nowTick)
+        long nowTick,
+        bool advance)
     {
         var missedRefreshes = Math.Max(0, previewRuntime.D3DFrameStatsMissedRefreshCount);
         var failures = Math.Max(0, previewRuntime.D3DFrameStatsFailureCount);
-        var previousTick = Interlocked.Exchange(ref _lastD3DFrameStatsEvalTick, nowTick);
-        var previousMissedRefreshes = Interlocked.Exchange(ref _lastD3DFrameStatsMissedRefreshes, missedRefreshes);
-        var previousFailures = Interlocked.Exchange(ref _lastD3DFrameStatsFailures, failures);
+        var previousTick = SwapIntervalBaseline(ref _lastD3DFrameStatsEvalTick, nowTick, advance);
+        var previousMissedRefreshes = SwapIntervalBaseline(ref _lastD3DFrameStatsMissedRefreshes, missedRefreshes, advance);
+        var previousFailures = SwapIntervalBaseline(ref _lastD3DFrameStatsFailures, failures, advance);
 
         if (previousTick == 0 || nowTick < previousTick)
         {
@@ -724,11 +736,12 @@ public sealed partial class AutomationDiagnosticsHub
 
     private long UpdateD3DFrameLatencyWaitRecentCounters(
         PreviewRuntimeSnapshot previewRuntime,
-        long nowTick)
+        long nowTick,
+        bool advance)
     {
         var timeouts = Math.Max(0, previewRuntime.D3DFrameLatencyWaitTimeoutCount);
-        var previousTick = Interlocked.Exchange(ref _lastD3DFrameLatencyWaitEvalTick, nowTick);
-        var previousTimeouts = Interlocked.Exchange(ref _lastD3DFrameLatencyWaitTimeouts, timeouts);
+        var previousTick = SwapIntervalBaseline(ref _lastD3DFrameLatencyWaitEvalTick, nowTick, advance);
+        var previousTimeouts = SwapIntervalBaseline(ref _lastD3DFrameLatencyWaitTimeouts, timeouts, advance);
 
         if (previousTick == 0 || nowTick < previousTick)
         {
@@ -740,7 +753,8 @@ public sealed partial class AutomationDiagnosticsHub
 
     private FlashbackRecordingRecentCounters UpdateFlashbackRecordingRecentCounters(
         CaptureHealthSnapshot snapshot,
-        long nowTick)
+        long nowTick,
+        bool advance)
     {
         var droppedFrames = snapshot.FlashbackActive ? Math.Max(0, snapshot.FlashbackDroppedFrames) : 0;
         var encoderDroppedFrames = snapshot.FlashbackActive ? Math.Max(0, snapshot.FlashbackVideoEncoderDroppedFrames) : 0;
@@ -748,12 +762,12 @@ public sealed partial class AutomationDiagnosticsHub
         var gpuFramesDropped = snapshot.FlashbackActive ? Math.Max(0, snapshot.FlashbackGpuFramesDropped) : 0;
         var backpressureEvents = snapshot.FlashbackActive ? Math.Max(0, snapshot.FlashbackVideoBackpressureEvents) : 0;
 
-        var previousTick = Interlocked.Exchange(ref _lastFlashbackRecordingEvalTick, nowTick);
-        var previousDroppedFrames = Interlocked.Exchange(ref _lastFlashbackDroppedFrames, droppedFrames);
-        var previousEncoderDroppedFrames = Interlocked.Exchange(ref _lastFlashbackVideoEncoderDroppedFrames, encoderDroppedFrames);
-        var previousSequenceGaps = Interlocked.Exchange(ref _lastFlashbackVideoSequenceGaps, sequenceGaps);
-        var previousGpuFramesDropped = Interlocked.Exchange(ref _lastFlashbackGpuFramesDropped, gpuFramesDropped);
-        var previousBackpressureEvents = Interlocked.Exchange(ref _lastFlashbackVideoBackpressureEvents, backpressureEvents);
+        var previousTick = SwapIntervalBaseline(ref _lastFlashbackRecordingEvalTick, nowTick, advance);
+        var previousDroppedFrames = SwapIntervalBaseline(ref _lastFlashbackDroppedFrames, droppedFrames, advance);
+        var previousEncoderDroppedFrames = SwapIntervalBaseline(ref _lastFlashbackVideoEncoderDroppedFrames, encoderDroppedFrames, advance);
+        var previousSequenceGaps = SwapIntervalBaseline(ref _lastFlashbackVideoSequenceGaps, sequenceGaps, advance);
+        var previousGpuFramesDropped = SwapIntervalBaseline(ref _lastFlashbackGpuFramesDropped, gpuFramesDropped, advance);
+        var previousBackpressureEvents = SwapIntervalBaseline(ref _lastFlashbackVideoBackpressureEvents, backpressureEvents, advance);
 
         if (previousTick == 0 || nowTick < previousTick)
         {
@@ -891,19 +905,40 @@ public sealed partial class AutomationDiagnosticsHub
 
     private readonly record struct LastOutputProbe(bool Exists, long? SizeBytes, long OutputEpoch);
 
-    private ProcessResourceSnapshot CaptureProcessResourceSnapshot()
+    // Two kernel32 calls on the current-process pseudo-handle. Process.Refresh() plus WorkingSet64 and
+    // TotalProcessorTime re-enumerated every process on the machine: about 21 ms per tick.
+    private ProcessResourceSnapshot CaptureProcessResourceSnapshot(bool advance)
+        => CaptureProcessResourceSnapshot(HubProcessCounters.Read(), advance);
+
+    private ProcessResourceSnapshot CaptureProcessResourceSnapshot(HubProcessCounters.Reading read, bool advance)
     {
-        // Memory & GC metrics are thread-safe and microsecond-cheap.
-        _currentProcess.Refresh();
-        var processCpuTotalMs = _currentProcess.TotalProcessorTime.TotalMilliseconds;
-        var processCpuPercent = CalculateProcessCpuPercent(processCpuTotalMs);
+        // A failed read repeats the last good reading. Zero memory would draw a cliff in the timeline and then a false
+        // growth spike on the next good read; the CPU baseline only moves on good reads, so the next one measures the
+        // whole interval since the last good read instead of a spike. Before any good read there is nothing to carry:
+        // memory reads zero and the CPU percentage is zero.
+        // The CPU percentage is an interval measurement, so like the other baselines it belongs to the poll tick
+        // (see SnapshotRefreshKind): an on-demand read reports the percentage since the last tick and leaves both the
+        // baseline and the carried percentage alone. The carried reading is a point in time, so any good read updates it.
+        var processCpuPercent = _lastProcessCpuPercent;
+        if (read.Valid)
+        {
+            _lastGoodProcessCounters = read;
+            processCpuPercent = CalculateProcessCpuPercent(read.CpuTicks / HubProcessCounters.TicksPerMillisecond, advance);
+            if (advance)
+            {
+                _lastProcessCpuPercent = processCpuPercent;
+            }
+        }
+
+        var counters = _lastGoodProcessCounters;
+        var processCpuTotalMs = counters.CpuTicks / HubProcessCounters.TicksPerMillisecond;
         var gcMemoryInfo = GC.GetGCMemoryInfo();
         ThreadPool.GetAvailableThreads(out var threadPoolWorkerAvailable, out var threadPoolIoAvailable);
         ThreadPool.GetMaxThreads(out var threadPoolWorkerMax, out var threadPoolIoMax);
 
         return new ProcessResourceSnapshot(
-            MemoryWorkingSetMb: _currentProcess.WorkingSet64 / (1024.0 * 1024.0),
-            MemoryPrivateBytesMb: _currentProcess.PrivateMemorySize64 / (1024.0 * 1024.0),
+            MemoryWorkingSetMb: counters.WorkingSetBytes / (1024.0 * 1024.0),
+            MemoryPrivateBytesMb: counters.PrivateBytes / (1024.0 * 1024.0),
             MemoryManagedHeapMb: GC.GetTotalMemory(false) / (1024.0 * 1024.0),
             MemoryTotalAllocatedMb: GC.GetTotalAllocatedBytes(precise: false) / (1024.0 * 1024.0),
             ProcessCpuPercent: processCpuPercent,
@@ -922,14 +957,17 @@ public sealed partial class AutomationDiagnosticsHub
             ThreadPoolIoMax: threadPoolIoMax);
     }
 
-    private double CalculateProcessCpuPercent(double processCpuTotalMs)
+    private double CalculateProcessCpuPercent(double processCpuTotalMs, bool advance)
     {
         var nowTimestamp = Stopwatch.GetTimestamp();
         var previousTimestamp = _lastProcessCpuSampleTimestamp;
         var previousCpuTotalMs = _lastProcessCpuTotalMs;
 
-        _lastProcessCpuSampleTimestamp = nowTimestamp;
-        _lastProcessCpuTotalMs = processCpuTotalMs;
+        if (advance)
+        {
+            _lastProcessCpuSampleTimestamp = nowTimestamp;
+            _lastProcessCpuTotalMs = processCpuTotalMs;
+        }
 
         if (previousTimestamp <= 0)
         {
@@ -1061,7 +1099,7 @@ public sealed partial class AutomationDiagnosticsHub
                 DiagnosticsCategory.Verification,
                 $"{verification.Message}{mismatchDetail}");
 
-            await RefreshSnapshotAsync(cancellationToken).ConfigureAwait(false);
+            await RefreshSnapshotAsync(SnapshotRefreshKind.OnDemand, cancellationToken).ConfigureAwait(false);
             return verification;
         }
         finally
@@ -1072,7 +1110,7 @@ public sealed partial class AutomationDiagnosticsHub
             {
                 try
                 {
-                    await RefreshSnapshotAsync(cancellationToken).ConfigureAwait(false);
+                    await RefreshSnapshotAsync(SnapshotRefreshKind.OnDemand, cancellationToken).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
@@ -1110,7 +1148,7 @@ public sealed partial class AutomationDiagnosticsHub
                 DiagnosticsCategory.Verification,
                 $"File verification ({Path.GetFileName(filePath)}): {verification.Message}");
 
-            await RefreshSnapshotAsync(cancellationToken).ConfigureAwait(false);
+            await RefreshSnapshotAsync(SnapshotRefreshKind.OnDemand, cancellationToken).ConfigureAwait(false);
             return verification;
         }
         finally
@@ -1121,7 +1159,7 @@ public sealed partial class AutomationDiagnosticsHub
             {
                 try
                 {
-                    await RefreshSnapshotAsync(cancellationToken).ConfigureAwait(false);
+                    await RefreshSnapshotAsync(SnapshotRefreshKind.OnDemand, cancellationToken).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {

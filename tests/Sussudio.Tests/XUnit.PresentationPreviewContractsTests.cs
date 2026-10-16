@@ -50,10 +50,6 @@ public sealed class PresentationPreviewStartupSignalContractsTests
         => global::Program.PreviewStartupSignalFormatter_PreservesSignalStrings();
 
     [Fact]
-    public Task PreviewStartupReadinessSignalControllerPreservesStateContracts()
-        => global::Program.PreviewStartupReadinessSignalController_PreservesSignalStateContracts();
-
-    [Fact]
     public Task PreviewStartupFailureTextFormatterPreservesStringContracts()
         => global::Program.PreviewStartupFailureTextFormatter_PreservesFailureStrings();
 }
@@ -497,8 +493,8 @@ public sealed class PresentationPreviewRuntimePolicyContractsTests
         => global::Program.PreviewRuntimeSnapshotMapper_PreservesSampledStartupFields();
 
     [Fact]
-    public Task PreviewRuntimeSnapshotMapperPreservesRendererAndEventFields()
-        => global::Program.PreviewRuntimeSnapshotMapper_PreservesRendererAndEventFields();
+    public Task PreviewRuntimeSnapshotMapperPreservesGpuPlaybackFields()
+        => global::Program.PreviewRuntimeSnapshotMapper_PreservesGpuPlaybackFields();
 
     [Fact]
     public Task PreviewRuntimeD3DFrameCounterPolicyPreservesCpuFallbackCounters()
@@ -1484,65 +1480,6 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task PreviewStartupReadinessSignalController_PreservesSignalStateContracts()
-    {
-        var controllerType = RequireType("Sussudio.Controllers.PreviewStartupReadinessSignalController");
-        var signalType = RequireType("Sussudio.Models.PreviewStartupSignalFlags");
-        var strategyType = RequireType("Sussudio.Models.PreviewStartupStrategy");
-        var statusType = RequireType("Sussudio.Controllers.PreviewStartupReadinessSignalStatus");
-        var playbackStatusType = RequireType("Sussudio.Controllers.PreviewStartupPlaybackPositionStatus");
-
-        var controller = Activator.CreateInstance(controllerType, nonPublic: true)!;
-        var configure = controllerType.GetMethod("Configure", BindingFlags.Public | BindingFlags.Instance)
-            ?? throw new InvalidOperationException("PreviewStartupReadinessSignalController.Configure was not found.");
-        var markSignal = controllerType.GetMethod("MarkSignal", BindingFlags.Public | BindingFlags.Instance)
-            ?? throw new InvalidOperationException("PreviewStartupReadinessSignalController.MarkSignal was not found.");
-        var trackPlaybackPosition = controllerType.GetMethod("TrackPlaybackPosition", BindingFlags.Public | BindingFlags.Instance)
-            ?? throw new InvalidOperationException("PreviewStartupReadinessSignalController.TrackPlaybackPosition was not found.");
-        var markFirstVisualConfirmed = controllerType.GetMethod("MarkFirstVisualConfirmed", BindingFlags.Public | BindingFlags.Instance)
-            ?? throw new InvalidOperationException("PreviewStartupReadinessSignalController.MarkFirstVisualConfirmed was not found.");
-        var snapshotProperty = controllerType.GetProperty("Snapshot", BindingFlags.Public | BindingFlags.Instance)
-            ?? throw new InvalidOperationException("PreviewStartupReadinessSignalController.Snapshot was not found.");
-
-        object Signals(int value) => Enum.ToObject(signalType, value);
-        object Strategy(string name) => Enum.Parse(strategyType, name);
-        object Status(string name) => Enum.Parse(statusType, name);
-        object PlaybackStatus(string name) => Enum.Parse(playbackStatusType, name);
-
-        var requiredSignals = Signals(1 | 2 | 4);
-        var initialMissing = configure.Invoke(controller, new object[] { Strategy("D3D11VideoProcessor"), requiredSignals, true, false })?.ToString();
-        AssertEqual("MediaOpened+FirstCaptureFrame+PlaybackAdvancing", initialMissing, "initial missing readiness signals");
-
-        var mediaOpened = markSignal.Invoke(controller, new object[] { Signals(1), true, false })!;
-        AssertEqual(Status("Accepted"), GetPropertyValue(mediaOpened, "Status"), "media-opened accepted");
-        AssertEqual("FirstCaptureFrame+PlaybackAdvancing", GetStringProperty(mediaOpened, "MissingSignals"), "media-opened missing signals");
-        AssertEqual(false, GetBoolProperty(mediaOpened, "AllRequiredSignalsReceived"), "media-opened not ready");
-
-        var mediaSnapshot = GetPropertyValue(mediaOpened, "Snapshot")!;
-        AssertEqual(true, GetBoolProperty(mediaSnapshot, "GpuSignalMediaOpened"), "media-opened snapshot flag");
-        AssertEqual(Signals(1), GetPropertyValue(mediaSnapshot, "ReceivedSignals"), "media-opened received flags");
-
-        var duplicate = markSignal.Invoke(controller, new object[] { Signals(1), true, false })!;
-        AssertEqual(Status("Duplicate"), GetPropertyValue(duplicate, "Status"), "duplicate media-opened status");
-
-        var playback = trackPlaybackPosition.Invoke(controller, new object[] { TimeSpan.FromMilliseconds(40), true, false })!;
-        AssertEqual(PlaybackStatus("BaselineCaptured"), GetPropertyValue(playback, "Status"), "playback baseline status");
-        var playbackSignal = GetPropertyValue(playback, "SignalResult")!;
-        AssertEqual(Status("Accepted"), GetPropertyValue(playbackSignal, "Status"), "playback advancing accepted");
-        AssertEqual("FirstCaptureFrame", GetStringProperty(playbackSignal, "MissingSignals"), "playback advancing missing signals");
-
-        var firstFrame = markSignal.Invoke(controller, new object[] { Signals(2), true, false })!;
-        AssertEqual(Status("Accepted"), GetPropertyValue(firstFrame, "Status"), "first frame accepted");
-        AssertEqual(true, GetBoolProperty(firstFrame, "AllRequiredSignalsReceived"), "all required readiness signals received");
-        AssertEqual(string.Empty, GetStringProperty(firstFrame, "MissingSignals"), "no missing readiness signals");
-
-        markFirstVisualConfirmed.Invoke(controller, Array.Empty<object>());
-        var finalSnapshot = snapshotProperty.GetValue(controller)!;
-        AssertEqual(Signals(1 | 2 | 4 | 8), GetPropertyValue(finalSnapshot, "ReceivedSignals"), "first visual signal preserved in received flags");
-
-        return Task.CompletedTask;
-    }
-
     internal static Task PreviewStartupSignalFormatter_PreservesSignalStrings()
     {
         var formatterType = RequireType("Sussudio.Controllers.PreviewStartupSignalFormatter");
@@ -1929,10 +1866,6 @@ static partial class Program
         InvokePreviewStartup(attaching, "SetStartupState", State("RendererAttaching"), null);
         InvokePreviewStartup(attaching, "ConfigureSignals",
             ParseEnum("Sussudio.Models.PreviewStartupStrategy", "D3D11VideoProcessor"), Signals("FirstVisual"));
-        InvokePreviewStartup(attaching, "MarkGpuStartupSignal", Signals("MediaOpened"), "MediaOpened");
-        InvokePreviewStartup(attaching, "MarkGpuStartupSignalPlaybackAdvancing", TimeSpan.FromMilliseconds(100));
-        AssertEqual(Signals("None"), GetPropertyValue(GetPropertyValue(attaching, "SignalSnapshot")!, "ReceivedSignals"), "configuration keeps dual GPU signal handling disabled");
-        AssertEqual(false, GetBoolProperty(attaching, "FirstVisualConfirmed"), "GPU startup signals do not confirm visual readiness");
         attachingRecorder.Events.Clear();
         InvokePreviewStartup(attaching, "ConfirmFirstVisual", "during-renderer-attach");
         AssertEqual(State("Rendering"), GetPropertyValue(attaching, "State"), "first visual can complete during renderer attach before waiting");
@@ -1941,7 +1874,6 @@ static partial class Program
         InvokePreviewStartup(attaching, "StartWatchdog");
 
         SetPropertyOrBackingField(controller, "RecoveryAttemptCount", 3);
-        SetPrivateField(controller, "_positionEventCount", 9L);
         InvokePreviewStartup(controller, "ScheduleFailureStop", "before-reset");
         recorder.Events.Clear();
         InvokePreviewStartup(controller, "ResetStartupTracking", true, true);
@@ -1953,7 +1885,6 @@ static partial class Program
         AssertEqual(null, GetPropertyValue(controller, "FirstVisualUtc"), "reset clears visual timestamp");
         AssertEqual(null, GetPropertyValue(controller, "MissingSignals"), "reset clears cached missing signals");
         AssertEqual(false, GetBoolProperty(controller, "FirstVisualConfirmed"), "reset clears first visual flag");
-        AssertEqual(0L, GetPropertyValue(controller, "PositionEventCount"), "reset clears position count");
         AssertEqual(Signals("None"), GetPropertyValue(SignalSnapshot(), "RequiredSignals"), "reset clears required signals");
         AssertEqual(Signals("None"), GetPropertyValue(SignalSnapshot(), "ReceivedSignals"), "reset clears received signals");
         AssertEqual("None", GetPropertyValue(SignalSnapshot(), "Strategy")?.ToString(), "reset clears strategy");
@@ -2233,7 +2164,7 @@ static partial class Program
         var epochMethod = samplerType.GetMethod("GetOrAdvancePreviewRuntimeSnapshotEpoch", BindingFlags.Instance | BindingFlags.NonPublic)
                           ?? throw new InvalidOperationException("GetOrAdvancePreviewRuntimeSnapshotEpoch method not found.");
         var signatureConstructor = signatureType.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
-            .Single(constructor => constructor.GetParameters().Length == 26);
+            .Single(constructor => constructor.GetParameters().Length == 22);
         var requestedUtc = DateTimeOffset.UtcNow.AddMilliseconds(-250);
 
         object CreateSignature(long framesDisplayed)
@@ -2254,17 +2185,13 @@ static partial class Program
                 "attempt-epoch",
                 requestedUtc,
                 1200,
-                true,
-                false,
-                true,
                 requiredSignals,
                 receivedSignals,
                 startupStrategy,
                 "FirstVisual",
                 2,
                 "timeout",
-                false,
-                3L
+                false
             });
 
         var unchangedSignature = CreateSignature(framesDisplayed: 7);
@@ -2462,7 +2389,6 @@ static partial class Program
         AssertEqual("None", GetStringProperty(previewingState, "GpuPlaybackState"), "null D3D GPU playback state");
         AssertEqual(0, GetIntProperty(previewingState, "NaturalVideoWidth"), "null D3D natural video width");
         AssertEqual(0, GetIntProperty(previewingState, "NaturalVideoHeight"), "null D3D natural video height");
-        AssertEqual(0d, GetDoubleProperty(previewingState, "PositionMs"), "null D3D GPU position");
 
         var idleState = evaluate.Invoke(null, new object[] { null!, false })
                         ?? throw new InvalidOperationException("PreviewRuntimeD3DRendererStatePolicy returned null for idle.");
@@ -2772,9 +2698,6 @@ static partial class Program
             SetPropertyOrBackingField(input, "StartupState", state);
             SetPropertyOrBackingField(input, "StartupAttemptId", attemptId);
             SetPropertyOrBackingField(input, "StartupTimeoutMs", timeoutMs);
-            SetPropertyOrBackingField(input, "StartupGpuSignalMediaOpened", hasAttempt);
-            SetPropertyOrBackingField(input, "StartupGpuSignalFirstFrame", !hasAttempt);
-            SetPropertyOrBackingField(input, "StartupGpuSignalPlaybackAdvancing", hasAttempt);
             SetPropertyOrBackingField(input, "StartupRequiredSignals", requiredSignals);
             SetPropertyOrBackingField(input, "StartupReceivedSignals", receivedSignals);
             SetPropertyOrBackingField(input, "StartupStrategy", startupStrategy);
@@ -2794,9 +2717,6 @@ static partial class Program
             AssertEqual(attemptId, GetPropertyValue(snapshot, "StartupAttemptId"), "snapshot startup attempt id");
             AssertEqual(elapsedMs, GetPropertyValue(snapshot, "StartupElapsedMs"), "snapshot startup elapsed");
             AssertEqual(timeoutMs, GetIntProperty(snapshot, "StartupTimeoutMs"), "snapshot startup timeout");
-            AssertEqual(hasAttempt, GetBoolProperty(snapshot, "StartupGpuSignalMediaOpened"), "snapshot media opened signal");
-            AssertEqual(!hasAttempt, GetBoolProperty(snapshot, "StartupGpuSignalFirstFrame"), "snapshot first frame signal");
-            AssertEqual(hasAttempt, GetBoolProperty(snapshot, "StartupGpuSignalPlaybackAdvancing"), "snapshot playback signal");
             AssertEqual(requiredSignals, GetPropertyValue(snapshot, "StartupRequiredSignals"), "snapshot required signals");
             AssertEqual(receivedSignals, GetPropertyValue(snapshot, "StartupReceivedSignals"), "snapshot received signals");
             AssertEqual(startupStrategy, GetPropertyValue(snapshot, "StartupStrategy"), "snapshot startup strategy");
@@ -2809,7 +2729,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task PreviewRuntimeSnapshotMapper_PreservesRendererAndEventFields()
+    internal static Task PreviewRuntimeSnapshotMapper_PreservesGpuPlaybackFields()
     {
         var inputType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotInput");
         var projectionType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DProjection");
@@ -2820,20 +2740,18 @@ static partial class Program
 
         foreach (var sample in new[]
         {
-            (State: "Rendering", Width: 3840, Height: 2160, PositionMs: 1234.5d, EventCount: 42L),
-            (State: "Idle", Width: 1920, Height: 1080, PositionMs: 987.25d, EventCount: 17L)
+            (State: "Rendering", Width: 3840, Height: 2160),
+            (State: "Idle", Width: 1920, Height: 1080)
         })
         {
             var input = Activator.CreateInstance(inputType)
                         ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotInput.");
-            SetPropertyOrBackingField(input, "GpuPositionEventCount", sample.EventCount);
 
             var d3dProjection = Activator.CreateInstance(projectionType)
                                 ?? throw new InvalidOperationException("Failed to create PreviewRuntimeD3DProjection.");
             SetPropertyOrBackingField(d3dProjection, "GpuPlaybackState", sample.State);
             SetPropertyOrBackingField(d3dProjection, "GpuNaturalVideoWidth", sample.Width);
             SetPropertyOrBackingField(d3dProjection, "GpuNaturalVideoHeight", sample.Height);
-            SetPropertyOrBackingField(d3dProjection, "GpuPositionMs", sample.PositionMs);
 
             var health = Activator.CreateInstance(healthType, new object?[] { null, false, false })
                          ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotHealth.");
@@ -2843,8 +2761,6 @@ static partial class Program
             AssertEqual(sample.State, GetStringProperty(snapshot, "GpuPlaybackState"), "snapshot GPU playback state");
             AssertEqual(sample.Width, GetIntProperty(snapshot, "GpuNaturalVideoWidth"), "snapshot GPU natural width");
             AssertEqual(sample.Height, GetIntProperty(snapshot, "GpuNaturalVideoHeight"), "snapshot GPU natural height");
-            AssertEqual(sample.PositionMs, GetDoubleProperty(snapshot, "GpuPositionMs"), "snapshot GPU position");
-            AssertEqual(sample.EventCount, GetLongProperty(snapshot, "GpuPositionEventCount"), "snapshot GPU event count");
         }
 
         return Task.CompletedTask;
@@ -2879,9 +2795,6 @@ static partial class Program
         SetPropertyOrBackingField(input, "StartupAttemptId", "attempt-1");
         SetPropertyOrBackingField(input, "StartupRequestedUtc", DateTimeOffset.UtcNow.AddMilliseconds(-2000));
         SetPropertyOrBackingField(input, "StartupTimeoutMs", 1000);
-        SetPropertyOrBackingField(input, "StartupGpuSignalMediaOpened", true);
-        SetPropertyOrBackingField(input, "StartupGpuSignalFirstFrame", false);
-        SetPropertyOrBackingField(input, "StartupGpuSignalPlaybackAdvancing", false);
         SetPropertyOrBackingField(input, "StartupRequiredSignals", requiredSignals);
         SetPropertyOrBackingField(input, "StartupReceivedSignals", receivedSignals);
         SetPropertyOrBackingField(input, "StartupStrategy", startupStrategy);
@@ -2889,7 +2802,6 @@ static partial class Program
         SetPropertyOrBackingField(input, "StartupRecoveryAttemptCount", 3);
         SetPropertyOrBackingField(input, "StartupLastFailureReason", "timeout");
         SetPropertyOrBackingField(input, "FirstVisualConfirmed", false);
-        SetPropertyOrBackingField(input, "GpuPositionEventCount", 7L);
 
         var snapshot = build.Invoke(null, new[] { input })
                        ?? throw new InvalidOperationException("PreviewRuntimeSnapshotController.Build returned null.");
@@ -2908,9 +2820,6 @@ static partial class Program
         AssertEqual(startupStrategy, GetPropertyValue(snapshot, "StartupStrategy"), "startup strategy");
         AssertEqual(3, GetIntProperty(snapshot, "StartupRecoveryAttemptCount"), "startup recovery count");
         AssertEqual("timeout", GetStringProperty(snapshot, "StartupLastFailureReason"), "startup failure reason");
-        AssertEqual(true, GetBoolProperty(snapshot, "StartupGpuSignalMediaOpened"), "media opened signal");
-        AssertEqual(false, GetBoolProperty(snapshot, "StartupGpuSignalFirstFrame"), "first-frame signal");
-        AssertEqual(false, GetBoolProperty(snapshot, "StartupGpuSignalPlaybackAdvancing"), "playback advancing signal");
         AssertEqual(true, GetDoubleProperty(snapshot, "StartupElapsedMs") >= 0, "startup elapsed is non-negative");
         AssertEqual(true, GetBoolProperty(snapshot, "BlankSuspected"), "blank suspected when CPU path receives frames but displays none");
         AssertEqual(true, GetBoolProperty(snapshot, "StallSuspected"), "stall suspected after stale last-presented tick");
@@ -2924,7 +2833,6 @@ static partial class Program
         AssertEqual("None", GetStringProperty(snapshot, "D3DInputColorSpace"), "D3D input color fallback");
         AssertEqual("None", GetStringProperty(snapshot, "D3DOutputColorSpace"), "D3D output color fallback");
         AssertEqual("None", GetStringProperty(snapshot, "GpuPlaybackState"), "GPU playback fallback");
-        AssertEqual(7L, GetLongProperty(snapshot, "GpuPositionEventCount"), "GPU position event count");
 
         return Task.CompletedTask;
     }

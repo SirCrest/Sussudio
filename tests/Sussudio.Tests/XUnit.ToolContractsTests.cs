@@ -5859,7 +5859,18 @@ static partial class Program
         ("SelectMicrophoneDevice", 54),
         ("SetMicrophoneVolume", 55),
         ("SetFlashbackBufferMinutes", 56),
-        ("SetFlashbackGpuDecode", 57)
+        ("SetFlashbackGpuDecode", 57),
+        ("GetPerfReport", 58),
+        ("PerfWindow", 59),
+        ("AddPerfMarker", 60),
+        ("FrameTrace", 61),
+        ("GetTuningKnobs", 62),
+        ("SetTuningKnob", 63),
+        ("GetLogTail", 64),
+        ("CaptureAudioOutput", 65),
+        ("GetUiTree", 66),
+        ("InvokeUiElement", 67),
+        ("PerfExperimentLease", 68)
     ];
 
     internal static Task AutomationCommandCatalog_CoversCommandsAndPolicyMetadata()
@@ -6011,7 +6022,9 @@ static partial class Program
             ["CapturePreviewFrame"] = ("WriteFile", "outputPath", false),
             ["CaptureWindowScreenshot"] = ("WriteFile", "outputPath", false),
             ["FlashbackExport"] = ("WriteFile", "outputPath", true),
-            ["VerifyFile"] = ("ReadFile", "filePath", true)
+            ["VerifyFile"] = ("ReadFile", "filePath", true),
+            ["FrameTrace"] = ("WriteFile", "outputPath", false),
+            ["CaptureAudioOutput"] = ("WriteFile", "outputPath", false)
         };
 
         var pathEntries = entries
@@ -6056,7 +6069,7 @@ static partial class Program
 
     internal static Task AutomationManifest_SerializationIsStable()
     {
-        const string ExpectedManifestSha256 = "54C31AFC222765BAA96AEAF28B5E9A6E233583EE23F55828DB4C629D47C82DE0";
+        const string ExpectedManifestSha256 = "3A35500AD0506D99943A32AB7D4EE477E06F12AEF0B23624147341CCE00E5F97";
         var catalogType = RequireAutomationContractType("Sussudio.Tools.AutomationCommandCatalog");
         var createManifestJson = RequireNonPublicStaticMethod(catalogType, "CreateManifestJson");
         var first = (string)createManifestJson.Invoke(null, Array.Empty<object>())!;
