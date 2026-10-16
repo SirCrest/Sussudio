@@ -470,16 +470,6 @@ internal sealed class PreviewStartupSessionController
         TryConfirmFirstVisualFromGpuSignals(result);
     }
 
-    public void MarkGpuStartupSignalFirstFrame()
-    {
-        if (!IsSignalWindowActive(_context.IsPreviewing()) || !_expectGpuDualSignals)
-        {
-            return;
-        }
-
-        MarkGpuStartupSignal(PreviewStartupSignalFlags.FirstCaptureFrame, "FirstCaptureFrame");
-    }
-
     public void MarkGpuStartupSignalPlaybackAdvancing(TimeSpan position)
     {
         var result = _readinessSignals.TrackPlaybackPosition(

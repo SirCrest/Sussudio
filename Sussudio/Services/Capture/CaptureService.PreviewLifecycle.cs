@@ -399,10 +399,6 @@ public partial class CaptureService
         Volatile.Write(ref _cleanupRequired, 0);
     }
 
-    public int GetNegotiatedVideoWidth() => _videoPipeline.NegotiatedVideoWidth;
-    public int GetNegotiatedVideoHeight() => _videoPipeline.NegotiatedVideoHeight;
-    public double GetNegotiatedVideoFps() => _videoPipeline.NegotiatedVideoFps;
-
     internal void SetPreviewFrameSink(IPreviewFrameSink? sink)
     {
         if (sink != null)

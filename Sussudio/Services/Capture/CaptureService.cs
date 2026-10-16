@@ -1319,10 +1319,6 @@ internal sealed class CaptureVideoPipelineResources
     public UnifiedVideoCapture.MjpegPipelineTimingMetrics LastMjpegPipelineTimingMetrics { get; private set; }
     public ParallelMjpegDecodePipeline.PipelineTimingMetrics? LastFullMjpegPipelineTimingMetrics { get; private set; }
 
-    public int NegotiatedVideoWidth => Capture?.Width ?? 0;
-    public int NegotiatedVideoHeight => Capture?.Height ?? 0;
-    public double NegotiatedVideoFps => Capture?.Fps ?? 0;
-
     public void InstallCapture(UnifiedVideoCapture capture)
     {
         Capture = capture;
