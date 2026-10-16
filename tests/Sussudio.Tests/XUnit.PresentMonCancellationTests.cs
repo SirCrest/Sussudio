@@ -194,16 +194,55 @@ static partial class Program
     private static async Task<int> WaitForPresentMonTestChildAsync(string pidPath, Task? run = null)
     {
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-        while (!File.Exists(pidPath))
+        Exception? lastReadFailure = null;
+        while (true)
         {
-            if (run is { IsCompleted: true })
+            if (File.Exists(pidPath))
+            {
+                if (TryReadTestChildPid(pidPath, out var childId, out lastReadFailure)) return childId;
+            }
+            else if (run is { IsCompleted: true })
             {
                 await run.ConfigureAwait(false);
                 throw new InvalidOperationException("PresentMon returned before its test child became ready.");
             }
-            await Task.Delay(25, deadline.Token).ConfigureAwait(false);
+
+            try
+            {
+                await Task.Delay(25, deadline.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (deadline.IsCancellationRequested)
+            {
+                throw new TimeoutException(
+                    $"The test child did not publish a readable pid at '{pidPath}' within 10 s.", lastReadFailure);
+            }
         }
-        return int.Parse(await File.ReadAllTextAsync(pidPath, deadline.Token).ConfigureAwait(false));
+    }
+
+    // Test children publish their pid by renaming a fully written temp file, so a
+    // visible pid file holds the whole pid. The rename keeps its own delete-access
+    // handle open until just after the new name appears, and a reader that does not
+    // share delete access (File.ReadAllText shares read only) fails with a sharing
+    // violation in that window. A read that still fails, for example because a
+    // scanner holds the file, means "not ready yet" rather than a test failure.
+    private static bool TryReadTestChildPid(string pidPath, out int childId, out Exception? failure)
+    {
+        childId = 0;
+        failure = null;
+        try
+        {
+            using var stream = new FileStream(pidPath, FileMode.Open, FileAccess.Read,
+                FileShare.ReadWrite | FileShare.Delete);
+            using var reader = new StreamReader(stream);
+            var text = reader.ReadToEnd();
+            if (int.TryParse(text, out childId)) return true;
+            failure = new FormatException($"The test child pid file held '{text}'.");
+        }
+        catch (IOException error)
+        {
+            failure = error;
+        }
+        return false;
     }
 
     private static async Task StopPresentMonTestRunAsync(Task run, int? childId)
@@ -253,13 +292,7 @@ static partial class Program
             run = (Task)runProcess.Invoke(null, new object[] { executable, arguments, 30_000, cancellation.Token })!;
             if (!preCanceled)
             {
-                using var startupDeadline = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-                while (!File.Exists(readyPath))
-                {
-                    if (run.IsCompleted) await run.ConfigureAwait(false);
-                    await Task.Delay(25, startupDeadline.Token).ConfigureAwait(false);
-                }
-                childId = int.Parse(await File.ReadAllTextAsync(readyPath, startupDeadline.Token).ConfigureAwait(false));
+                childId = await WaitForPresentMonTestChildAsync(readyPath, run).ConfigureAwait(false);
                 cancellation.Cancel();
             }
 
@@ -280,7 +313,7 @@ static partial class Program
         finally
         {
             cancellation.Cancel();
-            if (childId is null && File.Exists(readyPath) && int.TryParse(File.ReadAllText(readyPath), out var recordedId))
+            if (childId is null && File.Exists(readyPath) && TryReadTestChildPid(readyPath, out var recordedId, out _))
                 childId = recordedId;
             if (run is not null) await StopPresentMonTestRunAsync(run, childId).ConfigureAwait(false);
             if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);

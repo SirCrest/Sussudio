@@ -951,8 +951,8 @@ Important entry points:
   where they would start the Flashback backend, after the audio graph started
   (`CAPTURE_FAULT_PREVIEW_FLASHBACK_FAILED`), for its `AudioGraphRollback` scenario.
   `SUSSUDIO_CAPTURE_FAULT_PREVIEW_START_FAILURES` fails the first N video-preview
-  starts before any start work (`CAPTURE_FAULT_PREVIEW_START_FAILED`) for the
-  live check `scripts/performance/Test-PreviewStartFailureResolution.ps1`.
+  starts (`CAPTURE_FAULT_PREVIEW_START_FAILED`) for the live check
+  `scripts/performance/Test-PreviewStartFailureResolution.ps1`.
 - `CaptureService.cs` also owns `CaptureVideoPipelineResources`:
   active unified-video capture storage,
   preview-frame sink storage, negotiated video getters, and cached MJPEG

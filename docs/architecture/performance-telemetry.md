@@ -392,15 +392,15 @@ runtime; `knobs` lists them under
 `Excluded` with the reason. MMCSS task-name knobs are string choices. `apply`
 scopes are read from each consumer's read site; where the read site could not
 be confirmed from source the catalog uses the stricter scope.
+`SUSSUDIO_CAPTURE_FAULT_PREVIEW_START_FAILURES` (fault injection that fails video
+preview starts for a live check) is excluded the same way.
 `SUSSUDIO_CAPTURE_FAULT_PRE_CLEANUP_FAILURES` (fault injection that fails capture
 teardown for a live check) is excluded the same way, as are
 `SUSSUDIO_CAPTURE_FAULT_PREVIEW_INSTALL_FAILURES` (fails fresh preview starts after
-their capture is running, so the start rollback runs),
+their capture is running, so the start rollback runs) and
 `SUSSUDIO_CAPTURE_FAULT_PREVIEW_FLASHBACK_FAILURES` (fails fresh preview starts
 where they would start the Flashback backend, after program audio and the
-microphone monitor started, so the rollback must release the audio graph) and
-`SUSSUDIO_CAPTURE_FAULT_PREVIEW_START_FAILURES` (fails video preview starts before
-any start work).
+microphone monitor started, so the rollback must release the audio graph).
 
 New live knobs added on this branch:
 

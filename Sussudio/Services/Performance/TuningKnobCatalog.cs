@@ -185,6 +185,9 @@ public static class TuningKnobCatalog
             "SUSSUDIO_AUTOMATION_TOKEN",
             "Automation secret; never listed or settable through the tool."),
         new TuningKnobExclusion(
+            "SUSSUDIO_CAPTURE_FAULT_PREVIEW_START_FAILURES",
+            "Fault injection for the preview start failure live check; it deliberately fails video preview starts."),
+        new TuningKnobExclusion(
             "SUSSUDIO_CAPTURE_FAULT_PRE_CLEANUP_FAILURES",
             "Fault injection for the late capture cleanup live check; it deliberately fails capture teardown."),
         new TuningKnobExclusion(
@@ -193,9 +196,6 @@ public static class TuningKnobCatalog
         new TuningKnobExclusion(
             "SUSSUDIO_CAPTURE_FAULT_PREVIEW_FLASHBACK_FAILURES",
             "Fault injection for the audio-graph rollback live check; it deliberately fails fresh preview starts after their audio started."),
-        new TuningKnobExclusion(
-            "SUSSUDIO_CAPTURE_FAULT_PREVIEW_START_FAILURES",
-            "Fault injection for the preview start failure live check; it deliberately fails video preview starts."),
         new TuningKnobExclusion(
             "SUSSUDIO_RECOVERY_DIRECTORY",
             "Recording recovery directory path; changing it at run time could orphan recovery markers."),
