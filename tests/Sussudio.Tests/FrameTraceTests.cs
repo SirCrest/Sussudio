@@ -512,6 +512,92 @@ public sealed class FrameTraceTests
         Assert.Equal(Enumerable.Range(1_000, 10).Select(i => (long)i).ToList(), ids);
     }
 
+    // Ring reuse against writers of the previous trace. Failure modes, listed before the fix:
+    // 1. A writer read the active trace before Stop, was preempted, and records after the next Start reused the ring:
+    //    its event (and its old timestamp, which would pull the dump origin back) must not enter the new trace.
+    // 2. A writer claimed an index before Stop and stores after the reuse: its stamp must never match a new event's
+    //    index, and the new event that maps to the same slot must still be recorded and read.
+    // 3. Recorded, retained and overwritten after a reuse count only the new trace, also after it wraps.
+
+    [Fact]
+    public void AWriterThatReadTheTraceBeforeStopCannotRecordIntoTheReusedRing()
+    {
+        var buffer = new FrameTraceBuffer(FrameTraceBuffer.MinCapacity);
+        var staleGeneration = buffer.Generation;
+        buffer.RecordForTrace(staleGeneration, FrameTraceEventKind.CaptureRead, 10, 1, 1);
+        buffer.Freeze();
+        buffer.Restart();
+
+        // Resumes after the reuse with the trace it captured before Stop.
+        buffer.RecordForTrace(staleGeneration, FrameTraceEventKind.CaptureRead, 20, 1, 999);
+        buffer.RecordInstantForTrace(staleGeneration, FrameTraceEventKind.CaptureRead, 21, 998);
+        buffer.RecordForTrace(buffer.Generation, FrameTraceEventKind.CaptureRead, 30, 1, 2);
+
+        var events = buffer.ReadAll();
+        var only = Assert.Single(events);
+        Assert.Equal(2, only.Id);
+        Assert.Equal(2, buffer.Abandoned);
+    }
+
+    [Fact]
+    public void AWriteClaimedBeforeTheReuseIsNeverReadAsANewEventAndTheNewEventStillLands()
+    {
+        var buffer = new FrameTraceBuffer(FrameTraceBuffer.MinCapacity);
+        for (var i = 0; i < 5; i++)
+        {
+            buffer.Record(FrameTraceEventKind.CaptureRead, i, 1, i);
+        }
+
+        buffer.Freeze();
+        buffer.Restart();
+
+        // The old writer claimed index 5 before Stop and stores only now, before the new trace reaches that slot.
+        buffer.WriteClaimed(5, FrameTraceEventKind.CaptureRead, 5, 1, 777, 0);
+        for (var i = 0; i < 6; i++)
+        {
+            buffer.Record(FrameTraceEventKind.PreviewPresent, 100 + i, 1, 100 + i);
+        }
+
+        var events = buffer.ReadAll();
+        Assert.DoesNotContain(events, e => e.Id == 777);
+        Assert.Equal(Enumerable.Range(100, 6).Select(i => (long)i).ToList(), events.Select(e => e.Id).ToList());
+    }
+
+    [Fact]
+    public void CountsAfterAReuseCoverOnlyTheNewTraceAlsoAcrossAWrap()
+    {
+        var buffer = new FrameTraceBuffer(FrameTraceBuffer.MinCapacity);
+        for (var i = 0; i < FrameTraceBuffer.MinCapacity + 10; i++)
+        {
+            buffer.Record(FrameTraceEventKind.CaptureRead, i, 1, i);
+        }
+
+        buffer.Freeze();
+        buffer.Restart();
+        for (var i = 0; i < 3; i++)
+        {
+            buffer.Record(FrameTraceEventKind.CaptureRead, i, 1, 10_000 + i);
+        }
+
+        Assert.Equal(3, buffer.Recorded);
+        Assert.Equal(3, buffer.Retained);
+        Assert.Equal(0, buffer.Overwritten);
+        Assert.Equal(new long[] { 10_000, 10_001, 10_002 }, buffer.ReadAll().Select(e => e.Id).ToArray());
+
+        for (var i = 3; i < FrameTraceBuffer.MinCapacity + 7; i++)
+        {
+            buffer.Record(FrameTraceEventKind.CaptureRead, i, 1, 10_000 + i);
+        }
+
+        Assert.Equal(FrameTraceBuffer.MinCapacity + 7, buffer.Recorded);
+        Assert.Equal(FrameTraceBuffer.MinCapacity, buffer.Retained);
+        Assert.Equal(7, buffer.Overwritten);
+        var wrapped = buffer.ReadAll();
+        Assert.Equal(FrameTraceBuffer.MinCapacity, wrapped.Count);
+        Assert.Equal(10_007, wrapped[0].Id);
+        Assert.Equal(10_000 + FrameTraceBuffer.MinCapacity + 6, wrapped[^1].Id);
+    }
+
     [Fact]
     public void ADifferentCapacityGetsAFreshRing()
     {

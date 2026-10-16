@@ -897,6 +897,12 @@ static partial class Program
         var deviceResetEx = new System.Runtime.InteropServices.COMException("Device reset", unchecked((int)0x887A0007));
         AssertEqual(true, (bool)method.Invoke(null, new object[] { deviceResetEx })!, "DeviceReset COMException is device lost");
 
+        var deviceHungEx = new System.Runtime.InteropServices.COMException("Device hung", unchecked((int)0x887A0006));
+        AssertEqual(true, (bool)method.Invoke(null, new object[] { deviceHungEx })!, "DeviceHung COMException is device lost");
+
+        var driverInternalEx = new System.Runtime.InteropServices.COMException("Driver internal error", unchecked((int)0x887A0020));
+        AssertEqual(true, (bool)method.Invoke(null, new object[] { driverInternalEx })!, "DriverInternalError COMException is device lost");
+
         var otherComEx = new System.Runtime.InteropServices.COMException("Other", unchecked((int)0x80004005));
         AssertEqual(false, (bool)method.Invoke(null, new object[] { otherComEx })!, "Other COMException is not device lost");
 

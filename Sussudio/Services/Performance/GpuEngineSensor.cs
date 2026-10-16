@@ -173,7 +173,10 @@ public sealed record GpuEngineSensorStatus(
 /// <summary>
 /// Samples this process's GPU engine utilization at 1 Hz while demand lasts and records it into the
 /// <c>gpu.engine.*</c> histograms (hundredths of a percent). One dedicated thread owns the whole counter lifetime
-/// (open, read, close), so no handle is ever used from two threads and Stop only has to signal and join.
+/// (open, read, close), so no handle is ever used from two threads and Stop only has to signal and join. The join is
+/// bounded, so a PDH call that never returns cannot hang Stop; the thread then keeps ownership until the call returns.
+/// A Start in the meantime is remembered and the old thread starts its successor as it exits, so two generations
+/// never run side by side, and the late call's sample is dropped.
 /// An unavailable PDH is a state, never an exception: open failures are retried with a bounded backoff (the counters
 /// of a process appear only once it first uses the GPU, and PDH can be briefly unavailable), and the last error is
 /// kept for the report. A tick with no usable data (the first sample of a rate counter, or no PDH instance for the
@@ -187,7 +190,7 @@ public sealed class GpuEngineSensor : IDemandSensor
     /// <summary>Longest wait between open attempts while the counters are unavailable.</summary>
     public const int MaxOpenRetryMs = 15000;
 
-    private const int StopJoinTimeoutMs = 3000;
+    public const int DefaultStopJoinTimeoutMs = 3000;
 
     // 10000 % is far beyond any real sum; it only bounds a corrupt counter value inside the histogram range.
     private const double MaxCentiPercent = 1_000_000;
@@ -195,12 +198,18 @@ public sealed class GpuEngineSensor : IDemandSensor
     private readonly Func<IGpuCounterReader> _readerFactory;
     private readonly int _processId;
     private readonly int _periodMs;
+    private readonly int _stopJoinTimeoutMs;
     private readonly object _gate = new();
     private readonly List<GpuCounterItem> _engines = new();
     private readonly List<GpuCounterItem> _memory = new();
 
+    // The running generation. Only that thread clears these, under _gate, as it exits; Stop signals and waits.
     private Thread? _thread;
     private ManualResetEventSlim? _stop;
+
+    // Under _gate. Pending: a Start arrived while the old generation was still stopping. Overdue: the stop timed out.
+    private bool _restartPending;
+    private bool _stopOverdue;
 
     private int _state;
     private string? _lastError;
@@ -209,11 +218,16 @@ public sealed class GpuEngineSensor : IDemandSensor
     private long _openFailures;
     private long _dedicatedBytes = -1;
 
-    public GpuEngineSensor(Func<IGpuCounterReader> readerFactory, int processId, int periodMs = DefaultPeriodMs)
+    public GpuEngineSensor(
+        Func<IGpuCounterReader> readerFactory,
+        int processId,
+        int periodMs = DefaultPeriodMs,
+        int stopJoinTimeoutMs = DefaultStopJoinTimeoutMs)
     {
         _readerFactory = readerFactory;
         _processId = processId;
         _periodMs = Math.Max(1, periodMs);
+        _stopJoinTimeoutMs = Math.Max(0, stopJoinTimeoutMs);
     }
 
     public string Name => "gpu_engines";
@@ -224,6 +238,12 @@ public sealed class GpuEngineSensor : IDemandSensor
     /// </summary>
     public string Describe()
     {
+        if (Volatile.Read(ref _stopOverdue))
+        {
+            var restart = Volatile.Read(ref _restartPending) ? "; restarts when it returns" : string.Empty;
+            return $"gpu_engines: stopping, a counter call has not returned{restart}";
+        }
+
         var status = Status;
         switch (status.State)
         {
@@ -255,63 +275,109 @@ public sealed class GpuEngineSensor : IDemandSensor
         }
     }
 
-    /// <summary>Starts the sensor thread. Returns false when it is already running.</summary>
+    /// <summary>
+    /// Starts the sensor thread. Returns false when it is already running or already due to restart. While a stopped
+    /// generation is still exiting, the start is remembered and that thread starts the next one as it leaves.
+    /// </summary>
     public bool Start()
     {
         lock (_gate)
         {
-            if (_thread is not null)
+            if (_thread is null)
+            {
+                Launch();
+                return true;
+            }
+
+            if (!_stop!.IsSet || _restartPending)
             {
                 return false;
             }
 
-            var stop = new ManualResetEventSlim(false);
-            var thread = new Thread(() => Loop(stop))
-            {
-                IsBackground = true,
-                Name = "Sussudio.TelemetryGpuEngines",
-            };
-            _stop = stop;
-            _thread = thread;
-            Volatile.Write(ref _state, (int)GpuEngineSensorState.Opening);
-            thread.Start();
+            _restartPending = true;
             return true;
         }
     }
 
-    /// <summary>Stops the thread and waits for it (bounded). Harmless when not running.</summary>
+    /// <summary>
+    /// Stops the thread and waits for it (bounded). Harmless when not running. Cancels a remembered restart. When the
+    /// wait times out the thread keeps ownership until its counter call returns, and the report says so.
+    /// </summary>
     public void Stop()
     {
-        Thread? thread;
-        ManualResetEventSlim? stop;
+        Thread thread;
         lock (_gate)
         {
+            _restartPending = false;
+            if (_thread is null)
+            {
+                return;
+            }
+
             thread = _thread;
-            stop = _stop;
-            _thread = null;
-            _stop = null;
+
+            // Set under the gate: the thread disposes the event only after giving up ownership under the same gate.
+            _stop!.Set();
         }
 
-        if (thread is null || stop is null)
+        if (thread.Join(_stopJoinTimeoutMs))
         {
             return;
         }
 
-        stop.Set();
-        thread.Join(StopJoinTimeoutMs);
+        lock (_gate)
+        {
+            if (ReferenceEquals(_thread, thread))
+            {
+                Volatile.Write(ref _stopOverdue, true);
+            }
+        }
+    }
+
+    // Caller holds _gate and has checked that no generation owns the sensor. A thread that fails to start leaves the
+    // sensor stopped rather than owned by a thread that will never release it.
+    private void Launch()
+    {
+        var stop = new ManualResetEventSlim(false);
+        var thread = new Thread(() => Loop(stop))
+        {
+            IsBackground = true,
+            Name = "Sussudio.TelemetryGpuEngines",
+        };
+        _stop = stop;
+        _thread = thread;
+        Volatile.Write(ref _state, (int)GpuEngineSensorState.Opening);
+        try
+        {
+            thread.Start();
+        }
+        catch
+        {
+            _stop = null;
+            _thread = null;
+            Volatile.Write(ref _state, (int)GpuEngineSensorState.Stopped);
+            stop.Dispose();
+            throw;
+        }
     }
 
     /// <summary>
     /// One read of an open reader, aggregated and recorded. Internal so tests can drive the failure handling without
-    /// a thread. Returns false when the reader reported <see cref="GpuCounterReadResult.Unavailable"/>.
+    /// a thread. Returns false when the reader reported <see cref="GpuCounterReadResult.Unavailable"/>. A read that
+    /// returns after <paramref name="stop"/> was set records nothing: demand ended while it was blocked.
     /// </summary>
-    internal bool SampleOnce(IGpuCounterReader reader)
+    internal bool SampleOnce(IGpuCounterReader reader, ManualResetEventSlim? stop = null)
     {
         // The collect expands the GPU Engine wildcard across every process's instances; its span shows what the sensor
         // costs next to the stages it might disturb (a no-op unless a trace runs).
         var readStart = Stopwatch.GetTimestamp();
         var result = reader.Read(_engines, _memory, out var detail);
         FrameTrace.Record(FrameTraceEventKind.GpuEngineSample, readStart, Stopwatch.GetTimestamp() - readStart, -1);
+        if (stop is not null && stop.IsSet)
+        {
+            return true;
+        }
+
         if (result == GpuCounterReadResult.Unavailable)
         {
             Volatile.Write(ref _lastError, detail ?? "GPU counters unavailable");
@@ -386,7 +452,7 @@ public sealed class GpuEngineSensor : IDemandSensor
                 bool ok;
                 try
                 {
-                    ok = SampleOnce(reader);
+                    ok = SampleOnce(reader, stop);
                 }
                 catch (Exception ex)
                 {
@@ -411,6 +477,28 @@ public sealed class GpuEngineSensor : IDemandSensor
             // A dedicated-memory figure from a sensor that is no longer measuring would read as current in the report.
             Volatile.Write(ref _dedicatedBytes, -1);
             Volatile.Write(ref _state, (int)GpuEngineSensorState.Stopped);
+
+            // Ownership ends here and nowhere else, so the next generation can only start after these writes.
+            lock (_gate)
+            {
+                _thread = null;
+                _stop = null;
+                Volatile.Write(ref _stopOverdue, false);
+                if (_restartPending)
+                {
+                    _restartPending = false;
+                    try
+                    {
+                        Launch();
+                    }
+                    catch (Exception ex)
+                    {
+                        // Thrown here it would be unhandled on this thread and end the process; a report line will do.
+                        Volatile.Write(ref _lastError, "GPU sensor restart failed: " + ex.GetType().Name);
+                    }
+                }
+            }
+
             stop.Dispose();
         }
     }

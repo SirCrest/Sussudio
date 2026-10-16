@@ -900,3 +900,115 @@ internal sealed class MmcssThreadRegistration : IDisposable
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool AvRevertMmThreadCharacteristics(IntPtr avrtHandle);
 }
+
+/// <summary>
+/// Frame-pacing wait for a dedicated thread: a high-resolution waitable timer covers the bulk
+/// of the interval and a short spin covers the last fraction of a millisecond. Without the
+/// timer (pre-1803 Windows) it sleeps and spins the last 2 ms, the former pacing behaviour.
+/// One instance per thread; it owns a kernel timer handle.
+/// </summary>
+internal sealed class PrecisionWaiter : IDisposable
+{
+    private const uint CreateWaitableTimerHighResolution = 0x00000002;
+    private const uint TimerAllAccess = 0x001F0003;
+    private const uint WaitObject0 = 0;
+    private static readonly long SpinTailTicks = Math.Max(1, Stopwatch.Frequency / 4000); // 0.25 ms
+    private static readonly long SleepTailTicks = Math.Max(1, 2 * Stopwatch.Frequency / 1000); // 2 ms
+
+    private IntPtr _timer;
+
+    public PrecisionWaiter()
+    {
+        try
+        {
+            _timer = CreateWaitableTimerExW(IntPtr.Zero, IntPtr.Zero, CreateWaitableTimerHighResolution, TimerAllAccess);
+        }
+        catch (Exception)
+        {
+            _timer = IntPtr.Zero;
+        }
+    }
+
+    public bool IsHighResolution => _timer != IntPtr.Zero;
+
+    /// <summary>Returns once <paramref name="stopwatch"/> reaches <paramref name="targetTicks"/>.</summary>
+    public void WaitUntil(Stopwatch stopwatch, long targetTicks)
+    {
+        if (_timer == IntPtr.Zero)
+        {
+            SleepAndSpinUntil(stopwatch, targetTicks);
+            return;
+        }
+
+        var remaining = targetTicks - stopwatch.ElapsedTicks;
+        while (remaining > SpinTailTicks)
+        {
+            var waitTicks = remaining - SpinTailTicks;
+            // Relative due time in 100 ns units (negative means relative).
+            var dueTime = -(long)Math.Max(1, waitTicks * 10_000_000.0 / Stopwatch.Frequency);
+            if (!SetWaitableTimer(_timer, ref dueTime, 0, IntPtr.Zero, IntPtr.Zero, false))
+            {
+                SleepAndSpinUntil(stopwatch, targetTicks);
+                return;
+            }
+
+            var timeoutMs = (uint)Math.Max(1, waitTicks * 1000 / Stopwatch.Frequency + 2);
+            if (WaitForSingleObject(_timer, timeoutMs) != WaitObject0)
+            {
+                break;
+            }
+
+            remaining = targetTicks - stopwatch.ElapsedTicks;
+        }
+
+        while (stopwatch.ElapsedTicks < targetTicks)
+        {
+            Thread.SpinWait(1);
+        }
+    }
+
+    /// <summary>Sleep for the coarse remainder, then spin the last 2 ms (scheduler granularity is 1-15 ms).</summary>
+    public static void SleepAndSpinUntil(Stopwatch stopwatch, long targetTicks)
+    {
+        var remaining = targetTicks - stopwatch.ElapsedTicks;
+        if (remaining > SleepTailTicks)
+        {
+            var sleepMs = (int)((remaining - SleepTailTicks) * 1000 / Stopwatch.Frequency);
+            if (sleepMs > 0)
+            {
+                Thread.Sleep(sleepMs);
+            }
+        }
+
+        while (stopwatch.ElapsedTicks < targetTicks)
+        {
+            Thread.SpinWait(1);
+        }
+    }
+
+    public void Dispose()
+    {
+        var timer = _timer;
+        if (timer == IntPtr.Zero)
+        {
+            return;
+        }
+
+        _timer = IntPtr.Zero;
+        CloseHandle(timer);
+    }
+
+    [DllImport("kernel32.dll", ExactSpelling = true, SetLastError = true)]
+    private static extern IntPtr CreateWaitableTimerExW(IntPtr timerAttributes, IntPtr timerName, uint flags, uint desiredAccess);
+
+    [DllImport("kernel32.dll", ExactSpelling = true, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool SetWaitableTimer(IntPtr timer, ref long dueTime, int period, IntPtr completionRoutine, IntPtr argToCompletionRoutine, [MarshalAs(UnmanagedType.Bool)] bool resume);
+
+    [DllImport("kernel32.dll", ExactSpelling = true, SetLastError = true)]
+    private static extern uint WaitForSingleObject(IntPtr handle, uint milliseconds);
+
+    [DllImport("kernel32.dll", ExactSpelling = true, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool CloseHandle(IntPtr handle);
+}

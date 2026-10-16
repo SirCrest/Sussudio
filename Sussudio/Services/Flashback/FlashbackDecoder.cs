@@ -45,6 +45,32 @@ internal readonly struct DecodedAudioChunk
 }
 
 /// <summary>
+/// Stream parameters the writer publishes for the segments it is producing. They let the
+/// decoder open a segment without probe-decoding it: the demuxer only has to parse headers.
+/// </summary>
+internal readonly record struct FlashbackPlaybackStreamHints(
+    int Width,
+    int Height,
+    bool IsP010,
+    string CodecName,
+    double FrameRate);
+
+/// <summary>
+/// A keyframe the writer muxed: its stream PTS and the output byte position just before it
+/// was written. Seeking to that byte position and decoding keyframes only yields the IDR.
+/// </summary>
+internal readonly record struct FlashbackKeyframeLocation(TimeSpan Pts, long BytePosition);
+
+/// <summary>Why <see cref="FlashbackDecoder.PrebufferAudio"/> stopped reading.</summary>
+internal enum FlashbackAudioPrebufferStop
+{
+    Satisfied,
+    StashFull,
+    EndOfInput,
+    PacketCloneFailed
+}
+
+/// <summary>
 /// Video+audio decoder for Flashback segment (.ts or .mp4) files.
 /// Decodes HEVC/H.264 video via D3D11VA (GPU-direct) or software fallback to NV12/P010,
 /// and AAC audio to f32le interleaved stereo 48kHz.
@@ -62,6 +88,16 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
     private const int MaxDecodedAudioFrameBytes = 16 * 1024 * 1024;
     private const int MaxMpegTsProbeSizeBytes = 20 * 1024 * 1024;
     private const int MaxMpegTsAnalyzeDurationUs = 5 * 1000 * 1000;
+    // A hinted open parses container headers only: no probe decode, no frame-rate sampling.
+    private const int HintedProbeSizeBytes = 8 * 1024 * 1024;
+    private const int HintedAnalyzeDurationUs = 200 * 1000;
+    // The writer's GOP is round(fps) frames, about one second. A keyframe seek without an
+    // index backs off one GOP plus a margin so the packet-granular MPEG-TS binary seek lands
+    // before the IDR at or before the target.
+    private static readonly TimeSpan MpegTsNominalGop = TimeSpan.FromSeconds(1.0);
+    private static readonly TimeSpan MpegTsKeyframeSeekBackoff = TimeSpan.FromSeconds(1.1);
+    // Exact seeks decode forward from the keyframe; two GOPs covers the no-index fallback.
+    private const int MaxExactSeekForwardFrames = 960;
 
     private AVFormatContext* _formatCtx;
     private AVCodecContext* _videoCodecCtx;
@@ -93,6 +129,19 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
     // SeekTo forward-decode cap observability
     private long _seekToCapHits;
     private bool _lastSeekHitForwardDecodeCap;
+
+    // Video packets read ahead while priming audio. They are fed to the decoder before the
+    // demuxer is read again, so audio can be primed without decoding or rewinding video.
+    private readonly Queue<IntPtr> _stashedVideoPackets = new();
+    private FlashbackPlaybackStreamHints? _openHints;
+
+    /// <summary>
+    /// Resolves the writer-indexed keyframe at or before a target PTS for a segment path.
+    /// Null, or a null result, means the index does not cover the target.
+    /// </summary>
+    public Func<string, TimeSpan, FlashbackKeyframeLocation?>? KeyframeLookup { get; set; }
+
+    public int StashedVideoPacketCount => _stashedVideoPackets.Count;
 
     private bool _isOpen;
     private bool _disposed;
@@ -367,7 +416,7 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
     /// <summary>
     /// Opens a .ts or .mp4 file for decoding.
     /// </summary>
-    public void OpenFile(string filePath)
+    public void OpenFile(string filePath, FlashbackPlaybackStreamHints? hints = null)
     {
         ThrowIfNotInitialized();
         ThrowIfDisposed();
@@ -401,11 +450,26 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
             _formatCtx = formatCtx;
             _formatCtx->flags |= ffmpeg.AVFMT_FLAG_GENPTS;
 
-            // Rotated MPEG-TS segments can start mid-stream before the next IDR/SPS.
-            // Use the same larger probe window as the exporter so playback can recover
-            // dimensions and extradata from high-bitrate 4K120 flashback segments.
-            _formatCtx->probesize = MaxMpegTsProbeSizeBytes;
-            _formatCtx->max_analyze_duration = MaxMpegTsAnalyzeDurationUs;
+            var hinted = hints.HasValue && TryApplyStreamHints(_formatCtx, hints.Value);
+            _openHints = hinted ? hints : null;
+            if (hinted)
+            {
+                // The writer described the streams, so the probe only parses container
+                // headers: no probe decode, no frame-rate sampling, and no end-of-file
+                // duration scan on a segment that is still growing.
+                _formatCtx->probesize = HintedProbeSizeBytes;
+                _formatCtx->max_analyze_duration = HintedAnalyzeDurationUs;
+                _formatCtx->fps_probe_size = 0;
+                _formatCtx->skip_estimate_duration_from_pts = 1;
+            }
+            else
+            {
+                // Rotated MPEG-TS segments can start mid-stream before the next IDR/SPS.
+                // Use the same larger probe window as the exporter so playback can recover
+                // dimensions and extradata from high-bitrate 4K120 flashback segments.
+                _formatCtx->probesize = MaxMpegTsProbeSizeBytes;
+                _formatCtx->max_analyze_duration = MaxMpegTsAnalyzeDurationUs;
+            }
 
             var probeStartedAt = Stopwatch.GetTimestamp();
             FindInputStreamInfo(_formatCtx);
@@ -451,7 +515,7 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
             Logger.Log($"FLASHBACK_DECODER_OPEN path='{filePath}' " +
                        $"video={_videoWidth}x{_videoHeight} fps={_frameRate:F2} hdr={_isHdr} " +
                        $"hw_accel={((_isD3D11HwAccelerated ? "D3D11VA" : "Software"))} " +
-                       $"audio={(_audioStreamIndex >= 0 ? "yes" : "no")} " +
+                       $"audio={(_audioStreamIndex >= 0 ? "yes" : "no")} hinted={hinted} " +
                        $"probe_ms={probeMs:F1} codec_ms={Stopwatch.GetElapsedTime(codecStartedAt).TotalMilliseconds:F1} total_ms={Stopwatch.GetElapsedTime(openStartedAt).TotalMilliseconds:F1}");
         }
         catch (Exception ex)
@@ -461,6 +525,100 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
             throw;
         }
     }
+
+    /// <summary>
+    /// Pre-fills codec parameters the writer already knows so <see cref="FindInputStreamInfo"/>
+    /// can skip probe decoding. Returns false when the file does not match the hints, in which
+    /// case nothing is changed and the normal probe runs.
+    /// </summary>
+    private static bool TryApplyStreamHints(AVFormatContext* formatCtx, FlashbackPlaybackStreamHints hints)
+    {
+        if (hints.Width <= 0 || hints.Height <= 0 ||
+            !TryGetInputStreamCount(formatCtx, out var streamCount, out _))
+        {
+            return false;
+        }
+
+        var expectedVideoCodec = ResolveHintedVideoCodecId(hints.CodecName);
+        if (expectedVideoCodec == AVCodecID.AV_CODEC_ID_NONE)
+        {
+            return false;
+        }
+
+        for (var i = 0; i < streamCount; i++)
+        {
+            var codecPar = formatCtx->streams[i]->codecpar;
+            if (codecPar->codec_type == AVMediaType.AVMEDIA_TYPE_VIDEO && codecPar->codec_id != expectedVideoCodec)
+            {
+                return false;
+            }
+        }
+
+        var videoMatched = false;
+        for (var i = 0; i < streamCount; i++)
+        {
+            var codecPar = formatCtx->streams[i]->codecpar;
+            if (codecPar->codec_type == AVMediaType.AVMEDIA_TYPE_VIDEO)
+            {
+                videoMatched = true;
+                if (codecPar->width <= 0 || codecPar->height <= 0)
+                {
+                    codecPar->width = hints.Width;
+                    codecPar->height = hints.Height;
+                }
+
+                if (codecPar->format == (int)AVPixelFormat.AV_PIX_FMT_NONE)
+                {
+                    codecPar->format = (int)(hints.IsP010
+                        ? AVPixelFormat.AV_PIX_FMT_YUV420P10LE
+                        : AVPixelFormat.AV_PIX_FMT_YUV420P);
+                }
+            }
+            else if (codecPar->codec_type == AVMediaType.AVMEDIA_TYPE_AUDIO &&
+                     codecPar->codec_id == AVCodecID.AV_CODEC_ID_AAC &&
+                     codecPar->sample_rate <= 0)
+            {
+                // The writer encodes 48 kHz stereo AAC. A segment can begin with seconds of
+                // video before its first audio packet, so a header-only probe may not see
+                // one; the ADTS headers correct these values if they ever differ.
+                codecPar->sample_rate = OutputAudioSampleRate;
+                codecPar->format = (int)AVSampleFormat.AV_SAMPLE_FMT_FLTP;
+                ffmpeg.av_channel_layout_uninit(&codecPar->ch_layout);
+                ffmpeg.av_channel_layout_default(&codecPar->ch_layout, OutputAudioChannels);
+            }
+        }
+
+        return videoMatched;
+    }
+
+    private static AVCodecID ResolveHintedVideoCodecId(string? codecName)
+    {
+        if (string.IsNullOrWhiteSpace(codecName))
+        {
+            return AVCodecID.AV_CODEC_ID_NONE;
+        }
+
+        if (codecName.Contains("hevc", StringComparison.OrdinalIgnoreCase) ||
+            codecName.Contains("265", StringComparison.OrdinalIgnoreCase))
+        {
+            return AVCodecID.AV_CODEC_ID_HEVC;
+        }
+
+        if (codecName.Contains("264", StringComparison.OrdinalIgnoreCase))
+        {
+            return AVCodecID.AV_CODEC_ID_H264;
+        }
+
+        if (codecName.Contains("av1", StringComparison.OrdinalIgnoreCase))
+        {
+            return AVCodecID.AV_CODEC_ID_AV1;
+        }
+
+        return AVCodecID.AV_CODEC_ID_NONE;
+    }
+
+    private static bool IsMpegTsPath(string? filePath)
+        => string.Equals(System.IO.Path.GetExtension(filePath), ".ts", StringComparison.OrdinalIgnoreCase);
 
     private static void FindInputStreamInfo(AVFormatContext* formatCtx)
     {
@@ -514,12 +672,12 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
     {
         ThrowIfNotOpen();
         cancellationToken.ThrowIfCancellationRequested();
-        if (_completedInputDrainStarted || _hasPendingVideoFrame ||
-            !string.Equals(System.IO.Path.GetExtension(_currentFilePath), ".ts", StringComparison.OrdinalIgnoreCase) ||
-            !string.Equals(System.IO.Path.GetExtension(filePath), ".ts", StringComparison.OrdinalIgnoreCase) ||
+        if (_completedInputDrainStarted || _hasPendingVideoFrame || _stashedVideoPackets.Count > 0 ||
+            !IsMpegTsPath(_currentFilePath) ||
+            !IsMpegTsPath(filePath) ||
             _videoCodecCtx->codec_id is not (AVCodecID.AV_CODEC_ID_HEVC or AVCodecID.AV_CODEC_ID_H264))
         {
-            Logger.Log($"FLASHBACK_DECODER_CONTINUE_SKIP drained={_completedInputDrainStarted} pending={_hasPendingVideoFrame} codec={_videoCodecCtx->codec_id}");
+            Logger.Log($"FLASHBACK_DECODER_CONTINUE_SKIP drained={_completedInputDrainStarted} pending={_hasPendingVideoFrame} stashed={_stashedVideoPackets.Count} codec={_videoCodecCtx->codec_id}");
             return false;
         }
 
@@ -535,6 +693,11 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
             candidate->max_analyze_duration = 100_000;
             candidate->skip_estimate_duration_from_pts = 1;
             candidate->fps_probe_size = 0;
+            if (_openHints is { } continuationHints)
+            {
+                TryApplyStreamHints(candidate, continuationHints);
+            }
+
             FindInputStreamInfo(candidate);
             cancellationToken.ThrowIfCancellationRequested();
             if (!TryGetInputStreamCount(candidate, out var streamCount, out _) ||
@@ -642,14 +805,11 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         _isOpen = false;
         _completedInputDrainStarted = false;
         _suppressRecoverableSeekLogsForNextVideoFrame = false;
+        _openHints = null;
+        ReleaseStashedVideoPackets();
 
         // Clear any stashed pending frame (free held D3D11VA surface if present).
-        if (_hasPendingVideoFrame)
-        {
-            ReleaseHeldFrameBestEffort(_pendingVideoFrame, "close_pending");
-            _pendingVideoFrame = default;
-            _hasPendingVideoFrame = false;
-        }
+        ClearPendingVideoFrame("close_pending");
 
         // Free pinned handles used by the software decode path.
         for (var i = 0; i < VideoFrameBufferCount; i++)
@@ -773,15 +933,230 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         double ConvertMs);
 
     /// <summary>
-    /// Seeks to the nearest keyframe at or before <paramref name="target"/>.
-    /// Fast seek suitable for scrubbing.
+    /// Seeks so the next decoded frame is the keyframe at or before <paramref name="target"/>.
+    /// Uses the writer's keyframe index when it covers the target (one byte seek, one IDR
+    /// decode); otherwise backs off one GOP and decodes keyframes only, so no frame is
+    /// decoded against missing references and no later IDR is shown in place of the target.
+    /// The frame is stashed for the next <see cref="TryDecodeNextVideoFrame"/>.
     /// </summary>
     public bool SeekToKeyframe(TimeSpan target, CancellationToken cancellationToken = default)
     {
         ThrowIfNotOpen();
         cancellationToken.ThrowIfCancellationRequested();
-        _completedInputDrainStarted = false;
+        var seekStartedAt = Stopwatch.GetTimestamp();
+        var isMpegTs = IsMpegTsPath(_currentFilePath);
 
+        if (isMpegTs && TryLookupKeyframe(target, out var indexed))
+        {
+            if (TrySeekDemuxerToBytePosition(indexed, cancellationToken) &&
+                TryDecodeKeyframeOnly(out var indexedFrame, cancellationToken))
+            {
+                if (indexedFrame.Pts <= target + OneFrameInterval())
+                {
+                    StashPendingVideoFrame(indexedFrame);
+                    Logger.Log(
+                        $"FLASHBACK_DECODER_SEEK_INDEXED target_ms={(long)target.TotalMilliseconds} " +
+                        $"key_ms={(long)indexed.Pts.TotalMilliseconds} pos={indexed.BytePosition} " +
+                        $"frame_ms={(long)indexedFrame.Pts.TotalMilliseconds} elapsed_ms={ElapsedMsSince(seekStartedAt):F1}");
+                    return true;
+                }
+
+                // The bytes before the recorded position decoded to a later IDR; the index
+                // entry is stale for this file. Fall back to the timestamp path.
+                ReleaseHeldFrameBestEffort(indexedFrame, "seek_indexed_overshoot");
+                Logger.Log(
+                    $"FLASHBACK_DECODER_SEEK_INDEXED_MISS target_ms={(long)target.TotalMilliseconds} " +
+                    $"key_ms={(long)indexed.Pts.TotalMilliseconds} frame_ms={(long)indexedFrame.Pts.TotalMilliseconds}");
+            }
+        }
+
+        var seekStart = ResolveExactSeekStart(target, _currentFilePath);
+        if (!SeekDemuxerToTimestamp(seekStart, cancellationToken))
+        {
+            return false;
+        }
+
+        if (!TryDecodeKeyframeOnly(out var keyframe, cancellationToken))
+        {
+            Logger.Log($"FLASHBACK_DECODER_SEEK_KEYFRAME_NONE target_ms={(long)target.TotalMilliseconds} start_ms={(long)seekStart.TotalMilliseconds}");
+            return false;
+        }
+
+        if (isMpegTs && target - keyframe.Pts >= MpegTsNominalGop - OneFrameInterval())
+        {
+            // Backing off one GOP can land just before an earlier IDR. The next IDR may still
+            // be at or before the target; prefer it when it is.
+            if (TryDecodeKeyframeOnly(out var laterKeyframe, cancellationToken))
+            {
+                if (laterKeyframe.Pts <= target)
+                {
+                    ReleaseHeldFrameBestEffort(keyframe, "seek_keyframe_superseded");
+                    keyframe = laterKeyframe;
+                }
+                else
+                {
+                    ReleaseHeldFrameBestEffort(laterKeyframe, "seek_keyframe_overshoot");
+                }
+            }
+        }
+
+        StashPendingVideoFrame(keyframe);
+        Logger.Log(
+            $"FLASHBACK_DECODER_SEEK_KEYFRAME target_ms={(long)target.TotalMilliseconds} " +
+            $"start_ms={(long)seekStart.TotalMilliseconds} frame_ms={(long)keyframe.Pts.TotalMilliseconds} " +
+            $"indexed=false elapsed_ms={ElapsedMsSince(seekStartedAt):F1}");
+        return true;
+    }
+
+    /// <summary>
+    /// Seeks to the keyframe at or before <paramref name="target"/> and decodes forward to the
+    /// first frame at or after it. Intermediate frames are kept only as reference-counted
+    /// decoder frames; the single frame that is presented is converted. At EOF or the
+    /// forward-decode limit, keeps the best earlier frame when one was decoded.
+    /// </summary>
+    /// <returns>True when a usable frame was selected for the next decode call; false when seeking failed or no frame was obtained.</returns>
+    /// <remarks>
+    /// <see cref="CurrentPosition"/> reports the achieved PTS. Success does not require reaching the requested PTS.
+    /// <see cref="LastSeekHitForwardDecodeCap"/> identifies a cap-limited result more than one frame interval behind the target.
+    /// </remarks>
+    public bool SeekTo(TimeSpan target, CancellationToken cancellationToken = default)
+    {
+        ThrowIfNotOpen();
+        cancellationToken.ThrowIfCancellationRequested();
+        _lastSeekHitForwardDecodeCap = false;
+        var seekStartedAt = Stopwatch.GetTimestamp();
+
+        if (!SeekToKeyframe(target, cancellationToken))
+        {
+            return false;
+        }
+
+        if (_pendingVideoFrame.Pts.Ticks >= target.Ticks)
+        {
+            return true;
+        }
+
+        // The keyframe is the best frame so far. Take it out of the pending slot so a
+        // cancellation or failure below cannot leave it dangling.
+        var bestFrame = _pendingVideoFrame;
+        var hasBestFrame = true;
+        _pendingVideoFrame = default;
+        _hasPendingVideoFrame = false;
+        AVFrame* bestRaw = null;
+        var decoded = 0;
+        try
+        {
+            for (; decoded < MaxExactSeekForwardFrames; decoded++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (!TryReceiveRawVideoFrame(cancellationToken))
+                {
+                    break;
+                }
+
+                var pts = ResolveRawFramePts(_videoFrame);
+                if (pts.Ticks >= target.Ticks)
+                {
+                    var targetFrame = ConvertAndOutputVideoFrame(_videoFrame, takeOwnership: false);
+                    if (targetFrame.Width <= 0)
+                    {
+                        return false;
+                    }
+
+                    ReleaseSeekCandidates(ref bestFrame, ref hasBestFrame, ref bestRaw, "seek_replace_best");
+                    StashPendingVideoFrame(targetFrame);
+                    return true;
+                }
+
+                // Keep the closest frame as a reference-counted clone; converting it would be
+                // wasted work unless the decode ends before the target.
+                ReleaseSeekCandidates(ref bestFrame, ref hasBestFrame, ref bestRaw, "seek_best_superseded");
+                bestRaw = ffmpeg.av_frame_clone(_videoFrame);
+                ffmpeg.av_frame_unref(_videoFrame);
+                if (bestRaw == null)
+                {
+                    Logger.Log("FLASHBACK_DECODER_SEEK_WARN reason=clone_failed");
+                    return false;
+                }
+            }
+
+            if (bestRaw != null)
+            {
+                var rawToConvert = bestRaw;
+                bestRaw = null;
+                var bestConverted = ConvertAndOutputVideoFrame(rawToConvert, takeOwnership: true);
+                if (bestConverted.Width <= 0)
+                {
+                    return false;
+                }
+
+                bestFrame = bestConverted;
+                hasBestFrame = true;
+            }
+
+            if (!hasBestFrame)
+            {
+                return false;
+            }
+
+            if (decoded >= MaxExactSeekForwardFrames)
+            {
+                var bestMs = (long)bestFrame.Pts.TotalMilliseconds;
+                var targetMs = (long)target.TotalMilliseconds;
+                var gapMs = targetMs - bestMs;
+                var frameIntervalMs = _frameRate > 0.0 ? (long)(1000.0 / _frameRate) : 0L;
+                if (gapMs > frameIntervalMs)
+                {
+                    _lastSeekHitForwardDecodeCap = true;
+                    Interlocked.Increment(ref _seekToCapHits);
+                    Logger.Log($"FLASHBACK_DECODER_SEEK_CAP_HIT target_ms={targetMs} best_ms={bestMs} gap_ms={gapMs} frames_decoded={decoded}");
+                }
+                else
+                {
+                    Logger.Log($"FLASHBACK_DECODER_SEEK_FRAME_LIMIT target_ms={targetMs} best_ms={bestMs} frames={decoded}");
+                }
+            }
+
+            StashPendingVideoFrame(bestFrame);
+            hasBestFrame = false;
+            Logger.Log(
+                $"FLASHBACK_DECODER_SEEK_EXACT_SHORT target_ms={(long)target.TotalMilliseconds} " +
+                $"frame_ms={(long)bestFrame.Pts.TotalMilliseconds} frames_decoded={decoded} elapsed_ms={ElapsedMsSince(seekStartedAt):F1}");
+            return true;
+        }
+        finally
+        {
+            ReleaseSeekCandidates(ref bestFrame, ref hasBestFrame, ref bestRaw, "seek_best_abandoned");
+        }
+    }
+
+    private static void ReleaseSeekCandidates(
+        ref DecodedVideoFrame bestFrame,
+        ref bool hasBestFrame,
+        ref AVFrame* bestRaw,
+        string operation)
+    {
+        if (hasBestFrame)
+        {
+            ReleaseHeldFrameBestEffort(bestFrame, operation);
+            bestFrame = default;
+            hasBestFrame = false;
+        }
+
+        if (bestRaw != null)
+        {
+            var raw = bestRaw;
+            ffmpeg.av_frame_free(&raw);
+            bestRaw = null;
+        }
+    }
+
+    /// <summary>
+    /// Positions the demuxer at or before <paramref name="target"/> and flushes decoder state.
+    /// Packet-granular: an MPEG-TS binary seek lands on whatever packet precedes the timestamp.
+    /// </summary>
+    private bool SeekDemuxerToTimestamp(TimeSpan target, CancellationToken cancellationToken)
+    {
         var streamTimestamp = ToStreamTimestamp(target, _videoTimeBase);
         var result = ffmpeg.av_seek_frame(
             _formatCtx, _videoStreamIndex, streamTimestamp, ffmpeg.AVSEEK_FLAG_BACKWARD);
@@ -808,6 +1183,30 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
                 $"stream_ts={streamTimestamp} us_ts={timestampUs}");
         }
 
+        ResetDecodeStateAfterSeek();
+        Logger.Log(
+            $"FLASHBACK_DECODER_SEEK_OK target_ms={(long)target.TotalMilliseconds} " +
+            $"stream_index={_videoStreamIndex} stream_ts={streamTimestamp}");
+        return true;
+    }
+
+    private bool TrySeekDemuxerToBytePosition(FlashbackKeyframeLocation key, CancellationToken cancellationToken)
+    {
+        var result = ffmpeg.av_seek_frame(_formatCtx, -1, key.BytePosition, ffmpeg.AVSEEK_FLAG_BYTE);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (result < 0)
+        {
+            Logger.Log($"FLASHBACK_DECODER_SEEK_BYTE_WARN code={result} key_ms={(long)key.Pts.TotalMilliseconds} pos={key.BytePosition}");
+            return false;
+        }
+
+        ResetDecodeStateAfterSeek();
+        return true;
+    }
+
+    private void ResetDecodeStateAfterSeek()
+    {
+        _completedInputDrainStarted = false;
         if (_videoCodecCtx != null)
         {
             ffmpeg.avcodec_flush_buffers(_videoCodecCtx);
@@ -818,125 +1217,186 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
             ffmpeg.avcodec_flush_buffers(_audioCodecCtx);
         }
 
-        // Clear any stashed pending frame - it's from before the seek point.
+        ReleaseStashedVideoPackets();
+        ClearPendingVideoFrame("seek_pending");
+        _suppressRecoverableSeekLogsForNextVideoFrame = true;
+    }
+
+    private void ClearPendingVideoFrame(string operation)
+    {
         if (_hasPendingVideoFrame)
         {
-            ReleaseHeldFrameBestEffort(_pendingVideoFrame, "seek_keyframe_pending");
+            ReleaseHeldFrameBestEffort(_pendingVideoFrame, operation);
             _pendingVideoFrame = default;
             _hasPendingVideoFrame = false;
         }
+    }
 
-        _suppressRecoverableSeekLogsForNextVideoFrame = true;
-
-        Logger.Log(
-            $"FLASHBACK_DECODER_SEEK_OK target_ms={(long)target.TotalMilliseconds} " +
-            $"stream_index={_videoStreamIndex} stream_ts={streamTimestamp}");
-        return true;
+    private void StashPendingVideoFrame(DecodedVideoFrame frame)
+    {
+        ClearPendingVideoFrame("pending_replaced");
+        _pendingVideoFrame = frame;
+        _hasPendingVideoFrame = true;
+        _currentPosition = frame.Pts;
     }
 
     /// <summary>
-    /// Seeks from a preceding keyframe and decodes toward a frame at or after <paramref name="target"/>.
-    /// At EOF or the forward-decode limit, keeps the best earlier frame when one was decoded.
+    /// Decodes with non-keyframes discarded at the slice header, so the next output frame is an
+    /// IDR and no frame is reconstructed from missing references.
     /// </summary>
-    /// <returns>True when a usable frame was selected for the next decode call; false when seeking failed or no frame was obtained.</returns>
-    /// <remarks>
-    /// <see cref="CurrentPosition"/> reports the achieved PTS. Success does not require reaching the requested PTS.
-    /// <see cref="LastSeekHitForwardDecodeCap"/> identifies a cap-limited result more than one frame interval behind the target.
-    /// </remarks>
-    public bool SeekTo(TimeSpan target, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Decodes forward to the first keyframe after a demuxer seek. Without frame threading
+    /// (the D3D11VA path) the decoder is told to discard non-key input, so the keyframe costs
+    /// one decode. A frame-threaded software decoder submits packets ahead of the frame being
+    /// received: a skip_frame change there would also discard the frames right after the
+    /// keyframe, and a keyframe with reorder delay would never leave the decoder. That path
+    /// decodes normally and drops frames until the first keyframe.
+    /// </summary>
+    private bool TryDecodeKeyframeOnly(out DecodedVideoFrame frame, CancellationToken cancellationToken)
     {
-        ThrowIfNotOpen();
-        cancellationToken.ThrowIfCancellationRequested();
-        _lastSeekHitForwardDecodeCap = false;
-
-        // A TS binary seek can land between keyframes and return the next IDR,
-        // after the requested frame. Start one encoder GOP earlier for exact seeks.
-        var seekStart = ResolveExactSeekStart(target, _currentFilePath);
-        if (!SeekToKeyframe(seekStart, cancellationToken))
+        if ((_videoCodecCtx->active_thread_type & ffmpeg.FF_THREAD_FRAME) != 0)
         {
-            return false;
+            return TryDecodeDroppingUntilKeyframe(out frame, cancellationToken);
         }
 
-        // Decode forward until we reach (or pass) the target PTS.
-        // Stash the target frame so the next TryDecodeNextVideoFrame() returns it
-        // instead of skipping past it (fixes off-by-one on seek).
-        // Cap at 960 frames (8s at 120fps) to prevent CPU saturation on scrub.
-        const int maxForwardFrames = 960;
-        var targetTicks = target.Ticks;
-        DecodedVideoFrame? bestFrame = null;
-        var bestFrameTransferred = false;
+        var previous = _videoCodecCtx->skip_frame;
+        _videoCodecCtx->skip_frame = AVDiscard.AVDISCARD_NONKEY;
         try
         {
-            for (var i = 0; i < maxForwardFrames; i++)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                if (!TryDecodeNextVideoFrame(out var frame, cancellationToken))
-                {
-                    // Reached EOF before target - return best frame if we have one.
-                    if (bestFrame != null)
-                    {
-                        _currentPosition = bestFrame.Value.Pts;
-                        _pendingVideoFrame = bestFrame.Value;
-                        _hasPendingVideoFrame = true;
-                        bestFrameTransferred = true;
-                        return true;
-                    }
-
-                    return false;
-                }
-
-                if (frame.Pts.Ticks >= targetTicks)
-                {
-                    _currentPosition = frame.Pts;
-                    _pendingVideoFrame = frame;
-                    _hasPendingVideoFrame = true;
-                    if (bestFrame != null)
-                    {
-                        ReleaseHeldFrameBestEffort(bestFrame.Value, "seek_replace_best");
-                        bestFrame = null;
-                    }
-
-                    return true;
-                }
-
-                // Keep the closest frame in case we hit the limit.
-                if (bestFrame != null) ReleaseHeldFrameBestEffort(bestFrame.Value, "seek_best_superseded");
-                bestFrame = frame;
-            }
-
-            // Hit frame limit - return the closest frame we decoded.
-            if (bestFrame != null)
-            {
-                var bestMs = (long)bestFrame.Value.Pts.TotalMilliseconds;
-                var targetMs = (long)target.TotalMilliseconds;
-                var gapMs = targetMs - bestMs;
-                // One frame interval in ms (guard against zero/negative frame rate)
-                var frameIntervalMs = _frameRate > 0.0 ? (long)(1000.0 / _frameRate) : 0L;
-                if (gapMs > frameIntervalMs)
-                {
-                    _lastSeekHitForwardDecodeCap = true;
-                    Interlocked.Increment(ref _seekToCapHits);
-                    Logger.Log($"FLASHBACK_DECODER_SEEK_CAP_HIT target_ms={targetMs} best_ms={bestMs} gap_ms={gapMs} frames_decoded={maxForwardFrames}");
-                }
-                else
-                {
-                    Logger.Log($"FLASHBACK_DECODER_SEEK_FRAME_LIMIT target_ms={targetMs} best_ms={bestMs} frames={maxForwardFrames}");
-                }
-
-                _currentPosition = bestFrame.Value.Pts;
-                _pendingVideoFrame = bestFrame.Value;
-                _hasPendingVideoFrame = true;
-                bestFrameTransferred = true;
-                return true;
-            }
-
-            return false;
+            return TryDecodeNextVideoFrame(out frame, cancellationToken);
         }
         finally
         {
-            if (!bestFrameTransferred && bestFrame != null)
+            _videoCodecCtx->skip_frame = previous;
+        }
+    }
+
+    private bool TryDecodeDroppingUntilKeyframe(out DecodedVideoFrame frame, CancellationToken cancellationToken)
+    {
+        frame = default;
+        if (_hasPendingVideoFrame)
+        {
+            ClearPendingVideoFrame("keyframe_search");
+        }
+
+        for (var dropped = 0; dropped < MaxExactSeekForwardFrames; dropped++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!TryReceiveRawVideoFrame(cancellationToken))
             {
-                ReleaseHeldFrameBestEffort(bestFrame.Value, "seek_best_abandoned");
+                return false;
+            }
+
+            if ((_videoFrame->flags & ffmpeg.AV_FRAME_FLAG_KEY) != 0)
+            {
+                frame = ConvertAndOutputVideoFrame(_videoFrame, takeOwnership: false);
+                return frame.Width > 0;
+            }
+
+            ffmpeg.av_frame_unref(_videoFrame);
+        }
+
+        return false;
+    }
+
+    private bool TryLookupKeyframe(TimeSpan target, out FlashbackKeyframeLocation key)
+    {
+        key = default;
+        var lookup = KeyframeLookup;
+        var path = _currentFilePath;
+        if (lookup == null || path == null)
+        {
+            return false;
+        }
+
+        try
+        {
+            if (lookup(path, target) is { } found && found.Pts <= target && found.BytePosition >= 0)
+            {
+                key = found;
+                return true;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_DECODER_KEYFRAME_LOOKUP_WARN type={ex.GetType().Name} msg='{ex.Message}'");
+        }
+
+        return false;
+    }
+
+    private TimeSpan OneFrameInterval()
+        => _frameRate > 1.0 ? TimeSpan.FromSeconds(1.0 / _frameRate) : TimeSpan.FromMilliseconds(16.7);
+
+    private void ReleaseStashedVideoPackets()
+    {
+        while (_stashedVideoPackets.Count > 0)
+        {
+            var packet = (AVPacket*)_stashedVideoPackets.Dequeue();
+            ffmpeg.av_packet_free(&packet);
+        }
+    }
+
+    /// <summary>
+    /// Reads packets forward from the current position, decoding and delivering audio while
+    /// stashing the video packets it passes, until <paramref name="shouldStop"/> returns true,
+    /// the stash is full, or the input ends. Stashed packets are fed to the video decoder
+    /// before the demuxer is read again, so playback continues from exactly where it was:
+    /// no video is decoded to prime audio and nothing has to be rewound.
+    /// </summary>
+    public FlashbackAudioPrebufferStop PrebufferAudio(
+        Func<bool> shouldStop,
+        int maxStashedVideoPackets,
+        CancellationToken cancellationToken,
+        out int stashedVideoPackets)
+    {
+        ThrowIfNotOpen();
+        ArgumentNullException.ThrowIfNull(shouldStop);
+        stashedVideoPackets = 0;
+        while (true)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (shouldStop())
+            {
+                return FlashbackAudioPrebufferStop.Satisfied;
+            }
+
+            if (_stashedVideoPackets.Count >= maxStashedVideoPackets)
+            {
+                return FlashbackAudioPrebufferStop.StashFull;
+            }
+
+            ffmpeg.av_packet_unref(_packet);
+            var readResult = ffmpeg.av_read_frame(_formatCtx, _packet);
+            if (readResult < 0)
+            {
+                if (_formatCtx->pb != null)
+                    _formatCtx->pb->eof_reached = 0;
+                return FlashbackAudioPrebufferStop.EndOfInput;
+            }
+
+            try
+            {
+                if (_packet->stream_index == _videoStreamIndex)
+                {
+                    var clone = ffmpeg.av_packet_clone(_packet);
+                    if (clone == null)
+                    {
+                        Logger.Log("FLASHBACK_DECODER_PREBUFFER_WARN reason=packet_clone_failed");
+                        return FlashbackAudioPrebufferStop.PacketCloneFailed;
+                    }
+
+                    _stashedVideoPackets.Enqueue((IntPtr)clone);
+                    stashedVideoPackets++;
+                }
+                else if (_packet->stream_index == _audioStreamIndex && _audioCodecCtx != null)
+                {
+                    DecodeAndDeliverAudioPacket(_packet);
+                }
+            }
+            finally
+            {
+                ffmpeg.av_packet_unref(_packet);
             }
         }
     }
@@ -953,7 +1413,7 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         cancellationToken.ThrowIfCancellationRequested();
         _lastDecodePhaseTimings = default;
 
-        // Return stashed frame from SeekTo() before decoding new ones.
+        // Return stashed frame from a seek before decoding new ones.
         if (_hasPendingVideoFrame)
         {
             frame = _pendingVideoFrame;
@@ -964,6 +1424,23 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
 
         using var recoverableSeekLogScope = BeginRecoverableSeekLogSuppressionIfNeeded();
 
+        if (!TryReceiveRawVideoFrame(cancellationToken))
+        {
+            return false;
+        }
+
+        var convertStart = Stopwatch.GetTimestamp();
+        frame = ConvertAndOutputVideoFrame(_videoFrame, takeOwnership: false);
+        AddLastDecodeConvertMs(ElapsedMsSince(convertStart));
+        return frame.Width > 0; // a clone failure is treated as a decode failure
+    }
+
+    /// <summary>
+    /// Receives the next decoded frame into the reusable decoder frame without converting
+    /// it, feeding packets as needed. False means EOF (temporary at the live edge) or an error.
+    /// </summary>
+    private bool TryReceiveRawVideoFrame(CancellationToken cancellationToken)
+    {
         while (true)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -973,12 +1450,6 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
             AddLastDecodeReceiveMs(ElapsedMsSince(receiveStart));
             if (receiveResult == 0)
             {
-                // Got a decoded frame: convert and return.
-                var convertStart = Stopwatch.GetTimestamp();
-                frame = ConvertAndOutputVideoFrame();
-                AddLastDecodeConvertMs(ElapsedMsSince(convertStart));
-                if (frame.Width <= 0)
-                    return false; // clone failed, treat as decode failure
                 return true;
             }
 
@@ -988,7 +1459,7 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
                 var feedStart = Stopwatch.GetTimestamp();
                 if (!FeedNextVideoPacket(cancellationToken))
                 {
-                    // Temporary EOF on live fMP4: do not enter drain mode.
+                    // Temporary EOF on a growing segment: do not enter drain mode.
                     // The encoder is still appending; drain mode is permanent and
                     // would prevent decoding any future frames.
                     AddLastDecodeFeedMs(ElapsedMsSince(feedStart));
@@ -1026,13 +1497,17 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         return true;
     }
 
+    /// <summary>
+    /// Where a timestamp seek without a keyframe index starts. MPEG-TS has no index, so the
+    /// binary seek lands on the packet before the timestamp; backing off one GOP plus a margin
+    /// guarantees the IDR at or before the target is reached by a keyframe-only decode.
+    /// </summary>
     private static TimeSpan ResolveExactSeekStart(TimeSpan target, string? filePath)
     {
-        if (!string.Equals(System.IO.Path.GetExtension(filePath), ".ts", StringComparison.OrdinalIgnoreCase))
+        if (!IsMpegTsPath(filePath))
             return target;
 
-        var preroll = TimeSpan.FromSeconds(2);
-        return target > preroll ? target - preroll : TimeSpan.Zero;
+        return target > MpegTsKeyframeSeekBackoff ? target - MpegTsKeyframeSeekBackoff : TimeSpan.Zero;
     }
 
     /// <summary>
@@ -1044,6 +1519,23 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         while (true)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            if (_stashedVideoPackets.Count > 0)
+            {
+                // Packets read ahead while priming audio come before anything new from the demuxer.
+                var stashed = (AVPacket*)_stashedVideoPackets.Dequeue();
+                var stashedSendStart = Stopwatch.GetTimestamp();
+                var stashedSendResult = ffmpeg.avcodec_send_packet(_videoCodecCtx, stashed);
+                AddLastDecodeSendMs(ElapsedMsSince(stashedSendStart));
+                ffmpeg.av_packet_free(&stashed);
+                if (stashedSendResult < 0 && stashedSendResult != ffmpeg.AVERROR(ffmpeg.EAGAIN))
+                {
+                    Logger.Log($"FLASHBACK_DECODER_VIDEO_WARN send_packet(stashed) code={stashedSendResult}");
+                    continue;
+                }
+
+                return true;
+            }
+
             ffmpeg.av_packet_unref(_packet);
             var readStart = Stopwatch.GetTimestamp();
             var readResult = ffmpeg.av_read_frame(_formatCtx, _packet);
@@ -1700,6 +2192,11 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         {
             _frameRate = (double)videoStream->r_frame_rate.num / videoStream->r_frame_rate.den;
         }
+        else if (_openHints is { FrameRate: > 1.0 } hintedRate)
+        {
+            // A header-only (hinted) probe does not sample frame timing; the writer's rate is authoritative.
+            _frameRate = hintedRate.FrameRate;
+        }
         else
         {
             _frameRate = 30.0;
@@ -1813,11 +2310,20 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         _currentVideoBufferIndex = 0;
     }
 
-    private DecodedVideoFrame ConvertAndOutputVideoFrame()
+    private TimeSpan ResolveRawFramePts(AVFrame* frame)
+        => DecodePtsToTimeSpan(ResolveBestEffortFrameTimestamp(frame), _videoTimeBase);
+
+    /// <summary>
+    /// Converts a decoded frame into a <see cref="DecodedVideoFrame"/>. With
+    /// <paramref name="takeOwnership"/> false, <paramref name="source"/> is the reusable decoder
+    /// frame and is unreferenced afterwards; with it true, <paramref name="source"/> is a
+    /// standalone reference that this call consumes.
+    /// </summary>
+    private DecodedVideoFrame ConvertAndOutputVideoFrame(AVFrame* source, bool takeOwnership)
     {
         // Calculate PTS first (used by both paths). MPEG-TS frames can have
         // AV_NOPTS_VALUE in pts even when FFmpeg recovered a usable timestamp.
-        var pts = DecodePtsToTimeSpan(ResolveBestEffortFrameTimestamp(_videoFrame), _videoTimeBase);
+        var pts = ResolveRawFramePts(source);
 
         _currentPosition = pts;
 
@@ -1845,7 +2351,7 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
 
         // Check actual frame format; D3D11VA may silently fall back to software
         // (get_format callback runs on first decode, not during avcodec_open2).
-        var actualFormat = (AVPixelFormat)_videoFrame->format;
+        var actualFormat = (AVPixelFormat)source->format;
         if (_isD3D11HwAccelerated && actualFormat != AVPixelFormat.AV_PIX_FMT_D3D11)
         {
             Logger.Log($"FLASHBACK_DECODER_D3D11VA_FALLBACK actual_fmt={actualFormat} switching_to=software");
@@ -1859,16 +2365,24 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         if (_isD3D11HwAccelerated)
         {
             // D3D11VA path: frame->data[0] is ID3D11Texture2D*, data[1] is subresource index.
-            // Clone the AVFrame to hold the D3D11VA surface reference; _videoFrame is reused
-            // by the next avcodec_receive_frame call, which can release the surface back to the
-            // pool before the renderer copies it. The cloned frame must be freed after the
-            // texture is consumed (via HeldFrame).
-            var clonedFrame = ffmpeg.av_frame_clone(_videoFrame);
-            ffmpeg.av_frame_unref(_videoFrame); // release pool slot immediately
-            if (clonedFrame == null)
+            // Hold the D3D11VA surface through a standalone AVFrame reference; the reusable
+            // decoder frame is unreferenced by the next avcodec_receive_frame call, which can
+            // release the surface back to the pool before the renderer copies it. The held
+            // frame must be freed after the texture is consumed (via HeldFrame).
+            AVFrame* clonedFrame;
+            if (takeOwnership)
             {
-                Logger.Log("FLASHBACK_DECODE_CLONE_FAIL reason='av_frame_clone returned null'");
-                return default;
+                clonedFrame = source;
+            }
+            else
+            {
+                clonedFrame = ffmpeg.av_frame_clone(source);
+                ffmpeg.av_frame_unref(source); // release pool slot immediately
+                if (clonedFrame == null)
+                {
+                    Logger.Log("FLASHBACK_DECODE_CLONE_FAIL reason='av_frame_clone returned null'");
+                    return default;
+                }
             }
 
             if (!TryValidateD3D11VideoFrame(clonedFrame, _videoWidth, _videoHeight, out var d3dFrameFailure))
@@ -1902,10 +2416,10 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
             _needsConvert = _decodedPixelFormat != targetFmt;
         }
 
-        if (!TryValidateSoftwareVideoFrame(_videoFrame, _decodedPixelFormat, _videoWidth, _videoHeight, _isHdr, out var frameFailure))
+        if (!TryValidateSoftwareVideoFrame(source, _decodedPixelFormat, _videoWidth, _videoHeight, _isHdr, out var frameFailure))
         {
             Logger.Log($"FLASHBACK_DECODER_VIDEO_WARN reason=invalid_software_frame detail='{frameFailure}' fmt={_decodedPixelFormat} w={_videoWidth} h={_videoHeight}");
-            ffmpeg.av_frame_unref(_videoFrame);
+            ReleaseConvertSource(source, takeOwnership);
             return default;
         }
 
@@ -1937,13 +2451,13 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
             if (_needsConvert)
             {
                 if (!_isHdr)
-                    ConvertYuv420pToNv12((byte*)dataPtr);
+                    ConvertYuv420pToNv12(source, (byte*)dataPtr);
                 else
-                    ConvertYuv420p10leToP010((byte*)dataPtr);
+                    ConvertYuv420p10leToP010(source, (byte*)dataPtr);
             }
             else
             {
-                CopyFramePlanesToBuffer((byte*)dataPtr, outputSize);
+                CopyFramePlanesToBuffer(source, (byte*)dataPtr, outputSize);
             }
 
             return new DecodedVideoFrame
@@ -1960,7 +2474,20 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         }
         finally
         {
-            ffmpeg.av_frame_unref(_videoFrame);
+            ReleaseConvertSource(source, takeOwnership);
+        }
+    }
+
+    private static void ReleaseConvertSource(AVFrame* source, bool takeOwnership)
+    {
+        if (takeOwnership)
+        {
+            var owned = source;
+            ffmpeg.av_frame_free(&owned);
+        }
+        else
+        {
+            ffmpeg.av_frame_unref(source);
         }
     }
 
@@ -1995,16 +2522,16 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         return frame->pts;
     }
 
-    private void CopyFramePlanesToBuffer(byte* dest, int destSize)
+    private void CopyFramePlanesToBuffer(AVFrame* frame, byte* dest, int destSize)
     {
         // NV12 and P010 share layout; P010 just doubles the bytes per sample.
         var bytesPerSample = _isHdr ? 2 : 1;
         var lineSize = _videoWidth * bytesPerSample;
         var yPlaneSize = lineSize * _videoHeight;
 
-        CopyPlane(_videoFrame->data[0], _videoFrame->linesize[0],
+        CopyPlane(frame->data[0], frame->linesize[0],
                   dest, lineSize, _videoHeight);
-        CopyPlane(_videoFrame->data[1], _videoFrame->linesize[1],
+        CopyPlane(frame->data[1], frame->linesize[1],
                   dest + yPlaneSize, lineSize, _videoHeight / 2);
     }
 
@@ -2026,39 +2553,39 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         }
     }
 
-    private void ConvertYuv420pToNv12(byte* dest)
+    private void ConvertYuv420pToNv12(AVFrame* frame, byte* dest)
     {
         var w = _videoWidth;
         var h = _videoHeight;
 
-        CopyPlane(_videoFrame->data[0], _videoFrame->linesize[0], dest, w, h);
+        CopyPlane(frame->data[0], frame->linesize[0], dest, w, h);
 
         var uvDest = dest + w * h;
         var halfW = w / 2;
-        var uStride = _videoFrame->linesize[1];
-        var vStride = _videoFrame->linesize[2];
+        var uStride = frame->linesize[1];
+        var vStride = frame->linesize[2];
 
         for (var row = 0; row < h / 2; row++)
         {
-            var uRow = _videoFrame->data[1] + row * uStride;
-            var vRow = _videoFrame->data[2] + row * vStride;
+            var uRow = frame->data[1] + row * uStride;
+            var vRow = frame->data[2] + row * vStride;
             var destRow = uvDest + row * w;
 
             InterleaveUvRow(uRow, vRow, destRow, halfW);
         }
     }
 
-    private void ConvertYuv420p10leToP010(byte* dest)
+    private void ConvertYuv420p10leToP010(AVFrame* frame, byte* dest)
     {
         var w = _videoWidth;
         var h = _videoHeight;
 
         // Planar ten-bit samples occupy the low bits; P010 uses the high ten bits.
-        var yStride = _videoFrame->linesize[0];
+        var yStride = frame->linesize[0];
         var yDest = (ushort*)dest;
         for (var row = 0; row < h; row++)
         {
-            var yRow = (ushort*)(_videoFrame->data[0] + row * yStride);
+            var yRow = (ushort*)(frame->data[0] + row * yStride);
             var destRow = yDest + row * w;
             for (var col = 0; col < w; col++)
             {
@@ -2068,13 +2595,13 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
 
         var uvDest = (ushort*)(dest + w * h * 2);
         var halfW = w / 2;
-        var uStride = _videoFrame->linesize[1];
-        var vStride = _videoFrame->linesize[2];
+        var uStride = frame->linesize[1];
+        var vStride = frame->linesize[2];
 
         for (var row = 0; row < h / 2; row++)
         {
-            var uRow = (ushort*)(_videoFrame->data[1] + row * uStride);
-            var vRow = (ushort*)(_videoFrame->data[2] + row * vStride);
+            var uRow = (ushort*)(frame->data[1] + row * uStride);
+            var vRow = (ushort*)(frame->data[2] + row * vStride);
             var destRow = uvDest + row * w;
 
             for (var col = 0; col < halfW; col++)

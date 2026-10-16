@@ -5046,7 +5046,7 @@ static partial class Program
         AssertContains(flashbackScrubText, "private void InitializeFlashbackScrubInteractionController()");
         AssertContains(flashbackScrubText, "PositionMagneticPlayhead = (x, trackWidth) => _flashbackPlayheadMotionController.PositionMagneticPlayhead(x, trackWidth),");
         AssertContains(flashbackScrubText, "RefreshPlayheadMotion = reason => _flashbackPlayheadMotionController.RefreshPlayheadMotion(reason),");
-        AssertContains(flashbackScrubText, "GetTickCount64 = () => Environment.TickCount64,");
+        AssertContains(flashbackScrubText, "GetTimestamp = System.Diagnostics.Stopwatch.GetTimestamp,");
         AssertContains(flashbackScrubControllerText, "internal sealed class FlashbackScrubInteractionController");
         AssertContains(flashbackScrubControllerText, "private bool _isScrubbing;");
         AssertContains(flashbackScrubControllerText, "private TimeSpan? _lastPointerPosition;");
@@ -5094,7 +5094,7 @@ static partial class Program
         AssertContains(flashbackScrubControllerText, "FLASHBACK_UI_SCRUB_END");
         AssertContains(flashbackScrubText, "FlashbackScrubArea_PointerCanceled");
         AssertContains(flashbackScrubText, "FlashbackScrubArea_PointerCaptureLost");
-        AssertContains(flashbackScrubControllerText, "FlashbackTimelineGeometry.TryComputeFraction(pos.X, width, out var fraction)");
+        AssertContains(flashbackScrubControllerText, "FlashbackTimelineGeometry.TryComputeFraction(pointerX, width, out var fraction)");
         AssertContains(flashbackScrubControllerText, "FlashbackTimelineGeometry.IsUsableDuration(bufferDuration)");
         AssertContains(flashbackScrubControllerText, "FlashbackTimelineGeometry.ComputePosition(fraction, bufferDuration)");
         AssertContains(flashbackScrubControllerText, "FlashbackTimelineGeometry.TryComputePosition(");
@@ -5978,16 +5978,19 @@ static partial class Program
         AssertMemberContains(flashbackPlaybackCommandsText, "FlashbackSetOutPointAt", "_sessionCoordinator.FlashbackSetOutPointAt(position)");
         AssertMemberContains(flashbackPlaybackCommandsText, "FlashbackClearInOutPoints", "=> _sessionCoordinator.FlashbackClearInOutPoints()");
         AssertMemberContains(flashbackBufferStatusText, "UpdateFlashbackBufferStatus", "_sessionCoordinator.GetFlashbackBufferStatus()");
-        AssertMemberContains(flashbackBufferStatusText, "UpdateFlashbackBufferStatus", "_sessionCoordinator.GetFlashbackPlaybackSnapshot()");
-        AssertMemberContains(flashbackBufferStatusText, "UpdateFlashbackBufferStatus", "FlashbackInPoint = playback.InPoint;");
-        AssertMemberContains(flashbackBufferStatusText, "UpdateFlashbackBufferStatus", "FlashbackOutPoint = playback.OutPoint;");
+        AssertMemberContains(flashbackBufferStatusText, "UpdateFlashbackBufferStatus", "RefreshFlashbackPlaybackState();");
+        AssertMemberContains(flashbackBufferStatusText, "RefreshFlashbackPlaybackState", "_sessionCoordinator.GetFlashbackPlaybackSnapshot()");
+        AssertMemberContains(flashbackBufferStatusText, "RefreshFlashbackPlaybackState", "FlashbackInPoint = playback.InPoint;");
+        AssertMemberContains(flashbackBufferStatusText, "RefreshFlashbackPlaybackState", "FlashbackOutPoint = playback.OutPoint;");
         AssertMemberContains(flashbackBufferStatusText, "UpdateFlashbackBufferStatus", "FlashbackInPoint = null;");
         AssertMemberContains(flashbackBufferStatusText, "UpdateFlashbackBufferStatus", "FlashbackOutPoint = null;");
-        AssertMemberContains(flashbackBufferStatusText, "UpdateFlashbackBufferStatus", "if (FlashbackState != FlashbackPlaybackState.Live)");
-        AssertMemberContains(flashbackBufferStatusText, "UpdateFlashbackBufferStatus", "FlashbackState = FlashbackPlaybackState.Live;");
-        var updateFlashbackBufferStatus = ExtractMemberCode(flashbackBufferStatusText, "UpdateFlashbackBufferStatus");
+        AssertMemberContains(flashbackBufferStatusText, "RefreshFlashbackPlaybackState", "if (FlashbackState != FlashbackPlaybackState.Live)");
+        AssertMemberContains(flashbackBufferStatusText, "RefreshFlashbackPlaybackState", "FlashbackState = FlashbackPlaybackState.Live;");
+        // Controller transitions push a coalesced refresh instead of waiting for the poll.
+        AssertMemberContains(flashbackBufferStatusText, "OnFlashbackPlaybackStateChanged", "QueueFlashbackPlaybackStateRefresh();");
+        var refreshFlashbackPlaybackState = ExtractMemberCode(flashbackBufferStatusText, "RefreshFlashbackPlaybackState");
         var inactivePlaybackSnapshotBranch = ExtractTextBetween(
-            updateFlashbackBufferStatus,
+            refreshFlashbackPlaybackState,
             "else\n        {\n            if (FlashbackState != FlashbackPlaybackState.Live)",
             "\n        }\n    }");
         AssertDoesNotContain(inactivePlaybackSnapshotBranch, "FlashbackInPoint = null;");

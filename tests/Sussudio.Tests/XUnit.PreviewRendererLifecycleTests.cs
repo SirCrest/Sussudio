@@ -263,24 +263,25 @@ public sealed class PreviewRendererLifecycleTests
     public void FailedEvictionRemovesOldEntryAndLeavesCandidateWithCaller()
     {
         var cache = CreateCache();
+        var capacity = (int)cache.GetType().GetField("Capacity", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)!.GetValue(null)!;
         var victim = new LifetimeProbe(throwOnDispose: true);
         var candidate = new LifetimeProbe();
         CacheCall(cache, "Add", new IntPtr(1), 0, victim);
-        for (var index = 2; index <= 8; index++)
+        for (var index = 2; index <= capacity; index++)
         {
             CacheCall(cache, "Add", new IntPtr(index), 0, new LifetimeProbe());
         }
 
         var failure = Assert.Throws<TargetInvocationException>(() =>
-            CacheCall(cache, "Add", new IntPtr(9), 0, candidate));
+            CacheCall(cache, "Add", new IntPtr(capacity + 1), 0, candidate));
 
         Assert.IsType<InvalidOperationException>(failure.InnerException);
         Assert.Equal(1, victim.DisposeCount);
         Assert.Equal(0, candidate.DisposeCount);
-        Assert.Equal(7, cache.GetType().GetProperty("Count")!.GetValue(cache));
+        Assert.Equal(capacity - 1, cache.GetType().GetProperty("Count")!.GetValue(cache));
         var lookup = new object?[] { new IntPtr(1), 0, null };
         Assert.False((bool)CacheCall(cache, "TryGet", lookup)!);
-        lookup[0] = new IntPtr(9);
+        lookup[0] = new IntPtr(capacity + 1);
         Assert.False((bool)CacheCall(cache, "TryGet", lookup)!);
 
         candidate.Dispose();

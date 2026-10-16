@@ -809,6 +809,48 @@ public class RuntimeHelpersTests
             => Assert.InRange(actual, expected - Math.Max(64L << 20, expected / 4), expected + Math.Max(64L << 20, expected / 4));
     }
 
+    // Failure modes of a failed counter read in the hub snapshot, listed before the code. E2E cannot make
+    // K32GetProcessMemoryInfo or GetProcessTimes fail in a live process.
+    //  1. A failed read after a good one must publish the last good working set and private bytes. Zero draws a
+    //     memory cliff in the timeline and then a false growth spike on the next good read.
+    //  2. A failed read must keep the CPU total, so the next good read is not a CPU spike.
+    //  3. A failed read before any good one has nothing to carry: it publishes zero, and the next good read is
+    //     published as read.
+    [Fact]
+    public void HubProcessCounters_AFailedReadCarriesTheLastGoodMemoryAndCpuTotal()
+    {
+        var assembly = SussudioAssembly.Load();
+        var hubType = assembly.GetType("Sussudio.Services.Automation.AutomationDiagnosticsHub", throwOnError: true)!;
+        var readingType = assembly.GetType("Sussudio.Services.Automation.HubProcessCounters+Reading", throwOnError: true)!;
+        var capture = hubType.GetMethod("CaptureProcessResourceSnapshot", BindingFlags.NonPublic | BindingFlags.Instance, [readingType])!;
+        var hub = RuntimeHelpers.GetUninitializedObject(hubType);
+        object Reading(bool valid, long workingSet, long privateBytes, long cpuTicks)
+            => Activator.CreateInstance(readingType, valid, workingSet, privateBytes, cpuTicks)!;
+        double Value(object snapshot, string name) => (double)snapshot.GetType().GetProperty(name)!.GetValue(snapshot)!;
+        object Capture(object reading) => capture.Invoke(hub, [reading])!;
+        var failed = Activator.CreateInstance(readingType)!;
+
+        var beforeAnyGood = Capture(failed);
+        Assert.Equal(0.0, Value(beforeAnyGood, "MemoryWorkingSetMb"));
+        Assert.Equal(0.0, Value(beforeAnyGood, "MemoryPrivateBytesMb"));
+
+        var good = Capture(Reading(true, 300L << 20, 500L << 20, 20_000_000));
+        Assert.Equal(300.0, Value(good, "MemoryWorkingSetMb"));
+        Assert.Equal(500.0, Value(good, "MemoryPrivateBytesMb"));
+        Assert.Equal(2_000.0, Value(good, "ProcessCpuTotalProcessorTimeMs"));
+
+        var carried = Capture(failed);
+        Assert.Equal(300.0, Value(carried, "MemoryWorkingSetMb"));
+        Assert.Equal(500.0, Value(carried, "MemoryPrivateBytesMb"));
+        Assert.Equal(2_000.0, Value(carried, "ProcessCpuTotalProcessorTimeMs"));
+        Assert.Equal(0.0, Value(carried, "ProcessCpuPercent"));
+
+        var next = Capture(Reading(true, 310L << 20, 505L << 20, 20_100_000));
+        Assert.Equal(310.0, Value(next, "MemoryWorkingSetMb"));
+        Assert.Equal(505.0, Value(next, "MemoryPrivateBytesMb"));
+        Assert.Equal(2_010.0, Value(next, "ProcessCpuTotalProcessorTimeMs"));
+    }
+
     // Failure modes of the pooled-scratch Compute, listed before the code was written. E2E cannot reach them: the
     // hub only ever feeds Compute steady 1,100-sample windows on one thread at a time.
     //  1. Stale rent tail: ArrayPool returns an array longer than asked for, holding an earlier renter's values.
@@ -1279,13 +1321,29 @@ static partial class Program
                 "hdcpmode=27:hdcpver=2882:rxtxhdcp=29:hdr2sdrext=30:hdr2sdrcolor=33:colorrangesetting=34:" +
                 "vtem=35:biterr=36000000000:rawtiming=37733883";
             var expectedRows = """
-                Signal Details|Video Format|YCbCr420|
-                Signal Details|Colorimetry|BT.2020|
-                Signal Details|Quantization|Full|
-                Signal Details|HDR Transfer|HDR10 / PQ (2)|2
-                Signal Details|HDR to SDR|On (1)|1
-                Signal Details|VIC|97|
-                Signal Details|Vert Freq|59.94 Hz (5994)|5994
+                HDMI Signal|VIC|97|
+                HDMI Signal|Vert Freq|59.94 Hz (5994)|5994
+                HDMI Signal|Video Format|YCbCr420|
+                HDMI Signal|Colorimetry|BT.2020|
+                HDMI Signal|Quantization|Full|
+                HDMI Signal|HDR Transfer|HDR10 / PQ (2)|2
+                HDMI Link / HDCP|HDCP Mode|Unknown (27)|27
+                HDMI Link / HDCP|HDCP Version|2882|2882
+                HDMI Link / HDCP|RX/TX HDCP|Unknown (29)|29
+                HDMI Link / HDCP|TX Hot Plug|Mode 21 (21)|21
+                HDMI Link / HDCP|TX EDID Valid|Valid (1)|1
+                HDMI Link / HDCP|TX VRR|Mode 22 (22)|22
+                Color Processing|HDR to SDR|On (1)|1
+                Color Processing|HDR2SDR Status|Mode 30 (30)|30
+                Color Processing|HDR2SDR Color|21000000|21000000
+                Color Processing|Color Range|Code 34 (34)|34
+                Capture Card / UVC|UVC Format|19|19
+                Capture Card / UVC|UVC Timing|2442|2442
+                Capture Card / UVC|UVC Error|Code 26 (26)|26
+                USB Link|USB Protocol|Isochronous (2)|2
+                USB Link|USB Speed|Code 20 (20)|20
+                USB Link|USB Link State|Code 19 (19)|19
+                USB Link|USB CDC|Code 18 (18)|18
                 Audio / Input|Input Source|HDMI (0)|0
                 Audio / Input|Audio Format|Unknown (6)|6
                 Audio / Input|Audio Sample Rate|Unknown (7)|7
@@ -1295,25 +1353,9 @@ static partial class Program
                 Audio / USB|UAC Out1 Mute|Unmuted (0)|0
                 Audio / USB|UAC Out2 Mute|Muted (1)|1
                 Audio / USB|UAC Out2 Mixer|16|16
-                Link / Protection|USB Protocol|Isochronous (2)|2
-                Link / Protection|USB CDC|Code 18 (18)|18
-                Link / Protection|USB Link State|Code 19 (19)|19
-                Link / Protection|USB Speed|Code 20 (20)|20
-                Link / Protection|TX Hot Plug|Mode 21 (21)|21
-                Link / Protection|TX VRR|Mode 22 (22)|22
-                Link / Protection|TX EDID Valid|Valid (1)|1
-                Link / Protection|HDCP Mode|Unknown (27)|27
-                Link / Protection|HDCP Version|2882|2882
-                Link / Protection|RX/TX HDCP|Unknown (29)|29
-                Capture Card / UVC|UVC Timing|2442|2442
-                Capture Card / UVC|UVC Format|19|19
-                Capture Card / UVC|UVC Error|Code 26 (26)|26
-                Raw / Firmware|HDR2SDR Status|Mode 30 (30)|30
-                Raw / Firmware|Customer Version|customer-31 (637573746F6D65722D333100)|637573746F6D65722D333100
-                Raw / Firmware|Rescue Version|32|32
-                Raw / Firmware|HDR2SDR Color|21000000|21000000
-                Raw / Firmware|Color Range|Code 34 (34)|34
-                Raw / Firmware|Raw Timing|37733883|37733883
+                Firmware / Raw|Customer Version|customer-31 (637573746F6D65722D333100)|637573746F6D65722D333100
+                Firmware / Raw|Rescue Version|32|32
+                Firmware / Raw|Raw Timing|37733883|37733883
                 """.Replace("\r\n", "\n", StringComparison.Ordinal);
             if (unavailableCommands)
             {
@@ -1323,9 +1365,9 @@ static partial class Program
                     .Replace(":uvcerr=26:", ":uvcerr=n/a:", StringComparison.Ordinal)
                     .Replace(":hdcpver=2882:", ":hdcpver=n/a:", StringComparison.Ordinal);
                 expectedRows = expectedRows
-                    .Replace("Link / Protection|USB CDC|Code 18 (18)|18", "Link / Protection|USB CDC|Unavailable|getresponse", StringComparison.Ordinal)
+                    .Replace("USB Link|USB CDC|Code 18 (18)|18", "USB Link|USB CDC|Unavailable|getresponse", StringComparison.Ordinal)
                     .Replace("Capture Card / UVC|UVC Error|Code 26 (26)|26", "Capture Card / UVC|UVC Error|Unavailable|getresponse", StringComparison.Ordinal)
-                    .Replace("Link / Protection|HDCP Version|2882|2882", "Link / Protection|HDCP Version|Unavailable|", StringComparison.Ordinal);
+                    .Replace("HDMI Link / HDCP|HDCP Version|2882|2882", "HDMI Link / HDCP|HDCP Version|Unavailable|", StringComparison.Ordinal);
             }
 
             var expectedInputDetail = flashAudioOverride

@@ -129,6 +129,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameTryEn
         _ownsBufferManager = true;
         _videoLatencyTracker = new VideoQueueLatencyTracker(
             "FLASHBACK_SINK", _videoQueueSync, VideoQueueLatencyWindowSize);
+        _encoder.VideoKeyframeWritten += OnVideoKeyframeWritten;
     }
 
     public FlashbackEncoderSink(FlashbackBufferManager bufferManager)
@@ -138,6 +139,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameTryEn
         _ownsBufferManager = false;
         _videoLatencyTracker = new VideoQueueLatencyTracker(
             "FLASHBACK_SINK", _videoQueueSync, VideoQueueLatencyWindowSize);
+        _encoder.VideoKeyframeWritten += OnVideoKeyframeWritten;
     }
 
     internal FlashbackEncoderSink(
@@ -250,8 +252,15 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameTryEn
 
             Logger.Log($"FLASHBACK_SINK_INIT_COMPLETE session='{sessionId}' gpu_encoding={_gpuEncodingEnabled} segment_duration_s={_segmentDuration.TotalSeconds:F0}");
 
-            // Publish the encoder's frame rate as ground truth for playback pacing.
+            // Publish the encoder's frame rate as ground truth for playback pacing, and the
+            // stream parameters so the playback decoder can open segments without probing.
             _bufferManager.EncodeFrameRate = sessionFrameRate;
+            _bufferManager.PlaybackStreamHints = new FlashbackPlaybackStreamHints(
+                sessionContext.Width,
+                sessionContext.Height,
+                sessionContext.IsP010,
+                sessionContext.CodecName,
+                sessionFrameRate);
 
             _encodingTask = Task.Factory.StartNew(
                 () => EncodingLoop(_cts.Token),
@@ -272,6 +281,10 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameTryEn
             throw;
         }
     }
+
+    // Encode thread, once per GOP. The buffer manager ignores paths outside the session.
+    private void OnVideoKeyframeWritten(string path, TimeSpan pts, long bytePosition)
+        => _bufferManager.RecordKeyframe(path, pts, bytePosition);
 
     private static string CreateSessionId()
     {
@@ -329,7 +342,11 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameTryEn
             MicrophoneEnabled = context.MicrophoneEnabled,
             MicrophoneSampleRate = 48_000,
             MicrophoneChannels = 2,
-            MicrophoneBitRate = 320_000
+            MicrophoneBitRate = 320_000,
+            // Flashback segments are played back against their own audio clock (the
+            // audio-master pacer) and seeked by time, so audio seconds ahead of the
+            // picture is the single largest playback defect in long sessions.
+            LockVideoPtsToAudioClock = true
         };
     }
 

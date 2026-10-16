@@ -22,7 +22,7 @@ public enum TelemetrySensorMode
 /// </summary>
 public static class TelemetrySensorModes
 {
-    /// <summary>Gates every demand-driven sensor (UI responsiveness probe, PDH GPU engines).</summary>
+    /// <summary>Gates every demand-driven sensor (UI responsiveness probe, PDH GPU engines, the NVML poll's sensor demand).</summary>
     public const string SensorsKnob = "SUSSUDIO_TELEMETRY_SENSORS";
 
     /// <summary>Gates the D3D11 timestamp queries around the preview render passes.</summary>
