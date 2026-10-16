@@ -6746,19 +6746,11 @@ static partial class Program
             "preview reinitialize helper definition plus three call sites");
         AssertContains(previewLifecycleControllerText, "return treatCoalescedAsSuccess;");
         AssertContains(previewLifecycleControllerText, "if (_context.IsInitialized())\n            {\n                await _previewLifecycleController.StopPreviewAsync(userInitiated: false, teardownPipeline: true, CancellationToken.None);\n            }");
-        AssertContains(previewLifecycleControllerText, "catch (PreviewRendererReinitStopTimeoutException ex)");
-        AssertContains(previewLifecycleControllerText, "REINIT_ABORT_RENDERER_STOP_TIMEOUT reason='{reason}'");
         AssertContains(previewLifecycleControllerText, "await CleanupFailedPreviewRestartAsync(reason).ConfigureAwait(true);");
         AssertContains(previewLifecycleControllerText, "private async Task CleanupFailedPreviewRestartAsync(string reason)");
         AssertContains(previewLifecycleControllerText, "teardownPipeline: true");
         AssertContains(previewLifecycleControllerText, "_context.SetIsPreviewing(false);");
         AssertContains(previewLifecycleControllerText, "_context.SetIsInitialized(false);");
-        var rendererStopTimeoutCatch = ExtractTextBetween(
-            previewLifecycleControllerText,
-            "catch (PreviewRendererReinitStopTimeoutException ex)",
-            "        catch (Exception ex)");
-        AssertDoesNotContain(rendererStopTimeoutCatch, "CleanupFailedPreviewRestartAsync");
-        AssertContains(rendererStopTimeoutCatch, "success = false;");
         AssertContains(previewLifecycleControllerText, "_context.RestoreCaptureSelectionSnapshotIfUnchanged(rollback, attempted);");
         AssertContains(captureModeTransactionsText, "private bool RestoreCaptureSelectionSnapshotIfUnchanged(");
         AssertContains(captureModeTransactionsText, "if (!CaptureSelectionSnapshot().MatchesSelectionState(expectedCurrent))");

@@ -1042,13 +1042,6 @@ internal sealed class MainViewModelPreviewReinitializeController
                 logFatalBreadcrumbs: true,
                 reportSuccessfulPreview: true).ConfigureAwait(true);
         }
-        catch (PreviewRendererReinitStopTimeoutException ex)
-        {
-            Logger.LogException(ex);
-            Logger.Log($"REINIT_ABORT_RENDERER_STOP_TIMEOUT reason='{reason}' msg='{ex.InnerException?.Message ?? ex.Message}'");
-            _context.SetStatusText(StatusMessages.CaptureSettingsUpdateFailed(ex.Message));
-            success = false;
-        }
         catch (Exception ex) when (IsDeviceBusyException(ex) && shouldRestartPreview)
         {
             Logger.LogException(ex);

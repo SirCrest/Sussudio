@@ -77,6 +77,13 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
     private readonly int _renderMmcssPriority = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_RENDER_MMCSS_PRIORITY", 1, -2, 2);
     private readonly int _nativeStopFenceTimeoutMs = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_NATIVE_STOP_FENCE_TIMEOUT_MS", 1000, 100, 10000);
     private readonly int _renderThreadStopTimeoutMs = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_RENDER_THREAD_STOP_TIMEOUT_MS", 3000, 500, 30000);
+    // Fault injection for the wedged-renderer live check: the Nth renderer started in this process holds its render
+    // thread inside its first video-processor creation, within the native-call fence where the observed wedge sat,
+    // for WedgeFaultHoldMs. It stands in for a driver or compositor call that does not return. 0 (default) is off.
+    private readonly int _wedgeFaultRendererStart = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_FAULT_WEDGE_RENDERER_START", 0, 0, 1000);
+    private const int WedgeFaultHoldMs = 30_000;
+    private static int _rendererStartCount;
+    private bool _wedgeFaultArmed;
 
     private int _naturalWidth;
     private int _naturalHeight;
@@ -774,6 +781,8 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             ResetFirstFrameNotification();
             Interlocked.Exchange(ref _sharedDeviceResetPending, 0);
             ResetFrameReady("start");
+            _wedgeFaultArmed = _wedgeFaultRendererStart > 0 &&
+                               Interlocked.Increment(ref _rendererStartCount) == _wedgeFaultRendererStart;
 
             _renderThread = new Thread(RenderThreadMain)
             {
@@ -1301,6 +1310,14 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
 
     private void ExitNativeRenderCall()
         => Interlocked.Exchange(ref _inNativeCall, 0);
+
+    private void HoldRenderThreadForWedgeFault()
+    {
+        _wedgeFaultArmed = false;
+        Logger.Log($"D3D11_PREVIEW_FAULT_WEDGE_HOLD hold_ms={WedgeFaultHoldMs} in_native_call={Volatile.Read(ref _inNativeCall)}");
+        Thread.Sleep(WedgeFaultHoldMs);
+        Logger.Log($"D3D11_PREVIEW_FAULT_WEDGE_RELEASED stop_requested={Volatile.Read(ref _stopRequested)}");
+    }
 
     private void ThrowIfDisposed()
     {

@@ -114,14 +114,6 @@ internal sealed class PreviewRendererHostControllerContext
     public required Action<string> Log { get; init; }
 }
 
-internal sealed class PreviewRendererReinitStopTimeoutException : TimeoutException
-{
-    public PreviewRendererReinitStopTimeoutException(string message, TimeoutException innerException)
-        : base(message, innerException)
-    {
-    }
-}
-
 internal sealed class PreviewRendererHostController
 {
     private readonly PreviewRendererHostControllerContext _context;
@@ -134,6 +126,9 @@ internal sealed class PreviewRendererHostController
     private double _previewMinPresentationIntervalMs;
     private long _lastRendererStopTick;
     private long _rendererReinitUnsafeWindows;
+    // The panel an abandoned renderer's swap chain is still bound to; the next start replaces it.
+    private SwapChainPanel? _panelHeldByAbandonedRenderer;
+    private int _abandonedRendererCount;
 
     public PreviewRendererHostController(PreviewRendererHostControllerContext context)
     {
@@ -214,22 +209,10 @@ internal sealed class PreviewRendererHostController
 
     public Task StopRendererForReinitTeardownAsync()
     {
-        var renderer = _d3d11Renderer;
-        if (renderer != null)
+        if (_d3d11Renderer != null)
         {
             _context.Log("PREVIEW_REINIT_RENDERER_STOP: stopping render thread before pipeline teardown");
-            try
-            {
-                DisposeD3D11PreviewRendererForReinit();
-            }
-            catch (TimeoutException ex)
-            {
-                MarkPreviewRendererStopped();
-                _context.Log($"PREVIEW_REINIT_RENDERER_STOP_TIMEOUT: {ex.Message}; aborting reinit until renderer ownership is resolved.");
-                throw new PreviewRendererReinitStopTimeoutException(
-                    "D3D11 preview renderer did not stop before reinitialize teardown.",
-                    ex);
-            }
+            DisposeD3D11PreviewRendererForReinit();
         }
 
         return Task.CompletedTask;
@@ -243,9 +226,15 @@ internal sealed class PreviewRendererHostController
             return;
         }
 
-        // Keep the live sink and event wiring intact until Stop succeeds; a
-        // timeout aborts reinit with the existing preview state still coherent.
-        renderer.Stop();
+        // Capture pipeline teardown runs this before every teardown, not only reinit. Declining here left capture
+        // cleanup half done, so the next start failed on it, and the renderer still could not stop afterwards.
+        // An abandoned renderer keeps its duplicate shared-device reference along with everything else it holds.
+        if (!TryStopOrAbandonRenderer(renderer))
+        {
+            _context.ViewModel.SetPreviewFrameSink(null);
+            return;
+        }
+
         renderer.RetireSharedDeviceReferenceForReinit();
         _context.ViewModel.SetPreviewFrameSink(null);
         renderer.FirstFrameRendered -= OnD3DRendererFirstFrameRendered;
@@ -350,8 +339,11 @@ internal sealed class PreviewRendererHostController
     private void CleanupPreviewResources()
     {
         var renderer = _d3d11Renderer;
-        // Keep the owner, sink, and callbacks available if Stop times out.
-        renderer?.Stop();
+        if (renderer != null && !TryStopOrAbandonRenderer(renderer))
+        {
+            renderer = null;
+        }
+
         _context.ViewModel.SetPreviewFrameSink(null);
         if (renderer != null)
         {
@@ -371,6 +363,40 @@ internal sealed class PreviewRendererHostController
         _context.PreviewImage.Source = null;
         _context.PreviewImage.Visibility = Visibility.Collapsed;
         _previewSource = null;
+    }
+
+    // Stop() times out when the render thread is inside a native call that does not return (the native fence) or
+    // does not exit after one (the join). Nothing on the UI thread can end that call, so a retry fails the same way:
+    // keeping the renderer turned every later stop (startup-failure stop, user stop, window close) into the same
+    // timeout, and preview stayed down until the app exited. Every stop lets the renderer go instead.
+    private bool TryStopOrAbandonRenderer(D3D11PreviewRenderer renderer)
+    {
+        try
+        {
+            renderer.Stop();
+            return true;
+        }
+        catch (TimeoutException ex)
+        {
+            AbandonUnstoppableRenderer(renderer, ex);
+            return false;
+        }
+    }
+
+    private void AbandonUnstoppableRenderer(D3D11PreviewRenderer renderer, TimeoutException stopFailure)
+    {
+        // The swap chain stays bound and every D3D resource stays with the stuck thread: unbinding or releasing
+        // under an in-flight call is the BEX64 crash the fence exists for, so neither Dispose nor the shared-device
+        // retirement runs here. Stop() already asked the thread to exit; if the call returns, it cleans up after
+        // itself, and its late callbacks reach no handler. Every caller detaches the frame sink next.
+        renderer.FirstFrameRendered -= OnD3DRendererFirstFrameRendered;
+        renderer.RenderThreadFailed -= OnD3DRendererRenderThreadFailed;
+        var panel = _context.GetPreviewSwapChainPanel();
+        panel.SizeChanged -= _context.PreviewSwapChainPanelSizeChangedHandler;
+        _panelHeldByAbandonedRenderer = panel;
+        _d3d11Renderer = null;
+        _abandonedRendererCount++;
+        _context.Log($"PREVIEW_RENDERER_ABANDONED abandoned_total={_abandonedRendererCount} reason='{stopFailure.Message}'; its swap chain stays on the current panel and the next start uses a fresh one.");
     }
 
     private void OnD3DRendererFirstFrameRendered()
@@ -396,9 +422,11 @@ internal sealed class PreviewRendererHostController
 
     private D3D11PreviewRenderer CreateFreshD3D11PreviewRenderer(bool replaceSwapChainSurface)
     {
-        if (replaceSwapChainSurface)
+        // Never bind a second swap chain to the panel an abandoned renderer's chain is still bound to.
+        var panelHeldByAbandonedRenderer = ReferenceEquals(_panelHeldByAbandonedRenderer, _context.GetPreviewSwapChainPanel());
+        if (replaceSwapChainSurface || panelHeldByAbandonedRenderer)
         {
-            ReplacePreviewSwapChainPanelSurface();
+            ReplacePreviewSwapChainPanelSurface(replaceSwapChainSurface ? "reinit" : "abandoned-renderer");
         }
 
         var renderer = new D3D11PreviewRenderer(_context.GetPreviewSwapChainPanel(), _context.DispatcherQueue);
@@ -427,7 +455,7 @@ internal sealed class PreviewRendererHostController
         Interlocked.Exchange(ref _lastRendererStopTick, Environment.TickCount64);
     }
 
-    private void ReplacePreviewSwapChainPanelSurface()
+    private void ReplacePreviewSwapChainPanelSurface(string reason)
     {
         var oldPanel = _context.GetPreviewSwapChainPanel();
         oldPanel.SizeChanged -= _context.PreviewSwapChainPanelSizeChangedHandler;
@@ -464,7 +492,8 @@ internal sealed class PreviewRendererHostController
         }
 
         _context.SetPreviewSwapChainPanel(freshPanel);
-        _context.Log("PREVIEW_REINIT_SWAPCHAIN_PANEL_REPLACED: created fresh WinUI SwapChainPanel surface");
+        _panelHeldByAbandonedRenderer = null;
+        _context.Log($"PREVIEW_SWAPCHAIN_PANEL_REPLACED reason={reason}: created fresh WinUI SwapChainPanel surface");
     }
 }
 

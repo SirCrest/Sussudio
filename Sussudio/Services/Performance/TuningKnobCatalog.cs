@@ -184,6 +184,9 @@ public static class TuningKnobCatalog
         new TuningKnobExclusion(
             "SUSSUDIO_RECOVERY_DIRECTORY",
             "Recording recovery directory path; changing it at run time could orphan recovery markers."),
+        new TuningKnobExclusion(
+            "SUSSUDIO_PREVIEW_FAULT_WEDGE_RENDERER_START",
+            "Fault injection for the wedged-renderer live check; it deliberately holds a preview render thread."),
     };
 
     private static TuningKnobDefinition Int(string name, int defaultValue, int min, int max, TuningKnobApply apply, string owner, string description) =>

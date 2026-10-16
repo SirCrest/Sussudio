@@ -59,10 +59,13 @@ public sealed class PreviewRendererLifecycleTests
         Assert.Equal("flashback-go-live:stale", fixture.Get<string>("_lastDropReason"));
     }
 
+    // The preview host abandons a renderer whose Stop timed out. That is safe only because the timed-out Stop leaves
+    // native state with the stuck thread: the thread stays owned and is told to exit, nothing is disposed, and a
+    // native-fence timeout fails before the UI unbind, so the in-flight call keeps a bound swap chain.
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public void RendererStopTimeoutRetainsHostOwnerAndAllowsDisposalRetry(bool nativeFenceBlocked)
+    public void RendererStopTimeoutLeavesNativeStateWithTheStuckThreadAndAllowsDisposalRetry(bool nativeFenceBlocked)
     {
         using var fixture = new RendererFixture();
         fixture.PrepareForStop();
@@ -74,23 +77,16 @@ public sealed class PreviewRendererLifecycleTests
         fixture.Set("_nativeStopFenceTimeoutMs", 20);
         fixture.Set("_renderThreadStopTimeoutMs", 20);
         fixture.Set("_inNativeCall", nativeFenceBlocked ? 1 : 0);
-        Action firstFrame = () => { };
-        Action<string> failed = _ => { };
-        fixture.Set("FirstFrameRendered", firstFrame);
-        fixture.Set("RenderThreadFailed", failed);
-        var hostType = SussudioAssembly.Load().GetType("Sussudio.Controllers.PreviewRendererHostController", throwOnError: true)!;
-        var host = RuntimeHelpers.GetUninitializedObject(hostType);
-        var ownerField = hostType.GetField("_d3d11Renderer", BindingFlags.Instance | BindingFlags.NonPublic)!;
-        ownerField.SetValue(host, fixture.Instance);
+        // The offline renderer has no dispatcher, so only the fence case can hold a bound chain through Stop.
+        fixture.Set("_swapChainBound", nativeFenceBlocked ? 1 : 0);
         try
         {
-            var failure = Assert.Throws<TargetInvocationException>(() =>
-                hostType.GetMethod("CleanupPreviewResources", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(host, null));
+            var failure = Assert.Throws<TargetInvocationException>(() => fixture.Invoke("Stop"));
             Assert.IsType<TimeoutException>(failure.InnerException);
-            Assert.Same(fixture.Instance, ownerField.GetValue(host));
-            Assert.Same(firstFrame, fixture.Get<object>("FirstFrameRendered"));
-            Assert.Same(failed, fixture.Get<object>("RenderThreadFailed"));
+            Assert.Equal(1, fixture.Get<int>("_stopRequested"));
             Assert.Same(worker, fixture.Get<Thread>("_renderThread"));
+            Assert.Equal(nativeFenceBlocked ? 1 : 0, fixture.Get<int>("_swapChainBound"));
+            Assert.Null(fixture.Get<object?>("_pendingSwapChainUnbind"));
             var disposeFailure = Assert.Throws<TargetInvocationException>(() => fixture.Invoke("Dispose"));
             Assert.IsType<TimeoutException>(disposeFailure.InnerException);
             Assert.Equal(0, fixture.Get<int>("_disposed"));
@@ -100,6 +96,7 @@ public sealed class PreviewRendererLifecycleTests
         finally
         {
             fixture.Set("_inNativeCall", 0);
+            fixture.Set("_swapChainBound", 0);
             releaseWorker.Set();
             worker.Join(TimeSpan.FromSeconds(5));
         }
