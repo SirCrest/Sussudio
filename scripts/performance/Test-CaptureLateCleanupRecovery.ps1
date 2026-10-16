@@ -66,9 +66,27 @@ the Flashback session directory on disk:
                             opens the device and renders.
     plain-cycle-flashback-off
 
+  AudioGraphRollback (SUSSUDIO_CAPTURE_FAULT_PREVIEW_FLASHBACK_FAILURES=2, no handoff fault: the
+  first two fresh starts fail where they would start the Flashback backend, after program audio
+  and the microphone monitor started). WASAPI capture workers are counted two ways: the live
+  "WASAPI Capture" threads in the app process, and the log's started/stopped balance.
+    failed-launch-start     The launch auto-start (microphone as persisted) fails on fault 1
+                            after its audio graph ran; the rollback leaves no capture worker.
+    enable-mic              `set mic on` while preview is stopped.
+    failed-mic-start        `preview start` starts the microphone monitor, then fails on fault 2.
+                            The rollback stops the monitor (MIC_MONITOR_STOP after the fault),
+                            nothing is retained, and no capture worker is left.
+    recovery-start          A fresh start renders with exactly one microphone monitor: one new
+                            MIC_MONITOR_START, a launch-wide mic balance of 1, and as many live
+                            capture threads as the log balance says (no leaked worker).
+    plain-cycle-flashback-off
+                            A teardown stop and start still leave one microphone monitor.
+    restore-mic             `set mic` back to the persisted value read before enable-mic.
+
   Control (no fault): the two plain cycles only.
 
--Scenario All runs StopThenStart, ReinitThenStart, StartRollback and StartRollbackReleased.
+-Scenario All runs StopThenStart, ReinitThenStart, StartRollback, StartRollbackReleased and
+AudioGraphRollback.
 Writes result.json and one app log per launch under artifacts/capture-late-cleanup/. Refuses
 to start while any Sussudio instance runs: the app is single instance and owns the capture device.
 .EXAMPLE
@@ -79,7 +97,7 @@ param(
     [ValidatePattern('^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$')]
     [string] $Label = 'late-cleanup',
 
-    [ValidateSet('All', 'StopThenStart', 'ReinitThenStart', 'StartRollback', 'StartRollbackReleased', 'Control')]
+    [ValidateSet('All', 'StopThenStart', 'ReinitThenStart', 'StartRollback', 'StartRollbackReleased', 'AudioGraphRollback', 'Control')]
     [string] $Scenario = 'All',
 
     [ValidateRange(5, 120)]
@@ -119,24 +137,30 @@ if ($running.Count -gt 0) {
 }
 
 # @() keeps a single scenario an array; $() would unroll it to a string with no Count under strict mode.
-$scenarioNames = @(if ($Scenario -eq 'All') { 'StopThenStart', 'ReinitThenStart', 'StartRollback', 'StartRollbackReleased' } else { $Scenario })
+$scenarioNames = @(if ($Scenario -eq 'All') { 'StopThenStart', 'ReinitThenStart', 'StartRollback', 'StartRollbackReleased', 'AudioGraphRollback' } else { $Scenario })
 $pipeName = "SussudioAutomation.late-cleanup-$PID"
 # The app rotates its prior log at startup, so each launch starts a fresh file.
 $logPath = Join-Path $repoRoot 'temp/logs/Sussudio_Debug.log'
+$settingsPath = Join-Path $env:LOCALAPPDATA 'Sussudio/settings.json'
 $faultVariable = 'SUSSUDIO_CAPTURE_FAULT_PRE_CLEANUP_FAILURES'
 $installFaultVariable = 'SUSSUDIO_CAPTURE_FAULT_PREVIEW_INSTALL_FAILURES'
+$flashbackFaultVariable = 'SUSSUDIO_CAPTURE_FAULT_PREVIEW_FLASHBACK_FAILURES'
 # Fault 1 fails the teardown (or the start rollback), fault 2 fails the first finish of it, the third handoff passes.
 $faultFailures = 2
-# Per scenario: renderer handoff faults, fresh-start install faults, and whether the launch auto-start must fail.
+# Per scenario: renderer handoff faults, fresh-start install faults, fresh-start faults after the audio graph
+# started, and whether the launch auto-start must fail.
 $scenarioFaults = @{
-    StopThenStart = @{ PreCleanup = $faultFailures; Install = 0; LaunchFails = $false }
-    ReinitThenStart = @{ PreCleanup = $faultFailures; Install = 0; LaunchFails = $false }
-    StartRollback = @{ PreCleanup = $faultFailures; Install = 1; LaunchFails = $true }
-    StartRollbackReleased = @{ PreCleanup = 0; Install = 1; LaunchFails = $true }
-    Control = @{ PreCleanup = 0; Install = 0; LaunchFails = $false }
+    StopThenStart = @{ PreCleanup = $faultFailures; Install = 0; Flashback = 0; LaunchFails = $false }
+    ReinitThenStart = @{ PreCleanup = $faultFailures; Install = 0; Flashback = 0; LaunchFails = $false }
+    StartRollback = @{ PreCleanup = $faultFailures; Install = 1; Flashback = 0; LaunchFails = $true }
+    StartRollbackReleased = @{ PreCleanup = 0; Install = 1; Flashback = 0; LaunchFails = $true }
+    AudioGraphRollback = @{ PreCleanup = 0; Install = 0; Flashback = 2; LaunchFails = $true }
+    Control = @{ PreCleanup = 0; Install = 0; Flashback = 0; LaunchFails = $false }
 }
 $retiredMarkerName = '.flashback-retired-session'
-$markerPattern = 'CAPTURE_FAULT_PRE_CLEANUP_FAILED|CAPTURE_FAULT_PREVIEW_INSTALL_FAILED|CAPTURE_RETAINED_CLEANUP_|PREVIEW_STOP_CAPTURE_UNINITIALIZED|CAPTURE_INIT|PREVIEW_START requested|PREVIEW_START phase=(create_uvc|started)|Unified preview start failed|Unified preview rollback dispose|PREVIEW_PIPELINE_VIDEO_STOP_BEFORE_FLASHBACK_DISPOSE|UNIFIED_VIDEO_REINIT_RETIRE_SHARED_D3D_MANAGER|PREVIEW_SESSION_STARTED|PREVIEW_START_FAILURE_STOP|PREVIEW_RENDERER_ATTACH_FAILED|PREVIEW_D3D11_FIRST_FRAME|PREVIEW_START_TIMEOUT|REINIT_FAILED_CLEANUP|FLASHBACK_BUFFER_INIT|FLASHBACK_BUFFER_CLEANUP_RETIRE|FLASHBACK_BUFFER_DISPOSE|FLASHBACK_PREVIEW_DISPOSE_OK|FLASHBACK_CACHE_BUDGET_CLEANUP|FLASHBACK_STALE_SESSION_CLEANUP|CAP-COORD|Capture not initialized|Capture cleanup must complete'
+$micStartPattern = 'MIC_MONITOR_START device='
+$micStopPattern = '\] MIC_MONITOR_STOP\s*$'
+$markerPattern = 'CAPTURE_FAULT_PRE_CLEANUP_FAILED|CAPTURE_FAULT_PREVIEW_INSTALL_FAILED|CAPTURE_FAULT_PREVIEW_FLASHBACK_FAILED|MIC_MONITOR_|Microphone capture dispose failed|WASAPI capture st(arted|opped)\.|WASAPI_CAPTURE_THREAD_JOIN_TIMEOUT|Preview backend active|CAPTURE_RETAINED_CLEANUP_|PREVIEW_STOP_CAPTURE_UNINITIALIZED|CAPTURE_INIT|PREVIEW_START requested|PREVIEW_START phase=(create_uvc|started)|Unified preview start failed|Unified preview rollback dispose|PREVIEW_PIPELINE_VIDEO_STOP_BEFORE_FLASHBACK_DISPOSE|UNIFIED_VIDEO_REINIT_RETIRE_SHARED_D3D_MANAGER|PREVIEW_SESSION_STARTED|PREVIEW_START_FAILURE_STOP|PREVIEW_RENDERER_ATTACH_FAILED|PREVIEW_D3D11_FIRST_FRAME|PREVIEW_START_TIMEOUT|REINIT_FAILED_CLEANUP|FLASHBACK_BUFFER_INIT|FLASHBACK_BUFFER_CLEANUP_RETIRE|FLASHBACK_BUFFER_DISPOSE|FLASHBACK_PREVIEW_DISPOSE_OK|FLASHBACK_CACHE_BUDGET_CLEANUP|FLASHBACK_STALE_SESSION_CLEANUP|CAP-COORD|Capture not initialized|Capture cleanup must complete'
 # A preview session that starts or a renderer that attaches while cleanup is retained.
 $spuriousAttachPattern = 'PREVIEW_SESSION_STARTED|PREVIEW_RENDERER_ATTACH_FAILED|PREVIEW_START_FAILURE_STOP'
 
@@ -291,6 +315,96 @@ function Select-OtherFrameRate {
     return $null
 }
 
+# .NET publishes Thread.Name as the OS thread description, so a WASAPI capture worker (program audio or the
+# microphone monitor) is visible from outside the app as a thread named "WASAPI Capture".
+if (-not ('SussudioThreadDescriptionProbe' -as [type])) {
+    Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+
+public static class SussudioThreadDescriptionProbe
+{
+    private const uint ThreadQueryLimitedInformation = 0x0800;
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern IntPtr OpenThread(uint desiredAccess, bool inheritHandle, uint threadId);
+
+    [DllImport("kernel32.dll")]
+    private static extern int GetThreadDescription(IntPtr thread, out IntPtr description);
+
+    [DllImport("kernel32.dll")]
+    private static extern IntPtr LocalFree(IntPtr memory);
+
+    [DllImport("kernel32.dll")]
+    private static extern bool CloseHandle(IntPtr handle);
+
+    // Null when the thread has exited or cannot be opened.
+    public static string Get(int threadId)
+    {
+        IntPtr handle = OpenThread(ThreadQueryLimitedInformation, false, (uint)threadId);
+        if (handle == IntPtr.Zero) return null;
+        try
+        {
+            IntPtr text;
+            if (GetThreadDescription(handle, out text) < 0) return null;
+            try { return Marshal.PtrToStringUni(text); }
+            finally { LocalFree(text); }
+        }
+        finally
+        {
+            CloseHandle(handle);
+        }
+    }
+}
+'@
+}
+
+function Get-WasapiCaptureThreadCount {
+    if ($null -eq $script:app -or $script:app.HasExited) { return $null }
+    $process = Get-Process -Id $script:app.Id -ErrorAction SilentlyContinue
+    if ($null -eq $process) { return $null }
+    return @($process.Threads | Where-Object { [SussudioThreadDescriptionProbe]::Get($_.Id) -eq 'WASAPI Capture' }).Count
+}
+
+# The WASAPI capture workers alive now, counted from the process threads and from the launch's log: capture
+# workers started minus stopped, and microphone monitors started minus stopped. A worker whose stop timed out
+# logs no "stopped" line, so it stays counted.
+function Get-WasapiWorkerEvidence {
+    $lines = @(Read-LogLines)
+    $started = @($lines | Where-Object { $_ -match '\] WASAPI capture started\.' }).Count
+    $stopped = @($lines | Where-Object { $_ -match '\] WASAPI capture stopped\.' }).Count
+    $micStarts = @($lines | Where-Object { $_ -match $micStartPattern }).Count
+    $micStops = @($lines | Where-Object { $_ -match $micStopPattern }).Count
+    [ordered]@{
+        captureThreads = Get-WasapiCaptureThreadCount
+        logStarted = $started
+        logStopped = $stopped
+        logLive = $started - $stopped
+        micStarts = $micStarts
+        micStops = $micStops
+        micLive = $micStarts - $micStops
+        capturedUtc = [DateTime]::UtcNow.ToString('o')
+    }
+}
+
+# A stopped worker's thread can outlive its "stopped" line by a moment; wait briefly for the two counts to agree.
+function Wait-WasapiWorkerEvidence {
+    $deadline = [DateTime]::UtcNow.AddSeconds(5)
+    do {
+        $evidence = Get-WasapiWorkerEvidence
+        if ($evidence.captureThreads -eq $evidence.logLive) { return $evidence }
+        Start-Sleep -Milliseconds 250
+    } while ([DateTime]::UtcNow -lt $deadline)
+    return $evidence
+}
+
+# The persisted microphone toggle the app loaded at launch; false when unset.
+function Get-PersistedMicrophoneEnabled {
+    if (!(Test-Path -LiteralPath $settingsPath)) { return $false }
+    $settings = Get-Content -LiteralPath $settingsPath -Raw | ConvertFrom-Json
+    return [bool](Get-JsonProperty $settings 'IsMicrophoneEnabled' $false)
+}
+
 # Strict mode throws on a missing property; serializers may omit defaults.
 function Get-JsonProperty {
     param($Object, [string] $Name, $Default = $null)
@@ -333,8 +447,9 @@ function Invoke-RenderingStart {
 }
 
 # An ordinary stop + start must render, and must neither clear the flag nor re-initialize capture.
+# -RequireOneMicrophone also requires exactly one microphone monitor and no leaked capture worker afterwards.
 function Invoke-PlainCycle {
-    param([string] $Name)
+    param([string] $Name, [switch] $RequireOneMicrophone)
     $startLine = @(Read-LogLines).Count
     $stop = Invoke-Ssctl -Arguments @('preview', 'stop') -TimeoutMs 30000
     $stopped = Wait-PreviewStopped
@@ -343,6 +458,10 @@ function Invoke-PlainCycle {
     $step.stateAfterStop = Get-InitState $stopped
     $step.passed = $step.passed -and $stop.ExitCode -eq 0 -and $null -ne $stopped -and !$stopped.IsPreviewing -and
         !$step.captureInitialized -and !$step.flagClearedByStop -and !$step.attachFailed
+    if ($RequireOneMicrophone) {
+        $step.workers = Wait-WasapiWorkerEvidence
+        $step.passed = $step.passed -and $step.workers.micLive -eq 1 -and $step.workers.captureThreads -eq $step.workers.logLive
+    }
     $steps.Add([pscustomobject]$step)
     Write-Host "${Name}: state=$($step.startupState) rendered=$($step.renderedDuringDwell) reinit=$($step.captureInitialized) passed=$($step.passed)"
 }
@@ -360,12 +479,13 @@ function Set-AudioPreview {
 }
 
 function Start-App {
-    param([int] $FaultFailures, [int] $InstallFaultFailures, [switch] $ExpectLaunchFailure)
+    param([int] $FaultFailures, [int] $InstallFaultFailures, [int] $FlashbackFaultFailures, [switch] $ExpectLaunchFailure)
     $applied = @{ SUSSUDIO_AUTOMATION_PIPE = $pipeName }
     if ($FaultFailures -gt 0) { $applied[$faultVariable] = [string]$FaultFailures }
     if ($InstallFaultFailures -gt 0) { $applied[$installFaultVariable] = [string]$InstallFaultFailures }
+    if ($FlashbackFaultFailures -gt 0) { $applied[$flashbackFaultVariable] = [string]$FlashbackFaultFailures }
     $saved = @{}
-    foreach ($key in @($applied.Keys) + $faultVariable + $installFaultVariable) {
+    foreach ($key in @($applied.Keys) + $faultVariable + $installFaultVariable + $flashbackFaultVariable) {
         if ($saved.ContainsKey($key)) { continue }
         $saved[$key] = [Environment]::GetEnvironmentVariable($key, 'Process')
         $value = $null
@@ -391,7 +511,7 @@ function Start-App {
     if (!$ready) { throw "The app did not answer on its automation pipe within 90 s. Last ssctl reply (exit $($probe.ExitCode)): $($probe.Output)" }
 
     if ($ExpectLaunchFailure) {
-        # The launch auto-start is the first fresh start, so the install fault fails it; the scenario judges it.
+        # The launch auto-start is the first fresh start, so the injected start fault fails it; the scenario judges it.
         $failed = Wait-LogMarker -StartLine 0 -Pattern 'CAP-COORD-FAIL\] StartVideoPreview'
         $script:launch = [ordered]@{
             environment = $applied
@@ -399,7 +519,7 @@ function Start-App {
             state = Get-InitState (Get-SettledSnapshot)
         }
         Write-Host "launch: expected start failure logged=$failed"
-        if (!$failed) { throw 'The launch auto-start did not fail on the injected install fault.' }
+        if (!$failed) { throw 'The launch auto-start did not fail on the injected start fault.' }
         return
     }
 
@@ -539,19 +659,23 @@ function Invoke-FailedRecoveryStart {
     Write-Host "failed-recovery-start: fault=$faultFired finishBegan=$($step.finishBegan) completed=$($step.finishCompleted) spuriousAttach=$($step.spuriousAttach) passed=$($step.passed)"
 }
 
-# failed-launch-start: the launch auto-start fails on the install fault with its capture running and
-# not yet installed. With -HandoffFaults the rollback's renderer handoff hits fault 1 after that.
+# failed-launch-start: the launch auto-start fails on the injected start fault: by default the install fault,
+# with its capture running and not yet installed. With -HandoffFaults the rollback's renderer handoff hits
+# fault 1 after that. With -AfterAudioGraph it is the Flashback fault, after the audio graph ran, and the
+# rollback must leave no WASAPI capture worker behind.
 function Invoke-FailedLaunchStart {
-    param([switch] $HandoffFaults)
+    param([switch] $HandoffFaults, [switch] $AfterAudioGraph)
     $window = @(Read-LogLines)
     $state = $script:launch.state
-    $installIndex = Get-MarkerIndex -Window $window -Pattern 'CAPTURE_FAULT_PREVIEW_INSTALL_FAILED count=1 '
+    $startFault = $(if ($AfterAudioGraph) { 'CAPTURE_FAULT_PREVIEW_FLASHBACK_FAILED' } else { 'CAPTURE_FAULT_PREVIEW_INSTALL_FAILED' })
+    $startFaultIndex = Get-MarkerIndex -Window $window -Pattern "$startFault count=1 "
     $handoffIndex = Get-MarkerIndex -Window $window -Pattern 'CAPTURE_FAULT_PRE_CLEANUP_FAILED count=1 '
     $step = [ordered]@{
         name = 'failed-launch-start'
-        installFaultFired = $installIndex -ge 0
+        startFault = $startFault
+        startFaultFired = $startFaultIndex -ge 0
         handoffFaultFired = $handoffIndex -ge 0
-        handoffFaultedInRollback = $installIndex -ge 0 -and $handoffIndex -gt $installIndex
+        handoffFaultedInRollback = $startFaultIndex -ge 0 -and $handoffIndex -gt $startFaultIndex
         rollbackRan = Test-LogMarker -Window $window -Pattern 'Unified preview start failed'
         rollbackDisposeWarned = Test-LogMarker -Window $window -Pattern 'Unified preview rollback dispose warning'
         startFailed = Test-LogMarker -Window $window -Pattern 'CAP-COORD-FAIL\] StartVideoPreview'
@@ -561,11 +685,103 @@ function Invoke-FailedLaunchStart {
         markers = Select-Markers $window
     }
     $handoffAsExpected = $(if ($HandoffFaults) { $step.handoffFaultedInRollback } else { !$step.handoffFaultFired })
-    $step.passed = $step.installFaultFired -and $handoffAsExpected -and $step.rollbackRan -and $step.startFailed -and
+    $step.passed = $step.startFaultFired -and $handoffAsExpected -and $step.rollbackRan -and $step.startFailed -and
         $step.capturesCreated -eq 1 -and !$step.spuriousAttach -and $null -ne $state -and !$state.isPreviewing -and
         $state.viewModelInitialized -and $state.captureSessionState -eq 'Faulted'
+    if ($AfterAudioGraph) {
+        $audioGraphIndex = Get-MarkerIndex -Window $window -Pattern 'Preview backend active'
+        $step.audioGraphRanBeforeFault = $audioGraphIndex -ge 0 -and $startFaultIndex -gt $audioGraphIndex
+        $step.workers = Wait-WasapiWorkerEvidence
+        $step.passed = $step.passed -and $step.audioGraphRanBeforeFault -and $step.workers.captureThreads -eq 0 -and
+            $step.workers.logLive -eq 0 -and $step.workers.micLive -eq 0
+    }
     $steps.Add([pscustomobject]$step)
-    Write-Host "failed-launch-start: install=$($step.installFaultFired) handoff=$($step.handoffFaultFired) rollback=$($step.rollbackRan) captures=$($step.capturesCreated) passed=$($step.passed)"
+    Write-Host "failed-launch-start: fault=$($step.startFaultFired) handoff=$($step.handoffFaultFired) rollback=$($step.rollbackRan) captures=$($step.capturesCreated) passed=$($step.passed)"
+}
+
+function Invoke-AudioGraphRollback {
+    Invoke-FailedLaunchStart -AfterAudioGraph
+    $micPersisted = Get-PersistedMicrophoneEnabled
+    try {
+        # enable-mic: preview is stopped, so this only records the microphone for the next start.
+        $enable = Invoke-Ssctl -Arguments @('set', 'mic', 'on') -TimeoutMs 30000
+        $steps.Add([pscustomobject][ordered]@{
+            name = 'enable-mic'
+            persistedBefore = $micPersisted
+            exitCode = $enable.ExitCode
+            output = $enable.Output
+            passed = $enable.ExitCode -eq 0
+        })
+        Write-Host "enable-mic: exit=$($enable.ExitCode) persistedBefore=$micPersisted"
+
+        # failed-mic-start: the start runs program audio and the microphone monitor, then fails on fault 2. The
+        # rollback must stop the monitor itself: nothing is retained for a later transition to finish.
+        $startLine = @(Read-LogLines).Count
+        $start = Invoke-Ssctl -Arguments @('preview', 'start') -TimeoutMs 30000
+        $faultFired = Wait-LogMarker -StartLine $startLine -Pattern 'CAPTURE_FAULT_PREVIEW_FLASHBACK_FAILED count=2 '
+        $settled = Get-SettledSnapshot
+        $window = Get-LogWindow -StartLine $startLine
+        $state = Get-InitState $settled
+        $micStartIndex = Get-MarkerIndex -Window $window -Pattern $micStartPattern
+        $faultIndex = Get-MarkerIndex -Window $window -Pattern 'CAPTURE_FAULT_PREVIEW_FLASHBACK_FAILED count=2 '
+        $rollbackIndex = Get-MarkerIndex -Window $window -Pattern 'Unified preview start failed'
+        $micStopIndex = Get-MarkerIndex -Window $window -Pattern $micStopPattern
+        $step = [ordered]@{
+            name = 'failed-mic-start'
+            startExitCode = $start.ExitCode
+            startOutput = $start.Output
+            faultFired = $faultFired
+            failedWithStartFault = $start.Output -match 'Injected fault'
+            micStartedBeforeFault = $micStartIndex -ge 0 -and $faultIndex -gt $micStartIndex
+            micStoppedByRollback = $faultIndex -ge 0 -and $rollbackIndex -gt $faultIndex -and $micStopIndex -gt $rollbackIndex
+            micDisposeFailed = Test-LogMarker -Window $window -Pattern 'Microphone capture dispose failed|WASAPI_CAPTURE_THREAD_JOIN_TIMEOUT'
+            retainedCleanup = Test-LogMarker -Window $window -Pattern 'CAPTURE_RETAINED_CLEANUP_BEGIN'
+            spuriousAttach = Test-LogMarker -Window $window -Pattern $spuriousAttachPattern
+            workers = Wait-WasapiWorkerEvidence
+            stateAfter = $state
+            markers = Select-Markers $window
+        }
+        $step.passed = $start.ExitCode -ne 0 -and $faultFired -and $step.failedWithStartFault -and $step.micStartedBeforeFault -and
+            $step.micStoppedByRollback -and !$step.micDisposeFailed -and !$step.retainedCleanup -and !$step.spuriousAttach -and
+            $step.workers.captureThreads -eq 0 -and $step.workers.logLive -eq 0 -and $step.workers.micLive -eq 0 -and
+            $null -ne $state -and !$state.isPreviewing -and $state.viewModelInitialized -and $state.captureSessionState -eq 'Faulted'
+        $steps.Add([pscustomobject]$step)
+        Write-Host "failed-mic-start: fault=$faultFired micStarted=$($step.micStartedBeforeFault) micStopped=$($step.micStoppedByRollback) threads=$($step.workers.captureThreads) micLive=$($step.workers.micLive) passed=$($step.passed)"
+
+        # recovery-start: a fresh pipeline with exactly one microphone monitor. A monitor leaked by the failed
+        # start would still run beside the new one: a launch-wide mic balance of 2 and an extra capture thread.
+        $startLine = @(Read-LogLines).Count
+        $recovery = Invoke-RenderingStart -Name 'recovery-start' -StartLine $startLine
+        $window = Get-LogWindow -StartLine $startLine
+        $recovery.micStartsInStep = @($window | Where-Object { $_ -match $micStartPattern }).Count
+        $recovery.finishBegan = Test-LogMarker -Window $window -Pattern 'CAPTURE_RETAINED_CLEANUP_BEGIN'
+        $recovery.freshCaptureCreated = Test-LogMarker -Window $window -Pattern 'PREVIEW_START phase=create_uvc'
+        $recovery.workers = Wait-WasapiWorkerEvidence
+        $recovery.passed = $recovery.passed -and $recovery.micStartsInStep -eq 1 -and !$recovery.finishBegan -and
+            $recovery.freshCaptureCreated -and !$recovery.captureInitialized -and !$recovery.flagClearedByStop -and
+            !$recovery.attachFailed -and $recovery.workers.micLive -eq 1 -and $recovery.workers.logLive -ge 1 -and
+            $recovery.workers.captureThreads -eq $recovery.workers.logLive
+        $steps.Add([pscustomobject]$recovery)
+        Write-Host "recovery-start: state=$($recovery.startupState) micStarts=$($recovery.micStartsInStep) micLive=$($recovery.workers.micLive) threads=$($recovery.workers.captureThreads)/$($recovery.workers.logLive) rendered=$($recovery.renderedDuringDwell) passed=$($recovery.passed)"
+
+        # A teardown stop releases the monitor and the start runs a new one: still exactly one.
+        Invoke-FlashbackToggle -State off
+        Invoke-PlainCycle -Name 'plain-cycle-flashback-off' -RequireOneMicrophone
+    }
+    finally {
+        # restore-mic: leave the persisted microphone toggle as this scenario found it.
+        $restoreValue = $(if ($micPersisted) { 'on' } else { 'off' })
+        $restore = Invoke-Ssctl -Arguments @('set', 'mic', $restoreValue) -TimeoutMs 30000
+        $steps.Add([pscustomobject][ordered]@{
+            name = 'restore-mic'
+            value = $restoreValue
+            exitCode = $restore.ExitCode
+            output = $restore.Output
+            persistedAfter = Get-PersistedMicrophoneEnabled
+            passed = $restore.ExitCode -eq 0 -and (Get-PersistedMicrophoneEnabled) -eq $micPersisted
+        })
+        Write-Host "restore-mic: set mic $restoreValue exit=$($restore.ExitCode)"
+    }
 }
 
 function Invoke-StartRollback {
@@ -697,7 +913,7 @@ function Invoke-Control {
     Invoke-PlainCycle -Name 'plain-cycle-flashback-on'
 }
 
-$expectedStepCounts = @{ StopThenStart = 5; ReinitThenStart = 2; StartRollback = 5; StartRollbackReleased = 3; Control = 2 }
+$expectedStepCounts = @{ StopThenStart = 5; ReinitThenStart = 2; StartRollback = 5; StartRollbackReleased = 3; AudioGraphRollback = 6; Control = 2 }
 New-Item -ItemType Directory -Force -Path $OutputDirectory | Out-Null
 $scenarioResults = New-Object System.Collections.Generic.List[object]
 # Stays false unless the report is computed, so an error while writing it still exits 1.
@@ -712,12 +928,13 @@ try {
         Write-Host "== $name =="
         try {
             $faults = $scenarioFaults[$name]
-            Start-App -FaultFailures $faults.PreCleanup -InstallFaultFailures $faults.Install -ExpectLaunchFailure:$faults.LaunchFails
+            Start-App -FaultFailures $faults.PreCleanup -InstallFaultFailures $faults.Install -FlashbackFaultFailures $faults.Flashback -ExpectLaunchFailure:$faults.LaunchFails
             switch ($name) {
                 'StopThenStart' { Invoke-StopThenStart }
                 'ReinitThenStart' { Invoke-ReinitThenStart }
                 'StartRollback' { Invoke-StartRollback }
                 'StartRollbackReleased' { Invoke-StartRollbackReleased }
+                'AudioGraphRollback' { Invoke-AudioGraphRollback }
                 'Control' { Invoke-Control }
             }
         }
@@ -752,7 +969,7 @@ finally {
     $dirty = @(& git -C $repoRoot status --porcelain --untracked-files=no 2>$null).Count -gt 0
     $passed = $scenarioResults.Count -eq $scenarioNames.Count -and @($scenarioResults | Where-Object { !$_.passed }).Count -eq 0
     $report = [pscustomobject]@{
-        schema = 'sussudio.capture-late-cleanup-recovery/v3'
+        schema = 'sussudio.capture-late-cleanup-recovery/v4'
         label = $Label
         scenario = $Scenario
         generatedUtc = [DateTime]::UtcNow.ToString('o')
@@ -762,7 +979,7 @@ finally {
         appDllSha256 = (Get-FileHash (Join-Path (Split-Path -Parent $AppPath) 'Sussudio.dll')).Hash
         passed = $passed
         scenarios = $scenarioResults
-        doesNotProve = 'The teardown failures are injected exceptions at the capture pre-cleanup renderer handoff, not real renderer stop timeouts, and the start failure is an injected exception between a running capture and its install, not a real start failure with a renderer attached mid-start. Exercised: a preview-stop teardown, a reinit teardown and a fresh-start rollback, each finished late by a start or an initialize, and a fresh-start rollback that releases its capture itself. Not exercised: a retained full capture cleanup (fatal capture error), recording, the post-recording idle-release handoff, a start rollback after preview audio or the Flashback backend started, and cancellation of a finish. Device release is inferred from the finish stopping the retained video and a fresh capture opening the same device and rendering, not from a handle count. Judged from log markers, state counters and the Flashback session directory on disk; not colour, HDR, audio, or recording.'
+        doesNotProve = 'The teardown failures are injected exceptions at the capture pre-cleanup renderer handoff, not real renderer stop timeouts, and the start failures are injected exceptions between a running capture and its install, or after the audio graph started where the Flashback backend would start, not real start failures (a renderer attached mid-start, a Flashback encoder that fails to open). Exercised: a preview-stop teardown, a reinit teardown and a fresh-start rollback, each finished late by a start or an initialize, a fresh-start rollback that releases its capture itself, and one that releases program audio and the microphone monitor. Not exercised: a retained full capture cleanup (fatal capture error), recording, the post-recording idle-release handoff, a start rollback after the Flashback backend started, a microphone dispose that fails or times out, a rollback whose handoff fails after the audio graph started, and cancellation of a finish. Device release is inferred from the finish stopping the retained video and a fresh capture opening the same device and rendering, not from a handle count. WASAPI capture workers are counted from live process threads named by the app and from the log balance; that shows a worker thread ended, not that the audio endpoint was released. Judged from log markers, state counters, process threads and the Flashback session directory on disk; not colour, HDR, audible audio, or recording.'
     }
     $resultPath = Join-Path $OutputDirectory 'result.json'
     $report | ConvertTo-Json -Depth 8 | Out-File -LiteralPath $resultPath -Encoding utf8 -ErrorAction Stop

@@ -191,6 +191,9 @@ public static class TuningKnobCatalog
             "SUSSUDIO_CAPTURE_FAULT_PREVIEW_INSTALL_FAILURES",
             "Fault injection for the start-rollback live check; it deliberately fails fresh preview starts."),
         new TuningKnobExclusion(
+            "SUSSUDIO_CAPTURE_FAULT_PREVIEW_FLASHBACK_FAILURES",
+            "Fault injection for the audio-graph rollback live check; it deliberately fails fresh preview starts after their audio started."),
+        new TuningKnobExclusion(
             "SUSSUDIO_CAPTURE_FAULT_PREVIEW_START_FAILURES",
             "Fault injection for the preview start failure live check; it deliberately fails video preview starts."),
         new TuningKnobExclusion(
