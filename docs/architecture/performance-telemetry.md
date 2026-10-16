@@ -788,7 +788,8 @@ is used (a value implies `set-value`). The planner rejects before touching the U
 what the element's facts rule out: an unknown action (listing the valid ones), an
 action the element has no pattern for (listing what it supports), `set-value`
 without a value or with a non-numeric or out-of-range value on a range control
-(rejected, never clamped) or on a read-only text control, `select` with the wrong
+(rejected, never clamped) or on a read-only text or range control (a
+`ProgressBar`, which is not offered `set-value` either), `select` with the wrong
 value arity, `expand` or `collapse` on a leaf, and a value passed to an action
 that takes none. Actions go through the peer's pattern providers
 (`IInvokeProvider`, `IToggleProvider`, `IValueProvider`, `IRangeValueProvider`,
@@ -1257,7 +1258,7 @@ Written before the code, per the testing policy:
   resolves to the natural one and a control with none says so; an action with no
   pattern lists what the element supports; `set-value` needs a value, a range
   value must be finite and inside its limits (rejected, never clamped), a
-  read-only text control is rejected; `select` takes no value on an item and
+  read-only text or range control is rejected; `select` takes no value on an item and
   needs one on a container; `expand` and `collapse` on a leaf are rejected;
   a value on an action that takes none is rejected and an empty value counts as
   absent; `focus` and `scroll-into-view` need no pattern. Item selection matches

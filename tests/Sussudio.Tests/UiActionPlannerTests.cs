@@ -15,7 +15,8 @@ namespace Sussudio.Tests;
 //      no natural action must say so instead of guessing.
 //   3. An action the element has no pattern for must be rejected naming what it does support.
 //   4. set-value needs a value; a range element needs a finite number inside [minimum, maximum] (rejected, never
-//      clamped); a text element must not be read-only.
+//      clamped); a read-only element, text or range (a ProgressBar), is rejected and not offered set-value, or the
+//      action fails on the UI thread instead of naming the reason.
 //   5. select on an item takes no value; select on a container needs one.
 //   6. expand/collapse on a leaf node must be rejected; expand on an already-expanded element is allowed (a no-op).
 //   7. A value passed to an action that takes none is a mistake and must be rejected; an empty value counts as absent.
@@ -27,12 +28,14 @@ public sealed class UiActionPlannerTests
         bool valueReadOnly = false,
         double? min = null,
         double? max = null,
-        string? expandState = null)
-        => new(patterns, valueReadOnly, min, max, expandState);
+        string? expandState = null,
+        bool rangeReadOnly = false)
+        => new(patterns, valueReadOnly, min, max, rangeReadOnly, expandState);
 
     private static readonly UiElementFacts Button = Facts(new[] { UiPatterns.Invoke });
     private static readonly UiElementFacts ToggleSwitch = Facts(new[] { UiPatterns.Toggle });
     private static readonly UiElementFacts Slider = Facts(new[] { UiPatterns.RangeValue }, min: 0, max: 100);
+    private static readonly UiElementFacts ProgressBar = Facts(new[] { UiPatterns.RangeValue }, min: 0, max: 100, rangeReadOnly: true);
     private static readonly UiElementFacts TextBox = Facts(new[] { UiPatterns.Value });
     private static readonly UiElementFacts ComboBox = Facts(new[] { UiPatterns.Selection, UiPatterns.ExpandCollapse, UiPatterns.Value }, valueReadOnly: true, expandState: "Collapsed");
     private static readonly UiElementFacts ListItem = Facts(new[] { UiPatterns.SelectionItem });
@@ -234,6 +237,17 @@ public sealed class UiActionPlannerTests
     }
 
     [Fact]
+    public void Plan_ReadOnlyRangeRejectsSetValueAndHasNoNaturalSetValue()
+    {
+        var plan = UiActionPlanner.Plan("set-value", "50", ProgressBar);
+
+        Assert.False(plan.Ok);
+        Assert.Equal(UiActionStatus.InvalidValue, plan.ErrorStatus);
+        Assert.Contains("read-only", plan.Error);
+        Assert.False(UiActionPlanner.Plan(null, "50", ProgressBar).Ok);
+    }
+
+    [Fact]
     public void Plan_TextElementPlansTheRawString()
     {
         var plan = UiActionPlanner.Plan("set-value", "  hello  ", TextBox);
@@ -324,5 +338,9 @@ public sealed class UiActionPlannerTests
         Assert.Equal(
             new[] { UiActions.Select, UiActions.Expand, UiActions.Collapse, UiActions.Focus, UiActions.ScrollIntoView },
             UiActionPlanner.SupportedActions(ComboBox));
+        // The same for a read-only range.
+        Assert.Equal(
+            new[] { UiActions.Focus, UiActions.ScrollIntoView },
+            UiActionPlanner.SupportedActions(ProgressBar));
     }
 }

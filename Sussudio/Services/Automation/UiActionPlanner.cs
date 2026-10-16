@@ -43,6 +43,7 @@ public sealed record UiElementFacts(
     bool ValueReadOnly,
     double? RangeMinimum,
     double? RangeMaximum,
+    bool RangeReadOnly,
     string? ExpandState);
 
 /// <summary>A validated action ready for the bridge to perform, or the reason it was rejected before touching the UI.</summary>
@@ -130,7 +131,7 @@ public static class UiActionPlanner
             supported.Add(UiActions.Toggle);
         }
 
-        if (Has(facts, UiPatterns.RangeValue) || (Has(facts, UiPatterns.Value) && !facts.ValueReadOnly))
+        if (Settable(facts))
         {
             supported.Add(UiActions.SetValue);
         }
@@ -155,7 +156,7 @@ public static class UiActionPlanner
     {
         if (hasValue)
         {
-            if (Has(facts, UiPatterns.RangeValue) || (Has(facts, UiPatterns.Value) && !facts.ValueReadOnly))
+            if (Settable(facts))
             {
                 return UiActions.SetValue;
             }
@@ -224,6 +225,11 @@ public static class UiActionPlanner
 
         if (range)
         {
+            if (facts.RangeReadOnly)
+            {
+                return UiActionPlan.Reject(UiActionStatus.InvalidValue, "The element's value is read-only.");
+            }
+
             if (!double.TryParse(value!.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var number) || !double.IsFinite(number))
             {
                 return UiActionPlan.Reject(UiActionStatus.InvalidValue, $"'{value.Trim()}' is not a finite number (use a plain number such as 37.5).");
@@ -277,6 +283,10 @@ public static class UiActionPlanner
         => UiActionPlan.Reject(
             UiActionStatus.ActionUnsupported,
             $"The element does not support '{action}'. It supports: {string.Join(", ", SupportedActions(facts))}.");
+
+    // A range or text value the peer accepts writes to; a read-only one (a ProgressBar, a read-only ComboBox text) is not.
+    private static bool Settable(UiElementFacts facts)
+        => (Has(facts, UiPatterns.RangeValue) && !facts.RangeReadOnly) || (Has(facts, UiPatterns.Value) && !facts.ValueReadOnly);
 
     private static bool Has(UiElementFacts facts, string pattern)
         => facts.Patterns.Contains(pattern);
