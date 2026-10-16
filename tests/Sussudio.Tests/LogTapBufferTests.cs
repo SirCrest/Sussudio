@@ -7,6 +7,14 @@ namespace Sussudio.Tests;
 // log lines plus per-caller and per-tag counts for spam detection. Lines arrive in the Logger's format
 // "[HH:mm:ss.fff] [caller] message\n"; malformed lines, unbounded distinct keys and concurrent readers must never
 // throw or grow without bound.
+//
+// The exclude filter (written before the code; one chatty source, NATIVEXU_AT, was 358 of 1,139 lines in a live tail):
+//  - a line that contains the exclude text, in any case, is never returned;
+//  - max counts only the lines both filters keep, so excluded spam does not use up the budget and the tail still
+//    reaches back past it;
+//  - contains and exclude combine (contains AND NOT exclude), and an exclude equal to contains returns nothing;
+//  - a null or empty exclude excludes nothing;
+//  - an exclude that matches every line returns an empty tail, not an error, and the counts are untouched.
 public sealed class LogTapBufferTests
 {
     private static string Line(string caller, string message, int n = 0) =>
@@ -49,6 +57,64 @@ public sealed class LogTapBufferTests
         Assert.Empty(tap.Tail(10, "no such text"));
         Assert.Single(tap.Tail(0, null));
         Assert.Single(tap.Tail(-5, null));
+    }
+
+    [Fact]
+    public void ExcludeDropsMatchingLinesInAnyCaseAndMaxCountsOnlyKeptLines()
+    {
+        var tap = new LogTapBuffer();
+        for (var i = 0; i < 30; i++)
+        {
+            tap.Add(Line("Probe", $"NATIVEXU_AT attempt={i}"));
+            if (i % 10 == 0)
+            {
+                tap.Add(Line("Preview", $"preview event {i}"));
+            }
+        }
+
+        var kept = tap.Tail(3, null, "nativexu_at");
+        Assert.Equal(new[] { "preview event 0", "preview event 10", "preview event 20" }, kept.Select(l => l[(l.IndexOf("preview", StringComparison.Ordinal))..]));
+
+        // Without the exclude the same budget is all spam.
+        Assert.All(tap.Tail(3, null), line => Assert.Contains("NATIVEXU_AT", line, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void ContainsAndExcludeCombine()
+    {
+        var tap = new LogTapBuffer();
+        tap.Add(Line("A", "PREVIEW_DROPPED reason=late"));
+        tap.Add(Line("A", "PREVIEW_DROPPED reason=queue-full"));
+        tap.Add(Line("A", "PREVIEW_STARTED"));
+
+        var dropsNotLate = tap.Tail(10, "preview_dropped", "LATE");
+        Assert.Single(dropsNotLate);
+        Assert.EndsWith("reason=queue-full", dropsNotLate[0]);
+        Assert.Empty(tap.Tail(10, "PREVIEW", "preview"));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public void AMissingExcludeExcludesNothing(string? exclude)
+    {
+        var tap = new LogTapBuffer();
+        tap.Add(Line("A", "one"));
+        tap.Add(Line("A", "two"));
+
+        Assert.Equal(2, tap.Tail(10, null, exclude).Count);
+    }
+
+    [Fact]
+    public void AnExcludeThatMatchesEverythingReturnsAnEmptyTailAndLeavesCountsAlone()
+    {
+        var tap = new LogTapBuffer();
+        tap.Add(Line("A", "SOME_TAG one"));
+        tap.Add(Line("B", "SOME_TAG two"));
+
+        Assert.Empty(tap.Tail(10, null, "some_tag"));
+        Assert.Equal(2, tap.Counts().TotalLines);
+        Assert.Equal(2, tap.Counts().ByTag.Single(c => c.Key == "SOME_TAG").Count);
     }
 
     [Fact]

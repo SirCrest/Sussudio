@@ -36,6 +36,23 @@ namespace Sussudio.Tests;
 // 13. The shipped example spec drifting from the real knob catalog (a renamed knob, a value the knob now rejects, a
 //     knob that needs an app restart): it would only fail at preflight on a live app, so check it offline against the
 //     real catalog and the real store validation.
+//
+// The experiment lease (section 2.12; the app side is in PerfExperimentLeaseTests), written before the runner used it:
+//
+// 14. Another experiment holds the lease: the run is rejected naming that experiment, before any knob, preview,
+//     recording or window command, and no release is sent for a lease this runner never held.
+// 15. The acquire reached the app but its reply was lost: the runner releases its own id so the orphaned lease does
+//     not block the next experiment until it expires.
+// 16. The lease is lost mid-run (the runner stalled past the TTL, or an operator forced it off): the next renew is
+//     refused, the run fails naming why, and a window that was open when it was lost is not used. The restore still
+//     runs when nobody else holds the lease; when another experiment does, the runner leaves its knobs, preview and
+//     recording alone and says so.
+// 17. Long warmup and measure waits renew the lease before its TTL lapses (virtual time).
+// 18. Every knob change and restore carries the lease id, or the app would refuse the runner's own changes.
+// 19. The lease is released after the restore whether the run completed, failed or was canceled, on the restore's
+//     fresh token; a failed release is reported, not hidden.
+// 20. Baselines come from the acquire response, read by the app under the lease, so a knob changed by hand between
+//     preflight and the lease is restored to the value it had when the lease began.
 public sealed class PerfExperimentRunnerTests : IDisposable
 {
     private const string Depth = "SUSSUDIO_PREVIEW_JITTER_TARGET_DEPTH";
@@ -84,6 +101,13 @@ public sealed class PerfExperimentRunnerTests : IDisposable
         private bool _reportedPreviewing = true;
         private int _windowsEnded;
 
+        // The lease, enforced like the app does: knobs it names refuse changes without its id, and it lapses when
+        // virtual time (the sum of the runner's delays) passes its expiry, restoring the knobs it captured.
+        private string? _leaseId;
+        private string[] _leaseKnobs = Array.Empty<string>();
+        private readonly Dictionary<string, string?> _leaseBaseline = new(StringComparer.Ordinal);
+        private TimeSpan _leaseExpiresAt;
+
         public FakeApp()
         {
             foreach (var knob in Catalog)
@@ -126,6 +150,35 @@ public sealed class PerfExperimentRunnerTests : IDisposable
 
         public CancellationTokenSource? CancelSource { get; set; }
 
+        /// <summary>Another experiment's holder text while it holds the lease, with the knobs it leased.</summary>
+        public string? ForeignHolder { get; set; }
+
+        public string[] ForeignKnobs { get; set; } = Array.Empty<string>();
+
+        /// <summary>When the delay with this 1-based number runs, the runner's lease is lost: expired, or taken over.</summary>
+        public int LoseLeaseOnDelayNumber { get; set; }
+
+        /// <summary>Runs on the lost lease: null for an expiry the app restored, or another experiment taking it.</summary>
+        public Action<FakeApp>? OnLeaseLost { get; set; }
+
+        /// <summary>Runs inside the acquire, before the app captures the baseline.</summary>
+        public Action<FakeApp>? BeforeAcquire { get; set; }
+
+        /// <summary>The app handles the command and then the reply is lost.</summary>
+        public Func<string, JsonObject, bool>? LoseReplyWhen { get; set; }
+
+        public string? LeaseId => _leaseId;
+
+        public TimeSpan VirtualNow => Delays.Aggregate(TimeSpan.Zero, (sum, delay) => sum + delay);
+
+        /// <summary>Virtual times at which the runner took or renewed its lease.</summary>
+        public List<TimeSpan> LeaseRefreshes { get; } = new();
+
+        public IEnumerable<JsonObject> LeaseCalls(string action)
+            => Calls.Where(c => c.Command == "PerfExperimentLease" && c.Payload["action"]?.GetValue<string>() == action).Select(c => c.Payload);
+
+        public void SetValue(string name, string? value) => _values[name] = value;
+
         public string? Value(string name) => _values[name];
 
         public string? Effective(string name) => _effective[name];
@@ -141,7 +194,7 @@ public sealed class PerfExperimentRunnerTests : IDisposable
 
         public bool Touched()
             => Calls.Any(c => c.Command is "SetTuningKnob" or "SetPreviewEnabled" or "SetRecordingEnabled"
-                or "RestartFlashback" or "PerfWindow" or "AddPerfMarker");
+                or "RestartFlashback" or "PerfWindow" or "AddPerfMarker" or "PerfExperimentLease");
 
         public Task DelayAsync(TimeSpan delay, CancellationToken cancellationToken)
         {
@@ -151,8 +204,107 @@ public sealed class PerfExperimentRunnerTests : IDisposable
                 CancelSource!.Cancel();
             }
 
+            if (LoseLeaseOnDelayNumber > 0 && Delays.Count == LoseLeaseOnDelayNumber && _leaseId is not null)
+            {
+                ExpireLease();
+                OnLeaseLost?.Invoke(this);
+            }
+
             cancellationToken.ThrowIfCancellationRequested();
             return Task.CompletedTask;
+        }
+
+        private void ExpireLease()
+        {
+            foreach (var (name, value) in _leaseBaseline)
+            {
+                _values[name] = value;
+            }
+
+            _leaseId = null;
+            _leaseKnobs = Array.Empty<string>();
+            _leaseBaseline.Clear();
+        }
+
+        private JsonObject Lease(JsonObject body)
+        {
+            var action = body["action"]!.GetValue<string>();
+            var id = body["lease"]?.GetValue<string>();
+            if (_leaseId is not null && VirtualNow > _leaseExpiresAt)
+            {
+                ExpireLease();
+            }
+
+            JsonObject Holder(string holder) => new() { ["Holder"] = holder };
+            switch (action)
+            {
+                case "acquire":
+                    if (ForeignHolder is not null || (_leaseId is not null && _leaseId != id))
+                    {
+                        var holder = ForeignHolder ?? "another runner";
+                        return new JsonObject
+                        {
+                            ["Success"] = false,
+                            ["Message"] = $"Another perf experiment holds the tuning-knob lease: {holder}.",
+                            ["ErrorCode"] = "invalid-state",
+                            ["Data"] = new JsonObject { ["Active"] = Holder(holder) },
+                        };
+                    }
+
+                    BeforeAcquire?.Invoke(this);
+                    var ttl = body["ttlSeconds"]!.GetValue<int>();
+                    var knobs = (body["knobs"] as JsonArray ?? new JsonArray()).Select(n => n!.GetValue<string>()).ToArray();
+                    var baseline = new JsonArray();
+                    if (_leaseId != id)
+                    {
+                        _leaseBaseline.Clear();
+                        foreach (var knob in knobs)
+                        {
+                            _leaseBaseline[knob] = _values[knob];
+                        }
+                    }
+
+                    foreach (var (name, value) in _leaseBaseline)
+                    {
+                        baseline.Add(new JsonObject { ["Name"] = name, ["Value"] = value, ["Launch"] = _launch[name] });
+                    }
+
+                    _leaseId = id;
+                    _leaseKnobs = knobs;
+                    _leaseExpiresAt = VirtualNow + TimeSpan.FromSeconds(ttl);
+                    LeaseRefreshes.Add(VirtualNow);
+                    return Ok(new JsonObject { ["Active"] = Holder(body["holder"]!.GetValue<string>()), ["Baseline"] = baseline });
+                case "renew":
+                    if (_leaseId is null || _leaseId != id)
+                    {
+                        return new JsonObject
+                        {
+                            ["Success"] = false,
+                            ["Message"] = "The lease expired and the app restored its knobs.",
+                            ["ErrorCode"] = "invalid-state",
+                        };
+                    }
+
+                    _leaseExpiresAt = VirtualNow + TimeSpan.FromSeconds(body["ttlSeconds"]?.GetValue<int>() ?? 60);
+                    LeaseRefreshes.Add(VirtualNow);
+                    return Ok(new JsonObject { ["Active"] = Holder("runner") });
+                case "release":
+                    if (_leaseId is not null && _leaseId == id)
+                    {
+                        _leaseId = null;
+                        _leaseKnobs = Array.Empty<string>();
+                        _leaseBaseline.Clear();
+                    }
+
+                    return Ok(new JsonObject());
+                case "status":
+                    return Ok(new JsonObject
+                    {
+                        ["Active"] = ForeignHolder is not null ? Holder(ForeignHolder) : _leaseId is not null ? Holder("runner") : null,
+                    });
+                default:
+                    return Fail("unexpected lease action " + action);
+            }
         }
 
         public Task<JsonElement> SendAsync(
@@ -171,6 +323,7 @@ public sealed class PerfExperimentRunnerTests : IDisposable
                     null => null,
                     bool flag => flag,
                     int number => number,
+                    IEnumerable<string> list => new JsonArray(list.Select(item => (JsonNode?)JsonValue.Create(item)).ToArray()),
                     _ => value.ToString(),
                 };
             }
@@ -191,7 +344,13 @@ public sealed class PerfExperimentRunnerTests : IDisposable
                 }));
             }
 
-            return Task.FromResult(Parse(Handle(command, body)));
+            var reply = Handle(command, body);
+            if (LoseReplyWhen?.Invoke(command, body) == true)
+            {
+                throw new InvalidOperationException("injected lost reply for " + command);
+            }
+
+            return Task.FromResult(Parse(reply));
         }
 
         private static JsonElement Parse(JsonNode node)
@@ -298,6 +457,8 @@ public sealed class PerfExperimentRunnerTests : IDisposable
                     return Ok();
                 case "PerfWindow":
                     return Window(body);
+                case "PerfExperimentLease":
+                    return Lease(body);
                 default:
                     return Fail("unexpected command " + command);
             }
@@ -333,6 +494,18 @@ public sealed class PerfExperimentRunnerTests : IDisposable
             if (knob is null)
             {
                 return Fail("Unknown tuning knob " + name);
+            }
+
+            if (_leaseId is not null && VirtualNow > _leaseExpiresAt)
+            {
+                ExpireLease();
+            }
+
+            var leaseId = body["lease"]?.GetValue<string>();
+            if ((ForeignHolder is not null && ForeignKnobs.Contains(name))
+                || (_leaseId is not null && _leaseKnobs.Contains(name) && leaseId != _leaseId))
+            {
+                return Fail(name + " is leased to " + (ForeignHolder ?? "another runner"));
             }
 
             string? next;
@@ -1229,5 +1402,177 @@ public sealed class PerfExperimentRunnerTests : IDisposable
         Assert.Contains("better", summary);
         Assert.Contains("inconclusive", summary);
         Assert.Contains("lower is better", summary, StringComparison.OrdinalIgnoreCase);
+    }
+
+    // ---- the experiment lease ---------------------------------------------------------------------------------
+
+    [Fact]
+    public async Task AnotherExperimentHoldingTheLeaseRejectsTheRunBeforeAnyChange()
+    {
+        var app = new FakeApp { ForeignHolder = "McpServer pid 9: experiment 'other'", ForeignKnobs = new[] { Depth } };
+
+        var result = await RunAsync(app, Spec(BaselineAndDepth2));
+
+        Assert.Equal(PerfExperimentStatus.Rejected, result.Status);
+        Assert.Contains(result.Problems, p => p.Contains("experiment 'other'", StringComparison.Ordinal));
+        Assert.DoesNotContain(app.Calls, c => c.Command is "SetTuningKnob" or "SetPreviewEnabled" or "SetRecordingEnabled" or "PerfWindow" or "AddPerfMarker");
+        Assert.Empty(app.LeaseCalls("release"));
+        Assert.Single(app.LeaseCalls("acquire"));
+    }
+
+    [Fact]
+    public async Task ALostAcquireReplyIsReleasedSoTheLeaseDoesNotBlockTheNextExperiment()
+    {
+        var app = new FakeApp
+        {
+            LoseReplyWhen = (command, body) => command == "PerfExperimentLease" && body["action"]!.GetValue<string>() == "acquire",
+        };
+
+        var result = await RunAsync(app, Spec(BaselineAndDepth2));
+
+        Assert.Equal(PerfExperimentStatus.Failed, result.Status);
+        Assert.Contains("lease", result.Error, StringComparison.OrdinalIgnoreCase);
+        var acquired = Assert.Single(app.LeaseCalls("acquire"))["lease"]!.GetValue<string>();
+        Assert.Equal(acquired, Assert.Single(app.LeaseCalls("release"))["lease"]!.GetValue<string>());
+        Assert.Null(app.LeaseId);
+        Assert.DoesNotContain(app.Calls, c => c.Command is "SetTuningKnob" or "SetPreviewEnabled" or "PerfWindow");
+    }
+
+    [Fact]
+    public async Task ALeaseThatExpiresMidRunFailsTheRunDropsItsWindowAndStillRestores()
+    {
+        // Delay 4 is the second run's measure: the lease lapses inside that window.
+        var app = new FakeApp { LoseLeaseOnDelayNumber = 4 };
+
+        var result = await RunAsync(app, Spec(BaselineAndDepth2));
+
+        Assert.Equal(PerfExperimentStatus.Failed, result.Status);
+        Assert.Contains("lease", result.Error, StringComparison.OrdinalIgnoreCase);
+        Assert.Single(result.Runs);
+        AssertKnobsAtBaseline(app);
+        Assert.Null(app.Effective(Depth));
+        Assert.True(app.Previewing);
+        Assert.Empty(app.OpenWindows);
+        Assert.True(result.Restore.Verified, string.Join("; ", result.Restore.Errors.Concat(result.Restore.Mismatches)));
+    }
+
+    [Fact]
+    public async Task ALeaseTakenOverByAnotherExperimentLeavesThatExperimentsKnobsAndPreviewAlone()
+    {
+        var app = new FakeApp
+        {
+            LoseLeaseOnDelayNumber = 4,
+            OnLeaseLost = fake =>
+            {
+                fake.ForeignHolder = "McpServer pid 9: experiment 'other'";
+                fake.ForeignKnobs = new[] { Depth };
+                fake.SetValue(Depth, "7");
+            },
+        };
+
+        var result = await RunAsync(app, Spec(BaselineAndDepth2));
+
+        Assert.Equal(PerfExperimentStatus.Failed, result.Status);
+        Assert.Equal("7", app.Value(Depth));
+        Assert.False(result.Restore.Verified);
+        Assert.Contains(result.Restore.Errors, e => e.Contains("experiment 'other'", StringComparison.Ordinal));
+        var lastRenew = app.Calls.FindLastIndex(c => c.Command == "PerfExperimentLease" && c.Payload["action"]!.GetValue<string>() == "renew");
+        Assert.DoesNotContain(app.Calls.Skip(lastRenew + 1), c => c.Command is "SetTuningKnob" or "SetPreviewEnabled" or "SetRecordingEnabled" or "RestartFlashback");
+        Assert.Empty(app.LeaseCalls("release"));
+        Assert.Empty(app.OpenWindows);
+    }
+
+    [Fact]
+    public async Task LongWaitsRenewTheLeaseBeforeItsTtlLapses()
+    {
+        var app = new FakeApp();
+        var spec = "{\"name\":\"long\",\"warmupSeconds\":120,\"measureSeconds\":300,\"repeats\":2,\"variants\":[" + BaselineAndDepth2 + "]}";
+
+        var result = await RunAsync(app, spec);
+
+        Assert.Equal(PerfExperimentStatus.Completed, result.Status);
+        Assert.Equal(4, result.Runs.Count);
+        Assert.Equal(TimeSpan.FromSeconds(4 * (120 + 300)), app.VirtualNow);
+        var refreshes = app.LeaseRefreshes.Append(app.VirtualNow).ToList();
+        for (var i = 1; i < refreshes.Count; i++)
+        {
+            Assert.True(refreshes[i] - refreshes[i - 1] < TimeSpan.FromSeconds(60), $"no renew between {refreshes[i - 1]} and {refreshes[i]}");
+        }
+
+        AssertKnobsAtBaseline(app);
+    }
+
+    [Fact]
+    public async Task EveryKnobChangeAndRestoreCarriesTheLeaseId()
+    {
+        var app = new FakeApp();
+        var result = await RunAsync(app, Spec(BaselineAndDepth2));
+
+        Assert.Equal(PerfExperimentStatus.Completed, result.Status);
+        var acquire = Assert.Single(app.LeaseCalls("acquire"));
+        var id = acquire["lease"]!.GetValue<string>();
+        var sets = app.Calls.Where(c => c.Command == "SetTuningKnob").ToList();
+        Assert.NotEmpty(sets);
+        Assert.All(sets, c => Assert.Equal(id, c.Payload["lease"]?.GetValue<string>()));
+        Assert.Contains(Depth, acquire["knobs"]!.AsArray().Select(n => n!.GetValue<string>()));
+    }
+
+    [Theory]
+    [InlineData("completed")]
+    [InlineData("failed")]
+    [InlineData("canceled")]
+    public async Task TheLeaseIsReleasedAfterTheRestoreOnAFreshToken(string outcome)
+    {
+        var app = new FakeApp();
+        using var cts = new CancellationTokenSource();
+        if (outcome == "failed")
+        {
+            var seen = 0;
+            app.FailWhen = (command, payload) => command == "PerfWindow" && payload["action"]!.GetValue<string>() == "end" && ++seen == 2;
+        }
+        else if (outcome == "canceled")
+        {
+            app.CancelSource = cts;
+            app.CancelOnDelayNumber = 3;
+        }
+
+        var result = await RunAsync(app, Spec(BaselineAndDepth2), cancellationToken: cts.Token);
+
+        Assert.Equal(outcome, result.Status.ToString().ToLowerInvariant());
+        var lastSet = app.Calls.FindLastIndex(c => c.Command == "SetTuningKnob");
+        var release = app.Calls.FindLastIndex(c => c.Command == "PerfExperimentLease" && c.Payload["action"]!.GetValue<string>() == "release");
+        Assert.True(release > lastSet, "the lease was released before the knobs were restored");
+        Assert.False(app.Calls[release].TokenWasCanceled);
+        Assert.Null(app.LeaseId);
+        AssertKnobsAtBaseline(app);
+    }
+
+    [Fact]
+    public async Task AFailedReleaseIsReportedNotHidden()
+    {
+        var app = new FakeApp
+        {
+            FailWhen = (command, payload) => command == "PerfExperimentLease" && payload["action"]!.GetValue<string>() == "release",
+        };
+
+        var result = await RunAsync(app, Spec(BaselineAndDepth2));
+
+        Assert.Equal(PerfExperimentStatus.Completed, result.Status);
+        Assert.False(result.Restore.Verified);
+        Assert.Contains(result.Restore.Errors, e => e.Contains("lease", StringComparison.OrdinalIgnoreCase));
+        AssertKnobsAtBaseline(app);
+    }
+
+    [Fact]
+    public async Task BaselinesComeFromTheLeaseNotTheEarlierPreflightRead()
+    {
+        // A knob changed by hand after the preflight read and before the lease: the lease's baseline is the truth.
+        var app = new FakeApp { BeforeAcquire = fake => fake.SetValue(Depth, "5") };
+
+        var result = await RunAsync(app, Spec(BaselineAndDepth2));
+
+        Assert.Equal(PerfExperimentStatus.Completed, result.Status);
+        Assert.Equal("5", app.Value(Depth));
+        Assert.True(result.Restore.Verified, string.Join("; ", result.Restore.Mismatches));
     }
 }

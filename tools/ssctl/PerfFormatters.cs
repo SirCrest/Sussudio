@@ -125,6 +125,48 @@ internal static class PerfFormatters
         return builder.ToString().TrimEnd();
     }
 
+    public static string FormatLease(JsonElement response)
+    {
+        if (!TryGetData(response, out var data) || data.ValueKind != JsonValueKind.Object)
+        {
+            return FormatFailure(response, "Perf experiment lease reply not available.");
+        }
+
+        var builder = new StringBuilder();
+        builder.AppendLine(Text(response, "Message"));
+        if (data.TryGetProperty("Active", out var active) && active.ValueKind == JsonValueKind.Object)
+        {
+            builder.AppendLine($"  holder: {Text(active, "Holder")}");
+            builder.AppendLine($"  knobs: {JoinStrings(active, "Knobs")}");
+            builder.AppendLine($"  expires in: {Num(active, "ExpiresInSeconds", 1)} s (ttl {Text(active, "TtlSeconds")} s)");
+        }
+
+        if (data.TryGetProperty("LastEnded", out var ended) && ended.ValueKind == JsonValueKind.Object)
+        {
+            builder.AppendLine($"  last ended: {Text(ended, "Reason")} at {Text(ended, "EndedUtc")} ({Text(ended, "Holder")})");
+            builder.AppendLine($"    restored: {JoinStrings(ended, "Restored")}");
+            if (ended.TryGetProperty("Errors", out var errors) && errors.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var error in errors.EnumerateArray())
+                {
+                    builder.AppendLine($"    error: {error.GetString()}");
+                }
+            }
+        }
+
+        return builder.ToString().TrimEnd();
+    }
+
+    private static string JoinStrings(JsonElement element, string property)
+    {
+        if (!element.TryGetProperty(property, out var array) || array.ValueKind != JsonValueKind.Array || array.GetArrayLength() == 0)
+        {
+            return "none";
+        }
+
+        return string.Join(", ", array.EnumerateArray().Select(item => item.GetString()));
+    }
+
     public static string FormatLogTail(JsonElement response)
     {
         if (!TryGetData(response, out var data) || data.ValueKind != JsonValueKind.Object ||

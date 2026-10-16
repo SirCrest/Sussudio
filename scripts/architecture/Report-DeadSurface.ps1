@@ -24,6 +24,9 @@ Categories:
                    anywhere outside the production file that reads it
   field-unread     private field assigned but never read
   method-uncalled  private method with no call site
+  member-uncalled  public, internal or protected method that nothing anywhere
+                   names except its own declarations; methods the runtime or a
+                   framework calls are skipped (see that section)
 #>
 
 param(
@@ -270,7 +273,93 @@ foreach ($file in $production) {
     }
 }
 
-$findings = @($envUnset) + @($fieldUnread) + @($methodUncalled)
+# --- member-uncalled --------------------------------------------------------
+# The same no-mention rule as method-uncalled, applied to methods other code
+# could reach. Wider visibility brings callers the corpus cannot see, so each
+# of these is skipped rather than reported:
+#  - override, abstract, virtual, extern and partial methods: a base class, a
+#    subclass, native code or a source generator owns the call;
+#  - any method with an attribute on the line above ([McpServerTool],
+#    [UnmanagedCallersOnly], [ModuleInitializer], test attributes...): the
+#    attribute names a caller that discovers it by reflection;
+#  - methods in a file whose types derive from or implement a type the corpus
+#    does not declare (IValueConverter.ConvertBack, ICommand.Execute, a WinUI
+#    base class), or whose base list does not parse: the framework calls them
+#    through that contract. The base lists are read across the partial family,
+#    since Foo.Bar.cs inherits the contract Foo.cs declares;
+#  - pattern-bound names the compiler calls (GetEnumerator, GetAwaiter,
+#    Deconstruct, collection-initializer Add...).
+# Generic methods and methods whose return type contains spaces are not matched
+# at all, a false negative the policy accepts. Interface members declared
+# without an access modifier are not declarations here, so a method that
+# implements a corpus interface always has a mention beyond its own
+# declaration and is never reported.
+$memberUncalled = @()
+$conventionNames = @('Main', 'Dispose', 'DisposeAsync', 'GetHashCode', 'Equals', 'ToString', 'GetEnumerator',
+    'GetAsyncEnumerator', 'GetAwaiter', 'GetResult', 'OnCompleted', 'UnsafeOnCompleted', 'Deconstruct', 'Add',
+    'CompareTo', 'MoveNext', 'MoveNextAsync', 'GetPinnableReference', 'Slice')
+$declaredTypes = [System.Collections.Generic.HashSet[string]]::new()
+foreach ($m in [regex]::Matches($corpus, '\b(?:class|struct|interface|record|enum)\s+([A-Za-z_]\w*)')) {
+    [void]$declaredTypes.Add($m.Groups[1].Value)
+}
+# Base types a production class can satisfy only through the pattern names
+# above, so deriving from them hides no framework caller.
+$inertBaseTypes = @('IDisposable', 'IAsyncDisposable', 'IEquatable', 'IComparable', 'IEnumerable', 'IReadOnlyList',
+    'IReadOnlyCollection', 'Exception', 'EventArgs', 'Attribute', 'object')
+$typeDeclPattern = '\b(?:class|struct|record(?:\s+struct|\s+class)?)\s+[A-Za-z_]\w*(?:<[^>{;]*>)?(?:\s*\([^)]*\))?\s*:\s*([^{;]+?)\s*(?:\bwhere\b|\{|;)'
+$memberDeclPattern = '(?m)^[ \t]*(?:public|internal|protected(?:\s+internal)?)\s+((?:(?:static|async|unsafe|sealed|new|readonly|extern|virtual|override|abstract|partial)\s+)*)[\w\?<>\[\],\.]+\s+(\w+)\s*\('
+foreach ($file in $production) {
+    $text = [System.IO.File]::ReadAllText($file.FullName)
+    $relative = $file.FullName.Substring($Root.Length + 1).Replace('\', '/')
+
+    $familyKey = "$($file.DirectoryName)|$($file.Name -replace '\..*$', '')"
+    $externalContract = $null
+    foreach ($typeDecl in [regex]::Matches($familyText[$familyKey].ToString(), $typeDeclPattern)) {
+        # Generic arguments go first (two passes cover one level of nesting) so
+        # their commas do not split the list; base-constructor arguments go too.
+        $baseList = $typeDecl.Groups[1].Value -replace '<[^<>]*>', '' -replace '<[^<>]*>', '' -replace '\([^()]*\)', ''
+        foreach ($baseText in $baseList.Split(',')) {
+            $baseName = ($baseText.Trim() -split '[\s\.]')[-1]
+            if ($baseName -notmatch '^[A-Za-z_]\w*$') { $externalContract = "unparsed base list: $($baseText.Trim())"; break }
+            if ($inertBaseTypes -contains $baseName -or $declaredTypes.Contains($baseName)) { continue }
+            $externalContract = $baseName
+            break
+        }
+        if ($externalContract) { break }
+    }
+    if ($externalContract) { continue }
+
+    foreach ($decl in [regex]::Matches($text, $memberDeclPattern)) {
+        $modifiers = $decl.Groups[1].Value
+        $method = $decl.Groups[2].Value
+        if ($modifiers -match '\b(?:override|abstract|virtual|extern|partial)\b') { continue }
+        if ($conventionNames -contains $method) { continue }
+        if ($xamlMentions.Contains($method)) { continue }
+        if (Test-Annotated -Text $text -Index $decl.Index -Length $decl.Length) { continue }
+
+        # The previous non-blank line: an attribute there names a reflective caller.
+        $cursor = $decl.Index - 1
+        while ($cursor -ge 0 -and [char]::IsWhiteSpace($text[$cursor])) { $cursor-- }
+        if ($cursor -ge 0) {
+            $previousStart = $text.LastIndexOf("`n", $cursor) + 1
+            $previousLine = $text.Substring($previousStart, $cursor - $previousStart + 1).Trim()
+            if ($previousLine.StartsWith('[') -or $previousLine.EndsWith(']')) { continue }
+        }
+
+        $mentions = [int]$mentionCounts[$method]
+        $decls = [int]$declCounts[$method]
+        if ($mentions -le $decls) {
+            $memberUncalled += [pscustomobject]@{
+                category = 'member-uncalled'
+                name     = "$relative::$method"
+                detail   = "no reference outside its declarations ($mentions mentions, $decls declarations)"
+                files    = @($relative)
+            }
+        }
+    }
+}
+
+$findings = @($envUnset) + @($fieldUnread) + @($methodUncalled) + @($memberUncalled)
 $result = [pscustomobject]@{
     schemaVersion = 1
     generatedUtc  = (Get-Date).ToUniversalTime().ToString('o')
@@ -280,6 +369,7 @@ $result = [pscustomobject]@{
         envUnset       = @($envUnset).Count
         fieldUnread    = @($fieldUnread).Count
         methodUncalled = @($methodUncalled).Count
+        memberUncalled = @($memberUncalled).Count
         total          = $findings.Count
     }
     findings      = $findings
@@ -293,6 +383,7 @@ $result | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $outPath -Encoding 
 "env-unset       : $(@($envUnset).Count)"
 "field-unread    : $(@($fieldUnread).Count)"
 "method-uncalled : $(@($methodUncalled).Count)"
+"member-uncalled : $(@($memberUncalled).Count)"
 "total           : $($findings.Count)"
 "wrote           : $outPath"
 ""
@@ -302,3 +393,5 @@ $envUnset | ForEach-Object { "  {0}  [{1}]" -f $_.name, ($_.files -join ', ') }
 $fieldUnread | Select-Object -First 12 | ForEach-Object { "  {0}" -f $_.name }
 "--- method-uncalled (first 12) ---"
 $methodUncalled | Select-Object -First 12 | ForEach-Object { "  {0}" -f $_.name }
+"--- member-uncalled ---"
+$memberUncalled | ForEach-Object { "  {0}" -f $_.name }

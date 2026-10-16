@@ -77,13 +77,25 @@ ready-independent (they work with no capture device) and their responses carry
 the result in `Data` without an embedded automation snapshot. `FrameTrace dump`
 writes a file under the `WriteFile` path policy; `SetTuningKnob` rejects unknown
 names, wrong types and out-of-range values with `invalid-request` and never
-clamps. `SUSSUDIO_AUTOMATION_TOKEN` is not a settable knob. The wire contract is
-specified in `docs/architecture/performance-telemetry.md` section 3.
+clamps. `SUSSUDIO_AUTOMATION_TOKEN` is not a settable knob. `GetLogTail` takes
+`contains` and `exclude` (keep and drop lines by case-insensitive substring;
+`maxEntries` counts kept lines). The wire contract is specified in
+`docs/architecture/performance-telemetry.md` section 3.
 
-Seven ssctl verbs and seven MCP tools are projections of those commands
-(ssctl `perf report|window|mark|trace`, `knobs`, `knob`, `log`; MCP
+Command 68, `PerfExperimentLease`, was appended later in revision 3 (no bump):
+`{ action: status|acquire|renew|release, lease?, holder?, knobs?, ttlSeconds?,
+force? }`. One perf experiment at a time holds the knobs it varies; while it
+does, `SetTuningKnob` refuses those knobs with `invalid-state` unless its new
+optional `lease` field carries the holder's id. A holder that stops renewing
+loses the lease at expiry and the app restores its knobs. The experiment runner
+uses acquire, renew and release; ssctl `perf lease [status|release --force]` and
+MCP `perf_experiment_lease` expose status and the forced release only
+(performance-telemetry.md section 2.12).
+
+Eight ssctl verbs and eight MCP tools are projections of those commands
+(ssctl `perf report|window|mark|trace|lease`, `knobs`, `knob`, `log`; MCP
 `get_perf_report`, `perf_window`, `add_perf_marker`, `frame_trace`,
-`get_tuning_knobs`, `set_tuning_knob`, `get_log_tail`). The performance surface
+`get_tuning_knobs`, `set_tuning_knob`, `perf_experiment_lease`, `get_log_tail`). The performance surface
 also has tool-only members that have no app command behind them (section 7 of the
 spec): ssctl `perf trace analyze` reads a trace dump on the local machine and
 needs no running app, ssctl `perf experiment` and MCP `run_perf_experiment` are

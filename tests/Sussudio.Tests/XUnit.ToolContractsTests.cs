@@ -5450,6 +5450,7 @@ static partial class Program
             HelpLine(AutomationCommandKind.GetLogTail, "[--json]"),
             "  perf trace analyze <file> [--top N] [--json]   (offline: analyzes a dump from 'perf trace dump'; no app needed)",
             "  perf experiment <spec.json> [--out DIR] [--json]   (knob A/B run; takes minutes; restores the app afterward)",
+            HelpLine(AutomationCommandKind.PerfExperimentLease, "[--json]"),
             "",
             "Senses (hear the app's own audio output; read and operate its UI):",
             HelpLine(AutomationCommandKind.CaptureAudioOutput, "[--json]"),
@@ -7198,7 +7199,8 @@ static partial class Program
         ("GetLogTail", 64),
         ("CaptureAudioOutput", 65),
         ("GetUiTree", 66),
-        ("InvokeUiElement", 67)
+        ("InvokeUiElement", 67),
+        ("PerfExperimentLease", 68)
     ];
 
     internal static Task AutomationCommandCatalog_CoversCommandsAndPolicyMetadata()
@@ -7496,7 +7498,7 @@ static partial class Program
 
     internal static Task AutomationManifest_SerializationIsStable()
     {
-        const string ExpectedManifestSha256 = "27835FD4AAAFF929E74B125FA32E0159397898E63F1D7EFF6D90519AD0506E95";
+        const string ExpectedManifestSha256 = "3A35500AD0506D99943A32AB7D4EE477E06F12AEF0B23624147341CCE00E5F97";
         var catalogType = RequireAutomationContractType("Sussudio.Tools.AutomationCommandCatalog");
         var createManifestJson = RequireNonPublicStaticMethod(catalogType, "CreateManifestJson");
         var first = (string)createManifestJson.Invoke(null, Array.Empty<object>())!;

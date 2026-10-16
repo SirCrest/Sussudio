@@ -14,9 +14,9 @@ using Sussudio.Tools;
 namespace Sussudio.Services.Automation;
 
 // Performance-telemetry commands (GetPerfReport, PerfWindow, AddPerfMarker, FrameTrace, GetTuningKnobs, SetTuningKnob,
-// GetLogTail). They read and control process-wide telemetry state in Sussudio.Services.Performance and never touch
-// the view model, so they need no ready devices and return no automation snapshot. Contract:
-// docs/architecture/performance-telemetry.md section 3.
+// GetLogTail, PerfExperimentLease). They read and control process-wide telemetry state in
+// Sussudio.Services.Performance and never touch the view model, so they need no ready devices and return no automation
+// snapshot. Contract: docs/architecture/performance-telemetry.md section 3.
 public sealed partial class AutomationCommandDispatcher
 {
     private const int DefaultLogTailEntries = 200;
@@ -230,7 +230,8 @@ public sealed partial class AutomationCommandDispatcher
             throw new AutomationRequestValidationException("Specify either a value or reset, not both.");
         }
 
-        var result = reset ? TuningKnobs.Reset(name) : TuningKnobs.Set(name, value);
+        var lease = GetString(payload, AutomationPayloadKeys.Lease);
+        var result = TuningKnobs.Lease.ChangeKnob(name, value, reset, lease);
         var response = new TuningKnobChangeResponse(
             result.Success,
             result.Name,
@@ -246,7 +247,7 @@ public sealed partial class AutomationCommandDispatcher
                 correlationId,
                 result.Error ?? "Tuning knob change rejected.",
                 data: response,
-                errorCode: AutomationErrorCodes.InvalidRequest,
+                errorCode: result.Failure == TuningKnobFailure.Leased ? AutomationErrorCodes.InvalidState : AutomationErrorCodes.InvalidRequest,
                 success: false,
                 status: AutomationResponseStatus.Error,
                 includeSnapshot: false);
@@ -267,7 +268,8 @@ public sealed partial class AutomationCommandDispatcher
         }
 
         var contains = GetString(payload, AutomationPayloadKeys.Contains);
-        var lines = LogTap.Tail(maxEntries, contains);
+        var exclude = GetString(payload, AutomationPayloadKeys.Exclude);
+        var lines = LogTap.Tail(maxEntries, contains, exclude);
         var counts = LogTap.Counts();
         return CreatePerfResponse(
             correlationId,
@@ -278,6 +280,108 @@ public sealed partial class AutomationCommandDispatcher
                 lines,
                 counts.ByCaller.Take(MaxLogTailCountRows).ToList(),
                 counts.ByTag.Take(MaxLogTailCountRows).ToList()));
+    }
+
+    private AutomationCommandResponse ExecutePerfExperimentLeaseCommand(JsonElement payload, string correlationId)
+    {
+        var action = RequireString(payload, AutomationPayloadKeys.Action).Trim().ToLowerInvariant();
+        var id = GetString(payload, AutomationPayloadKeys.Lease);
+        var ttlSeconds = GetInt(payload, AutomationPayloadKeys.TtlSeconds);
+        if (ttlSeconds is null
+            && payload.ValueKind == JsonValueKind.Object
+            && payload.TryGetProperty(AutomationPayloadKeys.TtlSeconds, out var ttlProperty)
+            && ttlProperty.ValueKind != JsonValueKind.Null)
+        {
+            throw new AutomationRequestValidationException("ttlSeconds must be an integer.");
+        }
+
+        var lease = TuningKnobs.Lease;
+        var result = action switch
+        {
+            "status" => lease.Status(),
+            "acquire" => lease.Acquire(id, GetString(payload, AutomationPayloadKeys.Holder), ReadLeaseKnobs(payload), ttlSeconds),
+            "renew" => lease.Renew(id, ttlSeconds),
+            "release" => lease.Release(id, GetBool(payload, AutomationPayloadKeys.Force) ?? false),
+            _ => throw new AutomationRequestValidationException($"Unknown lease action '{action}'. Use status, acquire, renew or release."),
+        };
+
+        var response = ToLeaseResponse(action, result);
+        if (!result.Success)
+        {
+            return CreateResponse(
+                correlationId,
+                result.Error ?? "Perf experiment lease request refused.",
+                data: response,
+                errorCode: result.Failure is PerfExperimentLeaseFailure.Held or PerfExperimentLeaseFailure.NotHeld
+                    ? AutomationErrorCodes.InvalidState
+                    : AutomationErrorCodes.InvalidRequest,
+                success: false,
+                status: AutomationResponseStatus.Error,
+                includeSnapshot: false);
+        }
+
+        var message = result.Active is { } active
+            ? $"Perf experiment lease held by {active.Holder} until {active.ExpiresUtc.ToString("O", CultureInfo.InvariantCulture)} (knobs: {(active.Knobs.Count == 0 ? "none" : string.Join(", ", active.Knobs))})."
+            : "No perf experiment holds the lease.";
+        return CreatePerfResponse(correlationId, message, response);
+    }
+
+    private static IReadOnlyList<string>? ReadLeaseKnobs(JsonElement payload)
+    {
+        if (payload.ValueKind != JsonValueKind.Object
+            || !payload.TryGetProperty(AutomationPayloadKeys.Knobs, out var knobs)
+            || knobs.ValueKind == JsonValueKind.Null)
+        {
+            return null;
+        }
+
+        if (knobs.ValueKind != JsonValueKind.Array)
+        {
+            throw new AutomationRequestValidationException("knobs must be an array of knob names.");
+        }
+
+        var names = new List<string>();
+        foreach (var item in knobs.EnumerateArray())
+        {
+            if (item.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(item.GetString()))
+            {
+                throw new AutomationRequestValidationException("knobs must be an array of knob names.");
+            }
+
+            names.Add(item.GetString()!.Trim());
+        }
+
+        return names;
+    }
+
+    private static PerfExperimentLeaseResponse ToLeaseResponse(string action, PerfExperimentLeaseResult result)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var active = result.Active is { } view
+            ? new PerfExperimentLeaseInfo(
+                view.Holder,
+                view.Knobs,
+                view.AcquiredUtc.ToString("O", CultureInfo.InvariantCulture),
+                view.ExpiresUtc.ToString("O", CultureInfo.InvariantCulture),
+                Math.Round(Math.Max(0, (view.ExpiresUtc - now).TotalSeconds), 1),
+                view.TtlSeconds)
+            : null;
+        var lastEnded = result.LastEnded is { } ended
+            ? new PerfExperimentLeaseEndInfo(
+                ended.Holder,
+                ended.Reason.ToString(),
+                ended.EndedUtc.ToString("O", CultureInfo.InvariantCulture),
+                ended.Restored,
+                ended.Errors)
+            : null;
+        return new PerfExperimentLeaseResponse(
+            action,
+            result.Success,
+            result.Success ? null : result.Failure.ToString(),
+            result.Error,
+            active,
+            result.Baseline,
+            lastEnded);
     }
 
     private AutomationCommandResponse CreatePerfResponse(string correlationId, string message, object data)
@@ -387,6 +491,30 @@ internal sealed record TuningKnobListResponse(
     int Overridden,
     IReadOnlyList<TuningKnobInfoResponse> Knobs,
     IReadOnlyList<TuningKnobExclusion> Excluded);
+
+internal sealed record PerfExperimentLeaseInfo(
+    string Holder,
+    IReadOnlyList<string> Knobs,
+    string AcquiredUtc,
+    string ExpiresUtc,
+    double ExpiresInSeconds,
+    int TtlSeconds);
+
+internal sealed record PerfExperimentLeaseEndInfo(
+    string Holder,
+    string Reason,
+    string EndedUtc,
+    IReadOnlyList<string> Restored,
+    IReadOnlyList<string> Errors);
+
+internal sealed record PerfExperimentLeaseResponse(
+    string Action,
+    bool Success,
+    string? Failure,
+    string? Error,
+    PerfExperimentLeaseInfo? Active,
+    IReadOnlyList<PerfExperimentLeaseKnob> Baseline,
+    PerfExperimentLeaseEndInfo? LastEnded);
 
 internal sealed record TuningKnobChangeResponse(
     bool Success,

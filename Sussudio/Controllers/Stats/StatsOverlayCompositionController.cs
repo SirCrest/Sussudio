@@ -559,9 +559,6 @@ internal sealed class StatsOverlayCompositionController : IDisposable
     public StatsSnapshot RefreshStatsIfDueAndGetSnapshot()
         => _sampler.RefreshIfDueAndGetSnapshot();
 
-    public IDisposable SubscribeToStats(Action<StatsSnapshot> receiveSnapshot)
-        => _sampler.Subscribe(sample => receiveSnapshot(sample.Snapshot));
-
     public void ToggleSectionFromHeader(object sender)
         => _statsSectionChromeController.ToggleFromHeader(sender);
 

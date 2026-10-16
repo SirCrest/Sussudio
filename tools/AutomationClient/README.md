@@ -28,6 +28,10 @@ dotnet build tools/AutomationClient/AutomationClient.csproj -c Debug
 .\tools\AutomationClient\bin\Debug\net8.0\AutomationClient.exe --command SetVideoFormat --token codex-local --payload-kv videoFormat=MJPG
 ```
 
+```powershell
+.\tools\AutomationClient\bin\Debug\net8.0\AutomationClient.exe --command GetLogTail --token codex-local --payload-kv maxEntries=50 --payload-kv exclude=NATIVEXU_AT --pretty
+```
+
 ## Notes
 
 - Commands can be passed by name (`GetSnapshot`) or numeric id.

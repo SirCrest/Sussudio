@@ -1761,6 +1761,11 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
             $"InputSource source={source}",
             ct);
 
+    // dead-surface: nothing in the app calls the typed AT writes from here to
+    // SetHpOutGainAsync. They stay as the device's write table: each pins an
+    // opcode to its payload width (1-byte flags for 0x1F and 0x30, a 2-byte gain
+    // for 0x66, 4-byte ints elsewhere), which a raw SendNamedSetCommandAsync
+    // caller must get right and NativeXuAudioProbe's 4-byte default does not.
     public static Task<bool> SetAdcOnOffAsync(
         CaptureDevice? device,
         bool on,
@@ -1772,6 +1777,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
             $"AdcOnOff on={on}",
             ct);
 
+    // dead-surface: uncalled typed AT write, kept with the write table (see SetAdcOnOffAsync).
     public static Task<bool> SetAdcVolumeGainAsync(
         CaptureDevice? device,
         int gain,
@@ -1783,6 +1789,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
             $"AdcVolumeGain gain={gain}",
             ct);
 
+    // dead-surface: uncalled typed AT write, kept with the write table (see SetAdcOnOffAsync).
     public static Task<bool> SetHdr2SdrOnOffAsync(
         CaptureDevice? device,
         bool on,
@@ -1794,6 +1801,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
             $"Hdr2Sdr on={on}",
             ct);
 
+    // dead-surface: uncalled typed AT write, kept with the write table (see SetAdcOnOffAsync).
     public static Task<bool> SetLedLightAsync(
         CaptureDevice? device,
         int value,
@@ -1805,6 +1813,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
             $"LedLight value={value}",
             ct);
 
+    // dead-surface: uncalled typed AT write, kept with the write table (see SetAdcOnOffAsync).
     public static Task<bool> SetDacHpOnOffAsync(
         CaptureDevice? device,
         bool on,
@@ -1816,6 +1825,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
             $"DacHpOnOff on={on}",
             ct);
 
+    // dead-surface: uncalled typed AT write, kept with the write table (see SetAdcOnOffAsync).
     public static Task<bool> SetDacHpMuteAsync(
         CaptureDevice? device,
         bool mute,
@@ -1827,6 +1837,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
             $"DacHpMute mute={mute}",
             ct);
 
+    // dead-surface: uncalled typed AT write, kept with the write table (see SetAdcOnOffAsync).
     public static Task<bool> SetHpOutGainAsync(
         CaptureDevice? device,
         int gain,

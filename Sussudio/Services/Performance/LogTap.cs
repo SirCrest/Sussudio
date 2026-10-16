@@ -13,7 +13,7 @@ public static class LogTap
     /// <summary>Called by the logger writer for each entry. Never throws.</summary>
     public static void Add(string entry) => Buffer.Add(entry);
 
-    public static IReadOnlyList<string> Tail(int max, string? contains) => Buffer.Tail(max, contains);
+    public static IReadOnlyList<string> Tail(int max, string? contains, string? exclude) => Buffer.Tail(max, contains, exclude);
 
     public static LogTapCounts Counts() => Buffer.Counts();
 }

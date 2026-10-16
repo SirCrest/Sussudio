@@ -40,7 +40,6 @@ internal sealed partial class NativeXuAudioControlService
     // PID 0x009B Analog reference - data throughout.
     private static readonly byte[] AnalogReference = ParseHex(
         "058545008004009A080000000E9F002F8000006F0899905E2D0029C398A80079F09F433080CE109FE4A2433080CE10103900001A00060606801B301A2CA80029A8D6905EA8000029A800A8007900F043301ACE10B8F043301ACE101039000030000606061A1B301A1A2DA80029A80029A8000029A800A8007900F043301ACE10B8E400C00000060606001B301A001D301A601C301A2D");
-    private static readonly IReadOnlyList<string> SupportedModes = new[] { DeviceAudioMode.Hdmi, DeviceAudioMode.Analog };
     // Gain profiles not yet captured for PID 0x009B firmware - gain control disabled until fresh data.
     private static readonly GainProfile[] GainProfiles =
     {
@@ -55,8 +54,6 @@ internal sealed partial class NativeXuAudioControlService
     private const int TransportGateAttempts = 6;
     private const int TransportGateRetryDelayMs = 250;
     private static bool SupportsAnalogGainReadback => GainByteIndexes.Length > 0;
-
-    public IReadOnlyList<string> GetSupportedModes() => SupportedModes;
 
     public async Task<bool> SetAudioModeAsync(
         CaptureDevice? device,

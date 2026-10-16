@@ -370,11 +370,6 @@ public sealed class AutomationSnapshot
     public int RecordingGpuQueueMaxDepth { get; init; }
     public long RecordingGpuFramesEnqueued { get; init; }
     public long RecordingGpuFramesDropped { get; init; }
-    public int RecordingCudaQueueDepth { get; init; }
-    public int RecordingCudaQueueCapacity { get; init; }
-    public int RecordingCudaQueueMaxDepth { get; init; }
-    public long RecordingCudaFramesEnqueued { get; init; }
-    public long RecordingCudaFramesDropped { get; init; }
     public bool FlashbackEncodingFailed { get; init; }
     public string? FlashbackEncodingFailureType { get; init; }
     public string? FlashbackEncodingFailureMessage { get; init; }
@@ -469,9 +464,6 @@ public sealed class AutomationSnapshot
     public string? PreviewAttemptId { get; init; }
     public double? PreviewStartupElapsedMs { get; init; }
     public int PreviewStartupTimeoutMs { get; init; }
-    public bool PreviewGpuSignalMediaOpened { get; init; }
-    public bool PreviewGpuSignalFirstFrame { get; init; }
-    public bool PreviewGpuSignalPlaybackAdvancing { get; init; }
     public PreviewStartupSignalFlags PreviewStartupRequiredSignals { get; init; }
     public PreviewStartupSignalFlags PreviewStartupReceivedSignals { get; init; }
     public string PreviewStartupStrategy { get; init; } = "None";
@@ -567,8 +559,6 @@ public sealed class AutomationSnapshot
     public string PreviewGpuPlaybackState { get; init; } = "None";
     public int PreviewGpuNaturalVideoWidth { get; init; }
     public int PreviewGpuNaturalVideoHeight { get; init; }
-    public double PreviewGpuPositionMs { get; init; }
-    public long PreviewGpuPositionEventCount { get; init; }
     public bool PreviewHdrInputDetected { get; init; }
     public string PreviewToneMapMode { get; init; } = "Unknown";
     public string? PreviewColorContext { get; init; }
