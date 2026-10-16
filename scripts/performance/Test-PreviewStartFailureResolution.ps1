@@ -12,7 +12,9 @@ StartingSession indefinitely and the loading overlay kept spinning.
 Steps, each judged from app log markers and `ssctl --json state`:
   launch-failed-start   the launch auto-start (device scan) hits fault 1 and must reach
                         Failed with a capture-start-failed reason, preview stopped and the
-                        unavailable placeholder shown, within one step timeout.
+                        unavailable placeholder shown, within one step timeout. The state and
+                        placeholder are read again after the fades settle, and a window
+                        screenshot is saved next to result.json.
   manual-failed-start   `preview start` hits fault 2: the command fails with the injected
                         error and the snapshot must show a new attempt in Failed, within one
                         step timeout of issuing the command.
@@ -186,9 +188,15 @@ function Measure-LogInterval {
 
 # Judges a failed start: the attempt must be Failed with a capture start reason, preview stopped,
 # placeholder shown, and the outcome reported once without an ignored outcome for this request.
+# The placeholder is judged after the 200 ms fades settle: a start that fails inside the placeholder
+# fade-out used to have that fade-out collapse the placeholder again after the reveal.
 function Measure-FailedStart {
     param([string] $Name, $Outcome, [string[]] $Window, [int] $ExpectedFaultCount)
-    $state = Get-StartupState $Outcome.Snapshot
+    $resolved = Get-StartupState $Outcome.Snapshot
+    Start-Sleep -Milliseconds 800
+    $state = Get-StartupState (Get-Snapshot)
+    $screenshotPath = Join-Path $OutputDirectory "$Name.png"
+    $screenshot = Invoke-Ssctl -Arguments @('screenshot', $screenshotPath) -TimeoutMs 10000
     $requestMatch = @($Window | Where-Object { $_ -match 'PREVIEW_START_ABORTED request=(\d+)' } | Select-Object -First 1)
     $requestId = $null
     if ($requestMatch.Count -gt 0 -and $requestMatch[0] -match 'PREVIEW_START_ABORTED request=(\d+)') { $requestId = $Matches[1] }
@@ -203,9 +211,12 @@ function Measure-FailedStart {
         requestToFailedMs = Measure-LogInterval -Window $Window -FromPattern 'PREVIEW_START requested' -ToPattern 'PREVIEW_START_STATE state=Failed'
         waitedMs = $Outcome.WaitedMs
         stepTimeoutSeconds = $StepTimeoutSeconds
+        stateWhenResolved = $resolved
         stateAfter = $state
+        screenshot = $(if ($screenshot.ExitCode -eq 0) { Split-Path -Leaf $screenshotPath } else { "failed (exit $($screenshot.ExitCode)): $($screenshot.Output)" })
     }
-    $step.passed = $null -ne $state -and $state.previewStartupState -eq 'Failed' -and
+    $step.passed = $null -ne $resolved -and $resolved.previewStartupState -eq 'Failed' -and
+        $null -ne $state -and $state.previewStartupState -eq 'Failed' -and $state.attemptId -eq $resolved.attemptId -and
         [string]$state.lastFailureReason -like 'capture-start-failed:Injected fault*' -and
         !$state.isPreviewing -and $state.placeholderVisible -and
         $step.faultFired -and $step.startAbortedLogged -and $step.failedStateLogged -and !$step.ignoredForRequest -and
@@ -380,7 +391,7 @@ finally {
         stepsExpected = $expectedSteps
         steps = $steps
         close = $close
-        doesNotProve = 'The start failure is an injected exception at the top of the capture video-preview start transition, not a real device failure. Initialize failures, a cancelled start, a start superseded by a newer request, and the reinitialize device-busy retry are not exercised live (the xUnit suite covers them in isolation). Judged from log markers and snapshot state only; the placeholder check reads its visibility, not the rendered pixels.'
+        doesNotProve = 'The start failure is an injected exception at the top of the capture video-preview start transition, not a real device failure. Initialize failures, a cancelled start, a start superseded by a newer request, and the reinitialize device-busy retry are not exercised live (the xUnit suite covers them in isolation). Judged from log markers and snapshot state only; the placeholder check reads its Visibility, not its opacity or the rendered pixels (the saved window screenshots are for a human to look at, not judged).'
     }
     $resultPath = Join-Path $OutputDirectory 'result.json'
     $report | ConvertTo-Json -Depth 6 | Out-File -LiteralPath $resultPath -Encoding utf8

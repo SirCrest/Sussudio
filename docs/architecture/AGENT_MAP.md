@@ -2460,7 +2460,9 @@ Primary current owners:
   unavailable-placeholder fades, startup/unavailable presentation prep, preview
   reinit animation active state, first-visual transition clears, startup-reset
   preservation, completion presentation decisions, and the
-  `D3D11_RENDERER_REINIT_FLAG` / `PREVIEW_REINIT_ANIMATE_*` logs.
+  `D3D11_RENDERER_REINIT_FLAG` / `PREVIEW_REINIT_ANIMATE_*` logs. Element
+  opacity fades hand off: a new fade stops the one it replaces on that element,
+  and a replaced fade-out never collapses the element after a later fade-in.
   `Sussudio/MainWindow.xaml.cs` wires
   preview-transition animation callbacks; video-shadow fade callbacks route
   through the preview surface shadow controller in this owner.

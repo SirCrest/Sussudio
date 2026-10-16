@@ -1,5 +1,6 @@
 using System;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Microsoft.UI.Composition;
 using Microsoft.UI.Dispatching;
@@ -460,6 +461,10 @@ internal sealed class PreviewTransitionAnimationControllerContext
 
 internal sealed class PreviewTransitionAnimationController
 {
+    // The latest opacity fade begun on each element (UI thread only). A start that fails within
+    // the 200 ms placeholder fade-out reveals the placeholder again before that fade-out completes.
+    private static readonly ConditionalWeakTable<UIElement, Storyboard> LatestElementFades = new();
+
     private readonly PreviewTransitionAnimationControllerContext _context;
 
     public PreviewTransitionAnimationController(PreviewTransitionAnimationControllerContext context)
@@ -580,11 +585,18 @@ internal sealed class PreviewTransitionAnimationController
         Storyboard.SetTargetProperty(animation, "Opacity");
         storyboard.Completed += (_, _) =>
         {
+            // A fade-in that started during this fade-out owns the element now; collapsing
+            // it here would hide a placeholder or overlay that was just shown again.
+            if (!LatestElementFades.TryGetValue(element, out var latest) || !ReferenceEquals(latest, storyboard))
+            {
+                return;
+            }
+
             element.Visibility = Visibility.Collapsed;
             element.Opacity = 1.0;
         };
         storyboard.Children.Add(animation);
-        storyboard.Begin();
+        BeginElementFade(element, storyboard);
     }
 
     public static void FadeInElement(UIElement element)
@@ -601,6 +613,18 @@ internal sealed class PreviewTransitionAnimationController
         Storyboard.SetTarget(animation, element);
         Storyboard.SetTargetProperty(animation, "Opacity");
         storyboard.Children.Add(animation);
+        BeginElementFade(element, storyboard);
+    }
+
+    // Stops the fade this one replaces, so one storyboard at a time animates the element's opacity.
+    private static void BeginElementFade(UIElement element, Storyboard storyboard)
+    {
+        if (LatestElementFades.TryGetValue(element, out var replaced))
+        {
+            replaced.Stop();
+        }
+
+        LatestElementFades.AddOrUpdate(element, storyboard);
         storyboard.Begin();
     }
 
