@@ -469,7 +469,7 @@ internal sealed partial class D3D11PreviewRenderer
 
                 if (bltResult.Failure)
                 {
-                    throw new InvalidOperationException($"VideoProcessorBlt failed: 0x{bltResult.Code:X8}.");
+                    throw NativeCallFailed("VideoProcessorBlt", bltResult);
                 }
 
                 PresentAndTrackFrame(
@@ -739,7 +739,7 @@ internal sealed partial class D3D11PreviewRenderer
         presentTicks += presentEnd - presentStart;
         if (presentResult.Failure)
         {
-            throw new InvalidOperationException($"SwapChain.Present failed: 0x{presentResult.Code:X8}.");
+            throw NativeCallFailed("SwapChain.Present", presentResult);
         }
 
         NotifyFirstFrameRendered(firstFrameMessage);

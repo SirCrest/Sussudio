@@ -1034,7 +1034,18 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             return;
         }
 
-        ResizeCompositionSwapChain(target);
+        try
+        {
+            ResizeCompositionSwapChain(target);
+        }
+        catch (Exception ex) when (IsDeviceLostException(ex))
+        {
+            // Runs outside the per-frame catch: a removal surfaced by ResizeBuffers recovers like one surfaced by
+            // Present (the new swap chain takes the requested size). Other resize failures still end the render thread.
+            HandleDeviceLost(ex);
+            return;
+        }
+
         Interlocked.Exchange(ref _lastOutputResizeTick, now);
         var resizeCount = Interlocked.Increment(ref _outputResizeCount);
         Logger.Log($"D3D11_PREVIEW_OUTPUT_RESIZED width={target.Width} height={target.Height} count={resizeCount} debounceMs={PreviewOutputSizePolicy.ResizeDebounceMilliseconds}.");

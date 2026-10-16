@@ -937,7 +937,7 @@ internal sealed partial class D3D11PreviewRenderer
             flags);
         if (result.Failure)
         {
-            throw new InvalidOperationException($"D3D11 preview ResizeBuffers failed: 0x{result.Code:X8}.");
+            throw NativeCallFailed("D3D11 preview ResizeBuffers", result);
         }
 
         _configuredOutputWidth = target.Width;
@@ -1111,6 +1111,17 @@ internal sealed partial class D3D11PreviewRenderer
 
         try
         {
+            // A removed capture-shared device stays dead. Adopting it during device-lost recovery would fail at
+            // swap-chain creation and end the render thread, so fall back to a renderer-owned device; the capture
+            // restart hands over a fresh device through SetSharedDevice, whose reset moves the preview back onto it.
+            var removedReason = sharedDevice.DeviceRemovedReason;
+            if (removedReason.Failure)
+            {
+                Logger.Log($"D3D11_PREVIEW_SHARED_DEVICE_REMOVED reason=0x{removedReason.Code:X8}; falling back to renderer-owned device.");
+                sharedDevice.Dispose();
+                return false;
+            }
+
             _device = sharedDevice;
             sharedDevice = null;
             _deviceContext = _device.ImmediateContext;
@@ -1136,7 +1147,10 @@ internal sealed partial class D3D11PreviewRenderer
 
     private void HandleDeviceLost(Exception ex)
     {
-        Logger.Log($"D3D11_PREVIEW_DEVICE_LOST type={ex.GetType().Name} action=recreate");
+        // The removed reason (hung, reset, driver update) is only readable before cleanup releases the device.
+        var device = _device;
+        var removedReason = device != null && device.NativePointer != IntPtr.Zero ? device.DeviceRemovedReason.Code : 0;
+        Logger.Log($"D3D11_PREVIEW_DEVICE_LOST type={ex.GetType().Name} hr=0x{ex.HResult:X8} removedReason=0x{removedReason:X8} shared={Volatile.Read(ref _sharedDeviceActive)} action=recreate");
 
         // If Stop() is pending, bail. Stop() will unbind the swap chain from
         // the panel while D3D resources are still alive, then the finally block
@@ -1164,20 +1178,25 @@ internal sealed partial class D3D11PreviewRenderer
 
     private static bool IsDeviceLostException(Exception ex)
     {
-        if (ex is SharpGenException sharpGenException)
+        var hresult = ex switch
         {
-            return sharpGenException.ResultCode == Vortice.DXGI.ResultCode.DeviceRemoved ||
-                   sharpGenException.ResultCode == Vortice.DXGI.ResultCode.DeviceReset;
-        }
+            SharpGenException sharpGenException => sharpGenException.ResultCode.Code,
+            COMException comException => comException.HResult,
+            _ => 0,
+        };
 
-        if (ex is COMException comException)
-        {
-            return comException.HResult == unchecked((int)0x887A0005) ||
-                   comException.HResult == unchecked((int)0x887A0007);
-        }
-
-        return false;
+        // Every DXGI code that leaves the device removed: nothing created on it works again, so only a new device and
+        // swap chain recover. Any other failure stays a per-frame render failure.
+        return hresult == Vortice.DXGI.ResultCode.DeviceRemoved.Code ||
+               hresult == Vortice.DXGI.ResultCode.DeviceReset.Code ||
+               hresult == Vortice.DXGI.ResultCode.DeviceHung.Code ||
+               hresult == Vortice.DXGI.ResultCode.DriverInternalError.Code;
     }
+
+    // HRESULT-returning calls (Present, VideoProcessorBlt, ResizeBuffers) throw with their Result intact, so
+    // IsDeviceLostException routes a removed device to HandleDeviceLost exactly as it routes Vortice-thrown failures.
+    private static SharpGenException NativeCallFailed(string operation, Result result)
+        => new(result, $"{operation} failed: 0x{result.Code:X8}.", null);
 
     private void EnsureInputResources(int width, int height, bool isHdr)
     {
