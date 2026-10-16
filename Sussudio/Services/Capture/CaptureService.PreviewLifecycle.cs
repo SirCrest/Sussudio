@@ -317,6 +317,15 @@ public partial class CaptureService
             _activeVideoInputPixelFormat = unifiedVideoCapture.IsP010 ? "p010le" : "nv12";
 
             wasapiCapture = await StartPreviewAudioGraphAsync(settings, audioDeviceId, transitionToken).ConfigureAwait(false);
+            if (_previewFlashbackFaultFailures > 0)
+            {
+                var faultCount = Interlocked.Increment(ref _previewFlashbackFaultCount);
+                if (faultCount <= _previewFlashbackFaultFailures)
+                {
+                    Logger.Log($"CAPTURE_FAULT_PREVIEW_FLASHBACK_FAILED count={faultCount} of={_previewFlashbackFaultFailures}");
+                    throw new InvalidOperationException("Injected fault: the preview start failed starting its Flashback backend, after its audio graph started.");
+                }
+            }
 
             // Start flashback AFTER all preview components are running.
             // This eliminates the ~840ms A/V sync drift caused by WASAPI audio
@@ -353,7 +362,7 @@ public partial class CaptureService
                 }
             }
 
-            await RollbackPreviewAudioCaptureStartupAsync(wasapiCapture).ConfigureAwait(false);
+            await RollbackPreviewAudioGraphStartupAsync(wasapiCapture).ConfigureAwait(false);
             Volatile.Write(ref _cleanupRequired, 0);
 
             throw;
@@ -773,7 +782,7 @@ public partial class CaptureService
         }
         catch
         {
-            await RollbackPreviewAudioCaptureStartupAsync(wasapiCapture).ConfigureAwait(false);
+            await RollbackPreviewAudioGraphStartupAsync(wasapiCapture).ConfigureAwait(false);
             throw;
         }
     }
@@ -995,7 +1004,10 @@ public partial class CaptureService
         }
     }
 
-    private async Task RollbackPreviewAudioCaptureStartupAsync(WasapiAudioCapture? wasapiCapture)
+    // Releases what StartPreviewAudioGraphAsync started: program audio, then the microphone monitor, in the order
+    // the preview pipeline teardown releases them. Dispose failures are logged, not thrown, so a fresh-start
+    // rollback still rethrows the start's own error.
+    private async Task RollbackPreviewAudioGraphStartupAsync(WasapiAudioCapture? wasapiCapture)
     {
         if (wasapiCapture != null)
         {
@@ -1020,6 +1032,8 @@ public partial class CaptureService
                 Logger.Log($"WASAPI capture rollback dispose warning: {disposeEx.Message}");
             }
         }
+
+        await DisposeMicrophoneCaptureAsync().ConfigureAwait(false);
     }
 
     public Task StopAudioPreviewAsync(CancellationToken cancellationToken = default)
