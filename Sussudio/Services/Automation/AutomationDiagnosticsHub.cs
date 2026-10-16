@@ -44,7 +44,9 @@ public sealed partial class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
 
     // Fixed-size timeline ring used by long diagnostic sessions. It keeps the
     // last few minutes of high-level performance evidence in memory without
-    // requiring every poll to become an unbounded event.
+    // requiring every poll to become an unbounded event. Only poll ticks append,
+    // so it is a cadence timeline: one entry per poll interval, whatever the
+    // clients read in between (see SnapshotRefreshKind).
     private readonly PerformanceTimelineEntry[] _timelineBuffer = new PerformanceTimelineEntry[TimelineCapacity];
     private int _timelineHead;
     private int _timelineCount;
@@ -198,7 +200,7 @@ public sealed partial class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         {
             try
             {
-                await RefreshSnapshotAsync(cancellationToken).ConfigureAwait(false);
+                await RefreshSnapshotAsync(SnapshotRefreshKind.PollTick, cancellationToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {

@@ -27,7 +27,8 @@ RTX 4090 and Ryzen 9 7950X. Artifacts: `artifacts/perf-overhaul/baseline/`.
   cumulative and windowed values in one result.
 - There is no way to ask "what happened between t0 and t1". The hub's
   "recent" counters are deltas against the previous poll, so any on-demand
-  read shortens the next window.
+  read shortens the next window. (Fixed later: on-demand refreshes no longer
+  move those baselines, D15.)
 - No ETW, EventSource, Meter, PDH, GPU timestamp query, or per-thread CPU
   measurement exists anywhere in the app or tools.
 - All tuning is through about 55 `SUSSUDIO_*` environment variables read at
@@ -52,6 +53,7 @@ RTX 4090 and Ryzen 9 7950X. Artifacts: `artifacts/perf-overhaul/baseline/`.
 | D12 | The agent cannot read UI state (overlay, settings, InfoBars, section expansion, window rect) or press controls that have no purpose-built command (Flashback nudge and keyboard transport, timeline scrubbing). | Automation surface survey |
 | D13 | The DWM composed-frame rate was read as the display rate. With the preview presenting 4K60 on a 120 Hz display (independent flip or an overlay plane, so DWM does not compose it), `DwmGetCompositionTimingInfo` showed 0.057 composed frames per second, which looks like a stalled display. DWM's refresh counter is not a hardware vblank counter either: it advances with composition activity. **Fixed in slice 2b:** the report adds a `Display` section from the swap chain's DXGI frame statistics and classifies the DWM rate against the present rate (2.8.5). | Live: `Dwm.FramesComposedPerSec = 0.057` at 4K60 on a 120 Hz display; an idle 120 Hz desktop measured 0.2 refresh-counter increments per second |
 | D14 | `ssctl --json timeline --max N` printed N + 1 timestamps with the last one repeated. The timeline held exactly N entries; the response envelope embedded the cached snapshot (D10), and the snapshot's `TimestampUtc` equals the newest timeline entry's. **Fixed in slice 2b:** the timeline response carries no snapshot. | `AutomationCommandDispatcher.ExecuteGetPerformanceTimelineCommand`; `CreateResponse` default `includeSnapshot: true` |
+| D15 | The performance timeline was not a cadence timeline. Every on-demand refresh (`GetSnapshot`, `AssertSnapshot`, the recording toggle, a recording or file verification) appended an entry and advanced the baselines behind the "recent" counters and process CPU percent. A client polling `ssctl state` therefore packed extra entries between poll ticks, and the next tick's entry covered only the time since that read, so a missed refresh counted in the on-demand snapshot never appeared in the timeline. **Fixed in the loose-ends slice:** only the poll tick appends and advances baselines (`SnapshotRefreshKind`); an on-demand snapshot's "recent" counts and CPU percent cover the time since the last poll tick. The wire shape is unchanged. | `AutomationDiagnosticsHub.Snapshots.cs` `RefreshSnapshotCoreAsync`; `Verify-PerfTelemetry.ps1` timeline cadence check |
 
 ### 1.3 Gaps an agent cannot work around today
 
@@ -877,7 +879,8 @@ tick that sees `IsRecording` fall, and `LastVerification` then feeds `verify_rec
 parity alert and the truth verdict; the alert, event and recent-counter baselines, the 2-minute timeline and the audio-mute and
 recording-growth timers need continuous sampling; `wait_for_condition` and every control acknowledgement read the cached snapshot
 (`GetLatestSnapshot`), which would be stale or empty after an idle gap (only `GetSnapshot`, `AssertSnapshot` and the
-recording toggle call `RefreshSnapshotNowAsync`). Pipe clients are also one-shot connections, so "connected" is not a signal; the only available one is "a
+recording toggle call `RefreshSnapshotNowAsync`, and those refreshes neither append to the timeline nor move the interval
+baselines, D15). Pipe clients are also one-shot connections, so "connected" is not a signal; the only available one is "a
 request in the last N seconds". With the refresh now about 2 ms and 133 KB, the saving from a slower idle tick is small; live2 had
 already shown a 2,000 ms poll against 500 ms at noise level in CPU. If gating is still wanted, gate on recent request or an active
 recording and keep a floor tick, and decide that policy explicitly.

@@ -2,8 +2,8 @@
 .SYNOPSIS
 End-to-end check of the performance telemetry commands against a running Sussudio app.
 .DESCRIPTION
-Drives ssctl through perf report, perf window, perf mark, perf trace, knobs, knob set/reset and log tail,
-saves every raw response under the output directory, and writes verify-result.json with one entry per check.
+Drives ssctl through perf report, perf window, perf mark, perf trace, knobs, knob set/reset, the performance
+timeline's cadence under a burst of state reads and log tail, saves every raw response under the output directory, and writes verify-result.json with one entry per check.
 Exit code is 0 only when every check passed. Re-run it against any build to compare.
 
 Preconditions (not changed by this script): the app is running, ideally with live preview, so the
@@ -72,10 +72,8 @@ function Get-Data($result) {
     return $null
 }
 
-# Spacing of the diagnostics hub ticks, from the performance timeline. Only entries newer than $After count, so a
-# knob change is measured on ticks that ran under it. The snapshot refresh has occasional latency spikes of several
-# hundred milliseconds that dominate the median, so the lower quartile is the figure that follows the poll interval.
-function Get-HubIntervalStats {
+# Performance timeline entry timestamps newer than $After, oldest first, or $null when the response has no data.
+function Get-TimelineTimestamps {
     param([string] $Label, [DateTimeOffset] $After)
     $timeline = Invoke-Ssctl $Label @('timeline', '--max', '60')
     # Timestamps are read from the raw text (PowerShell 7 would turn them into culture-formatted DateTime values),
@@ -83,10 +81,18 @@ function Get-HubIntervalStats {
     $raw = $timeline.Raw
     $dataIndex = $raw.IndexOf('"Data"', [StringComparison]::Ordinal)
     if ($dataIndex -lt 0) { return $null }
-    $times = @([regex]::Matches($raw.Substring($dataIndex), '"TimestampUtc"\s*:\s*"([^"]+)"') | ForEach-Object {
+    return , @([regex]::Matches($raw.Substring($dataIndex), '"TimestampUtc"\s*:\s*"([^"]+)"') | ForEach-Object {
             [DateTimeOffset]::Parse([regex]::Unescape($_.Groups[1].Value), [Globalization.CultureInfo]::InvariantCulture)
         } | Where-Object { $_ -ge $After })
-    if ($times.Count -lt 6) { return $null }
+}
+
+# Spacing of the diagnostics hub ticks, from the performance timeline. Only entries newer than $After count, so a
+# knob change is measured on ticks that ran under it. The snapshot refresh has occasional latency spikes of several
+# hundred milliseconds that dominate the median, so the lower quartile is the figure that follows the poll interval.
+function Get-HubIntervalStats {
+    param([string] $Label, [DateTimeOffset] $After)
+    $times = Get-TimelineTimestamps $Label $After
+    if ($null -eq $times -or $times.Count -lt 6) { return $null }
     $allDeltas = @(for ($i = 1; $i -lt $times.Count; $i++) { ($times[$i] - $times[$i - 1]).TotalMilliseconds })
     $deltas = @($allDeltas | Where-Object { $_ -gt 0 } | Sort-Object)
     if ($deltas.Count -lt 5) { return $null }
@@ -211,6 +217,27 @@ if ($null -ne $baseline -and $null -ne $restored) {
 }
 else {
     Add-Check 'hub tick rate restored after reset' $false 'timeline had too few entries to measure'
+}
+
+# 6b. Cadence timeline: on-demand reads (each `ssctl state` refreshes the snapshot) add no timeline entries, so a
+# burst of reads leaves one entry per poll interval. Before the fix every read appended its own entry.
+$pollKnob = @((Get-Data (Invoke-Ssctl '06f-knobs-poll' @('knobs', 'POLL_MS'))).Knobs | Where-Object { $_.Name -eq 'SUSSUDIO_DIAGNOSTICS_POLL_MS' })
+$pollMs = if ($pollKnob.Count -eq 1 -and -not [string]::IsNullOrWhiteSpace($pollKnob[0].Value)) { [double]$pollKnob[0].Value } elseif ($pollKnob.Count -eq 1) { [double]$pollKnob[0].Default } else { 500.0 }
+$burstReads = 12
+$burstStart = [DateTimeOffset]::UtcNow
+for ($i = 0; $i -lt $burstReads; $i++) { $null = Invoke-Ssctl ('06g-burst-state-{0:00}' -f $i) @('state') }
+$burstEnd = [DateTimeOffset]::UtcNow
+Start-Sleep -Milliseconds ([int]($pollMs * 2))
+$burstTimes = Get-TimelineTimestamps '06h-timeline-after-burst' $burstStart
+if ($null -ne $burstTimes) {
+    $inBurst = @($burstTimes | Where-Object { $_ -le $burstEnd })
+    $burstMs = ($burstEnd - $burstStart).TotalMilliseconds
+    $maxTicks = [int][Math]::Ceiling($burstMs / $pollMs) + 1
+    $minSpacing = if ($inBurst.Count -ge 2) { (@(for ($i = 1; $i -lt $inBurst.Count; $i++) { ($inBurst[$i] - $inBurst[$i - 1]).TotalMilliseconds }) | Measure-Object -Minimum).Minimum } else { $null }
+    Add-Check 'on-demand reads add no timeline entries' ($inBurst.Count -le $maxTicks -and ($null -eq $minSpacing -or $minSpacing -ge ($pollMs / 2))) ("{0} entries in a {1:N0} ms burst of {2} state reads (at most {3} poll ticks at {4:N0} ms), smallest spacing {5} ms" -f $inBurst.Count, $burstMs, $burstReads, $maxTicks, $pollMs, $(if ($null -eq $minSpacing) { 'n/a' } else { '{0:N0}' -f $minSpacing }))
+}
+else {
+    Add-Check 'on-demand reads add no timeline entries' $false 'timeline response had no data'
 }
 
 # 7. Rejections: out of range, unknown name, credential.

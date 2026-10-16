@@ -395,6 +395,8 @@ Automation diagnostics ownership:
   refresh orchestration, cached last-output file existence/size probing,
   process CPU/memory/GC/thread-pool sampling, latest-snapshot publication,
   timeline append, event notification, and auto-verification handoff, plus
+  the poll-tick versus on-demand refresh split (only the poll tick appends to
+  the timeline and advances the recent-counter and CPU baselines), plus
   manual recording/file verification commands, verification-profile adaptation,
   explicit verification events, automatic post-recording verification
   scheduling, and recording-start verification reset.
