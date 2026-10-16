@@ -33,6 +33,10 @@ public sealed class PresentationPreviewStartupBehaviorContractsTests
         => global::Program.PreviewStartupSessionController_PreservesAttemptStateContracts();
 
     [Fact]
+    public Task PreviewStartupSessionControllerResolvesPreSessionStartFailuresForOwningRequestOnly()
+        => global::Program.PreviewStartupSessionController_ResolvesPreSessionStartFailuresForOwningRequestOnly();
+
+    [Fact]
     public Task PreviewReinitTransitionControllerPreservesTransitionStateContracts()
         => global::Program.PreviewReinitTransitionController_PreservesTransitionStateContracts();
 
@@ -1935,6 +1939,109 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    // A start that fails before its capture session runs never reaches the renderer attach, so the
+    // session owner resolves the attempt from the start's outcome: once, and only for the request
+    // that owns the attempt. A late outcome from a superseded or cancelled request must not fail a
+    // newer attempt, and an attempt the renderer path already moved on is never transitioned again.
+    internal static Task PreviewStartupSessionController_ResolvesPreSessionStartFailuresForOwningRequestOnly()
+    {
+        var controller = CreatePreviewStartupSessionForTest(out var recorder);
+        object State(string name) => ParseEnum("Sussudio.Models.PreviewStartupState", name);
+        object CurrentState() => GetPropertyValue(controller, "State")!;
+        void Admit(long requestId) => InvokePreviewStartup(controller, "AdmitStartRequest", requestId);
+        bool Resolve(long requestId, string reason, bool canceled = false, bool preserveReinitAnimation = false)
+            => (bool)InvokePreviewStartup(
+                controller,
+                "ResolveStartFailure",
+                Activator.CreateInstance(RequireType("Sussudio.Models.PreviewStartFailure"), requestId, reason, canceled),
+                preserveReinitAnimation)!;
+        int FailedTransitions() => recorder.Events.Count(value =>
+            value.StartsWith("log:PREVIEW_START_STATE state=Failed", StringComparison.Ordinal));
+
+        // The owning request's failure resolves its attempt to Failed with the reason.
+        Admit(1);
+        AssertEqual(State("StartingSession"), CurrentState(), "admitted request begins an attempt");
+        recorder.Events.Clear();
+        AssertEqual(true, Resolve(1, "capture-start-failed:boom"), "owning failure resolves");
+        AssertEqual(State("Failed"), CurrentState(), "owning failure state");
+        AssertEqual("capture-start-failed:boom", GetStringProperty(controller, "LastFailureReason"), "owning failure reason");
+        AssertEqual(
+            "log:PREVIEW_START_STATE state=Failed attempt=attempt-1 recovery=0 reason=capture-start-failed:boom|stop-overlay",
+            string.Join("|", recorder.Events), "failure publishes one state change and stops the overlay");
+
+        // A second outcome for the same request is ignored and says why.
+        recorder.Events.Clear();
+        AssertEqual(false, Resolve(1, "capture-start-failed:again"), "duplicate outcome ignored");
+        AssertEqual("capture-start-failed:boom", GetStringProperty(controller, "LastFailureReason"), "duplicate keeps the first reason");
+        AssertEqual(0, FailedTransitions(), "duplicate outcome does not transition again");
+        AssertEqual(1, recorder.Events.Count(value =>
+            value.StartsWith("log:PREVIEW_START_FAILURE_IGNORED request=1 ", StringComparison.Ordinal)), "ignored outcome is logged");
+
+        // A request that joins the attempt later owns it; the earlier request's failure is ignored.
+        recorder.AttemptId = "attempt-2";
+        Admit(2);
+        Admit(3);
+        AssertEqual("attempt-2", GetStringProperty(controller, "AttemptId"), "joining request keeps the attempt");
+        AssertEqual(false, Resolve(2, "capture-init-failed:stale"), "superseded request ignored");
+        AssertEqual(State("StartingSession"), CurrentState(), "superseded failure leaves the attempt starting");
+        AssertEqual(true, Resolve(3, "capture-init-failed:latest"), "latest request resolves");
+        AssertEqual("capture-init-failed:latest", GetStringProperty(controller, "LastFailureReason"), "latest failure reason");
+
+        // A reset forgets the request, and an attempt begun without a request has no owner.
+        recorder.AttemptId = "attempt-3";
+        Admit(4);
+        InvokePreviewStartup(controller, "ResetStartupTracking", false, false);
+        AssertEqual(false, Resolve(4, "capture-start-failed:after-reset"), "reset forgets the request");
+        AssertEqual(State("Idle"), CurrentState(), "failure after reset leaves tracking idle");
+        recorder.AttemptId = "attempt-4";
+        InvokePreviewStartup(controller, "BeginStartupAttempt");
+        AssertEqual(false, Resolve(4, "capture-start-failed:newer-attempt"), "an older request cannot fail a newer attempt");
+        AssertEqual(State("StartingSession"), CurrentState(), "newer attempt keeps starting");
+        AssertEqual("attempt-4", GetStringProperty(controller, "AttemptId"), "newer attempt identity kept");
+
+        // Once the renderer attach began, or the renderer path failed the attempt, the start outcome is ignored.
+        Admit(5);
+        InvokePreviewStartup(controller, "SetStartupState", State("RendererAttaching"), null);
+        AssertEqual(false, Resolve(5, "capture-start-failed:attaching"), "attaching attempt ignores the start failure");
+        AssertEqual(State("RendererAttaching"), CurrentState(), "attaching state kept");
+        InvokePreviewStartup(controller, "SetStartupState", State("Failed"), "renderer-attach-failed:x");
+        recorder.Events.Clear();
+        AssertEqual(false, Resolve(5, "capture-start-failed:after-attach-failure"), "renderer failure is not overwritten");
+        AssertEqual("renderer-attach-failed:x", GetStringProperty(controller, "LastFailureReason"), "renderer failure reason kept");
+        AssertEqual(0, FailedTransitions(), "no second Failed transition");
+
+        // A start while preview renders joins that attempt, and its failure leaves it rendering.
+        recorder.AttemptId = "attempt-5";
+        BeginWaitingPreviewStartup(controller);
+        InvokePreviewStartup(controller, "ConfirmFirstVisual", "D3D11FirstFrame");
+        Admit(6);
+        AssertEqual("attempt-5", GetStringProperty(controller, "AttemptId"), "start while rendering joins the attempt");
+        AssertEqual(false, Resolve(6, "capture-start-failed:while-rendering"), "rendering attempt ignores the start failure");
+        AssertEqual(State("Rendering"), CurrentState(), "rendering kept");
+
+        // A cancelled owning request withdraws the attempt to Idle; it is not a failure.
+        InvokePreviewStartup(controller, "ResetStartupTracking", false, false);
+        recorder.AttemptId = "attempt-6";
+        Admit(7);
+        recorder.Events.Clear();
+        AssertEqual(true, Resolve(7, "start-canceled", canceled: true, preserveReinitAnimation: true), "owning cancellation resolves");
+        AssertEqual(State("Idle"), CurrentState(), "cancellation returns idle");
+        AssertEqual(null, GetPropertyValue(controller, "LastFailureReason"), "cancellation records no failure");
+        AssertEqual(0, FailedTransitions(), "cancellation is not a Failed transition");
+        AssertEqual(
+            "log:PREVIEW_START_CANCELED request=7 attempt=attempt-6|stop-overlay|stop-fade-timer|clear-reinit:True:ResetPreviewStartupTracking|log:PREVIEW_START_STATE state=Idle attempt=none recovery=0 reason=-",
+            string.Join("|", recorder.Events), "cancellation resets tracking and keeps the reinit presentation");
+
+        // A cancelled request that no longer owns the attempt leaves the newer request's attempt alone.
+        recorder.AttemptId = "attempt-7";
+        Admit(8);
+        Admit(9);
+        AssertEqual(false, Resolve(8, "start-canceled", canceled: true), "superseded cancellation ignored");
+        AssertEqual(State("StartingSession"), CurrentState(), "superseded cancellation keeps the attempt");
+        AssertEqual("attempt-7", GetStringProperty(controller, "AttemptId"), "superseded cancellation keeps the identity");
+        return Task.CompletedTask;
+    }
+
     internal static Task PreviewReinitTransitionController_PreservesTransitionStateContracts()
     {
         var controllerType = RequireType("Sussudio.Controllers.PreviewReinitTransitionController");
@@ -3197,7 +3304,7 @@ internal static Task MainViewModelPresentationControllers_UseDependencyCompositi
         AssertContains(controllerGraphText, "ShouldStartAudioPreview = () => viewModel.IsAudioPreviewEnabled && viewModel.IsAudioEnabled,");
         AssertContains(controllerGraphText, "IsAudioPreviewActive = () => viewModel._captureService.IsAudioPreviewActive,");
         AssertContains(controllerGraphText, "SetStatusText = value => viewModel.StatusText = value,");
-        AssertContains(controllerGraphText, "RaisePreviewStartRequested = () => viewModel.PreviewStartRequested?.Invoke(viewModel, EventArgs.Empty),");
+        AssertContains(controllerGraphText, "RaisePreviewStartRequested = request => viewModel.PreviewStartRequested?.Invoke(viewModel, request),");
         AssertContains(controllerGraphText, "RaisePreviewStopRequested = () => viewModel.PreviewStopRequested?.Invoke(viewModel, EventArgs.Empty),");
         AssertContains(controllerGraphText, "ApplyLatestSourceTelemetryForPreviewStart = () =>");
 
@@ -3217,7 +3324,7 @@ internal static Task MainViewModelPresentationControllers_UseDependencyCompositi
         AssertContains(previewReinitializeControllerText, "private readonly SemaphoreSlim _previewReinitializeGate = new(1, 1);");
         AssertContains(previewReinitializeControllerText, "private int _previewReinitializeGeneration;");
         AssertContains(previewReinitializeControllerText, "private bool _cancelPreviewRestartAfterReinitialize;");
-        AssertContains(previewStateText, "public event EventHandler? PreviewStartRequested;");
+        AssertContains(previewStateText, "public event EventHandler<PreviewStartRequest>? PreviewStartRequested;");
         AssertContains(previewStateText, "public event EventHandler? PreviewStopRequested;");
         AssertContains(previewStateText, "public event Func<string, Task>? PreviewReinitRequested;");
         AssertContains(previewStateText, "public event Func<Task>? PreviewRendererStopRequested;");
@@ -3245,7 +3352,7 @@ internal static Task MainViewModelPresentationControllers_UseDependencyCompositi
         AssertContains(previewLifecycleControllerText, "public required Func<bool> ShouldStartAudioPreview { get; init; }");
         AssertContains(previewLifecycleControllerText, "public required Func<bool> IsAudioPreviewActive { get; init; }");
         AssertContains(previewLifecycleControllerText, "public required Action<string> SetStatusText { get; init; }");
-        AssertContains(previewLifecycleControllerText, "public required Action RaisePreviewStartRequested { get; init; }");
+        AssertContains(previewLifecycleControllerText, "public required Action<PreviewStartRequest> RaisePreviewStartRequested { get; init; }");
         AssertContains(previewLifecycleControllerText, "public required Action RaisePreviewStopRequested { get; init; }");
         AssertContains(previewLifecycleControllerText, "public required Action ApplyLatestSourceTelemetryForPreviewStart { get; init; }");
         AssertContains(previewLifecycleControllerText, "public async Task InitializeDeviceAsync(CancellationToken cancellationToken = default)");

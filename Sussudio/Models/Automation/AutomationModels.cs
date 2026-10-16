@@ -301,6 +301,18 @@ public enum PreviewStartupState
     Failed
 }
 
+/// <summary>
+/// One preview start request. The startup attempt it begins or joins is owned by the latest
+/// request admitted to it, so only that request's outcome can resolve the attempt.
+/// </summary>
+public sealed record PreviewStartRequest(long RequestId);
+
+/// <summary>
+/// The outcome of a preview start request that ended before its capture session ran.
+/// <see cref="Canceled"/> marks a request its caller withdrew, which is not a startup failure.
+/// </summary>
+public sealed record PreviewStartFailure(long RequestId, string Reason, bool Canceled);
+
 [Flags]
 public enum PreviewStartupSignalFlags
 {
