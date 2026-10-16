@@ -1036,7 +1036,18 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             return;
         }
 
-        ResizeCompositionSwapChain(target);
+        try
+        {
+            ResizeCompositionSwapChain(target);
+        }
+        catch (Exception ex) when (IsDeviceLostException(ex))
+        {
+            // Runs outside the per-frame catch: a removal surfaced by ResizeBuffers recovers like one surfaced by
+            // Present (the new swap chain takes the requested size). Other resize failures still end the render thread.
+            HandleDeviceLost(ex);
+            return;
+        }
+
         Interlocked.Exchange(ref _lastOutputResizeTick, now);
         var resizeCount = Interlocked.Increment(ref _outputResizeCount);
         Logger.Log($"D3D11_PREVIEW_OUTPUT_RESIZED width={target.Width} height={target.Height} count={resizeCount} debounceMs={PreviewOutputSizePolicy.ResizeDebounceMilliseconds}.");
@@ -1639,7 +1650,11 @@ public readonly record struct PresentCadenceMetrics(
         long LastPresentDelta,
         long LastPresentRefreshDelta,
         long LastSyncRefreshDelta,
-        long MissedRefreshCount);
+        // Every refresh beyond one per present: grows at the source frame rate when the display refresh is a multiple
+        // of it (60 fps on 120 Hz) even with perfect pacing.
+        long MissedRefreshCount,
+        // Refreshes where a new source frame was due but the previous one was shown (PreviewRefreshCadencePolicy).
+        long CadenceMissedRefreshCount);
 
     private readonly object _presentCadenceLock = new();
     private readonly PreviewFrameTimeHistory _presentFrameTimeHistory = new();
@@ -1749,6 +1764,8 @@ public readonly record struct PresentCadenceMetrics(
     private long _dxgiFrameStatisticsLastPresentRefreshDelta;
     private long _dxgiFrameStatisticsLastSyncRefreshDelta;
     private long _dxgiFrameStatisticsMissedRefreshCount;
+    private long _dxgiFrameStatisticsCadenceMissedRefreshCount;
+    private long _dxgiFrameStatisticsLastCadenceMissedRefreshes;
     private long _dxgiFrameStatisticsFrameCounter;
     private long _dxgiFrameStatisticsLastSampleFrameCounter;
     private bool _dxgiFrameStatisticsHasBaseline;
@@ -1827,6 +1844,8 @@ public readonly record struct PresentCadenceMetrics(
                     SlowFramePercent: 0);
             }
 
+            // Unlike the summary reads below, this copy is kept: it is published as RecentIntervalsMs (the snapshot's
+            // PreviewCadenceRecentIntervalsMs and the stats overlay graph). Compute sorts in its own pooled scratch.
             samples = RingBufferHelpers.Copy(_presentIntervalWindowMs, _presentIntervalCount, _presentIntervalIndex);
         }
 
@@ -1885,64 +1904,108 @@ public readonly record struct PresentCadenceMetrics(
     public PipelineLatencyMetrics GetPipelineLatencyMetrics()
     {
         // The render thread takes this lock once per presented frame. Copy the
-        // window under the lock and sort the copy outside it so a stats poll
-        // never holds the render thread for a full-window sort.
-        double[] samples;
+        // window into pooled scratch under the lock and sort it outside, so a
+        // stats poll neither holds the render thread for a full-window sort nor
+        // allocates a copy of the window (the hub reads this every tick).
+        double[] scratch;
+        int count;
         lock (_pipelineLatencyLock)
         {
-            if (_pipelineLatencyCount <= 0)
+            count = _pipelineLatencyCount;
+            if (count <= 0)
             {
                 return default;
             }
 
-            samples = RingBufferHelpers.Copy(_pipelineLatencyWindowMs, _pipelineLatencyCount, _pipelineLatencyIndex, _pipelineLatencyCount);
+            scratch = ArrayPool<double>.Shared.Rent(count);
+            RingBufferHelpers.CopyNewest(_pipelineLatencyWindowMs, count, _pipelineLatencyIndex, scratch.AsSpan(0, count));
         }
 
-        var timing = SummarizeCpuStageTiming(samples);
-        return new PipelineLatencyMetrics(
-            timing.SampleCount,
-            timing.AverageMs,
-            timing.P95Ms,
-            timing.P99Ms,
-            timing.MaxMs);
+        try
+        {
+            var timing = SummarizeCpuStageTiming(scratch.AsSpan(0, count));
+            return new PipelineLatencyMetrics(
+                timing.SampleCount,
+                timing.AverageMs,
+                timing.P95Ms,
+                timing.P99Ms,
+                timing.MaxMs);
+        }
+        finally
+        {
+            ArrayPool<double>.Shared.Return(scratch);
+        }
     }
 
     public RenderCpuTimingMetrics GetRenderCpuTimingMetrics()
     {
-        double[] uploadSamples;
-        double[] renderSamples;
-        double[] presentSamples;
-        double[] totalSamples;
+        // The four stage rings share one count and write index, so one pooled
+        // scratch holds their windows back to back: copied under the lock,
+        // sorted outside it.
+        double[] scratch;
+        int count;
         lock (_renderCpuTimingLock)
         {
-            uploadSamples = RingBufferHelpers.Copy(_inputUploadCpuTimingWindowMs, _renderCpuTimingCount, _renderCpuTimingIndex, _renderCpuTimingCount);
-            renderSamples = RingBufferHelpers.Copy(_renderSubmitCpuTimingWindowMs, _renderCpuTimingCount, _renderCpuTimingIndex, _renderCpuTimingCount);
-            presentSamples = RingBufferHelpers.Copy(_presentCallTimingWindowMs, _renderCpuTimingCount, _renderCpuTimingIndex, _renderCpuTimingCount);
-            totalSamples = RingBufferHelpers.Copy(_renderTotalCpuTimingWindowMs, _renderCpuTimingCount, _renderCpuTimingIndex, _renderCpuTimingCount);
+            count = _renderCpuTimingCount;
+            if (count <= 0)
+            {
+                return default;
+            }
+
+            scratch = ArrayPool<double>.Shared.Rent(count * 4);
+            RingBufferHelpers.CopyNewest(_inputUploadCpuTimingWindowMs, count, _renderCpuTimingIndex, scratch.AsSpan(0, count));
+            RingBufferHelpers.CopyNewest(_renderSubmitCpuTimingWindowMs, count, _renderCpuTimingIndex, scratch.AsSpan(count, count));
+            RingBufferHelpers.CopyNewest(_presentCallTimingWindowMs, count, _renderCpuTimingIndex, scratch.AsSpan(count * 2, count));
+            RingBufferHelpers.CopyNewest(_renderTotalCpuTimingWindowMs, count, _renderCpuTimingIndex, scratch.AsSpan(count * 3, count));
         }
 
-        return new RenderCpuTimingMetrics(
-            SummarizeCpuStageTiming(uploadSamples),
-            SummarizeCpuStageTiming(renderSamples),
-            SummarizeCpuStageTiming(presentSamples),
-            SummarizeCpuStageTiming(totalSamples));
+        try
+        {
+            return new RenderCpuTimingMetrics(
+                SummarizeCpuStageTiming(scratch.AsSpan(0, count)),
+                SummarizeCpuStageTiming(scratch.AsSpan(count, count)),
+                SummarizeCpuStageTiming(scratch.AsSpan(count * 2, count)),
+                SummarizeCpuStageTiming(scratch.AsSpan(count * 3, count)));
+        }
+        finally
+        {
+            ArrayPool<double>.Shared.Return(scratch);
+        }
     }
 
     public FrameLatencyWaitMetrics GetFrameLatencyWaitMetrics()
     {
-        // Copy under the lock, sort outside it: the render thread takes this
-        // lock before every frame's waitable-object wait.
-        double[] waitSamples;
+        // Copy into pooled scratch under the lock, sort outside it: the render
+        // thread takes this lock before every frame's waitable-object wait.
+        double[]? scratch = null;
+        int count;
         lock (_frameLatencyWaitTimingLock)
         {
-            waitSamples = RingBufferHelpers.Copy(
-                _frameLatencyWaitTimingWindowMs,
-                _frameLatencyWaitTimingCount,
-                _frameLatencyWaitTimingIndex,
-                _frameLatencyWaitTimingWindowMs.Length);
+            count = _frameLatencyWaitTimingCount;
+            if (count > 0)
+            {
+                scratch = ArrayPool<double>.Shared.Rent(count);
+                RingBufferHelpers.CopyNewest(
+                    _frameLatencyWaitTimingWindowMs,
+                    count,
+                    _frameLatencyWaitTimingIndex,
+                    scratch.AsSpan(0, count));
+            }
         }
 
-        var timing = SummarizeCpuStageTiming(waitSamples);
+        CpuStageTimingMetrics timing = default;
+        if (scratch != null)
+        {
+            try
+            {
+                timing = SummarizeCpuStageTiming(scratch.AsSpan(0, count));
+            }
+            finally
+            {
+                ArrayPool<double>.Shared.Return(scratch);
+            }
+        }
+
         var lastTicks = Interlocked.Read(ref _frameLatencyWaitLastTicks);
         return new FrameLatencyWaitMetrics(
             Enabled: _waitableSwapChainEnabled,
@@ -1997,7 +2060,8 @@ public readonly record struct PresentCadenceMetrics(
                 LastPresentDelta: _dxgiFrameStatisticsLastPresentDelta,
                 LastPresentRefreshDelta: _dxgiFrameStatisticsLastPresentRefreshDelta,
                 LastSyncRefreshDelta: _dxgiFrameStatisticsLastSyncRefreshDelta,
-                MissedRefreshCount: _dxgiFrameStatisticsMissedRefreshCount);
+                MissedRefreshCount: _dxgiFrameStatisticsMissedRefreshCount,
+                CadenceMissedRefreshCount: _dxgiFrameStatisticsCadenceMissedRefreshCount);
         }
     }
 
@@ -2061,6 +2125,7 @@ public readonly record struct PresentCadenceMetrics(
                     _dxgiFrameStatisticsLastPresentDelta = presentCount - _dxgiFrameStatisticsPresentCount;
                     _dxgiFrameStatisticsLastPresentRefreshDelta = presentRefreshCount - _dxgiFrameStatisticsPresentRefreshCount;
                     _dxgiFrameStatisticsLastSyncRefreshDelta = syncRefreshCount - _dxgiFrameStatisticsSyncRefreshCount;
+                    _dxgiFrameStatisticsLastCadenceMissedRefreshes = 0;
                     if (_dxgiFrameStatisticsLastPresentDelta < 0 ||
                         _dxgiFrameStatisticsLastPresentRefreshDelta < 0 ||
                         _dxgiFrameStatisticsLastSyncRefreshDelta < 0 ||
@@ -2075,8 +2140,18 @@ public readonly record struct PresentCadenceMetrics(
                     else if (_dxgiFrameStatisticsLastPresentDelta > 0 &&
                              _dxgiFrameStatisticsLastPresentRefreshDelta > _dxgiFrameStatisticsLastPresentDelta)
                     {
+                        // Raw: every refresh beyond one per present, including the repeats a source slower than
+                        // the display needs by design. Cadence: only refreshes where a new frame was due.
                         _dxgiFrameStatisticsMissedRefreshCount +=
                             _dxgiFrameStatisticsLastPresentRefreshDelta - _dxgiFrameStatisticsLastPresentDelta;
+                        _dxgiFrameStatisticsLastCadenceMissedRefreshes = PreviewRefreshCadencePolicy.CountMissedRefreshes(
+                            _dxgiFrameStatisticsLastPresentDelta,
+                            _dxgiFrameStatisticsLastPresentRefreshDelta,
+                            PreviewRefreshCadencePolicy.RefreshesPerSourceFrame(
+                                _startupFps,
+                                Interlocked.Read(ref _measuredRefreshIntervalTicks),
+                                Stopwatch.Frequency));
+                        _dxgiFrameStatisticsCadenceMissedRefreshCount += _dxgiFrameStatisticsLastCadenceMissedRefreshes;
                     }
                 }
                 else
@@ -2084,6 +2159,7 @@ public readonly record struct PresentCadenceMetrics(
                     _dxgiFrameStatisticsLastPresentDelta = 0;
                     _dxgiFrameStatisticsLastPresentRefreshDelta = 0;
                     _dxgiFrameStatisticsLastSyncRefreshDelta = 0;
+                    _dxgiFrameStatisticsLastCadenceMissedRefreshes = 0;
                 }
 
                 _dxgiFrameStatisticsPresentCount = presentCount;
@@ -2695,6 +2771,7 @@ public readonly record struct PresentCadenceMetrics(
         long presentRefreshDelta;
         long syncRefreshDelta;
         long missedRefreshCount;
+        long lastCadenceMissedRefreshes;
         long frameStatisticsLastSampleFrameCounter;
         lock (_dxgiFrameStatisticsLock)
         {
@@ -2702,13 +2779,15 @@ public readonly record struct PresentCadenceMetrics(
             presentRefreshDelta = _dxgiFrameStatisticsLastPresentRefreshDelta;
             syncRefreshDelta = _dxgiFrameStatisticsLastSyncRefreshDelta;
             missedRefreshCount = _dxgiFrameStatisticsMissedRefreshCount;
+            lastCadenceMissedRefreshes = _dxgiFrameStatisticsLastCadenceMissedRefreshes;
             frameStatisticsLastSampleFrameCounter = _dxgiFrameStatisticsLastSampleFrameCounter;
         }
 
+        // A slip is a refresh where a new frame was due, not every refresh beyond one per present: a 60 fps source on
+        // a 120 Hz display spans two refreshes per frame by design and would otherwise fill the ring with on-time frames.
         var isRefreshSlip =
             frameStatisticsLastSampleFrameCounter == frameStatisticsFrameCounter &&
-            presentDelta > 0 &&
-            presentRefreshDelta > presentDelta;
+            lastCadenceMissedRefreshes > 0;
 
         return new SlowFrameDxgiSlipSnapshot(
             PresentDelta: presentDelta,
@@ -2743,14 +2822,15 @@ public readonly record struct PresentCadenceMetrics(
         reason = reason.Length == 0 ? token : $"{reason}+{token}";
     }
 
-    private static CpuStageTimingMetrics SummarizeCpuStageTiming(double[] samples)
+    // Sorts samples in place: callers pass private scratch, never a published window.
+    private static CpuStageTimingMetrics SummarizeCpuStageTiming(Span<double> samples)
     {
-        if (samples.Length == 0)
+        if (samples.IsEmpty)
         {
             return new CpuStageTimingMetrics(0, 0, 0, 0, 0);
         }
 
-        Array.Sort(samples);
+        samples.Sort();
         var sum = 0.0;
         var max = 0.0;
         for (var i = 0; i < samples.Length; i++)

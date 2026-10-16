@@ -49,6 +49,7 @@ public sealed record FrameTraceInfo(
     long? Recorded,
     long? Retained,
     long Overwritten,
+    long Abandoned,
     bool? Running,
     string ArrivalSource,
     int ArrivalFallbackFrames,

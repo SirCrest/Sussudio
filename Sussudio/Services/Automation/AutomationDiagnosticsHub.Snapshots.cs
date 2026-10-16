@@ -21,6 +21,15 @@ internal readonly record struct D3DRendererRecentCounters(
     public static D3DRendererRecentCounters Empty { get; } = new(0, 0, 0);
 }
 
+// Raw counts every refresh beyond one per present; CadenceMissedRefreshes only refreshes where a new frame was due.
+internal readonly record struct D3DFrameStatsRecentCounters(
+    long MissedRefreshes,
+    long CadenceMissedRefreshes,
+    long Failures)
+{
+    public static D3DFrameStatsRecentCounters Empty { get; } = new(0, 0, 0);
+}
+
 internal readonly record struct MjpegRecentCounters(
     long TotalDropped,
     long DecodeFailures,
@@ -90,6 +99,7 @@ public sealed partial class AutomationDiagnosticsHub
     private long _lastD3DFramesDropped;
     private long _lastD3DRendererEvalTick;
     private long _lastD3DFrameStatsMissedRefreshes;
+    private long _lastD3DFrameStatsCadenceMissedRefreshes;
     private long _lastD3DFrameStatsFailures;
     private long _lastD3DFrameStatsEvalTick;
     private long _lastD3DFrameLatencyWaitTimeouts;
@@ -182,11 +192,13 @@ public sealed partial class AutomationDiagnosticsHub
             token => _snapshotQueryPort.GetRecordingStatsSnapshotAsync(token),
             snapshot => snapshot.CaptureSessionEpoch,
             cancellationToken).ConfigureAwait(false);
-        // One provider call, no producer-epoch bracket: the preview snapshot is a single UI work item, so its fields and
-        // epoch are consistent by construction, exactly like the view-model fragment above. The provider has no
-        // epoch-only read, so the old before/value/after bracket cost three full builds (about 225 KB and three UI
-        // dispatches per tick) to watch a window of about 2 ms; the cross-fragment checks in
-        // BuildSnapshotMixedEpochReasons (for example view_model_preview_runtime) are unchanged.
+        // One provider call, no producer-epoch bracket. PreviewRuntimeEpoch advances only when the UI-thread signature
+        // changes (visibility, startup state; its host frame counters are never incremented), and the snapshot reads
+        // that signature once in a single UI work item, so the epoch cannot move during the build. The renderer metrics
+        // it projects are separate per-window copies the render thread keeps updating: no epoch covered them before,
+        // and one that advanced per frame would mark healthy ticks as mixed. The provider has no epoch-only read, so the
+        // old before/value/after bracket cost three full builds (about 225 KB and three UI dispatches per tick); the
+        // cross-fragment checks in BuildSnapshotMixedEpochReasons (for example view_model_preview_runtime) are unchanged.
         var previewRuntimeFragment = await CaptureSnapshotFragmentAsync(
             collectionEpoch,
             _previewSnapshotProvider,
@@ -228,7 +240,7 @@ public sealed partial class AutomationDiagnosticsHub
         var recentPreviewJitter = UpdatePreviewJitterRecentCounters(health, nowTick, pollTick);
         var recentMjpeg = UpdateMjpegRecentCounters(health, nowTick, pollTick);
         var recentRenderer = UpdateD3DRendererRecentCounters(previewRuntime, nowTick, pollTick);
-        var (recentD3DMissedRefreshes, recentD3DStatsFailures) = UpdateD3DFrameStatsRecentCounters(previewRuntime, nowTick, pollTick);
+        var recentD3DFrameStats = UpdateD3DFrameStatsRecentCounters(previewRuntime, nowTick, pollTick);
         var recentD3DFrameLatencyWaitTimeouts = UpdateD3DFrameLatencyWaitRecentCounters(previewRuntime, nowTick, pollTick);
         var recentFlashbackRecording = UpdateFlashbackRecordingRecentCounters(health, nowTick, pollTick);
         var diagnostic = BuildDiagnosticEvaluation(
@@ -242,8 +254,7 @@ public sealed partial class AutomationDiagnosticsHub
             recentPreviewJitter.Underflows,
             recentPreviewJitter.DeadlineDrops,
             recentRenderer,
-            recentD3DMissedRefreshes,
-            recentD3DStatsFailures,
+            recentD3DFrameStats,
             recentFlashbackRecording);
         var previewPacingClassification = ClassifyPreviewPacing(
             viewModelSnapshot,
@@ -252,8 +263,7 @@ public sealed partial class AutomationDiagnosticsHub
             recentMjpeg,
             recentPreviewJitter,
             recentRenderer,
-            recentD3DMissedRefreshes,
-            recentD3DStatsFailures,
+            recentD3DFrameStats,
             recentD3DFrameLatencyWaitTimeouts);
         var hdrTruthVerdict = BuildHdrTruthVerdict(captureRuntime, viewModelSnapshot.IsHdrEnabled, lastVerification);
         var previewHdrState = BuildPreviewHdrState(captureRuntime, viewModelSnapshot, previewRuntime);
@@ -296,8 +306,7 @@ public sealed partial class AutomationDiagnosticsHub
             lastOutputFragment.Value,
             processResourcesFragment.Value,
             lastVerification,
-            recentD3DMissedRefreshes,
-            recentD3DStatsFailures);
+            recentD3DFrameStats);
 
         var shouldAutoVerify = ShouldAutoVerifySnapshot(snapshot);
 
@@ -713,24 +722,30 @@ public sealed partial class AutomationDiagnosticsHub
             Math.Max(0, dropped - previousDropped));
     }
 
-    private (long RecentMissedRefreshes, long RecentFailures) UpdateD3DFrameStatsRecentCounters(
+    private D3DFrameStatsRecentCounters UpdateD3DFrameStatsRecentCounters(
         PreviewRuntimeSnapshot previewRuntime,
         long nowTick,
         bool advance)
     {
         var missedRefreshes = Math.Max(0, previewRuntime.D3DFrameStatsMissedRefreshCount);
+        var cadenceMissedRefreshes = Math.Max(0, previewRuntime.D3DFrameStatsCadenceMissedRefreshCount);
         var failures = Math.Max(0, previewRuntime.D3DFrameStatsFailureCount);
         var previousTick = SwapIntervalBaseline(ref _lastD3DFrameStatsEvalTick, nowTick, advance);
         var previousMissedRefreshes = SwapIntervalBaseline(ref _lastD3DFrameStatsMissedRefreshes, missedRefreshes, advance);
+        var previousCadenceMissedRefreshes = SwapIntervalBaseline(
+            ref _lastD3DFrameStatsCadenceMissedRefreshes,
+            cadenceMissedRefreshes,
+            advance);
         var previousFailures = SwapIntervalBaseline(ref _lastD3DFrameStatsFailures, failures, advance);
 
         if (previousTick == 0 || nowTick < previousTick)
         {
-            return (0, 0);
+            return D3DFrameStatsRecentCounters.Empty;
         }
 
-        return (
+        return new D3DFrameStatsRecentCounters(
             Math.Max(0, missedRefreshes - previousMissedRefreshes),
+            Math.Max(0, cadenceMissedRefreshes - previousCadenceMissedRefreshes),
             Math.Max(0, failures - previousFailures));
     }
 
@@ -789,8 +804,7 @@ public sealed partial class AutomationDiagnosticsHub
         MjpegRecentCounters recentMjpeg,
         PreviewJitterRecentCounters recentPreviewJitter,
         D3DRendererRecentCounters recentRenderer,
-        long recentD3DMissedRefreshes,
-        long recentD3DStatsFailures,
+        D3DFrameStatsRecentCounters recentD3DFrameStats,
         long recentD3DFrameLatencyWaitTimeouts)
         => PreviewPacingSlowStageClassifier.Classify(
             new PreviewPacingClassificationInput
@@ -838,8 +852,8 @@ public sealed partial class AutomationDiagnosticsHub
                 PreviewD3DFrameLatencyWaitMaxMs = previewRuntime.D3DFrameLatencyWaitMaxMs,
                 PreviewD3DFrameLatencyWaitTimeoutCount = previewRuntime.D3DFrameLatencyWaitTimeoutCount,
                 RecentD3DFrameLatencyWaitTimeoutCount = recentD3DFrameLatencyWaitTimeouts,
-                RecentD3DMissedRefreshes = recentD3DMissedRefreshes,
-                RecentD3DStatsFailures = recentD3DStatsFailures,
+                RecentD3DCadenceMissedRefreshes = recentD3DFrameStats.CadenceMissedRefreshes,
+                RecentD3DStatsFailures = recentD3DFrameStats.Failures,
                 PreviewD3DLastDropReason = previewRuntime.D3DLastDropReason,
                 VisualCadenceSampleCount = health.VisualCadenceSampleCount,
                 VisualCadenceChangeObservedFps = health.VisualCadenceChangeObservedFps,

@@ -130,6 +130,7 @@ internal static class FrameTraceAnalysisBuilder
             capture.Recorded,
             capture.Retained,
             capture.Overwritten,
+            capture.Abandoned,
             capture.Running,
             arrivalSource,
             fallbackFrames,
@@ -263,6 +264,13 @@ internal static class FrameTraceAnalysisBuilder
             warnings.Add(
                 $"The ring wrapped: {capture.Overwritten.ToString(CultureInfo.InvariantCulture)} event(s) were overwritten, so the earliest "
                 + "frames may be incomplete. Start the trace with a larger --capacity to keep the whole interval.");
+        }
+
+        if (capture.Abandoned > 0)
+        {
+            warnings.Add(
+                $"{capture.Abandoned.ToString(CultureInfo.InvariantCulture)} event(s) were abandoned: claimed by a writer that the ring "
+                + "or a newer trace lapped, and never stored. The frames they belonged to may be missing stages.");
         }
 
         if (capture.Running == true)

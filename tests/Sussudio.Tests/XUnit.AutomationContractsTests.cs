@@ -7181,7 +7181,7 @@ public sealed class PreviewPacingClassifierTests
         Assert.Contains("PreviewPacingSlowStageClassifier.Classify", diagnosticsSnapshotsText);
         Assert.Contains("PreviewCadenceOnePercentLowFps = previewRuntime.DisplayCadenceOnePercentLowFps", diagnosticsHubText);
         Assert.Contains("CaptureCadenceEstimatedDroppedFrames = health.CaptureCadenceEstimatedDroppedFrames", diagnosticsHubText);
-        Assert.Contains("RecentD3DMissedRefreshes = recentD3DMissedRefreshes", diagnosticsHubText);
+        Assert.Contains("RecentD3DCadenceMissedRefreshes = recentD3DFrameStats.CadenceMissedRefreshes", diagnosticsHubText);
         Assert.Contains("RecentPreviewJitterScheduleLateCount = recentPreviewJitter.ScheduleLateCount", diagnosticsHubText);
         Assert.Contains("RecentD3DFrameLatencyWaitTimeoutCount = recentD3DFrameLatencyWaitTimeouts", diagnosticsHubText);
         Assert.Contains("UpdateD3DFrameLatencyWaitRecentCounters", diagnosticsHubText);
@@ -7236,13 +7236,13 @@ public sealed class PreviewPacingClassifierTests
     {
         var input = CreateBaselinePreviewPacingInput();
         SetPropertyOrBackingField(input, "PreviewD3DPresentCallP99Ms", 6d);
-        SetPropertyOrBackingField(input, "RecentD3DMissedRefreshes", 2L);
+        SetPropertyOrBackingField(input, "RecentD3DCadenceMissedRefreshes", 2L);
 
         var result = ClassifyPreviewPacing(input);
 
         Assert.Equal("CompositorMiss", GetStringProperty(result, "LikelySlowStage"));
         Assert.Equal("High", GetStringProperty(result, "Confidence"));
-        Assert.Contains("dxgiRecentMissed=2", GetStringProperty(result, "Evidence"));
+        Assert.Contains("dxgiRecentCadenceMissed=2", GetStringProperty(result, "Evidence"));
     }
 
     [Fact(DisplayName = "Preview pacing classifier flags dominant render upload")]
