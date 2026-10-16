@@ -82,7 +82,7 @@ public partial class CaptureService
             _isVideoPreviewActive = true;
             StartTelemetryPoll();
             StatusChanged?.Invoke(this, StatusMessages.PreviewStarted);
-        }, cancellationToken);
+        }, cancellationToken, finishesRetainedCleanup: CaptureCleanupScope.PreviewPipeline);
 
     public Task StopVideoPreviewAsync(CancellationToken cancellationToken = default)
         => StopVideoPreviewCoreAsync(teardownPipeline: false, cancellationToken);
@@ -133,8 +133,22 @@ public partial class CaptureService
             }
             catch (Exception ex)
             {
+                // Preview is stopped even when the teardown fails part way: the renderer is
+                // detached, the view model commits stopped, and _cleanupRequired keeps the retained
+                // pipeline for the next transition to finish. Leaving preview active would let the
+                // published error mirror preview back on and attach a renderer cleanup refuses.
+                // The audio monitor stops with it, as the teardown would have stopped it: the
+                // view model's own audio stop is a separate transition the retained cleanup refuses.
                 stopFailure = ex;
-                commitStoppedState = Volatile.Read(ref _cleanupRequired) == 0;
+                commitStoppedState = true;
+                if (_isAudioPreviewActive)
+                {
+                    _isAudioPreviewActive = false;
+                    _previewAudioGraph.StopPlayback(_flashbackBackend.PlaybackController);
+                    AudioLevelUpdated?.Invoke(this, new AudioLevelEventArgs(0, 0, false));
+                    Logger.Log("PREVIEW_STOP_FAILED_AUDIO_MONITOR_STOPPED");
+                }
+
                 throw;
             }
             finally
@@ -157,7 +171,7 @@ public partial class CaptureService
             }
 
             StatusChanged?.Invoke(this, StatusMessages.PreviewStopped);
-        }, cancellationToken, cleanupRetainedResources: true);
+        }, cancellationToken, finishesRetainedCleanup: CaptureCleanupScope.FullCapture);
 
     private async Task RecyclePreviewPipelineForStartAsync(
         CaptureSettings settings,
@@ -292,6 +306,16 @@ public partial class CaptureService
             Logger.LogFatalBreadcrumb($"PREVIEW_START phase=starting");
             unifiedVideoCapture.Start();
             Logger.LogFatalBreadcrumb($"PREVIEW_START phase=started");
+            if (_previewInstallFaultFailures > 0)
+            {
+                var faultCount = Interlocked.Increment(ref _previewInstallFaultCount);
+                if (faultCount <= _previewInstallFaultFailures)
+                {
+                    Logger.Log($"CAPTURE_FAULT_PREVIEW_INSTALL_FAILED count={faultCount} of={_previewInstallFaultFailures}");
+                    throw new InvalidOperationException("Injected fault: the preview start failed before the pipeline installed its running capture.");
+                }
+            }
+
             _videoPipeline.InstallCapture(unifiedVideoCapture);
             // Duplicated inline (rather than shared with its twin in
             // CaptureService.RecordingLifecycle.cs) because CaptureServiceOwnershipTests
@@ -319,6 +343,16 @@ public partial class CaptureService
         {
             Logger.Log($"Unified preview start failed: {ex.Message}");
             var previewStartRollbackToken = CancellationToken.None;
+            // The rollback tears down a half-started preview pipeline. Cleanup stays pending from here to the
+            // last release, and the pipeline owns the capture before the renderer handoff, so a step that throws
+            // (a renderer that never acknowledged its stop) leaves what it skipped to the retained teardown,
+            // which stops the renderer before it releases anything.
+            MarkCleanupRequired(CaptureCleanupScope.PreviewPipeline);
+            if (unifiedVideoCapture != null && _videoPipeline.Capture == null)
+            {
+                _videoPipeline.InstallCapture(unifiedVideoCapture);
+            }
+
             await StopPreviewRendererBeforeCaptureCleanupAsync(previewStartRollbackToken).ConfigureAwait(false);
             await DisposeFlashbackPreviewBackendAsync(previewStartRollbackToken).ConfigureAwait(false);
             _videoPipeline.ClearCapture();
@@ -336,6 +370,7 @@ public partial class CaptureService
             }
 
             await RollbackPreviewAudioCaptureStartupAsync(wasapiCapture).ConfigureAwait(false);
+            Volatile.Write(ref _cleanupRequired, 0);
 
             throw;
         }
@@ -345,7 +380,7 @@ public partial class CaptureService
         CancellationToken transitionToken,
         bool purgeFlashbackSegments)
     {
-        Volatile.Write(ref _cleanupRequired, 1);
+        MarkCleanupRequired(CaptureCleanupScope.PreviewPipeline);
         await StopPreviewRendererBeforeCaptureCleanupAsync(transitionToken).ConfigureAwait(false);
         _recordingBackend.ClearPendingLibAvDrainIfCompletedSuccessfully();
 
