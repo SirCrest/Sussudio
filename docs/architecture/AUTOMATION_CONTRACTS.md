@@ -77,8 +77,10 @@ ready-independent (they work with no capture device) and their responses carry
 the result in `Data` without an embedded automation snapshot. `FrameTrace dump`
 writes a file under the `WriteFile` path policy; `SetTuningKnob` rejects unknown
 names, wrong types and out-of-range values with `invalid-request` and never
-clamps. `SUSSUDIO_AUTOMATION_TOKEN` is not a settable knob. The wire contract is
-specified in `docs/architecture/performance-telemetry.md` section 3.
+clamps. `SUSSUDIO_AUTOMATION_TOKEN` is not a settable knob. `GetLogTail` takes
+`contains` and `exclude` (keep and drop lines by case-insensitive substring;
+`maxEntries` counts kept lines). The wire contract is specified in
+`docs/architecture/performance-telemetry.md` section 3.
 
 Command 68, `PerfExperimentLease`, was appended later in revision 3 (no bump):
 `{ action: status|acquire|renew|release, lease?, holder?, knobs?, ttlSeconds?,

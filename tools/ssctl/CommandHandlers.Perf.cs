@@ -25,7 +25,7 @@ internal static partial class CommandHandlers
     private const int MaxAnalyzeTopFrames = 1000;
     private const string KnobsUsage = "knobs [FILTER] [--json]";
     private const string KnobUsage = "knob set <name> <value> | knob reset <name>";
-    private const string LogUsage = "log tail [--max N] [--contains TEXT] [--json]";
+    private const string LogUsage = "log tail [--max N] [--contains TEXT] [--exclude TEXT] [--json]";
 
     private static Task<int> HandlePerfAsync(CommandContext context)
     {
@@ -335,6 +335,7 @@ internal static partial class CommandHandlers
 
         var max = ParseOptionalIntFlag(context.Rest, "--max");
         var contains = ParseOptionalStringFlag(context.Rest, "--contains");
+        var exclude = ParseOptionalStringFlag(context.Rest, "--exclude");
         EnsureNoArgs(context.Rest, LogUsage);
 
         var payload = new Dictionary<string, object?>();
@@ -346,6 +347,11 @@ internal static partial class CommandHandlers
         if (contains is not null)
         {
             payload[AutomationPayloadKeys.Contains] = contains;
+        }
+
+        if (exclude is not null)
+        {
+            payload[AutomationPayloadKeys.Exclude] = exclude;
         }
 
         var response = await context.SendCommandAsync(AutomationCommandKind.GetLogTail, payload).ConfigureAwait(false);

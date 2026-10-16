@@ -601,6 +601,10 @@ least three quarters), `mixed` (between) and `unknown` (a reading is missing; a 
   sign that the poll is still reading. `NATIVEXU_TOPOLOGY` is logged when a path's node layout is first seen or changes. The
   rolling poll re-reads every command and the topology each cycle and used to write 7,678 of 10,043 tap lines in one live window
   with identical text. Nothing parses these lines.
+  `GetLogTail` filters the retained lines with `contains` (keep lines that have the text) and `exclude` (drop lines that have
+  it), both case-insensitive substrings. `maxEntries` counts the lines kept, so excluding a chatty source (`NATIVEXU_AT` was
+  still 358 of 1,139 lines in a later live tail) returns the same number of lines reaching further back. The per-caller and
+  per-tag counts are lifetime totals and ignore both filters, which is how the source to exclude is found.
 
 ### 2.9 Ears: audio output probe
 
@@ -960,7 +964,7 @@ Appended after `SetFlashbackGpuDecode = 57`; manifest revision 2 to 3.
 | 61 | `FrameTrace` | `{ action: start\|stop\|status\|dump, capacity?, outputPath? }` | `perf trace ...` | `frame_trace` |
 | 62 | `GetTuningKnobs` | `{ filter? }` | `knobs` | `get_tuning_knobs` |
 | 63 | `SetTuningKnob` | `{ name, value?, reset?, lease? }` | `knob set\|reset` | `set_tuning_knob` |
-| 64 | `GetLogTail` | `{ maxEntries?, contains? }` | `log tail` | `get_log_tail` |
+| 64 | `GetLogTail` | `{ maxEntries?, contains?, exclude? }` | `log tail` | `get_log_tail` |
 | 65 | `CaptureAudioOutput` | `{ seconds?, outputPath?, measureLatency? }` | `audio listen` | `listen_audio_output` |
 | 66 | `GetUiTree` | `{ root?, maxDepth?, interactiveOnly? }` | `ui tree` | `get_ui_tree` |
 | 67 | `InvokeUiElement` | `{ target, action?, value?, force? }` | `ui invoke` | `invoke_ui_element` |
@@ -1083,6 +1087,10 @@ Written before the code, per the testing policy:
   escaped; dump while running is consistent.
 - Knobs: unknown name, wrong type, and out-of-range values rejected; reset
   restores the launch value including "unset"; apply scope reported.
+- Log tail exclude (written before the code): a line with the exclude text in any case is never returned; `maxEntries` counts
+  only kept lines, so the tail reaches back past excluded spam; `contains` and `exclude` combine, and the same text in both
+  returns nothing; a null or empty exclude excludes nothing; an exclude that matches every line returns an empty tail and
+  leaves the counts alone.
 - Wire contract: command ids appended with the manifest revision bump;
   payload keys from the shared vocabulary.
 - Analyzer: malformed and truncated trace JSON produce an error, not a
@@ -1293,7 +1301,8 @@ preview, a frame trace dumped and analyzed, a knob A/B experiment, an audio
 listen, and a UI tree read and invoke. Two scripts make the command surface
 repeatable against any build: `scripts/performance/Verify-PerfTelemetry.ps1`
 (report, window, marker, trace, knobs, the cadence timeline, the experiment
-lease's refusal, forced release and expiry, log tail; 46 checks) and
+lease's refusal, forced release and expiry, log tail with contains and exclude;
+47 checks) and
 `scripts/performance/Verify-AgentSenses.ps1` (audio listen, UI tree and
 invoke; 24 checks). Each writes `verify-result.json` and exits non-zero on
 any failed check. With a silent capture source the audio checks still pass

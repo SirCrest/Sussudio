@@ -268,7 +268,8 @@ public sealed partial class AutomationCommandDispatcher
         }
 
         var contains = GetString(payload, AutomationPayloadKeys.Contains);
-        var lines = LogTap.Tail(maxEntries, contains);
+        var exclude = GetString(payload, AutomationPayloadKeys.Exclude);
+        var lines = LogTap.Tail(maxEntries, contains, exclude);
         var counts = LogTap.Counts();
         return CreatePerfResponse(
             correlationId,

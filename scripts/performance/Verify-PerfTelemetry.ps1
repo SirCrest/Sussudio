@@ -331,6 +331,16 @@ $tailData = Get-Data $tail
 Add-Check 'log tail returns lines' ($tail.Exit -eq 0 -and @($tailData.Lines).Count -ge 1 -and @($tailData.Lines).Count -le 20) "lines=$(@($tailData.Lines).Count) total=$($tailData.TotalLines)"
 $knobLog = Invoke-Ssctl '08b-log-tail-knob-lines' @('log', 'tail', '--max', '20', '--contains', 'TUNING_KNOB_SET')
 Add-Check 'knob changes are logged' ($knobLog.Exit -eq 0 -and @((Get-Data $knobLog).Lines).Count -ge 2) "lines=$(@((Get-Data $knobLog).Lines).Count)"
+# Exclude the tag that dominates the tail: no returned line may carry it, and the budget is filled from older lines.
+$topTag = @($tailData.ByTag | Select-Object -First 1)
+if ($topTag.Count -eq 1) {
+    $excluded = Invoke-Ssctl '08c-log-tail-exclude-top-tag' @('log', 'tail', '--max', '20', '--exclude', $topTag[0].Key)
+    $excludedLines = @((Get-Data $excluded).Lines)
+    Add-Check 'log tail exclude drops the dominant tag' ($excluded.Exit -eq 0 -and $excludedLines.Count -ge 1 -and @($excludedLines | Where-Object { $_.IndexOf($topTag[0].Key, [StringComparison]::OrdinalIgnoreCase) -ge 0 }).Count -eq 0) "tag=$($topTag[0].Key) count=$($topTag[0].Count) lines=$($excludedLines.Count)"
+}
+else {
+    Add-Check 'log tail exclude drops the dominant tag' $false 'the tail reported no tag counts'
+}
 
 # 9. Final lifetime report with the marker and cleanup state.
 $final = Invoke-Ssctl '09-report-final' @('perf', 'report')

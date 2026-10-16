@@ -154,11 +154,12 @@ public static class PerfTelemetryTools
             .ConfigureAwait(false);
     }
 
-    [McpServerTool(UseStructuredContent = true), Description("Get the most recent app log lines (up to 4096 retained) plus per-caller and per-tag line counts for spotting log spam, without opening the log file.")]
+    [McpServerTool(UseStructuredContent = true), Description("Get the most recent app log lines (up to 4096 retained) plus per-caller and per-tag line counts for spotting log spam, without opening the log file. Use exclude to drop a chatty source (for example a tag the per-tag counts show dominating) so the lines returned reach further back.")]
     public static async Task<CallToolResult> get_log_tail(
         PipeClient pipeClient,
-        [Description("Maximum number of lines to return (default 200).")] int? maxEntries = null,
-        [Description("Optional case-insensitive substring filter.")] string? contains = null,
+        [Description("Maximum number of lines to return (default 200), counted after filtering.")] int? maxEntries = null,
+        [Description("Optional case-insensitive substring filter: keep only lines that contain it.")] string? contains = null,
+        [Description("Optional case-insensitive substring: drop lines that contain it.")] string? exclude = null,
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -171,6 +172,11 @@ public static class PerfTelemetryTools
         if (!string.IsNullOrWhiteSpace(contains))
         {
             payload[AutomationPayloadKeys.Contains] = contains;
+        }
+
+        if (!string.IsNullOrWhiteSpace(exclude))
+        {
+            payload[AutomationPayloadKeys.Exclude] = exclude;
         }
 
         return await SendStructuredAsync(pipeClient, AutomationCommandKind.GetLogTail, payload, "Log tail was not available.", cancellationToken)
