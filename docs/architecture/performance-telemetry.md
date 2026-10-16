@@ -90,14 +90,18 @@ bytes or percent otherwise).
   update `max`. Negative values clamp to 0. Recording never throws.
 - `Record(long value)`: four interlocked operations (records begun, the
   bucket, the sum, records finished) and a CAS only when a new maximum is
-  seen. No allocation, no lock. Safe from any number of threads.
+  seen, made after the record is marked begun. No allocation, no lock. Safe
+  from any number of threads.
 - `Snapshot()`: copies counts, sum and max. Concurrent writers may land in
-  the copy or not, but the sum and the counts always describe the same
-  records: a copy during which a record began or was still in flight is
-  retried (up to four tries), and if writes never pause, the last copy's
-  sum is clamped into the range its own buckets allow, so the mean is off
-  by at most a bucket width, never by a whole outlier. Counts never go
-  backwards.
+  the copy or not, but the sum, the max and the counts always describe the
+  same records. The max is read after the buckets and before the
+  records-begun count, so a max raised by a record the copy missed shows that
+  record in flight. A copy during which a record began or was still in
+  flight is retried (up to four tries), and if writes never pause, the last
+  copy's sum is clamped into the range its own buckets allow and its max is
+  capped at the top of its highest non-empty bucket (and then reported as
+  approximate), so the mean and the max are each off by at most a bucket
+  width, never by a whole outlier. Counts and the max never go backwards.
 - `PerfHistogramSnapshot.Subtract(baseline)`: per-bucket delta clamped at
   zero. Percentiles of a delta are exact to bucket precision; the delta's
   sum is kept inside the delta buckets' range (exact when both snapshots
@@ -896,9 +900,12 @@ Three changes, each measured:
   good reads; before the first good read memory reads zero.
 - The preview fragment makes one provider call. The old overload shape called the provider as producer-epoch probe, value and
   producer-epoch probe, so every tick built the full preview snapshot three times and hopped to the UI thread three times to watch a
-  window of about 2 ms. One UI work item is consistent by construction, like the view-model fragment, so the before and after
-  epochs the old bracket compared are now equal by definition and `preview_runtime_producer_changed` cannot fire; the cross-fragment
-  checks in `BuildSnapshotMixedEpochReasons` (for example `view_model_preview_runtime`) are unchanged. The provider has no
+  window of about 2 ms. The epoch it compared, `PreviewRuntimeEpoch`, advances only when the UI-thread signature changes (visibility,
+  startup state; the host frame counters in it are never incremented, so frame progress never moved it), and one UI work item reads
+  that signature once, so `preview_runtime_producer_changed` cannot fire. The renderer metrics the snapshot projects are separate
+  per-window copies the render thread keeps updating; no epoch covered them before or after this change, and one that advanced per
+  frame would mark healthy ticks as mixed. The cross-fragment checks in `BuildSnapshotMixedEpochReasons` (for example
+  `view_model_preview_runtime`) are unchanged. The provider has no
   epoch-only read; adding one would change the constructor wiring that two source-text tests pin, for a check that watched a window
   the single hop no longer has. It removed about 150 KB and two UI dispatches a tick.
 - `IntervalCadenceStatistics.Compute` sorts in a pooled scratch instead of cloning the window. Callers still pass the array they
@@ -1103,7 +1110,8 @@ Written before the code, per the testing policy:
 - Wire contract: command ids appended with the manifest revision bump;
   payload keys from the shared vocabulary.
 - Analyzer: malformed and truncated trace JSON produce an error, not a
-  crash; frames missing stages are counted, not dropped.
+  crash; frames missing stages are counted, not dropped; abandoned events
+  are reported with a warning, not passed over.
 - Hitch cause (live window 3, written before the code): a late arrival that
   explains the interval is named over an automation command, UI stall or hub
   refresh that overlapped longer; a GC pause overlapping a late arrival is
@@ -1373,6 +1381,10 @@ frames are listed with their per-stage breakdown. The report has:
 Arrival comes from the QPC `id` and the dump's metadata. A dump with no
 metadata, or ids that are not QPC ticks (sequence numbers from an older
 build), falls back to each frame's earliest event and says so in a warning.
+The report carries the dump's `overwritten` and `abandoned` counts and warns
+when either is above zero: a wrap loses the earliest frames, and an abandoned
+event (2.4) can leave any frame missing a stage. A dump from an app that
+predates `abandoned` reports zero.
 Input that is not a complete trace (empty, not JSON, truncated, a missing
 file) is exit code 3 with the reason; `--json` prints the same failure as
 `{"Success":false,"Message":...}` on stdout. Open the same file in

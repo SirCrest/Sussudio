@@ -180,11 +180,13 @@ public sealed partial class AutomationDiagnosticsHub
             token => _snapshotQueryPort.GetRecordingStatsSnapshotAsync(token),
             snapshot => snapshot.CaptureSessionEpoch,
             cancellationToken).ConfigureAwait(false);
-        // One provider call, no producer-epoch bracket: the preview snapshot is a single UI work item, so its fields and
-        // epoch are consistent by construction, exactly like the view-model fragment above. The provider has no
-        // epoch-only read, so the old before/value/after bracket cost three full builds (about 225 KB and three UI
-        // dispatches per tick) to watch a window of about 2 ms; the cross-fragment checks in
-        // BuildSnapshotMixedEpochReasons (for example view_model_preview_runtime) are unchanged.
+        // One provider call, no producer-epoch bracket. PreviewRuntimeEpoch advances only when the UI-thread signature
+        // changes (visibility, startup state; its host frame counters are never incremented), and the snapshot reads
+        // that signature once in a single UI work item, so the epoch cannot move during the build. The renderer metrics
+        // it projects are separate per-window copies the render thread keeps updating: no epoch covered them before,
+        // and one that advanced per frame would mark healthy ticks as mixed. The provider has no epoch-only read, so the
+        // old before/value/after bracket cost three full builds (about 225 KB and three UI dispatches per tick); the
+        // cross-fragment checks in BuildSnapshotMixedEpochReasons (for example view_model_preview_runtime) are unchanged.
         var previewRuntimeFragment = await CaptureSnapshotFragmentAsync(
             collectionEpoch,
             _previewSnapshotProvider,
