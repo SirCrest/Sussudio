@@ -365,8 +365,13 @@ it up at its next read without code changes. The launch value is captured
 at first use and `reset` restores it. Overrides are never persisted.
 
 `apply` values: `live` (read continuously), `preview-restart`,
-`recording-start`, `flashback-restart`, `app-restart` (read in a static
-initializer). Responses state what must restart. Values outside the range
+`recording-start`, `flashback-restart`, `pipeline-restart`, `app-restart` (read
+in a static initializer). `pipeline-restart` is a knob that preview, recordings
+and Flashback each read as they start and that sets the format of the capture
+they share (`SUSSUDIO_HDR_OUTPUT_FORCE_OFF`): it takes effect when preview
+restarts with no recording running, which rebuilds the capture and Flashback
+with it; a recording or Flashback started on a capture of the other format
+refuses to run. Responses state what must restart. Values outside the range
 or of the wrong type are rejected, not clamped. Every change logs
 `TUNING_KNOB_SET name= old= new= apply=` and appears in the next report. A
 call that changes nothing (a reset of a knob that is already unset, or a set
@@ -986,9 +991,9 @@ reported as not verified with the reason.
 
 Limits. The app restores knobs, not the rest of a dead runner's state: a
 recording the runner started keeps running and its open window stays open until
-someone ends or cancels them. A restored `preview-restart` or
-`flashback-restart` knob takes effect at the next restart of that part; the app
-does not restart the preview by itself. `ssctl perf lease` shows the lease and
+someone ends or cancels them. A restored `preview-restart`,
+`flashback-restart` or `pipeline-restart` knob takes effect at the next restart
+of that part; the app does not restart the preview by itself. `ssctl perf lease` shows the lease and
 `ssctl perf lease release --force` breaks a stuck one (MCP
 `perf_experiment_lease`).
 
@@ -1473,13 +1478,15 @@ The runner first validates the spec against the app without changing anything
 and reports every problem together (`rejected`): an unknown knob, a wrong type,
 a value outside the range, an `app-restart` knob (the runner cannot relaunch the
 app), a `recording-start` knob without `recording: true`, a `flashback-restart`
-knob while Flashback is off, a preview that is not running, or a recording that
-is already running. Then it runs the variants interleaved, reversing the
+knob while Flashback is off, a `pipeline-restart` knob while a recording the
+runner did not start holds the capture, a preview that is not running, or a
+recording that is already running. Then it runs the variants interleaved, reversing the
 direction each repeat (A B, B A, A B) so slow drift lands on both. Each variant
 is applied as a difference from the previous run, knobs a variant does not name
 return to their pre-experiment value, and the preview (and Flashback, where a
-`flashback-restart` knob needs it) is restarted and read back from the snapshot
-before warmup, not trusted from the acknowledgement. Every run is one named
+`flashback-restart` knob, or a `pipeline-restart` knob while Flashback is
+running, needs it) is restarted and read back from the snapshot before warmup,
+not trusted from the acknowledgement. The restore restarts the same parts. Every run is one named
 performance window (at most 64 characters, unique), and a marker (`experiment
 variant <name> run <n> warmup` and `... measure`) is added at the start of the
 warmup and of the measure window so the runs can be found in a frame trace.

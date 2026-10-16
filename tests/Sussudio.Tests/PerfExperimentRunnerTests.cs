@@ -53,6 +53,16 @@ namespace Sussudio.Tests;
 //     fresh token; a failed release is reported, not hidden.
 // 20. Baselines come from the acquire response, read by the app under the lease, so a knob changed by hand between
 //     preflight and the lease is restored to the value it had when the lease began.
+//
+// A knob several parts of the pipeline read (Apply pipeline-restart: HDR force-off), written before the runner modeled
+// it:
+//
+// 21. Preview, Flashback and a recording each read the knob when they start. A run that restarts only the preview
+//     measures a Flashback still running with the previous variant's value, and a restore leaves Flashback on the
+//     experiment value. Every run must start each part that is running on the variant's value, and the restore must
+//     restart the same parts.
+// 22. A recording the runner did not start holds the capture, so restarting the preview does not rebuild it: rejected
+//     before anything changes.
 public sealed class PerfExperimentRunnerTests : IDisposable
 {
     private const string Depth = "SUSSUDIO_PREVIEW_JITTER_TARGET_DEPTH";
@@ -60,6 +70,7 @@ public sealed class PerfExperimentRunnerTests : IDisposable
     private const string Poll = "SUSSUDIO_DIAGNOSTICS_POLL_MS";
     private const string RecordingKnob = "SUSSUDIO_TEST_RECORDING_KNOB";
     private const string FlashbackKnob = "SUSSUDIO_TEST_FLASHBACK_KNOB";
+    private const string PipelineKnob = "SUSSUDIO_TEST_PIPELINE_KNOB";
     private const string AppKnob = "SUSSUDIO_TEST_APP_KNOB";
     private const string ChoiceKnob = "SUSSUDIO_TEST_CHOICE";
     private const string BoolKnob = "SUSSUDIO_MJPEG_LOAD_SHED";
@@ -88,6 +99,7 @@ public sealed class PerfExperimentRunnerTests : IDisposable
             new(Poll, "int", "500", 100, 10000, null, "live"),
             new(RecordingKnob, "int", "8", 1, 64, null, "recording-start"),
             new(FlashbackKnob, "int", "4", 1, 16, null, "flashback-restart"),
+            new(PipelineKnob, "bool", "0", 0, 1, null, "pipeline-restart"),
             new(AppKnob, "int", "1000", 100, 10000, null, "app-restart"),
             new(ChoiceKnob, "choice", "Playback", null, null, new[] { "Playback", "Pro Audio" }, "preview-restart"),
             new(BoolKnob, "bool", "1", 0, 1, null, "preview-restart"),
@@ -97,6 +109,16 @@ public sealed class PerfExperimentRunnerTests : IDisposable
         private readonly Dictionary<string, string?> _launch = new(StringComparer.Ordinal);
         private readonly Dictionary<string, string?> _effective = new(StringComparer.Ordinal);
         private readonly HashSet<string> _openWindows = new(StringComparer.Ordinal);
+
+        // The pipeline knob as each part of the pipeline last read it. Each part reads it when it starts; a preview start
+        // does not while a recording holds the capture, because the app then reattaches the preview to that capture.
+        private readonly Dictionary<string, string?> _pipelineReadBy = new(StringComparer.Ordinal)
+        {
+            ["preview"] = null,
+            ["flashback"] = null,
+            ["recording"] = null,
+        };
+
         private int _lagRemaining;
         private bool _reportedPreviewing = true;
         private int _windowsEnded;
@@ -182,6 +204,12 @@ public sealed class PerfExperimentRunnerTests : IDisposable
         public string? Value(string name) => _values[name];
 
         public string? Effective(string name) => _effective[name];
+
+        /// <summary>The pipeline knob as <paramref name="part"/> (preview, flashback or recording) last read it.</summary>
+        public string? PipelineValueIn(string part) => _pipelineReadBy[part];
+
+        /// <summary>What each part was running with when each performance window began, in begin order.</summary>
+        public List<(string? Preview, string? Flashback, string? Recording)> PipelineAtWindowBegin { get; } = new();
 
         public void SeedKnob(string name, string? launch, string? current)
         {
@@ -417,6 +445,11 @@ public sealed class PerfExperimentRunnerTests : IDisposable
                         {
                             _effective[knob.Name] = _values[knob.Name];
                         }
+
+                        if (!Recording)
+                        {
+                            _pipelineReadBy["preview"] = _values[PipelineKnob];
+                        }
                     }
 
                     return Ok(snapshot: SnapshotNode());
@@ -439,6 +472,8 @@ public sealed class PerfExperimentRunnerTests : IDisposable
                         {
                             _effective[knob.Name] = _values[knob.Name];
                         }
+
+                        _pipelineReadBy["recording"] = _values[PipelineKnob];
                     }
 
                     Recording = enabled;
@@ -451,6 +486,7 @@ public sealed class PerfExperimentRunnerTests : IDisposable
                         _effective[knob.Name] = _values[knob.Name];
                     }
 
+                    _pipelineReadBy["flashback"] = _values[PipelineKnob];
                     return Ok(snapshot: SnapshotNode());
                 case "AddPerfMarker":
                     Markers.Add(body["text"]!.GetValue<string>());
@@ -472,6 +508,7 @@ public sealed class PerfExperimentRunnerTests : IDisposable
             {
                 case "begin":
                     _openWindows.Add(name);
+                    PipelineAtWindowBegin.Add((_pipelineReadBy["preview"], _pipelineReadBy["flashback"], _pipelineReadBy["recording"]));
                     return Ok(new JsonObject { ["Action"] = "begin", ["Name"] = name });
                 case "end":
                     if (!_openWindows.Remove(name))
@@ -646,7 +683,7 @@ public sealed class PerfExperimentRunnerTests : IDisposable
 
     private static void AssertKnobsAtBaseline(FakeApp app)
     {
-        foreach (var name in new[] { Depth, Latency, Poll, RecordingKnob, FlashbackKnob, AppKnob, ChoiceKnob, BoolKnob })
+        foreach (var name in new[] { Depth, Latency, Poll, RecordingKnob, FlashbackKnob, PipelineKnob, AppKnob, ChoiceKnob, BoolKnob })
         {
             Assert.Null(app.Value(name));
         }
@@ -820,6 +857,19 @@ public sealed class PerfExperimentRunnerTests : IDisposable
         Assert.False(app.Touched());
     }
 
+    [Fact]
+    public async Task APipelineKnobIsRejectedWhileARecordingTheRunnerDidNotStartHoldsTheCapture()
+    {
+        var app = new FakeApp { Recording = true, FlashbackActive = true };
+        var result = await RunAsync(app, Spec("{\"name\":\"A\"},{\"name\":\"B\",\"knobs\":{\"" + PipelineKnob + "\":\"1\"}}"));
+
+        Assert.Equal(PerfExperimentStatus.Rejected, result.Status);
+        Assert.Contains(result.Problems, p => p.Contains(PipelineKnob, StringComparison.Ordinal)
+            && p.Contains("recording", StringComparison.OrdinalIgnoreCase));
+        Assert.False(app.Touched());
+        Assert.True(app.Recording);
+    }
+
     // ---- the happy path ---------------------------------------------------------------------------------------
 
     [Fact]
@@ -981,6 +1031,65 @@ public sealed class PerfExperimentRunnerTests : IDisposable
         Assert.DoesNotContain(app.Calls, c => c.Command == "SetPreviewEnabled");
         Assert.Null(app.Value(FlashbackKnob));
         Assert.Null(app.Effective(FlashbackKnob));
+    }
+
+    [Fact]
+    public async Task APipelineKnobRestartsPreviewFlashbackAndTheRecordingSoEveryRunMeasuresItsOwnValue()
+    {
+        var app = new FakeApp { FlashbackActive = true };
+        var result = await RunAsync(app, Spec(
+            "{\"name\":\"A\"},{\"name\":\"B\",\"knobs\":{\"" + PipelineKnob + "\":\"1\"}}", repeats: 2, extra: ",\"recording\":true"));
+
+        Assert.Equal(PerfExperimentStatus.Completed, result.Status);
+        Assert.Equal(result.Runs.Count, app.PipelineAtWindowBegin.Count);
+        for (var run = 0; run < result.Runs.Count; run++)
+        {
+            var expected = result.Runs[run].Variant == "B" ? "1" : null;
+            Assert.Equal((expected, expected, expected), app.PipelineAtWindowBegin[run]);
+        }
+
+        Assert.Null(app.Value(PipelineKnob));
+        Assert.Null(app.PipelineValueIn("preview"));
+        Assert.Null(app.PipelineValueIn("flashback"));
+        Assert.False(app.Recording);
+        Assert.True(result.Restore.Verified);
+    }
+
+    [Fact]
+    public async Task APipelineKnobWithFlashbackOffRestartsOnlyThePreview()
+    {
+        var app = new FakeApp { FlashbackActive = false };
+        var result = await RunAsync(app, Spec("{\"name\":\"A\"},{\"name\":\"B\",\"knobs\":{\"" + PipelineKnob + "\":\"1\"}}", repeats: 2));
+
+        Assert.Equal(PerfExperimentStatus.Completed, result.Status);
+        Assert.DoesNotContain(app.Calls, c => c.Command == "RestartFlashback");
+        for (var run = 0; run < result.Runs.Count; run++)
+        {
+            Assert.Equal(result.Runs[run].Variant == "B" ? "1" : null, app.PipelineAtWindowBegin[run].Preview);
+        }
+
+        Assert.Null(app.Value(PipelineKnob));
+        Assert.Null(app.PipelineValueIn("preview"));
+        Assert.True(result.Restore.Verified);
+    }
+
+    [Fact]
+    public async Task APipelineKnobLeftSetByAFailedRunIsRestoredInPreviewAndFlashback()
+    {
+        var app = new FakeApp { FlashbackActive = true };
+        var begins = 0;
+        app.FailWhen = (command, payload) =>
+            command == "PerfWindow" && payload["action"]!.GetValue<string>() == "begin" && ++begins == 2;
+
+        var result = await RunAsync(app, Spec("{\"name\":\"A\"},{\"name\":\"B\",\"knobs\":{\"" + PipelineKnob + "\":\"1\"}}"));
+
+        // Run B set the knob and started preview and Flashback on it before its window failed to open.
+        Assert.Equal(PerfExperimentStatus.Failed, result.Status);
+        Assert.Contains(app.Calls, c => c.Command == "SetTuningKnob" && c.Payload["value"]?.GetValue<string>() == "1");
+        Assert.Null(app.Value(PipelineKnob));
+        Assert.Null(app.PipelineValueIn("preview"));
+        Assert.Null(app.PipelineValueIn("flashback"));
+        Assert.True(result.Restore.Verified);
     }
 
     // ---- failure and cancellation always restore ---------------------------------------------------------------
