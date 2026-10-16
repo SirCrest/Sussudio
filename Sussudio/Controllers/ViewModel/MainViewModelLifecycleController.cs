@@ -9,6 +9,7 @@ using Sussudio.Models;
 using Sussudio.Services.Capture;
 using Sussudio.Services.Flashback;
 using Sussudio.Services.Runtime;
+using Sussudio.ViewModels;
 
 namespace Sussudio.Controllers;
 
@@ -1435,7 +1436,7 @@ internal sealed class MainViewModelRecordingTransitionController
             _context.RestartRecordingStopwatch();
             _context.ClearRecordingBitrateSamples();
             _context.SetRecordingSizeInfo("0 B");
-            _context.SetRecordingBitrateInfo("--");
+            _context.SetRecordingBitrateInfo(MainViewModel.LiveInfoUnavailable);
             _context.SetStatusText(StatusMessages.Recording);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)

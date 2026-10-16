@@ -59,7 +59,6 @@ internal sealed class RecordingButtonChromeControllerContext
 {
     public required Border RecordingGlowBorder { get; init; }
     public required Storyboard RecordingGlowPulseStoryboard { get; init; }
-    public required Storyboard RecPulseStoryboard { get; init; }
     public required Button RecordButton { get; init; }
     public required UIElement RecordButtonNormalContent { get; init; }
     public required ProgressRing RecordButtonStartingContent { get; init; }
@@ -115,18 +114,6 @@ internal sealed class RecordingButtonChromeController
                 _context.RecordButtonNormalContent.Visibility = Visibility.Visible;
                 _context.RecordButton.Padding = new Thickness(0);
             });
-        }
-    }
-
-    public void ApplyRecordingPulse(bool isRecording)
-    {
-        if (isRecording)
-        {
-            _context.RecPulseStoryboard.Begin();
-        }
-        else
-        {
-            _context.RecPulseStoryboard.Stop();
         }
     }
 
@@ -260,7 +247,6 @@ internal sealed class RecordingStatePresentationController
         _context.ApplyHdrToggleEnabledState();
         _context.RefreshHdrHintText();
         _context.UpdateDeviceApplyButtonState();
-        _context.RecordingButtonChrome.ApplyRecordingPulse(isRecording);
 
         _context.ApplyWindowTitle();
     }

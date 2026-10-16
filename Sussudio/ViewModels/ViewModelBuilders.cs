@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using Sussudio.Models;
@@ -54,7 +55,7 @@ internal static class LiveSignalTextPresentationBuilder
         var codecSuffix = encoderCodecName switch
         {
             "hevc_nvenc" => " → HEVC",
-            "h264_nvenc" => " → H264",
+            "h264_nvenc" => " → H.264",
             "av1_nvenc" => " → AV1",
             _ => ""
         };
@@ -81,15 +82,20 @@ internal static class SourceTelemetryPresentationBuilder
             return "Source: waiting for signal telemetry";
         }
 
-        var resolution = snapshot.HasDimensions
-            ? $"{snapshot.Width}x{snapshot.Height}"
-            : "?x?";
-        var fps = snapshot.FrameRateArg ??
-                  snapshot.FrameRateExact?.ToString("0.###") ??
-                  "?";
-        var hdr = snapshot.IsHdr.HasValue ? (snapshot.IsHdr.Value ? "HDR" : "SDR") : "HDR?";
+        // Reads as a tooltip line; availability and confidence stay machine fields
+        // on the automation snapshot and only "stale" is worth saying here.
+        var fps = snapshot.FrameRateExact.HasValue
+            ? snapshot.FrameRateExact.Value.ToString("0.##", CultureInfo.InvariantCulture) + " fps"
+            : snapshot.FrameRateArg is { Length: > 0 } frameRateArg
+                ? frameRateArg + " fps"
+                : null;
+        var signal = snapshot.HasDimensions
+            ? fps == null ? $"{snapshot.Width}x{snapshot.Height}" : $"{snapshot.Width}x{snapshot.Height} @ {fps}"
+            : fps ?? "signal details pending";
+        var hdr = snapshot.IsHdr.HasValue ? (snapshot.IsHdr.Value ? "HDR" : "SDR") : "HDR unknown";
         var ageText = BuildAgeText(snapshot.TimestampUtc, nowUtc);
-        return $"Source: {resolution} @ {fps} | {hdr} | {snapshot.Availability}/{snapshot.Confidence} | {ageText}";
+        var staleText = snapshot.Availability == SourceTelemetryAvailability.Stale ? " · stale" : string.Empty;
+        return $"Source: {signal} · {hdr} · {ageText}{staleText}";
     }
 
     internal static string BuildAgeText(DateTimeOffset? timestampUtc, DateTimeOffset nowUtc)
@@ -108,21 +114,25 @@ internal static class SourceTelemetryPresentationBuilder
     internal static string BuildTargetSummary(
         string resolutionDisplayText,
         double selectedFrameRate,
-        double? selectedFriendlyFrameRate,
         double? selectedExactFrameRate,
-        string? selectedExactFrameRateArg,
         string? hdrRuntimeState)
     {
-        var friendly = selectedFriendlyFrameRate ?? Math.Round(selectedFrameRate);
         var exact = selectedExactFrameRate ?? selectedFrameRate;
-        var exactText = !string.IsNullOrWhiteSpace(selectedExactFrameRateArg)
-            ? selectedExactFrameRateArg
-            : exact > 0
-                ? exact.ToString("0.###")
-                : "?";
-        var hdrStateText = string.IsNullOrWhiteSpace(hdrRuntimeState) ? "Unknown" : hdrRuntimeState;
-        return $"Target: {resolutionDisplayText} @ {friendly:0} (exact {exactText}) | HDR={hdrStateText}";
+        var fpsText = exact > 0
+            ? $" @ {exact.ToString("0.##", CultureInfo.InvariantCulture)} fps"
+            : string.Empty;
+        return $"Target: {resolutionDisplayText}{fpsText} · {DescribeHdrRuntimeState(hdrRuntimeState)}";
     }
+
+    // CaptureService.RuntimeSnapshots publishes these states as automation strings.
+    private static string DescribeHdrRuntimeState(string? hdrRuntimeState) => hdrRuntimeState switch
+    {
+        "Active" => "recording HDR",
+        "Ready" => "HDR on next recording",
+        "Violation" => "HDR requested, recording SDR",
+        "Inactive" => "HDR off",
+        _ => "HDR state unknown",
+    };
 }
 
 internal static class AutomationOptionsSnapshotBuilder

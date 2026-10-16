@@ -122,7 +122,7 @@ namespace Sussudio.ViewModels
                     detail => detail.Group == TelemetryLabels.GroupCaptureCard);
                 telemetryDetails.Insert(
                     captureCardGroupStart >= 0 ? captureCardGroupStart : telemetryDetails.Count,
-                    new SourceTelemetryDetailEntry(TelemetryLabels.GroupCaptureCard, "Capture Format", captureCardFormat));
+                    new SourceTelemetryDetailEntry(TelemetryLabels.GroupCaptureCard, "Capture format", captureCardFormat));
             }
 
             return new StatsSnapshot(
@@ -490,7 +490,7 @@ namespace Sussudio.ViewModels
                 ? "\u2014"
                 : $"crop {FormatVisualCadenceSummary(snapshot)}";
             var visualMotion = snapshot.VisualCadenceSamples <= 0
-                ? "NoSamples"
+                ? "\u2014"
                 : FormatVisualMotionSummary(snapshot);
             var pipelineLatency = FormatPipelineLatency(snapshot.PipelineLatencyMs);
             var sourceDelivered = $"{FormatCount(snapshot.SourceFramesDelivered)} delivered";
@@ -510,9 +510,7 @@ namespace Sussudio.ViewModels
                 : "\u2014";
             var sourceHdr = FormatSourceHdr(snapshot.SourceIsHdr, snapshot.SourceColorimetry);
             var sourceFormat = snapshot.SourceVideoFormat ?? "\u2014";
-            var telemetryOrigin = snapshot.TelemetryOrigin is not null and not "Unknown"
-                ? $"{snapshot.TelemetryOrigin} ({snapshot.TelemetryConfidence ?? "?"})"
-                : "\u2014";
+            var telemetryOrigin = FormatTelemetryOrigin(snapshot.TelemetryOrigin, snapshot.TelemetryConfidence);
 
             var adcOnOff = "\u2014";
             var adcGain = "\u2014";
@@ -716,12 +714,44 @@ namespace Sussudio.ViewModels
 
         private static string FormatVisualMotionSummary(StatsSnapshot snapshot)
         {
+            var motion = $"{FormatPercent(snapshot.VisualCadenceMotionScore)} changed \u00b7 {DescribeMotionConfidence(snapshot.VisualCadenceMotionConfidence)}";
             if (IsVisualRepeatWithinExpectedDrift(snapshot))
             {
-                return $"{FormatPercent(snapshot.VisualCadenceMotionScore)} px / {snapshot.VisualCadenceMotionConfidence}";
+                return motion;
             }
 
-            return $"{FormatPercent(snapshot.VisualCadenceRepeatPercent)} repeat / run {FormatCount(snapshot.VisualCadenceLongestRepeatRun)} / {FormatPercent(snapshot.VisualCadenceMotionScore)} px / {snapshot.VisualCadenceMotionConfidence}";
+            return $"{FormatPercent(snapshot.VisualCadenceRepeatPercent)} repeat \u00b7 run {FormatCount(snapshot.VisualCadenceLongestRepeatRun)} \u00b7 {motion}";
+        }
+
+        // CaptureCadenceTrackers.ResolveMotionConfidence tokens; anything else passes through.
+        private static string DescribeMotionConfidence(string? confidence) => confidence switch
+        {
+            "WarmingUp" => "warming up",
+            "LowMotion" => "low motion",
+            "ModerateMotion" => "moderate motion",
+            "HighMotion" => "high motion",
+            null or "" => "\u2014",
+            _ => confidence,
+        };
+
+        // SourceTelemetryOrigin and SourceTelemetryConfidence enum names, as the snapshot carries them.
+        private static string FormatTelemetryOrigin(string? origin, string? confidence)
+        {
+            var source = origin switch
+            {
+                "NativeXu" => "Capture card",
+                "DeviceFormatFallback" => "Video format only",
+                null or "" or "Unknown" => null,
+                _ => origin,
+            };
+            if (source == null)
+            {
+                return "\u2014";
+            }
+
+            return confidence is null or "" or "Unknown"
+                ? source
+                : $"{source} \u00b7 {confidence.ToLowerInvariant()} confidence";
         }
 
         private static bool IsVisualRepeatWithinExpectedDrift(StatsSnapshot snapshot)
@@ -917,7 +947,7 @@ namespace Sussudio.ViewModels
 
                 var entry = part switch
                 {
-                    "nativexu" => ("Origin", "NativeXu"),
+                    "nativexu" => ("Origin", "Capture card"),
                     "hdr" => ("HDR", "Yes"),
                     "sdr" => ("HDR", "No"),
                     "unknown" => ("HDR", "Unknown"),
@@ -1094,9 +1124,7 @@ namespace Sussudio.ViewModels
                     : "\u2014",
                 SourceHdr: FormatSourceHdr(snapshot.SourceIsHdr, snapshot.SourceColorimetry),
                 SourceFormat: snapshot.SourceVideoFormat ?? "\u2014",
-                TelemetryOrigin: snapshot.TelemetryOrigin is not null and not "Unknown"
-                    ? $"{snapshot.TelemetryOrigin} ({snapshot.TelemetryConfidence ?? "?"})"
-                    : "\u2014",
+                TelemetryOrigin: FormatTelemetryOrigin(snapshot.TelemetryOrigin, snapshot.TelemetryConfidence),
                 SourceFps: FormatFps(snapshot.SourceObservedFps),
                 SourceExpectedFps: FormatFps(snapshot.SourceExpectedFps),
                 SourceAvg: $"{FormatMs(snapshot.SourceAvgIntervalMs)} avg",

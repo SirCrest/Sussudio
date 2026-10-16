@@ -194,7 +194,8 @@ internal static class MainViewModelSettingsPersistenceProjection
 public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDisposable, IAutomationViewModel
 {
     private IntPtr _windowHandle;
-    private const string LiveInfoUnavailable = "\u2014";
+    // The one "no value" mark for status-strip and live readouts.
+    internal const string LiveInfoUnavailable = "\u2014";
     private const int BitrateWindowMs = 10000;
     private const string DefaultRecordingFormat = "H.264";
     private const string HevcRecordingFormat = "HEVC";
@@ -272,7 +273,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             RecoveredRecordingFailurePath = recoveredRecording.PreservedArtifacts.FirstOrDefault(path =>
                 !RecordingFinalizationRecoveryArtifacts.IsUnresolvedMarkerPath(path))
                 ?? recoveredRecording.MarkerPath;
-            RecoveredRecordingFailureMessage = recoveredRecording.Reason;
+            RecoveredRecordingFailureMessage = StatusMessages.RecordingRecoveryNotice(recoveredRecording.Reason);
             StatusText = StatusMessages.RecordingFailed(recoveredRecording.Reason);
         }
         StartRecordingCapabilityRefresh();
@@ -2080,10 +2081,10 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     public partial string RecordingTime { get; set; } = "00:00:00";
 
     [ObservableProperty]
-    public partial string RecordingSizeInfo { get; set; } = "--";
+    public partial string RecordingSizeInfo { get; set; } = LiveInfoUnavailable;
 
     [ObservableProperty]
-    public partial string RecordingBitrateInfo { get; set; } = "--";
+    public partial string RecordingBitrateInfo { get; set; } = LiveInfoUnavailable;
 
     [ObservableProperty]
     public partial bool IsRecording { get; set; }
@@ -2134,9 +2135,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         SourceTargetSummaryText = SourceTelemetryPresentationBuilder.BuildTargetSummary(
             GetSelectedResolutionDisplayText(),
             SelectedFrameRate,
-            SelectedFriendlyFrameRate,
             SelectedExactFrameRate,
-            SelectedExactFrameRateArg,
             HdrRuntimeState);
     }
 
@@ -2257,8 +2256,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         if (!value)
         {
             ResetAudioMeter();
-            RecordingSizeInfo = "--";
-            RecordingBitrateInfo = "--";
+            RecordingSizeInfo = LiveInfoUnavailable;
+            RecordingBitrateInfo = LiveInfoUnavailable;
             _recordingBitrateSamples.Clear();
 
             if (_pendingModeOptionsRefreshForceRetarget is bool forceSourceAutoRetarget)
@@ -2277,7 +2276,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
         var now = Environment.TickCount64;
         var smoothed = _recordingBitrateSamples.AddSampleAndCompute(now, totalBytes);
-        RecordingBitrateInfo = smoothed.HasValue ? DisplayFormatters.FormatBitrate(smoothed.Value) : "--";
+        RecordingBitrateInfo = smoothed.HasValue ? DisplayFormatters.FormatBitrate(smoothed.Value) : LiveInfoUnavailable;
     }
 
     private void UpdateDiskSpace()

@@ -68,7 +68,7 @@ public partial class MainViewModel
     public partial long FlashbackBufferDiskBytes { get; set; }
 
     [ObservableProperty]
-    public partial string FlashbackBitrateInfo { get; set; } = "";
+    public partial string FlashbackBitrateInfo { get; set; } = LiveInfoUnavailable;
 
     [ObservableProperty]
     public partial double FlashbackExportProgress { get; set; }
@@ -329,7 +329,7 @@ public partial class MainViewModel
             FlashbackBufferFillPercent = 0;
             FlashbackBufferFilledDuration = TimeSpan.Zero;
             FlashbackBufferDiskBytes = 0;
-            FlashbackBitrateInfo = "";
+            FlashbackBitrateInfo = LiveInfoUnavailable;
             IsDiskWarningActive = false;
             FlashbackInPoint = null;
             FlashbackOutPoint = null;
@@ -381,7 +381,9 @@ public partial class MainViewModel
             return;
         }
 
-        if (IsFlashbackEnabled && !_sessionCoordinator.IsFlashbackActive)
+        // Flashback buffers what capture delivers. Before the first preview, or with no
+        // device, not running is expected rather than a fault worth a banner.
+        if (IsFlashbackEnabled && (IsPreviewing || IsRecording) && !_sessionCoordinator.IsFlashbackActive)
         {
             FlashbackHealthMessage = FlashbackDeadBackendHealthMessage;
         }
@@ -488,7 +490,7 @@ public partial class MainViewModel
         var diskBytes = _sessionCoordinator.FlashbackTotalBytesWritten;
         var now = Environment.TickCount64;
         var smoothed = _flashbackBitrateSamples.AddSampleAndCompute(now, diskBytes);
-        FlashbackBitrateInfo = smoothed.HasValue ? DisplayFormatters.FormatBitrate(smoothed.Value) : "";
+        FlashbackBitrateInfo = smoothed.HasValue ? DisplayFormatters.FormatBitrate(smoothed.Value) : LiveInfoUnavailable;
     }
 
     public IReadOnlyList<FlashbackSegmentInfo> GetFlashbackSegments()
@@ -878,6 +880,9 @@ public partial class MainViewModel
 
         return Path.Combine(directory, $"{baseName}.{Guid.NewGuid():N}{extension}");
     }
+
+    /// <summary>True while the Flashback backend is buffering capture.</summary>
+    internal bool IsFlashbackBuffering => _sessionCoordinator.IsFlashbackActive;
 
     private bool EnsureFlashbackActiveForExport(string operation)
     {

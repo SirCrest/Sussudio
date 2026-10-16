@@ -445,13 +445,13 @@ internal sealed class PreviewButtonPresentationController
     public void ShowStopPreview()
     {
         _context.PreviewButtonIcon.Glyph = StopPreviewGlyph;
-        ToolTipService.SetToolTip(_context.PreviewButton, "Stop Preview");
+        ToolTipService.SetToolTip(_context.PreviewButton, "Stop preview (Ctrl+P)");
     }
 
     public void ShowStartPreview()
     {
         _context.PreviewButtonIcon.Glyph = StartPreviewGlyph;
-        ToolTipService.SetToolTip(_context.PreviewButton, "Start Preview");
+        ToolTipService.SetToolTip(_context.PreviewButton, "Start preview (Ctrl+P)");
     }
 }
 
@@ -983,8 +983,8 @@ internal sealed class PreviewSurfacePresentationController
 
     public void SetGpuPreviewVisibility(Visibility visibility)
     {
-        // PreviewLetterboxBackground stays Collapsed - letterbox areas must be
-        // transparent so the Composition DropShadow is visible around the video.
+        // Letterbox areas stay transparent so the Composition DropShadow is
+        // visible around the video.
         _context.GetPreviewSwapChainPanel().Visibility = visibility;
     }
 }

@@ -84,7 +84,26 @@ internal static class StatusMessages
     // InfoBar copy. An InfoBar message is a full sentence and keeps its period, unlike the
     // footer fragments above; the other rules (ASCII, product-name casing) still apply.
     public const string FlashbackSnapToLiveNotice = "Returned to live after a playback error.";
-    public const string FlashbackNotRunningNotice = "Flashback is not running. Use Restart Flashback to retry.";
+    public const string FlashbackNotRunningNotice = "Flashback is not buffering.";
+    public const string RecordingRecoveryFallbackNotice = "The recording was not finalized.";
+
+    /// <summary>
+    /// Recovery banner message from a stored failure reason. The banner title already says
+    /// the recording did not finish, so a leading "Recording failed" is dropped.
+    /// </summary>
+    public static string RecordingRecoveryNotice(string? reason)
+    {
+        const string prefix = "Recording failed";
+        var text = Detail(reason);
+        if (StartsWithFailure(text, prefix))
+        {
+            text = text[prefix.Length..].TrimStart(':', ' ');
+        }
+
+        return text.Length == 0
+            ? RecordingRecoveryFallbackNotice
+            : char.ToUpperInvariant(text[0]) + text[1..] + ".";
+    }
 
     // Failures. The subject names the feature; Failed() joins the reason.
     public static string DeviceInitializationFailed(string? reason) => Failed("Device initialization", reason);

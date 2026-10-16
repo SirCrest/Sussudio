@@ -5547,7 +5547,7 @@ static partial class Program
         AssertContains(recordingRuntimeText, "_recordingBitrateSamples.Clear();");
         AssertContains(recordingRuntimeText, "var smoothed = _recordingBitrateSamples.AddSampleAndCompute(now, totalBytes);");
         AssertContains(recordingRuntimeText, "RecordingSizeInfo = DisplayFormatters.FormatBytes(totalBytes, \"0\");");
-        AssertContains(recordingRuntimeText, "RecordingBitrateInfo = smoothed.HasValue ? DisplayFormatters.FormatBitrate(smoothed.Value) : \"--\";");
+        AssertContains(recordingRuntimeText, "RecordingBitrateInfo = smoothed.HasValue ? DisplayFormatters.FormatBitrate(smoothed.Value) : LiveInfoUnavailable;");
         AssertContains(flashbackBufferStatusText, "var smoothed = _flashbackBitrateSamples.AddSampleAndCompute(now, diskBytes);");
         AssertContains(recordingStateText, "internal sealed class BitrateSampleWindow");
         AssertContains(recordingStateText, "public double? AddSampleAndCompute(long tick, long bytes)");

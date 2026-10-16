@@ -127,11 +127,12 @@ public sealed class FlashbackHealthLifetimeTests
         var viewModel = Uninitialized("Sussudio.ViewModels.MainViewModel");
         WriteField(viewModel, "_sessionCoordinator", coordinator);
         Write(viewModel, "IsFlashbackEnabled", true);
+        Write(viewModel, "IsPreviewing", true);
         Write(viewModel, "IsFlashbackTimelineVisible", false);
         Write(viewModel, "FlashbackHealthMessage", "");
 
         Invoke(viewModel, "UpdateFlashbackHealthStatus");
-        Assert.Equal("Flashback is not running. Use Restart Flashback to retry.", Read<string>(viewModel, "FlashbackHealthMessage"));
+        Assert.Equal("Flashback is not buffering.", Read<string>(viewModel, "FlashbackHealthMessage"));
         Write(fixture.Backend, "Sink", Uninitialized("Sussudio.Services.Flashback.FlashbackEncoderSink"));
         Invoke(viewModel, "UpdateFlashbackHealthStatus");
         Assert.Equal("", Read<string>(viewModel, "FlashbackHealthMessage"));
@@ -141,7 +142,7 @@ public sealed class FlashbackHealthLifetimeTests
         Assert.Equal("Returned to live after a playback error.", Read<string>(viewModel, "FlashbackHealthMessage"));
         Write(fixture.Backend, "Sink", null);
         Invoke(viewModel, "UpdateFlashbackHealthStatus");
-        Assert.Equal("Flashback is not running. Use Restart Flashback to retry.", Read<string>(viewModel, "FlashbackHealthMessage"));
+        Assert.Equal("Flashback is not buffering.", Read<string>(viewModel, "FlashbackHealthMessage"));
         Write(viewModel, "IsFlashbackEnabled", false);
         Invoke(viewModel, "UpdateFlashbackHealthStatus");
         Assert.Equal("", Read<string>(viewModel, "FlashbackHealthMessage"));

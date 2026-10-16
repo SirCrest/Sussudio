@@ -15,13 +15,6 @@
 
     <Grid Padding="0" RowSpacing="0">
         <Grid.Resources>
-            <Storyboard x:Name="RecPulseStoryboard" RepeatBehavior="Forever">
-                <DoubleAnimation Storyboard.TargetName="RecIndicatorDot"
-                                 Storyboard.TargetProperty="Opacity"
-                                 From="1.0" To="0.3"
-                                 Duration="0:0:0.8"
-                                 AutoReverse="True"/>
-            </Storyboard>
             <Storyboard x:Name="RecordingGlowPulseStoryboard" RepeatBehavior="Forever">
                 <DoubleAnimation Storyboard.TargetName="RecordingGlowBorder"
                                  Storyboard.TargetProperty="Opacity"
@@ -64,7 +57,7 @@
                 <Border.ContextFlyout>
                     <MenuFlyout>
                         <MenuFlyoutItem x:Name="FullScreenMenuItem"
-                                        Text="Enter Full Screen"
+                                        Text="Full screen"
                                         Click="FullScreenMenuItem_Click">
                             <MenuFlyoutItem.Icon>
                                 <FontIcon Glyph="&#xE740;"/>
@@ -90,10 +83,6 @@
                                             ScaleX="1"
                                             ScaleY="1"/>
                         </Grid.RenderTransform>
-                    <Border x:Name="PreviewLetterboxBackground"
-                            Background="Black"
-                            Visibility="Collapsed" />
-
                     <!-- Primary GPU preview path -->
                     <SwapChainPanel x:Name="PreviewSwapChainPanel"
                                     AutomationProperties.AutomationId="PreviewPlayerElement"
@@ -109,22 +98,7 @@
                            HorizontalAlignment="Stretch"
                            VerticalAlignment="Stretch"/>
 
-                    <!-- Recording Indicator (hidden — glow border serves as tally) -->
-                    <Border x:Name="RecordingIndicator"
-                            AutomationProperties.AutomationId="RecordingIndicator"
-                            Visibility="Collapsed"
-                            HorizontalAlignment="Left"
-                            VerticalAlignment="Top"
-                            Margin="16,12,0,0"
-                            Padding="8,4"
-                            CornerRadius="4"
-                            Background="{ThemeResource RecordingIndicatorBrush}">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <Ellipse x:Name="RecIndicatorDot" Width="10" Height="10" Fill="White"/>
-                            <TextBlock Text="REC" Foreground="White" FontWeight="Bold" FontSize="12"/>
-                        </StackPanel>
-                    </Border>
-
+                    <!-- Recording tally: pulsed by RecordingGlowPulseStoryboard while recording. -->
                     <Border x:Name="RecordingGlowBorder"
                             BorderThickness="3"
                             BorderBrush="#50FF1414"
@@ -176,14 +150,14 @@
                             </Grid>
                             <Grid>
                                 <TextBlock Text="FRAME RATE · FPS" FontSize="10" CharacterSpacing="80" Foreground="#FFEED779" />
-                                <TextBlock x:Name="FrameTime_FpsScaleValue" Text="60 fps source" FontSize="10" HorizontalAlignment="Right"
+                                <TextBlock x:Name="FrameTime_FpsScaleValue" Text="60 fps target" FontSize="10" HorizontalAlignment="Right"
                                            FontFamily="Consolas" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                             </Grid>
                             <Grid x:Name="FrameTime_FpsCanvas" AutomationProperties.AutomationId="FrameTime_FpsCanvas"
                                   Height="68" Background="#FF171E28" />
                             <Grid>
                                 <TextBlock Text="FRAME TIME · ms" FontSize="10" CharacterSpacing="80" Foreground="#FF51D1FF" />
-                                <TextBlock x:Name="FrameTime_BudgetScaleValue" Text="16.67 / 33.33 / 50.00 ms" FontSize="10" HorizontalAlignment="Right"
+                                <TextBlock x:Name="FrameTime_BudgetScaleValue" Text="16.67 / 33.33 / 50 ms" FontSize="10" HorizontalAlignment="Right"
                                            FontFamily="Consolas" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                             </Grid>
                             <Grid x:Name="FrameTime_Canvas" AutomationProperties.AutomationId="FrameTime_Canvas"
@@ -195,11 +169,11 @@
                             </Grid>
                             <TextBlock x:Name="FrameTime_StatusValue"
                                        AutomationProperties.AutomationId="FrameTime_StatusValue"
-                                       Text="Waiting for preview samples"
+                                       Text="No preview frames · 10 s history"
                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                        FontSize="11" TextWrapping="Wrap" />
                             <TextBlock x:Name="FrameTime_LatencyValue" AutomationProperties.AutomationId="FrameTime_LatencyValue"
-                                       Text="Estimated capture → preview —" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       Text="P99 present interval — · estimated capture → preview —" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                        FontFamily="Consolas"
                                        FontSize="11" TextWrapping="Wrap" />
                         </StackPanel>
@@ -219,13 +193,13 @@
                                    Style="{ThemeResource SubtitleTextBlockStyle}"
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                    HorizontalAlignment="Center"/>
-                        <TextBlock Text="Open settings to select a device, then click Start Preview"
+                        <TextBlock Text="Pick a device in settings (Ctrl+D), then start preview (Ctrl+P)"
                                    Style="{ThemeResource CaptionTextBlockStyle}"
                                    Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                                    HorizontalAlignment="Center"/>
                         <TextBlock x:Name="FlashbackKeepAliveHintText"
                                    AutomationProperties.AutomationId="FlashbackKeepAliveHintText"
-                                   Text="Flashback is still recording — the capture device remains in use."
+                                   Text="Flashback is still buffering, so the capture device stays in use"
                                    Style="{ThemeResource CaptionTextBlockStyle}"
                                    Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                                    HorizontalAlignment="Center"
@@ -244,50 +218,61 @@
                 </Grid>
             </Border>
 
-            <!-- Disk warning InfoBar — overlays at top of preview area -->
-            <InfoBar x:Name="DiskWarningInfoBar"
-                     AutomationProperties.AutomationId="DiskWarningInfoBar"
-                     Title="Disk space warning"
-                     Message="Recording disk usage exceeds the Flashback buffer limit. Oldest segments cannot be evicted."
-                     Severity="Error"
-                     IsOpen="False"
-                     IsClosable="False"
-                     VerticalAlignment="Top"
-                     Margin="16,8,16,0"/>
+            <!-- Notice stack: the persistent warnings, overlaid at the top of the preview.
+                 NoticeBannerStyle collapses a closed banner to nothing, so open banners
+                 stack in order without fixed offsets. -->
+            <StackPanel x:Name="NoticeStack"
+                        VerticalAlignment="Top"
+                        MaxWidth="720"
+                        Margin="28,24,28,0">
+                <StackPanel.ChildrenTransitions>
+                    <TransitionCollection>
+                        <RepositionThemeTransition/>
+                    </TransitionCollection>
+                </StackPanel.ChildrenTransitions>
 
-            <!-- Flashback health InfoBar — involuntary snap-to-live notice and dead-backend banner.
-                 Offset below DiskWarningInfoBar so both can be open without overlapping. -->
-            <InfoBar x:Name="FlashbackHealthInfoBar"
-                     AutomationProperties.AutomationId="FlashbackHealthInfoBar"
-                     Title="Flashback"
-                     Severity="Warning"
-                     IsOpen="False"
-                     IsClosable="False"
-                     VerticalAlignment="Top"
-                     Margin="16,64,16,0">
-                <InfoBar.ActionButton>
-                    <Button x:Name="FlashbackHealthRestartButton"
-                            AutomationProperties.AutomationId="FlashbackHealthRestartButton"
-                            Content="Restart Flashback"
-                            Click="FlashbackHealthRestartButton_Click"/>
-                </InfoBar.ActionButton>
-            </InfoBar>
+                <!-- Eviction is paused while a recording or export reads the buffer. -->
+                <InfoBar x:Name="DiskWarningInfoBar"
+                         AutomationProperties.AutomationId="DiskWarningInfoBar"
+                         Style="{StaticResource NoticeBannerStyle}"
+                         Title="FLASHBACK STORAGE"
+                         Message="Flashback is keeping extra footage on disk while a recording or export runs. It trims back to the buffer length afterwards."
+                         Severity="Warning"
+                         IsOpen="False"
+                         IsClosable="False"/>
 
-            <InfoBar x:Name="RecordingRecoveryInfoBar"
-                     AutomationProperties.AutomationId="RecordingRecoveryInfoBar"
-                     Title="An earlier recording failed"
-                     Severity="Error"
-                     IsOpen="False"
-                     IsClosable="True"
-                     VerticalAlignment="Top"
-                     Margin="16,120,16,0">
-                <InfoBar.ActionButton>
-                    <Button x:Name="RecordingRecoveryOpenLocationButton"
-                            AutomationProperties.AutomationId="RecordingRecoveryOpenLocationButton"
-                            Content="Open location"
-                            Click="RecordingRecoveryOpenLocationButton_Click"/>
-                </InfoBar.ActionButton>
-            </InfoBar>
+                <!-- Involuntary snap-to-live notice and not-buffering banner; the
+                     presentation controller sets severity and the action per message. -->
+                <InfoBar x:Name="FlashbackHealthInfoBar"
+                         AutomationProperties.AutomationId="FlashbackHealthInfoBar"
+                         Style="{StaticResource NoticeBannerStyle}"
+                         Title="FLASHBACK"
+                         Severity="Warning"
+                         IsOpen="False"
+                         IsClosable="False">
+                    <InfoBar.ActionButton>
+                        <Button x:Name="FlashbackHealthRestartButton"
+                                AutomationProperties.AutomationId="FlashbackHealthRestartButton"
+                                Content="Restart Flashback"
+                                Click="FlashbackHealthRestartButton_Click"/>
+                    </InfoBar.ActionButton>
+                </InfoBar>
+
+                <InfoBar x:Name="RecordingRecoveryInfoBar"
+                         AutomationProperties.AutomationId="RecordingRecoveryInfoBar"
+                         Style="{StaticResource NoticeBannerStyle}"
+                         Title="LAST RECORDING DID NOT FINISH"
+                         Severity="Error"
+                         IsOpen="False"
+                         IsClosable="True">
+                    <InfoBar.ActionButton>
+                        <Button x:Name="RecordingRecoveryOpenLocationButton"
+                                AutomationProperties.AutomationId="RecordingRecoveryOpenLocationButton"
+                                Content="Open folder"
+                                Click="RecordingRecoveryOpenLocationButton_Click"/>
+                    </InfoBar.ActionButton>
+                </InfoBar>
+            </StackPanel>
 
         </Grid>
 
@@ -403,7 +388,7 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="HDMI Input" Style="{StaticResource DockStatsSectionHeaderStyle}" />
+                                <TextBlock Text="HDMI input" Style="{StaticResource DockStatsSectionHeaderStyle}" />
                                 <FontIcon x:Name="SourceSignal_Chevron" Grid.Column="1" Glyph="&#xE70D;"
                                           FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                           VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
@@ -431,7 +416,7 @@
                                             <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="*" />
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Text="Frame Rate" Style="{StaticResource DockStatsLabelStyle}" />
+                                        <TextBlock Text="Frame rate" Style="{StaticResource DockStatsLabelStyle}" />
                                         <TextBlock x:Name="Stats_SourceFrameRateValue" AutomationProperties.AutomationId="Stats_SourceFrameRateValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
                                     </Grid>
                                 </Border>
@@ -442,7 +427,7 @@
                                             <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="*" />
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Text="Video Format" Style="{StaticResource DockStatsLabelStyle}" />
+                                        <TextBlock Text="Video format" Style="{StaticResource DockStatsLabelStyle}" />
                                         <TextBlock x:Name="Stats_SourceFormatValue" AutomationProperties.AutomationId="Stats_SourceFormatValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
                                     </Grid>
                                 </Border>
@@ -475,7 +460,7 @@
                                             <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="*" />
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Text="Analog Gain" Style="{StaticResource DockStatsLabelStyle}" />
+                                        <TextBlock Text="Analog gain" Style="{StaticResource DockStatsLabelStyle}" />
                                         <TextBlock x:Name="Stats_AdcGainValue" AutomationProperties.AutomationId="Stats_AdcGainValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
                                     </Grid>
                                 </Border>
@@ -516,7 +501,7 @@
                                         <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition Width="*" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Average Rate" Style="{StaticResource DockStatsLabelStyle}" />
+                                    <TextBlock Text="Average rate" Style="{StaticResource DockStatsLabelStyle}" />
                                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right">
                                         <TextBlock x:Name="Stats_SourceFpsValue" AutomationProperties.AutomationId="Stats_SourceFpsValue" Text="0.00" Style="{StaticResource DockStatsValueStyle}" />
                                         <TextBlock Text="/" Style="{StaticResource DockStatsLabelStyle}" />
@@ -532,7 +517,7 @@
                                         <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition Width="*" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Frame Time" Style="{StaticResource DockStatsLabelStyle}" />
+                                    <TextBlock Text="Frame time" Style="{StaticResource DockStatsLabelStyle}" />
                                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
                                         <TextBlock x:Name="Stats_SourceAvgValue" AutomationProperties.AutomationId="Stats_SourceAvgValue" Text="0.00ms avg" Style="{StaticResource DockStatsValueStyle}" />
                                         <TextBlock x:Name="Stats_SourceP95Value" AutomationProperties.AutomationId="Stats_SourceP95Value" Text="0.00ms P95" Style="{StaticResource DockStatsValueStyle}" />
@@ -573,7 +558,7 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="MJPEG Decode" Style="{StaticResource DockStatsSectionHeaderStyle}" />
+                                <TextBlock Text="MJPEG decode" Style="{StaticResource DockStatsSectionHeaderStyle}" />
                                 <FontIcon x:Name="Decode_Chevron" Grid.Column="1" Glyph="&#xE70D;"
                                           FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                           VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
@@ -591,7 +576,7 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="AV Sync" Style="{StaticResource DockStatsSectionHeaderStyle}" />
+                                <TextBlock Text="A/V sync" Style="{StaticResource DockStatsSectionHeaderStyle}" />
                                 <FontIcon x:Name="AvSync_Chevron" Grid.Column="1" Glyph="&#xE70D;"
                                           FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                           VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
@@ -617,7 +602,7 @@
                                             <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="*" />
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Text="Drift Rate" Style="{StaticResource DockStatsLabelStyle}" />
+                                        <TextBlock Text="Drift rate" Style="{StaticResource DockStatsLabelStyle}" />
                                         <TextBlock x:Name="Stats_AvSyncDriftRateValue" AutomationProperties.AutomationId="Stats_AvSyncDriftRateValue" Grid.Column="1" Text="&#x2014;" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
                                     </Grid>
                                 </Border>
@@ -659,7 +644,7 @@
                                         <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition Width="*" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Average Rate" Style="{StaticResource DockStatsLabelStyle}" />
+                                    <TextBlock Text="Average rate" Style="{StaticResource DockStatsLabelStyle}" />
                                     <TextBlock x:Name="Stats_PreviewFpsValue" AutomationProperties.AutomationId="Stats_PreviewFpsValue" Grid.Column="1" Text="0.00" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
                                 </Grid>
                             </Border>
@@ -670,7 +655,7 @@
                                         <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition Width="*" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Frame Time" Style="{StaticResource DockStatsLabelStyle}" />
+                                    <TextBlock Text="Frame time" Style="{StaticResource DockStatsLabelStyle}" />
                                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
                                         <TextBlock x:Name="Stats_PreviewAvgValue" AutomationProperties.AutomationId="Stats_PreviewAvgValue" Text="0.00ms avg" Style="{StaticResource DockStatsValueStyle}" />
                                         <TextBlock x:Name="Stats_PreviewP95Value" AutomationProperties.AutomationId="Stats_PreviewP95Value" Text="0.00ms P95" Style="{StaticResource DockStatsValueStyle}" />
@@ -694,10 +679,10 @@
                                         <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition Width="*" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Sampled Crop" Style="{StaticResource DockStatsLabelStyle}" />
+                                    <TextBlock Text="Sampled crop" Style="{StaticResource DockStatsLabelStyle}" />
                                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
-                                        <TextBlock x:Name="Stats_VisualFpsValue" AutomationProperties.AutomationId="Stats_VisualFpsValue" Text="0.00 fps" Style="{StaticResource DockStatsValueStyle}" />
-                                        <TextBlock x:Name="Stats_VisualMotionValue" AutomationProperties.AutomationId="Stats_VisualMotionValue" Text="NoSamples" Style="{StaticResource DockStatsValueStyle}" />
+                                        <TextBlock x:Name="Stats_VisualFpsValue" AutomationProperties.AutomationId="Stats_VisualFpsValue" Text="—" Style="{StaticResource DockStatsValueStyle}" />
+                                        <TextBlock x:Name="Stats_VisualMotionValue" AutomationProperties.AutomationId="Stats_VisualMotionValue" Text="—" Style="{StaticResource DockStatsValueStyle}" />
                                     </StackPanel>
                                 </Grid>
                             </Border>
@@ -728,7 +713,7 @@
                                         <ColumnDefinition Width="*" />
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Text="Latency" Style="{StaticResource DockStatsLabelStyle}" />
-                                    <TextBlock x:Name="Stats_PipelineLatencyValue" AutomationProperties.AutomationId="Stats_PipelineLatencyValue" Grid.Column="1" Text="0ms avg" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
+                                    <TextBlock x:Name="Stats_PipelineLatencyValue" AutomationProperties.AutomationId="Stats_PipelineLatencyValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
                                 </Grid>
                             </Border>
                             </StackPanel>
@@ -812,7 +797,7 @@
                                             <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="*" />
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Text="Frame Rate" Style="{StaticResource DockStatsLabelStyle}" />
+                                        <TextBlock Text="Frame rate" Style="{StaticResource DockStatsLabelStyle}" />
                                         <TextBlock x:Name="Stats_EncoderFrameRateValue" AutomationProperties.AutomationId="Stats_EncoderFrameRateValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
                                     </Grid>
                                 </Border>
@@ -822,7 +807,7 @@
                                             <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="*" />
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Text="Target Bitrate" Style="{StaticResource DockStatsLabelStyle}" />
+                                        <TextBlock Text="Target bitrate" Style="{StaticResource DockStatsLabelStyle}" />
                                         <TextBlock x:Name="Stats_EncoderBitrateValue" AutomationProperties.AutomationId="Stats_EncoderBitrateValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
                                     </Grid>
                                 </Border>
@@ -890,7 +875,7 @@
                                         <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition Width="*" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Legacy Score" Style="{StaticResource DockStatsLabelStyle}" />
+                                    <TextBlock Text="Legacy score" Style="{StaticResource DockStatsLabelStyle}" />
                                     <TextBlock x:Name="Stats_PerfScoreValue" AutomationProperties.AutomationId="Stats_PerfScoreValue" Grid.Column="1" Text="0.0 / 100" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
                                 </Grid>
                             </Border>
@@ -1051,14 +1036,9 @@
                                         StepFrequency="1"
                                         TickFrequency="10"
                                         Width="120"
-                                        VerticalAlignment="Center">
-                                    <Slider.Resources>
-                                        <Style TargetType="ToolTip">
-                                            <Setter Property="Opacity" Value="0"/>
-                                            <Setter Property="IsHitTestVisible" Value="False"/>
-                                        </Style>
-                                    </Slider.Resources>
-                                </Slider>
+                                        VerticalAlignment="Center"
+                                        IsThumbToolTipEnabled="False"
+                                        ToolTipService.ToolTip="Analog input gain"/>
                                 <TextBlock x:Name="AnalogAudioGainValueTextBlock"
                                            Style="{StaticResource SettingsShelfCaptionStyle}"
                                            Text="50%"/>
@@ -1076,7 +1056,7 @@
                             </Grid.RowDefinitions>
                             <CheckBox x:Name="CustomAudioToggle"
                                       AutomationProperties.AutomationId="CustomAudioToggle"
-                                      Content="Alt Audio"
+                                      Content="Alt audio"
                                       VerticalAlignment="Center"/>
                             <ComboBox x:Name="AudioInputComboBox"
                                       Grid.Column="1"
@@ -1336,26 +1316,20 @@
                                     Content="Apply"
                                     Height="30" Padding="10,0"
                                     VerticalAlignment="Center"
-                                    ToolTipService.ToolTip="Restart flashback with current settings (clears buffer)"
+                                    ToolTipService.ToolTip="Restart Flashback with these settings (clears the buffer)"
                                     Click="FlashbackApplyButton_Click"/>
                           </Grid>
                         </StackPanel>
-                        <Grid Grid.Row="2" ColumnSpacing="6">
+                        <Grid Grid.Row="2" ColumnSpacing="6"
+                              ToolTipService.ToolTip="Decode Flashback playback on the GPU">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock x:Name="FlashbackDiskEstimateText"
-                                       AutomationProperties.AutomationId="FlashbackDiskEstimateText"
-                                       Style="{StaticResource SettingsShelfCaptionStyle}"
-                                       MinWidth="52"
-                                       Text="~1.3 GB"/>
-                            <TextBlock Grid.Column="1" Text="GPU"
-                                       Style="{StaticResource SettingsShelfCaptionStyle}"
-                                       Margin="8,0,0,0"/>
+                            <TextBlock Text="GPU decode"
+                                       Style="{StaticResource SettingsShelfCaptionStyle}"/>
                             <ToggleSwitch x:Name="FlashbackGpuDecodeToggle"
-                                          Grid.Column="2"
+                                          Grid.Column="1"
                                           AutomationProperties.AutomationId="FlashbackGpuDecodeToggle"
                                           OnContent="" OffContent=""
                                           MinWidth="0" MinHeight="0"
@@ -1421,12 +1395,6 @@
                                    FontSize="11" FontFamily="Consolas"
                                    Foreground="White"/>
                     </Border>
-                    <!-- Live edge indicator (hidden — playhead already shows position) -->
-                    <Border x:Name="FlashbackLiveEdge"
-                            Width="2" Background="#00CED1"
-                            CornerRadius="1"
-                            Canvas.Top="0"
-                            Visibility="Collapsed"/>
                     <!-- In point marker -->
                     <Border x:Name="FlashbackInPointMarker"
                             Width="2" Background="#FFD700"
@@ -1470,7 +1438,7 @@
                             ToolTipService.ToolTip="Play/Pause (Space)">
                         <FontIcon x:Name="FlashbackPlayPauseIcon" Glyph="&#xE768;" FontSize="14"/>
                     </Button>
-                    <Button x:Name="FlashbackGoLiveButton" AutomationProperties.AutomationId="FlashbackGoLiveButton" Content="Go Live" Height="28"
+                    <Button x:Name="FlashbackGoLiveButton" AutomationProperties.AutomationId="FlashbackGoLiveButton" Content="Go live" Height="28"
                             FontSize="11" Padding="8,0" CornerRadius="6"
                             Foreground="#00CED1"
                             Click="FlashbackGoLiveButton_Click"
@@ -1485,10 +1453,10 @@
                             <TextBlock Text="Export" FontSize="11"/>
                         </StackPanel>
                     </Button>
-                    <Button x:Name="FlashbackSaveLast5mButton" AutomationProperties.AutomationId="FlashbackSaveLast5mButton" Content="Save Last 5m" Height="28"
+                    <Button x:Name="FlashbackSaveLast5mButton" AutomationProperties.AutomationId="FlashbackSaveLast5mButton" Content="Save last 5 min" Height="28"
                             FontSize="11" Padding="8,0" CornerRadius="6"
                             Click="FlashbackSaveLast5mButton_Click"
-                            ToolTipService.ToolTip="Save last 5 minutes"/>
+                            ToolTipService.ToolTip="Save up to the last 5 minutes"/>
                 </StackPanel>
 
                 <!-- Row 3: Export Progress -->
@@ -1690,7 +1658,8 @@
                                 Width="70" MinHeight="0"
                                 Padding="0" Margin="0"
                                 VerticalAlignment="Center"
-                                ToolTipService.ToolTip="Preview volume">
+                                IsThumbToolTipEnabled="False"
+                                ToolTipService.ToolTip="Monitor volume">
                             <Slider.Resources>
                                 <x:Double x:Key="SliderHorizontalHeight">10</x:Double>
                                 <x:Double x:Key="SliderTrackThemeHeight">2</x:Double>
@@ -1700,10 +1669,6 @@
                                 <Thickness x:Key="SliderTopHeaderMargin">0</Thickness>
                                 <x:Double x:Key="SliderPreContentMargin">0</x:Double>
                                 <x:Double x:Key="SliderPostContentMargin">0</x:Double>
-                                <Style TargetType="ToolTip">
-                                    <Setter Property="Opacity" Value="0"/>
-                                    <Setter Property="IsHitTestVisible" Value="False"/>
-                                </Style>
                             </Slider.Resources>
                         </Slider>
                         <TextBlock x:Name="PreviewVolumeLabel"
@@ -1712,7 +1677,7 @@
                                    FontSize="10"
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                    VerticalAlignment="Center"
-                                   Text="100%"/>
+                                   Text="0%"/>
                             </Grid>
                         </Grid>
 
@@ -1763,6 +1728,7 @@
                                         Width="70" MinHeight="0"
                                         Padding="0" Margin="0"
                                         VerticalAlignment="Center"
+                                        IsThumbToolTipEnabled="False"
                                         ToolTipService.ToolTip="Microphone volume">
                                     <Slider.Resources>
                                         <x:Double x:Key="SliderHorizontalHeight">10</x:Double>
@@ -1773,10 +1739,6 @@
                                         <Thickness x:Key="SliderTopHeaderMargin">0</Thickness>
                                         <x:Double x:Key="SliderPreContentMargin">0</x:Double>
                                         <x:Double x:Key="SliderPostContentMargin">0</x:Double>
-                                        <Style TargetType="ToolTip">
-                                            <Setter Property="Opacity" Value="0"/>
-                                            <Setter Property="IsHitTestVisible" Value="False"/>
-                                        </Style>
                                     </Slider.Resources>
                                 </Slider>
                                 <TextBlock x:Name="MicVolumeLabel"
@@ -1965,7 +1927,7 @@
                             Height="36"
                             Padding="10,0"
                             CornerRadius="8"
-                            ToolTipService.ToolTip="Start Preview (Ctrl+P)">
+                            ToolTipService.ToolTip="Start preview (Ctrl+P)">
                         <Button.KeyboardAccelerators>
                             <KeyboardAccelerator Key="P" Modifiers="Control"/>
                         </Button.KeyboardAccelerators>
@@ -2013,7 +1975,7 @@
                                   ToolTipService.ToolTip="True HDR preview">
                         <StackPanel Orientation="Horizontal" Spacing="6">
                             <FontIcon Glyph="&#xE7B3;" FontSize="14"/>
-                            <TextBlock x:Name="HdrPreviewToggleLabel" Text="HDR Preview"
+                            <TextBlock x:Name="HdrPreviewToggleLabel" Text="HDR preview"
                                        FontSize="12" VerticalAlignment="Center"
                                        Visibility="Collapsed"/>
                         </StackPanel>
@@ -2022,7 +1984,7 @@
                                   AutomationProperties.AutomationId="AudioPreviewToggle"
                                   IsChecked="True"
                                   Height="32" Padding="8,0"
-                                  ToolTipService.ToolTip="Preview audio">
+                                  ToolTipService.ToolTip="Monitor source audio">
                         <StackPanel Orientation="Horizontal" Spacing="6">
                             <FontIcon Glyph="&#xE767;" FontSize="14"/>
                             <TextBlock x:Name="AudioPreviewToggleLabel" Text="Monitor"
@@ -2053,7 +2015,7 @@
                         <StackPanel Orientation="Horizontal" Spacing="6">
                             <FontIcon Glyph="&#xE9D2;" FontSize="14"/>
                             <TextBlock x:Name="FrameTimeOverlayToggleLabel"
-                                       Text="Frame Time"
+                                       Text="Frame time"
                                        FontSize="12"
                                        VerticalAlignment="Center"
                                        Visibility="Collapsed"/>

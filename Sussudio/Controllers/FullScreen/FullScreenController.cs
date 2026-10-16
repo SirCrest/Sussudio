@@ -474,15 +474,15 @@ internal sealed class FullScreenController
         if (_isFullScreen)
         {
             _context.FullScreenButtonIcon.Glyph = "\uE73F";
-            ToolTipService.SetToolTip(_context.FullScreenButton, "Exit full screen");
-            _context.FullScreenMenuItem.Text = "Exit Full Screen";
+            ToolTipService.SetToolTip(_context.FullScreenButton, "Exit full screen (F11 or Esc)");
+            _context.FullScreenMenuItem.Text = "Exit full screen";
             if (_context.FullScreenMenuItem.Icon is FontIcon icon) icon.Glyph = "\uE73F";
         }
         else
         {
             _context.FullScreenButtonIcon.Glyph = "\uE740";
-            ToolTipService.SetToolTip(_context.FullScreenButton, "Full screen");
-            _context.FullScreenMenuItem.Text = "Enter Full Screen";
+            ToolTipService.SetToolTip(_context.FullScreenButton, "Full screen (F11)");
+            _context.FullScreenMenuItem.Text = "Full screen";
             if (_context.FullScreenMenuItem.Icon is FontIcon icon) icon.Glyph = "\uE740";
         }
     }

@@ -403,9 +403,32 @@ internal sealed class PreviewStartupSessionController
             : $"{TimeoutReasonPrefix}{timeoutMs}ms{MissingSignalsMarker}{missingSignals}";
 
     private static string FormatTimeoutStatusText(string? missingSignals)
-        => StatusMessages.PreviewFailed(string.IsNullOrWhiteSpace(missingSignals)
-            ? "no visual confirmation"
-            : $"missing readiness signal ({missingSignals})");
+        => StatusMessages.PreviewFailed(DescribeMissingSignals(missingSignals));
+
+    // Missing signals arrive as the "+"-joined log tokens from FormatSignalList. The footer
+    // names the earliest stage that never happened, since later stages wait on it.
+    private static string DescribeMissingSignals(string? missingSignals)
+    {
+        var missing = string.IsNullOrWhiteSpace(missingSignals)
+            ? Array.Empty<string>()
+            : missingSignals.Split('+');
+        if (Array.IndexOf(missing, "MediaOpened") >= 0)
+        {
+            return "the capture device did not open";
+        }
+
+        if (Array.IndexOf(missing, "FirstCaptureFrame") >= 0)
+        {
+            return "no frames arrived from the capture device";
+        }
+
+        if (Array.IndexOf(missing, "PlaybackAdvancing") >= 0)
+        {
+            return "the preview did not start playing";
+        }
+
+        return "no picture reached the screen";
+    }
 
     // The failure stop republishes after teardown. A timeout reason is a machine token, so it
     // maps back to the same readable text the watchdog already published; other reasons are

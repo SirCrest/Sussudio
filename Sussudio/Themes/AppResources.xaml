@@ -8,20 +8,10 @@
             <SolidColorBrush x:Key="AudioMeterTrackBrush" Color="#141414"/>
             <SolidColorBrush x:Key="AudioMeterBorderBrush" Color="#2A2A2A"/>
             <SolidColorBrush x:Key="RecordButtonBrush" Color="#E81123"/>
-            <SolidColorBrush x:Key="RecordButtonHoverBrush" Color="#FF4D5E"/>
-            <SolidColorBrush x:Key="RecordButtonPressedBrush" Color="#CC0E1B"/>
-            <SolidColorBrush x:Key="RecordButtonBorderBrush" Color="Transparent"/>
-            <SolidColorBrush x:Key="RecordingIndicatorBrush" Color="#E0FF0000"/>
-            <SolidColorBrush x:Key="WarningHintBrush" Color="#F5C542"/>
             <SolidColorBrush x:Key="ClipAlertBrush" Color="#FF1744"/>
 
             <!-- Floating Cinema surfaces -->
-            <SolidColorBrush x:Key="PreviewAreaBackgroundBrush" Color="#000000"/>
-            <SolidColorBrush x:Key="SurfaceBorderSubtleBrush" Color="Transparent"/>
             <SolidColorBrush x:Key="ToolbarSeparatorBrush" Color="#0AFFFFFF"/>
-
-            <!-- Accent system -->
-            <SolidColorBrush x:Key="AccentBrush" Color="#00CED1"/>
 
             <!-- Replace the Windows system accent (OS blue) with the app's
                  teal. AccentFillColor* covers controls that bind the accent
@@ -63,19 +53,10 @@
             <SolidColorBrush x:Key="AudioMeterTrackBrush" Color="#E8E8E8"/>
             <SolidColorBrush x:Key="AudioMeterBorderBrush" Color="#CCCCCC"/>
             <SolidColorBrush x:Key="RecordButtonBrush" Color="#E81123"/>
-            <SolidColorBrush x:Key="RecordButtonHoverBrush" Color="#FF4D5E"/>
-            <SolidColorBrush x:Key="RecordButtonPressedBrush" Color="#CC0E1B"/>
-            <SolidColorBrush x:Key="RecordButtonBorderBrush" Color="Transparent"/>
-            <SolidColorBrush x:Key="RecordingIndicatorBrush" Color="#E0FF0000"/>
-            <SolidColorBrush x:Key="WarningHintBrush" Color="#C49000"/>
             <SolidColorBrush x:Key="ClipAlertBrush" Color="#D13438"/>
 
             <!-- Light fallbacks -->
-            <SolidColorBrush x:Key="PreviewAreaBackgroundBrush" Color="#F0F0F0"/>
-            <SolidColorBrush x:Key="SurfaceBorderSubtleBrush" Color="#08000000"/>
             <SolidColorBrush x:Key="ToolbarSeparatorBrush" Color="#0A000000"/>
-
-            <SolidColorBrush x:Key="AccentBrush" Color="#00868A"/>
 
             <!-- Match the dark theme: app teal replaces the OS blue accent. -->
             <Color x:Key="SystemAccentColor">#00868A</Color>
@@ -113,6 +94,260 @@
     <Style x:Key="SecondaryLabelStyle" TargetType="TextBlock">
         <Setter Property="FontSize" Value="12"/>
         <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}"/>
+    </Style>
+
+    <!-- Severity palette. Notices, hints and the stats readouts all sit on the
+         dark cinema surfaces, so these do not change with the system theme.
+         StatsOverlayCompositionController (metric brushes) and
+         FrameTimeGraphController (warning stroke) repeat the critical, warning
+         and success values in code; change them together. Live readouts keep
+         their own sky-blue info tone so values never read as teal controls. -->
+    <Color x:Key="SeverityCriticalColor">#FF6B6B</Color>
+    <Color x:Key="SeverityWarningColor">#FFC857</Color>
+    <Color x:Key="SeverityInfoColor">#00CED1</Color>
+    <Color x:Key="SeveritySuccessColor">#70F08B</Color>
+    <SolidColorBrush x:Key="SeverityCriticalBrush" Color="{StaticResource SeverityCriticalColor}"/>
+    <SolidColorBrush x:Key="SeverityWarningBrush" Color="{StaticResource SeverityWarningColor}"/>
+    <SolidColorBrush x:Key="SeverityInfoBrush" Color="{StaticResource SeverityInfoColor}"/>
+    <SolidColorBrush x:Key="SeveritySuccessBrush" Color="{StaticResource SeveritySuccessColor}"/>
+
+    <!-- Notice banners: the app's InfoBar. Same glass as the control bar and
+         settings shelf, a severity rail and wash instead of a tinted slab, and
+         an eyebrow title in the tracked caps the stats dock and frame-time
+         overlay use. Each banner keeps its own margin inside ContentRoot so a
+         closed banner takes no space in the notice stack. -->
+    <AcrylicBrush x:Key="NoticeBannerBackgroundBrush"
+                  TintColor="#141414"
+                  TintOpacity="0.85"
+                  FallbackColor="#1C1C1C"/>
+    <LinearGradientBrush x:Key="NoticeCriticalWashBrush" StartPoint="0,0.5" EndPoint="1,0.5">
+        <GradientStop Color="#33FF6B6B" Offset="0"/>
+        <GradientStop Color="#00FF6B6B" Offset="0.6"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="NoticeWarningWashBrush" StartPoint="0,0.5" EndPoint="1,0.5">
+        <GradientStop Color="#2EFFC857" Offset="0"/>
+        <GradientStop Color="#00FFC857" Offset="0.6"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="NoticeInfoWashBrush" StartPoint="0,0.5" EndPoint="1,0.5">
+        <GradientStop Color="#2900CED1" Offset="0"/>
+        <GradientStop Color="#0000CED1" Offset="0.6"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="NoticeSuccessWashBrush" StartPoint="0,0.5" EndPoint="1,0.5">
+        <GradientStop Color="#2970F08B" Offset="0"/>
+        <GradientStop Color="#0070F08B" Offset="0.6"/>
+    </LinearGradientBrush>
+
+    <Style x:Key="NoticeBannerStyle" TargetType="InfoBar">
+        <Setter Property="IsTabStop" Value="False"/>
+        <Setter Property="RequestedTheme" Value="Dark"/>
+        <Setter Property="Background" Value="{StaticResource NoticeBannerBackgroundBrush}"/>
+        <Setter Property="BorderBrush" Value="#1FFFFFFF"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="12"/>
+        <Setter Property="AutomationProperties.LandmarkType" Value="Custom"/>
+        <Setter Property="AutomationProperties.IsDialog" Value="True"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="InfoBar">
+                    <!-- InfoBar collapses ContentRoot when closed; the name is part of its template contract. -->
+                    <Border x:Name="ContentRoot"
+                            Margin="0,0,0,8"
+                            VerticalAlignment="Top"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="{TemplateBinding CornerRadius}">
+                        <Border.RenderTransform>
+                            <TranslateTransform x:Name="ContentRootTranslate"/>
+                        </Border.RenderTransform>
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="SeverityLevels">
+                                <VisualState x:Name="Informational"/>
+                                <VisualState x:Name="Error">
+                                    <VisualState.Setters>
+                                        <Setter Target="SeverityWash.Background" Value="{StaticResource NoticeCriticalWashBrush}"/>
+                                        <Setter Target="SeverityRail.Background" Value="{StaticResource SeverityCriticalBrush}"/>
+                                        <Setter Target="StandardIcon.Glyph" Value="&#xE783;"/>
+                                        <Setter Target="StandardIcon.Foreground" Value="{StaticResource SeverityCriticalBrush}"/>
+                                        <Setter Target="Title.Foreground" Value="{StaticResource SeverityCriticalBrush}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Warning">
+                                    <VisualState.Setters>
+                                        <Setter Target="SeverityWash.Background" Value="{StaticResource NoticeWarningWashBrush}"/>
+                                        <Setter Target="SeverityRail.Background" Value="{StaticResource SeverityWarningBrush}"/>
+                                        <Setter Target="StandardIcon.Glyph" Value="&#xE7BA;"/>
+                                        <Setter Target="StandardIcon.Foreground" Value="{StaticResource SeverityWarningBrush}"/>
+                                        <Setter Target="Title.Foreground" Value="{StaticResource SeverityWarningBrush}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Success">
+                                    <VisualState.Setters>
+                                        <Setter Target="SeverityWash.Background" Value="{StaticResource NoticeSuccessWashBrush}"/>
+                                        <Setter Target="SeverityRail.Background" Value="{StaticResource SeveritySuccessBrush}"/>
+                                        <Setter Target="StandardIcon.Glyph" Value="&#xE930;"/>
+                                        <Setter Target="StandardIcon.Foreground" Value="{StaticResource SeveritySuccessBrush}"/>
+                                        <Setter Target="Title.Foreground" Value="{StaticResource SeveritySuccessBrush}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                            <VisualStateGroup x:Name="IconStates">
+                                <VisualState x:Name="StandardIconVisible"/>
+                                <VisualState x:Name="UserIconVisible">
+                                    <VisualState.Setters>
+                                        <Setter Target="UserIconBox.Visibility" Value="Visible"/>
+                                        <Setter Target="StandardIcon.Visibility" Value="Collapsed"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="NoIconVisible">
+                                    <VisualState.Setters>
+                                        <Setter Target="StandardIcon.Visibility" Value="Collapsed"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                            <VisualStateGroup>
+                                <VisualState x:Name="CloseButtonVisible"/>
+                                <VisualState x:Name="CloseButtonCollapsed">
+                                    <VisualState.Setters>
+                                        <Setter Target="CloseButton.Visibility" Value="Collapsed"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                            <VisualStateGroup x:Name="InfoBarVisibility">
+                                <!-- InfoBar enters this state without transitions, so the
+                                     entrance lives in the state storyboard itself. -->
+                                <VisualState x:Name="InfoBarVisible">
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="ContentRoot"
+                                                         Storyboard.TargetProperty="Opacity"
+                                                         From="0" To="1"
+                                                         Duration="0:0:0.2"/>
+                                        <DoubleAnimation Storyboard.TargetName="ContentRootTranslate"
+                                                         Storyboard.TargetProperty="Y"
+                                                         From="-8" To="0"
+                                                         Duration="0:0:0.28">
+                                            <DoubleAnimation.EasingFunction>
+                                                <ExponentialEase EasingMode="EaseOut" Exponent="5"/>
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="InfoBarCollapsed">
+                                    <VisualState.Setters>
+                                        <Setter Target="ContentRoot.Visibility" Value="Collapsed"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+
+                        <Grid MinHeight="52">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Border x:Name="SeverityWash"
+                                    Grid.ColumnSpan="5"
+                                    CornerRadius="11"
+                                    Background="{StaticResource NoticeInfoWashBrush}"
+                                    IsHitTestVisible="False"/>
+                            <Border x:Name="SeverityRail"
+                                    Width="3"
+                                    Margin="10,12,0,12"
+                                    CornerRadius="1.5"
+                                    Background="{StaticResource SeverityInfoBrush}"/>
+                            <FontIcon x:Name="StandardIcon"
+                                      Grid.Column="1"
+                                      Margin="12,16,0,0"
+                                      VerticalAlignment="Top"
+                                      FontSize="16"
+                                      Glyph="&#xE946;"
+                                      Foreground="{StaticResource SeverityInfoBrush}"
+                                      AutomationProperties.AccessibilityView="Raw"/>
+                            <Viewbox x:Name="UserIconBox"
+                                     Grid.Column="1"
+                                     Visibility="Collapsed"
+                                     Margin="12,16,0,0"
+                                     VerticalAlignment="Top"
+                                     MaxWidth="16"
+                                     MaxHeight="16"
+                                     Child="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=TemplateSettings.IconElement}"/>
+
+                            <StackPanel Grid.Column="2"
+                                        Margin="12,11,12,12"
+                                        VerticalAlignment="Center">
+                                <TextBlock x:Name="Title"
+                                           Text="{TemplateBinding Title}"
+                                           FontSize="11"
+                                           FontWeight="SemiBold"
+                                           CharacterSpacing="100"
+                                           Foreground="{StaticResource SeverityInfoBrush}"
+                                           TextWrapping="WrapWholeWords"/>
+                                <TextBlock x:Name="Message"
+                                           Margin="0,3,0,0"
+                                           Text="{TemplateBinding Message}"
+                                           FontSize="13"
+                                           Foreground="{ThemeResource TextFillColorPrimaryBrush}"
+                                           TextWrapping="WrapWholeWords"/>
+                                <ContentPresenter x:Name="ContentArea"
+                                                  Content="{TemplateBinding Content}"
+                                                  ContentTemplate="{TemplateBinding ContentTemplate}"/>
+                            </StackPanel>
+
+                            <ContentPresenter Grid.Column="3"
+                                              Margin="0,0,4,0"
+                                              VerticalAlignment="Center"
+                                              Content="{TemplateBinding ActionButton}">
+                                <ContentPresenter.Resources>
+                                    <SolidColorBrush x:Key="ButtonBackground" Color="#1AFFFFFF"/>
+                                    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#2EFFFFFF"/>
+                                    <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#12FFFFFF"/>
+                                    <SolidColorBrush x:Key="ButtonBorderBrush" Color="Transparent"/>
+                                    <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="Transparent"/>
+                                    <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="Transparent"/>
+                                    <SolidColorBrush x:Key="ButtonForeground" Color="#F2FFFFFF"/>
+                                    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#FFFFFFFF"/>
+                                    <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#B3FFFFFF"/>
+                                    <Style TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+                                        <Setter Property="Height" Value="30"/>
+                                        <Setter Property="Padding" Value="12,0"/>
+                                        <Setter Property="FontSize" Value="12"/>
+                                        <Setter Property="CornerRadius" Value="8"/>
+                                    </Style>
+                                </ContentPresenter.Resources>
+                            </ContentPresenter>
+
+                            <Button x:Name="CloseButton"
+                                    Grid.Column="4"
+                                    Width="28"
+                                    Height="28"
+                                    Margin="0,12,10,0"
+                                    Padding="0"
+                                    VerticalAlignment="Top"
+                                    CornerRadius="8"
+                                    Command="{TemplateBinding CloseButtonCommand}"
+                                    CommandParameter="{TemplateBinding CloseButtonCommandParameter}">
+                                <Button.Resources>
+                                    <SolidColorBrush x:Key="ButtonBackground" Color="Transparent"/>
+                                    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#1AFFFFFF"/>
+                                    <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#0DFFFFFF"/>
+                                    <SolidColorBrush x:Key="ButtonBorderBrush" Color="Transparent"/>
+                                    <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="Transparent"/>
+                                    <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="Transparent"/>
+                                    <SolidColorBrush x:Key="ButtonForeground" Color="#99FFFFFF"/>
+                                    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#FFFFFFFF"/>
+                                    <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#B3FFFFFF"/>
+                                </Button.Resources>
+                                <FontIcon Glyph="&#xE711;" FontSize="10"/>
+                            </Button>
+                        </Grid>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
 </ResourceDictionary>

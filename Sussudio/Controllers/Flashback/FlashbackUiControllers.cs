@@ -642,10 +642,11 @@ internal sealed class FlashbackExportProgressPresentationController
 internal sealed class FlashbackHealthPresentationControllerContext
 {
     public required InfoBar FlashbackHealthInfoBar { get; init; }
+    public required ButtonBase FlashbackHealthRestartButton { get; init; }
 }
 
 // Presents the UI health surfacing message (involuntary snap-to-live notice,
-// dead-backend banner) set by MainViewModel.FlashbackState.cs. Empty message
+// not-buffering banner) set by MainViewModel.FlashbackState.cs. Empty message
 // means hidden.
 internal sealed class FlashbackHealthPresentationController
 {
@@ -658,6 +659,15 @@ internal sealed class FlashbackHealthPresentationController
 
     public void UpdateMessage(string message)
     {
+        // The snap-to-live notice is informational and clears itself; only the
+        // not-buffering banner is a fault, and only it offers a restart.
+        var isNotBuffering = message == StatusMessages.FlashbackNotRunningNotice;
+        _context.FlashbackHealthInfoBar.Severity = isNotBuffering
+            ? InfoBarSeverity.Warning
+            : InfoBarSeverity.Informational;
+        _context.FlashbackHealthRestartButton.Visibility = isNotBuffering
+            ? Visibility.Visible
+            : Visibility.Collapsed;
         _context.FlashbackHealthInfoBar.Message = message;
         _context.FlashbackHealthInfoBar.IsOpen = !string.IsNullOrEmpty(message);
     }
@@ -757,7 +767,6 @@ internal sealed class FlashbackTimelineControllerContext
     public required FrameworkElement FlashbackTrackBackground { get; init; }
     public required FrameworkElement FlashbackScrubArea { get; init; }
     public required FrameworkElement FlashbackPlayhead { get; init; }
-    public required FrameworkElement FlashbackLiveEdge { get; init; }
     public required Action SnapPlayheadOnNextOpen { get; init; }
     public required Action StartStatusPolling { get; init; }
     public required Action StopStatusPolling { get; init; }
@@ -842,9 +851,6 @@ internal sealed class FlashbackTimelineController
         _context.FlashbackScrubArea.Width = width;
         _context.FlashbackScrubArea.Height = height;
         _context.FlashbackPlayhead.Height = height;
-        _context.FlashbackLiveEdge.Height = height;
-
-        Canvas.SetLeft(_context.FlashbackLiveEdge, width - 2);
     }
 
     public void ApplyLockout()

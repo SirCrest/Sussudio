@@ -132,11 +132,18 @@ internal sealed class CaptureOptionPresentationController
 
     public void RefreshHdrHintText()
     {
+        // The service's violation reason names pipeline and pixel-format tokens for logs
+        // and automation; the tooltip says what it means for the recording.
+        var readinessHint = _context.ViewModel.HdrRuntimeState == "Violation"
+            ? CaptureOptionTooltipFormatter.HdrRecordingInSdrHint
+            : _context.ViewModel.HdrReadinessReason;
         var tooltip = CaptureOptionTooltipFormatter.BuildHdrHintText(
             _context.ViewModel.HdrResolutionSupportHint,
-            _context.ViewModel.HdrReadinessReason,
+            readinessHint,
             _context.ViewModel.IsRecording);
-        ToolTipService.SetToolTip(_context.HdrToggle, tooltip);
+        ToolTipService.SetToolTip(
+            _context.HdrToggle,
+            tooltip ?? CaptureOptionTooltipFormatter.HdrToggleToolTip);
     }
 
     public void UpdateFpsTelemetryTooltip()
@@ -432,6 +439,10 @@ internal sealed class CaptureOptionBindingController
 
 internal static class CaptureOptionTooltipFormatter
 {
+    // Matches the XAML tooltip, which a hint replaces while one applies.
+    public const string HdrToggleToolTip = "HDR recording";
+    public const string HdrRecordingInSdrHint = "HDR was requested, but this recording is running in SDR.";
+
     public static string? BuildHdrHintText(string? resolutionHint, string? readinessHint, bool isRecording)
     {
         resolutionHint = resolutionHint?.Trim();

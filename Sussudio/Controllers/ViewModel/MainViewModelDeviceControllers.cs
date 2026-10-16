@@ -974,7 +974,7 @@ internal sealed class MainViewModelCaptureModeOptionRebuildController
                         IsEnabled = enabled,
                         DisableReason = enabled
                             ? string.Empty
-                            : "HDR mode is not supported at this frame rate."
+                            : "HDR is not supported at this frame rate."
                     };
                 })
                 .OrderByDescending(option => option.FriendlyValue)
