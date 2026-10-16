@@ -54,8 +54,8 @@ implementations and shared fixtures out of the oversized `Program` helper namesp
   cancellation before commit, and ownership after the caller stops waiting.
 - `tests/Sussudio.Tests/FlashbackForceRotateResultTests.cs` protects the actual
   request's typed completion, cancellation/commit states and planner handoff.
-- `tests/Sussudio.Tests/XUnit.PreviewRendererPerformanceTests.cs` owns bounded
-  texture/subresource cache reuse, eviction, and allocation checks.
+- `tests/Sussudio.Tests/PreviewInputViewCacheTests.cs` owns bounded
+  texture/subresource cache reuse, eviction, and warm-lookup allocation checks.
 - `tests/Sussudio.Tests/XUnit.StatsUiSamplerTests.cs` owns shared fanout, cadence,
   visibility demand, epoch changes, and exception recovery checks.
 - `tests/Sussudio.Tests/PreviewFrameTimeHistoryTests.cs` directly tests the pure
@@ -150,8 +150,8 @@ implementations and shared fixtures out of the oversized `Program` helper namesp
   checks.
 - `XUnit.CoreRuntimeContractsTests.cs` owns RuntimePaths, FFmpeg runtime
   location, bounded process supervision, MMCSS registration, ProcessSpec,
-  ProcessRunResult, and the shared `RuntimeContractSource` source-family
-  readers used by tool/runtime contract tests.
+  ProcessRunResult, and the shared `RuntimeContractSource` repository-root
+  lookup used by fixture-backed tests.
 - `XUnit.ModelContractsTests.cs` owns the former legacy
   CaptureDiagnosticsSnapshot, CaptureHealthSnapshot,
   SourceSignalTelemetrySnapshot, SourceTelemetryDetailEntry, and source
@@ -197,9 +197,9 @@ implementations and shared fixtures out of the oversized `Program` helper namesp
   sink, playback, decoder, exporter, and Flashback model xUnit classes while
   preserving their buffer option sizing, session/playback/export DTO,
   reflection/nullability helper, frame-rate, codec, queue, force-rotate,
-  startup, command-queue, source-shape, cadence, frame-buffer, state/lifetime,
+  startup, command-queue, cadence, frame-buffer, state/lifetime,
   timestamp, audio, in/out marker, request validation, segment, cancellation,
-  output path/finalization, and source-ownership checks.
+  and output path/finalization checks.
 - `tests/Sussudio.Tests/XUnit.RecordingAdmissionTests.cs` owns executable raw,
   pooled, leased, and GPU admission accounting plus rejected-lease lifetime checks.
 - `XUnit.FlashbackFailureTests.cs` owns structured export failure classification,
@@ -212,13 +212,13 @@ implementations and shared fixtures out of the oversized `Program` helper namesp
   checks gain an independent fixture or runtime harness.
 - `XUnit.FlashbackContractsTests.cs` owns the former legacy Flashback playback
   fMP4 reopen, seek recovery, in/out marker API, normalization, disposal,
-  marker clamp, root state, transition, audio guard checks, command queue, and
-  source-shape backing `Program` methods.
+  marker clamp, root state, transition, audio guard checks, and command queue
+  backing `Program` methods.
 - `MainWindowControllerOwnershipTests.cs` owns the former legacy MainWindow
   UI contract and stats snapshot construction/health/renderer metric projection
   checks.
 - `XUnit.AutomationContractsTests.cs` owns the former legacy automation xUnit
-  execution groups: catalog, manifest, path-policy, reliability-gates,
+  execution groups: catalog, manifest, path-policy,
   app-surface, ViewModel/Flashback UI, dispatcher, capture/Flashback routing,
   diagnostics snapshot projection, and diagnostics-loop polling checks. The
   public wrapper classes remain separate inside this file so existing test
@@ -226,15 +226,14 @@ implementations and shared fixtures out of the oversized `Program` helper namesp
 - `XUnit.ToolContractsTests.cs` owns the former legacy tool xUnit execution
   surface: focused tool formatter contract checks, PresentMon parser, ssctl
   pipe transport, KS audio-node, EGAVDS probe, shared automation snapshot
-  formatter core, Flashback, Preview D3D, source ownership, ssctl formatter,
+  formatter core, Flashback, Preview D3D, ssctl formatter,
   NVML snapshot, CaptureSessionSnapshot default-state, and RTK I2C
   unsafe-native-path contract checks. The public wrapper classes remain
   separate inside this file so existing test identities stay stable while the
   backing snapshot formatter, PresentMon, pipe transport, KS audio-node, and
   EGAVDS probe checks live together in `XUnit.ToolContractsTests.cs`.
 - `XUnit.ToolContractsTests.cs` owns the former legacy ssctl
-  command-handler routing, source ownership, and catalog-backed help contract
-  checks.
+  command-handler routing checks.
 - `HarnessCore.cs` owns the assembly-load smoke entry point and the xUnit bootstrap
   helper that initializes the staged app assembly before wrappers call shared
   reflection helpers.
@@ -242,13 +241,8 @@ implementations and shared fixtures out of the oversized `Program` helper namesp
   checks for the flashback free-disk policy (`IsDiskSpaceLow` /
   `IsDiskCriticallyLow` via the injectable `FreeDiskBytesProvider` seam) and
   the 7-day recovery-preserve marker aging in startup cache cleanup.
-- `XUnit.FlashbackSinkHardeningTests.cs` exercises real encoder force rotation
-  and successful recording finalization after accepted frames drain. The narrow
-  source check preserves path reservation before the encoder-lane handoff.
-  `XUnit.FlashbackRecordingBoundaryTests.cs` deterministically proves that later
+- `XUnit.FlashbackRecordingBoundaryTests.cs` deterministically proves that later
   queued preview work cannot extend the captured recording boundary.
-- `tests/Sussudio.Tests/XUnit.FlashbackUiHealthTests.cs` pins the
-  `FlashbackHealthInfoBar` AutomationId.
 - `XUnit.ToolContractsTests.cs` owns the former legacy MCP tool execution
   groups: window/preview wait, screenshot, frame-capture, window action,
   preview-toggle/probe, PresentMon correlation, performance timeline,
@@ -305,9 +299,9 @@ implementations and shared fixtures out of the oversized `Program` helper namesp
   Flashback buffer startup/recovery checks.
 - Preview-startup ordering checks also live in
   `XUnit.PresentationPreviewContractsTests.cs`.
-- `XUnit.AutomationContractsTests.cs` owns the former legacy app-surface and
-  project-file build/publish policy implementation plus xUnit execution checks
-  after their removal from the presentation-preview capture catalog.
+- `XUnit.AutomationContractsTests.cs` owns the former legacy app-surface
+  implementation plus xUnit execution checks after their removal from the
+  presentation-preview capture catalog.
 - `XUnit.PresentationPreviewContractsTests.cs` owns the former legacy
   presentation-preview D3D registration groups: pacing, geometry/screenshot,
   present cadence, device-lost, diagnostics, contracts/metrics ownership,
@@ -360,11 +354,14 @@ helper namespace once each xUnit class owns its own checks and fixtures:
    `GpuPipelineHandles`, `IRecordingSink` shape).
 3. **Behavioral service tests** that exercise pure logic
    (`FrameLedger`, `PresentMonProbe`).
-4. **Source-shape tests** - replace broad implementation-grep tests with
-   behavioral tests where behavior is the contract. Keep focused ownership and
-   source-shape assertions when the architecture boundary itself is the
-   contract, and keep them small enough that a legitimate move has one obvious
-   test update.
+4. **Source-shape tests** - retired on 2026-10-03 from the automation, tool,
+   recording, Flashback, diagnostic, native and controller test files per
+   AGENTS.md § Testing Policy (see
+   `docs/architecture/test-suite-audit-2026-10-02.md`). Do not add new
+   source-text assertions. The remaining readers live in the presentation,
+   ownership, guardrail, core-runtime, model and MJPEG files; the RTK shim guard
+   in `ArchitectureGuardrailsTests.cs` is the known exception pending a
+   behavioral native test.
 5. **Reflection-over-private tests** — rewrite to use the now-internal API
    directly. If a test still needs to peek at a private field, the design is
    probably the bug; consider exposing the value or restructuring.
@@ -381,17 +378,20 @@ helper namespace once each xUnit class owns its own checks and fixtures:
 - Use `Assert.Equal/True/False/Contains/Empty`. Avoid `Assert.Equal(expected,
   actual, comparer)` overloads unless the type genuinely needs custom equality.
 - For HDR/P010 paths, prefer behavioural tests that drive the encoder against a
-  small fixture buffer. Source-grep contract assertions stay only when the
-  public API shape is the contract.
+  small fixture buffer. Do not add source-grep contract assertions.
 - Keep the assembly-load smoke entry point available while the repo still
   requires the offline `dotnet exec` validation step; add all regression coverage
   to xUnit and keep moving implementations out of `Program`.
 
 ## Open work tracked separately
 
-- `source_text_grep_assertions_couple_to_text` — replace per-area, biggest win.
-- `structural_snapshot_tests_dont_verify_behavior` — collapse property-name
-  loops into behavioural tests.
+- `source_text_grep_assertions_couple_to_text` — largely retired on 2026-10-03;
+  the remaining source readers live in `XUnit.PresentationPreviewContractsTests.cs`,
+  `MainWindowControllerOwnershipTests.cs`, `CaptureServiceOwnershipTests.cs`,
+  `ArchitectureGuardrailsTests.cs`, `XUnit.CoreRuntimeContractsTests.cs`,
+  `XUnit.ModelContractsTests.cs`, and `MjpegPipelineTests.cs`.
+- `structural_snapshot_tests_dont_verify_behavior` — property-name loops were
+  removed from the pruned files; the files listed above still hold the rest.
 - `untested_critical_subsystems_on_hdr_rail` — needs the integration-test seam
   before meaningful coverage lands.
 - `wall_clock_mcp_process_tests` — `XUnit.McpCancellationTests.cs`'s

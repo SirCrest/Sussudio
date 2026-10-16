@@ -8,19 +8,20 @@ namespace Sussudio.Tests
     {
         public static IEnumerable<object[]> ScenarioOutcomes()
         {
-            var scenarios = new (string Name, string Artifact, bool PreviewStopped, string Requested, string ExportFailure)[]
+            var allOutcomes = new[] { "success", "export-failed", "export-no-message", "verify-failed", "verify-no-message", "export-threw", "verify-threw", "export-canceled", "verify-canceled" };
+            // The scenario name, artifact and action strings are pass-through, so one scenario carries the
+            // full outcome matrix. previewStopped is the only input that changes behavior: it rewrites the
+            // requested-action and export-failure wording, so it keeps one row for each of those two paths.
+            var scenarios = new (string Name, string Artifact, bool PreviewStopped, string Requested, string ExportFailure, string[] Outcomes)[]
             {
                 ("flashback restart cycle", "flashback-restart-cycle-export.mp4", false,
-                    "flashback restart cycle export requested", "flashback restart cycle: export failed - "),
-                ("flashback encoder cycle", "flashback-encoder-cycle-export.mp4", false,
-                    "flashback encoder cycle export requested", "flashback encoder cycle: export failed - "),
+                    "flashback restart cycle export requested", "flashback restart cycle: export failed - ", allOutcomes),
                 ("flashback preview cycle", "flashback-preview-off-export.mp4", true,
-                    "flashback preview cycle export while preview off requested", "flashback preview cycle: export while preview off failed - "),
-                ("flashback playback preview cycle", "flashback-playback-preview-cycle.mp4", true,
-                    "flashback playback preview cycle export while preview off requested", "flashback playback preview cycle: export while preview off failed - ")
+                    "flashback preview cycle export while preview off requested", "flashback preview cycle: export while preview off failed - ",
+                    new[] { "success", "export-failed" })
             };
             foreach (var scenario in scenarios)
-            foreach (var outcome in new[] { "success", "export-failed", "export-no-message", "verify-failed", "verify-no-message", "export-threw", "verify-threw", "export-canceled", "verify-canceled" })
+            foreach (var outcome in scenario.Outcomes)
                 yield return new object[] { scenario.Name, scenario.Artifact, scenario.PreviewStopped, scenario.Requested, scenario.ExportFailure, outcome };
         }
 

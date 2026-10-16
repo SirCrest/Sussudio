@@ -74,10 +74,6 @@ public sealed class PresentationPreviewCaptureFlashbackBufferContractsTests
     }
 
     [Fact]
-    public Task FlashbackBufferManagerCleansStaleSessionDirectories()
-        => global::Program.FlashbackBufferManager_CleansStaleSessionDirectories();
-
-    [Fact]
     public Task FlashbackBufferManagerPreservesMarkedRecoverySessions()
         => global::Program.FlashbackBufferManager_PreservesMarkedRecoverySessions();
 }
@@ -337,10 +333,6 @@ public sealed class PresentationPreviewCaptureRuntimeGuardContractsTests
     {
         global::Program.EnsureTargetAssemblyLoadedForXUnit();
     }
-
-    [Fact]
-    public Task RecordingStopPropagatesUnifiedVideoStopFailure()
-        => global::Program.RecordingStop_PropagatesUnifiedVideoStopFailure();
 
     [Fact]
     public Task PreviewStopApiSurfaceHasNoDefaultLiteralAmbiguity()

@@ -70,6 +70,7 @@ public sealed class FlashbackFailureTests
         Set(result, "CleanupPending", true);
         Set(result, "RecoveryPath", "recovery.ts");
         Set(result, "FinalizationElapsedMs", 1234L);
+        Set(result, "PreservedArtifacts", new[] { "export.ts" });
         result = InvokeInstance(result, "WithTrackEvidence", new[] { "video", "program" }, new[] { "video" });
 
         var endResult = CreateFailure("recording-finalization-failed", "Retained recording segments.");
@@ -81,7 +82,7 @@ public sealed class FlashbackFailureTests
             endResult);
 
         AssertFailure(preserved, "flashback-export-cancelled", "Cancelled");
-        Assert.Equal(new[] { "segment.ts" }, Get<IEnumerable<string>>(preserved, "PreservedArtifacts"));
+        Assert.Equal(new[] { "export.ts", "segment.ts" }, Get<IEnumerable<string>>(preserved, "PreservedArtifacts"));
         AssertMetadata(preserved);
 
         var integrityFailure = InvokeInstance(preserved, "AsFailure", "Requested audio was missing.", "recording-program-audio-missing");
@@ -91,14 +92,25 @@ public sealed class FlashbackFailureTests
         AssertDiagnostics(integrityFailure, "Failed", "Failed");
     }
 
-    [Fact]
-    public void SuccessfulResultDoesNotExposeStaleFailureCode()
+    [Theory]
+    [InlineData("", "cancelled in point timeout output path", false, "Failed")]
+    [InlineData("future-failure", "cancelled", false, "Failed")]
+    [InlineData("flashback-export-input-read-failed", "permission denied cancelled", false, "InputReadFailed")]
+    [InlineData("flashback-export-cancelled", "localized status", false, "Cancelled")]
+    [InlineData("flashback-export-cancelled", "cancelled", true, "")]
+    public void ClassificationUsesFailureIdentityAndSuccess(string code, string message, bool succeeded, string expected)
     {
-        var result = CreateFailure("flashback-export-cancelled", "Export complete.");
-        SetOutcome(result, "Saved");
+        var result = Activator.CreateInstance(TypeOf("Sussudio.Services.Contracts.FinalizeResult"))!;
+        Set(result, "FailureCode", code);
+        Set(result, "StatusMessage", message);
+        SetOutcome(result, succeeded ? "Saved" : "Failed");
 
-        Assert.Equal(string.Empty, GetKind(result));
-        Assert.False(IsCancelled(result));
+        Assert.Equal(expected, GetKind(result));
+        if (succeeded)
+        {
+            // A successful result must not expose a stale cancellation identity.
+            Assert.False(IsCancelled(result));
+        }
     }
 
     [Fact]
@@ -113,6 +125,9 @@ public sealed class FlashbackFailureTests
             culture: null)!;
 
         Assert.Equal("flashback-export-input-read-failed", InvokeStatic(FailureType, "FromException", exception));
+        Assert.Equal(
+            "flashback-export-input-read-failed",
+            InvokeStatic(FailureType, "FromException", new InvalidOperationException("wrapper", (Exception)exception)));
         Assert.Equal("flashback-export-failed", InvokeStatic(FailureType, "FromException", new InvalidOperationException("cancelled, disposed, timeout")));
         Assert.Equal("flashback-export-disposed", InvokeStatic(FailureType, "FromException", new ObjectDisposedException("exporter")));
         Assert.Equal("flashback-export-timeout", InvokeStatic(FailureType, "FromException", new TimeoutException("cancelled input path")));

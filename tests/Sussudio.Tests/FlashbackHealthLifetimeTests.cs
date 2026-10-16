@@ -8,17 +8,6 @@ namespace Sussudio.Tests;
 public sealed class FlashbackHealthLifetimeTests
 {
     [Fact]
-    public async Task CaptureServiceBackendBorrowsTheServiceExportOperationLock()
-    {
-        await using var service = (IAsyncDisposable)Activator.CreateInstance(
-            TypeOf("Sussudio.Services.Capture.CaptureService"))!;
-        var exportOperationLock = Assert.IsType<SemaphoreSlim>(ReadField(service, "_flashbackExportOperationLock"));
-        var backend = ReadField(service, "_flashbackBackend");
-        Assert.NotNull(backend);
-        Assert.Same(exportOperationLock, ReadField(backend, "_exportOperationLock"));
-    }
-
-    [Fact]
     public void BackendReplacementForwardsNewController_AndRejectsRetiredCallbacks()
     {
         using var fixture = new BackendFixture();

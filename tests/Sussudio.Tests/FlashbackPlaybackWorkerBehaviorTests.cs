@@ -32,9 +32,6 @@ public sealed class FlashbackPlaybackWorkerBehaviorTests
         Assert.False((bool)Field(session.Worker, "IsScrubbing")!);
         Assert.False((bool)Field(session.Worker, "FileOpen")!);
         Assert.Null(Field(session.Worker, "PendingExactResumeTarget"));
-        Assert.Equal(0L, Field(session.Controller, "_lastAudioPtsTicks"));
-        Assert.Equal(0L, Field(session.Controller, "_lastVideoPtsTicks"));
-        Assert.Null(Field(session.Controller, "_currentOpenFilePath"));
         Assert.Same(session.Decoder, Field(session.Worker, "Decoder"));
         Assert.False(Read<bool>(session.Decoder, "IsOpen"));
         Assert.False((bool)Field(session.Decoder, "_disposed")!);

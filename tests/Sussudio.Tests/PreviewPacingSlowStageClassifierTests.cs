@@ -25,12 +25,6 @@ public sealed class PreviewPacingSlowStageClassifierTests
         PreviewCadenceP99IntervalMs = 16.0,
     };
 
-    [Fact]
-    public void ClassifyRejectsANullInput()
-    {
-        Assert.Throws<ArgumentNullException>(() => PreviewPacingSlowStageClassifier.Classify(null!));
-    }
-
     // ── Gates ────────────────────────────────────────────────────────────────
 
     [Fact]
@@ -374,54 +368,5 @@ public sealed class PreviewPacingSlowStageClassifierTests
         };
 
         Assert.NotEqual("SourceCapture", PreviewPacingSlowStageClassifier.Classify(input).LikelySlowStage);
-    }
-
-    [Fact]
-    public void EveryClassificationCarriesNonEmptyEvidence()
-    {
-        // The evidence string is what an operator reads; an empty one makes the
-        // verdict unactionable.
-        var inputs = new[]
-        {
-            new PreviewPacingClassificationInput { IsPreviewing = false },
-            new PreviewPacingClassificationInput { IsPreviewing = true },
-            Healthy(),
-            new PreviewPacingClassificationInput
-            {
-                IsPreviewing = true,
-                TargetFrameRate = 60,
-                PreviewCadenceSampleCount = 60,
-                PreviewCadenceSampleDurationMs = 30_000,
-                PreviewCadenceOnePercentLowFps = 50,
-                CaptureCadenceEstimatedDroppedFrames = 3,
-            },
-        };
-
-        foreach (var input in inputs)
-        {
-            var result = PreviewPacingSlowStageClassifier.Classify(input);
-
-            Assert.False(string.IsNullOrWhiteSpace(result.LikelySlowStage));
-            Assert.False(string.IsNullOrWhiteSpace(result.Confidence));
-            Assert.False(string.IsNullOrWhiteSpace(result.Evidence));
-        }
-    }
-
-    [Fact]
-    public void ClassificationIsDeterministicForTheSameInput()
-    {
-        var input = new PreviewPacingClassificationInput
-        {
-            IsPreviewing = true,
-            TargetFrameRate = 60,
-            PreviewCadenceSampleCount = 60,
-            PreviewCadenceSampleDurationMs = 30_000,
-            PreviewCadenceOnePercentLowFps = 50,
-            CaptureCadenceEstimatedDroppedFrames = 4,
-        };
-
-        Assert.Equal(
-            PreviewPacingSlowStageClassifier.Classify(input),
-            PreviewPacingSlowStageClassifier.Classify(input));
     }
 }

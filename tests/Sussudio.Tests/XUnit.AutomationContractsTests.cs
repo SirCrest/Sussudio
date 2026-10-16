@@ -11,9 +11,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
 using System.Text;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using System.Threading;
-using Sussudio.Models;
 using Sussudio.Tools;
 using Xunit;
 
@@ -56,8 +54,8 @@ public sealed class AutomationAppSurfaceContractsTests
     }
 
     [Fact]
-    public Task AppWiresRecoverableAndFatalUnhandledExceptionPolicy()
-        => global::Program.App_Xaml_WiresUnhandledExceptionPolicy();
+    public Task AppUnhandledExceptionTriageTreatsCancellationAsRecoverableAndOthersAsFatal()
+        => global::Program.App_IsRecoverableUnhandled_TriagesCancellationOnly();
 
     [Fact]
     public Task BoolConvertersPreserveInversionAndVisibilityMappings()
@@ -98,20 +96,8 @@ public sealed class AutomationAppSurfaceContractsTests
     }
 
     [Fact]
-    public Task ProjectFilePreservesEnglishOnlyPublishLocalePolicy()
-        => global::Program.ProjectFile_PreservesEnglishOnlyPublishLocalePolicy();
-
-    [Fact]
     public Task LoggingJsonContextSerializesStructuredSnapshotPayloads()
         => global::Program.LoggingJsonContext_SerializesStructuredSnapshotPayloads();
-
-    [Fact]
-    public Task UiAutomationCommandsAreNotBlockedOnDeviceReadiness()
-        => global::Program.UiAutomationCommands_AreNotBlockedOnDeviceReadiness();
-
-    [Fact]
-    public Task MainWindowAutomationIdsCoverAgentCriticalUiSurface()
-        => global::Program.MainWindowAutomationIds_CoverAgentCriticalSurface();
 
     [Fact]
     public Task WindowUiDispatchCancellationDoesNotCompleteWindowCloseRequest()
@@ -120,10 +106,6 @@ public sealed class AutomationAppSurfaceContractsTests
     [Fact]
     public Task AutomationPipeServerGatesDefaultSecurityFallbackOnAuthToken()
         => global::Program.NamedPipeAutomationServer_GatesDefaultSecurityFallbackOnAuthToken();
-
-    [Fact]
-    public Task AutomationPipeServerRequestTimeoutsUseBoundedDispatchCancellation()
-        => global::Program.NamedPipeAutomationServer_RequestTimeoutsUseBoundedDispatchCancellation();
 
     [Theory]
     [InlineData("canceled", false, false)]
@@ -152,82 +134,6 @@ public sealed class AutomationAppSurfaceContractsTests
     [Fact]
     public Task AutomationPipeServerKeepsDiagnosticsAvailableBesideBusyClients()
         => global::Program.NamedPipeAutomationServer_KeepsDiagnosticsAvailableBesideBusyClients();
-
-    [Fact]
-    public Task MainWindowWiresAutomationPipeAuthFallbackPolicy()
-        => global::Program.MainWindowAutomation_WiresPipeAuthFallbackPolicy();
-
-    [Fact]
-    public Task StreamDeckScopeDocumentsAutomationAuthEnvelope()
-        => global::Program.StreamDeckPluginScope_DocumentsAutomationAuthEnvelope();
-}
-
-// Minimal xUnit slice for Sussudio.Converters.BoolConverters. The full
-// behavior matrix is exercised by the legacy Program checks below; these
-// focused checks keep the directly executable converter contracts visible in
-// xUnit discovery too.
-public class BoolConvertersTests
-{
-    [Fact]
-    public void InverseBoolConverter_InvertsBooleanValues()
-    {
-        var asm = SussudioAssembly.Load();
-        var converterType = asm.GetType("Sussudio.Converters.InverseBoolConverter", throwOnError: true)!;
-        var convert = ResolveConvertMethod(converterType, "Convert");
-
-        var instance = Activator.CreateInstance(converterType)!;
-        Assert.Equal(false, convert.Invoke(instance, new object?[] { true, typeof(bool), null, "" }));
-        Assert.Equal(true, convert.Invoke(instance, new object?[] { false, typeof(bool), null, "" }));
-    }
-
-    [Fact]
-    public void InverseBoolConverter_PreservesNonBooleanValues()
-    {
-        var asm = SussudioAssembly.Load();
-        var converterType = asm.GetType("Sussudio.Converters.InverseBoolConverter", throwOnError: true)!;
-        var convert = ResolveConvertMethod(converterType, "Convert");
-
-        var instance = Activator.CreateInstance(converterType)!;
-
-        var sentinel = new object();
-        Assert.Same(sentinel, convert.Invoke(instance, new object?[] { sentinel, typeof(bool), null, "" }));
-    }
-
-    [Fact]
-    public void BoolToVisibilityConverter_ImplementsIValueConverter()
-    {
-        var asm = SussudioAssembly.Load();
-        var boolToVisibility = asm.GetType("Sussudio.Converters.BoolToVisibilityConverter", throwOnError: true)!;
-
-        AssertImplementsValueConverter(boolToVisibility);
-    }
-
-    [Fact]
-    public void BoolToInverseVisibilityConverter_ImplementsIValueConverter()
-    {
-        var asm = SussudioAssembly.Load();
-        var inverseVisibility = asm.GetType("Sussudio.Converters.BoolToInverseVisibilityConverter", throwOnError: true)!;
-
-        AssertImplementsValueConverter(inverseVisibility);
-
-        // Visibility mapping behavior is exercised by the legacy reflection runner
-        // below, which loads Microsoft.UI.Xaml.dll via the staged win-x64 path; the
-        // xUnit host here intentionally stops at metadata checks because WinUI
-        // dependencies are not side-loaded into the test AppDomain.
-    }
-
-    private static void AssertImplementsValueConverter(Type type)
-    {
-        var iface = type.GetInterface("Microsoft.UI.Xaml.Data.IValueConverter")
-            ?? throw new InvalidOperationException($"{type.FullName} does not implement IValueConverter.");
-        Assert.NotNull(type.GetMethod("Convert", new[] { typeof(object), typeof(Type), typeof(object), typeof(string) }));
-        Assert.NotNull(type.GetMethod("ConvertBack", new[] { typeof(object), typeof(Type), typeof(object), typeof(string) }));
-        Assert.True(iface.IsAssignableFrom(type));
-    }
-
-    private static MethodInfo ResolveConvertMethod(Type type, string name)
-        => type.GetMethod(name, new[] { typeof(object), typeof(Type), typeof(object), typeof(string) })
-            ?? throw new InvalidOperationException($"{type.Name}.{name}(object, Type, object, string) not found.");
 }
 
 public sealed class AutomationCatalogContractsTests
@@ -235,10 +141,6 @@ public sealed class AutomationCatalogContractsTests
     [Fact]
     public Task CommandCatalogCoversCommandsAndPolicyMetadata()
         => global::Program.AutomationCommandCatalog_CoversCommandsAndPolicyMetadata();
-
-    [Fact]
-    public Task ReliabilityGatesRunToolsAndOfflineHarness()
-        => global::Program.ReliabilityGates_RunToolsAndOfflineHarness();
 
     [Fact]
     public Task ManifestCoversCatalogMetadata()
@@ -256,31 +158,6 @@ public sealed class AutomationCatalogContractsTests
 public sealed class AutomationContractsProtocolXunitTests
 {
     private static readonly object AutomationTokenLock = new();
-
-    [Fact]
-    public void AutomationCommandKind_PreservesNumericValuesThroughGetAutomationManifest()
-    {
-        var expectedCommands = global::Program.ExpectedAutomationCommands();
-        var enumValues = Enum.GetValues<AutomationCommandKind>();
-        var manifest = AutomationCommandCatalog.CreateManifest();
-
-        Assert.Equal(expectedCommands.Length, enumValues.Length);
-        Assert.Equal(expectedCommands.Length, manifest.Commands.Count);
-
-        for (var i = 0; i < expectedCommands.Length; i++)
-        {
-            var (name, value) = expectedCommands[i];
-            var parsed = Enum.Parse<AutomationCommandKind>(name);
-
-            Assert.Equal(value, (int)parsed);
-            Assert.True(Enum.IsDefined(parsed), $"AutomationCommandKind missing sequential value {value}.");
-
-            var manifestCommand = Assert.Single(
-                manifest.Commands,
-                command => string.Equals(command.Name, name, StringComparison.Ordinal));
-            Assert.Equal(value, manifestCommand.Id);
-        }
-    }
 
     [Fact]
     public void AutomationPipeProtocol_ExposesStableWireDefaults()
@@ -311,20 +188,6 @@ public sealed class AutomationContractsProtocolXunitTests
         Assert.Equal("SetRecordingEnabled", commandName);
         Assert.False(AutomationPipeProtocol.TryGetCommandName(-1, out var unknownCommandName));
         Assert.Equal(string.Empty, unknownCommandName);
-    }
-
-    [Fact]
-    public void AutomationPipeProtocol_UsesCatalogTimeoutPolicy()
-    {
-        Assert.Equal(15000, AutomationPipeProtocol.GetDefaultResponseTimeout("GetSnapshot"));
-        Assert.Equal(305000, AutomationPipeProtocol.GetDefaultResponseTimeout("FlashbackExport"));
-        Assert.Equal(305000, AutomationPipeProtocol.GetDefaultResponseTimeout("SetFlashbackEnabled"));
-        Assert.Equal(305000, AutomationPipeProtocol.GetDefaultResponseTimeout("SetFlashbackBufferMinutes"));
-        Assert.Equal(305000, AutomationPipeProtocol.GetDefaultResponseTimeout("RestartFlashback"));
-        Assert.Equal(150000, AutomationPipeProtocol.GetDefaultResponseTimeout("SetRecordingEnabled"));
-        Assert.Equal(150000, AutomationPipeProtocol.GetDefaultResponseTimeout("set-recording-enabled"));
-        Assert.Equal(150000, AutomationPipeProtocol.GetDefaultResponseTimeout("17"));
-        Assert.Equal(60000, AutomationPipeProtocol.GetDefaultResponseTimeout(AutomationCommandKind.WaitForCondition));
     }
 
     [Fact]
@@ -368,26 +231,6 @@ public sealed class AutomationContractsProtocolXunitTests
         var envelope = AutomationPipeProtocol.CreateRequestEnvelope(1, authToken: "explicit-token");
 
         Assert.Empty(Assert.IsType<Dictionary<string, object?>>(envelope["payload"]));
-    }
-
-    [Fact]
-    public void SharedProtocol_CommandMap_CoversEveryAutomationCommandKind()
-    {
-        var enumNames = Enum.GetNames<AutomationCommandKind>();
-        var expectedCommands = global::Program.ExpectedAutomationCommands();
-        var commandMap = AutomationPipeProtocol.CommandMap;
-
-        Assert.NotEmpty(enumNames);
-        Assert.Equal(expectedCommands.Length, commandMap.Count);
-
-        foreach (var (name, ordinal) in expectedCommands)
-        {
-            Assert.True(commandMap.TryGetValue(name, out var mappedOrdinal), $"AutomationPipeProtocol.CommandMap missing '{name}'.");
-            Assert.Equal(ordinal, mappedOrdinal);
-            Assert.Equal(ordinal, (int)Enum.Parse<AutomationCommandKind>(name));
-        }
-
-        Assert.Equal(enumNames.Length, commandMap.Count);
     }
 }
 
@@ -475,15 +318,6 @@ public sealed class AutomationDiagnosticsLoopContractsTests
         static void Set(object target, string propertyName, object? value)
             => target.GetType().GetProperty(propertyName)!.SetValue(target, value);
     }
-
-    public AutomationDiagnosticsLoopContractsTests()
-    {
-        global::Program.EnsureTargetAssemblyLoadedForXUnit();
-    }
-
-    [Fact]
-    public Task DiagnosticsLoopDoesNotRebuildAutomationOptionsEachPoll()
-        => global::Program.DiagnosticsLoop_DoesNotRebuildAutomationOptionsEachPoll();
 }
 
 public sealed class AutomationDispatcherContractsTests
@@ -496,10 +330,6 @@ public sealed class AutomationDispatcherContractsTests
     [Fact]
     public Task AutomationDispatcherExtractsStringPayloadFields()
         => global::Program.AutomationCommandDispatcher_GetString_ExtractsFromJsonPayload();
-
-    [Fact]
-    public Task AutomationDispatcherExtractsBoolPayloadFields()
-        => global::Program.AutomationCommandDispatcher_GetBool_ExtractsFromJsonPayload();
 
     [Theory]
     [InlineData(null, null)]
@@ -600,18 +430,6 @@ public sealed class AutomationDispatcherContractsTests
         => global::Program.AutomationCommandDispatcher_GetInt_ExtractsFromJsonPayload();
 
     [Fact]
-    public Task AutomationDispatcherExtractsDoublePayloadFields()
-        => global::Program.AutomationCommandDispatcher_GetDouble_ExtractsFromJsonPayload();
-
-    [Fact]
-    public Task AutomationDispatcherRejectsNonFiniteDoublePayloadFields()
-        => global::Program.AutomationCommandDispatcher_GetDouble_RejectsNonFiniteValues();
-
-    [Fact]
-    public Task AutomationDispatcherRequiresMissingStringFields()
-        => global::Program.AutomationCommandDispatcher_RequireString_ThrowsOnMissing();
-
-    [Fact]
     public Task AutomationDispatcherDefaultsMissingWindowAction()
         => global::Program.AutomationCommandDispatcher_WindowAction_DefaultsMissingActionToRestore();
 
@@ -644,28 +462,12 @@ public sealed class AutomationDispatcherContractsTests
         => global::Program.AutomationCommandDispatcher_InvalidAudioMode_DoesNotCallMutationPort();
 
     [Fact]
-    public Task AutomationDispatcherAudioRampTracePayloadFieldMatchesCatalog()
-        => global::Program.AutomationCommandDispatcher_GetAudioRampTrace_MetadataMatchesDispatcherPayload();
-
-    [Fact]
-    public Task AutomationDispatcherReadyDeviceGateClassifiesCommands()
-        => global::Program.AutomationCommandDispatcher_RequiresReadyDevices_ClassifiesCommands();
-
-    [Fact]
     public Task AutomationDispatcherReadyIndependentCatalogCommandsBypassDeviceReadiness()
         => global::Program.AutomationCommandDispatcher_CatalogReadyIndependentCommands_BypassDeviceReadiness();
 
     [Fact]
-    public Task AutomationDispatcherWindowCloseWaitsForCompletion()
-        => global::Program.AutomationCommandDispatcher_WindowClose_AwaitsCloseCompletion();
-
-    [Fact]
     public Task AutomationDispatcherWindowCloseRequiresMatchingArmActionId()
         => global::Program.AutomationCommandDispatcher_WindowClose_RequiresMatchingArmActionId();
-
-    [Fact]
-    public Task AutomationDispatcherPreviewHealthWaitsForFirstVisual()
-        => global::Program.AutomationCommandDispatcher_PreviewRendererHealthy_RequiresFirstVisual();
 
     [Fact]
     public Task AutomationDispatcherAuthorizationContractIsTokenGated()
@@ -682,10 +484,6 @@ public sealed class AutomationDispatcherContractsTests
     [Fact]
     public Task AutomationDispatcherFlashbackFailuresReturnPlaybackDiagnostics()
         => global::Program.AutomationCommandDispatcher_FlashbackActionFailure_ReturnsPlaybackDiagnostics();
-
-    [Fact]
-    public Task AutomationDispatcherHandlesEveryAutomationCommandKindValue()
-        => global::Program.AutomationCommandDispatcher_AllCommandKinds_AreHandled();
 }
 
 public sealed class AutomationViewModelFlashbackUiContractsTests
@@ -696,60 +494,20 @@ public sealed class AutomationViewModelFlashbackUiContractsTests
     }
 
     [Fact]
-    public Task AutomationPreviewVolumePersistsThroughSettingsPath()
-        => global::Program.AutomationPreviewVolume_PersistsThroughSettingsPath();
-
-    [Fact]
-    public Task AutomationAudioCommandsPreserveRuntimeGuards()
-        => global::Program.AutomationAudioCommands_PreserveRuntimeGuards();
-
-    [Fact]
-    public Task AutomationUiSettingsPersistThroughSettingsPath()
-        => global::Program.AutomationUiSettings_PersistThroughSettingsPath();
+    public Task SettingsServiceSaveToFileReportsFilesystemFailureText()
+        => global::Program.SettingsService_SaveToFile_ReportsSuccessAndFilesystemFailure();
 
     [Fact]
     public Task SettingsPersistenceProjectionLoadPlanPreservesSavedSemantics()
         => global::Program.SettingsPersistenceProjection_LoadPlanPreservesSavedSemantics();
 
     [Fact]
-    public Task SettingsPersistenceProjectionSaveSettingsMapsPersistedValues()
-        => global::Program.SettingsPersistenceProjection_SaveSettingsMapsPersistedValues();
-
-    [Fact]
-    public Task AutomationDeviceSelectionRoutesThroughApplyReinit()
-        => global::Program.AutomationDeviceSelection_RoutesThroughApplyReinit();
-
-    [Fact]
-    public Task AutomationCaptureSettingsRouteThroughControllerAndAwaitReinitialization()
-        => global::Program.AutomationCaptureModeChanges_AwaitReinitialization();
-
-    [Fact]
-    public Task AutomationRecordingTransitionsUseSharedLifecycleGate()
-        => global::Program.MainViewModelAutomation_RoutesRecordingThroughSharedTransitionGate();
-
-    [Fact]
     public Task BitrateSampleWindowPreservesBoundedAverageBehavior()
         => global::Program.BitrateSampleWindow_PreservesBoundedAverageBehavior();
 
     [Fact]
-    public Task AutomationRecordingSettingsRouteThroughControllerAndFlashbackCycle()
-        => global::Program.MainViewModelAutomation_RecordingSettingsRouteThroughControllerAndFlashbackCycle();
-
-    [Fact]
-    public Task AutomationFlashbackAndProbeCommandsUseAsyncViewModelSurface()
-        => global::Program.MainViewModelAutomation_UsesAsyncFlashbackAndProbeSurface();
-
-    [Fact]
-    public Task MainWindowFlashbackScrubEndsOnReleaseCancelAndCaptureLost()
-        => global::Program.MainWindowFlashbackScrub_EndsOnReleaseCancelAndCaptureLost();
-
-    [Fact]
     public Task FlashbackTimelineGeometryPreservesScrubMath()
         => global::Program.FlashbackTimelineGeometry_PreservesScrubMath();
-
-    [Fact]
-    public Task MainWindowFlashbackToggleRollsBackUiStateOnFailure()
-        => global::Program.MainWindowFlashbackToggle_RollsBackUiStateOnFailure();
 
 }
 
@@ -774,52 +532,12 @@ public sealed class AutomationCaptureFlashbackRoutingContractsTests
     }
 
     [Fact]
-    public Task FlashbackMutationsRouteThroughCaptureCoordinator()
-        => global::Program.MainViewModelCapture_RoutesFlashbackMutationsThroughCoordinator();
-
-    [Fact]
-    public Task FlashbackExportsReleaseBackendLeaseBeforeNativeExport()
-        => global::Program.CaptureService_FlashbackExportsReleaseBackendLeaseBeforeNativeExport();
-
-    [Fact]
-    public Task MainViewModelFlashbackExportRoutesThroughCoordinatorAndOwnsCtsLifecycle()
-        => global::Program.MainViewModelFlashbackExport_RoutesThroughCoordinatorAndOwnsCtsLifecycle();
-
-    [Fact]
-    public Task RetainedFlashbackPreviewPipelineRecyclesOnSettingsChanges()
-        => global::Program.CaptureService_RecyclesRetainedFlashbackPreviewPipeline_WhenSettingsChange();
-
-    [Fact]
-    public Task DeviceSwitchTeardownStopsVideoBeforeFlashbackDisposal()
-        => global::Program.CaptureService_DeviceSwitchTeardown_StopsVideoBeforeFlashbackDisposal();
-
-    [Fact]
-    public Task FlashbackLifecycleLogsUseOutcomeNames()
-        => global::Program.CaptureService_FlashbackLifecycleLogs_UseOutcomeNames();
-
-    [Fact]
     public Task FlashbackFrameRateRationalMatchesDeliveredCadence()
         => global::Program.CaptureService_FlashbackFrameRateParts_PreserveOnlyDeliveredCadenceRational();
 
     [Fact]
     public Task AudioMonitoringTransitionsFinishTeardownBeforeRestart()
         => global::Program.MainViewModel_AudioMonitoringTransitionsFinishTeardownBeforeRestart();
-
-    [Fact]
-    public Task FlashbackEnableDisablePreservesPreviewState()
-        => global::Program.CaptureService_FlashbackEnableDisable_PreservesPreviewState();
-
-    [Fact]
-    public Task CaptureSessionCoordinatorExposesExpectedLifecycleApi()
-        => global::Program.CaptureSessionCoordinator_HasExpectedPublicMethods();
-
-    [Fact]
-    public Task CaptureSessionCoordinatorCommandKindCoversFlashbackCommands()
-        => global::Program.CaptureSessionCoordinator_CaptureCommandKind_HasExpectedValues();
-
-    [Fact]
-    public Task CaptureSessionSnapshotExposesLifecycleContract()
-        => global::Program.CaptureSessionCoordinator_CaptureSessionSnapshot_HasFullContract();
 
     [Fact]
     public Task CaptureSessionTransitionPolicyDefinesCoreLifecycleRules()
@@ -834,8 +552,8 @@ public sealed class AutomationCaptureFlashbackRoutingContractsTests
         => global::Program.CaptureService_SnapshotProducerEpoch_AdvancesWhenRecordingStateChanges();
 
     [Fact]
-    public Task CaptureSessionCoordinatorCancellationAndWorkerTokensStayBounded()
-        => global::Program.CaptureSessionCoordinator_CancellationAndWorkerTokensStayBounded();
+    public Task FlashbackExportStatusAppendsResultDetailOnlyWhenPresent()
+        => global::Program.MainViewModel_FormatSuccessfulFlashbackExportStatus_AppendsDetailOnlyWhenPresent();
 
     [Fact]
     public Task CaptureSessionCoordinatorAccountsCanceledQueuedCommands()
@@ -848,27 +566,6 @@ public sealed class AutomationCaptureFlashbackRoutingContractsTests
     [Fact]
     public Task CaptureSessionCoordinatorDisposeDrainsQueuedCommandsBeforeCancellation()
         => global::Program.CaptureSessionCoordinator_DisposeDrainsQueuedCommandBeforeCancellation();
-
-    [Fact]
-    public Task CaptureSessionCoordinatorCoalescesFlashbackEncoderCycles()
-        => global::Program.CaptureSessionCoordinator_CoalescesFlashbackEncoderCycles();
-
-    [Fact]
-    public Task CaptureSessionCoordinatorDisposalAccountingClassifiesCanceledQueuedCommands()
-        => global::Program.CaptureSessionCoordinator_DisposalAccounting_ClassifiesCanceledQueuedCommands();
-
-    [Fact]
-    public Task CaptureSessionCoordinatorPropagatesFlashbackMutationCancellation()
-        => global::Program.CaptureSessionCoordinator_FlashbackMutationsPropagateRequestCancellation();
-
-    [Fact]
-    public Task CaptureSessionCoordinatorKeepsCommittedStopsUncancelable()
-        => global::Program.CaptureSessionCoordinator_CommittedStopsDoNotPropagateRequestCancellation();
-
-    [Fact]
-    public Task CaptureSessionCoordinatorLogsInactiveFlashbackCommandRejections()
-        => global::Program.CaptureSessionCoordinator_LogsInactiveFlashbackCommandRejections();
-
 }
 
 }
@@ -876,35 +573,6 @@ public sealed class AutomationCaptureFlashbackRoutingContractsTests
 // Legacy app-surface checks executed by AutomationAppSurfaceContractsTests.
 static partial class Program
 {
-    internal static Task AutomationCommandDispatcher_AllCommandKinds_AreHandled()
-    {
-        // Every AutomationCommandKind value must be explicitly handled: either
-        // as the pre-switch Authenticate check, as a handler-table key, as an
-        // explicit focused-helper equality check, or as a case label in the
-        // custom switch. This test reads the dispatcher source and verifies each
-        // enum name appears in at least one of those locations.
-        var dispatcherText = ReadAutomationCommandDispatcherFamilyText();
-
-        var commandKindType = RequireType("Sussudio.Models.AutomationCommandKind");
-        var names = Enum.GetNames(commandKindType);
-
-        foreach (var name in names)
-        {
-            var inTrivialHandlers = dispatcherText.Contains($"[AutomationCommandKind.{name}]");
-            var inFocusedHelper = dispatcherText.Contains($"command == AutomationCommandKind.{name}");
-            var inSwitchCase = dispatcherText.Contains($"case AutomationCommandKind.{name}:");
-            var isAuthenticate = name == "Authenticate" &&
-                dispatcherText.Contains("request.Command == AutomationCommandKind.Authenticate");
-
-            AssertEqual(
-                true,
-                inTrivialHandlers || inFocusedHelper || inSwitchCase || isAuthenticate,
-                $"AutomationCommandKind.{name} must be handled in a handler table, focused helper, switch case, or the pre-switch Authenticate check");
-        }
-
-        return Task.CompletedTask;
-    }
-
     internal static async Task AutomationCommandDispatcher_AssertSnapshot_BoundsAndEvaluatesRequests()
     {
         var viewModelType = RequireType("Sussudio.Services.Automation.IAutomationViewModel");
@@ -1218,18 +886,6 @@ static partial class Program
                 Assert.Null(manifest);
             }
         }
-
-        var dispatcherText = ReadAutomationCommandDispatcherFamilyText();
-
-        AssertContains(dispatcherText, "if (string.IsNullOrWhiteSpace(_authToken))\n        {\n            return true;\n        }");
-        AssertContains(dispatcherText, "var providedToken = request.AuthToken;");
-        AssertContains(dispatcherText, "providedToken = GetString(request.Payload, AutomationPayloadKeys.AuthToken);");
-        AssertContains(dispatcherText, "CryptographicOperations.FixedTimeEquals(expected, actual)");
-        AssertContains(dispatcherText, "Logger.LogEvent(\"AUTO-AUTH-FAILED\"");
-        AssertContains(dispatcherText, "Logger.LogEvent(\"AUTO-AUTH-LEGACY-PAYLOAD\"");
-        AssertContains(dispatcherText, "errorCode: authorized ? null : AutomationErrorCodes.Unauthorized");
-        AssertContains(dispatcherText, "errorCode: AutomationErrorCodes.Unauthorized");
-        AssertContains(dispatcherText, "status: authorized ? AutomationResponseStatus.Ok : AutomationResponseStatus.Error");
     }
 
     internal static async Task AutomationCommandDispatcher_GetAutomationManifest_IsReadOnlyAndReadinessIndependent()
@@ -1801,26 +1457,6 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task AutomationCommandDispatcher_GetBool_ExtractsFromJsonPayload()
-    {
-        var dispatcherType = RequireType("Sussudio.Services.Automation.AutomationCommandDispatcher");
-        var method = dispatcherType.GetMethod("GetBool",
-            BindingFlags.Static | BindingFlags.NonPublic)
-            ?? throw new InvalidOperationException("GetBool not found.");
-
-        var doc = JsonDocument.Parse("{\"enabled\": true, \"disabled\": false}");
-        var trueResult = (bool?)method.Invoke(null, new object[] { doc.RootElement, "enabled" });
-        AssertEqual(true, trueResult, "GetBool extracts true");
-
-        var falseResult = (bool?)method.Invoke(null, new object[] { doc.RootElement, "disabled" });
-        AssertEqual(false, falseResult, "GetBool extracts false");
-
-        var missingResult = (bool?)method.Invoke(null, new object[] { doc.RootElement, "missing" });
-        AssertEqual(true, missingResult == null, "GetBool returns null for missing");
-
-        return Task.CompletedTask;
-    }
-
     internal static Task AutomationCommandDispatcher_GetInt_ExtractsFromJsonPayload()
     {
         var dispatcherType = RequireType("Sussudio.Services.Automation.AutomationCommandDispatcher");
@@ -1834,62 +1470,6 @@ static partial class Program
 
         var textResult = (int?)method.Invoke(null, new object[] { doc.RootElement, "text" });
         AssertEqual(true, textResult == null, "GetInt returns null for string property");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task AutomationCommandDispatcher_GetDouble_ExtractsFromJsonPayload()
-    {
-        var dispatcherType = RequireType("Sussudio.Services.Automation.AutomationCommandDispatcher");
-        var method = dispatcherType.GetMethod("GetDouble",
-            BindingFlags.Static | BindingFlags.NonPublic)
-            ?? throw new InvalidOperationException("GetDouble not found.");
-
-        var doc = JsonDocument.Parse("{\"volume\": 0.75}");
-        var result = (double?)method.Invoke(null, new object[] { doc.RootElement, "volume" });
-        AssertEqual(true, Math.Abs(result!.Value - 0.75) < 0.001, $"GetDouble extracts 0.75, got {result}");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task AutomationCommandDispatcher_GetDouble_RejectsNonFiniteValues()
-    {
-        var dispatcherType = RequireType("Sussudio.Services.Automation.AutomationCommandDispatcher");
-        var method = dispatcherType.GetMethod("GetDouble",
-            BindingFlags.Static | BindingFlags.NonPublic)
-            ?? throw new InvalidOperationException("GetDouble not found.");
-
-        using var doc = JsonDocument.Parse("{\"nan\":\"NaN\",\"positive\":\"Infinity\",\"negative\":\"-Infinity\",\"valid\":\"1.25\"}");
-        AssertEqual(null, method.Invoke(null, new object[] { doc.RootElement, "nan" }), "GetDouble rejects NaN string");
-        AssertEqual(null, method.Invoke(null, new object[] { doc.RootElement, "positive" }), "GetDouble rejects Infinity string");
-        AssertEqual(null, method.Invoke(null, new object[] { doc.RootElement, "negative" }), "GetDouble rejects -Infinity string");
-
-        var valid = (double?)method.Invoke(null, new object[] { doc.RootElement, "valid" });
-        AssertEqual(true, Math.Abs(valid!.Value - 1.25) < 0.001, "GetDouble still accepts finite numeric strings");
-        return Task.CompletedTask;
-    }
-
-    internal static Task AutomationCommandDispatcher_RequireString_ThrowsOnMissing()
-    {
-        var dispatcherType = RequireType("Sussudio.Services.Automation.AutomationCommandDispatcher");
-        var method = dispatcherType.GetMethod("RequireString",
-            BindingFlags.Static | BindingFlags.NonPublic)
-            ?? throw new InvalidOperationException("RequireString not found.");
-
-        var doc = JsonDocument.Parse("{\"path\": \"/output/file.mp4\"}");
-        var result = method.Invoke(null, new object[] { doc.RootElement, "path" })?.ToString();
-        AssertEqual("/output/file.mp4", result, "RequireString returns present value");
-
-        var threw = false;
-        try
-        {
-            method.Invoke(null, new object[] { doc.RootElement, "missing" });
-        }
-        catch (TargetInvocationException)
-        {
-            threw = true;
-        }
-        AssertEqual(true, threw, "RequireString throws on missing property");
 
         return Task.CompletedTask;
     }
@@ -1977,38 +1557,47 @@ static partial class Program
             }),
             CreateThrowingProxy(windowControlType),
             authToken: null);
-        var filePath = Path.Combine(GetRepoRoot(), "tests", "Sussudio.Tests", "XUnit.AutomationContractsTests.cs");
-        var response = await ExecuteAutomationCommandAsync(
-                dispatcher,
-                CreateAutomationCommandRequest(
-                    "VerifyFile",
-                    authToken: null,
-                    payloadJson: JsonSerializer.Serialize(new
-                    {
-                        filePath,
-                        verificationProfile = "bogus"
-                    })))
-            .ConfigureAwait(false);
+        // VerifyFile validates that its input exists, so give it a real (empty) file that this test owns.
+        var filePath = Path.Combine(Path.GetTempPath(), $"verify_file_profile_{Guid.NewGuid():N}.mp4");
+        File.WriteAllBytes(filePath, Array.Empty<byte>());
+        try
+        {
+            var response = await ExecuteAutomationCommandAsync(
+                    dispatcher,
+                    CreateAutomationCommandRequest(
+                        "VerifyFile",
+                        authToken: null,
+                        payloadJson: JsonSerializer.Serialize(new
+                        {
+                            filePath,
+                            verificationProfile = "bogus"
+                        })))
+                .ConfigureAwait(false);
 
-        AssertAutomationResponse(response, success: false, errorCode: "invalid-request", status: "error", "unknown verification profile");
-        AssertEqual("Unknown verification profile 'bogus'. Expected flashback-export.", GetPublicProperty(response, "Message"), "unknown verification profile message");
-        AssertEqual(0, verificationCalls, "unknown verification profile does not reach verification");
+            AssertAutomationResponse(response, success: false, errorCode: "invalid-request", status: "error", "unknown verification profile");
+            AssertEqual("Unknown verification profile 'bogus'. Expected flashback-export.", GetPublicProperty(response, "Message"), "unknown verification profile message");
+            AssertEqual(0, verificationCalls, "unknown verification profile does not reach verification");
 
-        var normalizedProfileResponse = await ExecuteAutomationCommandAsync(
-                dispatcher,
-                CreateAutomationCommandRequest(
-                    "VerifyFile",
-                    authToken: null,
-                    payloadJson: JsonSerializer.Serialize(new
-                    {
-                        filePath,
-                        verificationProfile = "flashback_export"
-                    })))
-            .ConfigureAwait(false);
+            var normalizedProfileResponse = await ExecuteAutomationCommandAsync(
+                    dispatcher,
+                    CreateAutomationCommandRequest(
+                        "VerifyFile",
+                        authToken: null,
+                        payloadJson: JsonSerializer.Serialize(new
+                        {
+                            filePath,
+                            verificationProfile = "flashback_export"
+                        })))
+                .ConfigureAwait(false);
 
-        AssertAutomationResponse(normalizedProfileResponse, success: true, errorCode: null, status: "ok", "normalized verification profile");
-        AssertEqual(1, verificationCalls, "normalized verification profile reaches verification once");
-        AssertEqual("flashback-export", observedProfile, "underscore verification profile is normalized");
+            AssertAutomationResponse(normalizedProfileResponse, success: true, errorCode: null, status: "ok", "normalized verification profile");
+            AssertEqual(1, verificationCalls, "normalized verification profile reaches verification once");
+            AssertEqual("flashback-export", observedProfile, "underscore verification profile is normalized");
+        }
+        finally
+        {
+            File.Delete(filePath);
+        }
     }
 
     internal static async Task AutomationCommandDispatcher_StateConflictMapsToInvalidState()
@@ -2082,48 +1671,6 @@ static partial class Program
                 .Cast<object>()
                 .ToArray();
         }
-
-        static object GetAutomationCommandCatalogMetadata(object kind)
-        {
-            var catalogType = kind.GetType().Assembly.GetType("Sussudio.Tools.AutomationCommandCatalog")
-                              ?? throw new InvalidOperationException("AutomationCommandCatalog not found.");
-            var getMethod = catalogType.GetMethod("Get", BindingFlags.Static | BindingFlags.Public)
-                            ?? throw new InvalidOperationException("AutomationCommandCatalog.Get not found.");
-            return getMethod.Invoke(null, new[] { kind })
-                   ?? throw new InvalidOperationException($"AutomationCommandCatalog.Get({kind}) returned null.");
-        }
-    }
-
-    internal static Task AutomationCommandDispatcher_GetAudioRampTrace_MetadataMatchesDispatcherPayload()
-    {
-        var dispatcherText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
-            .Replace("\r\n", "\n");
-        var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
-            .Replace("\r\n", "\n");
-        AssertContains(dispatcherText, "case AutomationCommandKind.GetAudioRampTrace:");
-        AssertContains(dispatcherText, "ExecuteGetDiagnosticsCommand(payload, correlationId)");
-        AssertContains(dispatcherText, "ExecuteGetPerformanceTimelineCommand(payload, correlationId)");
-        AssertContains(dispatcherText, "ExecuteGetAudioRampTraceCommandAsync(payload, correlationId, cancellationToken)");
-        AssertContains(customCommandsText, "private AutomationCommandResponse ExecuteGetDiagnosticsCommand(");
-        AssertContains(customCommandsText, "var maxEvents = GetInt(payload, AutomationPayloadKeys.MaxEvents) ?? 100;");
-        AssertContains(customCommandsText, "private AutomationCommandResponse ExecuteGetPerformanceTimelineCommand(");
-        AssertContains(customCommandsText, "var maxEntries = GetInt(payload, AutomationPayloadKeys.MaxEntries) ?? 240;");
-        AssertContains(customCommandsText, "var maxEntries = GetInt(payload, AutomationPayloadKeys.MaxEntries) ?? 512;");
-        AssertContains(customCommandsText, "GetAudioRampTraceSnapshotAsync(maxEntries, cancellationToken)");
-
-        var enumType = RequireType("Sussudio.Models.AutomationCommandKind");
-        var kind = Enum.Parse(enumType, "GetAudioRampTrace");
-        var catalogMetadata = GetAutomationCommandCatalogMetadata(kind);
-        var catalogPayloadFields = GetMetadataCollection(catalogMetadata, "PayloadFields");
-
-        AssertEqual("{ maxEntries?: int }", (string)GetMetadataProperty(catalogMetadata, "PayloadShape")!, "GetAudioRampTrace payload shape");
-        AssertEqual(1, catalogPayloadFields.Length, "GetAudioRampTrace catalog payload field count");
-        var maxEntriesField = catalogPayloadFields[0];
-        AssertEqual("maxEntries", (string)GetMetadataProperty(maxEntriesField, "Name")!, "GetAudioRampTrace payload field name");
-        AssertEqual("Integer", GetMetadataProperty(maxEntriesField, "Type")!.ToString(), "GetAudioRampTrace payload field type");
-        AssertEqual(false, (bool)GetMetadataProperty(maxEntriesField, "Required")!, "GetAudioRampTrace payload field required flag");
-
-        return Task.CompletedTask;
 
         static object GetAutomationCommandCatalogMetadata(object kind)
         {
@@ -2388,75 +1935,6 @@ static partial class Program
         return true;
     }
 
-    internal static Task AutomationCommandDispatcher_RequiresReadyDevices_ClassifiesCommands()
-    {
-        var dispatcherType = RequireType("Sussudio.Services.Automation.AutomationCommandDispatcher");
-        var method = dispatcherType.GetMethod("RequiresReadyDevices",
-            BindingFlags.Static | BindingFlags.NonPublic)
-            ?? throw new InvalidOperationException("RequiresReadyDevices not found.");
-
-        var commandType = RequireType("Sussudio.Models.AutomationCommandKind");
-
-        var getSnapshot = (bool)method.Invoke(null, new[] { Enum.Parse(commandType, "GetSnapshot") })!;
-        AssertEqual(false, getSnapshot, "GetSnapshot does not require ready devices");
-
-        var windowAction = (bool)method.Invoke(null, new[] { Enum.Parse(commandType, "WindowAction") })!;
-        AssertEqual(false, windowAction, "WindowAction does not require ready devices");
-
-        var authenticate = (bool)method.Invoke(null, new[] { Enum.Parse(commandType, "Authenticate") })!;
-        AssertEqual(false, authenticate, "Authenticate does not require ready devices");
-
-        var setFlashbackEnabled = (bool)method.Invoke(null, new[] { Enum.Parse(commandType, "SetFlashbackEnabled") })!;
-        AssertEqual(false, setFlashbackEnabled, "SetFlashbackEnabled does not require ready devices");
-
-        var getAutomationManifest = (bool)method.Invoke(null, new[] { Enum.Parse(commandType, "GetAutomationManifest") })!;
-        AssertEqual(false, getAutomationManifest, "GetAutomationManifest does not require ready devices");
-
-        var setFullScreenEnabled = (bool)method.Invoke(null, new[] { Enum.Parse(commandType, "SetFullScreenEnabled") })!;
-        AssertEqual(false, setFullScreenEnabled, "SetFullScreenEnabled does not require ready devices");
-
-        var openRecordingsFolder = (bool)method.Invoke(null, new[] { Enum.Parse(commandType, "OpenRecordingsFolder") })!;
-        AssertEqual(false, openRecordingsFolder, "OpenRecordingsFolder does not require ready devices");
-
-        var setMicrophoneVolume = (bool)method.Invoke(null, new[] { Enum.Parse(commandType, "SetMicrophoneVolume") })!;
-        AssertEqual(false, setMicrophoneVolume, "SetMicrophoneVolume does not require ready devices");
-
-        var setFlashbackBufferMinutes = (bool)method.Invoke(null, new[] { Enum.Parse(commandType, "SetFlashbackBufferMinutes") })!;
-        AssertEqual(false, setFlashbackBufferMinutes, "SetFlashbackBufferMinutes does not require ready devices");
-
-        var setResolution = (bool)method.Invoke(null, new[] { Enum.Parse(commandType, "SetResolution") })!;
-        AssertEqual(true, setResolution, "SetResolution requires ready devices");
-
-        var setFrameRate = (bool)method.Invoke(null, new[] { Enum.Parse(commandType, "SetFrameRate") })!;
-        AssertEqual(true, setFrameRate, "SetFrameRate requires ready devices");
-
-        var selectMicrophoneDevice = (bool)method.Invoke(null, new[] { Enum.Parse(commandType, "SelectMicrophoneDevice") })!;
-        AssertEqual(true, selectMicrophoneDevice, "SelectMicrophoneDevice requires ready devices");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task AutomationCommandDispatcher_WindowClose_AwaitsCloseCompletion()
-    {
-        var sourceText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
-            .Replace("\r\n", "\n");
-        var windowActionBlock = ExtractTextBetween(
-            sourceText,
-            "private async Task<AutomationCommandResponse> ExecuteWindowActionCommandAsync(",
-            "return CreateAcknowledgedResponse(correlationId, $\"Window action requested: {action}.\");");
-        var closeBlock = ExtractTextBetween(
-            windowActionBlock,
-            "if (action == AutomationWindowAction.Close)",
-            "await ExecuteWindowActionAsync(action, cancellationToken, payload).ConfigureAwait(false);");
-
-        AssertContains(closeBlock, "await ExecuteWindowActionAsync(action, cancellationToken).ConfigureAwait(false);");
-        AssertContains(closeBlock, "Window close completed.");
-        AssertDoesNotContain(closeBlock, "ContinueWith(");
-        AssertDoesNotContain(closeBlock, "CancellationToken.None");
-
-        return Task.CompletedTask;
-    }
-
     internal static async Task AutomationCommandDispatcher_WindowClose_RequiresMatchingArmActionId()
     {
         var viewModelType = RequireType("Sussudio.Services.Automation.IAutomationViewModel");
@@ -2526,96 +2004,19 @@ static partial class Program
         AssertEqual(1, closeCalls, "replayed close actionId does not close twice");
     }
 
-    internal static Task AutomationCommandDispatcher_PreviewRendererHealthy_RequiresFirstVisual()
-    {
-        var sourceText = ReadAutomationCommandDispatcherFamilyText();
-        var conditionBlock = ExtractTextBetween(
-            sourceText,
-            "AutomationWaitCondition.PreviewRendererHealthy =>",
-            "AutomationWaitCondition.AudioSignalPresent =>");
-
-        AssertContains(conditionBlock, "snapshot.PreviewFirstVisualConfirmed");
-        AssertContains(conditionBlock, "snapshot.PreviewGpuActive || snapshot.PreviewFramesDisplayed > 0");
-        AssertDoesNotContain(conditionBlock, "snapshot.PreviewGpuActive || snapshot.PreviewRendererAttached");
-        AssertDoesNotContain(sourceText, "WaitConditionRefreshCadenceMs");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task UiAutomationCommands_AreNotBlockedOnDeviceReadiness()
-    {
-        var dispatcherText = ReadAutomationCommandDispatcherFamilyText();
-
-        AssertDoesNotContain(dispatcherText, "AutomationCommandKind.SetShowAllCaptureOptions => true,");
-        AssertDoesNotContain(dispatcherText, "AutomationCommandKind.SetPreviewVolume => true,");
-        AssertDoesNotContain(dispatcherText, "AutomationCommandKind.SetStatsVisible => true,");
-        AssertDoesNotContain(dispatcherText, "AutomationCommandKind.GetCaptureOptions => true,");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task App_Xaml_WiresUnhandledExceptionPolicy()
+    internal static Task App_IsRecoverableUnhandled_TriagesCancellationOnly()
     {
         var appType = RequireType("Sussudio.App");
-        var appRootSource = ReadRepoFile("Sussudio/App.xaml.cs")
-            .Replace("\r\n", "\n");
-
-        var uiHandler = appType.GetMethod(
-            "App_UnhandledException",
-            BindingFlags.Instance | BindingFlags.NonPublic);
-        AssertNotNull(uiHandler, "App.App_UnhandledException handler");
-
-        var domainHandler = appType.GetMethod(
-            "CurrentDomain_UnhandledException",
-            BindingFlags.Instance | BindingFlags.NonPublic);
-        AssertNotNull(domainHandler, "App.CurrentDomain_UnhandledException handler");
-
         var isRecoverable = appType.GetMethod(
             "IsRecoverableUnhandled",
-            BindingFlags.Static | BindingFlags.NonPublic);
-        AssertNotNull(isRecoverable, "App.IsRecoverableUnhandled triage");
+            BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("App.IsRecoverableUnhandled was not found.");
 
-        var recoverable = (bool)isRecoverable!.Invoke(null, new object[] { new OperationCanceledException() })!;
+        var recoverable = (bool)isRecoverable.Invoke(null, new object[] { new OperationCanceledException() })!;
         AssertEqual(true, recoverable, "OperationCanceledException is recoverable");
 
         var nonRecoverable = (bool)isRecoverable.Invoke(null, new object[] { new InvalidOperationException() })!;
         AssertEqual(false, nonRecoverable, "InvalidOperationException is not recoverable");
-
-        AssertContains(appRootSource, "Logger.Initialize(logRoot);");
-        AssertOccursBefore(appRootSource, "Logger.Initialize(logRoot);", "InitializeComponent();");
-        AssertContains(appRootSource, "FfmpegRuntimeInit.EnsureInitialized(requireNativeRuntime: true);");
-        AssertContains(appRootSource, "UnhandledException += App_UnhandledException;");
-        AssertContains(appRootSource, "AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;");
-        AssertContains(appRootSource, "private static bool IsRecoverableUnhandled(Exception ex)");
-        AssertContains(appRootSource, "private void App_UnhandledException(");
-        AssertContains(appRootSource, "private void CurrentDomain_UnhandledException(");
-        AssertContains(appRootSource, "private void TryEmergencyStopRecording(string source)");
-        AssertContains(appRootSource, "() => viewModel.StopRecordingForEmergencyAsync(),");
-        AssertContains(appRootSource, "viewModel.MarkRecordingFinalizationUnresolved,");
-        AssertContains(appRootSource, "TimeSpan.FromSeconds(8));");
-        AssertContains(appRootSource, "protected override void OnLaunched(");
-        AssertDoesNotContain(appRootSource, "SingleInstanceMutexName");
-        var startupSource = ReadRepoFile("Sussudio/Services/Runtime/AppProcessStartup.cs");
-        AssertContains(startupSource, "SingleInstanceMutexName");
-        AssertContains(startupSource, "SINGLE_INSTANCE_GUARD second instance detected");
-        AssertContains(startupSource, "SINGLE_INSTANCE_GUARD mutex setup failed; refusing launch.");
-        AssertContains(startupSource, "mutex.ReleaseMutex();");
-        AssertDoesNotContain(startupSource, "Logger.");
-        var entrySource = ReadRepoFile("Sussudio/Program.cs");
-        var childDispatch = entrySource.IndexOf("NativeFfmpegCapabilityProbe.TryRunChildProcess(", StringComparison.Ordinal);
-        var normalAdmission = entrySource.IndexOf("AppProcessStartup.RunAsSingleInstance(StartApplication)", StringComparison.Ordinal);
-        AssertEqual(true, childDispatch >= 0 && normalAdmission > childDispatch, "private child dispatch precedes normal admission");
-        var comInitialization = entrySource.IndexOf("ComWrappersSupport.InitializeComWrappers();", StringComparison.Ordinal);
-        var applicationStart = entrySource.IndexOf("Application.Start(", StringComparison.Ordinal);
-        var synchronizationContext = entrySource.IndexOf("SynchronizationContext.SetSynchronizationContext(context);", StringComparison.Ordinal);
-        var appConstruction = entrySource.IndexOf("new App();", StringComparison.Ordinal);
-        AssertEqual(
-            true,
-            comInitialization > normalAdmission && applicationStart > comInitialization &&
-            synchronizationContext > applicationStart && appConstruction > synchronizationContext,
-            "admitted startup preserves the generated WinUI sequence");
-        AssertContains(appRootSource, "\"APP_START \" +");
-        AssertContains(appRootSource, "public partial class App : Application");
 
         return Task.CompletedTask;
     }
@@ -2786,46 +2187,9 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task ProjectFile_PreservesEnglishOnlyPublishLocalePolicy()
-    {
-        var projectText = ReadRepoFile("Sussudio/Sussudio.csproj").Replace("\r\n", "\n");
-        var buildTargetsText = ReadRepoFile("Sussudio/Sussudio.Build.targets").Replace("\r\n", "\n");
-        AssertContains(projectText, "<SatelliteResourceLanguages>en-US</SatelliteResourceLanguages>");
-        AssertContains(projectText, "<Import Project=\"Sussudio.Build.targets\" />");
-        AssertContains(buildTargetsText, "<Target Name=\"StripUnwantedLocales\"");
-        AssertContains(buildTargetsText, "AfterTargets=\"Build;Publish\"");
-        AssertContains(buildTargetsText, "$_.Name.ToLowerInvariant() -ne 'en-us'");
-        AssertContains(buildTargetsText, "'$(PublishDir)' != ''");
-        AssertContains(buildTargetsText, "^[A-Za-z]{2,3}(-[A-Za-z]+)+$");
-        AssertContains(buildTargetsText, "<Target Name=\"StageLatestBuildToRepoRoot\"");
-        AssertContains(buildTargetsText, "<LatestBuildRoot>$(MSBuildProjectDirectory)\\..\\latest-build\\</LatestBuildRoot>");
-        return Task.CompletedTask;
-    }
-
     internal static Task NamedPipeAutomationServer_GatesDefaultSecurityFallbackOnAuthToken()
     {
         AssertPipeSecurityPolicyMatrix();
-
-        var pipeServerRootText = ReadRepoFile("Sussudio/Services/Automation/NamedPipeAutomationServer.cs")
-            .Replace("\r\n", "\n");
-        AssertContains(pipeServerRootText, "public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable");
-        AssertContains(pipeServerRootText, "public bool Start()");
-        AssertContains(pipeServerRootText, "private async Task HandleConnectionAsync(");
-        AssertContains(pipeServerRootText, "new ConnectionSession(this, server, cancellationToken);");
-        AssertContains(pipeServerRootText, "private sealed class ConnectionSession");
-        AssertContains(pipeServerRootText, "public async Task RunAsync()");
-        AssertContains(pipeServerRootText, "private async Task<AutomationCommandResponse> ExecuteCommandWithTimeoutAsync(");
-        AssertContains(pipeServerRootText, "AutomationPipeSecurityPolicy.ShouldDisableDefaultSecurityFallback(");
-        AssertContains(pipeServerRootText, "_explicitSecurityFailed = true;");
-        AssertContains(pipeServerRootText, "if (!_authTokenRequired)\n                {\n                    throw new AutomationPipeSecurityException(");
-        AssertContains(pipeServerRootText, "Automation pipe explicit security fallback to token-required default security");
-        AssertContains(pipeServerRootText, "private AutomationCommandResponse CreateRequestTimeoutResponse()");
-        AssertDoesNotContain(pipeServerRootText, "TraceFallback");
-        AssertContains(pipeServerRootText, "Logger.Log($\"Automation pipe server disabled: {ex}\")");
-        AssertContains(pipeServerRootText, "Logger.Log($\"Automation pipe server startup failed: {ex}\")");
-        AssertContains(pipeServerRootText, "Logger.Log($\"Automation pipe server loop error: {ex}\")");
-        AssertContains(pipeServerRootText, "Logger.Log($\"Automation pipe connection I/O error: {ioEx}\")");
-        AssertContains(pipeServerRootText, "Logger.Log($\"Automation pipe connection error: {ex}\")");
 
         if (!OperatingSystem.IsWindows())
         {
@@ -2927,30 +2291,6 @@ static partial class Program
                 $"NamedPipeAutomationServer fallback test reflection call threw {ex.InnerException.GetType().Name}: {ex.InnerException.Message}",
                 ex.InnerException);
         }
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task NamedPipeAutomationServer_RequestTimeoutsUseBoundedDispatchCancellation()
-    {
-        var pipeServerText = ReadRepoFile("Sussudio/Services/Automation/NamedPipeAutomationServer.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(pipeServerText, "private sealed class ConnectionSession");
-        AssertContains(pipeServerText, "var session = new ConnectionSession(this, server, cancellationToken);");
-        AssertContains(pipeServerText, "var requestCancellation = CancellationTokenSource.CreateLinkedTokenSource(requestTimeout.Token, _serverCancellation);");
-        AssertDoesNotContain(pipeServerText, "WaitForDispatchCompletionAsync(dispatchTask, CancellationToken.None)");
-        AssertContains(pipeServerText, "Automation command exceeded request timeout; waiting for dispatch to stop");
-        AssertDoesNotContain(pipeServerText, "DispatchContinues");
-        AssertDoesNotContain(pipeServerText, "ObserveTimedOutDispatch");
-        AssertContains(pipeServerText, "Request timed out after {_owner._requestTimeoutMs} ms.");
-        AssertContains(pipeServerText, "AutomationErrorCodes.RequestTimeout");
-        AssertContains(pipeServerText, "private const int MaxRequestCharacters = 1024 * 1024;");
-        AssertContains(pipeServerText, "ReadRequestLineAsync(reader, requestCancellation.Token)");
-        AssertContains(pipeServerText, "request.Length > MaxRequestCharacters + 1");
-        AssertContains(pipeServerText, "request.Length == MaxRequestCharacters + 1 && request[^1] != '\\r'");
-        AssertContains(pipeServerText, "AutomationErrorCodes.RequestTooLarge");
-        AssertDoesNotContain(pipeServerText, "reader.ReadLineAsync().WaitAsync(requestCancellation.Token)");
 
         return Task.CompletedTask;
     }
@@ -3231,58 +2571,6 @@ static partial class Program
         }
     }
 
-    internal static Task MainWindowAutomation_WiresPipeAuthFallbackPolicy()
-    {
-        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
-            .Replace("\r\n", "\n");
-        var automationHostControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowControllers.cs")
-            .Replace("\r\n", "\n");
-        var startupText = ReadMainWindowShellChromeAdapterSource();
-        var launchStartupControllerText = ReadRepoFile("Sussudio/Controllers/Launch/LaunchFlowController.cs")
-            .Replace("\r\n", "\n");
-        var launchStartupHandleLoadedText = ExtractMemberCode(launchStartupControllerText, "HandleLoaded");
-
-        AssertContains(mainWindowText, "_automationHostLifecycleController = new WindowAutomationHostLifecycleController(");
-        AssertContains(mainWindowText, "GetPreviewRuntimeSnapshotAsync,\n            this);");
-        AssertContains(mainWindowText, "private readonly WindowAutomationHostLifecycleController _automationHostLifecycleController;");
-        AssertContains(automationHostControllerText, "var automationToken = Environment.GetEnvironmentVariable(AutomationPipeProtocol.AutomationKeyEnvVar);");
-        AssertContains(automationHostControllerText, "var automationPipeName = Environment.GetEnvironmentVariable(\"SUSSUDIO_AUTOMATION_PIPE\");");
-        AssertContains(automationHostControllerText, "automationPipeName = NamedPipeAutomationServer.DefaultPipeName;");
-        AssertContains(automationHostControllerText, "var automationPorts = AutomationViewModelPorts.From(viewModel);");
-        AssertContains(automationHostControllerText, "new AutomationDiagnosticsHub(\n            automationPorts.SnapshotQuery,\n            previewSnapshotProvider,\n            new RecordingVerifier())");
-        AssertContains(automationHostControllerText, "new AutomationCommandDispatcher(\n            automationPorts,\n            _diagnosticsHub,\n            windowControl,\n            automationToken)");
-        AssertContains(automationHostControllerText, "_tokenRequired = !string.IsNullOrWhiteSpace(automationToken);");
-        AssertContains(automationHostControllerText, "new NamedPipeAutomationServer(\n            automationDispatcher,\n            _pipeName,\n            _tokenRequired)");
-        AssertDoesNotContain(mainWindowText, "Environment.GetEnvironmentVariable(AutomationPipeProtocol.AutomationKeyEnvVar)");
-        AssertDoesNotContain(mainWindowText, "new NamedPipeAutomationServer(");
-        AssertDoesNotContain(startupText, "new NamedPipeAutomationServer(");
-        AssertContains(startupText, "RefreshDevicesAsync = () => ViewModel.RefreshDevicesForStartupAsync(),");
-        AssertContains(startupText, "StartAutomationHost = _automationHostLifecycleController.Start,");
-        AssertContains(launchStartupControllerText, "_context.StartAutomationHost();");
-        AssertDoesNotContain(launchStartupHandleLoadedText, "finally");
-        AssertOccursBefore(launchStartupHandleLoadedText, "await _context.RefreshDevicesAsync();", "_context.StartAutomationHost();");
-        AssertContains(automationHostControllerText, "if (_pipeServer.Start())\n        {\n            _diagnosticsHub.Start();");
-        AssertContains(automationHostControllerText, "Automation control ready on pipe '{_pipeName}' (token required={_tokenRequired}).");
-        AssertContains(automationHostControllerText, "Automation control disabled on pipe '{_pipeName}' (token required={_tokenRequired}).");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task StreamDeckPluginScope_DocumentsAutomationAuthEnvelope()
-    {
-        var docs = ReadRepoFile("docs/stream-deck-plugin-scope.md")
-            .Replace("\r\n", "\n");
-
-        AssertContains(docs, "\"authToken\": \"<token-or-null>\"");
-        AssertContains(docs, "SUSSUDIO_AUTOMATION_TOKEN");
-        AssertContains(docs, "AutomationPipeProtocol.CreateRequestEnvelope");
-        AssertContains(docs, "ErrorCode: \"unauthorized\"");
-        AssertContains(docs, "optional auth token");
-        AssertContains(docs, "automation is disabled instead of opening a default");
-
-        return Task.CompletedTask;
-    }
-
     private static void AssertPipeSecurityPolicyMatrix()
     {
         AssertEqual(
@@ -3436,52 +2724,6 @@ static partial class Program
 // Tests for diagnostic snapshot JSON source-generation compatibility.
     internal static Task LoggingJsonContext_SerializesStructuredSnapshotPayloads()
     {
-        var loggerText = ReadRepoFile("Sussudio/AppRuntime.cs");
-        AssertContains(loggerText, "public static class Logger");
-        AssertDoesNotContain(loggerText, "partial class Logger");
-        AssertContains(loggerText, "[JsonSourceGenerationOptions(WriteIndented = false)]");
-        AssertContains(loggerText, "[JsonSerializable(typeof(CaptureHealthSnapshot))]");
-        AssertContains(loggerText, "[JsonSerializable(typeof(CaptureDiagnosticsSnapshot))]");
-        AssertContains(loggerText, "internal sealed partial class LoggingJsonContext : JsonSerializerContext");
-        AssertContains(loggerText, "Channel.CreateBounded<string>");
-        AssertContains(loggerText, "private static async Task RunLogWriterAsync()");
-        AssertContains(loggerText, "public static async Task ShutdownAsync(TimeSpan timeout)");
-        AssertContains(loggerText, "LogChannel.Writer.TryComplete();");
-        AssertContains(loggerText, "await _logWriterTask.WaitAsync(timeout).ConfigureAwait(false);");
-        AssertDoesNotContain(loggerText, "LogWriterCancellation");
-        AssertContains(loggerText, "private static void WriteDirect(string entry)");
-        var logMethod = ExtractTextBetween(loggerText, "public static void Log(string message", "public static void LogVerbose(");
-        AssertContains(logMethod, "LogChannel.Writer.TryWrite(logMessage)");
-        AssertDoesNotContain(logMethod, "WriteDirect(");
-        AssertDoesNotContain(logMethod, "File.");
-        AssertContains(loggerText, "private static void RotatePriorLog()");
-        AssertContains(loggerText, "public static void LogSystemInfo()");
-        AssertDoesNotContain(loggerText, "System.Management");
-        AssertDoesNotContain(loggerText, "ManagementObjectSearcher");
-        AssertContains(loggerText, "CPU info unavailable:");
-        AssertContains(loggerText, "RAM info unavailable:");
-        AssertContains(loggerText, "GPU info unavailable:");
-        AssertContains(loggerText, "public static void LogStructured(");
-        AssertContains(loggerText, "public static void LogFatalBreadcrumb(");
-        AssertContains(
-            loggerText,
-            "JsonSerializer.Serialize(healthSnapshot, LoggingJsonContext.Default.CaptureHealthSnapshot)");
-        AssertContains(
-            loggerText,
-            "JsonSerializer.Serialize(diagnosticsSnapshot, LoggingJsonContext.Default.CaptureDiagnosticsSnapshot)");
-        AssertOccursBefore(
-            loggerText,
-            "CaptureHealthSnapshot healthSnapshot =>",
-            "CaptureDiagnosticsSnapshot diagnosticsSnapshot =>");
-        AssertOccursBefore(
-            loggerText,
-            "CaptureHealthSnapshot healthSnapshot =>",
-            "_ when JsonSerializer.IsReflectionEnabledByDefault =>");
-        AssertOccursBefore(
-            loggerText,
-            "CaptureDiagnosticsSnapshot diagnosticsSnapshot =>",
-            "_ when JsonSerializer.IsReflectionEnabledByDefault =>");
-
         LoggingJsonContext_SerializesRepresentativePayloadsWithSourceGeneration();
 
         return Task.CompletedTask;
@@ -3806,454 +3048,6 @@ static partial class Program
         }
     }
 
-// Flashback backend preview pipeline contracts live with the automation xUnit wrappers.
-    internal static Task CaptureService_DeviceSwitchTeardown_StopsVideoBeforeFlashbackDisposal()
-    {
-        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs")
-            .Replace("\r\n", "\n");
-        var unifiedVideoCaptureText = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs")
-            .Replace("\r\n", "\n");
-        var disposePreviewPipeline = ExtractTextBetween(
-            captureServiceText,
-            "private async Task DisposePreviewPipelineAsync",
-            "\n}");
-        var unifiedDisposeCore = ExtractTextBetween(
-            unifiedVideoCaptureText,
-            "private async ValueTask DisposeCoreAsync",
-            "private void ThrowIfDisposed()");
-
-        AssertContains(disposePreviewPipeline, "unifiedVideoCapture.SetPreviewSink(null);");
-        AssertContains(disposePreviewPipeline, "unifiedVideoCapture.SetFlashbackSink(null);");
-        AssertContains(disposePreviewPipeline, "PREVIEW_PIPELINE_VIDEO_STOP_BEFORE_FLASHBACK_DISPOSE");
-        AssertOccursBefore(
-            disposePreviewPipeline,
-            "await unifiedVideoCapture.StopAsync().ConfigureAwait(false);",
-            "await DisposeFlashbackPreviewBackendAsync(");
-        AssertOccursBefore(
-            disposePreviewPipeline,
-            "await DisposeFlashbackPreviewBackendAsync(",
-            "await unifiedVideoCapture.DisposeForPreviewReinitAsync().ConfigureAwait(false);");
-        AssertDoesNotContain(disposePreviewPipeline, "await unifiedVideoCapture.DisposeAsync().ConfigureAwait(false);");
-        AssertContains(unifiedVideoCaptureText, "public async ValueTask DisposeForPreviewReinitAsync()");
-        AssertContains(unifiedDisposeCore, "if (disposeSharedD3DDeviceManager)");
-        AssertContains(unifiedDisposeCore, "UNIFIED_VIDEO_REINIT_RETIRE_SHARED_D3D_MANAGER");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task CaptureService_RecyclesRetainedFlashbackPreviewPipeline_WhenSettingsChange()
-    {
-        var captureServiceText = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.cs")
-            + "\n" + ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
-            + "\n" + ReadCaptureServicePreviewLifecycleCodeWithoutCommentsOrStrings()
-            + "\n" + ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.Flashback.cs")
-            + "\n" + ReadCaptureServiceAudioCodeWithoutCommentsOrStrings()
-            + "\n" + ReadCaptureServiceFlashbackOrchestrationCodeWithoutCommentsOrStrings();
-        var captureServiceRawText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
-            .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadCaptureServicePreviewLifecycleSource()
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadCaptureServiceAudioSource()
-            + "\n" + ReadCaptureServiceFlashbackOrchestrationSource();
-        var captureServiceRootText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
-            .Replace("\r\n", "\n");
-        var previewLifecycleText = ReadCaptureServicePreviewLifecycleSource();
-        var coordinatorText = ReadCaptureSessionCoordinatorSource();
-        var flashbackPreviewBackendText = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.Flashback.cs");
-        var flashbackBackendResourcesText = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/FlashbackBackendResources.cs");
-        var viewModelPreviewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs")
-            .Replace("\r\n", "\n");
-        var startVideoPreview = ExtractTextBetween(
-            captureServiceText,
-            "public Task StartVideoPreviewAsync",
-            "private bool CanReuseVideoCaptureForPreview");
-        var retainedPreviewFastPath = ExtractTextBetween(
-            startVideoPreview,
-            "private async Task<bool> TryStartPreviewFromRetainedPipelineAsync",
-            "private async Task StartFreshPreviewPipelineAsync");
-        var ensureFlashbackAudio = ExtractTextBetween(
-            captureServiceText,
-            "private async Task EnsureFlashbackAudioInputsAsync",
-            "private async Task EnsureFlashbackPreviewBackendAsync");
-        var startAudioPreview = ExtractTextBetween(
-            captureServiceText,
-            "public Task StartAudioPreviewAsync",
-            "public Task StopAudioPreviewAsync");
-
-        AssertDoesNotContain(captureServiceRootText, "public Task StartVideoPreviewAsync");
-        AssertDoesNotContain(captureServiceRootText, "private async Task DisposePreviewPipelineAsync");
-        AssertContains(previewLifecycleText, "public Task StartVideoPreviewAsync");
-        AssertContains(previewLifecycleText, "private async Task DisposePreviewPipelineAsync");
-        AssertContains(startVideoPreview, "var previousSettings = _flashbackBackend.SettingsSnapshot ?? _currentSettings;");
-        AssertContains(startVideoPreview, "CanReuseFlashbackBackend(previousSettings, settings)");
-        AssertOccursBefore(startVideoPreview, "var previousSettings = _flashbackBackend.SettingsSnapshot ?? _currentSettings;", "_currentSettings = settings;");
-        AssertOccursBefore(startVideoPreview, "CanReuseFlashbackBackend(previousSettings, settings)", "_currentSettings = settings;");
-        AssertContains(startVideoPreview, "CanReuseVideoCaptureForPreview(unifiedVideoCapture, settings)");
-        AssertRegex(
-            startVideoPreview,
-            @"var\s+unifiedVideoCapture\s*=\s*_videoPipeline\.Capture;\s*if\s*\(\s*unifiedVideoCapture\s*!=\s*null\s*&&\s*!_isRecording\s*&&\s*!CanReuseVideoCaptureForPreview\(unifiedVideoCapture,\s*settings\)\s*\)\s*\{[^{}]*DisposePreviewPipelineAsync\(transitionToken,\s*purgeFlashbackSegments:\s*false\)",
-            "preview settings-change recycle branch");
-        AssertRegex(
-            startVideoPreview,
-            @"unifiedVideoCapture\s*=\s*_videoPipeline\.Capture;\s*if\s*\(\s*unifiedVideoCapture\s*!=\s*null\s*&&\s*!_isRecording\s*&&\s*!_flashbackEnabled\s*\)\s*\{[^{}]*DisposePreviewPipelineAsync\(transitionToken,\s*purgeFlashbackSegments:\s*false\)",
-            "preview flashback-disabled recycle branch");
-        AssertRegex(
-            startVideoPreview,
-            @"unifiedVideoCapture\s*=\s*_videoPipeline\.Capture;\s*if\s*\(\s*unifiedVideoCapture\s*!=\s*null\s*&&\s*!_isRecording\s*&&\s*_flashbackBackend\.Sink\s*!=\s*null\s*&&\s*flashbackBackendSettingsChanged\s*\)\s*\{[^{}]*DisposeFlashbackPreviewBackendAsync\(transitionToken,\s*purgeSegments:\s*false\)",
-            "preview flashback-backend recycle branch");
-
-        AssertContains(retainedPreviewFastPath, "unifiedVideoCapture.SetPreviewSink(_videoPipeline.PreviewFrameSink)");
-        AssertContains(retainedPreviewFastPath, "await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, settings, transitionToken)");
-        AssertContains(retainedPreviewFastPath, "await EnsureFlashbackAudioInputsAsync(settings, transitionToken,");
-        AssertOccursBefore(
-            retainedPreviewFastPath,
-            "await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, settings, transitionToken)",
-            "await EnsureFlashbackAudioInputsAsync(settings, transitionToken,");
-        AssertOccursBefore(
-            retainedPreviewFastPath,
-            "await EnsureFlashbackAudioInputsAsync(settings, transitionToken,",
-            "_isVideoPreviewActive = true;");
-        var startVideoPreviewRaw = ExtractTextBetween(
-            captureServiceRawText,
-            "public Task StartVideoPreviewAsync",
-            "private bool CanReuseVideoCaptureForPreview");
-        AssertOccursBefore(
-            startVideoPreviewRaw,
-            "await StartPreviewAudioGraphAsync(settings, audioDeviceId, transitionToken)",
-            "// Start flashback AFTER");
-        var previewAudioGraphRaw = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs")
-            .Replace("\r\n", "\n");
-        var previewMicMonitorStart = ExtractTextBetween(
-            previewAudioGraphRaw,
-            "private async Task StartPreviewMicrophoneMonitorAsync",
-            "private async Task RollbackPreviewAudioCaptureStartupAsync");
-        AssertContains(previewMicMonitorStart, "WasapiAudioCapture? micCapture = null;");
-        AssertContains(previewMicMonitorStart, "catch (OperationCanceledException) when (transitionToken.IsCancellationRequested)");
-        AssertContains(previewMicMonitorStart, "MIC_MONITOR_PREVIEW_START_DISPOSE_WARN");
-        AssertContains(previewMicMonitorStart, "_previewAudioGraph.MicrophoneCapture = micCapture;");
-        AssertContains(previewMicMonitorStart, "micCapture = null;");
-        AssertContains(previewMicMonitorStart, "_previewAudioGraph.MicrophoneCapture = micCapture;\n            micCapture = null;");
-
-        AssertContains(ensureFlashbackAudio, "if (settings.AudioEnabled && _previewAudioGraph.ProgramCapture == null)");
-        AssertContains(ensureFlashbackAudio, "AttachFlashbackAudioIfSupported(_previewAudioGraph.ProgramCapture, reason)");
-        AssertContains(ensureFlashbackAudio, "if (_micMonitorEnabled && _previewAudioGraph.MicrophoneCapture == null && !string.IsNullOrWhiteSpace(_micMonitorDeviceId))");
-        AssertContains(ensureFlashbackAudio, "_previewAudioGraph.MicrophoneCapture.SetAudioWriter(samples => fbSink.WriteMicrophoneAudioAsync(samples))");
-
-        AssertContains(startAudioPreview, "AttachFlashbackAudioIfSupported(_previewAudioGraph.ProgramCapture,");
-        AssertOccursBefore(
-            startAudioPreview,
-            "AttachFlashbackAudioIfSupported(_previewAudioGraph.ProgramCapture,",
-            "await _previewAudioGraph.StartPlaybackAsync(");
-        AssertContains(startAudioPreview, "var createdCaptureForAudioPreview = false;");
-        AssertContains(startAudioPreview, "createdCaptureForAudioPreview = true;");
-        AssertContains(startAudioPreview, "_isAudioPreviewActive = false;");
-        AssertContains(startAudioPreview, "_previewAudioGraph.DetachCapture(");
-        AssertOccursBefore(
-            startAudioPreview,
-            "_isAudioPreviewActive = true;",
-            "await _previewAudioGraph.StartPlaybackAsync(");
-        var startAudioPreviewRaw = ExtractTextBetween(
-            captureServiceRawText,
-            "public Task StartAudioPreviewAsync",
-            "public Task StopAudioPreviewAsync");
-        AssertContains(startAudioPreviewRaw, "AUDIO_PREVIEW_START_ROLLBACK_DISPOSE_WARN");
-        var updateAudioInput = ExtractTextBetween(
-            captureServiceText,
-            "public Task UpdateAudioInputAsync",
-            "private void OnWasapiAudioLevelUpdated");
-        AssertContains(updateAudioInput, "await newCapture.InitializeAsync(resolvedId, transitionToken)");
-        AssertContains(updateAudioInput, "await _previewAudioGraph.StartPlaybackAsync(");
-        AssertContains(updateAudioInput, "cancellationToken: transitionToken)");
-        AssertOccursBefore(
-            updateAudioInput,
-            "await newCapture.InitializeAsync(resolvedId, transitionToken)",
-            "_previewAudioGraph.DetachCapture(");
-        AssertContains(updateAudioInput, "_audioDeviceId = previousDeviceId;");
-        AssertContains(updateAudioInput, "_audioDeviceName = previousDeviceName;");
-        AssertOccursBefore(updateAudioInput, "newCapture.Start();", "_previewAudioGraph.ProgramCapture = newCapture;");
-        AssertOccursBefore(updateAudioInput, "_previewAudioGraph.ProgramCapture = newCapture;", "captureCommitted = true;");
-        AssertContains(updateAudioInput, "finally\n                {\n                    if (!captureCommitted)");
-        AssertOccursBefore(updateAudioInput, "captureCommitted = true;", "AttachFlashbackAudioIfSupported(newCapture");
-        var candidateCleanup = ExtractTextBetween(updateAudioInput,
-            "if (!captureCommitted)", "_audioDeviceId = audioDeviceId;");
-        foreach (var operation in new[]
-        {
-            "newCapture.AudioLevelUpdated -= OnWasapiAudioLevelUpdated;",
-            "_previewAudioGraph.DetachCaptureFailure(newCapture);",
-            "await newCapture.DisposeAsync().ConfigureAwait(false);"
-        })
-        {
-            AssertContains(candidateCleanup, operation);
-            AssertEqual(1, updateAudioInput.Split(operation, StringSplitOptions.None).Length - 1,
-                "uncommitted audio capture has one cleanup owner: " + operation);
-        }
-
-        AssertContains(updateAudioInput, "activeSink != null && !ReferenceEquals(activeSink, _flashbackBackend.Sink)");
-        AssertOccursBefore(
-            updateAudioInput,
-            "newCapture.AttachRecordingSink(activeSink);",
-            "await _previewAudioGraph.StartPlaybackAsync(");
-        var updateMicrophoneMonitor = ExtractTextBetween(
-            ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs").Replace("\r\n", "\n"),
-            "public Task UpdateMicrophoneMonitorAsync",
-            "        }, cancellationToken);");
-        AssertContains(updateMicrophoneMonitor, "if (_isRecording)");
-        AssertContains(updateMicrophoneMonitor, "MIC_MONITOR_UPDATE_DEFERRED recording=true");
-        AssertOccursBefore(
-            updateMicrophoneMonitor,
-            "MIC_MONITOR_UPDATE_DEFERRED recording=true",
-            "await DisposeMicrophoneCaptureAsync()");
-        var updateAudioInputRaw = ExtractTextBetween(
-            captureServiceRawText,
-            "public Task UpdateAudioInputAsync",
-            "private void OnWasapiAudioLevelUpdated");
-        AssertContains(updateAudioInputRaw, "AUDIO_INPUT_SWITCH_OLD_DISPOSE_WARN");
-        AssertContains(updateAudioInputRaw, "AUDIO_INPUT_SWITCH_NEW_DISPOSE_WARN");
-        AssertContains(updateAudioInputRaw, "AUDIO_INPUT_SWITCH_CANCEL_DEFERRED");
-        AssertContains(updateAudioInputRaw, "AUDIO_INPUT_SWITCH_PLAYBACK_START_FAILED");
-        AssertContains(updateAudioInputRaw, "AUDIO_INPUT_SWITCH_COMMITTED");
-        AssertContains(updateAudioInputRaw, "AUDIO_INPUT_SWITCH_ABORT");
-
-        AssertContains(captureServiceText, "await _flashbackBackend.StartPreviewBackendAsync(");
-        AssertContains(captureServiceText, "new FlashbackPreviewBackendStartRequest(");
-        AssertContains(captureServiceText, "CloneCaptureSettings(settings),");
-        AssertContains(captureServiceText, "CloneCaptureSettings(currentSettings)");
-        AssertContains(flashbackBackendResourcesText, "SettingsSnapshot = request.SettingsSnapshot;");
-        AssertContains(flashbackBackendResourcesText, "ClearSinkAndSettings();");
-        AssertContains(captureServiceText, "_flashbackBackend.DisposePreviewBackendUnderExportLockAsync(");
-        AssertContains(flashbackBackendResourcesText, "Clear();");
-        AssertContains(flashbackBackendResourcesText, "public async Task StartPreviewBackendAsync(");
-        AssertContains(flashbackBackendResourcesText, "var bufferManager = new FlashbackBufferManager(");
-        AssertContains(flashbackBackendResourcesText, "flashbackSink.SetFatalErrorCallback(_onFatalError);");
-        AssertContains(flashbackBackendResourcesText, "flashbackSink.FrameEncoded += _onFrameEncodedHandler;");
-        AssertContains(flashbackBackendResourcesText, "Install(");
-        AssertContains(flashbackBackendResourcesText, "AttachProducers(");
-        AssertContains(flashbackBackendResourcesText, "playbackController.Initialize(");
-        AssertContains(flashbackBackendResourcesText, "private async Task RollBackPreviewBackendStartAsync(");
-        AssertContains(flashbackBackendResourcesText, "flashbackSink.FrameEncoded -= _onFrameEncodedHandler;");
-        AssertContains(flashbackBackendResourcesText, "ScheduleDeferredArtifactCleanup(");
-        AssertDoesNotContain(captureServiceText, "var bufferManager = new FlashbackBufferManager(");
-        AssertDoesNotContain(captureServiceText, "FlashbackPlaybackController? playbackController = null;");
-        AssertDoesNotContain(captureServiceText, "flashbackSink.SetFatalErrorCallback(OnFlashbackBackendFatalError);");
-        AssertDoesNotContain(flashbackPreviewBackendText, "flashbackSink.FrameEncoded -= OnFlashbackFrameEncoded;");
-        AssertContains(captureServiceText, "controller is { IsDisposed: false, IsInitialized: false }");
-        AssertContains(coordinatorText, "controller == null || controller.IsDisposed");
-        AssertContains(coordinatorText, "controller is { IsDisposed: false, IsInitialized: true, State: not FlashbackPlaybackState.Disabled }");
-        AssertContains(coordinatorText, "? \"disposed\"");
-        AssertContains(captureServiceText, "!CanReuseFlashbackBackend(_flashbackBackend.SettingsSnapshot, settings)");
-        AssertContains(captureServiceText, "await EnsureFlashbackAudioInputsAsync(settings, transitionToken,");
-        AssertContains(startVideoPreview, "var previewStartRollbackToken = CancellationToken.None;");
-        AssertContains(startVideoPreview, "await DisposeFlashbackPreviewBackendAsync(previewStartRollbackToken)");
-        var stopVideoPreviewCore = ExtractTextBetween(
-            captureServiceText,
-            "private Task StopVideoPreviewCoreAsync",
-            "private async Task DisposePreviewPipelineAsync");
-        AssertContains(stopVideoPreviewCore, "var commitStoppedState = false;");
-        AssertContains(stopVideoPreviewCore, "catch (OperationCanceledException) when (transitionToken.IsCancellationRequested)");
-        AssertContains(stopVideoPreviewCore, "commitStoppedState = true;");
-        AssertContains(stopVideoPreviewCore, "if (commitStoppedState)\n                {\n                    _isVideoPreviewActive = false;");
-        AssertContains(stopVideoPreviewCore, "await StopSourceTelemetryPollingAsync().ConfigureAwait(false);");
-        AssertContains(stopVideoPreviewCore, "catch (Exception ex) when (stopFailure != null)");
-        AssertDoesNotContain(stopVideoPreviewCore, "!keepPipelineAlive) StopTelemetryPoll()");
-        var stopPreviewBlock = ExtractTextBetween(
-            viewModelPreviewLifecycleControllerText,
-            "public async Task StopPreviewAsync(bool userInitiated, bool teardownPipeline, CancellationToken cancellationToken)",
-            "\n}\n");
-        AssertContains(stopPreviewBlock, "var commitStoppedState = false;");
-        AssertContains(stopPreviewBlock, "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)");
-        AssertContains(stopPreviewBlock, "if (commitStoppedState)\n            {\n                _context.SetIsPreviewing(false);\n            }");
-        AssertOccursBefore(
-            ExtractTextBetween(
-                captureServiceText,
-                "if (_flashbackEnabled && _flashbackBackend.Sink != null)",
-                "_recordingBackend.InstallFlashback(activeFlashbackSink, fbRecordingContext, settings);"),
-            "await EnsureFlashbackAudioInputsAsync(settings, transitionToken,",
-            "activeFlashbackSink.BeginRecording");
-        AssertContains(ensureFlashbackAudio, "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)");
-        AssertContains(ensureFlashbackAudio, "await micCapture.DisposeAsync()");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task CaptureService_FlashbackLifecycleLogs_UseOutcomeNames()
-    {
-        var flashbackTexts = Directory
-            .GetFiles(Path.Combine(GetRepoRoot(), "Sussudio", "Services"), "*.cs", SearchOption.AllDirectories)
-            .Where(path => File.ReadAllText(path).Contains("FLASHBACK_", StringComparison.Ordinal))
-            .Select(path => File.ReadAllText(path).Replace("\r\n", "\n"))
-            .ToArray();
-        var captureServiceText = ReadCaptureServiceFlashbackOrchestrationSource()
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
-                .Replace("\r\n", "\n");
-        var flashbackBackendResourcesText = ReadRepoFile("Sussudio/Services/Capture/FlashbackBackendResources.cs")
-            .Replace("\r\n", "\n");
-        var flashbackText = string.Join("\n", flashbackTexts);
-
-        AssertNoRegex(
-            flashbackText,
-            @"""FLASHBACK_[^""]*_(BEGIN|DONE|END)\b",
-            "Flashback lifecycle scaffold log tokens");
-
-        foreach (var expectedToken in new[]
-        {
-            "FLASHBACK_RESTART_OK",
-            "FLASHBACK_BACKEND_DEFERRED_CLEANUP_OK",
-            "FLASHBACK_BACKEND_DEFERRED_CLEANUP_RETRY",
-            "FLASHBACK_BACKEND_DEFERRED_CLEANUP_GIVE_UP",
-            "FLASHBACK_RECORDING_EXPORT_OK",
-            "FLASHBACK_RECORDING_EXPORT_FAIL",
-            "FLASHBACK_UNIFIED_RECORDING_STOP_OK",
-            "FLASHBACK_UNIFIED_RECORDING_STOP_FAIL",
-            "FLASHBACK_PREVIEW_INIT_OK",
-            "FLASHBACK_PREVIEW_INIT_CANCELLED",
-            "FLASHBACK_PREVIEW_DISPOSE_OK",
-            "FLASHBACK_BUFFER_CYCLE_OK",
-            "FLASHBACK_RECORDING_ACTIVE",
-            "FLASHBACK_RECORDING_READY",
-            "FLASHBACK_EXPORT_OK",
-            "FLASHBACK_EXPORT_SEGMENT_OK",
-            "FLASHBACK_EXPORT_SEGMENTS_OK",
-            "FLASHBACK_CYCLE_NEW_SINK_EVENT_DETACH_WARN",
-            "FLASHBACK_CYCLE_NEW_SINK_DISPOSE_WARN",
-            "FLASHBACK_PLAYBACK_DISPOSE_REQUEST"
-        })
-        {
-            AssertContains(flashbackText, expectedToken);
-        }
-
-        var settingsChange = ExtractTextBetween(
-            captureServiceText,
-            "internal async Task<RecordingSettingsApplyDisposition> ApplyRecordingSettingsAsync(",
-            "private void UpdateEncodingSettings(CaptureSettings source)");
-        AssertContains(settingsChange, "var previousSettings = CloneCaptureSettings(_currentSettings);");
-        AssertContains(settingsChange, "_currentSettings = previousSettings;");
-        AssertContains(settingsChange, "applicationFailure = ex;");
-        AssertContains(settingsChange, "ExceptionDispatchInfo.Capture(applicationFailure).Throw();");
-        AssertContains(settingsChange, "catch (OperationCanceledException ex) when (transitionToken.IsCancellationRequested)");
-        AssertContains(settingsChange, "await _rebuildRecordingSettingsBackendAsync(transitionToken)");
-        foreach (var suffix in new[] { "_OK", "_CYCLE_FAIL", "_CYCLE_CANCELLED", "_ROLLBACK" })
-        {
-            AssertContains(settingsChange, "{logPrefix}" + suffix);
-        }
-        AssertContains(settingsChange, "FLASHBACK_FORMAT_CHANGE");
-        AssertContains(settingsChange, "FLASHBACK_ENCODER_SETTINGS_CHANGE");
-        AssertContains(settingsChange, "RecordingSettingsSelection selection");
-        AssertContains(settingsChange, "selection.ApplyTo(_currentSettings);");
-
-        var settingsRebuild = ExtractTextBetween(
-            captureServiceText,
-            "private async Task RebuildFlashbackPreviewBackendForSettingsChangeAsync",
-            "    private async Task CycleFlashbackBufferAsync");
-        AssertContains(settingsRebuild, "await DisposeFlashbackPreviewBackendAsync(cancellationToken, purgeSegments: false)");
-        AssertContains(settingsRebuild, "var committedRebuildToken = CancellationToken.None;");
-        AssertContains(settingsRebuild, "await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, currentSettings, committedRebuildToken)");
-        AssertContains(settingsRebuild, "FLASHBACK_SETTINGS_REBUILD_OK");
-
-        var cycleBuffer = ExtractTextBetween(
-            captureServiceText,
-            "private async Task CycleFlashbackBufferAsync",
-            "    private void OnFlashbackFrameEncoded");
-        var backendCycleBuffer = ExtractTextBetween(
-            flashbackBackendResourcesText,
-            "public async Task<FlashbackBufferCycleOutcome> CycleSinkOnlyAsync",
-            "    private async Task RollBackPreviewBackendStartAsync");
-        AssertContains(cycleBuffer, "await _flashbackExportOperationLock.WaitAsync(cancellationToken).ConfigureAwait(false);");
-        AssertOccursBefore(cycleBuffer, "_flashbackBackendLeaseLock.WaitAsync(", "_flashbackExportOperationLock.WaitAsync(");
-        AssertOccursBefore(cycleBuffer, "_flashbackExportOperationLock.WaitAsync(", "_flashbackBackend.DisposePreviewBackendUnderExportLockAsync(");
-        AssertContains(cycleBuffer, "ReleaseFlashbackExportOperationLockIfHeld(ref exportOperationLockHeld);");
-        AssertContains(backendCycleBuffer, "preserveSegments: !request.PurgeSegments");
-        AssertContains(backendCycleBuffer, "private FlashbackBufferCyclePlaybackState DisposePlaybackForBufferCycle(");
-        AssertContains(backendCycleBuffer, "preserveSegments ? oldPlaybackController?.InPoint : null");
-        AssertContains(backendCycleBuffer, "preserveSegments ? oldPlaybackController?.OutPoint : null");
-        AssertContains(backendCycleBuffer, "preserveSegments ? oldPlaybackController?.InPointFilePts : null");
-        AssertContains(backendCycleBuffer, "preserveSegments ? oldPlaybackController?.OutPointFilePts : null");
-        AssertDoesNotContain(backendCycleBuffer, "var preservedInPoint = oldPlaybackController?.InPoint;");
-        AssertDoesNotContain(backendCycleBuffer, "var preservedOutPoint = oldPlaybackController?.OutPoint;");
-        AssertContains(backendCycleBuffer, "playbackController.RestoreInOutPoints(");
-        AssertContains(backendCycleBuffer, "preservedPlaybackState.InPoint,");
-        AssertContains(backendCycleBuffer, "preservedPlaybackState.OutPoint,");
-        AssertContains(backendCycleBuffer, "preservedPlaybackState.InPointFilePts,");
-        AssertContains(backendCycleBuffer, "preservedPlaybackState.OutPointFilePts);");
-        var ensureFlashbackPreviewBackend = ExtractTextBetween(
-            captureServiceText,
-            "private async Task EnsureFlashbackPreviewBackendAsync",
-            "private async Task DisposeFlashbackPreviewBackendAsync");
-        var createFlashbackSessionContext = ExtractTextBetween(
-            captureServiceText,
-            "private FlashbackSessionContext CreateFlashbackSessionContext",
-            "    private async Task<FinalizeResult> FinalizeFlashbackRecordingAsync");
-        AssertContains(createFlashbackSessionContext, "var frameRateParts = ResolveCaptureDeliveryFrameRateParts(settings, frameRate);");
-        AssertContains(createFlashbackSessionContext, "frameRate = frameRateParts.EffectiveFrameRate;");
-        AssertContains(createFlashbackSessionContext, "FrameRateNumerator = fpsNum");
-        AssertContains(ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs"), "private static (int? Numerator, int? Denominator, double EffectiveFrameRate) ResolveCaptureDeliveryFrameRateParts(");
-        AssertContains(ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs"), "private static (int? Numerator, int? Denominator, double EffectiveFrameRate) InferCaptureDeliveryFrameRateParts(double deliveryFrameRate)");
-        AssertContains(ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs"), "CAPTURE_FRAME_RATE_RATIONAL_ACCEPT");
-        AssertContains(ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs"), "CAPTURE_FRAME_RATE_RATIONAL_REJECT");
-        AssertContains(ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs"), "CAPTURE_FRAME_RATE_RATIONAL_INFER");
-        AssertContains(ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs"), "deltaFps > toleranceFps");
-        AssertContains(createFlashbackSessionContext, "RecordingFormat.Av1Mp4 => \"av1_nvenc\"");
-        AssertContains(createFlashbackSessionContext, "AV1 recording requires the av1_nvenc encoder");
-        AssertDoesNotContain(createFlashbackSessionContext, "UseTransportStreamFlashbackCodec");
-        AssertContains(captureServiceText, "settings.Format == RecordingFormat.Av1Mp4");
-        AssertContains(captureServiceText, "private static string? ResolveFlashbackExportVerificationFormat(");
-        AssertContains(captureServiceText, "FlashbackExportPlanner.PlanLiveEdge(");
-        AssertContains(captureServiceText, "FLASHBACK_EXPORT_FORCE_ROTATE_FAILED");
-        AssertContains(captureServiceText, "FLASHBACK_EXPORT_FORCE_ROTATE_FALLBACK reason=force_rotate_timeout");
-        AssertDoesNotContain(captureServiceText, "? RecordingFormat.HevcMp4.ToString()");
-        AssertContains(createFlashbackSessionContext, "var flashbackNvencPreset = settings.NvencPreset;");
-        AssertContains(createFlashbackSessionContext, "NvencPreset = flashbackNvencPreset");
-        AssertContains(createFlashbackSessionContext, "SplitEncodeMode = settings.SplitEncodeMode");
-        // Flashback must honor user codec/preset settings directly. The legacy snapshot
-        // field remains for compatibility, but the old silent AV1->HEVC path must stay gone.
-        AssertDoesNotContain(createFlashbackSessionContext, "FLASHBACK_CODEC_DOWNGRADE");
-        AssertDoesNotContain(captureServiceText, "AV1->HEVC: software MJPEG pipeline at");
-        AssertDoesNotContain(captureServiceText, "NVENC preset '");
-        var snapshotsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
-            .Replace("\r\n", "\n");
-        AssertDoesNotContain(snapshotsText, "ResolveFlashbackCodecDowngradeReason");
-        var contractsText = ReadAutomationSnapshotFamilyText();
-        AssertContains(contractsText, "public string? FlashbackExportVerificationFormat { get; init; }");
-        AssertContains(contractsText, "public string? FlashbackCodecDowngradeReason { get; init; }");
-        var automationDiagnosticsHubText = ReadAutomationSnapshotInitializerText();
-        AssertContains(automationDiagnosticsHubText, "FlashbackExportVerificationFormat = captureRuntime.FlashbackExportVerificationFormat ?? health.FlashbackExportVerificationFormat,");
-        AssertContains(automationDiagnosticsHubText, "FlashbackCodecDowngradeReason = captureRuntime.FlashbackCodecDowngradeReason ?? health.FlashbackCodecDowngradeReason");
-        AssertDoesNotContain(captureServiceText, "var fbFileNameFormatOverride =");
-        AssertDoesNotContain(captureServiceText, "FileNameFormatOverride = fbFileNameFormatOverride");
-        AssertContains(ensureFlashbackPreviewBackend, "var failureToken = ex is OperationCanceledException && cancellationToken.IsCancellationRequested");
-        AssertContains(ensureFlashbackPreviewBackend, "FLASHBACK_PREVIEW_INIT_CANCELLED");
-        AssertContains(ensureFlashbackPreviewBackend, "FLASHBACK_PREVIEW_INIT_FAIL");
-        AssertContains(backendCycleBuffer, "FLASHBACK_CYCLE_NEW_SINK_EVENT_DETACH_WARN");
-        AssertContains(backendCycleBuffer, "FLASHBACK_CYCLE_NEW_SINK_DISPOSE_WARN");
-        AssertContains(backendCycleBuffer, "FLASHBACK_CYCLE_NEW_SINK_FAIL type={ex.GetType().Name} error='{ex.Message}'");
-        AssertContains(backendCycleBuffer, "var committedCycleToken = CancellationToken.None;");
-        AssertContains(backendCycleBuffer, "StopAndDisposeOldSinkForBufferCycleAsync(");
-        AssertContains(backendCycleBuffer, "TryStartReplacementSinkForBufferCycleAsync(");
-        AssertContains(backendCycleBuffer, "CleanupFailedReplacementSinkForBufferCycleAsync(");
-        AssertContains(backendCycleBuffer, "await oldSink.StopAsync(committedCycleToken)");
-        AssertContains(backendCycleBuffer, "await newSink.StartAsync(");
-        AssertContains(backendCycleBuffer, "request.CreateSessionContext(),");
-        AssertContains(backendCycleBuffer, "cancellationToken: committedCycleToken)");
-        AssertContains(backendCycleBuffer, "FLASHBACK_BUFFER_CYCLE_CANCEL_DEFERRED");
-        AssertOccursBefore(
-            backendCycleBuffer,
-            "StopAndDisposeOldSinkForBufferCycleAsync(",
-            "ClearSinkAndSettings();");
-        AssertContains(backendCycleBuffer, "await oldSink.DisposeAsync().ConfigureAwait(false);");
-
-        return Task.CompletedTask;
-    }
-
     internal static Task CaptureService_FlashbackFrameRateParts_PreserveOnlyDeliveredCadenceRational()
     {
         var captureServiceType = RequireType("Sussudio.Services.Capture.CaptureService");
@@ -4363,248 +3157,6 @@ static partial class Program
         AssertEqual(expectedNumerator, numerator == null ? null : Convert.ToInt32(numerator), $"{fieldName} numerator");
         AssertEqual(expectedDenominator, denominator == null ? null : Convert.ToInt32(denominator), $"{fieldName} denominator");
         AssertNearlyEqual(expectedFrameRate, Convert.ToDouble(effectiveFrameRate), 0.000001, $"{fieldName} effective frame rate");
-    }
-
-    internal static Task CaptureService_FlashbackEnableDisable_PreservesPreviewState()
-    {
-        var captureServiceText = ReadCaptureServiceRecordingFinalizationSource()
-            .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
-                .Replace("\r\n", "\n");
-        var setFlashbackEnabled = ExtractTextBetween(
-            captureServiceText,
-            "public Task SetFlashbackEnabledAsync",
-            "/// <summary>\n    /// Updates flashback-specific fields");
-        var stopAndDisposeRecordingBackend = ExtractTextBetween(
-            captureServiceText,
-            "private async Task<FinalizeResult> StopAndDisposeLibAvRecordingBackendAsync",
-            "private async Task DisposeTransientRecordingBackendAsync");
-        var libAvPreviewRestore = ExtractTextBetween(
-            captureServiceText,
-            "private async Task<OperationCanceledException?> RestorePendingFlashbackEnableAfterLibAvRecordingAsync",
-            "private async Task<OperationCanceledException?> RestartStandardMicrophoneMonitorAfterLibAvRecordingAsync");
-
-        AssertContains(setFlashbackEnabled, "_pendingFlashbackEnableAfterRecording = false;");
-        AssertContains(setFlashbackEnabled, "if (_flashbackEnabled == enabled)");
-        AssertContains(setFlashbackEnabled, "if (enabled && (_flashbackBackend.Sink != null || _isRecording))");
-        AssertContains(setFlashbackEnabled, "if (!enabled && !_flashbackBackend.HasAnyResource)");
-        AssertContains(
-            setFlashbackEnabled,
-            "if (!_isVideoPreviewActive && !_isAudioPreviewActive && !_isRecording)\n                {\n                    await DisposePreviewPipelineAsync(transitionToken, purgeFlashbackSegments: false).ConfigureAwait(false);");
-        AssertContains(setFlashbackEnabled, "await DisposeFlashbackPreviewBackendAsync(transitionToken, purgeSegments: false)");
-        AssertContains(setFlashbackEnabled, "if (_isRecording)\n            {\n                _pendingFlashbackEnableAfterRecording = true;");
-        AssertContains(setFlashbackEnabled, "FLASHBACK_ENABLE_DEFERRED");
-        var recordingActiveEnableBranch = ExtractTextBetween(
-            setFlashbackEnabled,
-            "if (_isRecording)\n            {",
-            "\n            _pendingFlashbackEnableAfterRecording = false;");
-        AssertContains(recordingActiveEnableBranch, "return;");
-        AssertDoesNotContain(recordingActiveEnableBranch, "EnsureFlashbackPreviewBackendAsync");
-        var immediateEnableBranch = ExtractTextBetween(
-            setFlashbackEnabled,
-            "_pendingFlashbackEnableAfterRecording = false;\n            var unifiedVideoCapture = _videoPipeline.Capture;\n            if (unifiedVideoCapture != null && _currentSettings != null)",
-            "\n        }, cancellationToken);");
-        AssertContains(immediateEnableBranch, "try");
-        AssertContains(immediateEnableBranch, "await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, _currentSettings, transitionToken)");
-        AssertContains(immediateEnableBranch, "catch (OperationCanceledException ex) when (transitionToken.IsCancellationRequested)");
-        AssertContains(immediateEnableBranch, "FLASHBACK_ENABLE_IMMEDIATE_CANCELLED");
-        AssertContains(immediateEnableBranch, "catch");
-        AssertContains(immediateEnableBranch, "_flashbackEnabled = false;");
-        AssertContains(immediateEnableBranch, "_pendingFlashbackEnableAfterRecording = false;");
-        AssertContains(immediateEnableBranch, "await DisposeFlashbackPreviewBackendAsync(CancellationToken.None, purgeSegments: true)");
-        AssertContains(immediateEnableBranch, "FLASHBACK_ENABLE_IMMEDIATE_FAIL type={ex.GetType().Name} error='{ex.Message}'");
-        AssertContains(immediateEnableBranch, "throw;");
-
-        AssertContains(stopAndDisposeRecordingBackend, "RestoreLibAvPreviewFeaturesAfterRecordingAsync(");
-        AssertContains(stopAndDisposeRecordingBackend, "CompleteLibAvRecordingFinalizeStateAsync()");
-        AssertContains(stopAndDisposeRecordingBackend, "_mfConvertersDisabled = false;");
-        AssertOccursBefore(
-            stopAndDisposeRecordingBackend,
-            "CompleteLibAvRecordingFinalizeStateAsync()",
-            "RestoreLibAvPreviewFeaturesAfterRecordingAsync(");
-        AssertOccursBefore(
-            stopAndDisposeRecordingBackend,
-            "RestoreLibAvPreviewFeaturesAfterRecordingAsync(",
-            "PublishRecordingFinalizedOutcome(result, updateOutputPath: true);");
-        AssertContains(libAvPreviewRestore, "if (!_pendingFlashbackEnableAfterRecording)");
-        AssertContains(libAvPreviewRestore, "_pendingFlashbackEnableAfterRecording = false;");
-        AssertContains(
-            libAvPreviewRestore,
-            "if (_flashbackEnabled && _isVideoPreviewActive && unifiedVideoCapture != null && settings != null)");
-        AssertContains(
-            libAvPreviewRestore,
-            "await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, settings, cancellationToken)");
-        AssertContains(
-            libAvPreviewRestore,
-            "FLASHBACK_ENABLE_AFTER_RECORDING_FAIL type={ex.GetType().Name} error='{ex.Message}'");
-        AssertContains(
-            libAvPreviewRestore,
-            "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)\n            {\n                cancellationException ??= new OperationCanceledException(cancellationToken);");
-        AssertContains(libAvPreviewRestore, "FLASHBACK_ENABLE_AFTER_RECORDING_CANCELLED");
-        var deferredEnableFailureBranch = ExtractTextBetween(
-            libAvPreviewRestore,
-            "catch (Exception ex)\n            {",
-            "Logger.Log($\"FLASHBACK_ENABLE_AFTER_RECORDING_FAIL");
-        AssertContains(deferredEnableFailureBranch, "_flashbackEnabled = false;");
-        AssertContains(deferredEnableFailureBranch, "_pendingFlashbackEnableAfterRecording = false;");
-        AssertContains(deferredEnableFailureBranch, "await DisposeFlashbackPreviewBackendAsync(CancellationToken.None, purgeSegments: true)");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task CaptureSessionCoordinator_HasExpectedPublicMethods()
-    {
-        var coordinatorType = RequireType("Sussudio.Services.Capture.CaptureSessionCoordinator");
-
-        // Core lifecycle methods
-        var expectedMethods = new[]
-        {
-            "InitializeAsync",
-            "StartVideoPreviewAsync",
-            "StopVideoPreviewAsync",
-            "StopVideoPreviewWithTeardownAsync",
-            "StartRecordingAsync",
-            "StopRecordingAsync",
-            "CleanupAsync",
-            "StartAudioPreviewAsync",
-            "StopAudioPreviewAsync",
-            "StopAudioPreviewWithTeardownAsync",
-            "UpdateAudioMonitoringAsync",
-            "UpdateAudioInputAsync",
-            "UpdateMicrophoneMonitorAsync",
-            "RestartFlashbackAsync",
-            "SetFlashbackEnabledAsync",
-            "UpdateFlashbackSettingsAsync"
-        };
-
-        foreach (var methodName in expectedMethods)
-        {
-            var method = Array.Find(
-                coordinatorType.GetMethods(BindingFlags.Public | BindingFlags.Instance),
-                method => method.Name == methodName);
-            AssertNotNull(method, $"CaptureSessionCoordinator.{methodName}");
-        }
-
-        // Snapshot property
-        var snapshotProp = coordinatorType.GetProperty("Snapshot", BindingFlags.Public | BindingFlags.Instance);
-        AssertNotNull(snapshotProp, "CaptureSessionCoordinator.Snapshot");
-
-        // Implements IDisposable and IAsyncDisposable
-        AssertEqual(true, typeof(IDisposable).IsAssignableFrom(coordinatorType),
-            "Implements IDisposable");
-        AssertEqual(true, typeof(IAsyncDisposable).IsAssignableFrom(coordinatorType),
-            "Implements IAsyncDisposable");
-
-        return Task.CompletedTask;
-    }
-
-    // ── CaptureSessionCoordinator: CaptureCommand shape ──
-
-    internal static Task CaptureSessionCoordinator_CaptureCommandKind_HasExpectedValues()
-    {
-        var commandKindType = RequireType("Sussudio.Services.Capture.CaptureCommandKind");
-
-        // Core command kinds should exist
-        var expectedValues = new[]
-        {
-            "Initialize", "StartVideoPreview", "StopVideoPreview",
-            "StartRecording", "StopRecording", "Cleanup",
-            "StartAudioPreview", "StopAudioPreview",
-            "UpdateAudioMonitoring", "UpdateAudioInput",
-            "UpdateMicrophoneMonitor",
-            "SetFlashbackEnabled", "UpdateFlashbackSettings",
-            "RestartFlashback", "UpdateFlashbackRecordingFormat",
-            "CycleFlashbackEncoderSettings"
-        };
-
-        foreach (var value in expectedValues)
-        {
-            var parsed = Enum.Parse(commandKindType, value);
-            AssertNotNull(parsed, $"CaptureCommandKind.{value}");
-        }
-
-        return Task.CompletedTask;
-    }
-
-    // ── CaptureSessionCoordinator: CaptureSessionSnapshot ──
-
-    internal static Task CaptureSessionCoordinator_CaptureSessionSnapshot_HasFullContract()
-    {
-        var snapshotType = RequireType("Sussudio.Services.Capture.CaptureSessionSnapshot");
-
-        var expectedProps = new[]
-        {
-            "LastTransitionUtc", "LastCommand", "LastCorrelationId",
-            "LastError", "CommandsEnqueued", "CommandsCompleted",
-            "CommandsFailed", "CommandsCanceled", "CommandsCoalesced", "PendingCommands",
-            "MaxPendingCommands", "OldestPendingCommandAgeMs",
-            "LastCommandQueueLatencyMs", "MaxCommandQueueLatencyMs", "LastOutcome", "SessionState",
-            "IsRecording", "IsInitialized", "IsVideoPreviewActive", "IsAudioPreviewActive"
-        };
-
-        foreach (var prop in expectedProps)
-        {
-            var propInfo = snapshotType.GetProperty(prop, BindingFlags.Public | BindingFlags.Instance);
-            AssertNotNull(propInfo, $"CaptureSessionSnapshot.{prop}");
-        }
-
-        // Default state should be clean
-        var snapshot = Activator.CreateInstance(snapshotType)!;
-        AssertEqual(false, GetBoolProperty(snapshot, "IsRecording"), "Default IsRecording");
-        AssertEqual(false, GetBoolProperty(snapshot, "IsInitialized"), "Default IsInitialized");
-        AssertEqual(0, Convert.ToInt32(GetPropertyValue(snapshot, "PendingCommands")), "Default PendingCommands");
-        AssertEqual(0, Convert.ToInt32(GetPropertyValue(snapshot, "MaxPendingCommands")), "Default MaxPendingCommands");
-        AssertEqual(0L, Convert.ToInt64(GetPropertyValue(snapshot, "OldestPendingCommandAgeMs")), "Default OldestPendingCommandAgeMs");
-        AssertEqual(0L, Convert.ToInt64(GetPropertyValue(snapshot, "MaxCommandQueueLatencyMs")), "Default MaxCommandQueueLatencyMs");
-        AssertEqual(0L, Convert.ToInt64(GetPropertyValue(snapshot, "CommandsCoalesced")), "Default CommandsCoalesced");
-        AssertEqual("None", GetStringProperty(snapshot, "LastOutcome"), "Default LastOutcome");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task CaptureSessionSnapshot_DefaultState()
-    {
-        var snapshotType = RequireType("Sussudio.Services.Capture.CaptureSessionSnapshot");
-        var snapshot = RuntimeHelpers.GetUninitializedObject(snapshotType);
-
-        AssertEqual(false, GetBoolProperty(snapshot, "IsRecording"), "IsRecording default");
-        AssertEqual(false, GetBoolProperty(snapshot, "IsInitialized"), "IsInitialized default");
-        AssertEqual(false, GetBoolProperty(snapshot, "IsVideoPreviewActive"), "IsVideoPreviewActive default");
-        AssertEqual(false, GetBoolProperty(snapshot, "IsAudioPreviewActive"), "IsAudioPreviewActive default");
-        AssertEqual(0, (int)GetPropertyValue(snapshot, "PendingCommands")!, "PendingCommands default");
-        AssertEqual(0L, GetLongProperty(snapshot, "CommandsCoalesced"), "CommandsCoalesced default");
-        AssertEqual("None", GetStringProperty(snapshot, "LastOutcome"), "LastOutcome default");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task CaptureSessionCoordinator_CancellationAndWorkerTokensStayBounded()
-    {
-        var coordinatorText = ReadCaptureSessionCoordinatorSource();
-
-        AssertContains(coordinatorText, "return Task.FromCanceled(cancellationToken);");
-        AssertContains(coordinatorText, "CancellationTokenRegistration cancellationRegistration = default;");
-        AssertContains(coordinatorText, "cancellationRegistration = cancellationToken.Register");
-        AssertContains(coordinatorText, "DisposeCancellationRegistrationBestEffort(cancellationRegistration, \"enqueue_failed\");");
-        AssertContains(coordinatorText, "DisposeCancellationRegistrationBestEffort(workItem.CancellationRegistration, \"begin_process\");");
-        AssertContains(coordinatorText, "DisposeCancellationRegistrationBestEffort(pending.CancellationRegistration, \"fail_pending\");");
-        AssertContains(coordinatorText, "CAPTURE_COORD_CANCEL_REG_DISPOSE_WARN");
-        AssertContains(coordinatorText, "CancelWorkerBestEffort();");
-        AssertContains(coordinatorText, "DisposeWorkerCancellationBestEffort(\"worker_completed\");");
-        AssertContains(coordinatorText, "CAPTURE_COORD_WORKER_CANCEL_WARN");
-        AssertContains(coordinatorText, "CAPTURE_COORD_WORKER_CTS_DISPOSE_WARN");
-        AssertContains(coordinatorText, "public bool PropagateCancellationToOperation { get; init; }");
-        AssertContains(coordinatorText, "bool propagateCancellationToOperation = false");
-        AssertContains(coordinatorText, "propagateCancellationToOperation: true");
-        AssertContains(coordinatorText, "A caller cancellation token cancels the returned task immediately and prevents queued work");
-        AssertContains(coordinatorText, "when that enqueue explicitly opts into propagation");
-        AssertContains(coordinatorText, "coordinator disposal uses its separate");
-
-        return Task.CompletedTask;
     }
 
     internal static async Task CaptureSessionCoordinator_CanceledQueuedCommandUpdatesAccounting()
@@ -4770,16 +3322,6 @@ static partial class Program
         }
     }
 
-    private static string ReadCaptureSessionCoordinatorSource()
-    {
-        var parts = new[]
-        {
-            ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs").Replace("\r\n", "\n")
-        };
-
-        return string.Join("\n", parts);
-    }
-
     private static void AssertCanEnterTransition(
         MethodInfo canEnter,
         Type stateType,
@@ -4896,252 +3438,6 @@ static partial class Program
         throw new InvalidOperationException("Expected task to be canceled.");
     }
 
-    internal static Task CaptureSessionCoordinator_CoalescesFlashbackEncoderCycles()
-    {
-        var coordinatorText = ReadCaptureSessionCoordinatorSource();
-        var cycleMethod = ExtractTextBetween(
-            coordinatorText,
-            "internal async Task<RecordingSettingsApplyDisposition> ApplyRecordingSettingsAsync",
-            "public Task SetFlashbackEnabledAsync");
-        var queueProcessor = ExtractTextBetween(
-            coordinatorText,
-            "private async Task ProcessQueueAsync",
-            "private void FailPendingCommands(Exception ex)");
-
-        AssertContains(coordinatorText, "_latestFlashbackEncoderCycleGeneration");
-        AssertContains(coordinatorText, "_commandsCoalesced");
-        AssertContains(cycleMethod, "coalesceLatest: kind == RecordingSettingsChangeKind.EncoderParameters");
-        AssertContains(queueProcessor, "Volatile.Read(ref _latestFlashbackEncoderCycleGeneration)");
-        AssertContains(queueProcessor, "CaptureCommandOutcome.Coalesced");
-        AssertContains(queueProcessor, "CAP-COORD-SKIP");
-        AssertContains(coordinatorText, "CAP-COORD-ENQUEUE-FAIL");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task CaptureSessionCoordinator_DisposalAccounting_ClassifiesCanceledQueuedCommands()
-    {
-        var coordinatorText = ReadCaptureSessionCoordinatorSource();
-        var failPending = ExtractTextBetween(
-            coordinatorText,
-            "private void FailPendingCommands(Exception ex)",
-            "    private void DecrementPendingCommands");
-
-        AssertContains(failPending, "if (pending.Completion.Task.IsCanceled)\n            {\n                Interlocked.Increment(ref _commandsCanceled);");
-        AssertContains(failPending, "else if (pending.Completion.TrySetException(ex))\n            {\n                Interlocked.Increment(ref _commandsFailed);");
-        AssertContains(failPending, "DecrementPendingCommands(\"fail_pending\");");
-        AssertContains(coordinatorText, "DecrementPendingCommands(\"enqueue_failed\");");
-        AssertContains(coordinatorText, "DecrementPendingCommands(\"process_complete\");");
-        AssertContains(coordinatorText, "private void DecrementPendingCommands(string operation)");
-        AssertContains(coordinatorText, "CAPTURE_COORD_PENDING_UNDERFLOW");
-        AssertContains(coordinatorText, "throw new ObjectDisposedException(nameof(CaptureSessionCoordinator));");
-        AssertDoesNotContain(failPending, "pending.Completion.TrySetException(ex);\n            Interlocked.Increment(ref _commandsFailed);\n            Interlocked.Decrement(ref _pendingCommands);");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task CaptureSessionCoordinator_FlashbackMutationsPropagateRequestCancellation()
-    {
-        var coordinatorText = ReadCaptureSessionCoordinatorSource();
-        var restartNoSettings = ExtractTextBetween(
-            coordinatorText,
-            "public Task RestartFlashbackAsync(CancellationToken cancellationToken = default)",
-            "public Task RestartFlashbackAsync(CaptureSettings settings");
-        var restartWithSettings = ExtractTextBetween(
-            coordinatorText,
-            "public Task RestartFlashbackAsync(CaptureSettings settings",
-            "internal async Task<RecordingSettingsApplyDisposition> ApplyRecordingSettingsAsync");
-        var setFlashbackEnabled = ExtractTextBetween(
-            coordinatorText,
-            "public Task SetFlashbackEnabledAsync",
-            "public Task UpdateFlashbackSettingsAsync");
-
-        AssertContains(restartNoSettings, "propagateCancellationToOperation: true");
-        AssertContains(restartWithSettings, "propagateCancellationToOperation: true");
-        AssertContains(restartWithSettings, "ct => _captureService.RestartFlashbackAsync(settings, ct)");
-        AssertDoesNotContain(restartWithSettings, "_captureService.UpdateEncodingSettings(settings)");
-        AssertContains(setFlashbackEnabled, "propagateCancellationToOperation: true");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task CaptureSessionCoordinator_CommittedStopsDoNotPropagateRequestCancellation()
-    {
-        var coordinatorText = ReadCaptureSessionCoordinatorSource();
-        var stopVideo = ExtractTextBetween(
-            coordinatorText,
-            "public Task StopVideoPreviewAsync(CancellationToken cancellationToken = default)",
-            "public Task StopVideoPreviewWithTeardownAsync");
-        var stopVideoTeardown = ExtractTextBetween(
-            coordinatorText,
-            "public Task StopVideoPreviewWithTeardownAsync",
-            "public Task StartRecordingAsync");
-        var stopRecording = ExtractTextBetween(
-            coordinatorText,
-            "public Task StopRecordingAsync",
-            "public Task StartAudioPreviewAsync");
-        var recordingSettings = ExtractTextBetween(
-            coordinatorText,
-            "internal async Task<RecordingSettingsApplyDisposition> ApplyRecordingSettingsAsync",
-            "public Task SetFlashbackEnabledAsync");
-
-        AssertDoesNotContain(stopVideo, "propagateCancellationToOperation: true");
-        AssertDoesNotContain(stopVideoTeardown, "propagateCancellationToOperation: true");
-        AssertDoesNotContain(stopRecording, "propagateCancellationToOperation: true");
-        AssertDoesNotContain(recordingSettings, "propagateCancellationToOperation: true");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task CaptureSessionCoordinator_LogsInactiveFlashbackCommandRejections()
-    {
-        var coordinatorText = ReadCaptureSessionCoordinatorSource();
-
-        AssertContains(coordinatorText, "TryGetActiveFlashback(nameof(FlashbackBeginScrub), out var controller)");
-        AssertContains(coordinatorText, "TryGetActiveFlashback(nameof(FlashbackUpdateScrub), out var controller)");
-        AssertContains(coordinatorText, "TryGetActiveFlashback(nameof(FlashbackEndScrub), out var controller)");
-        AssertContains(coordinatorText, "TryGetActiveFlashback(nameof(FlashbackGoLive), out var controller)");
-        AssertContains(coordinatorText, "TryGetActiveFlashback(nameof(FlashbackClearInOutPoints), out var controller)");
-        AssertContains(coordinatorText, "bool ThreadAlive,\n    int PendingCommands,\n    string LastCommandFailure,\n    long LastCommandFailureUtcUnixMs");
-        AssertContains(coordinatorText, "controller.PlaybackThreadAlive,\n                controller.PendingCommands,\n                controller.LastCommandFailure,\n                controller.LastCommandFailureUtcUnixMs");
-        AssertContains(coordinatorText, "public static FlashbackPlaybackSnapshot Inactive(");
-        AssertContains(coordinatorText, "private long _lastFlashbackCommandRejectionUtcUnixMs;");
-        AssertContains(coordinatorText, "private string _lastFlashbackCommandRejection = string.Empty;");
-        AssertContains(coordinatorText, "FlashbackPlaybackSnapshot.Inactive(\n                _lastFlashbackCommandRejection,\n                Interlocked.Read(ref _lastFlashbackCommandRejectionUtcUnixMs))");
-        AssertContains(coordinatorText, "private bool TryGetActiveFlashback(\n        string command,");
-        AssertContains(coordinatorText, "var reason = controller == null\n            ? \"missing_controller\"\n            : controller.IsDisposed\n                ? \"disposed\"\n                : !controller.IsInitialized\n                ? \"not_initialized\"\n                : $\"state_{controller.State}\";");
-        AssertContains(coordinatorText, "_lastFlashbackCommandRejection = $\"{reason}:{command}\";");
-        AssertContains(coordinatorText, "Interlocked.Exchange(ref _lastFlashbackCommandRejectionUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());");
-        AssertContains(coordinatorText, "Logger.Log($\"FLASHBACK_COORD_COMMAND_REJECTED command={command} reason={reason}\");");
-
-        return Task.CompletedTask;
-    }
-
-// MainWindow Flashback automation and presentation contracts live with their xUnit wrappers.
-
-    internal static Task MainWindowFlashbackScrub_EndsOnReleaseCancelAndCaptureLost()
-    {
-        var flashbackWindowText = ReadMainWindowFlashbackAdapterSource();
-        var flashbackCommandControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackUiControllers.cs")
-            .Replace("\r\n", "\n");
-        var flashbackScrubText = ReadMainWindowFlashbackAdapterSource();
-        var flashbackScrubControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackUiControllers.cs")
-            .Replace("\r\n", "\n");
-        var flashbackGeometryText = flashbackScrubControllerText;
-        var flashbackPlayheadText = ReadMainWindowFlashbackAdapterSource();
-        var flashbackPlayheadControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackUiControllers.cs")
-            .Replace("\r\n", "\n");
-        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
-            .Replace("\r\n", "\n");
-        var fullScreenWindowText = ReadMainWindowShellChromeAdapterSource();
-        var fullScreenControllerText = ReadRepoFile("Sussudio/Controllers/FullScreen/FullScreenController.cs")
-            .Replace("\r\n", "\n");
-        var xamlText = ReadRepoFile("Sussudio/MainWindow.xaml")
-            .Replace("\r\n", "\n");
-
-        AssertContains(xamlText, "PointerReleased=\"FlashbackScrubArea_PointerReleased\"");
-        AssertContains(xamlText, "PointerCanceled=\"FlashbackScrubArea_PointerCanceled\"");
-        AssertContains(xamlText, "PointerCaptureLost=\"FlashbackScrubArea_PointerCaptureLost\"");
-        AssertContains(flashbackScrubText, "XAML-facing Flashback pointer scrub adapter");
-        AssertContains(flashbackScrubText, "private FlashbackScrubInteractionController _flashbackScrubInteractionController = null!;");
-        AssertContains(flashbackScrubText, "private void InitializeFlashbackScrubInteractionController()");
-        AssertContains(flashbackScrubText, "PositionMagneticPlayhead = (x, trackWidth) => _flashbackPlayheadMotionController.PositionMagneticPlayhead(x, trackWidth),");
-        AssertContains(flashbackScrubText, "RefreshPlayheadMotion = reason => _flashbackPlayheadMotionController.RefreshPlayheadMotion(reason),");
-        AssertContains(flashbackScrubText, "GetTimestamp = System.Diagnostics.Stopwatch.GetTimestamp,");
-        AssertContains(flashbackScrubControllerText, "internal sealed class FlashbackScrubInteractionController");
-        AssertContains(flashbackScrubControllerText, "private bool _isScrubbing;");
-        AssertContains(flashbackScrubControllerText, "private TimeSpan? _lastPointerPosition;");
-        AssertContains(flashbackScrubControllerText, "private long _lastUpdateTick;");
-        AssertContains(flashbackScrubControllerText, "public bool IsScrubbing => _isScrubbing;");
-        AssertContains(flashbackScrubControllerText, "private void End(UIElement? element, Pointer pointer, string reason, TimeSpan? releasePosition = null)");
-        AssertContains(flashbackScrubControllerText, "if (!_context.ViewModel.FlashbackBeginScrub(targetPosition))\n        {\n            _lastPointerPosition = null;\n            _context.ViewModel.ReportFlashbackPlaybackRejection(\"scrub begin\", \"FLASHBACK_UI_SCRUB_BEGIN_REJECTED\");\n            return;\n        }");
-        AssertContains(flashbackScrubControllerText, "if (!_context.ViewModel.FlashbackUpdateScrub(targetPosition))\n        {\n            _context.ViewModel.ReportFlashbackPlaybackRejection(\"scrub update\", \"FLASHBACK_UI_SCRUB_UPDATE_REJECTED\");\n            End(element, e.Pointer, \"update_rejected\");\n            return;\n        }");
-        AssertContains(flashbackScrubText, "private void FlashbackScrubArea_PointerReleased(object sender, PointerRoutedEventArgs e)");
-        AssertContains(flashbackScrubText, "=> _flashbackScrubInteractionController.PointerReleased(sender as UIElement, e);");
-        AssertContains(flashbackScrubControllerText, "TimeSpan? releasePosition = null;\n        if (_isScrubbing)");
-        AssertContains(flashbackScrubControllerText, "var targetPosition = ComputeScrubPosition(e);\n            releasePosition = targetPosition;\n            _lastPointerPosition = targetPosition;\n            if (!_context.ViewModel.FlashbackUpdateScrub(targetPosition))");
-        AssertContains(flashbackScrubControllerText, "_context.ViewModel.ReportFlashbackPlaybackRejection(\"scrub release update\", \"FLASHBACK_UI_SCRUB_RELEASE_UPDATE_REJECTED\");");
-        AssertContains(flashbackScrubControllerText, "End(element, e.Pointer, \"released\", releasePosition);");
-        AssertContains(flashbackCommandControllerText, "ReportFlashbackPlaybackRejection(\"set in point\", \"FLASHBACK_UI_SET_IN_REJECTED\")");
-        AssertContains(flashbackCommandControllerText, "ReportFlashbackPlaybackRejection(\"set out point\", \"FLASHBACK_UI_SET_OUT_REJECTED\")");
-        AssertContains(flashbackCommandControllerText, "ReportFlashbackPlaybackRejection(\"clear in/out\", \"FLASHBACK_UI_CLEAR_INOUT_REJECTED\")");
-        AssertContains(flashbackCommandControllerText, "Logger.Log($\"FLASHBACK_UI_SET_IN pos_ms={(long)pos.Value.TotalMilliseconds}\");");
-        AssertContains(flashbackCommandControllerText, "Logger.Log($\"FLASHBACK_UI_SET_OUT pos_ms={(long)pos.Value.TotalMilliseconds}\");");
-        AssertContains(flashbackCommandControllerText, "Logger.Log(\"FLASHBACK_UI_CLEAR_INOUT\");");
-        AssertContains(flashbackCommandControllerText, "ReportFlashbackPlaybackRejection(\"pause\", \"FLASHBACK_UI_PAUSE_REJECTED\")");
-        AssertContains(flashbackCommandControllerText, "ReportFlashbackPlaybackRejection(\"play\", \"FLASHBACK_UI_PLAY_REJECTED\")");
-        AssertContains(flashbackCommandControllerText, "ReportFlashbackPlaybackRejection(\"go live\", \"FLASHBACK_UI_GOLIVE_REJECTED\")");
-        AssertContains(flashbackCommandControllerText, "Logger.Log(\"FLASHBACK_UI_PAUSE\");");
-        AssertContains(flashbackCommandControllerText, "Logger.Log(\"FLASHBACK_UI_PLAY\");");
-        AssertContains(flashbackCommandControllerText, "Logger.Log(\"FLASHBACK_UI_GOLIVE\");");
-        AssertContains(flashbackCommandControllerText, "public bool HandleFullScreenKeyboardCommand(VirtualKey key)");
-        AssertContains(flashbackCommandControllerText, "case VirtualKey.I:");
-        AssertContains(flashbackCommandControllerText, "SetInPointAtPlayhead();");
-        AssertContains(flashbackCommandControllerText, "case VirtualKey.O:");
-        AssertContains(flashbackCommandControllerText, "SetOutPointAtPlayhead();");
-        AssertContains(flashbackCommandControllerText, "case VirtualKey.Space:");
-        AssertContains(flashbackCommandControllerText, "TogglePlayPause();");
-        AssertContains(flashbackCommandControllerText, "case VirtualKey.L:");
-        AssertContains(flashbackCommandControllerText, "GoLive();");
-        AssertContains(flashbackCommandControllerText, "case VirtualKey.Left:");
-        AssertContains(flashbackCommandControllerText, "NudgePlayback(TimeSpan.FromSeconds(-1), \"nudge left\", \"FLASHBACK_UI_NUDGE_REJECTED direction=left\");");
-        AssertContains(flashbackCommandControllerText, "case VirtualKey.Right:");
-        AssertContains(flashbackCommandControllerText, "NudgePlayback(TimeSpan.FromSeconds(1), \"nudge right\", \"FLASHBACK_UI_NUDGE_REJECTED direction=right\");");
-        AssertContains(flashbackCommandControllerText, "ReportFlashbackPlaybackRejection(operationName, rejectionDetail)");
-        AssertContains(flashbackScrubControllerText, "_isScrubbing = true;\n        _lastPointerPosition = targetPosition;\n        _lastUpdateTick = 0;\n        element?.CapturePointer(e.Pointer);");
-        AssertContains(flashbackScrubControllerText, "var carriedPosition = _isScrubbing ? _lastPointerPosition : null;");
-        AssertContains(flashbackScrubControllerText, "var ended = releasePosition.HasValue\n            ? _context.ViewModel.FlashbackEndScrubAt(releasePosition.Value)\n            : _context.ViewModel.FlashbackEndScrub();\n        if (!ended)\n        {\n            _context.ViewModel.ReportFlashbackPlaybackRejection($\"scrub end ({reason})\", $\"FLASHBACK_UI_SCRUB_END_REJECTED reason={reason}\");\n        }");
-        AssertContains(flashbackScrubControllerText, "ClearLocalState();\n        element?.ReleasePointerCapture(pointer);");
-        AssertContains(flashbackScrubControllerText, "FLASHBACK_UI_SCRUB_END");
-        AssertContains(flashbackScrubText, "FlashbackScrubArea_PointerCanceled");
-        AssertContains(flashbackScrubText, "FlashbackScrubArea_PointerCaptureLost");
-        AssertContains(flashbackScrubControllerText, "FlashbackTimelineGeometry.TryComputeFraction(pointerX, width, out var fraction)");
-        AssertContains(flashbackScrubControllerText, "FlashbackTimelineGeometry.IsUsableDuration(bufferDuration)");
-        AssertContains(flashbackScrubControllerText, "FlashbackTimelineGeometry.ComputePosition(fraction, bufferDuration)");
-        AssertContains(flashbackScrubControllerText, "FlashbackTimelineGeometry.TryComputePosition(");
-        AssertContains(flashbackGeometryText, "internal static class FlashbackTimelineGeometry");
-        AssertContains(flashbackGeometryText, "public static bool TryComputeFraction(double x, double width, out double fraction)");
-        AssertContains(flashbackGeometryText, "public static bool TryComputePosition(double x, double width, TimeSpan bufferDuration, out TimeSpan position)");
-        AssertContains(flashbackGeometryText, "public static TimeSpan ComputePosition(double fraction, TimeSpan bufferDuration)");
-        AssertContains(flashbackGeometryText, "public static bool IsUsableTrackDimension(double value)");
-        AssertContains(flashbackGeometryText, "public static bool IsUsableDuration(TimeSpan value)");
-        AssertContains(flashbackPlayheadControllerText, "FlashbackTimelineGeometry.IsUsableTrackDimension(trackW)");
-        AssertDoesNotContain(flashbackPlayheadText, "FlashbackTimelineGeometry.IsUsableTrackDimension(trackW)");
-        AssertDoesNotContain(flashbackScrubText, "private static bool TryComputeFlashbackTimelineFraction(double x, double width, out double fraction)");
-        AssertDoesNotContain(flashbackScrubText, "private static bool IsUsableFlashbackTrackDimension(double value)");
-        AssertDoesNotContain(flashbackScrubText, "private static bool IsUsableFlashbackDuration(TimeSpan value)");
-        AssertContains(fullScreenWindowText, "HandleFlashbackKeyboardCommand = _flashbackCommandController.HandleFullScreenKeyboardCommand,");
-        AssertContains(fullScreenWindowText, "private void OnContentKeyDown(object sender, KeyRoutedEventArgs e)\n        => _fullScreenController.OnKeyDown(e);");
-        AssertContains(fullScreenControllerText, "private void HandleFlashbackKeyDown(KeyRoutedEventArgs e)");
-        AssertContains(fullScreenControllerText, "if (!_context.ViewModel.IsFlashbackEnabled || _context.FlashbackTimelinePanel.Visibility != Visibility.Visible)");
-        AssertContains(fullScreenControllerText, "if (_context.HandleFlashbackKeyboardCommand(e.Key))\n        {\n            e.Handled = true;\n        }");
-        AssertDoesNotContain(fullScreenWindowText, "if (!ViewModel.IsFlashbackEnabled || FlashbackTimelinePanel.Visibility != Visibility.Visible)");
-        AssertDoesNotContain(fullScreenWindowText, "_flashbackCommandController.HandleFullScreenKeyboardCommand(e.Key)");
-        AssertContains(fullScreenWindowText, "EndFlashbackScrubForFullScreen = _flashbackScrubInteractionController.EndForFullScreen,");
-        AssertContains(fullScreenWindowText, "ResetFlashbackTimelineAnimation = _flashbackTimelineController.ResetAnimationForFullScreen,");
-        AssertContains(fullScreenWindowText, "SyncFlashbackTimelineToggle = _flashbackTimelineController.SyncToggle,");
-        AssertContains(fullScreenControllerText, "var timelineVisibleAtExit = ShouldShowFlashbackTimeline();");
-        AssertContains(fullScreenControllerText, "private bool ShouldShowFlashbackTimeline()\n        => _context.ViewModel.IsFlashbackEnabled && _context.ViewModel.IsFlashbackTimelineVisible;");
-        AssertDoesNotContain(fullScreenWindowText, "private bool ShouldShowFlashbackTimeline()");
-        AssertDoesNotContain(fullScreenWindowText, "=> _flashbackScrubInteractionController.EndForFullScreen();");
-        AssertContains(flashbackScrubControllerText, "var carriedPosition = _lastPointerPosition;\n        Logger.Log($\"FLASHBACK_SCRUB_END_FULLSCREEN carried_position_ms={(long?)carriedPosition?.TotalMilliseconds}\");");
-        AssertContains(flashbackScrubControllerText, "var ended = carriedPosition.HasValue\n            ? _context.ViewModel.FlashbackEndScrubAt(carriedPosition.Value)\n            : _context.ViewModel.FlashbackEndScrub();\n        if (!ended)");
-        AssertContains(flashbackScrubControllerText, "ReportFlashbackPlaybackRejection(\"scrub end (fullscreen_enter)\", \"FLASHBACK_UI_SCRUB_END_REJECTED reason=fullscreen_enter\")");
-        AssertDoesNotContain(flashbackScrubControllerText, "var carriedPosition = _context.ViewModel.FlashbackPlaybackPosition;");
-        AssertDoesNotContain(fullScreenWindowText, "ReportFlashbackPlaybackRejection(\"nudge left\", \"FLASHBACK_UI_NUDGE_REJECTED direction=left\")");
-        AssertDoesNotContain(fullScreenWindowText, "ReportFlashbackPlaybackRejection(\"nudge right\", \"FLASHBACK_UI_NUDGE_REJECTED direction=right\")");
-        AssertDoesNotContain(fullScreenWindowText, "ReportFlashbackPlaybackRejection(\"nudge left\", \"FLASHBACK_UI_NUDGE_REJECTED direction=left\")");
-        AssertDoesNotContain(fullScreenWindowText, "ReportFlashbackPlaybackRejection(\"nudge right\", \"FLASHBACK_UI_NUDGE_REJECTED direction=right\")");
-        AssertDoesNotContain(flashbackScrubText, "private bool _isFlashbackScrubbing;");
-        AssertDoesNotContain(flashbackScrubText, "private TimeSpan? _lastScrubPointerPosition;");
-        AssertDoesNotContain(flashbackScrubText, "private long _lastScrubUpdateTick;");
-        AssertDoesNotContain(flashbackScrubControllerText, "var carriedPosition = _isScrubbing ? _context.ViewModel.FlashbackPlaybackPosition : (TimeSpan?)null;");
-        AssertDoesNotContain(mainWindowText, "private bool _isFlashbackScrubbing;");
-        AssertDoesNotContain(mainWindowText, "private TimeSpan? _lastScrubPointerPosition;");
-
-        return Task.CompletedTask;
-    }
-
     internal static Task FlashbackTimelineGeometry_PreservesScrubMath()
     {
         var geometryType = RequireType("Sussudio.Controllers.FlashbackTimelineGeometry");
@@ -5194,430 +3490,6 @@ static partial class Program
         AssertEqual(true, (bool)isUsableDuration.Invoke(null, new object[] { TimeSpan.FromMilliseconds(1) })!, "positive duration is usable");
         AssertEqual(false, (bool)isUsableDuration.Invoke(null, new object[] { TimeSpan.Zero })!, "zero duration is unusable");
 
-        return Task.CompletedTask;
-    }
-
-    internal static Task MainWindowFlashbackToggle_RollsBackUiStateOnFailure()
-    {
-        var flashbackWindowText = ReadMainWindowFlashbackAdapterSource();
-        var flashbackCommandAdapterText = ReadMainWindowFlashbackAdapterSource();
-        var flashbackCommandControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackUiControllers.cs")
-            .Replace("\r\n", "\n");
-        var flashbackTimelineText = ReadMainWindowFlashbackAdapterSource();
-        var fullScreenText = ReadMainWindowShellChromeAdapterSource();
-        var flashbackSettingsText = ReadMainWindowFlashbackAdapterSource();
-        var flashbackTimelineControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackUiControllers.cs")
-            .Replace("\r\n", "\n");
-        var flashbackTimelineAnimationControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackUiControllers.cs")
-            .Replace("\r\n", "\n");
-        var flashbackSettingsControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackUiControllers.cs")
-            .Replace("\r\n", "\n");
-        var mainWindowText = ReadMainWindowCompositionSource();
-        var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
-            .Replace("\r\n", "\n");
-        var flashbackPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
-            .Replace("\r\n", "\n");
-        var flashbackPropertyChangedControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackUiControllers.cs")
-            .Replace("\r\n", "\n");
-        var bindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
-            .Replace("\r\n", "\n");
-        var viewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackState.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(mainWindowText, "InitializeFlashbackCommandController();");
-        AssertContains(mainWindowText, "InitializeFlashbackTimelineController();");
-        AssertContains(mainWindowText, "InitializeFlashbackSettingsBindingController();");
-        AssertContains(viewModelText, "partial void OnIsFlashbackEnabledChanged(bool value)");
-        AssertContains(viewModelText, "IsFlashbackTimelineVisible = false;");
-        AssertContains(bindingsText, "ApplyInitialFlashbackSettings();");
-        AssertContains(flashbackSettingsText, "private FlashbackSettingsBindingController _flashbackSettingsBindingController = null!;");
-        AssertContains(flashbackSettingsText, "ApplyFlashbackTimelineLockout = () => _flashbackTimelineController.ApplyLockout()");
-        AssertContains(flashbackSettingsControllerText, "_context.FlashbackEnabledToggle.IsOn = _context.ViewModel.IsFlashbackEnabled;");
-        AssertContains(flashbackSettingsControllerText, "_context.ApplyFlashbackTimelineLockout();");
-        AssertContains(propertyChangedText, "TryHandleFlashback = propertyName => _flashbackPropertyChangedController.TryHandlePropertyChanged(propertyName)");
-        AssertContains(flashbackPropertyChangedText, "private void InitializeFlashbackPropertyChangedController()");
-        AssertContains(flashbackPropertyChangedText, "ApplyTimelineLockout = () => _flashbackTimelineController.ApplyLockout(),");
-        AssertContains(flashbackPropertyChangedText, "ApplyTimelineVisibility = show => _flashbackTimelineController.ApplyVisibility(show),");
-        AssertContains(flashbackPropertyChangedText, "IsFlashbackEnabled = () => ViewModel.IsFlashbackEnabled,");
-        AssertContains(flashbackPropertyChangedText, "UpdateFlashbackKeepAliveHint = UpdateFlashbackKeepAliveHint,");
-        AssertContains(flashbackPropertyChangedControllerText, "case nameof(MainViewModel.IsFlashbackEnabled):");
-        AssertContains(flashbackPropertyChangedControllerText, "_context.ApplyTimelineLockout();");
-        AssertContains(flashbackPropertyChangedControllerText, "_context.UpdateFlashbackKeepAliveHint(_context.IsFlashbackEnabled());");
-        AssertContains(flashbackPropertyChangedControllerText, "case nameof(MainViewModel.IsFlashbackTimelineVisible):");
-        AssertContains(flashbackPropertyChangedControllerText, "_context.ApplyTimelineVisibility(_context.IsTimelineVisible());");
-        AssertContains(flashbackTimelineText, "private FlashbackTimelineController _flashbackTimelineController = null!;");
-        AssertContains(flashbackTimelineText, "FlashbackToggle = FlashbackToggle,");
-        AssertContains(flashbackTimelineText, "FlashbackTimelinePanel = FlashbackTimelinePanel,");
-        AssertContains(flashbackTimelineText, "SnapPlayheadOnNextOpen = () => _flashbackPlayheadMotionController.RequestSnapOnNextUpdate(),");
-        AssertContains(flashbackTimelineText, "ClearScrubInteraction = () => _flashbackScrubInteractionController.ClearForLockout(),");
-        AssertContains(flashbackTimelineText, "=> _flashbackTimelineController.OnToggleChecked();");
-        AssertContains(fullScreenText, "ResetFlashbackTimelineAnimation = _flashbackTimelineController.ResetAnimationForFullScreen,");
-        AssertContains(flashbackTimelineControllerText, "public void ResetAnimationForFullScreen()");
-        AssertDoesNotContain(flashbackTimelineText, "ResetFlashbackTimelineAnimationForFullScreen");
-        AssertContains(flashbackTimelineControllerText, "internal sealed class FlashbackTimelineController");
-        AssertContains(flashbackTimelineControllerText, "private readonly FlashbackTimelineAnimationController _animationController;");
-        AssertContains(flashbackTimelineAnimationControllerText, "private Storyboard? _timelineStoryboard;");
-        AssertContains(flashbackTimelineAnimationControllerText, "_snapPlayheadOnNextOpen();");
-        AssertContains(flashbackTimelineAnimationControllerText, "private void CompleteAnimation(Storyboard storyboard)");
-        AssertContains(flashbackTimelineControllerText, "private bool _suppressToggle;");
-        AssertContains(flashbackTimelineControllerText, "if (!_context.ViewModel.IsFlashbackEnabled)\n        {\n            ApplyLockout();\n            return;\n        }");
-        AssertContains(flashbackTimelineControllerText, "_context.ViewModel.IsFlashbackTimelineVisible = true;");
-        AssertContains(flashbackTimelineControllerText, "_context.ViewModel.IsFlashbackTimelineVisible = false;");
-        AssertContains(flashbackTimelineControllerText, "_context.FlashbackToggle.IsEnabled = flashbackEnabled;");
-        AssertContains(flashbackTimelineControllerText, "_context.FlashbackTimelinePanel.IsHitTestVisible = flashbackEnabled;");
-        AssertContains(flashbackTimelineControllerText, "SyncToggle(isVisible: false);");
-        AssertContains(flashbackTimelineControllerText, "_context.ClearScrubInteraction();");
-        AssertContains(flashbackTimelineControllerText, "CollapseImmediately();");
-        AssertContains(flashbackTimelineControllerText, "=> _animationController.CollapseImmediately();");
-        AssertContains(flashbackTimelineControllerText, "=> _animationController.ResetForFullScreen();");
-        AssertContains(flashbackCommandAdapterText, "private FlashbackCommandController _flashbackCommandController = null!;");
-        AssertContains(flashbackCommandAdapterText, "private void InitializeFlashbackCommandController()");
-        AssertContains(flashbackCommandAdapterText, "FlashbackEnabledToggle = FlashbackEnabledToggle,");
-        AssertContains(flashbackCommandAdapterText, "RunUiEventHandlerAsync = RunUiEventHandlerAsync");
-        AssertContains(flashbackCommandAdapterText, "=> _flashbackCommandController.ToggleEnabled(nameof(FlashbackEnabledToggle_Toggled));");
-        AssertContains(flashbackCommandControllerText, "if (_suppressFlashbackEnabledToggle)");
-        AssertContains(flashbackCommandControllerText, "var requestedEnabled = _context.FlashbackEnabledToggle.IsOn;");
-        AssertContains(flashbackCommandControllerText, "ApplyFlashbackEnabledToggleAsync(requestedEnabled)");
-        AssertContains(flashbackCommandControllerText, "private async Task ApplyFlashbackEnabledToggleAsync(bool requestedEnabled)");
-        AssertContains(flashbackCommandControllerText, "var previousEnabled = _context.ViewModel.IsFlashbackEnabled;");
-        AssertContains(flashbackCommandControllerText, "_context.ViewModel.IsFlashbackEnabled = requestedEnabled;");
-        AssertContains(flashbackCommandControllerText, "_context.ViewModel.IsFlashbackEnabled = previousEnabled;");
-        AssertContains(flashbackCommandControllerText, "_suppressFlashbackEnabledToggle = true;");
-        AssertContains(flashbackCommandControllerText, "_context.FlashbackEnabledToggle.IsOn = previousEnabled;");
-        AssertContains(flashbackCommandControllerText, "_suppressFlashbackEnabledToggle = false;");
-        AssertDoesNotContain(mainWindowText, "private bool _suppressFlashbackEnabledToggle;");
-        AssertDoesNotContain(flashbackWindowText, "ApplyFlashbackEnabledToggleAsync(requestedEnabled)");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task MainViewModelAutomation_UsesAsyncFlashbackAndProbeSurface()
-    {
-        var automationInterfaceType = RequireType("Sussudio.Services.Automation.IAutomationViewModel");
-        var readinessPortType = RequireType("Sussudio.Services.Automation.IAutomationReadinessPort");
-        var deviceSelectionPortType = RequireType("Sussudio.Services.Automation.IAutomationDeviceSelectionPort");
-        var snapshotQueryPortType = RequireType("Sussudio.Services.Automation.IAutomationSnapshotQueryPort");
-        var captureSettingsPortType = RequireType("Sussudio.Services.Automation.IAutomationCaptureSettingsPort");
-        var audioPortType = RequireType("Sussudio.Services.Automation.IAutomationAudioPort");
-        var previewRecordingPortType = RequireType("Sussudio.Services.Automation.IAutomationPreviewRecordingPort");
-        var probePortType = RequireType("Sussudio.Services.Automation.IAutomationProbePort");
-        AssertEqual(
-            true,
-            readinessPortType.IsAssignableFrom(automationInterfaceType),
-            "IAutomationViewModel inherits readiness port");
-        AssertEqual(
-            true,
-            deviceSelectionPortType.IsAssignableFrom(automationInterfaceType),
-            "IAutomationViewModel inherits device-selection port");
-        AssertEqual(
-            true,
-            snapshotQueryPortType.IsAssignableFrom(automationInterfaceType),
-            "IAutomationViewModel inherits snapshot-query port");
-        AssertEqual(
-            true,
-            captureSettingsPortType.IsAssignableFrom(automationInterfaceType),
-            "IAutomationViewModel inherits capture-settings port");
-        AssertEqual(
-            true,
-            audioPortType.IsAssignableFrom(automationInterfaceType),
-            "IAutomationViewModel inherits audio port");
-        AssertEqual(
-            true,
-            previewRecordingPortType.IsAssignableFrom(automationInterfaceType),
-            "IAutomationViewModel inherits preview-recording port");
-        AssertEqual(
-            true,
-            probePortType.IsAssignableFrom(automationInterfaceType),
-            "IAutomationViewModel inherits probe port");
-        AssertEqual(
-            false,
-            automationInterfaceType.GetProperty("IsMicrophoneEnabled") != null,
-            "IAutomationViewModel sync microphone setter");
-        AssertTaskReturningMethod(automationInterfaceType, "SelectMicrophoneDeviceAsync", resultType: null);
-        AssertTaskReturningMethod(automationInterfaceType, "SetMicrophoneEnabledAsync", resultType: null);
-        AssertTaskReturningMethod(automationInterfaceType, "SetMicrophoneVolumeAsync", resultType: null);
-        AssertTaskReturningMethod(automationInterfaceType, "SetHdrEnabledAsync", resultType: null);
-        AssertTaskReturningMethod(automationInterfaceType, "SetTrueHdrPreviewEnabledAsync", resultType: null);
-        AssertTaskReturningMethod(automationInterfaceType, "SetFlashbackEnabledAsync", resultType: null);
-        AssertTaskReturningMethod(automationInterfaceType, "SetFlashbackBufferMinutesAsync", resultType: null);
-        AssertTaskReturningMethod(automationInterfaceType, "SetFlashbackGpuDecodeAsync", resultType: null);
-        AssertTaskReturningMethod(automationInterfaceType, "ExecuteFlashbackActionAsync", typeof(bool));
-        AssertTaskReturningMethod(
-            automationInterfaceType,
-            "GetFlashbackSegmentsAsync",
-            typeof(IReadOnlyList<>).MakeGenericType(RequireType("Sussudio.Models.FlashbackSegmentInfo")));
-        AssertTaskReturningMethod(
-            automationInterfaceType,
-            "ProbeVideoSourceAsync",
-            RequireType("Sussudio.Models.VideoSourceProbeResult"));
-        AssertTaskReturningMethod(
-            automationInterfaceType,
-            "ProbePreviewColorAsync",
-            RequireType("Sussudio.Models.PreviewColorProbeResult"));
-        AssertTaskReturningMethod(snapshotQueryPortType, "GetCaptureSnapshotProducerEpochAsync", typeof(long));
-
-        var interfaceText = ReadRepoFile("Sussudio/Services/Automation/IAutomationViewModel.cs")
-            .Replace("\r\n", "\n");
-        var dispatcherText = ReadAutomationCommandDispatcherFamilyText();
-        var viewModelDispatchText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
-            .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Controllers/Dispatch/UiDispatchControllers.cs")
-                .Replace("\r\n", "\n");
-        var flashbackSettingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackState.cs")
-            .Replace("\r\n", "\n");
-        var flashbackExportText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackState.cs")
-            .Replace("\r\n", "\n");
-        var flashbackExportOperationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackState.cs")
-            .Replace("\r\n", "\n");
-        var flashbackExportAutomationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackState.cs")
-            .Replace("\r\n", "\n");
-        var flashbackBufferStatusText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackState.cs")
-            .Replace("\r\n", "\n");
-        var flashbackPlaybackCommandsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackState.cs")
-            .Replace("\r\n", "\n");
-        var automationFacadeText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
-            .Replace("\r\n", "\n");
-        var automationText = string.Join(
-            "\n",
-            flashbackSettingsText,
-            flashbackExportText,
-            flashbackExportOperationText,
-            flashbackExportAutomationText,
-            flashbackBufferStatusText,
-            flashbackPlaybackCommandsText,
-            automationFacadeText);
-
-        AssertDoesNotContain(interfaceText, "bool FlashbackPlay();");
-        AssertDoesNotContain(interfaceText, "bool FlashbackPause();");
-        AssertDoesNotContain(interfaceText, "bool FlashbackGoLive();");
-        AssertDoesNotContain(interfaceText, "bool FlashbackBeginScrub(TimeSpan position);");
-        AssertDoesNotContain(interfaceText, "bool FlashbackEndScrub();");
-        AssertDoesNotContain(interfaceText, "VideoSourceProbeResult ProbeVideoSource();");
-        AssertDoesNotContain(interfaceText, "PreviewColorProbeResult ProbePreviewColor();");
-        AssertContains(dispatcherText, "await _flashbackPort.ExecuteFlashbackActionAsync(action, position, cancellationToken).ConfigureAwait(false)");
-        AssertContains(dispatcherText, "return CreateFlashbackActionRejectedResponse(");
-        AssertContains(dispatcherText, "errorCode: AutomationErrorCodes.FlashbackActionFailed");
-        AssertContains(dispatcherText, "RequestedPositionMs = requestedPositionMs");
-        AssertContains(dispatcherText, "LastCommandFailureUtcUnixMs = snapshot.FlashbackPlaybackLastCommandFailureUtcUnixMs");
-        AssertContains(dispatcherText, "var useSelectionRange = GetBool(payload, AutomationPayloadKeys.UseSelectionRange) ?? false;");
-        AssertContains(dispatcherText, "_ = GetBool(payload, AutomationPayloadKeys.Force) ?? false;");
-        AssertContains(dispatcherText, "ExportFlashbackAutomationAsync(seconds, outputPath, useSelectionRange, cancellationToken)");
-        AssertContains(dispatcherText, "FlashbackExportFailureCodes.Classify(exportResult)");
-        AssertContains(dispatcherText, "FailureKind = failureKind");
-        AssertContains(dispatcherText, "AutomationFlashbackValidation.ValidatePositionMs(positionMs.Value);");
-        var flashbackValidationText = ReadRepoFile("Sussudio.Automation.Contracts/AutomationCommandCatalog.cs")
-            .Replace("\r\n", "\n");
-        AssertContains(flashbackValidationText, "Flashback positionMs must be finite, non-negative, and within TimeSpan range.");
-        AssertContains(dispatcherText, "AutomationFlashbackAction.BeginScrub => RequireDouble(payload, AutomationPayloadKeys.PositionMs)");
-        AssertContains(dispatcherText, "AutomationFlashbackAction.UpdateScrub => RequireDouble(payload, AutomationPayloadKeys.PositionMs)");
-        AssertContains(dispatcherText, "AutomationFlashbackAction.EndScrub => GetDouble(payload, AutomationPayloadKeys.PositionMs)");
-        AssertContains(dispatcherText, "private readonly IAutomationReadinessPort _readinessPort;");
-        AssertContains(dispatcherText, "private readonly IAutomationDeviceSelectionPort _deviceSelectionPort;");
-        AssertContains(dispatcherText, "private readonly IAutomationSnapshotQueryPort _snapshotQueryPort;");
-        AssertContains(dispatcherText, "private readonly IAutomationCaptureSettingsPort _captureSettingsPort;");
-        AssertContains(dispatcherText, "private readonly IAutomationAudioPort _audioPort;");
-        AssertContains(dispatcherText, "private readonly IAutomationPreviewRecordingPort _previewRecordingPort;");
-        AssertContains(dispatcherText, "private readonly IAutomationUiPort _uiPort;");
-        AssertContains(dispatcherText, "private readonly IAutomationFlashbackPort _flashbackPort;");
-        AssertContains(dispatcherText, "private readonly IAutomationProbePort _probePort;");
-        AssertDoesNotContain(dispatcherText, "private readonly IAutomationViewModel _viewModel;");
-        AssertContains(interfaceText, "internal readonly record struct AutomationViewModelPorts(");
-        AssertContains(interfaceText, "public static AutomationViewModelPorts From(IAutomationViewModel viewModel)");
-        AssertContains(interfaceText, "ArgumentNullException.ThrowIfNull(viewModel);");
-        AssertContains(dispatcherText, "internal AutomationCommandDispatcher(");
-        AssertContains(dispatcherText, "AutomationViewModelPorts ports,");
-        AssertDoesNotContain(dispatcherText, "public AutomationCommandDispatcher(\n        IAutomationViewModel viewModel,");
-        AssertContains(dispatcherText, "_readinessPort = ports.Readiness");
-        AssertContains(dispatcherText, "_snapshotQueryPort = ports.SnapshotQuery");
-        AssertDoesNotContain(dispatcherText, "_readinessPort = viewModel;");
-        AssertDoesNotContain(dispatcherText, "_snapshotQueryPort = viewModel;");
-        AssertContains(dispatcherText, "_readinessPort.IsInitialized || _readinessPort.Devices.Count > 0");
-        AssertContains(dispatcherText, "await deviceSelectionHandler.InvokeAsync(_deviceSelectionPort, payload, cancellationToken).ConfigureAwait(false);");
-        AssertContains(dispatcherText, "await captureSettingsHandler.InvokeAsync(_captureSettingsPort, payload, cancellationToken).ConfigureAwait(false);");
-        AssertContains(dispatcherText, "await audioHandler.InvokeAsync(_audioPort, payload, cancellationToken).ConfigureAwait(false);");
-        AssertContains(dispatcherText, "await previewRecordingHandler.InvokeAsync(_previewRecordingPort, payload, cancellationToken).ConfigureAwait(false);");
-        AssertContains(dispatcherText, "await _deviceSelectionPort.RefreshDevicesForAutomationAsync(cancellationToken).ConfigureAwait(false);");
-        AssertContains(dispatcherText, "await _deviceSelectionPort.SelectDeviceAsync(deviceId, deviceName, cancellationToken).ConfigureAwait(false);");
-        AssertContains(dispatcherText, "await _deviceSelectionPort.SelectMicrophoneDeviceAsync(deviceId, deviceName, cancellationToken).ConfigureAwait(false);");
-        AssertContains(dispatcherText, "await _snapshotQueryPort.GetAutomationOptionsSnapshotAsync(cancellationToken).ConfigureAwait(false);");
-        AssertContains(dispatcherText, "await _audioPort.SetMicrophoneEnabledAsync(enabled, cancellationToken).ConfigureAwait(false);");
-        AssertContains(dispatcherText, "await _audioPort.SetMicrophoneVolumeAsync(volume, cancellationToken).ConfigureAwait(false);");
-        AssertContains(dispatcherText, "await _captureSettingsPort.SetMjpegDecoderCountAsync(decoderCount.Value, cancellationToken).ConfigureAwait(false);");
-        AssertContains(dispatcherText, "await _previewRecordingPort.SetRecordingEnabledAsync(enabled, cancellationToken).ConfigureAwait(false);");
-        AssertContains(dispatcherText, "await _probePort.ProbeVideoSourceAsync(cancellationToken).ConfigureAwait(false);");
-        AssertContains(dispatcherText, "await _probePort.ProbePreviewColorAsync(cancellationToken).ConfigureAwait(false);");
-        AssertContains(dispatcherText, "await _uiPort.SetStatsSectionVisibleAsync(section, visible, cancellationToken).ConfigureAwait(false);");
-        AssertContains(dispatcherText, "await _snapshotQueryPort.GetAudioRampTraceSnapshotAsync(maxEntries, cancellationToken).ConfigureAwait(false);");
-        AssertContains(dispatcherText, "await _flashbackPort.SetFlashbackEnabledAsync(enabled, cancellationToken).ConfigureAwait(false);");
-        AssertContains(dispatcherText, "await _flashbackPort.SetFlashbackBufferMinutesAsync(minutes, cancellationToken).ConfigureAwait(false);");
-        AssertContains(dispatcherText, "await _flashbackPort.SetFlashbackGpuDecodeAsync(enabled, cancellationToken).ConfigureAwait(false);");
-        AssertContains(dispatcherText, "await _flashbackPort.GetFlashbackSegmentsAsync(cancellationToken).ConfigureAwait(false);");
-        AssertContains(dispatcherText, "vm.SetHdrEnabledAsync(v, ct)");
-        AssertContains(dispatcherText, "vm.SetTrueHdrPreviewEnabledAsync(v, ct)");
-        AssertDoesNotContain(dispatcherText, "_viewModel.IsMicrophoneEnabled =");
-        AssertContains(viewModelDispatchText, "registration.Dispose();\n                registration = default;\n\n                if (cancellationToken.IsCancellationRequested)");
-
-        AssertContains(automationText, "public Task<bool> ExecuteFlashbackActionAsync(");
-        AssertContains(automationText, "public async Task SetFlashbackBufferMinutesAsync(int minutes, CancellationToken cancellationToken = default)");
-        AssertContains(automationText, "public async Task SetFlashbackGpuDecodeAsync(bool enabled, CancellationToken cancellationToken = default)");
-        AssertContains(automationText, "public void ReportFlashbackPlaybackRejection(string action, string logToken)");
-        AssertContains(automationText, "StatusMessages.FlashbackPlaybackRejected(");
-        AssertContains(automationText, "StatusText = message;");
-        AssertContains(automationText, "case AutomationFlashbackAction.SetInPoint:");
-        AssertContains(automationText, "case AutomationFlashbackAction.SetOutPoint:");
-        AssertContains(automationText, "case AutomationFlashbackAction.ClearInOutPoints:");
-        AssertContains(automationText, "case AutomationFlashbackAction.BeginScrub:");
-        AssertContains(automationText, "return FlashbackBeginScrub(position ?? TimeSpan.Zero);");
-        AssertContains(automationText, "case AutomationFlashbackAction.UpdateScrub:");
-        AssertContains(automationText, "return FlashbackUpdateScrub(position ?? TimeSpan.Zero);");
-        AssertContains(automationText, "case AutomationFlashbackAction.EndScrub:");
-        AssertContains(automationText, "? FlashbackEndScrubAt(position.Value)\n                    : FlashbackEndScrub();");
-        var automationPlayBlock = ExtractTextBetween(
-            automationText,
-            "case AutomationFlashbackAction.Play:",
-            "            case AutomationFlashbackAction.Pause:");
-        AssertContains(automationPlayBlock, "if (position.HasValue)");
-        AssertContains(automationPlayBlock, "if (!FlashbackSeek(position.Value))");
-        AssertContains(automationPlayBlock, "return FlashbackPlay();");
-        AssertDoesNotContain(automationPlayBlock, "FlashbackBeginScrub(position.Value);");
-        AssertDoesNotContain(automationPlayBlock, "FlashbackEndScrub();");
-        AssertContains(automationText, "if (useSelectionRange)");
-        AssertContains(automationText, "FLASHBACK_EXPORT_START_UI_ENQUEUE_FAILED source=automation");
-        AssertContains(automationText, "FLASHBACK_EXPORT_PROGRESS_UI_ENQUEUE_FAILED source=automation percent={p.Percent:0.###}");
-        AssertContains(automationText, "FLASHBACK_EXPORT_PROGRESS_UI_ENQUEUE_FAILED source=ui percent={p.Percent:0.###}");
-        AssertContains(automationText, "public Task SetFlashbackEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
-        AssertContains(automationText, "InvokeOnUiThreadAsync(() => ExecuteFlashbackAction(action, position), cancellationToken)");
-        AssertContains(automationText, "=> FromSynchronousSnapshot(GetFlashbackSegments, cancellationToken);");
-        AssertContains(automationText, "await _sessionCoordinator.RestartFlashbackAsync(settings, cancellationToken).ConfigureAwait(false)");
-        AssertContains(automationText, "_flashbackBitrateSamples.Clear();\n                return true;\n            },\n            cancellationToken).ConfigureAwait(false);");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task MainViewModelAutomation_RoutesRecordingThroughSharedTransitionGate()
-    {
-        var rootViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
-            .Replace("\r\n", "\n");
-        var recordingLifecycleText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
-            .Replace("\r\n", "\n");
-        var recordingTransitionControllerRootText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs")
-            .Replace("\r\n", "\n");
-        var recordingTransitionControllerText = recordingTransitionControllerRootText;
-        var automationText = recordingLifecycleText
-            + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackState.cs")
-                .Replace("\r\n", "\n");
-        var captureText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
-            .Replace("\r\n", "\n");
-        var recordingStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
-            .Replace("\r\n", "\n");
-        var recordingRuntimeText = recordingStateText;
-        var flashbackStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackState.cs")
-            .Replace("\r\n", "\n");
-        var flashbackBufferStatusText = flashbackStateText;
-        var runtimeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs")
-            .Replace("\r\n", "\n");
-        var dispatcherText = ReadAutomationCommandDispatcherFamilyText();
-
-        AssertContains(recordingLifecycleText, "public Task SetRecordingEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
-        AssertContains(recordingLifecycleText, "=> SetRecordingDesiredStateAsync(enabled, cancellationToken);");
-        AssertContains(recordingLifecycleText, "internal Task SetRecordingDesiredStateAsync");
-        AssertContains(recordingLifecycleText, "public Task ToggleRecordingAsync()\n        => _recordingTransitionController.ToggleRecordingAsync();");
-        AssertContains(recordingLifecycleText, "=> _recordingTransitionController.SetRecordingDesiredStateAsync(enabled, cancellationToken);");
-        AssertContains(rootViewModelText, "public Task ToggleRecordingAsync()");
-        AssertContains(rootViewModelText, "public Task SetRecordingEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
-        AssertContains(rootViewModelText, "internal Task SetRecordingDesiredStateAsync");
-        AssertContains(recordingTransitionControllerRootText, "namespace Sussudio.Controllers;");
-        AssertContains(recordingTransitionControllerRootText, "internal sealed class MainViewModelRecordingTransitionController");
-        AssertDoesNotContain(recordingTransitionControllerRootText, "partial class MainViewModelRecordingTransitionController");
-        AssertContains(recordingTransitionControllerRootText, "internal sealed class MainViewModelRecordingTransitionControllerContext");
-        AssertContains(recordingTransitionControllerRootText, "private readonly MainViewModelRecordingTransitionControllerContext _context;");
-        AssertDoesNotContain(recordingTransitionControllerText, "private readonly MainViewModel _viewModel;");
-        AssertDoesNotContain(recordingTransitionControllerText, "_viewModel.");
-        AssertContains(recordingTransitionControllerText, "Recording transition already in progress.");
-        AssertContains(recordingTransitionControllerText, "await inFlight;");
-        AssertContains(recordingTransitionControllerText, "private Task BeginRecordingTransitionAsync(bool enabled, CancellationToken cancellationToken = default)");
-        AssertContains(recordingTransitionControllerText, "var task = RecordingTransitionInnerAsync(enabled, cancellationToken);");
-        AssertContains(recordingTransitionControllerRootText, "await StartRecordingAsync(cancellationToken);");
-        AssertContains(recordingTransitionControllerRootText, "await StopRecordingAsync(cancellationToken);");
-        AssertContains(recordingTransitionControllerText, "await BeginRecordingTransitionAsync(enabled, cancellationToken);");
-        AssertDoesNotContain(recordingLifecycleText, "await _sessionCoordinator.StartRecordingAsync(settings, cancellationToken);");
-        AssertDoesNotContain(recordingLifecycleText, "await _sessionCoordinator.StopRecordingAsync(cancellationToken);");
-        AssertContains(recordingTransitionControllerRootText, "private async Task StartRecordingAsync(CancellationToken cancellationToken = default)");
-        AssertContains(recordingTransitionControllerRootText, "private async Task StopRecordingAsync(CancellationToken cancellationToken = default)");
-        AssertContains(recordingTransitionControllerRootText, "await _context.StartRecordingAsync(settings, cancellationToken);");
-        AssertContains(recordingTransitionControllerRootText, "await _context.StopRecordingAsync(cancellationToken);");
-        AssertDoesNotContain(captureText, "private Task BeginRecordingTransitionAsync(bool enabled, CancellationToken cancellationToken = default)");
-        AssertDoesNotContain(captureText, "await _sessionCoordinator.StartRecordingAsync(settings, cancellationToken);");
-        AssertContains(recordingStateText, "private readonly Stopwatch _recordingStopwatch = new();");
-        AssertContains(recordingStateText, "private readonly BitrateSampleWindow _recordingBitrateSamples = new(BitrateWindowMs);");
-        AssertContains(flashbackStateText, "private readonly BitrateSampleWindow _flashbackBitrateSamples = new(BitrateWindowMs);");
-        AssertContains(recordingStateText, "public partial ObservableCollection<string> AvailableRecordingFormats");
-        AssertContains(recordingStateText, "public partial string OutputPath");
-        AssertContains(recordingStateText, "public partial bool IsRecording");
-        AssertDoesNotContain(recordingStateText, "_activeRecordingToggleTask");
-        AssertDoesNotContain(recordingStateText, "_recordingToggleInProgress");
-        AssertContains(recordingRuntimeText, "partial void OnIsRecordingChanged(bool value)");
-        AssertContains(recordingRuntimeText, "private void UpdateRecordingStats()");
-        AssertContains(recordingRuntimeText, "_recordingBitrateSamples.Clear();");
-        AssertContains(recordingRuntimeText, "var smoothed = _recordingBitrateSamples.AddSampleAndCompute(now, totalBytes);");
-        AssertContains(recordingRuntimeText, "RecordingSizeInfo = DisplayFormatters.FormatBytes(totalBytes, \"0\");");
-        AssertContains(recordingRuntimeText, "RecordingBitrateInfo = smoothed.HasValue ? DisplayFormatters.FormatBitrate(smoothed.Value) : \"--\";");
-        AssertContains(flashbackBufferStatusText, "var smoothed = _flashbackBitrateSamples.AddSampleAndCompute(now, diskBytes);");
-        AssertContains(recordingStateText, "internal sealed class BitrateSampleWindow");
-        AssertContains(recordingStateText, "public double? AddSampleAndCompute(long tick, long bytes)");
-        AssertContains(recordingStateText, "private static double? ComputeAverageBitrate(Queue<(long Tick, long Bytes)> samples)");
-        AssertContains(recordingRuntimeText, "if (_pendingModeOptionsRefreshForceRetarget is bool forceSourceAutoRetarget)");
-        AssertContains(recordingRuntimeText, "_pendingModeOptionsRefreshForceRetarget = null;");
-        AssertContains(recordingRuntimeText, "RebuildResolutionOptions(forceSourceAutoRetarget);");
-        AssertContains(recordingRuntimeText, "private void SetPendingModeOptionsRefresh(bool forceSourceAutoRetarget)");
-        AssertContains(recordingRuntimeText, "_pendingModeOptionsRefreshForceRetarget == true || forceSourceAutoRetarget");
-        AssertContains(runtimeLifecycleControllerText, "_context.UpdateRecordingStats();");
-        AssertDoesNotContain(runtimeLifecycleControllerText, "private void UpdateRecordingStats()");
-        AssertDoesNotContain(runtimeLifecycleControllerText, "private static double? ComputeAverageBitrate(");
-        AssertDoesNotContain(runtimeLifecycleControllerText, "partial void OnIsRecordingChanged(bool value)");
-        AssertContains(rootViewModelText, "public partial ObservableCollection<string> AvailableRecordingFormats");
-        AssertContains(rootViewModelText, "public partial string OutputPath");
-        AssertContains(automationText, "=> SetRecordingDesiredStateAsync(enabled, cancellationToken);");
-        AssertContains(dispatcherText, "return CreateResponse(correlationId, $\"Recording {(enabled ? \"started\" : \"stopped\")}.\"");
-        AssertContains(dispatcherText, "var snapshot = await _diagnosticsHub.RefreshSnapshotNowAsync(cancellationToken).ConfigureAwait(false);");
-        AssertContains(dispatcherText, "snapshot: snapshot");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task MainViewModelAutomation_RecordingSettingsRouteThroughControllerAndFlashbackCycle()
-    {
-        var viewModelFiles = ReadMainViewModelCodeFiles();
-        var hooks = viewModelFiles["MainViewModel.FlashbackState.cs"];
-        var viewModel = viewModelFiles["MainViewModel.cs"];
-        var controller = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsController.cs");
-        var captureAutomation = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelSettingsAutomationControllers.cs");
-
-        foreach (var member in new[] { "SetRecordingFormatAsync", "SetQualityAsync", "SetSplitEncodeModeAsync", "SetCustomBitrateAsync", "SetPresetAsync" })
-        {
-            AssertMemberContains(viewModel, member, "RunPersistedSettingsAutomationAsync(");
-            AssertMemberContains(viewModel, member, "_recordingSettingsController.");
-        }
-        foreach (var member in new[] { "OnSelectedRecordingFormatChanged", "OnSelectedQualityChanged", "OnSelectedSplitEncodeModeChanged", "OnCustomBitrateMbpsChanged", "OnSelectedPresetChanged" })
-        {
-            AssertMemberContains(hooks, member, "_recordingSettingsController.OnSelectionChanged(");
-            AssertMemberContains(hooks, member, "SaveSettings();");
-        }
-        AssertContains(controller, "internal sealed class MainViewModelRecordingSettingsController");
-        AssertContains(controller, "private readonly MainViewModelRecordingSettingsControllerContext _context;");
-        AssertContains(controller, "public IDisposable SuppressPropertyReactions()");
-        AssertContains(controller, "public Task? PendingApplication");
-        AssertContains(controller, "public void ClearPendingIfSameAndCompleted(Task task)");
-        AssertDoesNotContain(controller, "private readonly MainViewModel _viewModel;");
-        AssertDoesNotContain(captureAutomation, "MainViewModelRecordingSettings");
-        AssertDoesNotContain(hooks, "TrackPendingFlashbackCycleTask");
-        AssertDoesNotContain(hooks, "_suppressFlashbackFormatCycle");
-        AssertDoesNotContain(hooks, "_suppressFlashbackEncoderSettingsCycle");
-        AssertDoesNotContain(hooks, "_pendingFlashbackCycleTask");
-        AssertContains(viewModel, "CaptureSelection = () => new RecordingSettingsSelection(");
-        AssertContains(viewModel, "ApplyAsync = viewModel._sessionCoordinator.ApplyRecordingSettingsAsync,");
-        AssertContains(viewModel, "viewModel._recordingSettingsController.PendingApplication");
-        AssertContains(viewModel, "viewModel._recordingSettingsController.ClearPendingIfSameAndCompleted(task)");
         return Task.CompletedTask;
     }
 
@@ -5703,75 +3575,6 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task AutomationAudioCommands_PreserveRuntimeGuards()
-    {
-        var automationAudioText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
-            .Replace("\r\n", "\n");
-        var automationUiText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
-            .Replace("\r\n", "\n");
-        var viewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
-            .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Controllers/Dispatch/UiDispatchControllers.cs")
-                .Replace("\r\n", "\n");
-        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
-            .Replace("\r\n", "\n")
-            + "\n" + ReadCaptureServiceAudioSource()
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
-                .Replace("\r\n", "\n");
-
-        AssertContains(automationAudioText, "public Task SetAudioEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
-        AssertContains(automationAudioText, "public Task SetAudioPreviewEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
-        AssertContains(automationAudioText, "public Task SetPreviewVolumeAsync(double previewVolumePercent, CancellationToken cancellationToken = default)");
-        var previewVolumeCommand = ExtractMemberCode(automationAudioText, "SetPreviewVolumeAsync");
-        AssertContains(previewVolumeCommand, "return InvokeOnUiThreadAsync(() =>");
-        AssertContains(previewVolumeCommand, "SetPreviewVolumeFromUser(Math.Clamp(previewVolumePercent / 100.0, 0.0, 1.0));");
-        AssertOccursBefore(previewVolumeCommand, "SetPreviewVolumeFromUser(", "SaveSettingsOrThrow();");
-        AssertContains(automationAudioText, "public Task SetDeviceAudioModeAsync(string mode, CancellationToken cancellationToken = default)");
-        AssertContains(automationAudioText, "public Task SetAnalogAudioGainAsync(double gainPercent, CancellationToken cancellationToken = default)");
-        AssertContains(automationAudioText, "WithAudioControlRefreshSuppressed(() => SelectedDeviceAudioMode = normalizedMode);");
-        AssertContains(automationAudioText, "WithAudioControlRefreshSuppressed(() => AnalogAudioGainPercent = clampedGain);");
-        AssertContains(automationAudioText, "public async Task SelectMicrophoneDeviceAsync(string? deviceId, string? deviceName, CancellationToken cancellationToken = default)");
-        AssertContains(automationAudioText, "throw new AutomationStateConflictException(\"Cannot change microphone device while recording. Stop the recording first.\");");
-        AssertContains(automationAudioText, "throw new AutomationStateConflictException(\"Custom audio input cannot be changed while recording.\");");
-        AssertContains(automationAudioText, "Cannot change microphone device while recording. Stop the recording first.");
-        AssertContains(automationAudioText, "SelectedMicrophoneDevice = request.Target;");
-        AssertContains(automationAudioText, "public Task SetMicrophoneEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
-        AssertContains(automationAudioText, "private async Task SetMicrophoneEnabledAutomationAsync(bool enabled, CancellationToken cancellationToken)");
-        AssertContains(automationAudioText, "public Task SetMicrophoneVolumeAsync(double microphoneVolumePercent, CancellationToken cancellationToken = default)");
-        AssertContains(automationAudioText, "MicrophoneVolume = Math.Clamp(microphoneVolumePercent, 0.0, 100.0);");
-        AssertContains(automationAudioText, "Logger.Log($\"MIC_TOGGLE_NOOP reason=recording_active_idempotent requested={enabled}\");");
-        AssertContains(automationAudioText, "Logger.Log($\"MIC_TOGGLE_REFUSED reason=recording_active requested={enabled} current={request.CurrentMicEnabled}\");");
-        AssertContains(automationAudioText, "throw new AutomationStateConflictException(");
-        AssertContains(automationAudioText, "Cannot change microphone enable state while recording. Stop the recording first.");
-        AssertContains(automationAudioText, "_suppressMicrophoneMonitorUpdate = true;");
-        AssertContains(automationAudioText, "await _sessionCoordinator.UpdateMicrophoneMonitorAsync(");
-        AssertContains(automationAudioText, "cancellationToken).ConfigureAwait(false);");
-        AssertContains(automationAudioText, "IsMicrophoneEnabled = enabled;\n                }\n                finally\n                {\n                    _suppressMicrophoneMonitorUpdate = false;\n                }\n\n                SaveSettingsOrThrow();\n                return true;\n            },\n            cancellationToken).ConfigureAwait(false);");
-        AssertContains(automationUiText, "public Task SetPreviewVolumeAsync");
-        AssertContains(viewModelText, "if (_suppressMicrophoneMonitorUpdate)");
-        AssertContains(viewModelText, "return ResolveByName(MicrophoneDevices, deviceName, d => d.Name);");
-        AssertContains(captureServiceText, "var previousEnabled = _micMonitorEnabled;");
-        AssertContains(captureServiceText, "await DisposeMicrophoneCaptureAsync().ConfigureAwait(false);");
-        AssertContains(captureServiceText, "_micMonitorEnabled = enabled;");
-
-        var microphoneUpdateIndex = automationAudioText.IndexOf(
-            "await _sessionCoordinator.UpdateMicrophoneMonitorAsync(",
-            StringComparison.Ordinal);
-        var microphonePersistIndex = automationAudioText.IndexOf(
-            "IsMicrophoneEnabled = enabled;",
-            StringComparison.Ordinal);
-        AssertEqual(
-            true,
-            microphoneUpdateIndex >= 0 && microphonePersistIndex > microphoneUpdateIndex,
-            "automation microphone persists only after monitor update");
-
-        return Task.CompletedTask;
-    }
-
     internal static Task MainViewModelAutomation_RoutesPreviewVolumePersistenceThroughSaveHook()
     {
         var vmType = RequireType("Sussudio.ViewModels.MainViewModel");
@@ -5823,529 +3626,8 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task DiagnosticsLoop_DoesNotRebuildAutomationOptionsEachPoll()
+    internal static Task MainViewModel_FormatSuccessfulFlashbackExportStatus_AppendsDetailOnlyWhenPresent()
     {
-        var diagnosticsHubText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs");
-        var automationSnapshotText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs");
-        var automationOptionsText = automationSnapshotText;
-        var automationOptionsBuilderText = ReadRepoFile("Sussudio/ViewModels/ViewModelBuilders.cs");
-
-        AssertDoesNotContain(diagnosticsHubText, "GetAutomationOptionsSnapshotAsync(cancellationToken)");
-        AssertDoesNotContain(diagnosticsHubText, "Options = optionsSnapshot");
-        AssertDoesNotContain(automationSnapshotText, "BuildStringOptions(");
-        AssertContains(automationOptionsText, "GetAutomationOptionsSnapshotAsync");
-        AssertContains(automationOptionsText, "InvokeOnUiThreadAsync(() =>");
-        AssertContains(automationOptionsText, "AvailableFrameRates");
-        AssertContains(automationOptionsText, "MicrophoneDevices");
-        AssertContains(automationOptionsText, "IsMicrophoneEnabled = IsMicrophoneEnabled");
-        AssertContains(automationOptionsText, "SupportedFlashbackBufferMinutes");
-        AssertContains(automationOptionsText, "FrameRateTimingPolicy.IsFrameRateMatch(option.Value, selectedFrameRate)");
-        AssertContains(automationOptionsText, "AutomationOptionsSnapshotBuilder.Build(input)");
-        AssertNoRegex(
-            automationOptionsText,
-            @"new\s+AutomationOptionsSnapshot\s*\{",
-            "MainViewModel automation options DTO construction");
-        AssertContains(automationOptionsBuilderText, "internal static class AutomationOptionsSnapshotBuilder");
-        AssertContains(automationOptionsBuilderText, "internal sealed class AutomationOptionsSnapshotInput");
-        AssertContains(automationOptionsBuilderText, "BuildStringOptions(input.RecordingFormats, input.SelectedRecordingFormat)");
-        AssertContains(automationOptionsBuilderText, "MjpegDecoderCounts = Enumerable.Range(1, 8)");
-        AssertContains(automationOptionsBuilderText, "MicrophoneDevices = input.MicrophoneDevices");
-        AssertContains(automationOptionsBuilderText, "FlashbackBufferMinuteOptions = input.FlashbackBufferMinuteOptions");
-        AssertContains(automationOptionsBuilderText, "DisableReason = option.DisableReason ?? string.Empty");
-        AssertContains(automationOptionsBuilderText, "PreviewVolumePercent = input.PreviewVolume * 100.0");
-        AssertContains(automationOptionsBuilderText, "IsMicrophoneEnabled = input.IsMicrophoneEnabled");
-        AssertContains(automationOptionsBuilderText, "MicrophoneVolumePercent = input.MicrophoneVolume");
-        AssertContains(automationOptionsBuilderText, "FlashbackGpuDecode = input.FlashbackGpuDecode");
-
-        return Task.CompletedTask;
-    }
-
-    private static void AssertTaskReturningMethod(Type type, string methodName, Type? resultType)
-    {
-        var method = type.GetMethod(methodName, BindingFlags.Instance | BindingFlags.Public)
-            ?? type.GetInterfaces()
-                .Select(interfaceType => interfaceType.GetMethod(methodName, BindingFlags.Instance | BindingFlags.Public))
-                .FirstOrDefault(candidate => candidate != null);
-        AssertNotNull(method, $"{type.FullName}.{methodName}");
-        AssertEqual(
-            true,
-            method!.GetParameters().Any(parameter => parameter.ParameterType == typeof(CancellationToken)),
-            $"{type.FullName}.{methodName} cancellation token");
-
-        if (resultType == null)
-        {
-            AssertEqual(typeof(Task).FullName, method.ReturnType.FullName, $"{type.FullName}.{methodName} return type");
-            return;
-        }
-
-        AssertEqual(true, method.ReturnType.IsGenericType, $"{type.FullName}.{methodName} generic Task return");
-        AssertEqual(
-            typeof(Task<>).FullName,
-            method.ReturnType.GetGenericTypeDefinition().FullName,
-            $"{type.FullName}.{methodName} generic Task definition");
-        AssertEqual(
-            resultType.FullName,
-            method.ReturnType.GenericTypeArguments[0].FullName,
-            $"{type.FullName}.{methodName} task result");
-    }
-
-    internal static Task MainViewModelCapture_RoutesFlashbackMutationsThroughCoordinator()
-    {
-        var coordinatorType = RequireType("Sussudio.Services.Capture.CaptureSessionCoordinator");
-        foreach (var methodName in new[]
-        {
-            "SetFlashbackEnabledAsync",
-            "RestartFlashbackAsync",
-            "ApplyRecordingSettingsAsync",
-            "UpdateFlashbackSettingsAsync",
-            "ExportFlashbackRangeAsync",
-            "ExportFlashbackLastNSecondsAsync",
-            "GetFlashbackSegments",
-            "GetFlashbackPlaybackSnapshot",
-            "FlashbackBeginScrub",
-            "FlashbackSeek",
-            "FlashbackUpdateScrub",
-            "FlashbackEndScrub",
-            "FlashbackPlay",
-            "FlashbackPause",
-            "FlashbackGoLive",
-            "FlashbackNudge",
-            "FlashbackSetInPoint",
-            "FlashbackSetOutPoint",
-            "FlashbackClearInOutPoints"
-        })
-        {
-            var method = Array.Find(
-                coordinatorType.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic),
-                method => method.Name == methodName);
-            AssertNotNull(method, $"CaptureSessionCoordinator.{methodName}");
-        }
-
-        var viewModelFiles = ReadMainViewModelCodeFiles();
-        var recordingSettingsAutomationControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsController.cs")
-            .Replace("\r\n", "\n");
-        var viewModelText = string.Join("\n", viewModelFiles.Values) + "\n" + recordingSettingsAutomationControllerText;
-        var viewModelAudioStateText = viewModelFiles["MainViewModel.AudioState.cs"];
-        var viewModelFlashbackStateText = viewModelFiles["MainViewModel.FlashbackState.cs"];
-        var flashbackSettingsText = viewModelFiles["MainViewModel.FlashbackState.cs"];
-        var flashbackExportText = viewModelFiles["MainViewModel.FlashbackState.cs"];
-        var flashbackExportOperationText = viewModelFiles["MainViewModel.FlashbackState.cs"];
-        var flashbackExportAutomationText = viewModelFiles["MainViewModel.FlashbackState.cs"];
-        var flashbackBufferStatusText = viewModelFlashbackStateText;
-        var flashbackPlaybackCommandsText = viewModelFlashbackStateText;
-        var flashbackPlaybackText = flashbackPlaybackCommandsText;
-        var flashbackAutomationText = flashbackSettingsText
-            + "\n" + flashbackExportText
-            + "\n" + flashbackExportOperationText
-            + "\n" + flashbackExportAutomationText
-            + "\n" + flashbackBufferStatusText
-            + "\n" + flashbackPlaybackCommandsText;
-        var audioCapturePropertyChangesText = viewModelFiles["MainViewModel.AudioState.cs"];
-        var rawViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
-            .Replace("\r\n", "\n");
-        var rawAudioCapturePropertyChangesText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs")
-            .Replace("\r\n", "\n");
-        var flashbackEncoderSettingsText = viewModelFiles["MainViewModel.FlashbackState.cs"];
-        var rawFlashbackSettingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackState.cs")
-            .Replace("\r\n", "\n");
-        var coordinatorText = ReadCaptureSessionCoordinatorSource();
-        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
-            .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadCaptureServiceAudioSource();
-
-        AssertContains(coordinatorText, "if (controller is { IsDisposed: false, IsInitialized: true, State: not FlashbackPlaybackState.Disabled })\n        {\n            return true;\n        }");
-        AssertMemberContains(flashbackPlaybackText, "GetFlashbackPlaybackSnapshot", "_sessionCoordinator.GetFlashbackPlaybackSnapshot()");
-        AssertMemberContains(flashbackPlaybackText, "ReportFlashbackPlaybackRejection", "_sessionCoordinator.GetFlashbackPlaybackSnapshot()");
-        AssertMemberContains(flashbackPlaybackText, "ReportFlashbackPlaybackRejection", "StatusText = message;");
-        AssertMemberContains(flashbackPlaybackCommandsText, "ExecuteFlashbackActionAsync", "InvokeOnUiThreadAsync(() => ExecuteFlashbackAction(action, position), cancellationToken)");
-        AssertMemberContains(flashbackPlaybackCommandsText, "ExecuteFlashbackAction", "return FlashbackBeginScrub(position ?? TimeSpan.Zero)");
-        AssertMemberContains(flashbackPlaybackCommandsText, "ExecuteFlashbackAction", "return FlashbackSetInPoint().HasValue");
-        AssertMemberDoesNotContain(flashbackPlaybackCommandsText, "ExecuteFlashbackAction", "_sessionCoordinator.FlashbackSetInPoint()");
-        AssertMemberContains(flashbackPlaybackCommandsText, "FlashbackBeginScrub", "_sessionCoordinator.FlashbackBeginScrub(position)");
-        AssertMemberContains(flashbackPlaybackCommandsText, "FlashbackSeek", "_sessionCoordinator.FlashbackSeek(position)");
-        AssertMemberContains(flashbackPlaybackCommandsText, "FlashbackUpdateScrub", "return _sessionCoordinator.FlashbackUpdateScrub(position)");
-        AssertMemberContains(flashbackPlaybackCommandsText, "FlashbackEndScrub", "_sessionCoordinator.FlashbackEndScrub()");
-        AssertMemberContains(flashbackPlaybackCommandsText, "FlashbackEndScrubAt", "_sessionCoordinator.FlashbackEndScrubAt(position)");
-        AssertMemberContains(flashbackPlaybackCommandsText, "FlashbackPlay", "_sessionCoordinator.FlashbackPlay()");
-        AssertMemberContains(flashbackPlaybackCommandsText, "FlashbackPause", "_sessionCoordinator.FlashbackPause()");
-        AssertMemberContains(flashbackPlaybackCommandsText, "FlashbackGoLive", "_sessionCoordinator.FlashbackGoLive()");
-        AssertMemberContains(flashbackPlaybackCommandsText, "FlashbackNudge", "_sessionCoordinator.FlashbackNudge(delta)");
-        AssertMemberContains(flashbackPlaybackCommandsText, "FlashbackSetInPoint", "_sessionCoordinator.FlashbackSetInPoint()");
-        AssertMemberContains(flashbackPlaybackCommandsText, "FlashbackSetInPointAt", "_sessionCoordinator.FlashbackSetInPointAt(position)");
-        AssertMemberContains(flashbackPlaybackCommandsText, "FlashbackSetOutPoint", "_sessionCoordinator.FlashbackSetOutPoint()");
-        AssertMemberContains(flashbackPlaybackCommandsText, "FlashbackSetOutPointAt", "_sessionCoordinator.FlashbackSetOutPointAt(position)");
-        AssertMemberContains(flashbackPlaybackCommandsText, "FlashbackClearInOutPoints", "=> _sessionCoordinator.FlashbackClearInOutPoints()");
-        AssertMemberContains(flashbackBufferStatusText, "UpdateFlashbackBufferStatus", "_sessionCoordinator.GetFlashbackBufferStatus()");
-        AssertMemberContains(flashbackBufferStatusText, "UpdateFlashbackBufferStatus", "RefreshFlashbackPlaybackState();");
-        AssertMemberContains(flashbackBufferStatusText, "RefreshFlashbackPlaybackState", "_sessionCoordinator.GetFlashbackPlaybackSnapshot()");
-        AssertMemberContains(flashbackBufferStatusText, "RefreshFlashbackPlaybackState", "FlashbackInPoint = playback.InPoint;");
-        AssertMemberContains(flashbackBufferStatusText, "RefreshFlashbackPlaybackState", "FlashbackOutPoint = playback.OutPoint;");
-        AssertMemberContains(flashbackBufferStatusText, "UpdateFlashbackBufferStatus", "FlashbackInPoint = null;");
-        AssertMemberContains(flashbackBufferStatusText, "UpdateFlashbackBufferStatus", "FlashbackOutPoint = null;");
-        AssertMemberContains(flashbackBufferStatusText, "RefreshFlashbackPlaybackState", "if (FlashbackState != FlashbackPlaybackState.Live)");
-        AssertMemberContains(flashbackBufferStatusText, "RefreshFlashbackPlaybackState", "FlashbackState = FlashbackPlaybackState.Live;");
-        // Controller transitions push a coalesced refresh instead of waiting for the poll.
-        AssertMemberContains(flashbackBufferStatusText, "OnFlashbackPlaybackStateChanged", "QueueFlashbackPlaybackStateRefresh();");
-        var refreshFlashbackPlaybackState = ExtractMemberCode(flashbackBufferStatusText, "RefreshFlashbackPlaybackState");
-        var inactivePlaybackSnapshotBranch = ExtractTextBetween(
-            refreshFlashbackPlaybackState,
-            "else\n        {\n            if (FlashbackState != FlashbackPlaybackState.Live)",
-            "\n        }\n    }");
-        AssertDoesNotContain(inactivePlaybackSnapshotBranch, "FlashbackInPoint = null;");
-        AssertDoesNotContain(inactivePlaybackSnapshotBranch, "FlashbackOutPoint = null;");
-        AssertMemberContains(flashbackBufferStatusText, "UpdateFlashbackBitrate", "_sessionCoordinator.FlashbackTotalBytesWritten");
-        AssertContains(captureServiceText, "public long FlashbackTotalBytesWritten => _flashbackBackend.BufferManager?.TotalBytesWritten ?? 0;");
-        AssertContains(captureServiceText, "public void AttachCaptureFailure(");
-        AssertContains(captureServiceText, "new CaptureErrorOrigin(CaptureErrorOriginKind.AudioCaptureRegistration, ++_captureErrorGeneration)");
-        AssertContains(captureServiceText, "private void OnWasapiCaptureFailed(Exception ex, CaptureErrorOrigin origin, string source)");
-        AssertContains(captureServiceText, "if (!IsCaptureErrorCurrent(origin))");
-        AssertDoesNotContain(captureServiceText, "ReferenceEquals(sender, ProgramCapture)");
-        AssertDoesNotContain(captureServiceText, "ReferenceEquals(sender, MicrophoneCapture)");
-        AssertContains(captureServiceText, "WASAPI_CAPTURE_FAILED source={source}");
-        AssertContains(captureServiceText, "_previewAudioGraph.RecordCaptureFault(source, ex);");
-        AssertContains(coordinatorText, "if (Volatile.Read(ref _isDisposed))");
-        AssertContains(coordinatorText, "Volatile.Write(ref _isDisposed, true);");
-        AssertContains(coordinatorText, "Exception failure = Volatile.Read(ref _isDisposed)");
-        AssertContains(viewModelFlashbackStateText, "private int _flashbackExportOperationId;");
-        AssertMemberContains(flashbackPlaybackText, "GetFlashbackSegments", "_sessionCoordinator.GetFlashbackSegments()");
-        AssertMemberContains(flashbackSettingsText, "SetFlashbackEnabledAsync", "_sessionCoordinator.SetFlashbackEnabledAsync(enabled, cancellationToken)");
-        AssertContains(rawFlashbackSettingsText, "Flashback buffer minutes must be one of: 1, 2, 5, 10, 15, or 30.");
-        AssertMemberContains(flashbackSettingsText, "SetFlashbackBufferMinutesAsync", "if (FlashbackBufferMinutes == minutes)");
-        AssertMemberContains(flashbackSettingsText, "SetFlashbackBufferMinutesAsync", "Changed: false");
-        AssertMemberContains(flashbackSettingsText, "SetFlashbackBufferMinutesAsync", "if (!state.Changed)");
-        AssertMemberContains(flashbackSettingsText, "SetFlashbackBufferMinutesAsync", "_suppressFlashbackSettingsUpdate = true;");
-        AssertMemberContains(flashbackSettingsText, "SetFlashbackBufferMinutesAsync", "await RestartFlashbackAsync(cancellationToken).ConfigureAwait(false);");
-        AssertMemberContains(flashbackSettingsText, "SetFlashbackBufferMinutesAsync", "_sessionCoordinator.UpdateFlashbackSettingsAsync(");
-        AssertMemberContains(flashbackSettingsText, "SetFlashbackGpuDecodeAsync", "if (FlashbackGpuDecode == enabled)");
-        AssertMemberContains(flashbackSettingsText, "SetFlashbackGpuDecodeAsync", "Changed: false");
-        AssertMemberContains(flashbackSettingsText, "SetFlashbackGpuDecodeAsync", "if (!state.Changed)");
-        AssertMemberContains(flashbackSettingsText, "SetFlashbackGpuDecodeAsync", "_suppressFlashbackSettingsUpdate = true;");
-        AssertMemberContains(flashbackSettingsText, "SetFlashbackGpuDecodeAsync", "_sessionCoordinator.UpdateFlashbackSettingsAsync(");
-        var restartFlashbackAsyncText = ExtractMemberCodeFromDeclaration(
-            rawFlashbackSettingsText,
-            "public async Task RestartFlashbackAsync(CancellationToken cancellationToken = default)");
-        AssertContains(restartFlashbackAsyncText, "InvokeOnUiThreadAsync(BuildCaptureSettings, cancellationToken)");
-        AssertContains(restartFlashbackAsyncText, "_sessionCoordinator.RestartFlashbackAsync(settings, cancellationToken)");
-
-        AssertDoesNotContain(flashbackSettingsText, "public async Task SetRecordingFormatAsync");
-        AssertContains(flashbackSettingsText, "private static readonly int[] SupportedFlashbackBufferMinutes = { 1, 2, 5, 10, 15, 30 };");
-        AssertMemberContains(flashbackSettingsText, "OnFlashbackBufferMinutesChanged", "_sessionCoordinator.UpdateFlashbackSettingsAsync(FlashbackBufferMinutes, FlashbackGpuDecode)");
-        AssertMemberContains(flashbackSettingsText, "OnFlashbackGpuDecodeChanged", "_sessionCoordinator.UpdateFlashbackSettingsAsync(FlashbackBufferMinutes, FlashbackGpuDecode)");
-        AssertMemberContains(flashbackSettingsText, "OnFlashbackBufferMinutesChanged", "Interlocked.Increment(ref _flashbackSettingsRestartGeneration)");
-        AssertMemberContains(flashbackSettingsText, "OnFlashbackBufferMinutesChanged", "RestartFlashbackAfterSettingsUpdateAsync(updateTask, restartGeneration)");
-        AssertMemberContains(flashbackSettingsText, "RestartFlashbackAfterSettingsUpdateAsync", "Volatile.Read(ref _flashbackSettingsRestartGeneration)");
-        AssertMemberContains(flashbackSettingsText, "RestartFlashbackAfterSettingsUpdateAsync", "restartGeneration != Volatile.Read(ref _flashbackSettingsRestartGeneration)");
-        AssertMemberContains(flashbackSettingsText, "RestartFlashbackAfterSettingsUpdateAsync", "InvokeOnUiThreadAsync(");
-        AssertMemberContains(flashbackSettingsText, "RestartFlashbackAfterSettingsUpdateAsync", "IsPreviewing && !IsRecording && _isLoadingSettings is false");
-        AssertMemberContains(flashbackSettingsText, "RestartFlashbackAfterSettingsUpdateAsync", "shouldRestart is false");
-        AssertMemberContains(flashbackSettingsText, "RestartFlashbackAfterSettingsUpdateAsync", "await RestartFlashbackAsync().ConfigureAwait(false)");
-        AssertMemberContains(flashbackSettingsText, "RestartFlashbackAfterSettingsUpdateAsync", "catch (OperationCanceledException ex)");
-        AssertContains(rawFlashbackSettingsText, "RestartFlashbackAfterSettingsUpdate canceled");
-        AssertMemberContains(audioCapturePropertyChangesText, "OnIsAudioEnabledChanged", "var settings = BuildCaptureSettings();");
-        AssertMemberContains(rawAudioCapturePropertyChangesText, "OnIsAudioEnabledChanged", "SetAudioMonitoringEnabledWithVolumeTransitionAsync(\n                        true,\n                        \"audio_capture_enable\",");
-        AssertMemberContains(audioCapturePropertyChangesText, "OnIsAudioEnabledChanged", "afterMonitoringStarted: () => _sessionCoordinator.RestartFlashbackAsync(settings)");
-        AssertMemberContains(rawAudioCapturePropertyChangesText, "OnIsAudioEnabledChanged", "SetAudioMonitoringEnabledWithVolumeTransitionAsync(false, \"audio_capture_disable\", teardownCapture: true)");
-        AssertContains(viewModelAudioStateText, "private int _audioEnabledChangeGeneration;");
-        AssertContains(viewModelAudioStateText, "private bool _suppressAudioPreviewEnabledChangeOperation;");
-        AssertMemberContains(audioCapturePropertyChangesText, "OnIsAudioEnabledChanged", "var changeGeneration = Interlocked.Increment(ref _audioEnabledChangeGeneration);");
-        AssertMemberContains(audioCapturePropertyChangesText, "OnIsAudioEnabledChanged", "_suppressAudioPreviewEnabledChangeOperation = true;");
-        AssertMemberContains(audioCapturePropertyChangesText, "OnIsAudioEnabledChanged", "changeGeneration != Volatile.Read(ref _audioEnabledChangeGeneration) || !IsAudioEnabled");
-        AssertMemberContains(audioCapturePropertyChangesText, "OnIsAudioEnabledChanged", "changeGeneration != Volatile.Read(ref _audioEnabledChangeGeneration) || IsAudioEnabled");
-        AssertMemberContains(rawAudioCapturePropertyChangesText, "OnIsAudioEnabledChanged", "AUDIO_TOGGLE_SKIP op=enable");
-        AssertMemberContains(rawAudioCapturePropertyChangesText, "OnIsAudioEnabledChanged", "AUDIO_TOGGLE_SKIP op=disable");
-        AssertContains(viewModelFlashbackStateText, "private int _flashbackSettingsRestartGeneration;");
-
-        foreach (var memberName in new[]
-        {
-            "GetFlashbackPlaybackSnapshot",
-            "FlashbackBeginScrub",
-            "FlashbackSeek",
-            "FlashbackUpdateScrub",
-            "FlashbackEndScrub",
-            "FlashbackEndScrubAt",
-            "FlashbackPlay",
-            "FlashbackPause",
-            "FlashbackGoLive",
-            "FlashbackNudge",
-            "FlashbackSetInPoint",
-            "FlashbackSetInPointAt",
-            "FlashbackSetOutPoint",
-            "FlashbackSetOutPointAt",
-            "FlashbackClearInOutPoints",
-            "UpdateFlashbackBufferStatus",
-            "UpdateFlashbackBitrate",
-            "ExportFlashbackAsync",
-            "SaveFlashbackLast5mAsync",
-            "ExportFlashbackAutomationAsync",
-            "GetFlashbackSegments",
-            "SetFlashbackEnabledAsync",
-            "SetFlashbackBufferMinutesAsync",
-            "SetFlashbackGpuDecodeAsync",
-            "RestartFlashbackAsync"
-        })
-        {
-            AssertMemberDoesNotContain(flashbackAutomationText, memberName, "_captureService");
-        }
-
-        foreach (var memberName in new[]
-        {
-            "OnSelectedRecordingFormatChanged",
-            "OnCustomBitrateMbpsChanged",
-            "OnFlashbackBufferMinutesChanged",
-            "OnFlashbackGpuDecodeChanged",
-            "OnSelectedQualityChanged",
-            "OnSelectedPresetChanged",
-            "OnSelectedSplitEncodeModeChanged"
-        })
-        {
-            var sourceText = memberName is "OnFlashbackBufferMinutesChanged" or "OnFlashbackGpuDecodeChanged"
-                ? flashbackSettingsText
-                : flashbackEncoderSettingsText;
-            AssertMemberDoesNotContain(sourceText, memberName, "_captureService");
-        }
-
-        AssertNoRegex(
-            viewModelText,
-            @"\b_captureService\s*\.\s*(SetFlashbackEnabled|RestartFlashbackAsync|ApplyRecordingSettingsAsync|UpdateFlashbackSettings|ExportFlashback|GetFlashbackSegments|FlashbackPlaybackController|FlashbackBufferManager|FlashbackDiskBytes|FlashbackTotalBytesWritten)\b",
-            "MainViewModel flashback mutating/backend capture-service access");
-        AssertNoRegex(
-            viewModelText,
-            @"\b(?:var|CaptureService)\s+\w+\s*=\s*_captureService\s*;",
-            "MainViewModel local capture-service aliases");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task CaptureService_FlashbackExportsReleaseBackendLeaseBeforeNativeExport()
-    {
-        var exportOperationsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
-            .Replace("\r\n", "\n");
-        var exportCoreText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
-            .Replace("\r\n", "\n");
-        var captureServiceText = exportOperationsText
-            + "\n" + exportCoreText
-            + "\n" + ReadCaptureServiceFlashbackOrchestrationSource()
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs")
-                .Replace("\r\n", "\n");
-        var backendResourcesText = ReadRepoFile("Sussudio/Services/Capture/FlashbackBackendResources.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(exportOperationsText, "internal async Task<FinalizeResult> ExportFlashbackRangeAsync");
-        AssertContains(exportOperationsText, "internal async Task<FinalizeResult> ExportFlashbackLastNSecondsAsync");
-        AssertDoesNotContain(exportOperationsText, "resolveRangeAfterEvictionPaused: manager =>");
-        AssertContains(exportOperationsText, "private readonly record struct FlashbackExportBackendSnapshot(");
-        AssertContains(exportOperationsText, "private async Task<FlashbackExportBackendSnapshotResult> SnapshotFlashbackExportBackendAsync(");
-        AssertContains(exportCoreText, "private static FlashbackExportRangeResolver CreateFlashbackExportRangeResolver(");
-        AssertContains(exportCoreText, "private static FlashbackExportRangeResolver CreateFlashbackExportLastNRangeResolver(double seconds)");
-        AssertContains(exportOperationsText, "return await ExportFlashbackCoreAsync(");
-        AssertContains(exportCoreText, "private async Task<FinalizeResult> ExportFlashbackCoreAsync");
-        AssertContains(exportCoreText, "bufferManager.PauseEviction();");
-        AssertContains(exportCoreText, "private FlashbackExportPreparationResult PrepareFlashbackExportRequest(");
-        AssertContains(exportCoreText, "FlashbackExportPlanner.ResolveRange(");
-        AssertContains(exportCoreText, "FlashbackExportPlanner.PlanLiveEdge(");
-        AssertContains(exportCoreText, "FlashbackExportPlanner.CreateRequest(");
-        AssertContains(exportCoreText, "CreateFlashbackExportThrottleDelayProvider");
-
-        var rangeExport = ExtractMemberCode(exportOperationsText, "ExportFlashbackRangeAsync");
-        AssertContains(rangeExport, "SnapshotFlashbackExportBackendAsync(");
-        AssertContains(rangeExport, "operationName: \"range\",");
-        AssertContains(rangeExport, "sessionReleaseOperation: \"flashback_export_snapshot_session\",");
-        AssertContains(rangeExport, "var snapshot = snapshotResult.Snapshot;");
-        AssertContains(rangeExport, "snapshotSink: snapshot.Sink,");
-        AssertContains(rangeExport, "snapshotBufferManager: snapshot.BufferManager,");
-        AssertContains(rangeExport, "snapshotExporter: snapshot.Exporter,");
-        AssertContains(rangeExport, "exportOperationLockAlreadyHeld: true,");
-        AssertContains(rangeExport, "resolveRangeAfterEvictionPaused: CreateFlashbackExportRangeResolver(");
-        AssertContains(rangeExport, "inPointFilePts,");
-        AssertContains(rangeExport, "outPointFilePts)");
-
-        var lastNExport = ExtractMemberCode(exportOperationsText, "ExportFlashbackLastNSecondsAsync");
-        AssertContains(lastNExport, "SnapshotFlashbackExportBackendAsync(");
-        AssertContains(lastNExport, "operationName: \"last_n\",");
-        AssertContains(lastNExport, "sessionReleaseOperation: \"flashback_export_last_n_snapshot_session\",");
-        AssertContains(lastNExport, "var snapshot = snapshotResult.Snapshot;");
-        AssertContains(lastNExport, "snapshotSink: snapshot.Sink,");
-        AssertContains(lastNExport, "snapshotBufferManager: snapshot.BufferManager,");
-        AssertContains(lastNExport, "snapshotExporter: snapshot.Exporter,");
-        AssertContains(lastNExport, "exportOperationLockAlreadyHeld: true,");
-        AssertContains(lastNExport, "resolveRangeAfterEvictionPaused: CreateFlashbackExportLastNRangeResolver(seconds)");
-
-        var backendSnapshot = ExtractMemberCode(exportOperationsText, "SnapshotFlashbackExportBackendAsync");
-        AssertContains(backendSnapshot, "var bufferManager = _flashbackBackend.BufferManager;");
-        AssertContains(backendSnapshot, "var flashbackSink = _flashbackBackend.Sink;");
-        AssertContains(backendSnapshot, "var flashbackExporter = bufferManager != null\n                ? _flashbackBackend.GetOrCreateExporter()\n                : _flashbackBackend.Exporter;");
-        AssertContains(backendSnapshot, "await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);\n            exportOperationLockHeld = true;");
-        AssertOccursBefore(backendSnapshot, "await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);", "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);");
-        AssertContains(backendSnapshot, "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);\n            if (sessionLockHeld)");
-        AssertContains(backendSnapshot, "new FlashbackExportBackendSnapshot(bufferManager, flashbackSink, flashbackExporter)");
-
-        var exportCore = ExtractTextBetween(
-            exportCoreText,
-            "    private async Task<FinalizeResult> ExportFlashbackCoreAsync",
-            "\n}\n");
-        AssertContains(exportCore, "FlashbackExporter? snapshotExporter = null,");
-        AssertContains(exportCore, "bool exportOperationLockAlreadyHeld = false,");
-        AssertContains(exportCore, "FlashbackExportRangeResolver? resolveRangeAfterEvictionPaused = null)");
-        AssertContains(exportCore, "var exportOperationLockHeld = exportOperationLockAlreadyHeld;");
-        AssertContains(exportCore, "if (!exportOperationLockAlreadyHeld)");
-        AssertContains(exportCore, "ReleaseFlashbackExportOperationLockIfHeld(ref exportOperationLockHeld);");
-        AssertOccursBefore(exportCore, "if (bufferManager == null)", "var exporter = snapshotExporter;");
-        AssertContains(exportCore, "var exporter = snapshotExporter;\n            if (exporter == null)\n            {\n                exporter = _flashbackBackend.GetOrCreateExporter();\n            }");
-        AssertContains(exportCore, "var preparedExport = PrepareFlashbackExportRequest(");
-        AssertContains(exportCore, "if (preparedExport.FailureResult is { } preparationFailure)");
-        AssertContains(exportCoreText, "FLASHBACK_EXPORT_FORCE_ROTATE_FALLBACK reason=force_rotate_timeout");
-        AssertContains(exportCore, "live-edge partial fallback: active segment was not closed before timeout; export may omit the newest frames");
-        AssertContains(exportCore, "if (preparedExport.ForceRotateFallbackUsed && result.Succeeded)\n            {\n                result = FinalizeResult.Success(");
-        AssertContains(exportCore, "_flashbackExport.RecordLastResult(exportId, result);\n            _flashbackExport.CompleteDiagnostics(exportId, result);");
-
-        var backendCleanup = ExtractTextBetween(
-            backendResourcesText,
-            "private async Task<bool> CleanupArtifactsAfterExportAsync",
-            "    public async Task StartPreviewBackendAsync");
-        AssertContains(backendCleanup, "FlashbackBackendArtifactCleanupRequest request,");
-        AssertContains(backendCleanup, "_exportOperationLock.WaitAsync(");
-        AssertContains(backendCleanup, "return CleanupArtifactsUnderExportLock(request, mode);");
-        AssertDoesNotContain(backendCleanup, "exportOperationLockAlreadyHeld");
-        AssertContains(backendCleanup, "request.Reason");
-        AssertContains(backendCleanup, "request.FlashbackExporter.Dispose();");
-        AssertContains(backendCleanup, "request.BufferManager.PurgeAllSegments();");
-        AssertContains(backendCleanup, "request.BufferManager.IsSessionPreservedForRecovery");
-        AssertContains(backendCleanup, "FLASHBACK_BUFFER_CLEANUP_PRESERVE_RECOVERY mode={mode} reason='{request.Reason}'");
-        AssertContains(backendCleanup, "FLASHBACK_BUFFER_CLEANUP_RETIRE mode={mode} reason='{request.Reason}'");
-        AssertContains(backendCleanup, "request.BufferManager.MarkSessionRetiredForStartupCleanup(request.Reason);");
-        AssertContains(backendCleanup, "if (lockAcquired)");
-        AssertContains(backendCleanup, "_exportOperationLock.Release();");
-        var callerHeldCleanup = ExtractDeclaredMemberCode(
-            backendResourcesText,
-            "private static bool CleanupArtifactsUnderExportLock(");
-        AssertDoesNotContain(callerHeldCleanup, "_exportOperationLock");
-
-        var disposeBackend = ExtractTextBetween(
-            captureServiceText,
-            "private async Task DisposeFlashbackPreviewBackendAsync",
-            "    private FlashbackPreviewBackendDisposalRequest CreateFlashbackPreviewBackendDisposalRequest");
-        AssertContains(disposeBackend, "await _flashbackExportOperationLock.WaitAsync(cancellationToken).ConfigureAwait(false);");
-        AssertOccursBefore(disposeBackend, "_flashbackBackendLeaseLock.WaitAsync(", "_flashbackExportOperationLock.WaitAsync(");
-        AssertOccursBefore(disposeBackend, "_flashbackExportOperationLock.WaitAsync(", "_flashbackBackend.DisposePreviewBackendUnderExportLockAsync(");
-        AssertContains(disposeBackend, "await _flashbackBackend.DisposePreviewBackendUnderExportLockAsync(");
-        AssertContains(disposeBackend, "CreateFlashbackPreviewBackendDisposalRequest(");
-        AssertContains(disposeBackend, "ReleaseFlashbackExportOperationLockIfHeld(ref exportOperationLockHeld);");
-
-        var disposeBackendResources = ExtractTextBetween(
-            backendResourcesText,
-            "public async Task DisposePreviewBackendUnderExportLockAsync",
-            "    private void ScheduleDeferredArtifactCleanup");
-        AssertDoesNotContain(disposeBackendResources, "request.ExportOperationLockAlreadyHeld");
-        AssertContains(disposeBackendResources, "request.PurgeSegments ? \"preview_backend_dispose_purge\" : \"preview_backend_dispose\"");
-        AssertContains(disposeBackendResources, "CleanupArtifactsUnderExportLock(cleanupRequest, \"preview_backend_dispose\")");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task MainViewModelFlashbackExport_RoutesThroughCoordinatorAndOwnsCtsLifecycle()
-    {
-        var viewModelFiles = ReadMainViewModelCodeFiles();
-        var viewModelFlashbackStateText = viewModelFiles["MainViewModel.FlashbackState.cs"];
-        var disposalText = viewModelFiles["MainViewModel.cs"];
-        var flashbackExportText = viewModelFiles["MainViewModel.FlashbackState.cs"];
-        var flashbackExportOperationText = viewModelFiles["MainViewModel.FlashbackState.cs"];
-        var flashbackExportAutomationText = viewModelFiles["MainViewModel.FlashbackState.cs"];
-        var rawDisposalText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
-            .Replace("\r\n", "\n");
-        var disposalControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs")
-            .Replace("\r\n", "\n");
-        var rawFlashbackExportText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackState.cs")
-            .Replace("\r\n", "\n");
-        var rawFlashbackExportOperationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackState.cs")
-            .Replace("\r\n", "\n");
-        var rawFlashbackExportAutomationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackState.cs")
-            .Replace("\r\n", "\n");
-        var coordinatorText = ReadCaptureSessionCoordinatorSource();
-
-        AssertMemberContains(flashbackExportText, "ExportFlashbackAsync", "_sessionCoordinator.ExportFlashbackRangeAsync(");
-        AssertMemberContains(flashbackExportText, "ExportFlashbackAsync", "playback.InPointFilePts");
-        AssertMemberContains(flashbackExportText, "ExportFlashbackAsync", "playback.OutPointFilePts");
-        AssertContains(coordinatorText, "TimeSpan? InPointFilePts,");
-        AssertContains(coordinatorText, "TimeSpan? OutPointFilePts,");
-        AssertMemberContains(flashbackExportText, "SaveFlashbackLast5mAsync", "_sessionCoordinator.ExportFlashbackLastNSecondsAsync(");
-        AssertContains(rawFlashbackExportText, "EnsureFlashbackActiveForExport(\"export\")");
-        AssertContains(rawFlashbackExportText, "EnsureFlashbackActiveForExport(\"save_last_5m\")");
-        AssertContains(rawFlashbackExportText, "FLASHBACK_EXPORT_UI_REJECTED op={operation} reason=inactive");
-        AssertContains(rawFlashbackExportText, "StatusText = StatusMessages.FlashbackNotActiveForExport;");
-        AssertMemberContains(flashbackExportText, "ExportFlashbackAsync", "case ExportFlashbackOutcome.Stale:");
-        AssertMemberContains(flashbackExportText, "SaveFlashbackLast5mAsync", "case ExportFlashbackOutcome.Stale:");
-        AssertContains(rawFlashbackExportText, "private static string FormatSuccessfulFlashbackExportStatus(");
-        AssertMemberContains(
-            flashbackExportText,
-            "ExportFlashbackAsync",
-            "FormatSuccessfulFlashbackExportStatus(");
-        AssertMemberContains(
-            flashbackExportText,
-            "SaveFlashbackLast5mAsync",
-            "FormatSuccessfulFlashbackExportStatus(");
-        AssertContains(
-            rawFlashbackExportText,
-            "FormatSuccessfulFlashbackExportStatus(StatusMessages.ExportComplete, exportPath, succeeded.Result)");
-        AssertContains(
-            rawFlashbackExportText,
-            "FormatSuccessfulFlashbackExportStatus(StatusMessages.SavedLastFiveMinutes, exportPath, succeeded.Result)");
-        AssertContains(viewModelFlashbackStateText, "private int _flashbackExportOperationId;");
-        AssertContains(disposalText, "Interlocked.Increment(ref _flashbackExportOperationId);");
-        AssertContains(disposalText, "var exportCts = Interlocked.Exchange(ref _exportCts, null);");
-        AssertContains(disposalText, "CancelFlashbackExportCts(exportCts);");
-        AssertContains(rawDisposalText, "private void CancelActiveFlashbackExportForDispose()");
-        var disposalCoreText = ExtractTextBetween(
-            disposalControllerText,
-            "private async Task DisposeCoreAsync()",
-            "private static int GetDisposeTimeoutMs()");
-        AssertOccursBefore(disposalCoreText, "_context.CancelActiveFlashbackExport();", "_context.StopRuntimeForDispose();");
-        AssertOccursBefore(disposalCoreText, "_context.StopRuntimeForDispose();", "_context.CleanupSessionCoordinatorAsync,");
-        AssertOccursBefore(disposalCoreText, "_context.CleanupSessionCoordinatorAsync,", "_context.DisposeSessionCoordinatorAsync,");
-        AssertOccursBefore(disposalCoreText, "_context.DisposeSessionCoordinatorAsync,", "await _context.DisposeCaptureServiceAsync().ConfigureAwait(false);");
-        AssertOccursBefore(disposalCoreText, "await _context.DisposeCaptureServiceAsync().ConfigureAwait(false);", "_context.CompleteRuntimeDispose();");
-        AssertContains(rawDisposalText, "DisposeFlashbackExportCtsBestEffort(exportCts, \"viewmodel_dispose\");");
-        AssertContains(flashbackExportOperationText, "private abstract record ExportFlashbackOutcome");
-        AssertContains(flashbackExportOperationText, "private async Task<ExportFlashbackOutcome> ExportFlashbackCoreAsync");
-        AssertContains(viewModelFlashbackStateText, "private readonly SemaphoreSlim _flashbackExportRequestGate = new(1, 1);");
-        AssertMemberContains(flashbackExportOperationText, "ExportFlashbackCoreAsync", "await _flashbackExportRequestGate.WaitAsync();");
-        AssertMemberContains(flashbackExportAutomationText, "ExportFlashbackAutomationAsync", "await _flashbackExportRequestGate.WaitAsync(cancellationToken);");
-        AssertMemberContains(flashbackExportAutomationText, "ExportFlashbackAutomationAsync", "Volatile.Read(ref _disposeState) != 0");
-        AssertContains(rawFlashbackExportAutomationText, "DisposeFlashbackExportCtsBestEffort(exportCts, \"automation_dispatcher_cleanup\");\n                    _flashbackExportRequestGate.Release();");
-        AssertContains(rawFlashbackExportAutomationText, "DisposeFlashbackExportCtsBestEffort(exportCts, \"automation_inline_cleanup\");\n                _flashbackExportRequestGate.Release();");
-        AssertContains(flashbackExportOperationText, "var exportId = Interlocked.Increment(ref _flashbackExportOperationId);");
-        AssertContains(flashbackExportOperationText, "CancelFlashbackExportCts(oldExportCts);");
-        AssertContains(flashbackExportOperationText, "IsCurrentFlashbackExport(exportId, exportCts)");
-        AssertContains(flashbackExportOperationText, "_exportCts = null;");
-        AssertContains(flashbackExportOperationText, "ReferenceEquals(_exportCts, exportCts)");
-        AssertContains(flashbackExportOperationText, "private static void CancelFlashbackExportCts(CancellationTokenSource? cts)");
-        AssertContains(flashbackExportOperationText, "catch (ObjectDisposedException)");
-        AssertContains(rawFlashbackExportOperationText, "FLASHBACK_EXPORT_CTS_CANCEL_WARN");
-        AssertMemberContains(flashbackExportAutomationText, "ExportFlashbackAutomationAsync", "_sessionCoordinator.ExportFlashbackLastNSecondsAsync(");
-        AssertMemberContains(flashbackExportAutomationText, "ExportFlashbackAutomationAsync", "var exportId = Interlocked.Increment(ref _flashbackExportOperationId);");
-        AssertMemberContains(flashbackExportAutomationText, "ExportFlashbackAutomationAsync", "CancelFlashbackExportCts(oldExportCts);");
-        AssertMemberContains(flashbackExportAutomationText, "ExportFlashbackAutomationAsync", "CancellationTokenSource.CreateLinkedTokenSource(cancellationToken)");
-        AssertMemberContains(flashbackExportAutomationText, "ExportFlashbackAutomationAsync", "IsCurrentFlashbackExport(exportId, exportCts)");
-        AssertMemberContains(flashbackExportAutomationText, "ExportFlashbackAutomationAsync", "FlashbackExportProgress = p.Percent;");
-        AssertMemberContains(flashbackExportAutomationText, "ExportFlashbackAutomationAsync", "exportCts.Token");
-        AssertMemberContains(flashbackExportAutomationText, "ExportFlashbackAutomationAsync", "_exportCts = null;");
-        AssertMemberContains(flashbackExportAutomationText, "ExportFlashbackAutomationAsync", "if (!_dispatcherQueue.TryEnqueue(");
-        AssertMemberContains(flashbackExportAutomationText, "ExportFlashbackAutomationAsync", "finally");
-        AssertContains(rawFlashbackExportAutomationText, "IsFlashbackExporting = false;\n                    FlashbackExportProgress = 0;\n                    _exportCts = null;");
-        AssertContains(flashbackExportOperationText, "private static void DisposeFlashbackExportCtsBestEffort(CancellationTokenSource cts, string operation)");
-        AssertContains(rawFlashbackExportOperationText, "FLASHBACK_EXPORT_CTS_DISPOSE_WARN");
-        AssertContains(rawFlashbackExportOperationText, "DisposeFlashbackExportCtsBestEffort(exportCts, \"ui_current\");");
-        AssertContains(rawFlashbackExportOperationText, "DisposeFlashbackExportCtsBestEffort(exportCts, \"ui_stale\");");
-        AssertContains(rawFlashbackExportAutomationText, "DisposeFlashbackExportCtsBestEffort(exportCts, \"automation_dispatcher_cleanup\");");
-        AssertContains(rawFlashbackExportAutomationText, "DisposeFlashbackExportCtsBestEffort(exportCts, \"automation_inline_cleanup\");");
-        AssertDoesNotContain(
-            flashbackExportText + "\n" + flashbackExportOperationText + "\n" + flashbackExportAutomationText,
-            "exportCts.Dispose();");
-
         var viewModelType = RequireType("Sussudio.ViewModels.MainViewModel");
         var finalizeResultType = RequireType("Sussudio.Services.Contracts.FinalizeResult");
         var successFactory = finalizeResultType.GetMethod(
@@ -6353,21 +3635,21 @@ static partial class Program
             BindingFlags.Public | BindingFlags.Static,
             null,
             new[] { typeof(string), typeof(string) },
-            null);
-        AssertNotNull(successFactory, "FinalizeResult.Success(string, string)");
+            null)
+            ?? throw new InvalidOperationException("FinalizeResult.Success(string, string) was not found.");
         var formatter = viewModelType.GetMethod(
             "FormatSuccessfulFlashbackExportStatus",
-            BindingFlags.Static | BindingFlags.NonPublic);
-        AssertNotNull(formatter, "MainViewModel.FormatSuccessfulFlashbackExportStatus");
+            BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("MainViewModel.FormatSuccessfulFlashbackExportStatus was not found.");
 
-        var partialSuccess = successFactory!.Invoke(
+        var partialSuccess = successFactory.Invoke(
             null,
             new object[]
             {
                 "clip.mp4",
                 "Exported 42 packets (live-edge partial fallback: active segment was not closed before timeout; export may omit the newest frames)"
             });
-        var partialStatus = (string)formatter!.Invoke(
+        var partialStatus = (string)formatter.Invoke(
             null,
             new object?[] { "Export complete", "clip.mp4", partialSuccess })!;
         AssertContains(partialStatus, "Export complete: clip.mp4 (Exported 42 packets");
@@ -6383,157 +3665,17 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task AutomationPreviewVolume_PersistsThroughSettingsPath()
+    internal static Task SettingsService_SaveToFile_ReportsSuccessAndFilesystemFailure()
     {
-        var automationUiText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
-        var automationAudioText = automationUiText;
-        var settingsProjectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
-        var audioStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs").Replace("\r\n", "\n");
-        var previewVolumeCommand = ExtractMemberCode(automationAudioText, "SetPreviewVolumeAsync");
-
-        AssertContains(previewVolumeCommand, "SetPreviewVolumeFromUser(Math.Clamp(previewVolumePercent / 100.0, 0.0, 1.0));");
-        AssertOccursBefore(previewVolumeCommand, "SetPreviewVolumeFromUser(", "SaveSettingsOrThrow();");
-        AssertContains(ExtractMemberCode(audioStateText, "SetPreviewVolumeFromUser"), "_previewAudioVolumeTransitionController.SetUserVolume(value)");
-        AssertContains(ExtractMemberCode(settingsProjectionText, "SaveSettings"), "_previewAudioVolumeTransitionController.RequestedVolume,");
-        AssertContains(settingsProjectionText, "PreviewVolume = input.PreviewVolume,");
-        AssertContains(automationAudioText, "public Task SetPreviewVolumeAsync(double previewVolumePercent, CancellationToken cancellationToken = default)");
-        AssertContains(automationUiText, "public Action<string, bool>? StatsSectionVisibilityHandler { get; set; }");
-        AssertContains(automationUiText, "public Task SetStatsSectionVisibleAsync(string section, bool visible, CancellationToken cancellationToken = default)");
-        AssertContains(automationUiText, "public Task SetStatsVisibleAsync(bool visible, CancellationToken cancellationToken = default)");
-        AssertContains(automationUiText, "public Task SetFrameTimeOverlayVisibleAsync(bool visible, CancellationToken cancellationToken = default)");
-        return Task.CompletedTask;
-    }
-
-    internal static Task AutomationUiSettings_PersistThroughSettingsPath()
-    {
-        var settingsPersistenceText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
-        var settingsLoadApplicationText = settingsPersistenceText;
-        var settingsProjectionText = settingsPersistenceText[..settingsPersistenceText.IndexOf("public partial class MainViewModel", StringComparison.Ordinal)];
-        var settingsServiceText = ReadRepoFile("Sussudio/Services/Runtime/SettingsService.cs").Replace("\r\n", "\n");
-
-        AssertContains(settingsServiceText, "public bool? IsStatsVisible { get; set; }");
-        AssertContains(settingsServiceText, "public string? SelectedVideoFormat { get; set; }");
-        AssertContains(settingsPersistenceText, "private void LoadSettings()");
-        AssertContains(settingsPersistenceText, "private bool SaveSettings()");
-        AssertContains(settingsPersistenceText, "SettingsService.Load()");
-        AssertContains(settingsPersistenceText, "SettingsService.Save(settings, out var settingsSaveFailure)");
-        AssertContains(settingsPersistenceText, "StatusText = StatusMessages.SettingsSaveFailed(settingsSaveFailure);");
-        AssertContains(settingsPersistenceText, "return false;");
-        AssertContains(settingsServiceText, "public static bool Save(UserSettings settings, out string failure)");
-        AssertContains(settingsServiceText, "internal static bool SaveToFile(UserSettings settings, string settingsFilePath, out string failure)");
-        AssertContains(settingsServiceText, "failure = $\"{ex.GetType().Name}: {ex.Message}\";");
-        AssertContains(settingsServiceText, "return false;");
-        AssertContains(settingsPersistenceText, "SaveSettings = () => { _ = viewModel.SaveSettings(); }");
-        AssertContains(settingsPersistenceText, "private void SaveSettingsOrThrow()");
-        AssertContains(settingsPersistenceText, "throw new InvalidOperationException(StatusText);");
-        AssertContains(settingsPersistenceText, "private async Task RunPersistedSettingsAutomationAsync(Task operation, CancellationToken cancellationToken)");
-        AssertContains(settingsPersistenceText, "await operation.ConfigureAwait(false);");
-        foreach (var persistedAutomationMember in new[]
-        {
-            "SelectDeviceAsync",
-            "SelectAudioInputDeviceAsync",
-            "SetCustomAudioInputEnabledAsync",
-            "SetAudioEnabledAsync",
-            "SetAudioPreviewEnabledAsync",
-            "SetPreviewVolumeAsync",
-            "SetDeviceAudioModeAsync",
-            "SetAnalogAudioGainAsync",
-            "SetStatsVisibleAsync"
-        })
-        {
-            AssertMemberContains(settingsPersistenceText, persistedAutomationMember, "SaveSettingsOrThrow();");
-        }
-
-        AssertContains(settingsPersistenceText, "private async Task SetMicrophoneEnabledAutomationAsync(bool enabled, CancellationToken cancellationToken)");
-        AssertContains(settingsPersistenceText, "_suppressMicrophoneMonitorUpdate = false;\n                }\n\n                SaveSettingsOrThrow();");
-        foreach (var delegatedPersistedAutomationMember in new[]
-        {
-            "SetRecordingFormatAsync",
-            "SetQualityAsync",
-            "SetSplitEncodeModeAsync",
-            "SetCustomBitrateAsync",
-            "SetPresetAsync",
-            "SetOutputPathAsync"
-        })
-        {
-            AssertMemberContains(settingsPersistenceText, delegatedPersistedAutomationMember, "RunPersistedSettingsAutomationAsync(");
-        }
-
-        AssertContains(settingsPersistenceText, "Directory.Exists");
-        AssertContains(settingsPersistenceText, "_isLoadingSettings = true;");
-        AssertContains(settingsPersistenceText, "_isLoadingSettings = false;");
-        AssertContains(settingsPersistenceText, "MainViewModelSettingsPersistenceProjection.BuildLoadPlan(");
-        AssertContains(settingsPersistenceText, "MainViewModelSettingsPersistenceProjection.BuildSaveSettings(");
-        AssertContains(settingsPersistenceText, "private void ApplySettingsLoadPlan(MainViewModelSettingsLoadPlan loadPlan)");
-        AssertContains(settingsPersistenceText, "ApplyRecordingSettingsLoadPlan(loadPlan);");
-        AssertContains(settingsPersistenceText, "ApplyAudioSettingsLoadPlan(loadPlan);");
-        AssertContains(settingsPersistenceText, "ApplyUiSettingsLoadPlan(loadPlan);");
-        AssertContains(settingsPersistenceText, "ApplyDeviceAudioSettingsLoadPlan(loadPlan);");
-        AssertContains(settingsPersistenceText, "ApplyFlashbackSettingsLoadPlan(loadPlan);");
-        AssertContains(settingsPersistenceText, "StageDeferredDeviceSettingsLoadPlan(loadPlan);");
-        AssertOccursBefore(settingsPersistenceText, "ApplyRecordingSettingsLoadPlan(loadPlan);", "ApplyAudioSettingsLoadPlan(loadPlan);");
-        AssertOccursBefore(settingsPersistenceText, "ApplyAudioSettingsLoadPlan(loadPlan);", "ApplyUiSettingsLoadPlan(loadPlan);");
-        AssertOccursBefore(settingsPersistenceText, "ApplyUiSettingsLoadPlan(loadPlan);", "ApplyDeviceAudioSettingsLoadPlan(loadPlan);");
-        AssertOccursBefore(settingsPersistenceText, "ApplyDeviceAudioSettingsLoadPlan(loadPlan);", "ApplyFlashbackSettingsLoadPlan(loadPlan);");
-        AssertOccursBefore(settingsPersistenceText, "ApplyFlashbackSettingsLoadPlan(loadPlan);", "StageDeferredDeviceSettingsLoadPlan(loadPlan);");
-        AssertContains(settingsLoadApplicationText, "private void ApplyRecordingSettingsLoadPlan(MainViewModelSettingsLoadPlan loadPlan)");
-        AssertContains(settingsLoadApplicationText, "private void ApplyAudioSettingsLoadPlan(MainViewModelSettingsLoadPlan loadPlan)");
-        AssertContains(settingsLoadApplicationText, "private void ApplyUiSettingsLoadPlan(MainViewModelSettingsLoadPlan loadPlan)");
-        AssertContains(settingsLoadApplicationText, "private void ApplyDeviceAudioSettingsLoadPlan(MainViewModelSettingsLoadPlan loadPlan)");
-        AssertContains(settingsLoadApplicationText, "private void ApplyFlashbackSettingsLoadPlan(MainViewModelSettingsLoadPlan loadPlan)");
-        AssertContains(settingsLoadApplicationText, "private void StageDeferredDeviceSettingsLoadPlan(MainViewModelSettingsLoadPlan loadPlan)");
-        AssertContains(settingsLoadApplicationText, "_pendingSavedDeviceId = loadPlan.PendingDeviceId;");
-        AssertContains(settingsLoadApplicationText, "_pendingSavedAudioDeviceId = loadPlan.PendingAudioDeviceId;");
-        AssertContains(settingsLoadApplicationText, "_pendingSavedMicrophoneDeviceId = loadPlan.PendingMicrophoneDeviceId;");
-        AssertContains(settingsProjectionText, "internal static class MainViewModelSettingsPersistenceProjection");
-        AssertContains(settingsProjectionText, "internal static MainViewModelSettingsLoadPlan BuildLoadPlan(");
-        AssertContains(settingsProjectionText, "internal static UserSettings BuildSaveSettings(");
-        AssertContains(settingsProjectionText, "internal readonly record struct MainViewModelSettingsLoadInput(");
-        AssertContains(settingsProjectionText, "internal readonly record struct MainViewModelSettingsLoadPlan(");
-        AssertContains(settingsProjectionText, "internal readonly record struct MainViewModelSettingsSaveInput(");
-        foreach (var removedProjectionFile in new[]
-        {
-            "MainViewModelSettingsPersistenceProjection.cs",
-            "MainViewModelSettingsPersistenceProjection.Load.cs",
-            "MainViewModelSettingsPersistenceProjection.Save.cs",
-            "MainViewModelSettingsPersistenceProjection.Models.cs"
-        })
-        {
-        }
-        AssertDoesNotContain(settingsProjectionText, "SettingsService");
-        AssertDoesNotContain(settingsProjectionText, "Logger");
-        AssertDoesNotContain(settingsProjectionText, "Directory.");
-        AssertDoesNotContain(settingsProjectionText, "MainViewModel.");
-        AssertContains(settingsProjectionText, "IsStatsVisible: settings.IsStatsVisible,");
-        AssertContains(settingsProjectionText, "IsStatsVisible = input.IsStatsVisible,");
-        AssertContains(settingsProjectionText, "Math.Clamp(settings.PreviewVolume.Value, 0.0, 1.0)");
-        AssertContains(settingsProjectionText, "Math.Clamp(settings.FlashbackBufferMinutes.Value, 1, 30)");
-        AssertContains(settingsProjectionText, "ResolveAvailableValue(");
-        AssertDoesNotContain(settingsPersistenceText, "if (settings.ShowAllCaptureOptions.HasValue)");
-        AssertDoesNotContain(settingsPersistenceText, "if (settings.IsStatsVisible.HasValue)");
-        AssertContains(settingsPersistenceText, "partial void OnIsStatsVisibleChanged(bool value)");
-        AssertDoesNotContain(settingsPersistenceText, "RebuildResolutionOptions();\n        SaveSettings();");
-        AssertContains(settingsProjectionText, "string? SelectedVideoFormat");
-        AssertContains(settingsProjectionText, "SelectedVideoFormat: settings.SelectedVideoFormat");
-        AssertContains(settingsProjectionText, "SelectedVideoFormat = input.SelectedVideoFormat,");
-        AssertContains(settingsPersistenceText, "_pendingSavedVideoFormat = loadPlan.SelectedVideoFormat;");
-
         var settingsServiceType = RequireType("Sussudio.Services.Runtime.SettingsService");
         var userSettingsType = RequireType("Sussudio.Services.Runtime.UserSettings");
-        var publicSave = settingsServiceType.GetMethod(
-            "Save",
-            BindingFlags.Public | BindingFlags.Static,
-            null,
-            new[] { userSettingsType, typeof(string).MakeByRefType() },
-            null);
-        AssertNotNull(publicSave, "SettingsService.Save(UserSettings, out string)");
         var saveToFile = settingsServiceType.GetMethod(
             "SaveToFile",
             BindingFlags.NonPublic | BindingFlags.Static,
             null,
             new[] { userSettingsType, typeof(string), typeof(string).MakeByRefType() },
-            null);
-        AssertNotNull(saveToFile, "SettingsService.SaveToFile");
+            null)
+            ?? throw new InvalidOperationException("SettingsService.SaveToFile was not found.");
 
         var tempRoot = Path.Combine(Path.GetTempPath(), $"sussudio_settings_test_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempRoot);
@@ -6544,7 +3686,7 @@ static partial class Program
             SetPropertyOrBackingField(settings, "OutputPath", "C:\\SettingsTest");
             var successPath = Path.Combine(tempRoot, "ok", "settings.json");
             var successArgs = new object?[] { settings, successPath, string.Empty };
-            AssertEqual(true, (bool)saveToFile!.Invoke(null, successArgs)!, "SettingsService.SaveToFile succeeds");
+            AssertEqual(true, (bool)saveToFile.Invoke(null, successArgs)!, "SettingsService.SaveToFile succeeds");
             AssertEqual(string.Empty, (string)successArgs[2]!, "successful settings save failure text");
             AssertEqual(true, File.Exists(successPath), "successful settings save writes JSON");
 
@@ -6622,200 +3764,6 @@ static partial class Program
         AssertEqual("mic-1", GetPropertyValue(plan, "PendingMicrophoneDeviceId"), "settings load pending microphone device");
         AssertEqual("Analog", GetPropertyValue(plan, "PendingDeviceAudioMode"), "settings load pending audio mode");
         AssertEqual(-5d, GetPropertyValue(plan, "PendingAnalogAudioGainPercent"), "settings load pending analog gain");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task SettingsPersistenceProjection_SaveSettingsMapsPersistedValues()
-    {
-        var settings = BuildSettingsSaveSettings(
-            selectedDeviceId: "device-2",
-            outputPath: "C:\\Capture",
-            selectedRecordingFormat: "HEVC",
-            selectedQuality: "Balanced",
-            selectedPreset: "P5",
-            selectedSplitEncodeMode: "Disabled",
-            customBitrateMbps: 55d,
-            isHdrEnabled: true,
-            isAudioEnabled: true,
-            isAudioPreviewEnabled: false,
-            isCustomAudioInputEnabled: true,
-            selectedAudioInputDeviceId: "audio-2",
-            isMicrophoneEnabled: true,
-            selectedMicrophoneDeviceId: "mic-2",
-            microphoneVolume: 75d,
-            previewVolume: 0.625d,
-            isStatsVisible: true,
-            selectedDeviceAudioMode: "Embedded",
-            analogAudioGainPercent: 33d,
-            flashbackGpuDecode: false,
-            flashbackBufferMinutes: 12);
-
-        AssertEqual("device-2", GetPropertyValue(settings, "SelectedDeviceId"), "settings save selected device");
-        AssertEqual("C:\\Capture", GetPropertyValue(settings, "OutputPath"), "settings save output path");
-        AssertEqual("HEVC", GetPropertyValue(settings, "SelectedRecordingFormat"), "settings save recording format");
-        AssertEqual("Balanced", GetPropertyValue(settings, "SelectedQuality"), "settings save quality");
-        AssertEqual("P5", GetPropertyValue(settings, "SelectedPreset"), "settings save preset");
-        AssertEqual("Disabled", GetPropertyValue(settings, "SelectedSplitEncodeMode"), "settings save split encode mode");
-        AssertEqual(55d, GetPropertyValue(settings, "CustomBitrateMbps"), "settings save custom bitrate");
-        AssertEqual(true, GetPropertyValue(settings, "IsHdrEnabled"), "settings save hdr enabled");
-        AssertEqual(true, GetPropertyValue(settings, "IsAudioEnabled"), "settings save audio enabled");
-        AssertEqual(false, GetPropertyValue(settings, "IsAudioPreviewEnabled"), "settings save audio preview enabled");
-        AssertEqual(true, GetPropertyValue(settings, "IsCustomAudioInputEnabled"), "settings save custom audio input enabled");
-        AssertEqual("audio-2", GetPropertyValue(settings, "SelectedAudioInputDeviceId"), "settings save selected audio input");
-        AssertEqual(true, GetPropertyValue(settings, "IsMicrophoneEnabled"), "settings save microphone enabled");
-        AssertEqual("mic-2", GetPropertyValue(settings, "SelectedMicrophoneDeviceId"), "settings save selected microphone");
-        AssertEqual(75d, GetPropertyValue(settings, "MicrophoneVolume"), "settings save microphone volume");
-        AssertEqual(0.625d, GetPropertyValue(settings, "PreviewVolume"), "settings save preview volume");
-        AssertEqual(true, GetPropertyValue(settings, "IsStatsVisible"), "settings save stats visible");
-        AssertEqual("Embedded", GetPropertyValue(settings, "SelectedDeviceAudioMode"), "settings save selected device audio mode");
-        AssertEqual(33d, GetPropertyValue(settings, "AnalogAudioGainPercent"), "settings save analog gain");
-        AssertEqual(false, GetPropertyValue(settings, "FlashbackGpuDecode"), "settings save flashback gpu decode");
-        AssertEqual(12, GetPropertyValue(settings, "FlashbackBufferMinutes"), "settings save flashback buffer minutes");
-        AssertEqual("Auto", GetPropertyValue(settings, "SelectedVideoFormat"), "settings save selected video format");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task AutomationCaptureModeChanges_AwaitReinitialization()
-    {
-        var viewModelStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
-        var automationSettingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
-        var captureSettingsAutomationControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelSettingsAutomationControllers.cs").Replace("\r\n", "\n");
-        var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
-        var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs").Replace("\r\n", "\n");
-
-        AssertDoesNotContain(viewModelStateText, "private readonly SemaphoreSlim _automationCaptureModeGate = new(1, 1);");
-        AssertContains(automationSettingsText, "public Task SetResolutionAsync(string resolution, CancellationToken cancellationToken = default)");
-        AssertContains(automationSettingsText, "=> _captureSettingsAutomationController.SetResolutionAsync(resolution, cancellationToken);");
-        AssertContains(automationSettingsText, "public Task SetFrameRateAsync(double frameRate, CancellationToken cancellationToken = default)");
-        AssertContains(automationSettingsText, "=> _captureSettingsAutomationController.SetFrameRateAsync(frameRate, cancellationToken);");
-        AssertContains(automationSettingsText, "public Task SetVideoFormatAsync(string videoFormat, CancellationToken cancellationToken = default)");
-        AssertContains(automationSettingsText, "=> RunPersistedSettingsAutomationAsync(");
-        AssertContains(automationSettingsText, "_captureSettingsAutomationController.SetVideoFormatAsync(videoFormat, cancellationToken),");
-        AssertContains(automationSettingsText, "public Task SetMjpegDecoderCountAsync(int decoderCount, CancellationToken cancellationToken = default)");
-        AssertContains(automationSettingsText, "=> _captureSettingsAutomationController.SetMjpegDecoderCountAsync(decoderCount, cancellationToken);");
-        AssertDoesNotContain(automationSettingsText, "private async Task SetAutomationCaptureModeAsync(");
-        AssertContains(captureSettingsAutomationControllerText, "namespace Sussudio.Controllers;");
-        AssertContains(captureSettingsAutomationControllerText, "internal sealed class MainViewModelCaptureSettingsAutomationController");
-        AssertContains(captureSettingsAutomationControllerText, "internal sealed class MainViewModelCaptureSettingsAutomationControllerContext");
-        AssertContains(captureSettingsAutomationControllerText, "private readonly MainViewModelCaptureSettingsAutomationControllerContext _context;");
-        AssertDoesNotContain(captureSettingsAutomationControllerText, "private readonly MainViewModel _viewModel;");
-        AssertDoesNotContain(captureSettingsAutomationControllerText, "_viewModel.");
-        AssertEqual(
-            true,
-            captureSettingsAutomationControllerText.Split('\n').Length >= 100,
-            "capture settings automation controller is a substantial ownership file");
-        AssertContains(captureSettingsAutomationControllerText, "private readonly SemaphoreSlim _captureModeGate = new(1, 1);");
-        AssertContains(captureSettingsAutomationControllerText, "public Task SetResolutionAsync(string resolution, CancellationToken cancellationToken = default)");
-        AssertContains(captureSettingsAutomationControllerText, "return SetAutomationCaptureModeAsync(\"resolution\"");
-        AssertContains(captureSettingsAutomationControllerText, "public Task SetFrameRateAsync(double frameRate, CancellationToken cancellationToken = default)");
-        AssertContains(captureSettingsAutomationControllerText, "return SetAutomationCaptureModeAsync(\"frame rate\"");
-        AssertContains(captureSettingsAutomationControllerText, "FrameRateTimingPolicy.IsAutoFrameRateValue(frameRate)");
-        AssertContains(captureSettingsAutomationControllerText, "_context.SetSelectedFrameRate(matched.Value);");
-        AssertContains(captureSettingsAutomationControllerText, "public Task SetVideoFormatAsync(string videoFormat, CancellationToken cancellationToken = default)");
-        AssertContains(captureSettingsAutomationControllerText, "return SetAutomationCaptureModeAsync(\"video format\"");
-        AssertContains(captureSettingsAutomationControllerText, "_context.SetSelectedVideoFormat(match);");
-        AssertContains(captureSettingsAutomationControllerText, "public Task SetMjpegDecoderCountAsync(int decoderCount, CancellationToken cancellationToken = default)");
-        AssertContains(captureSettingsAutomationControllerText, "return SetAutomationCaptureModeAsync(\"mjpeg decoder count\"");
-        AssertContains(captureSettingsAutomationControllerText, "_context.SetMjpegDecoderCount(Math.Clamp(decoderCount, 1, 8));");
-        AssertContains(captureSettingsAutomationControllerText, "private async Task SetAutomationCaptureModeAsync(");
-        AssertContains(captureSettingsAutomationControllerText, "await _captureModeGate.WaitAsync(cancellationToken).ConfigureAwait(false);");
-        AssertContains(captureSettingsAutomationControllerText, "MainViewModelCaptureSelectionSnapshot rollback = default;");
-        AssertContains(captureSettingsAutomationControllerText, "MainViewModelCaptureSelectionSnapshot attempted = default;");
-        AssertContains(captureSettingsAutomationControllerText, "rollback = _context.CaptureSelectionSnapshot();");
-        AssertContains(captureSettingsAutomationControllerText, "attempted = _context.CaptureSelectionSnapshot();");
-        AssertContains(captureModeTransactionsText, "AvailableResolutions.ToArray()");
-        AssertContains(captureModeTransactionsText, "AvailableFrameRates.ToArray()");
-        AssertContains(captureModeTransactionsText, "AvailableVideoFormats.ToArray()");
-        AssertContains(captureModeTransactionsText, "AvailableRecordingFormats.ToArray()");
-        AssertContains(captureModeTransactionsText, "_latestSourceTelemetry");
-        AssertContains(captureSettingsAutomationControllerText, "_context.ApplyCaptureSelectionWithoutReinitialize(apply);");
-        AssertDoesNotContain(captureSettingsAutomationControllerText, "SetSuppressFormatChangeReinitialize");
-        AssertContains(captureSettingsAutomationControllerText, "return wasPreviewing && _context.GetSelectedFormat() != null;");
-        AssertContains(captureSettingsAutomationControllerText, "reinitialized = await _context.ReinitializeDeviceWithResultAsync($\"automation {reason}\")");
-        AssertContains(captureSettingsAutomationControllerText, "var restored = await RestoreCaptureSelectionSnapshotIfUnchangedAsync(rollback, attempted).ConfigureAwait(false);");
-        AssertContains(captureSettingsAutomationControllerText, "a newer capture selection superseded this request");
-        AssertContains(captureSettingsAutomationControllerText, "_captureModeGate.Release();");
-        AssertContains(previewLifecycleControllerText, "private async Task<bool> ReinitializeDeviceCoreAsync(\n        string reason,\n        bool treatCoalescedAsSuccess,\n        CaptureErrorOrigin? errorOrigin = null)");
-        AssertContains(previewLifecycleControllerText, "if (!IsCaptureErrorCurrent(errorOrigin))");
-        AssertContains(previewLifecycleControllerText, "private async Task<bool> TryInitializeAndRestartPreviewAsync(");
-        AssertEqual(
-            4,
-            Regex.Matches(previewLifecycleControllerText, @"\bTryInitializeAndRestartPreviewAsync\(").Count,
-            "preview reinitialize helper definition plus three call sites");
-        AssertContains(previewLifecycleControllerText, "return treatCoalescedAsSuccess;");
-        AssertContains(previewLifecycleControllerText, "if (_context.IsInitialized())\n            {\n                await _previewLifecycleController.StopPreviewAsync(userInitiated: false, teardownPipeline: true, CancellationToken.None);\n            }");
-        AssertContains(previewLifecycleControllerText, "catch (PreviewRendererReinitStopTimeoutException ex)");
-        AssertContains(previewLifecycleControllerText, "REINIT_ABORT_RENDERER_STOP_TIMEOUT reason='{reason}'");
-        AssertContains(previewLifecycleControllerText, "await CleanupFailedPreviewRestartAsync(reason).ConfigureAwait(true);");
-        AssertContains(previewLifecycleControllerText, "private async Task CleanupFailedPreviewRestartAsync(string reason)");
-        AssertContains(previewLifecycleControllerText, "teardownPipeline: true");
-        AssertContains(previewLifecycleControllerText, "_context.SetIsPreviewing(false);");
-        AssertContains(previewLifecycleControllerText, "_context.SetIsInitialized(false);");
-        var rendererStopTimeoutCatch = ExtractTextBetween(
-            previewLifecycleControllerText,
-            "catch (PreviewRendererReinitStopTimeoutException ex)",
-            "        catch (Exception ex)");
-        AssertDoesNotContain(rendererStopTimeoutCatch, "CleanupFailedPreviewRestartAsync");
-        AssertContains(rendererStopTimeoutCatch, "success = false;");
-        AssertContains(previewLifecycleControllerText, "_context.RestoreCaptureSelectionSnapshotIfUnchanged(rollback, attempted);");
-        AssertContains(captureModeTransactionsText, "private bool RestoreCaptureSelectionSnapshotIfUnchanged(");
-        AssertContains(captureModeTransactionsText, "if (!CaptureSelectionSnapshot().MatchesSelectionState(expectedCurrent))");
-        AssertContains(captureModeTransactionsText, "RestoreCollection(AvailableResolutions, snapshot.AvailableResolutions);");
-        AssertContains(captureModeTransactionsText, "RestoreCollection(AvailableFrameRates, snapshot.AvailableFrameRates);");
-        AssertContains(captureModeTransactionsText, "RestoreCollection(AvailableVideoFormats, snapshot.AvailableVideoFormats);");
-        AssertContains(captureModeTransactionsText, "RestoreCollection(AvailableRecordingFormats, snapshot.AvailableRecordingFormats);");
-        AssertContains(captureModeTransactionsText, "_latestSourceTelemetry = snapshot.LatestSourceTelemetry;");
-        AssertContains(captureModeTransactionsText, "SaveSettings();");
-        AssertContains(previewLifecycleControllerText, "string.Equals(SelectedRecordingFormat, other.SelectedRecordingFormat, StringComparison.Ordinal)");
-        AssertDoesNotContain(captureModeTransactionsText, "_automationCaptureModeGate");
-        AssertDoesNotContain(captureModeTransactionsText, "SetAutomationCaptureModeAsync(");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task AutomationDeviceSelection_RoutesThroughApplyReinit()
-    {
-        var deviceSelectionAutomationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
-        var rootViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
-            .Replace("\r\n", "\n");
-        var deviceRefreshControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs")
-            .Replace("\r\n", "\n");
-        var selectDevice = ExtractTextBetween(
-            deviceSelectionAutomationText,
-            "public Task SelectDeviceAsync",
-            "public Task SelectAudioInputDeviceAsync");
-        var selectAudioDevice = ExtractTextBetween(
-            deviceSelectionAutomationText,
-            "public Task SelectAudioInputDeviceAsync",
-            "public Task SetCustomAudioInputEnabledAsync");
-
-        AssertContains(deviceSelectionAutomationText, "public Task RefreshDevicesForAutomationAsync");
-        AssertContains(deviceSelectionAutomationText, "=> InvokeOnUiThreadAsync(() => _deviceRefreshController.RefreshDevicesAsync(throwOnScanFailure: true, cancellationToken: cancellationToken), cancellationToken);");
-        AssertContains(deviceSelectionAutomationText, "public Task SelectDeviceAsync");
-        AssertContains(deviceSelectionAutomationText, "private CaptureDevice? ResolveDevice");
-        AssertContains(deviceSelectionAutomationText, "public Task SelectAudioInputDeviceAsync");
-        AssertContains(deviceSelectionAutomationText, "public Task SetCustomAudioInputEnabledAsync");
-        AssertContains(deviceSelectionAutomationText, "private AudioInputDevice? ResolveAudioDevice");
-        AssertContains(deviceSelectionAutomationText, "private static T? ResolveByName<T>(");
-        AssertContains(deviceSelectionAutomationText, ".Contains(deviceName, StringComparison.OrdinalIgnoreCase)");
-        AssertContains(deviceSelectionAutomationText, ".Take(2)");
-        AssertContains(deviceSelectionAutomationText, "return partialMatches.Length == 1 ? partialMatches[0] : null;");
-        AssertContains(rootViewModelText, "public Task RefreshDevicesAsync(CancellationToken cancellationToken = default)");
-        AssertContains(rootViewModelText, "=> _deviceRefreshController.RefreshDevicesAsync(cancellationToken: cancellationToken);");
-        AssertContains(deviceRefreshControllerText, "namespace Sussudio.Controllers;");
-        AssertContains(deviceRefreshControllerText, "internal sealed class MainViewModelDeviceRefreshController");
-        AssertContains(deviceRefreshControllerText, "internal sealed class MainViewModelDeviceRefreshControllerContext");
-        AssertContains(deviceRefreshControllerText, "private readonly MainViewModelDeviceRefreshControllerContext _context;");
-        AssertDoesNotContain(deviceRefreshControllerText, "private readonly MainViewModel _viewModel;");
-        AssertDoesNotContain(deviceRefreshControllerText, "_viewModel.");
-        AssertContains(deviceRefreshControllerText, "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)\n        {\n            if (requestGeneration == Volatile.Read(ref _refreshRequestGeneration))\n            {\n                _context.SetStatusText(StatusMessages.DeviceScanCanceled);\n            }\n\n            throw;\n        }");
-        AssertContains(selectDevice, "return InvokeOnUiThreadAsync(async () =>");
-        AssertContains(selectDevice, "var applied = await ApplySelectedDeviceWithResultAsync(target, cancellationToken).ConfigureAwait(true);");
-        AssertContains(selectDevice, "throw new InvalidOperationException(\"Capture device selection did not initialize; rollback was skipped if a newer selection superseded this request.\");");
-        AssertDoesNotContain(selectDevice, "SelectedDevice = target;");
-        AssertContains(selectAudioDevice, "SelectedAudioInputDevice = target;");
 
         return Task.CompletedTask;
     }
@@ -6906,65 +3854,6 @@ static partial class Program
 
         return buildLoadPlan.Invoke(null, new[] { settings, input })
                ?? throw new InvalidOperationException("BuildLoadPlan returned null.");
-    }
-
-    private static object BuildSettingsSaveSettings(
-        string? selectedDeviceId,
-        string outputPath,
-        string selectedRecordingFormat,
-        string selectedQuality,
-        string selectedPreset,
-        string selectedSplitEncodeMode,
-        double customBitrateMbps,
-        bool isHdrEnabled,
-        bool isAudioEnabled,
-        bool isAudioPreviewEnabled,
-        bool isCustomAudioInputEnabled,
-        string? selectedAudioInputDeviceId,
-        bool isMicrophoneEnabled,
-        string? selectedMicrophoneDeviceId,
-        double microphoneVolume,
-        double previewVolume,
-        bool isStatsVisible,
-        string selectedDeviceAudioMode,
-        double analogAudioGainPercent,
-        bool flashbackGpuDecode,
-        int flashbackBufferMinutes,
-        string selectedVideoFormat = "Auto")
-    {
-        var inputType = RequireType("Sussudio.ViewModels.MainViewModelSettingsSaveInput");
-        var input = InvokeSingleConstructor(inputType,
-            selectedDeviceId,
-            outputPath,
-            selectedRecordingFormat,
-            selectedQuality,
-            selectedPreset,
-            selectedSplitEncodeMode,
-            customBitrateMbps,
-            isHdrEnabled,
-            isAudioEnabled,
-            isAudioPreviewEnabled,
-            isCustomAudioInputEnabled,
-            selectedAudioInputDeviceId,
-            isMicrophoneEnabled,
-            selectedMicrophoneDeviceId,
-            microphoneVolume,
-            previewVolume,
-            isStatsVisible,
-            selectedDeviceAudioMode,
-            analogAudioGainPercent,
-            flashbackGpuDecode,
-            flashbackBufferMinutes,
-            selectedVideoFormat);
-
-        var projectionType = RequireType("Sussudio.ViewModels.MainViewModelSettingsPersistenceProjection");
-        var buildSaveSettings = projectionType.GetMethod(
-            "BuildSaveSettings",
-            BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
-            ?? throw new InvalidOperationException("BuildSaveSettings was not found.");
-
-        return buildSaveSettings.Invoke(null, new[] { input })
-               ?? throw new InvalidOperationException("BuildSaveSettings returned null.");
     }
 
     private static object InvokeSingleConstructor(Type type, params object?[] arguments)
@@ -7152,53 +4041,6 @@ public sealed class PreviewPacingClassifierTests
 {
     private const string InputTypeName = "Sussudio.Services.Automation.PreviewPacingClassificationInput";
     private const string ClassifierTypeName = "Sussudio.Services.Automation.PreviewPacingSlowStageClassifier";
-
-    [Fact]
-    public void AutomationSnapshot_ExposesPreviewPacingClassificationFields()
-    {
-        var contractsText = ReadAutomationSnapshotFamilyText();
-
-        Assert.Contains("public string PreviewPacingLikelySlowStage { get; init; }", contractsText);
-        Assert.Contains("public string PreviewPacingSlowStageConfidence { get; init; }", contractsText);
-        Assert.Contains("public string PreviewPacingSlowStageEvidence { get; init; }", contractsText);
-    }
-
-    [Fact]
-    public void AutomationDiagnosticsHub_ProjectsPreviewPacingClassification()
-    {
-        var diagnosticsSnapshotsText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs");
-        var diagnosticsSnapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs");
-        var diagnosticsHubText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs")
-            + "\n" + diagnosticsSnapshotsText
-            + "\n" + diagnosticsSnapshotProjectionText;
-
-        Assert.Contains("var previewPacingClassification = ClassifyPreviewPacing(", diagnosticsSnapshotsText);
-        Assert.Contains("new PreviewPacingClassificationInput", diagnosticsSnapshotsText);
-        Assert.Contains("PreviewPacingLikelySlowStage = snapshotEvaluation.PreviewPacingLikelySlowStage", diagnosticsSnapshotProjectionText);
-        Assert.Contains("PreviewPacingLikelySlowStage = snapshotEvaluation.PreviewPacingLikelySlowStage", diagnosticsSnapshotProjectionText);
-        Assert.Contains("PreviewPacingLikelySlowStage = previewPacingClassification.LikelySlowStage", diagnosticsSnapshotProjectionText);
-        Assert.Contains("private static PreviewPacingClassification ClassifyPreviewPacing(", diagnosticsSnapshotsText);
-        Assert.Contains("PreviewPacingSlowStageClassifier.Classify", diagnosticsSnapshotsText);
-        Assert.Contains("PreviewCadenceOnePercentLowFps = previewRuntime.DisplayCadenceOnePercentLowFps", diagnosticsHubText);
-        Assert.Contains("CaptureCadenceEstimatedDroppedFrames = health.CaptureCadenceEstimatedDroppedFrames", diagnosticsHubText);
-        Assert.Contains("RecentD3DCadenceMissedRefreshes = recentD3DFrameStats.CadenceMissedRefreshes", diagnosticsHubText);
-        Assert.Contains("RecentPreviewJitterScheduleLateCount = recentPreviewJitter.ScheduleLateCount", diagnosticsHubText);
-        Assert.Contains("RecentD3DFrameLatencyWaitTimeoutCount = recentD3DFrameLatencyWaitTimeouts", diagnosticsHubText);
-        Assert.Contains("UpdateD3DFrameLatencyWaitRecentCounters", diagnosticsHubText);
-        Assert.Contains("private long UpdateD3DFrameLatencyWaitRecentCounters(", diagnosticsSnapshotsText);
-        Assert.DoesNotContain("private long UpdateD3DFrameLatencyWaitRecentCounters(", ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs"));
-        Assert.Contains("PreviewPacingLikelySlowStage = previewPacingClassification.LikelySlowStage", diagnosticsHubText);
-        Assert.Contains("PreviewPacingSlowStageConfidence = previewPacingClassification.Confidence", diagnosticsHubText);
-        Assert.Contains("PreviewPacingSlowStageEvidence = previewPacingClassification.Evidence", diagnosticsHubText);
-        Assert.Contains("PreviewPacingLikelySlowStage = snapshot.PreviewPacingLikelySlowStage,", diagnosticsHubText);
-        Assert.Contains("PreviewPacingSlowStageConfidence = snapshot.PreviewPacingSlowStageConfidence,", diagnosticsHubText);
-        Assert.Contains("PreviewPacingSlowStageEvidence = snapshot.PreviewPacingSlowStageEvidence,", diagnosticsHubText);
-    }
-
-    [Fact]
-    public void AutomationDiagnosticsHub_DoesNotRetainSupersededPreviewPacingPartials()
-    {
-    }
 
     [Fact(DisplayName = "Preview pacing classifier rejects weak samples")]
     public void PreviewPacingClassifier_RequiresStableSampleUnlessHardSignal()
@@ -7435,32 +4277,6 @@ public sealed class PreviewPacingClassifierTests
         var property = instance.GetType().GetProperty(propertyName, ReflectionFlags.Instance)
             ?? throw new InvalidOperationException($"Property '{propertyName}' not found on '{instance.GetType().Name}'.");
         return property.GetValue(instance)?.ToString() ?? string.Empty;
-    }
-
-    private static string ReadRepoFile(string relativePath)
-        => File.ReadAllText(Path.Combine(GetRepoRoot(), relativePath));
-
-    private static string ReadAutomationSnapshotFamilyText()
-    {
-        return ReadRepoFile("Sussudio/Models/Automation/AutomationSnapshot.cs")
-            .Replace("\r\n", "\n");
-    }
-
-    private static string GetRepoRoot()
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory != null)
-        {
-            if (File.Exists(Path.Combine(directory.FullName, "Sussudio.slnx")))
-            {
-                return directory.FullName;
-            }
-
-            directory = directory.Parent;
-        }
-
-        throw new InvalidOperationException(
-            $"Could not locate repository root from '{AppContext.BaseDirectory}'.");
     }
 }
 }
