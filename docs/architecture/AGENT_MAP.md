@@ -1494,9 +1494,10 @@ Primary current owners:
   changes, plus bottom status-strip projection: status text, recording time, disk warning,
   disk-space text, recording size, recording bitrate, the status-line tooltip that
   shows the full message only while it is ellipsis-trimmed, the status-strip
-  `PropertyChanged` router, the recording-only title-refresh callback, and the
+  `PropertyChanged` router, the recording-only title-refresh callback, the
   Flashback bitrate fallback used while Flashback is enabled and recording is
-  idle. `Sussudio/MainWindow.xaml.cs` is the XAML-facing
+  idle, and the re-projection of that idle bitrate slot when Flashback is
+  turned on or off (called from the Flashback `IsFlashbackEnabled` route). `Sussudio/MainWindow.xaml.cs` is the XAML-facing
   adapter and builds the ViewModel snapshot passed into the controller.
 - `Sussudio/Controllers/Window/WindowControllers.cs` owns window close
   request flags, completion TCS, cleanup latch, recording-stop handoff flags,
@@ -3012,9 +3013,11 @@ Primary current owners:
   `MainViewModel.FlashbackState.cs` owns the one Flashback enable transition
   shared by the settings toggle and automation: it publishes
   `IsFlashbackEnabled`, applies it through the capture session coordinator,
-  and restores the previous value on failure unless a newer request has
-  superseded it. It also owns automation restart routing alongside buffer/GPU
-  setting reactions.
+  and, when the last in-flight request settles, adopts the backend's enabled
+  state (`CaptureService.IsFlashbackEnabled`), reopens a timeline that a
+  refused disable closed, and runs the buffer-status inactive pass if the
+  backend stopped buffering. It also owns automation restart routing alongside
+  buffer/GPU setting reactions.
   `MainViewModel.cs` owns automation device refresh,
   capture-device selection, audio-input selection, and custom audio-input
   enablement.

@@ -668,6 +668,7 @@ internal sealed class FlashbackPropertyChangedControllerContext
     public required Action<bool> ApplyTimelineVisibility { get; init; }
     public required Action ApplyTimelineLockout { get; init; }
     public required Action SyncEnabledSetting { get; init; }
+    public required Action RefreshStatusStripBitrate { get; init; }
     public required Func<bool> IsFlashbackEnabled { get; init; }
     public required Action<bool> UpdateFlashbackKeepAliveHint { get; init; }
     public required Action UpdateState { get; init; }
@@ -701,6 +702,7 @@ internal sealed class FlashbackPropertyChangedController
             case nameof(MainViewModel.IsFlashbackEnabled):
                 _context.SyncEnabledSetting();
                 _context.ApplyTimelineLockout();
+                _context.RefreshStatusStripBitrate();
                 _context.UpdateFlashbackKeepAliveHint(_context.IsFlashbackEnabled());
                 return true;
 

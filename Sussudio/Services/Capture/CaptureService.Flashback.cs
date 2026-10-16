@@ -18,6 +18,8 @@ namespace Sussudio.Services.Capture;
 public partial class CaptureService
 {
     public bool IsFlashbackActive => _flashbackBackend.Sink != null;
+    // The backend's enable intent, which outlives preview; IsFlashbackActive is whether it is buffering.
+    public bool IsFlashbackEnabled => _flashbackEnabled;
     public TimeSpan FlashbackBufferedDuration => _flashbackBackend.BufferManager?.BufferedDuration ?? TimeSpan.Zero;
     public long FlashbackDiskBytes => _flashbackBackend.BufferManager?.TotalDiskBytes ?? 0;
     public int FlashbackSegmentCount => _flashbackBackend.BufferManager?.SegmentCount ?? 0;

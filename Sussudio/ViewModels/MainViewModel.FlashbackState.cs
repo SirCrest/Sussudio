@@ -19,8 +19,10 @@ public partial class MainViewModel
     private readonly SemaphoreSlim _flashbackExportRequestGate = new(1, 1);
     private int _flashbackExportOperationId;
     private int _flashbackSettingsRestartGeneration;
-    // UI-thread only: the latest enable request owns IsFlashbackEnabled.
-    private int _flashbackEnabledRequestGeneration;
+    // UI-thread only. While enable requests are in flight IsFlashbackEnabled shows the
+    // latest one; when the last settles it adopts the backend's state.
+    private int _flashbackEnabledRequestsInFlight;
+    private bool _flashbackTimelineVisibleBeforeEnableRequests;
     private bool _suppressFlashbackSettingsUpdate;
     private static readonly int[] SupportedFlashbackBufferMinutes = { 1, 2, 5, 10, 15, 30 };
 
@@ -101,17 +103,24 @@ public partial class MainViewModel
     /// <summary>
     /// The one Flashback enable transition, shared by the settings toggle and automation.
     /// Publishes the requested state first so the toggle, timeline lockout and keep-alive
-    /// hint follow at once, then restores the previous state if the backend refuses,
-    /// unless a newer request has taken ownership of <see cref="IsFlashbackEnabled"/>.
+    /// hint follow at once, then applies it through the session coordinator. When the
+    /// last in-flight request settles, success or not, <see cref="IsFlashbackEnabled"/>
+    /// adopts the backend's state, so a refused or cancelled request cannot leave the
+    /// view model claiming a state the backend does not hold.
     /// </summary>
     public async Task SetFlashbackEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
     {
-        var request = await InvokeOnUiThreadAsync(
+        await InvokeOnUiThreadAsync(
             () =>
             {
-                var previousEnabled = IsFlashbackEnabled;
+                if (_flashbackEnabledRequestsInFlight == 0)
+                {
+                    _flashbackTimelineVisibleBeforeEnableRequests = IsFlashbackTimelineVisible;
+                }
+
                 IsFlashbackEnabled = enabled;
-                return (PreviousEnabled: previousEnabled, Generation: ++_flashbackEnabledRequestGeneration);
+                _flashbackEnabledRequestsInFlight++;
+                return true;
             },
             cancellationToken).ConfigureAwait(false);
 
@@ -122,37 +131,58 @@ public partial class MainViewModel
         catch (Exception ex)
         {
             Logger.Log(
-                $"FLASHBACK_ENABLE_REQUEST_FAILED requested={enabled} restore={request.PreviousEnabled} " +
+                $"FLASHBACK_ENABLE_REQUEST_FAILED requested={enabled} " +
                 $"type={ex.GetType().Name} error='{ex.Message}'");
-            await RestoreFlashbackEnabledAfterFailedRequestAsync(request.PreviousEnabled, request.Generation)
-                .ConfigureAwait(false);
             throw;
+        }
+        finally
+        {
+            await SettleFlashbackEnabledRequestAsync().ConfigureAwait(false);
         }
     }
 
-    private async Task RestoreFlashbackEnabledAfterFailedRequestAsync(bool previousEnabled, int generation)
+    private async Task SettleFlashbackEnabledRequestAsync()
     {
         try
         {
             await InvokeOnUiThreadAsync(
                 () =>
                 {
-                    if (generation != _flashbackEnabledRequestGeneration)
+                    if (--_flashbackEnabledRequestsInFlight > 0)
                     {
-                        Logger.Log($"FLASHBACK_ENABLE_RESTORE_SKIPPED reason=superseded generation={generation}");
                         return false;
                     }
 
-                    IsFlashbackEnabled = previousEnabled;
+                    var backendEnabled = _sessionCoordinator.IsFlashbackEnabled;
+                    if (IsFlashbackEnabled != backendEnabled)
+                    {
+                        Logger.Log($"FLASHBACK_ENABLE_SETTLED_TO_BACKEND enabled={backendEnabled}");
+                        IsFlashbackEnabled = backendEnabled;
+
+                        // A refused disable closed the timeline on its way out; reopen it.
+                        if (backendEnabled && _flashbackTimelineVisibleBeforeEnableRequests)
+                        {
+                            IsFlashbackTimelineVisible = true;
+                        }
+                    }
+
+                    // The status poll stops with the timeline, so run its inactive pass
+                    // once: a backend that stopped buffering must not keep its last rate,
+                    // fill or bitrate samples.
+                    if (!_sessionCoordinator.IsFlashbackActive)
+                    {
+                        UpdateFlashbackBufferStatus();
+                    }
+
                     return true;
                 },
                 CancellationToken.None).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
-            // Only a dispatcher that is shutting down refuses this; the caller's
-            // original failure is the one worth reporting.
-            Logger.Log($"FLASHBACK_ENABLE_RESTORE_FAILED type={ex.GetType().Name} error='{ex.Message}'");
+            // Only a dispatcher that is shutting down refuses this; the request's
+            // own outcome is the one worth reporting.
+            Logger.Log($"FLASHBACK_ENABLE_SETTLE_FAILED type={ex.GetType().Name} error='{ex.Message}'");
         }
     }
 

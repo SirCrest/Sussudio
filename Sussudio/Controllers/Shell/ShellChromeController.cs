@@ -441,6 +441,24 @@ internal sealed class StatusStripPresentationController
         }
     }
 
+    // Turning Flashback on or off changes which rate the idle bitrate slot shows, so
+    // re-project it rather than leave the last Flashback rate behind.
+    public void RefreshIdleBitrateSlot(
+        bool isRecording,
+        bool isFlashbackEnabled,
+        string flashbackBitrateInfo,
+        string recordingBitrateInfo)
+    {
+        if (isRecording)
+        {
+            return;
+        }
+
+        _context.RecordingBitrateTextBlock.Text = isFlashbackEnabled
+            ? flashbackBitrateInfo
+            : recordingBitrateInfo;
+    }
+
     private void UpdateDiskWarning(bool isDiskWarningActive)
     {
         _context.DiskWarningInfoBar.IsOpen = isDiskWarningActive;
