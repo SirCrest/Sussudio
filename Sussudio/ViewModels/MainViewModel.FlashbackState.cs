@@ -426,9 +426,13 @@ public partial class MainViewModel
             return;
         }
 
-        // Flashback buffers what capture delivers. Before the first preview, or with no
-        // device, not running is expected rather than a fault worth a banner.
-        if (IsFlashbackEnabled && (IsPreviewing || IsRecording) && !_sessionCoordinator.IsFlashbackActive)
+        // Flashback buffers what capture delivers, so it is expected to run whenever capture
+        // is open: during preview or recording, and after a normal preview stop, which keeps
+        // capture running for Flashback. Before the first preview, or after a teardown, not
+        // running is expected rather than a fault worth a banner.
+        if (IsFlashbackEnabled &&
+            (IsPreviewing || IsRecording || _sessionCoordinator.IsVideoCaptureOpen) &&
+            !_sessionCoordinator.IsFlashbackActive)
         {
             FlashbackHealthMessage = FlashbackDeadBackendHealthMessage;
         }
