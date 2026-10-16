@@ -809,6 +809,48 @@ public class RuntimeHelpersTests
             => Assert.InRange(actual, expected - Math.Max(64L << 20, expected / 4), expected + Math.Max(64L << 20, expected / 4));
     }
 
+    // Failure modes of a failed counter read in the hub snapshot, listed before the code. E2E cannot make
+    // K32GetProcessMemoryInfo or GetProcessTimes fail in a live process.
+    //  1. A failed read after a good one must publish the last good working set and private bytes. Zero draws a
+    //     memory cliff in the timeline and then a false growth spike on the next good read.
+    //  2. A failed read must keep the CPU total, so the next good read is not a CPU spike.
+    //  3. A failed read before any good one has nothing to carry: it publishes zero, and the next good read is
+    //     published as read.
+    [Fact]
+    public void HubProcessCounters_AFailedReadCarriesTheLastGoodMemoryAndCpuTotal()
+    {
+        var assembly = SussudioAssembly.Load();
+        var hubType = assembly.GetType("Sussudio.Services.Automation.AutomationDiagnosticsHub", throwOnError: true)!;
+        var readingType = assembly.GetType("Sussudio.Services.Automation.HubProcessCounters+Reading", throwOnError: true)!;
+        var capture = hubType.GetMethod("CaptureProcessResourceSnapshot", BindingFlags.NonPublic | BindingFlags.Instance, [readingType])!;
+        var hub = RuntimeHelpers.GetUninitializedObject(hubType);
+        object Reading(bool valid, long workingSet, long privateBytes, long cpuTicks)
+            => Activator.CreateInstance(readingType, valid, workingSet, privateBytes, cpuTicks)!;
+        double Value(object snapshot, string name) => (double)snapshot.GetType().GetProperty(name)!.GetValue(snapshot)!;
+        object Capture(object reading) => capture.Invoke(hub, [reading])!;
+        var failed = Activator.CreateInstance(readingType)!;
+
+        var beforeAnyGood = Capture(failed);
+        Assert.Equal(0.0, Value(beforeAnyGood, "MemoryWorkingSetMb"));
+        Assert.Equal(0.0, Value(beforeAnyGood, "MemoryPrivateBytesMb"));
+
+        var good = Capture(Reading(true, 300L << 20, 500L << 20, 20_000_000));
+        Assert.Equal(300.0, Value(good, "MemoryWorkingSetMb"));
+        Assert.Equal(500.0, Value(good, "MemoryPrivateBytesMb"));
+        Assert.Equal(2_000.0, Value(good, "ProcessCpuTotalProcessorTimeMs"));
+
+        var carried = Capture(failed);
+        Assert.Equal(300.0, Value(carried, "MemoryWorkingSetMb"));
+        Assert.Equal(500.0, Value(carried, "MemoryPrivateBytesMb"));
+        Assert.Equal(2_000.0, Value(carried, "ProcessCpuTotalProcessorTimeMs"));
+        Assert.Equal(0.0, Value(carried, "ProcessCpuPercent"));
+
+        var next = Capture(Reading(true, 310L << 20, 505L << 20, 20_100_000));
+        Assert.Equal(310.0, Value(next, "MemoryWorkingSetMb"));
+        Assert.Equal(505.0, Value(next, "MemoryPrivateBytesMb"));
+        Assert.Equal(2_010.0, Value(next, "ProcessCpuTotalProcessorTimeMs"));
+    }
+
     // Failure modes of the pooled-scratch Compute, listed before the code was written. E2E cannot reach them: the
     // hub only ever feeds Compute steady 1,100-sample windows on one thread at a time.
     //  1. Stale rent tail: ArrayPool returns an array longer than asked for, holding an earlier renter's values.

@@ -36,6 +36,10 @@ public struct FrameTraceReadCursor
 /// on a newer event (it finds the slot lapped or busy and drops its own event instead). The owner fills the slot and
 /// publishes the stamp (index + 1). A reader keeps a slot only when the stamp it read before copying equals the
 /// stamp it reads after, so a slot that is mid-write or was lapped is dropped, never emitted torn.
+/// The head carries the trace generation in its top bits (<see cref="IndexBits"/> below them count events), so a
+/// reused ring never hands an index or a stamp of the previous trace to the next one: a writer that captured the
+/// previous generation drops its event when its claimed index belongs to a newer one, and an old stamp can never
+/// equal a new index.
 /// Capacity is a power of two between 2^12 and 2^22. Reads are chunked (<see cref="ReadChunk(ref FrameTraceReadCursor, Span{FrameTraceEvent})"/>)
 /// so a dump never materialises the ring. Contract: docs/architecture/performance-telemetry.md section 2.4.
 /// </summary>
@@ -45,8 +49,13 @@ public sealed class FrameTraceBuffer
     public const int MaxCapacity = 1 << 22;
     public const int DefaultCapacity = 1 << 18;
 
-    // 0 = never written, -1 = write in progress, otherwise (event index + 1).
+    // 0 = never written, -1 = write in progress, otherwise (event index + 1). Indices include the generation bits.
     private const long StampInProgress = -1;
+
+    // Low bits of the head count the events of one trace; the bits above hold the trace generation. 2^40 events is
+    // over a year at 30,000 events a second, so the count never carries into the generation.
+    private const int IndexBits = 40;
+    private const long EventCountMask = (1L << IndexBits) - 1;
 
     private readonly Slot[] _slots;
     private readonly long _mask;
@@ -75,8 +84,14 @@ public sealed class FrameTraceBuffer
     /// <summary>Stopwatch timestamp when the trace was frozen; zero while running.</summary>
     public long StopTimestamp { get; private set; }
 
-    /// <summary>Events claimed since creation, including ones already overwritten.</summary>
-    public long Recorded => Volatile.Read(ref _head);
+    /// <summary>Events claimed since the trace started, including ones already overwritten.</summary>
+    public long Recorded => Volatile.Read(ref _head) & EventCountMask;
+
+    /// <summary>
+    /// The trace this ring is recording: zero when created, advanced by every <see cref="Restart"/>. A writer passes
+    /// the generation it captured with the buffer to <see cref="RecordForTrace"/> so it cannot record into a later trace.
+    /// </summary>
+    public int Generation => (int)(Volatile.Read(ref _head) >> IndexBits);
 
     public long Retained => Math.Min(Recorded, Capacity);
 
@@ -110,13 +125,24 @@ public sealed class FrameTraceBuffer
         return (int)System.Numerics.BitOperations.RoundUpToPowerOf2((uint)requested);
     }
 
-    /// <summary>Records a duration event that began at <paramref name="startTimestamp"/> (Stopwatch ticks).</summary>
+    /// <summary>Records a duration event that began at <paramref name="startTimestamp"/> (Stopwatch ticks) into the current trace.</summary>
     public void Record(FrameTraceEventKind kind, long startTimestamp, long durationTicks, long id, ushort arg = 0) =>
-        Write(kind, startTimestamp, durationTicks < 0 ? 0 : durationTicks, id, arg);
+        WriteClaimed(Interlocked.Increment(ref _head) - 1, kind, startTimestamp, durationTicks < 0 ? 0 : durationTicks, id, arg);
 
-    /// <summary>Records an instant event at <paramref name="timestamp"/> (Stopwatch ticks).</summary>
+    /// <summary>Records an instant event at <paramref name="timestamp"/> (Stopwatch ticks) into the current trace.</summary>
     public void RecordInstant(FrameTraceEventKind kind, long timestamp, long id, ushort arg = 0) =>
-        Write(kind, timestamp, -1, id, arg);
+        WriteClaimed(Interlocked.Increment(ref _head) - 1, kind, timestamp, -1, id, arg);
+
+    /// <summary>
+    /// Records a duration event only if the ring is still on <paramref name="generation"/>: the recorder's path, where
+    /// a writer that read the active trace before <c>Stop</c> may resume after the next <c>Start</c> reused the ring.
+    /// </summary>
+    public void RecordForTrace(int generation, FrameTraceEventKind kind, long startTimestamp, long durationTicks, long id, ushort arg = 0) =>
+        WriteForTrace(generation, kind, startTimestamp, durationTicks < 0 ? 0 : durationTicks, id, arg);
+
+    /// <summary>Records an instant event only if the ring is still on <paramref name="generation"/>.</summary>
+    public void RecordInstantForTrace(int generation, FrameTraceEventKind kind, long timestamp, long id, ushort arg = 0) =>
+        WriteForTrace(generation, kind, timestamp, -1, id, arg);
 
     internal void Freeze()
     {
@@ -124,26 +150,29 @@ public sealed class FrameTraceBuffer
     }
 
     /// <summary>
-    /// Re-arms a frozen buffer for a new trace without allocating a new ring: clears every slot (so no stale stamp can
-    /// match a new event index), resets the head and the start times. Only for a buffer that is no longer recording and
-    /// is not being read; the recorder guarantees both. The ring of a default trace is 10.5 MB and up to 168 MB, which
-    /// would otherwise land on the large object heap on every start.
+    /// Re-arms a frozen buffer for a new trace without allocating a new ring: advances the generation (which restarts
+    /// the event count) and resets the start times. The slots are not cleared: every stamp of the previous trace is
+    /// below every index of the new one, so none can match, and a writer of the previous trace that is still in flight
+    /// either drops its event (its claim lands in the new generation) or publishes a stamp no reader of the new trace
+    /// accepts. Only for a buffer that is not being read; the recorder guarantees that. The ring of a default trace is
+    /// 10.5 MB and up to 168 MB, which would otherwise land on the large object heap on every start.
     /// </summary>
     internal void Restart()
     {
-        Array.Clear(_slots);
         StopTimestamp = 0;
         StartTimestamp = Stopwatch.GetTimestamp();
         StartedUtc = DateTime.UtcNow;
         Volatile.Write(ref _abandoned, 0);
-        Volatile.Write(ref _head, 0);
+        var nextGeneration = (Volatile.Read(ref _head) >> IndexBits) + 1;
+        Volatile.Write(ref _head, nextGeneration << IndexBits);
     }
 
-    /// <summary>Captures the range a chunked read will walk: the newest <see cref="Capacity"/> event indices.</summary>
+    /// <summary>Captures the range a chunked read will walk: the newest <see cref="Capacity"/> event indices of the current trace.</summary>
     public FrameTraceReadCursor BeginRead()
     {
         var head = Volatile.Read(ref _head);
-        return new FrameTraceReadCursor { Next = Math.Max(0, head - Capacity), End = head };
+        var firstOfTrace = head & ~EventCountMask;
+        return new FrameTraceReadCursor { Next = Math.Max(firstOfTrace, head - Capacity), End = head };
     }
 
     /// <summary>
@@ -190,13 +219,24 @@ public sealed class FrameTraceBuffer
         return written;
     }
 
-    private void Write(FrameTraceEventKind kind, long timestamp, long duration, long id, ushort arg) =>
-        WriteClaimed(Interlocked.Increment(ref _head) - 1, kind, timestamp, duration, id, arg);
+    private void WriteForTrace(int generation, FrameTraceEventKind kind, long timestamp, long duration, long id, ushort arg)
+    {
+        var claimed = Interlocked.Increment(ref _head) - 1;
+        if (claimed >> IndexBits != generation)
+        {
+            // The ring was reused for a newer trace after this writer captured it: the event belongs to a trace that
+            // has ended. The claimed index stays empty (readers skip it) and the drop is counted.
+            Interlocked.Increment(ref _abandoned);
+            return;
+        }
+
+        WriteClaimed(claimed, kind, timestamp, duration, id, arg);
+    }
 
     /// <summary>
-    /// Stores an event at an already-claimed index. Separate from <see cref="Write"/> only so a test can replay the
-    /// writer that was preempted between claiming its index and storing the event, which cannot be provoked reliably
-    /// with real threads.
+    /// Stores an event at an already-claimed index. Separate from the claim only so a test can replay the writer that
+    /// was preempted between claiming its index and storing the event, which cannot be provoked reliably with real
+    /// threads.
     /// </summary>
     internal void WriteClaimed(long index, FrameTraceEventKind kind, long timestamp, long duration, long id, ushort arg)
     {

@@ -50,6 +50,8 @@ public sealed partial class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
     private int _timelineCount;
     private long _lastProcessCpuSampleTimestamp;
     private double _lastProcessCpuTotalMs;
+    private HubProcessCounters.Reading _lastGoodProcessCounters;
+    private double _lastProcessCpuPercent;
 
     private const int MaxRecentEvents = 500;
     // Live tuning knob (see TuningKnobCatalog): read again each tick so a runtime change applies on the next delay.

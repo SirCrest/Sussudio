@@ -173,6 +173,73 @@ public sealed class PerfHistogramTests
         await Task.WhenAll(writers);
     }
 
+    // Failure modes for the sum: a writer that lands between the bucket copy and the sum read puts its value in the sum
+    // but not the count, and one paused between its bucket increment and its sum add puts it in the count but not the
+    // sum. Either makes Mean wrong, and one outlier in a short delta can make it wildly wrong. Writers here record one
+    // value with an exact bucket, so any snapshot whose sum and count come from one cut has Sum == value * Count.
+    [Fact]
+    public async Task SnapshotsTakenDuringWritesHaveASumThatMatchesTheirCount()
+    {
+        const long value = 7;
+        var histogram = new PerfHistogram();
+        using var stop = new CancellationTokenSource();
+        var writers = Enumerable.Range(0, 4).Select(_ => Task.Run(() =>
+        {
+            while (!stop.IsCancellationRequested)
+            {
+                histogram.Record(value);
+            }
+        })).ToArray();
+
+        var previous = histogram.Snapshot();
+        var deadline = Stopwatch.StartNew();
+        while (deadline.ElapsedMilliseconds < 300)
+        {
+            var snapshot = histogram.Snapshot();
+            Assert.Equal(value * snapshot.Count, snapshot.Sum);
+            var delta = snapshot.Subtract(previous);
+            Assert.Equal(value * delta.Count, delta.Sum);
+            previous = snapshot;
+        }
+
+        stop.Cancel();
+        await Task.WhenAll(writers);
+    }
+
+    // Under writers that never pause a snapshot may not get a quiet moment; its sum must then still stay inside the
+    // range its own buckets allow, so the mean is off by at most the bucket width instead of by a whole outlier.
+    [Fact]
+    public async Task UnderConstantWritesTheMeanStaysInsideTheBucketOfTheOnlyValueRecorded()
+    {
+        const long value = 1_000_000;
+        var bucket = PerfHistogram.BucketIndex(value);
+        var lower = PerfHistogram.BucketLowerBound(bucket);
+        var upper = lower + PerfHistogram.BucketWidth(bucket) - 1;
+        var histogram = new PerfHistogram();
+        using var stop = new CancellationTokenSource();
+        var writers = Enumerable.Range(0, 4).Select(_ => Task.Run(() =>
+        {
+            while (!stop.IsCancellationRequested)
+            {
+                histogram.Record(value);
+            }
+        })).ToArray();
+
+        var previous = histogram.Snapshot();
+        var deadline = Stopwatch.StartNew();
+        while (deadline.ElapsedMilliseconds < 300)
+        {
+            var snapshot = histogram.Snapshot();
+            Assert.InRange(snapshot.Sum, lower * snapshot.Count, upper * snapshot.Count);
+            var delta = snapshot.Subtract(previous);
+            Assert.InRange(delta.Sum, lower * delta.Count, upper * delta.Count);
+            previous = snapshot;
+        }
+
+        stop.Cancel();
+        await Task.WhenAll(writers);
+    }
+
     [Theory]
     [InlineData(1, 10_000)]
     [InlineData(100, 5_000_000)]

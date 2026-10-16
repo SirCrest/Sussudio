@@ -112,6 +112,8 @@ public sealed class PerfExperimentRunnerTests : IDisposable
 
         public int RecordingsStarted { get; private set; }
 
+        public int StopsToIgnore { get; set; }
+
         public IReadOnlyCollection<string> OpenWindows => _openWindows;
 
         public Func<string, JsonObject, bool>? FailWhen { get; set; }
@@ -264,6 +266,13 @@ public sealed class PerfExperimentRunnerTests : IDisposable
                 case "SetRecordingEnabled":
                 {
                     var enabled = body["enabled"]!.GetValue<bool>();
+                    if (!enabled && StopsToIgnore > 0)
+                    {
+                        // Acknowledged, but the recording keeps running and the reply's snapshot says so.
+                        StopsToIgnore--;
+                        return Ok(snapshot: SnapshotNode());
+                    }
+
                     if (enabled && !Recording)
                     {
                         RecordingsStarted++;
@@ -873,6 +882,21 @@ public sealed class PerfExperimentRunnerTests : IDisposable
         AssertKnobsAtBaseline(app);
     }
 
+    // Failure mode: the stop command succeeds but the app still reports a recording. The run fails on that, and the
+    // restore must still own the recording it started and stop it, not treat the acknowledged request as a stop.
+    [Fact]
+    public async Task AStopTheAppAcknowledgedButDidNotPerformIsRetriedByTheRestore()
+    {
+        var app = new FakeApp { StopsToIgnore = 1 };
+
+        var result = await RunAsync(app, Spec(BaselineAndDepth2, extra: ",\"recording\":true"));
+
+        Assert.Equal(PerfExperimentStatus.Failed, result.Status);
+        Assert.False(app.Recording);
+        Assert.Equal(1, app.RecordingsStarted);
+        AssertKnobsAtBaseline(app);
+    }
+
     [Fact]
     public async Task RecordingBracketsEveryMeasureWindowWhenRequested()
     {
@@ -1113,6 +1137,35 @@ public sealed class PerfExperimentRunnerTests : IDisposable
             using var report = JsonDocument.Parse(File.ReadAllText(Path.Combine(result.OutputDirectory!, run.ReportFile!)));
             Assert.True(report.RootElement.TryGetProperty("Metrics", out _));
         }
+    }
+
+    // Failure mode: spec.json is the artifact another agent re-runs. If it is not a whole spec in the schema the runner
+    // loads (an array of variants, or a spec missing the run settings), the re-run fails or measures something else.
+    [Fact]
+    public async Task TheWrittenSpecLoadsBackAsTheSameExperiment()
+    {
+        var app = new FakeApp();
+        var options = Options(app, writeArtifacts: true);
+        var specJson = Spec(
+            BaselineAndDepth2,
+            repeats: 2,
+            extra: ",\"description\":\"depth sweep\",\"recording\":true,\"metrics\":[\"preview.present_interval\",\"capture.*\"],\"verdictStatistic\":\"p90\"");
+        var result = await RunAsync(app, specJson, options);
+
+        Assert.Equal(PerfExperimentStatus.Completed, result.Status);
+        var original = PerfExperimentSpec.Parse(specJson);
+        var reloaded = PerfExperimentSpec.Load(Path.Combine(result.OutputDirectory!, "spec.json"));
+        Assert.Equal(original.Name, reloaded.Name);
+        Assert.Equal(original.Description, reloaded.Description);
+        Assert.Equal(original.WarmupSeconds, reloaded.WarmupSeconds);
+        Assert.Equal(original.MeasureSeconds, reloaded.MeasureSeconds);
+        Assert.Equal(original.Repeats, reloaded.Repeats);
+        Assert.Equal(original.Recording, reloaded.Recording);
+        Assert.Equal(original.Metrics, reloaded.Metrics);
+        Assert.Equal(original.VerdictStatistic, reloaded.VerdictStatistic);
+        Assert.Equal(original.Variants.Select(v => v.Name), reloaded.Variants.Select(v => v.Name));
+        Assert.All(original.Variants.Zip(reloaded.Variants), pair =>
+            Assert.Equal(pair.First.Knobs.OrderBy(k => k.Key), pair.Second.Knobs.OrderBy(k => k.Key)));
     }
 
     [Fact]

@@ -87,15 +87,21 @@ bytes or percent otherwise).
   reported value of a bucket is its midpoint: relative error at most 1.6 %.
 - Range: 0 to 2^32 - 1. Larger values clamp into the top bucket and still
   update `max`. Negative values clamp to 0. Recording never throws.
-- `Record(long value)`: one `Interlocked.Increment` on the bucket, one
-  `Interlocked.Add` on the sum, and a CAS only when a new maximum is seen.
-  No allocation, no lock. Safe from any number of threads.
+- `Record(long value)`: four interlocked operations (records begun, the
+  bucket, the sum, records finished) and a CAS only when a new maximum is
+  seen. No allocation, no lock. Safe from any number of threads.
 - `Snapshot()`: copies counts, sum and max. Concurrent writers may land in
-  the copy or not; counts never go backwards.
+  the copy or not, but the sum and the counts always describe the same
+  records: a copy during which a record began or was still in flight is
+  retried (up to four tries), and if writes never pause, the last copy's
+  sum is clamped into the range its own buckets allow, so the mean is off
+  by at most a bucket width, never by a whole outlier. Counts never go
+  backwards.
 - `PerfHistogramSnapshot.Subtract(baseline)`: per-bucket delta clamped at
   zero. Percentiles of a delta are exact to bucket precision; the delta's
-  max is the upper bound of the highest non-empty delta bucket, clamped to
-  the lifetime max, and is reported as approximate.
+  sum is kept inside the delta buckets' range (exact when both snapshots
+  are), and its max is the upper bound of the highest non-empty delta
+  bucket, clamped to the lifetime max, and is reported as approximate.
 
 ### 2.2 `PerfMetrics` catalog
 
@@ -292,9 +298,14 @@ site costs one volatile read.
   object reports `recorded`, `retained`, `overwritten` (events that left the
   ring) and `abandoned` (events dropped by the stale-writer rule above).
 - `start` reuses the previous trace's ring when its capacity is unchanged and
-  no dump is reading it (the slots are cleared, so no old stamp can match a new
-  index); otherwise it allocates. Repeated traces therefore do not each
-  allocate a ring on the large object heap.
+  no dump is reading it; otherwise it allocates. Repeated traces therefore do
+  not each allocate a ring on the large object heap. The ring's head carries a
+  trace generation above a 40-bit event count. Reuse advances the generation,
+  so no stamp of the previous trace can match a new index (the slots are not
+  cleared), and a writer that read the active trace before `stop` records with
+  the generation it read: if it resumes after the reuse, its claim lands in the
+  new generation and the event is dropped and counted as `abandoned` instead of
+  entering the new trace with an old timestamp.
 - Markers (`perf mark`) and thread names are kept beside the ring and
   emitted as instant and metadata events. Thread names are labels by managed
   thread id, set by `HotThreads.Register`. When a registration retires its label
@@ -498,6 +509,12 @@ PDH that cannot open or read is `unavailable`: the sensor retries with backoff a
 every reader it abandons is disposed. A genuine 0 % is recorded as 0. The details line reads `gpu_engines: stopped`,
 `gpu_engines: unavailable, retrying (open_failures=.., last_error=..)` or `gpu_engines: running samples=N`, with a note after three
 pending ticks. `Gpu.DedicatedBytes` is null whenever the sensor is stopped, pending or unavailable.
+
+Stop waits at most 3 s for the sensor thread. A PDH call that has not returned by then keeps the thread, and its counters, owned by
+the sensor until it does: the details line reads `gpu_engines: stopping, a counter call has not returned`. A start in that time is
+held (`; restarts when it returns`) and the old thread starts its successor as it exits, so two sensor threads never run side by
+side and the old one cannot mark the new one stopped. The late call's sample is dropped. A stop before it returns cancels the held
+start.
 
 VRAM is not a thread. `GpuMemorySensor.Read()` runs when a report is built: it enumerates the DXGI adapters and calls
 `IDXGIAdapter3.QueryVideoMemoryInfo` on the local and non-local segment groups, so `Gpu.Adapters` holds instantaneous per-process
@@ -832,6 +849,8 @@ Three changes, each measured:
   on the current-process pseudo-handle, instead of `Process.Refresh()`, which enumerates every process on the machine. The values
   are the same counters (`WorkingSetSize`, `PrivateUsage`, kernel plus user ticks); the hub's working set and private bytes now match
   the perf report's `ProcessSensors` reading to 0.1 MB in both after runs (421.9 and 550.7 MB in one of them). It removed the 22 ms and 14 KB.
+  A failed read publishes the hub's last good reading (memory and CPU percentage), never zero, and the CPU baseline only moves on
+  good reads; before the first good read memory reads zero.
 - The preview fragment makes one provider call. The old overload shape called the provider as producer-epoch probe, value and
   producer-epoch probe, so every tick built the full preview snapshot three times and hopped to the UI thread three times to watch a
   window of about 2 ms. One UI work item is consistent by construction, like the view-model fragment, so the before and after
@@ -1353,7 +1372,8 @@ preview is running again, and the state is read back. `result.json` says whether
 and lists anything that was not. Artifacts go to `--out DIR` or
 `artifacts/perf-experiments/<timestamp>-<name>`: `result.json` (settings, runs,
 per-metric statistics and verdicts, restore, warnings), `summary.md`,
-`spec.json` (the variants as run) and `reports/NN-variant-rN.json`, the raw
+`spec.json` (the whole spec as run, every default written out, so
+`ssctl perf experiment` reruns it as is) and `reports/NN-variant-rN.json`, the raw
 window report of each run. A failure to write them is a warning and never
 changes the status or skips the restore.
 

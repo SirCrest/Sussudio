@@ -19,7 +19,8 @@ internal static class HubProcessCounters
     private static readonly uint MemoryCountersSize = (uint)Marshal.SizeOf<ProcessMemoryCountersEx>();
     private static int _failureLogged;
 
-    // Valid is false when either call failed; the byte and tick fields are then zero.
+    // Valid is false when either call failed; the byte and tick fields are then zero. The hub publishes its last good
+    // reading in place of a failed one (AutomationDiagnosticsHub.CaptureProcessResourceSnapshot).
     public readonly record struct Reading(bool Valid, long WorkingSetBytes, long PrivateBytes, long CpuTicks);
 
     public static Reading Read()
