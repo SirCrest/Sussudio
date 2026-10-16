@@ -828,8 +828,9 @@ Important entry points:
   cleanup, a video-preview stop or an initialize finishes either scope and a
   video-preview start finishes a teardown, each then running its own transition
   under the same lock hold; every other transition refuses (`CAPTURE_RETAINED_CLEANUP_*`).
-  A teardown stop that fails still commits preview stopped, so a published capture
-  error never mirrors preview back on over retained resources.
+  A teardown stop that fails still commits preview stopped, and stops the audio
+  monitor with it, so a published capture error never mirrors preview back on over
+  retained resources and no audio plays behind a stopped preview.
   `SUSSUDIO_CAPTURE_FAULT_PRE_CLEANUP_FAILURES` fails the first N renderer handoffs
   for the live check `scripts/performance/Test-CaptureLateCleanupRecovery.ps1`.
   Disposal callers share one owned task; a caller timeout does not retire its
@@ -2821,9 +2822,9 @@ Primary current owners:
   lifecycle operations: device initialization, preview start/stop,
   selected-device apply, and the reinitialize facade. Failed initialization repairs
   visible state and faults the caller so automation publishes command failure.
-  A preview stop clears the initialized flag when capture is no longer initialized
-  afterwards (a stop that finished a half-done full capture cleanup);
-  it never sets the flag from capture state.
+  A preview stop that leaves capture uninitialized (it finished a half-done full
+  capture cleanup) clears the initialized flag, and the recording flag when that
+  cleanup finalized the recording; it never sets either flag from capture state.
   It also owns the preview lifecycle graph-port contract for preview
   state/events, capture/session operations, source telemetry refresh, UI
   dispatch, audio-preview activity, and preview-volume ramp-down.

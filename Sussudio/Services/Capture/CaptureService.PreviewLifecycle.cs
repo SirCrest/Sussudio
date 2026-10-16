@@ -121,8 +121,18 @@ public partial class CaptureService
                 // detached, the view model commits stopped, and _cleanupRequired keeps the retained
                 // pipeline for the next transition to finish. Leaving preview active would let the
                 // published error mirror preview back on and attach a renderer cleanup refuses.
+                // The audio monitor stops with it, as the teardown would have stopped it: the
+                // view model's own audio stop is a separate transition the retained cleanup refuses.
                 stopFailure = ex;
                 commitStoppedState = true;
+                if (_isAudioPreviewActive)
+                {
+                    _isAudioPreviewActive = false;
+                    _previewAudioGraph.StopPlayback(_flashbackBackend.PlaybackController);
+                    AudioLevelUpdated?.Invoke(this, new AudioLevelEventArgs(0, 0, false));
+                    Logger.Log("PREVIEW_STOP_FAILED_AUDIO_MONITOR_STOPPED");
+                }
+
                 throw;
             }
             finally

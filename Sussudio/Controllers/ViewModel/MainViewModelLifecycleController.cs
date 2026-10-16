@@ -561,6 +561,8 @@ internal sealed class MainViewModelPreviewLifecycleControllerContext
     public required Action<bool> SetIsPreviewing { get; init; }
     public required Func<bool> IsPreviewReinitializing { get; init; }
     public required Func<bool> IsRecording { get; init; }
+    public required Action<bool> SetIsRecording { get; init; }
+    public required Func<bool> IsCaptureRecording { get; init; }
     public required Func<bool> ShouldStartAudioPreview { get; init; }
     public required Func<bool> IsAudioPreviewActive { get; init; }
     public required Action<string> SetStatusText { get; init; }
@@ -805,7 +807,7 @@ internal sealed class MainViewModelPreviewLifecycleController
                 _context.SetIsPreviewing(false);
             }
 
-            ClearInitializedIfCaptureCleanedUp();
+            ReconcileWithCompletedCaptureCleanup();
         }
 
         if (_context.IsAudioPreviewActive())
@@ -827,17 +829,29 @@ internal sealed class MainViewModelPreviewLifecycleController
     }
 
     // A stop that finds an earlier full capture cleanup half done (a fatal capture error whose
-    // cleanup failed) finishes it, which uninitializes the capture service; a half-done preview
-    // teardown is finished as a teardown and keeps it initialized. That stop succeeds, or is
-    // cancelled, without a capture error, so nothing else tells this view model. Only ever clear
-    // the flag: false while capture is still initialized is a deliberate re-init request (device
-    // apply, reinit) and must stand.
-    private void ClearInitializedIfCaptureCleanedUp()
+    // cleanup failed) finishes it, which uninitializes the capture service and finalizes any
+    // recording that error interrupted; a half-done preview teardown is finished as a teardown
+    // and keeps it initialized. That stop succeeds, or is cancelled, without a capture error, so
+    // nothing else tells this view model. Only ever clear flags, and only once capture is
+    // uninitialized: false while capture is still initialized is a deliberate re-init request
+    // (device apply, reinit) and must stand, and a recording stop owns its own transition.
+    private void ReconcileWithCompletedCaptureCleanup()
     {
-        if (_context.IsInitialized() && !_context.IsCaptureInitialized())
+        if (_context.IsCaptureInitialized())
+        {
+            return;
+        }
+
+        if (_context.IsInitialized())
         {
             Logger.Log("PREVIEW_STOP_CAPTURE_UNINITIALIZED: the stop completed capture cleanup; the next start initializes.");
             _context.SetIsInitialized(false);
+        }
+
+        if (_context.IsRecording() && !_context.IsCaptureRecording())
+        {
+            Logger.Log("PREVIEW_STOP_CAPTURE_RECORDING_ENDED: the stop completed capture cleanup, which finalized the recording.");
+            _context.SetIsRecording(false);
         }
     }
 

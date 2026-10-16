@@ -17,29 +17,33 @@ then run in the same transition. Nothing may attach a renderer while it is retai
 Scenarios, each its own app launch, judged from app log markers, `ssctl --json state` and
 the Flashback session directory on disk:
 
-  StopThenStart (Flashback off, so a preview stop tears the pipeline down)
+  StopThenStart (Flashback off, so a preview stop tears the pipeline down; audio preview
+  on for the scenario and restored afterwards, so the audio monitor runs into the stop)
     faulted-stop            `preview stop` fails on fault 1. Preview reports stopped, the
-                            view model stays initialized, capture is Faulted, and no
-                            preview session starts (the old spurious attach).
+                            audio monitor stops with it, the view model stays initialized,
+                            capture is Faulted, and no preview session starts (the old
+                            spurious attach).
     failed-recovery-start   `preview start` finishes the retained teardown first and hits
                             fault 2. The start fails with that error, not "Capture cleanup
                             must complete". No new capture is created or initialized, no
-                            preview session starts, no renderer attach fails, and no
-                            startup-failure stop runs.
+                            preview session or audio monitor starts, no renderer attach
+                            fails, and no startup-failure stop runs.
     recovery-start          `preview start` finishes the teardown (scope=PreviewPipeline,
                             capture still initialized), starts a fresh pipeline without
-                            re-initializing capture, and renders.
+                            re-initializing capture, restarts the audio monitor, and renders.
     plain-cycle-flashback-off / plain-cycle-flashback-on
                             ordinary stop + start cycles, before and after `flashback on`.
 
   ReinitThenStart (Flashback on, so DVR segments are live at the failure)
     failed-reinit           `set fps <another rate>` reinitializes. Its teardown hits fault 1
                             and its failure-cleanup stop hits fault 2 while finishing it.
-                            Preview stops, the view model is uninitialized, and the Flashback
-                            session directory still holds its segments with no retired marker.
+                            Preview stops, the view model is uninitialized, the selection is
+                            rolled back to the starting rate, and the Flashback session
+                            directory still holds its segments with no retired marker.
     recovery-start          `preview start` initializes; that transition finishes the
                             teardown first. The Flashback session is retired (purge=False),
-                            its segment files are still on disk, and preview renders.
+                            its segment files are still on disk, preview renders, and the
+                            starting rate is still selected.
 
   StartRollback (also SUSSUDIO_CAPTURE_FAULT_PREVIEW_INSTALL_FAILURES=1: the launch auto-start
   fails after its capture is running and before the pipeline installs it, so its rollback
@@ -349,6 +353,12 @@ function Invoke-FlashbackToggle {
     if ($toggle.ExitCode -ne 0) { throw "flashback $State failed: $($toggle.Output)" }
 }
 
+function Set-AudioPreview {
+    param([ValidateSet('on', 'off')] [string] $State)
+    $set = Invoke-Ssctl -Arguments @('set', 'audio-preview', $State) -TimeoutMs 30000
+    if ($set.ExitCode -ne 0) { throw "set audio-preview $State failed: $($set.Output)" }
+}
+
 function Start-App {
     param([int] $FaultFailures, [int] $InstallFaultFailures, [switch] $ExpectLaunchFailure)
     $applied = @{ SUSSUDIO_AUTOMATION_PIPE = $pipeName }
@@ -431,6 +441,23 @@ function Stop-App {
 
 function Invoke-StopThenStart {
     Invoke-FlashbackToggle -State off
+    # Audio monitoring runs into the faulted stop, so the stop must be seen to end it. The
+    # user's setting is put back afterwards.
+    $initialAudioPreview = [bool](Get-JsonProperty (Get-Snapshot) 'IsAudioPreviewEnabled' $false)
+    Set-AudioPreview -State on
+    try {
+        Invoke-StopThenStartSteps
+    }
+    finally {
+        if (!$initialAudioPreview) {
+            try { Set-AudioPreview -State off }
+            catch { Write-Warning "Could not restore audio preview off: $($_.Exception.Message)" }
+        }
+    }
+}
+
+function Invoke-StopThenStartSteps {
+    $audioMonitorStarted = Wait-LogMarker -StartLine 0 -Pattern 'WASAPI audio playback started\.'
 
     # faulted-stop: the stop tears the pipeline down, and fault 1 fails its renderer handoff.
     $startLine = @(Read-LogLines).Count
@@ -447,14 +474,18 @@ function Invoke-StopThenStart {
         faultFired = $faultFired
         stopFailed = Test-LogMarker -Window $window -Pattern 'CAP-COORD-FAIL\] StopVideoPreview'
         spuriousAttach = Test-LogMarker -Window $window -Pattern $spuriousAttachPattern
+        audioMonitorStarted = $audioMonitorStarted
+        audioMonitorStopped = Test-LogMarker -Window $window -Pattern 'PREVIEW_STOP_FAILED_AUDIO_MONITOR_STOPPED'
+        audioPlaybackDisposed = Test-LogMarker -Window $window -Pattern 'WASAPI audio playback disposed\.'
         stateAfter = $state
         markers = Select-Markers $window
     }
     $step.passed = $stop.ExitCode -ne 0 -and $faultFired -and $step.stopFailed -and !$step.spuriousAttach -and
+        $audioMonitorStarted -and $step.audioMonitorStopped -and $step.audioPlaybackDisposed -and
         $null -ne $stopped -and $null -ne $state -and !$state.isPreviewing -and $state.viewModelInitialized -and
         $state.captureSessionState -eq 'Faulted'
     $steps.Add([pscustomobject]$step)
-    Write-Host "faulted-stop: fault=$faultFired stopFailed=$($step.stopFailed) spuriousAttach=$($step.spuriousAttach) passed=$($step.passed)"
+    Write-Host "faulted-stop: fault=$faultFired stopFailed=$($step.stopFailed) spuriousAttach=$($step.spuriousAttach) audioStopped=$($step.audioMonitorStopped)/$($step.audioPlaybackDisposed) passed=$($step.passed)"
 
     Invoke-FailedRecoveryStart
 
@@ -464,10 +495,11 @@ function Invoke-StopThenStart {
     $recovery = Invoke-RenderingStart -Name 'recovery-start' -StartLine $startLine
     $window = Get-LogWindow -StartLine $startLine
     $recovery.finishCompleted = Test-LogMarker -Window $window -Pattern 'CAPTURE_RETAINED_CLEANUP_COMPLETED requested=Previewing scope=PreviewPipeline initialized=True'
+    $recovery.audioMonitorRestarted = Test-LogMarker -Window $window -Pattern 'WASAPI audio playback started\.'
     $recovery.passed = $recovery.passed -and $recovery.finishCompleted -and !$recovery.captureInitialized -and
-        !$recovery.flagClearedByStop -and !$recovery.attachFailed
+        !$recovery.flagClearedByStop -and !$recovery.attachFailed -and $recovery.audioMonitorRestarted
     $steps.Add([pscustomobject]$recovery)
-    Write-Host "recovery-start: state=$($recovery.startupState) finished=$($recovery.finishCompleted) reinit=$($recovery.captureInitialized) rendered=$($recovery.renderedDuringDwell) passed=$($recovery.passed)"
+    Write-Host "recovery-start: state=$($recovery.startupState) finished=$($recovery.finishCompleted) reinit=$($recovery.captureInitialized) audio=$($recovery.audioMonitorRestarted) rendered=$($recovery.renderedDuringDwell) passed=$($recovery.passed)"
 
     Invoke-PlainCycle -Name 'plain-cycle-flashback-off'
     Invoke-FlashbackToggle -State on
@@ -495,12 +527,14 @@ function Invoke-FailedRecoveryStart {
         newCaptureCreated = Test-LogMarker -Window $window -Pattern 'PREVIEW_START phase=create_uvc'
         captureInitialized = Test-LogMarker -Window $window -Pattern '\] CAPTURE_INIT( |_READY)'
         spuriousAttach = Test-LogMarker -Window $window -Pattern $spuriousAttachPattern
+        audioMonitorStarted = Test-LogMarker -Window $window -Pattern 'WASAPI audio playback started\.'
         stateAfter = $state
         markers = Select-Markers $window
     }
     $step.passed = $start.ExitCode -ne 0 -and $faultFired -and $step.failedWithFinishError -and !$step.refusedForCleanup -and
         $step.finishBegan -and !$step.finishCompleted -and !$step.newCaptureCreated -and !$step.captureInitialized -and
-        !$step.spuriousAttach -and $null -ne $state -and !$state.isPreviewing -and $state.viewModelInitialized
+        !$step.spuriousAttach -and !$step.audioMonitorStarted -and
+        $null -ne $state -and !$state.isPreviewing -and $state.viewModelInitialized
     $steps.Add([pscustomobject]$step)
     Write-Host "failed-recovery-start: fault=$faultFired finishBegan=$($step.finishBegan) completed=$($step.finishCompleted) spuriousAttach=$($step.spuriousAttach) passed=$($step.passed)"
 }
@@ -622,13 +656,15 @@ function Invoke-ReinitThenStart {
         segmentsBefore = $segmentsBefore
         segmentsAtFailure = $segmentsAtFailure
         stateAfter = $state
+        # The failed reinit rolls the selection back to the rate it started from.
+        selectedFrameRateRestored = $null -ne $state -and [Math]::Abs([double]$state.selectedFrameRate - $initialFrameRate) -lt 0.01
         markers = Select-Markers $window
     }
     $step.passed = $set.ExitCode -ne 0 -and $step.teardownFaulted -and $step.finishFaulted -and $cleanupFaulted -and
         $step.finishBegan -and !$step.finishCompleted -and !$step.flashbackDisposed -and !$step.spuriousAttach -and
         $segmentsBefore.segmentFiles -ge 1 -and $segmentsAtFailure.exists -and !$segmentsAtFailure.retiredMarker -and
         $segmentsAtFailure.segmentFiles -ge $segmentsBefore.segmentFiles -and
-        $null -ne $state -and !$state.isPreviewing -and !$state.viewModelInitialized
+        $null -ne $state -and !$state.isPreviewing -and !$state.viewModelInitialized -and $step.selectedFrameRateRestored
     $steps.Add([pscustomobject]$step)
     Write-Host "failed-reinit: faults=$($step.teardownFaulted)/$($step.finishFaulted) segments=$($segmentsBefore.segmentFiles)->$($segmentsAtFailure.segmentFiles) vmInitialized=$($state.viewModelInitialized) passed=$($step.passed)"
 
@@ -643,13 +679,14 @@ function Invoke-ReinitThenStart {
     $recovery.segmentsRetired = Test-LogMarker -Window $window -Pattern 'FLASHBACK_PREVIEW_DISPOSE_OK purge=False'
     $recovery.segmentsPurged = Test-LogMarker -Window $window -Pattern 'FLASHBACK_PREVIEW_DISPOSE_OK purge=True|FLASHBACK_BUFFER_DISPOSE_PURGE'
     $recovery.segmentsAfter = Get-SegmentEvidence -SessionDirectory $sessionDirectory
-    $recovery.passed = $recovery.passed -and $recovery.finishCompleted -and $recovery.segmentsRetired -and
-        !$recovery.segmentsPurged -and !$recovery.attachFailed -and $recovery.segmentsAfter.exists -and
-        $recovery.segmentsAfter.retiredMarker -and $recovery.segmentsAfter.segmentFiles -ge $segmentsAtFailure.segmentFiles
     $after = Get-Snapshot
     $recovery.selectedFrameRateRestored = $null -ne $after -and [Math]::Abs([double]$after.SelectedFrameRate - $initialFrameRate) -lt 0.01
+    $recovery.passed = $recovery.passed -and $recovery.finishCompleted -and $recovery.segmentsRetired -and
+        !$recovery.segmentsPurged -and !$recovery.attachFailed -and $recovery.segmentsAfter.exists -and
+        $recovery.segmentsAfter.retiredMarker -and $recovery.segmentsAfter.segmentFiles -ge $segmentsAtFailure.segmentFiles -and
+        $recovery.selectedFrameRateRestored
     $steps.Add([pscustomobject]$recovery)
-    Write-Host "recovery-start: state=$($recovery.startupState) finishedBy=$($recovery.finishedBy) retired=$($recovery.segmentsRetired) segments=$($recovery.segmentsAfter.segmentFiles) marker=$($recovery.segmentsAfter.retiredMarker) passed=$($recovery.passed)"
+    Write-Host "recovery-start: state=$($recovery.startupState) finishedBy=$($recovery.finishedBy) retired=$($recovery.segmentsRetired) segments=$($recovery.segmentsAfter.segmentFiles) marker=$($recovery.segmentsAfter.retiredMarker) rateRestored=$($recovery.selectedFrameRateRestored) passed=$($recovery.passed)"
 }
 
 function Invoke-Control {
