@@ -1,6 +1,5 @@
 using System;
 using System.Numerics;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.UI.Composition;
 using Microsoft.UI.Dispatching;
@@ -17,176 +16,79 @@ namespace Sussudio.Controllers;
 
 internal sealed class PreviewAudioFadeControllerContext
 {
-    public required DispatcherQueue DispatcherQueue { get; init; }
     public required PreviewAudioVolumeTransitionController VolumeController { get; init; }
 }
 
-// WinUI supplies the existing easing/timing; the volume owner admits each frame.
+// Ties the preview audio fades to the visual lifecycle: prime mutes at the
+// start request, first-visual readiness releases the fade-in once, and the
+// stop button fades out before teardown. The volume owner runs both ramps, so
+// easing, timing, writer admission, user supersession and the audio-ramp trace
+// match every other preview-audio transition. A XAML storyboard cannot drive
+// this: WinUI resolves Storyboard.TargetProperty through XAML type metadata,
+// which a code-only DependencyObject does not have.
 internal sealed class PreviewAudioFadeController
 {
+    private const string PreviewStartReason = "preview_start";
+    private const string PreviewStopReason = "preview_stop";
+
     private readonly PreviewAudioFadeControllerContext _context;
-    private PreviewAudioVolumeOperation _operation;
-    private bool _isFadingIn;
-    private FadeRun? _activeFade;
+    private PreviewAudioVolumeOperation _primedOperation;
+    private bool _fadeInArmed;
 
     public PreviewAudioFadeController(PreviewAudioFadeControllerContext context)
     {
         _context = context;
     }
 
-    public bool IsFadingIn => _isFadingIn;
-    public bool IsAnimationActive => _activeFade != null;
-
     public void PrimeFadeIn()
     {
-        StopActiveFade();
-        _operation = _context.VolumeController.PrimeForAudioTransition("preview_start");
+        // A new operation supersedes any running fade through its writer lease.
+        _primedOperation = _context.VolumeController.PrimeForAudioTransition(PreviewStartReason);
         // Even a zero target can be changed by the user before first-frame readiness.
-        _isFadingIn = _operation.Generation != 0;
+        _fadeInArmed = _primedOperation.Generation != 0;
         Sussudio.Logger.Log($"PREVIEW_AUDIO_FADE_PRIMED targetPct={_context.VolumeController.RequestedVolume * 100:0}");
     }
 
-    public void StartFadeIn(int durationMs = 900)
+    public void StartFadeIn()
     {
-        if (!_isFadingIn) return;
-        _ = StartStoryboardAsync(_operation, muteOutput: false, durationMs);
+        if (!_fadeInArmed) return;
+        _fadeInArmed = false;
+        _ = RunFadeInAsync(_primedOperation);
     }
 
-    public Task StartFadeOutAsync(int durationMs = 450)
+    // Never faults: the stop button awaits this before backend teardown.
+    public async Task StartFadeOutAsync()
     {
-        StopActiveFade();
-        _isFadingIn = false;
-        _operation = _context.VolumeController.BeginTransition("preview_stop");
-        return StartStoryboardAsync(_operation, muteOutput: true, durationMs);
-    }
-
-    private Task StartStoryboardAsync(PreviewAudioVolumeOperation operation, bool muteOutput, int durationMs)
-    {
-        StopActiveFade();
-        var candidate = _context.VolumeController.BeginWriter(operation, muteOutput);
-        if (candidate is not { } writer)
-        {
-            _isFadingIn = false;
-            return Task.CompletedTask;
-        }
-        if (Math.Abs(writer.StartingVolume - writer.TargetVolume) <= 0.001)
-        {
-            _context.VolumeController.TryCompleteWriter(writer);
-            _isFadingIn = false;
-            return Task.CompletedTask;
-        }
-
-        var animationValue = new PreviewAudioAnimationValue();
-        var volumeAnimation = new DoubleAnimation
-        {
-            From = writer.StartingVolume,
-            To = writer.TargetVolume,
-            Duration = TimeSpan.FromMilliseconds(durationMs),
-            EasingFunction = new CubicEase { EasingMode = muteOutput ? EasingMode.EaseIn : EasingMode.EaseOut },
-            EnableDependentAnimation = true,
-        };
-        Storyboard.SetTarget(volumeAnimation, animationValue);
-        Storyboard.SetTargetProperty(volumeAnimation, nameof(PreviewAudioAnimationValue.Value));
-        var storyboard = new Storyboard();
-        storyboard.Children.Add(volumeAnimation);
-        var run = new FadeRun(storyboard, animationValue, writer);
-        animationValue.ValueChanged = value => _context.VolumeController.TryApplyTransient(writer, value);
-        run.CompletedHandler = (_, _) => Finish(run, completed: true);
-        storyboard.Completed += run.CompletedHandler;
-        _activeFade = run;
-        run.Cancellation = writer.CancellationToken.Register(() =>
-        {
-            if (_context.DispatcherQueue.HasThreadAccess)
-            {
-                Finish(run, completed: false);
-            }
-            else if (!_context.DispatcherQueue.TryEnqueue(() => Finish(run, completed: false)))
-            {
-                // The window is gone. Its revoked lease rejects late frames, and
-                // a stop operation must not wait forever for a dead dispatcher.
-                run.Completion.TrySetResult(true);
-            }
-        });
-        if (!run.Finished)
-        {
-            Sussudio.Logger.Log(muteOutput
-                ? $"PREVIEW_AUDIO_FADE_OUT_STARTED fromPct={writer.StartingVolume * 100:0} durationMs={durationMs}"
-                : $"PREVIEW_AUDIO_FADE_IN_STARTED targetPct={writer.TargetVolume * 100:0} durationMs={durationMs}");
-            try
-            {
-                storyboard.Begin();
-            }
-            catch (Exception ex)
-            {
-                Sussudio.Logger.LogException(ex);
-                // A failed visual animation must still settle its target and
-                // release the stop caller to finish backend teardown.
-                Finish(run, completed: true);
-            }
-        }
-        else run.Cancellation.Dispose();
-        return run.Completion.Task;
-    }
-
-    private void StopActiveFade()
-    {
-        if (_activeFade is { } run) Finish(run, completed: false);
-    }
-
-    private void Finish(FadeRun run, bool completed)
-    {
-        if (run.Finished) return;
-        run.Finished = true;
-        run.Storyboard.Completed -= run.CompletedHandler;
-        run.AnimationValue.ValueChanged = null;
+        _fadeInArmed = false;
+        var operation = _context.VolumeController.BeginTransition(PreviewStopReason);
         try
         {
-            if (completed) _context.VolumeController.TryCompleteWriter(run.Writer);
-            else _context.VolumeController.EndWriter(run.Writer);
+            await _context.VolumeController.RampDownForAudioTransitionAsync(operation, PreviewStopReason);
         }
         catch (Exception ex)
         {
             Sussudio.Logger.LogException(ex);
         }
-        finally
+    }
+
+    private async Task RunFadeInAsync(PreviewAudioVolumeOperation operation)
+    {
+        try
         {
-            try { run.Storyboard.Stop(); }
-            catch (Exception ex) { Sussudio.Logger.LogException(ex); }
-            run.Cancellation.Dispose();
-            if (ReferenceEquals(_activeFade, run))
-            {
-                _activeFade = null;
-                _isFadingIn = false;
-            }
-            // Superseding a visual fade does not cancel the requested backend stop.
-            run.Completion.TrySetResult(true);
+            await _context.VolumeController.RampUpForAudioTransitionAsync(operation, PreviewStartReason);
         }
-        if (completed && run.Writer.MutesOutput) Sussudio.Logger.Log("PREVIEW_AUDIO_FADE_OUT_COMPLETED");
-    }
-
-    private sealed class FadeRun(Storyboard storyboard, PreviewAudioAnimationValue animationValue, PreviewAudioVolumeWriter writer)
-    {
-        public Storyboard Storyboard { get; } = storyboard;
-        public PreviewAudioAnimationValue AnimationValue { get; } = animationValue;
-        public PreviewAudioVolumeWriter Writer { get; } = writer;
-        public TaskCompletionSource<bool> Completion { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        public EventHandler<object>? CompletedHandler;
-        public CancellationTokenRegistration Cancellation;
-        public bool Finished;
-    }
-
-    private sealed class PreviewAudioAnimationValue : DependencyObject
-    {
-        public static readonly DependencyProperty ValueProperty = DependencyProperty.Register(
-            nameof(Value), typeof(double), typeof(PreviewAudioAnimationValue),
-            new PropertyMetadata(0.0, (sender, args) =>
-                ((PreviewAudioAnimationValue)sender).ValueChanged?.Invoke((double)args.NewValue)));
-
-        public Action<double>? ValueChanged { get; set; }
-        public double Value
+        catch (Exception ex)
         {
-            get => (double)GetValue(ValueProperty);
-            set => SetValue(ValueProperty, value);
+            Sussudio.Logger.LogException(ex);
+            try
+            {
+                // A failed fade must not leave preview audio held at the primed mute.
+                _context.VolumeController.RestoreAfterUnavailableAudio(operation, "preview_start_fade_failed");
+            }
+            catch (Exception restoreEx)
+            {
+                Sussudio.Logger.LogException(restoreEx);
+            }
         }
     }
 }

@@ -777,38 +777,6 @@ public class RuntimeHelpersTests
         Assert.IsType<ArgumentException>(invocation.InnerException);
     }
 
-    // Failure modes of HubProcessCounters, which replaced Process.Refresh() + WorkingSet64 / PrivateMemorySize64 /
-    // TotalProcessorTime in the hub snapshot. The snapshot fields are a wire contract, so the numbers must mean
-    // the same thing: a unit slip (pages or KB for bytes, milliseconds for 100 ns ticks) or a wrong struct
-    // layout (reading PagefileUsage for PrivateUsage) would be silent in a live snapshot until someone compared.
-    // E2E compares hub values against the perf report's independent reading but cannot isolate a unit error from
-    // process growth, so this compares against the Process properties the hub used before, in the same process.
-    [Fact]
-    public void HubProcessCounters_ReadAgreesWithProcessMemoryAndCpuTime()
-    {
-        var type = SussudioAssembly.Load().GetType("Sussudio.Services.Automation.HubProcessCounters", throwOnError: true)!;
-        var reading = type.GetMethod("Read", BindingFlags.Public | BindingFlags.Static)!.Invoke(null, null)!;
-        T Field<T>(string name) => (T)reading.GetType().GetProperty(name)!.GetValue(reading)!;
-
-        using var process = Process.GetCurrentProcess();
-        process.Refresh();
-
-        Assert.True(Field<bool>("Valid"));
-
-        // Same counters read a moment apart in a live test host: allow drift, not a unit error (1024x or 8192x).
-        AssertWithin(process.WorkingSet64, Field<long>("WorkingSetBytes"));
-        AssertWithin(process.PrivateMemorySize64, Field<long>("PrivateBytes"));
-
-        // CPU is cumulative, so the later Process reading is never behind the earlier counter read, and the gap is
-        // the few milliseconds between the two calls (100 ns ticks; a millisecond reading would be 10,000x smaller).
-        var cpuTicks = Field<long>("CpuTicks");
-        var processTicks = process.TotalProcessorTime.Ticks;
-        Assert.InRange(processTicks - cpuTicks, 0L, TimeSpan.TicksPerSecond);
-
-        static void AssertWithin(long expected, long actual)
-            => Assert.InRange(actual, expected - Math.Max(64L << 20, expected / 4), expected + Math.Max(64L << 20, expected / 4));
-    }
-
     // Failure modes of a failed counter read in the hub snapshot, listed before the code. E2E cannot make
     // K32GetProcessMemoryInfo or GetProcessTimes fail in a live process.
     //  1. A failed read after a good one must publish the last good working set and private bytes. Zero draws a
@@ -816,18 +784,19 @@ public class RuntimeHelpersTests
     //  2. A failed read must keep the CPU total, so the next good read is not a CPU spike.
     //  3. A failed read before any good one has nothing to carry: it publishes zero, and the next good read is
     //     published as read.
+    // Driven as a poll tick (advance: true), the path that owns the CPU baseline and the carried percentage.
     [Fact]
     public void HubProcessCounters_AFailedReadCarriesTheLastGoodMemoryAndCpuTotal()
     {
         var assembly = SussudioAssembly.Load();
         var hubType = assembly.GetType("Sussudio.Services.Automation.AutomationDiagnosticsHub", throwOnError: true)!;
         var readingType = assembly.GetType("Sussudio.Services.Automation.HubProcessCounters+Reading", throwOnError: true)!;
-        var capture = hubType.GetMethod("CaptureProcessResourceSnapshot", BindingFlags.NonPublic | BindingFlags.Instance, [readingType])!;
+        var capture = hubType.GetMethod("CaptureProcessResourceSnapshot", BindingFlags.NonPublic | BindingFlags.Instance, [readingType, typeof(bool)])!;
         var hub = RuntimeHelpers.GetUninitializedObject(hubType);
         object Reading(bool valid, long workingSet, long privateBytes, long cpuTicks)
             => Activator.CreateInstance(readingType, valid, workingSet, privateBytes, cpuTicks)!;
         double Value(object snapshot, string name) => (double)snapshot.GetType().GetProperty(name)!.GetValue(snapshot)!;
-        object Capture(object reading) => capture.Invoke(hub, [reading])!;
+        object Capture(object reading) => capture.Invoke(hub, [reading, true])!;
         var failed = Activator.CreateInstance(readingType)!;
 
         var beforeAnyGood = Capture(failed);
@@ -1012,6 +981,48 @@ public class RuntimeHelpersTests
 
     private static string NewEnvVarName(string suffix)
         => $"SUSSUDIO_TEST_{suffix}_{Guid.NewGuid():N}";
+}
+
+// The hub counter check compares two whole-process readings, so nothing else in the test host may run between
+// them. Run in parallel with the rest of the suite, another class's allocations moved the working set by 25-130%
+// and the process CPU time by more than a second between the two reads.
+[CollectionDefinition(nameof(HubProcessCountersCollection), DisableParallelization = true)]
+public sealed class HubProcessCountersCollection { }
+
+[Collection(nameof(HubProcessCountersCollection))]
+public sealed class HubProcessCountersTests
+{
+    // Failure modes of HubProcessCounters, which replaced Process.Refresh() + WorkingSet64 / PrivateMemorySize64 /
+    // TotalProcessorTime in the hub snapshot. The snapshot fields are a wire contract, so the numbers must mean
+    // the same thing: a unit slip (pages or KB for bytes, milliseconds for 100 ns ticks) or a wrong struct
+    // layout (reading PagefileUsage for PrivateUsage) would be silent in a live snapshot until someone compared.
+    // E2E compares hub values against the perf report's independent reading but cannot isolate a unit error from
+    // process growth, so this compares against the Process properties the hub used before, in the same process.
+    [Fact]
+    public void HubProcessCounters_ReadAgreesWithProcessMemoryAndCpuTime()
+    {
+        var type = SussudioAssembly.Load().GetType("Sussudio.Services.Automation.HubProcessCounters", throwOnError: true)!;
+        var reading = type.GetMethod("Read", BindingFlags.Public | BindingFlags.Static)!.Invoke(null, null)!;
+        T Field<T>(string name) => (T)reading.GetType().GetProperty(name)!.GetValue(reading)!;
+
+        using var process = Process.GetCurrentProcess();
+        process.Refresh();
+
+        Assert.True(Field<bool>("Valid"));
+
+        // Same counters read a moment apart in a live test host: allow drift, not a unit error (1024x or 8192x).
+        AssertWithin(process.WorkingSet64, Field<long>("WorkingSetBytes"));
+        AssertWithin(process.PrivateMemorySize64, Field<long>("PrivateBytes"));
+
+        // CPU is cumulative, so the later Process reading is never behind the earlier counter read, and the gap is
+        // the few milliseconds between the two calls (100 ns ticks; a millisecond reading would be 10,000x smaller).
+        var cpuTicks = Field<long>("CpuTicks");
+        var processTicks = process.TotalProcessorTime.Ticks;
+        Assert.InRange(processTicks - cpuTicks, 0L, TimeSpan.TicksPerSecond);
+
+        static void AssertWithin(long expected, long actual)
+            => Assert.InRange(actual, expected - Math.Max(64L << 20, expected / 4), expected + Math.Max(64L << 20, expected / 4));
+    }
 }
 
 // xUnit slice for three small contract / policy types that the legacy

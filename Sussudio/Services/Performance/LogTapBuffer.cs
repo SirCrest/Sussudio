@@ -55,9 +55,11 @@ public sealed class LogTapBuffer
 
     /// <summary>
     /// The newest <paramref name="max"/> lines (clamped to 1..capacity) whose text contains
-    /// <paramref name="contains"/> (case-insensitive), oldest first, without trailing newlines.
+    /// <paramref name="contains"/> and does not contain <paramref name="exclude"/> (both case-insensitive), oldest
+    /// first, without trailing newlines. <paramref name="max"/> counts kept lines only, so excluded spam never uses up
+    /// the budget.
     /// </summary>
-    public IReadOnlyList<string> Tail(int max, string? contains)
+    public IReadOnlyList<string> Tail(int max, string? contains, string? exclude = null)
     {
         max = Math.Clamp(max, 1, _ring.Length);
         string[] snapshot;
@@ -75,10 +77,12 @@ public sealed class LogTapBuffer
 
         var matches = new List<string>(Math.Min(max, snapshot.Length));
         var filter = string.IsNullOrEmpty(contains) ? null : contains;
+        var excluded = string.IsNullOrEmpty(exclude) ? null : exclude;
         for (var i = snapshot.Length - 1; i >= 0 && matches.Count < max; i--)
         {
             var line = snapshot[i];
-            if (filter is null || line.Contains(filter, StringComparison.OrdinalIgnoreCase))
+            if ((filter is null || line.Contains(filter, StringComparison.OrdinalIgnoreCase))
+                && (excluded is null || !line.Contains(excluded, StringComparison.OrdinalIgnoreCase)))
             {
                 matches.Add(line.TrimEnd('\n', '\r'));
             }

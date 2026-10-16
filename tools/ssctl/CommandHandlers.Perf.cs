@@ -5,7 +5,7 @@ using Sussudio.Tools.Performance;
 
 namespace Sussudio.Tools.Ssctl;
 
-// Performance-telemetry verbs: perf report|window|mark|trace|experiment, knobs, knob set|reset, log tail. Payload shapes
+// Performance-telemetry verbs: perf report|window|mark|trace|experiment|lease, knobs, knob set|reset, log tail. Payload shapes
 // and help text come from the automation command catalog; formatting lives in PerfFormatters. Contract:
 // docs/architecture/performance-telemetry.md section 3.
 //
@@ -14,17 +14,18 @@ namespace Sussudio.Tools.Ssctl;
 // preview and recording control, performance windows) driven by the shared runner in tools/Common/Performance.
 internal static partial class CommandHandlers
 {
-    private const string PerfUsage = "perf report|window|mark|trace|experiment ...";
+    private const string PerfUsage = "perf report|window|mark|trace|experiment|lease ...";
     private const string PerfReportUsage = "perf report [--window NAME] [--filter PREFIX] [--idle] [--json]";
     private const string PerfWindowUsage = "perf window begin|read|end|cancel|list [NAME] [--json]";
     private const string PerfMarkUsage = "perf mark <text>";
     private const string PerfTraceUsage = "perf trace start [--capacity N]|stop|status|dump [path]|analyze <file> [--top N] [--json]";
     private const string PerfTraceAnalyzeUsage = "perf trace analyze <file> [--top N] [--json]";
     private const string PerfExperimentUsage = "perf experiment <spec.json> [--out DIR] [--json]";
+    private const string PerfLeaseUsage = "perf lease [status|release --force] [--json]";
     private const int MaxAnalyzeTopFrames = 1000;
     private const string KnobsUsage = "knobs [FILTER] [--json]";
     private const string KnobUsage = "knob set <name> <value> | knob reset <name>";
-    private const string LogUsage = "log tail [--max N] [--contains TEXT] [--json]";
+    private const string LogUsage = "log tail [--max N] [--contains TEXT] [--exclude TEXT] [--json]";
 
     private static Task<int> HandlePerfAsync(CommandContext context)
     {
@@ -37,6 +38,7 @@ internal static partial class CommandHandlers
             "mark" => HandlePerfMarkAsync(context),
             "trace" => HandlePerfTraceAsync(context),
             "experiment" => HandlePerfExperimentAsync(context),
+            "lease" => HandlePerfLeaseAsync(context),
             _ => throw new UsageException(PerfUsage),
         };
     }
@@ -234,6 +236,34 @@ internal static partial class CommandHandlers
         return result.Succeeded ? 0 : 3;
     }
 
+    // Status, or a forced release of a lease a dead or stuck experiment left behind. A plain release needs the holder's
+    // lease id, which only the experiment runner has, so the CLI offers only the forced form.
+    private static async Task<int> HandlePerfLeaseAsync(CommandContext context)
+    {
+        var json = context.GlobalJson || ConsumeFlag(context.Rest, "--json");
+        var force = ConsumeFlag(context.Rest, "--force");
+        var action = context.Rest.Count == 0 ? "status" : RequireWord(context.Rest, 0, PerfLeaseUsage).ToLowerInvariant();
+        if (context.Rest.Count > 0)
+        {
+            context.Rest.RemoveAt(0);
+        }
+
+        EnsureNoArgs(context.Rest, PerfLeaseUsage);
+        if (action is not ("status" or "release") || force != (action == "release"))
+        {
+            throw new UsageException(PerfLeaseUsage);
+        }
+
+        var payload = new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = action };
+        if (force)
+        {
+            payload[AutomationPayloadKeys.Force] = true;
+        }
+
+        var response = await context.SendCommandAsync(AutomationCommandKind.PerfExperimentLease, payload).ConfigureAwait(false);
+        return WriteResponse(response, json, PerfFormatters.FormatLease);
+    }
+
     private static int WritePerfToolFailure(string message, bool json)
     {
         if (json)
@@ -305,6 +335,7 @@ internal static partial class CommandHandlers
 
         var max = ParseOptionalIntFlag(context.Rest, "--max");
         var contains = ParseOptionalStringFlag(context.Rest, "--contains");
+        var exclude = ParseOptionalStringFlag(context.Rest, "--exclude");
         EnsureNoArgs(context.Rest, LogUsage);
 
         var payload = new Dictionary<string, object?>();
@@ -316,6 +347,11 @@ internal static partial class CommandHandlers
         if (contains is not null)
         {
             payload[AutomationPayloadKeys.Contains] = contains;
+        }
+
+        if (exclude is not null)
+        {
+            payload[AutomationPayloadKeys.Exclude] = exclude;
         }
 
         var response = await context.SendCommandAsync(AutomationCommandKind.GetLogTail, payload).ConfigureAwait(false);

@@ -75,6 +75,8 @@ public enum TuningKnobFailure
     WrongType,
     OutOfRange,
     MissingValue,
+    /// <summary>A running perf experiment holds the knob (<see cref="PerfExperimentLease"/>).</summary>
+    Leased,
 }
 
 public sealed record TuningKnobChangeResult(
@@ -165,6 +167,20 @@ public sealed class TuningKnobStore
             }
 
             return states;
+        }
+    }
+
+    /// <summary>One knob by case-insensitive name, or <c>null</c> when the catalog has no such knob.</summary>
+    public TuningKnobState? Find(string? name)
+    {
+        if (!TryFind(name, out var definition))
+        {
+            return null;
+        }
+
+        lock (_gate)
+        {
+            return StateLocked(definition);
         }
     }
 

@@ -173,7 +173,7 @@ public sealed class SnapshotModelsTests
         Assert.Equal(state, GetPropertyValue(restored, "FlashbackPlaybackState"));
 
         var automation = AutomationSnapshotRegressionFixture.BuildResult(healthType.Assembly, populated: false, healthOverride: health);
-        Assert.Equal(809, automation.EnumerateObject().Count());
+        Assert.Equal(799, automation.EnumerateObject().Count());
         Assert.Equal(expectedText, automation.GetProperty("FlashbackPlaybackState").GetString());
         var hubType = healthType.Assembly.GetType("Sussudio.Services.Automation.AutomationDiagnosticsHub", throwOnError: true)!;
         var laneMethod = hubType.GetMethod("BuildFlashbackPlaybackPerformanceLane", BindingFlags.Static | BindingFlags.NonPublic)!;

@@ -450,7 +450,6 @@ function Assert-LibAvRuntimeSnapshot {
     Assert-Condition ((Convert-ToInt64 (Get-PropertyValue $Snapshot "VideoDropsQueueSaturated" 0)) -le $MaxRuntimeQueueDrops) "VideoDropsQueueSaturated exceeded $MaxRuntimeQueueDrops."
     Assert-Condition ((Convert-ToInt64 (Get-PropertyValue $Snapshot "VideoDropsBacklogEviction" 0)) -le $MaxRuntimeQueueDrops) "VideoDropsBacklogEviction exceeded $MaxRuntimeQueueDrops."
     Assert-Condition ((Convert-ToInt64 (Get-PropertyValue $Snapshot "RecordingGpuFramesDropped" 0)) -le $MaxRuntimeQueueDrops) "RecordingGpuFramesDropped exceeded $MaxRuntimeQueueDrops."
-    Assert-Condition ((Convert-ToInt64 (Get-PropertyValue $Snapshot "RecordingCudaFramesDropped" 0)) -le $MaxRuntimeQueueDrops) "RecordingCudaFramesDropped exceeded $MaxRuntimeQueueDrops."
     Assert-Condition ((Convert-ToInt64 (Get-PropertyValue $Snapshot "CaptureCadenceEstimatedDroppedFrames" 0)) -le $MaxRuntimeCaptureDrops) "CaptureCadenceEstimatedDroppedFrames exceeded $MaxRuntimeCaptureDrops."
 }
 
@@ -594,7 +593,6 @@ try {
         RuntimeEncodedFrames = Get-PropertyValue $lastRuntimeSnapshot "EncoderVideoFramesEncoded" 0
         RuntimeQueueDrops = Get-PropertyValue $lastRuntimeSnapshot "VideoDropsQueueSaturated" 0
         RuntimeGpuDrops = Get-PropertyValue $lastRuntimeSnapshot "RecordingGpuFramesDropped" 0
-        RuntimeCudaDrops = Get-PropertyValue $lastRuntimeSnapshot "RecordingCudaFramesDropped" 0
         RuntimeCaptureEstimatedDrops = Get-PropertyValue $lastRuntimeSnapshot "CaptureCadenceEstimatedDroppedFrames" 0
         ExpectedWidth = $ExpectedWidth
         ExpectedHeight = $ExpectedHeight

@@ -6,14 +6,21 @@ namespace Sussudio.Services.Performance;
 /// <summary>
 /// Process-wide tuning knobs: <see cref="TuningKnobCatalog"/> over the real process environment, with every change
 /// logged as <c>TUNING_KNOB_SET</c>. The store logic (validation, launch-value capture, reset) lives in
-/// <see cref="TuningKnobStore"/>; this class only binds it to the environment and the logger. To add a knob see the
-/// remarks on <see cref="TuningKnobCatalog"/>.
+/// <see cref="TuningKnobStore"/>, and who may change a knob while a perf experiment runs lives in
+/// <see cref="PerfExperimentLease"/>; this class only binds them to the environment, the clock and the logger. Knob
+/// changes go through <see cref="Lease"/>. To add a knob see the remarks on <see cref="TuningKnobCatalog"/>.
 /// </summary>
 public static class TuningKnobs
 {
     private static readonly TuningKnobStore Store = new(
         TuningKnobCatalog.Knobs,
         new ProcessEnvironment(),
+        message => Logger.Log(message, nameof(TuningKnobs)));
+
+    /// <summary>The perf experiment lease; every automation knob change goes through <see cref="PerfExperimentLease.ChangeKnob"/>.</summary>
+    public static PerfExperimentLease Lease { get; } = new(
+        Store,
+        TimeProvider.System,
         message => Logger.Log(message, nameof(TuningKnobs)));
 
     /// <summary>Raised after any knob was set or reset; see <see cref="TuningKnobStore.Changed"/>.</summary>
@@ -30,10 +37,6 @@ public static class TuningKnobs
 
     /// <summary>Knobs whose current value differs from the launch value.</summary>
     public static IReadOnlyList<TuningKnobState> Overrides() => Store.Overrides();
-
-    public static TuningKnobChangeResult Set(string? name, string? value) => Store.Set(name, value);
-
-    public static TuningKnobChangeResult Reset(string? name) => Store.Reset(name);
 
     private sealed class ProcessEnvironment : ITuningKnobEnvironment
     {

@@ -143,9 +143,7 @@ namespace Sussudio.Services.Contracts
 
     public readonly record struct GpuPipelineHandles(
         IntPtr D3D11DevicePtr,
-        IntPtr D3D11DeviceContextPtr,
-        IntPtr CudaHwDeviceCtxPtr,
-        IntPtr CudaHwFramesCtxPtr)
+        IntPtr D3D11DeviceContextPtr)
     {
         public static GpuPipelineHandles None => default;
     }
@@ -200,8 +198,6 @@ namespace Sussudio.Services.Contracts
 
         public IntPtr D3D11DevicePtr => GpuHandles.D3D11DevicePtr;
         public IntPtr D3D11DeviceContextPtr => GpuHandles.D3D11DeviceContextPtr;
-        public IntPtr CudaHwDeviceCtxPtr => GpuHandles.CudaHwDeviceCtxPtr;
-        public IntPtr CudaHwFramesCtxPtr => GpuHandles.CudaHwFramesCtxPtr;
     }
 
     // Shared P010 boundary check so the HDR pipeline's "is this stream P010" test

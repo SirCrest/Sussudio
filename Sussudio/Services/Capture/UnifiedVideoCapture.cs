@@ -220,9 +220,6 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
         return capture?.GetSourceCadenceMetrics() ?? MfSourceReaderVideoCapture.SourceCadenceMetrics.Empty;
     }
 
-    public MjpegPipelineTimingMetrics GetMjpegPipelineTimingMetrics()
-        => GetMjpegPipelineTimingSnapshot().Summary;
-
     public MjpegPipelineTimingSnapshot GetMjpegPipelineTimingSnapshot()
     {
         var pipeline = Volatile.Read(ref _mjpegPipeline);

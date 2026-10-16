@@ -2263,6 +2263,7 @@ static partial class Program
             "PerfWindow" => "{\"action\":\"list\"}",
             "AddPerfMarker" => "{\"text\":\"harness readiness check\"}",
             "FrameTrace" => "{\"action\":\"status\"}",
+            "PerfExperimentLease" => "{\"action\":\"status\"}",
             // Unknown name: the handler must reject it without touching the process environment.
             "SetTuningKnob" => "{\"name\":\"SUSSUDIO_NOT_A_KNOB\",\"value\":\"1\"}",
             // The agent senses have real side effects (a loopback capture, UI actions), so the harness sends payloads that

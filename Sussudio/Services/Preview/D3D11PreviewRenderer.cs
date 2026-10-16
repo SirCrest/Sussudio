@@ -1880,14 +1880,6 @@ public readonly record struct PresentCadenceMetrics(
         }
     }
 
-    public double[] GetRecentPresentIntervalsMs(int maxSamples)
-    {
-        lock (_presentCadenceLock)
-        {
-            return RingBufferHelpers.Copy(_presentIntervalWindowMs, _presentIntervalCount, _presentIntervalIndex, maxSamples);
-        }
-    }
-
     public double GetEstimatedPipelineLatencyMs()
     {
         lock (_pipelineLatencyLock)
@@ -1942,14 +1934,6 @@ public readonly record struct PresentCadenceMetrics(
         finally
         {
             ArrayPool<double>.Shared.Return(scratch);
-        }
-    }
-
-    public double[] GetRecentPipelineLatencyMs(int maxSamples)
-    {
-        lock (_pipelineLatencyLock)
-        {
-            return RingBufferHelpers.Copy(_pipelineLatencyWindowMs, _pipelineLatencyCount, _pipelineLatencyIndex, maxSamples);
         }
     }
 

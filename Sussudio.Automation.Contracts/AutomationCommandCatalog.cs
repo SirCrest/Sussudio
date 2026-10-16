@@ -104,7 +104,8 @@ namespace Sussudio.Models
         GetLogTail = 64,
         CaptureAudioOutput = 65,
         GetUiTree = 66,
-        InvokeUiElement = 67
+        InvokeUiElement = 67,
+        PerfExperimentLease = 68
     }
 }
 
@@ -126,6 +127,7 @@ namespace Sussudio.Tools
         public const string DeviceId = "deviceId";
         public const string DeviceName = "deviceName";
         public const string Enabled = "enabled";
+        public const string Exclude = "exclude";
         public const string Field = "field";
         public const string FilePath = "filePath";
         public const string Filter = "filter";
@@ -134,8 +136,11 @@ namespace Sussudio.Tools
         public const string FrameRate = "frameRate";
         public const string Gain = "gain";
         public const string Height = "height";
+        public const string Holder = "holder";
         public const string IncludeIdle = "includeIdle";
         public const string InteractiveOnly = "interactiveOnly";
+        public const string Knobs = "knobs";
+        public const string Lease = "lease";
         public const string MaxDepth = "maxDepth";
         public const string MaxEntries = "maxEntries";
         public const string MaxEvents = "maxEvents";
@@ -160,6 +165,7 @@ namespace Sussudio.Tools
         public const string Target = "target";
         public const string Text = "text";
         public const string TimeoutMs = "timeoutMs";
+        public const string TtlSeconds = "ttlSeconds";
         public const string UseSelectionRange = "useSelectionRange";
         public const string Value = "value";
         public const string VerificationProfile = "verificationProfile";
@@ -520,8 +526,9 @@ namespace Sussudio.Tools
             Set(entries, AutomationCommandKind.AddPerfMarker, "{ text: string }", ready: false, timeoutMs: DefaultTimeout, pathPolicy: AutomationCommandPathPolicy.None, "perf mark <text>", "Add an annotation to the performance timeline, recorded with the time it was added; it appears in perf reports and in frame trace dumps.", Required(AutomationPayloadKeys.Text, AutomationPayloadFieldType.String));
             Set(entries, AutomationCommandKind.FrameTrace, "{ action: string, capacity?: int, outputPath?: string }", ready: false, timeoutMs: AutomationPipeProtocol.ExtendedResponseTimeoutMs, pathPolicy: AutomationCommandPathPolicy.WriteFile, "perf trace start [--capacity N]|stop|status|dump [path]", "Control the frame trace flight recorder (off by default). action is start, stop, status or dump. start allocates the ring (capacity is rounded to a power of two between 4096 and 4194304 events), stop freezes it, status reports it, dump writes Chrome Trace Event JSON that Perfetto opens; dump without outputPath writes to a temporary file and returns its path.", Required(AutomationPayloadKeys.Action, AutomationPayloadFieldType.String), Optional(AutomationPayloadKeys.Capacity, AutomationPayloadFieldType.Integer), Optional(AutomationPayloadKeys.OutputPath, AutomationPayloadFieldType.String));
             Set(entries, AutomationCommandKind.GetTuningKnobs, "{ filter?: string }", ready: false, timeoutMs: DefaultTimeout, pathPolicy: AutomationCommandPathPolicy.None, "knobs [FILTER]", "List the SUSSUDIO_* tuning knobs with type, default, range, current and launch value, owner file and when a change takes effect. filter is a case-insensitive substring of the knob name.", Optional(AutomationPayloadKeys.Filter, AutomationPayloadFieldType.String));
-            Set(entries, AutomationCommandKind.SetTuningKnob, "{ name: string, value?: string, reset?: bool }", ready: false, timeoutMs: DefaultTimeout, pathPolicy: AutomationCommandPathPolicy.None, "knob set <name> <value> | knob reset <name>", "Set a tuning knob (process environment variable) or, with reset true, restore its launch value. Values of the wrong type or outside the range are rejected, never clamped. The response states what must restart for the change to take effect; overrides are not persisted.", Required(AutomationPayloadKeys.Name, AutomationPayloadFieldType.String), Optional(AutomationPayloadKeys.Value, AutomationPayloadFieldType.String), Optional(AutomationPayloadKeys.Reset, AutomationPayloadFieldType.Boolean));
-            Set(entries, AutomationCommandKind.GetLogTail, "{ maxEntries?: int, contains?: string }", ready: false, timeoutMs: DefaultTimeout, pathPolicy: AutomationCommandPathPolicy.None, "log tail [--max N] [--contains TEXT]", "Get the most recent app log lines (up to 4096 retained) plus per-caller and per-tag line counts for spotting log spam. contains filters lines by case-insensitive substring.", Optional(AutomationPayloadKeys.MaxEntries, AutomationPayloadFieldType.Integer), Optional(AutomationPayloadKeys.Contains, AutomationPayloadFieldType.String));
+            Set(entries, AutomationCommandKind.SetTuningKnob, "{ name: string, value?: string, reset?: bool, lease?: string }", ready: false, timeoutMs: DefaultTimeout, pathPolicy: AutomationCommandPathPolicy.None, "knob set <name> <value> | knob reset <name>", "Set a tuning knob (process environment variable) or, with reset true, restore its launch value. Values of the wrong type or outside the range are rejected, never clamped. The response states what must restart for the change to take effect; overrides are not persisted. While a perf experiment holds the knob (PerfExperimentLease), the change is refused with invalid-state unless lease is that experiment's lease id.", Required(AutomationPayloadKeys.Name, AutomationPayloadFieldType.String), Optional(AutomationPayloadKeys.Value, AutomationPayloadFieldType.String), Optional(AutomationPayloadKeys.Reset, AutomationPayloadFieldType.Boolean), Optional(AutomationPayloadKeys.Lease, AutomationPayloadFieldType.String));
+            Set(entries, AutomationCommandKind.GetLogTail, "{ maxEntries?: int, contains?: string, exclude?: string }", ready: false, timeoutMs: DefaultTimeout, pathPolicy: AutomationCommandPathPolicy.None, "log tail [--max N] [--contains TEXT] [--exclude TEXT]", "Get the most recent app log lines (up to 4096 retained) plus per-caller and per-tag line counts for spotting log spam. contains keeps only lines with that text and exclude drops lines with that text, both case-insensitive substrings; maxEntries counts the lines kept, so excluded spam does not use it up.", Optional(AutomationPayloadKeys.MaxEntries, AutomationPayloadFieldType.Integer), Optional(AutomationPayloadKeys.Contains, AutomationPayloadFieldType.String), Optional(AutomationPayloadKeys.Exclude, AutomationPayloadFieldType.String));
+            Set(entries, AutomationCommandKind.PerfExperimentLease, "{ action: string, lease?: string, holder?: string, knobs?: array, ttlSeconds?: int, force?: bool }", ready: false, timeoutMs: DefaultTimeout, pathPolicy: AutomationCommandPathPolicy.None, "perf lease [status|release --force]", "The perf experiment lease: one experiment at a time holds the tuning knobs it varies. action is status, acquire, renew or release. acquire takes lease (the client's own id, 1 to 64 characters), holder (who runs the experiment, 1 to 200 characters), knobs (names) and ttlSeconds (10 to 600, default 60); it is refused with invalid-state while another experiment holds the lease, and a retry with the same id renews it. While the lease is held, SetTuningKnob refuses its knobs without the lease id. renew moves the expiry; a holder that stops renewing loses the lease at expiry and the app restores every leased knob to its value when the lease began. release with the holder's id frees the lease and leaves the knobs alone; force ends anyone's lease and restores its knobs. ssctl perf experiment and MCP run_perf_experiment take, renew and release it themselves.", Required(AutomationPayloadKeys.Action, AutomationPayloadFieldType.String), Optional(AutomationPayloadKeys.Lease, AutomationPayloadFieldType.String), Optional(AutomationPayloadKeys.Holder, AutomationPayloadFieldType.String), Optional(AutomationPayloadKeys.Knobs, AutomationPayloadFieldType.Array), Optional(AutomationPayloadKeys.TtlSeconds, AutomationPayloadFieldType.Integer), Optional(AutomationPayloadKeys.Force, AutomationPayloadFieldType.Boolean));
         }
 
         private static void RegisterAgentSenseEntries(Dictionary<AutomationCommandKind, AutomationCommandMetadata> entries)

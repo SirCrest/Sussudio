@@ -83,8 +83,8 @@ internal static class AtomicCounter
 // Both sinks publish onto a bounded Channel from a hot capture callback, and both
 // need the same three steps: claim a depth slot, record the high-water mark when
 // the write lands, and give the slot back when the channel refuses. That sequence
-// was open-coded seven times across the two sinks (video, gpu, cuda and audio
-// lanes) and every copy was byte-identical, so a drift in one lane would have been
+// was open-coded seven times across the two sinks (video, gpu, a since-removed
+// cuda lane and audio lanes) and every copy was byte-identical, so a drift in one lane would have been
 // invisible. The rollback stays a caller-supplied delegate because each sink tags
 // its underflow diagnostic with its own log prefix.
 internal static class QueueAdmission
@@ -93,7 +93,7 @@ internal static class QueueAdmission
     // group converts without allocating per call.
     internal delegate void DepthRollback(ref int depth, string queueName);
 
-    // Video/gpu/cuda lanes: the observed depth feeds the lane's high-water mark.
+    // Video/gpu lanes: the observed depth feeds the lane's high-water mark.
     public static bool TryWrite<T>(
         Channel<T> queue,
         T packet,

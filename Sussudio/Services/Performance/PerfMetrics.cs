@@ -38,7 +38,7 @@ public static class PerfMetrics
     public static readonly PerfHistogram PreviewIngressToVisible = Time("preview.ingress_to_visible", "MF sample time to estimated visible (QPC domain only)");
 
     // recording
-    public static readonly PerfHistogram RecordingQueueDwell = Time("recording.queue_dwell", "video packet enqueue to encode-loop dequeue, all lanes (CPU, D3D11, CUDA), QPC");
+    public static readonly PerfHistogram RecordingQueueDwell = Time("recording.queue_dwell", "video packet enqueue to encode-loop dequeue, both lanes (CPU, D3D11), QPC");
     public static readonly PerfHistogram RecordingEncodeSubmit = Time("recording.encode_submit", "avcodec_send_frame plus the receive/drain loop, including the nested mux_write time");
     public static readonly PerfHistogram RecordingMuxWrite = Time("recording.mux_write", "video-packet av_interleaved_write_frame including I/O (nested inside encode_submit; audio packets are not recorded)");
 

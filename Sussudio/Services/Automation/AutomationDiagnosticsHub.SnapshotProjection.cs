@@ -340,9 +340,6 @@ public sealed partial class AutomationDiagnosticsHub
             PreviewAttemptId = previewStartup.AttemptId,
             PreviewStartupElapsedMs = previewStartup.ElapsedMs,
             PreviewStartupTimeoutMs = previewStartup.TimeoutMs,
-            PreviewGpuSignalMediaOpened = previewStartup.GpuSignalMediaOpened,
-            PreviewGpuSignalFirstFrame = previewStartup.GpuSignalFirstFrame,
-            PreviewGpuSignalPlaybackAdvancing = previewStartup.GpuSignalPlaybackAdvancing,
             PreviewStartupRequiredSignals = previewStartup.RequiredSignals,
             PreviewStartupReceivedSignals = previewStartup.ReceivedSignals,
             PreviewStartupStrategy = previewStartup.Strategy,
@@ -440,8 +437,6 @@ public sealed partial class AutomationDiagnosticsHub
             PreviewGpuPlaybackState = previewRuntime.GpuPlaybackState,
             PreviewGpuNaturalVideoWidth = previewRuntime.GpuNaturalVideoWidth,
             PreviewGpuNaturalVideoHeight = previewRuntime.GpuNaturalVideoHeight,
-            PreviewGpuPositionMs = previewRuntime.GpuPositionMs,
-            PreviewGpuPositionEventCount = previewRuntime.GpuPositionEventCount,
             PreviewHdrInputDetected = previewHdrState.InputDetected,
             PreviewToneMapMode = previewHdrState.ToneMapMode,
             PreviewColorContext = captureRuntime.NegotiatedPixelFormat,
@@ -482,11 +477,6 @@ public sealed partial class AutomationDiagnosticsHub
             RecordingGpuQueueMaxDepth = health.RecordingGpuQueueMaxDepth,
             RecordingGpuFramesEnqueued = health.RecordingGpuFramesEnqueued,
             RecordingGpuFramesDropped = health.RecordingGpuFramesDropped,
-            RecordingCudaQueueDepth = health.RecordingCudaQueueDepth,
-            RecordingCudaQueueCapacity = health.RecordingCudaQueueCapacity,
-            RecordingCudaQueueMaxDepth = health.RecordingCudaQueueMaxDepth,
-            RecordingCudaFramesEnqueued = health.RecordingCudaFramesEnqueued,
-            RecordingCudaFramesDropped = health.RecordingCudaFramesDropped,
             FlashbackEncodingFailed = health.FlashbackEncodingFailed,
             FlashbackEncodingFailureType = health.FlashbackEncodingFailureType,
             FlashbackEncodingFailureMessage = health.FlashbackEncodingFailureMessage,
@@ -1504,9 +1494,6 @@ public sealed partial class AutomationDiagnosticsHub
             AttemptId = previewRuntime.StartupAttemptId,
             ElapsedMs = previewRuntime.StartupElapsedMs,
             TimeoutMs = previewRuntime.StartupTimeoutMs,
-            GpuSignalMediaOpened = previewRuntime.StartupGpuSignalMediaOpened,
-            GpuSignalFirstFrame = previewRuntime.StartupGpuSignalFirstFrame,
-            GpuSignalPlaybackAdvancing = previewRuntime.StartupGpuSignalPlaybackAdvancing,
             RequiredSignals = previewRuntime.StartupRequiredSignals,
             ReceivedSignals = previewRuntime.StartupReceivedSignals,
             Strategy = previewRuntime.StartupStrategy.ToString(),
@@ -1525,9 +1512,6 @@ public sealed partial class AutomationDiagnosticsHub
         public string? AttemptId { get; init; }
         public double? ElapsedMs { get; init; }
         public int TimeoutMs { get; init; }
-        public bool GpuSignalMediaOpened { get; init; }
-        public bool GpuSignalFirstFrame { get; init; }
-        public bool GpuSignalPlaybackAdvancing { get; init; }
         public PreviewStartupSignalFlags RequiredSignals { get; init; }
         public PreviewStartupSignalFlags ReceivedSignals { get; init; }
         public string Strategy { get; init; }

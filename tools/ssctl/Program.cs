@@ -339,6 +339,7 @@ internal static class SsctlHelpWriter
         WriteCatalogHelpLine(writer, AutomationCommandKind.GetLogTail, "[--json]");
         writer.WriteLine("  perf trace analyze <file> [--top N] [--json]   (offline: analyzes a dump from 'perf trace dump'; no app needed)");
         writer.WriteLine("  perf experiment <spec.json> [--out DIR] [--json]   (knob A/B run; takes minutes; restores the app afterward)");
+        WriteCatalogHelpLine(writer, AutomationCommandKind.PerfExperimentLease, "[--json]");
         writer.WriteLine();
     }
 

@@ -27,7 +27,8 @@ RTX 4090 and Ryzen 9 7950X. Artifacts: `artifacts/perf-overhaul/baseline/`.
   cumulative and windowed values in one result.
 - There is no way to ask "what happened between t0 and t1". The hub's
   "recent" counters are deltas against the previous poll, so any on-demand
-  read shortens the next window.
+  read shortens the next window. (Fixed later: on-demand refreshes no longer
+  move those baselines, D15.)
 - No ETW, EventSource, Meter, PDH, GPU timestamp query, or per-thread CPU
   measurement exists anywhere in the app or tools.
 - All tuning is through about 55 `SUSSUDIO_*` environment variables read at
@@ -52,7 +53,8 @@ RTX 4090 and Ryzen 9 7950X. Artifacts: `artifacts/perf-overhaul/baseline/`.
 | D12 | The agent cannot read UI state (overlay, settings, InfoBars, section expansion, window rect) or press controls that have no purpose-built command (Flashback nudge and keyboard transport, timeline scrubbing). | Automation surface survey |
 | D13 | The DWM composed-frame rate was read as the display rate. With the preview presenting 4K60 on a 120 Hz display (independent flip or an overlay plane, so DWM does not compose it), `DwmGetCompositionTimingInfo` showed 0.057 composed frames per second, which looks like a stalled display. DWM's refresh counter is not a hardware vblank counter either: it advances with composition activity. **Fixed in slice 2b:** the report adds a `Display` section from the swap chain's DXGI frame statistics and classifies the DWM rate against the present rate (2.8.5). | Live: `Dwm.FramesComposedPerSec = 0.057` at 4K60 on a 120 Hz display; an idle 120 Hz desktop measured 0.2 refresh-counter increments per second |
 | D14 | `ssctl --json timeline --max N` printed N + 1 timestamps with the last one repeated. The timeline held exactly N entries; the response envelope embedded the cached snapshot (D10), and the snapshot's `TimestampUtc` equals the newest timeline entry's. **Fixed in slice 2b:** the timeline response carries no snapshot. | `AutomationCommandDispatcher.ExecuteGetPerformanceTimelineCommand`; `CreateResponse` default `includeSnapshot: true` |
-| D15 | `PreviewD3DFrameStatsMissedRefreshCount` counts every display refresh beyond one per present, so a source slower than the display reports a "miss" on every frame while pacing perfectly: 60.67 a second for 59.94 fps on the rig's 120 Hz display. The slow-stage classifier read any recent value above zero as a hard compositor signal, and every sampled frame qualified as a `dxgi_refresh_slip` for the slow-frame ring (10 of the 16 slow frames in a 60 fps window). **Fixed in the preview-renderer follow-ups:** the raw count keeps its meaning (it is a wire field) and a cadence count is added beside it (2.8.7); the classifier and the slip check read the cadence count. | Live: `artifacts/preview-renderer-followups/missed-refresh-cadence/result-before.json`; `D3D11PreviewRenderer.TrackDxgiFrameStatistics` |
+| D15 | The performance timeline was not a cadence timeline. Every on-demand refresh (`GetSnapshot`, `AssertSnapshot`, the recording toggle, a recording or file verification) appended an entry and advanced the baselines behind the "recent" counters and process CPU percent. A client polling `ssctl state` therefore packed extra entries between poll ticks, and the next tick's entry covered only the time since that read, so a missed refresh counted in the on-demand snapshot never appeared in the timeline. **Fixed in the loose-ends slice:** only the poll tick appends and advances baselines (`SnapshotRefreshKind`); an on-demand snapshot's "recent" counts and CPU percent cover the time since the last poll tick. The wire shape is unchanged. | `AutomationDiagnosticsHub.Snapshots.cs` `RefreshSnapshotCoreAsync`; `Verify-PerfTelemetry.ps1` timeline cadence check |
+| D16 | `PreviewD3DFrameStatsMissedRefreshCount` counts every display refresh beyond one per present, so a source slower than the display reports a "miss" on every frame while pacing perfectly: 60.67 a second for 59.94 fps on the rig's 120 Hz display. The slow-stage classifier read any recent value above zero as a hard compositor signal, and every sampled frame qualified as a `dxgi_refresh_slip` for the slow-frame ring (10 of the 16 slow frames in a 60 fps window). **Fixed in the preview-renderer follow-ups:** the raw count keeps its meaning (it is a wire field) and a cadence count is added beside it (2.8.7); the classifier and the slip check read the cadence count. | Live: `artifacts/preview-renderer-followups/missed-refresh-cadence/result-before.json`; `D3D11PreviewRenderer.TrackDxgiFrameStatistics` |
 
 ### 1.3 Gaps an agent cannot work around today
 
@@ -141,7 +143,7 @@ Initial catalog (time unit is microseconds unless noted):
 | `preview.present_interval` | hist | present-to-present on cadence frames |
 | `preview.pipeline_latency` | hist | arrival to estimated visible; live frames only (Flashback playback frames, source sequence below zero, are excluded) |
 | `preview.ingress_to_visible` | hist | MF sample time to estimated visible; QPC domain and live frames only; the sample time reaches the renderer through the ingress sample ledger (2.6) |
-| `recording.queue_dwell` | hist | video packet enqueue to encode-loop dequeue, all lanes (CPU, D3D11, CUDA), QPC |
+| `recording.queue_dwell` | hist | video packet enqueue to encode-loop dequeue, both lanes (CPU, D3D11), QPC |
 | `recording.encode_submit` | hist | `avcodec_send_frame` plus the receive/drain loop of one frame, including the nested `mux_write` time |
 | `recording.mux_write` | hist | video-packet `av_interleaved_write_frame` including I/O (nested inside `encode_submit`; audio packets are not recorded) |
 | `flashback.queue_dwell` | hist | as recording |
@@ -188,7 +190,7 @@ drift):
 | `preview.gpu_render`, `preview.gpu_timing_skipped`, `preview.gpu_timing_unmeasured`; `preview.gpu_render` | `GpuTimestampRing` records a finished query when a later frame reads it back. The renderer opens and closes the span with `BeginGpuTiming(frameId, path)`/`EndGpuTiming` (`D3D11PreviewRenderer.GpuTiming.cs`; the path names the render path so counts can be split per path) around the `Draw` of the NV12 and HDR shader paths and the `VideoProcessorBlt` of the video-processor path in `D3D11PreviewRenderer.RenderPasses.cs`. The trace span starts at the CPU submit time, lasts the GPU duration, and uses the frame's arrival tick as its id (2.8.4) |
 | `ui.dispatcher_latency`, `ui.stall_50ms`; `ui.dispatcher_latency` | `UiResponsivenessProbe.OnDispatcher`, on the UI thread when the probe's no-op runs; the trace span (UI thread track, id -1) only for waits above 16 ms |
 | `gpu.engine.*` | `GpuEngineSensor.SampleOnce` on its sensor thread, once a second, from the second PDH sample on (rate counters need two) |
-| `recording.*`, `flashback.queue_dwell`, `flashback.encode_submit`, `flashback.mux_write` | `LibAvRecordingSink.DrainVideoPackets`/`DrainGpuPackets`/`DrainCudaPackets` and `FlashbackEncoderSink.DrainVideoPackets`/`DrainGpuPackets` for queue dwell (QPC stamp on the packet at enqueue, recorded after dequeue and outside `_videoQueueSync`; the GPU packet also carries the frame's arrival tick, passed by the UVC call site through `TryEnqueueGpuVideoFrame`, and uses it as the trace id); `LibAvEncoder.SendVideoFrame`/`SendGpuVideoFrame`/`SendCudaVideoFrame` and `WritePacket` for encode and mux, through the injected `EncoderPerfMetrics` role |
+| `recording.*`, `flashback.queue_dwell`, `flashback.encode_submit`, `flashback.mux_write` | `LibAvRecordingSink.DrainVideoPackets`/`DrainGpuPackets` and `FlashbackEncoderSink.DrainVideoPackets`/`DrainGpuPackets` for queue dwell (QPC stamp on the packet at enqueue, recorded after dequeue and outside `_videoQueueSync`; the GPU packet also carries the frame's arrival tick, passed by the UVC call site through `TryEnqueueGpuVideoFrame`, and uses it as the trace id); `LibAvEncoder.SendVideoFrame`/`SendGpuVideoFrame` and `WritePacket` for encode and mux, through the injected `EncoderPerfMetrics` role |
 | `flashback.segment_rotation` | `FlashbackEncoderSink.RotateSegment` through `PerfScope` (covers both returns and the terminal rethrow) |
 | `flashback.playback_decode`, `flashback.playback_present_interval` | `FlashbackPlaybackController.PaceAndDecodeFrame` and `UpdateCadenceMetrics` |
 | `audio.capture_interval`, `audio.capture_drain`; `audio.capture` | `WasapiAudioCapture.CaptureThreadMain`, beside the existing `TrackCaptureCallback` (its TickCount64 trackers are unchanged) |
@@ -348,7 +350,7 @@ site costs one volatile read.
   lease, and the D3D11 GPU lane, whose packet carries the arrival tick the UVC
   call site passes to `TryEnqueueGpuVideoFrame` (its `queue_dwell` and
   `encode_submit` therefore join to the frame's other stages). The id is -1
-  otherwise (raw buffers, the CUDA lane, and a GPU frame whose producer gave
+  otherwise (raw buffers, and a GPU frame whose producer gave
   no tick); `*.mux_write` is always -1.
 
 ### 2.5 Runtime tuning knobs
@@ -385,6 +387,10 @@ New live knobs added on this branch:
 | `SUSSUDIO_PREVIEW_GPU_TIMING` | auto | live, `auto\|on\|off`: D3D11 timestamp queries around the preview render pass; `on` and `off` win, `auto` follows the sensor demand, `off` creates no query objects, and the WARP software adapter never runs them (2.8.4) |
 
 Both are read as parsed modes. Text set by hand is case-insensitive, `1` and `true` mean `on`, `0` and `false` mean `off`, and anything unrecognised means `auto`; the knob store itself accepts only the three choices. The report's `Sensors` section states the mode in force.
+
+While a perf experiment holds a knob (2.12), an automation change to it without
+the experiment's lease id is refused with `invalid-state`, failure `Leased`, and a
+`TUNING_KNOB_REFUSED` log line; the error names the experiment.
 
 ### 2.6 Ingress clock
 
@@ -620,6 +626,10 @@ least three quarters), `mixed` (between) and `unknown` (a reading is missing; a 
   sign that the poll is still reading. `NATIVEXU_TOPOLOGY` is logged when a path's node layout is first seen or changes. The
   rolling poll re-reads every command and the topology each cycle and used to write 7,678 of 10,043 tap lines in one live window
   with identical text. Nothing parses these lines.
+  `GetLogTail` filters the retained lines with `contains` (keep lines that have the text) and `exclude` (drop lines that have
+  it), both case-insensitive substrings. `maxEntries` counts the lines kept, so excluding a chatty source (`NATIVEXU_AT` was
+  still 358 of 1,139 lines in a later live tail) returns the same number of lines reaching further back. The per-caller and
+  per-tag counts are lifetime totals and ignore both filters, which is how the source to exclude is found.
 
 #### 2.8.7 Missed refreshes against the source cadence
 
@@ -645,7 +655,7 @@ Readers: the slow-stage classifier's hard signal and `CompositorMiss` rule read 
 `dxgiRecentCadenceMissed`, which replaced `dxgiRecentMissed`). A slow frame is a `dxgi_refresh_slip` only when the sample taken on
 that frame had a cadence miss. The present lane, `ssctl state`, `ssctl timeline`, `get_performance_timeline` and
 `get_frame_pacing_verdict` show both counts. The diagnostic session's `missedRefreshDelta` still reads the raw count. The snapshot
-gains two keys (807 to 809); no existing key changed.
+gains two keys; no existing key changed.
 
 Live, the rig's 120 Hz display (measured 119.998 Hz from DXGI), 30 s windows after 20 s of settling, under the heavy load of a
 video export running at the same time (`Measure-MissedRefreshCadence.ps1` beside the results):
@@ -897,7 +907,8 @@ Three changes, each measured:
   are the same counters (`WorkingSetSize`, `PrivateUsage`, kernel plus user ticks); the hub's working set and private bytes now match
   the perf report's `ProcessSensors` reading to 0.1 MB in both after runs (421.9 and 550.7 MB in one of them). It removed the 22 ms and 14 KB.
   A failed read publishes the hub's last good reading (memory and CPU percentage), never zero, and the CPU baseline only moves on
-  good reads; before the first good read memory reads zero.
+  good reads; before the first good read memory reads zero. The CPU baseline and the carried percentage belong to the poll tick
+  (D15): an on-demand good read updates the carried memory and CPU total but not the percentage a later failed read repeats.
 - The preview fragment makes one provider call. The old overload shape called the provider as producer-epoch probe, value and
   producer-epoch probe, so every tick built the full preview snapshot three times and hopped to the UI thread three times to watch a
   window of about 2 ms. The epoch it compared, `PreviewRuntimeEpoch`, advances only when the UI-thread signature changes (visibility,
@@ -976,10 +987,70 @@ tick that sees `IsRecording` fall, and `LastVerification` then feeds `verify_rec
 parity alert and the truth verdict; the alert, event and recent-counter baselines, the 2-minute timeline and the audio-mute and
 recording-growth timers need continuous sampling; `wait_for_condition` and every control acknowledgement read the cached snapshot
 (`GetLatestSnapshot`), which would be stale or empty after an idle gap (only `GetSnapshot`, `AssertSnapshot` and the
-recording toggle call `RefreshSnapshotNowAsync`). Pipe clients are also one-shot connections, so "connected" is not a signal; the only available one is "a
+recording toggle call `RefreshSnapshotNowAsync`, and those refreshes neither append to the timeline nor move the interval
+baselines, D15). Pipe clients are also one-shot connections, so "connected" is not a signal; the only available one is "a
 request in the last N seconds". With the refresh now about 2 ms and 133 KB, the saving from a slower idle tick is small; live2 had
 already shown a 2,000 ms poll against 500 ms at noise level in CPU. If gating is still wanted, gate on recent request or an active
 recording and keep a floor tick, and decide that policy explicitly.
+
+### 2.12 Perf experiment lease
+
+`PerfExperimentLease` (`Sussudio/Services/Performance/PerfExperimentLease.cs`,
+command 68) gives one perf experiment at a time ownership of the tuning knobs it
+varies. Without it a second experiment, or a hand-typed `knob set`, could change
+knobs under a running experiment, and a runner that died left its knobs set.
+Every automation knob change goes through it; one lock covers the lease and is
+taken before the knob store's.
+
+- `acquire` takes the lease on a list of knobs with a client-chosen id (1 to 64
+  characters, the holder's capability, never shown to other clients), a holder
+  text (who runs it, 1 to 200 characters) and a time to live (10 to 600 s,
+  default 60). While another experiment holds it, `acquire` is refused with
+  `invalid-state` and the error and `Data.Active` name the holder. A retry with
+  the same id, after a lost reply, renews the lease and keeps the first baseline.
+  Malformed requests (a TTL out of range, an unknown knob, an empty id) are
+  rejected with `invalid-request`, never clamped.
+- The reply's `Baseline` is each leased knob's value and launch value when the
+  lease began, read under the knob store's lock. The runner restores to it, not
+  to its earlier preflight read, so a knob changed by hand between the two is
+  restored to the value it had when the experiment took it.
+- While the lease is held, `SetTuningKnob` on a leased knob without the lease
+  id is refused (2.5). Knobs outside the lease are unaffected, and a lease id
+  sent while no lease is active is ignored.
+- `renew` moves the expiry. A holder that stops renewing (a crash, a hang, a
+  killed tool) loses the lease at expiry: a timer restores every leased knob
+  that is not already at its baseline (a reset when the baseline was the launch
+  value, a set otherwise), logs `PERF_EXPERIMENT_LEASE_EXPIRED` and frees the
+  lease. A timer callback that races a renew re-arms instead of ending it.
+- `release` with the holder's id frees the lease and leaves the knobs alone,
+  because the holder restores them itself. `release` with `force` ends anyone's
+  lease and restores its knobs the same way (`PERF_EXPERIMENT_LEASE_FORCED`).
+  A renew by an id that no longer holds the lease is refused with
+  `invalid-state` and says whether the lease expired, was forced or was never
+  held (an app restart forgets every lease). Releasing a lease that already
+  ended succeeds; releasing another client's lease without `force` is refused.
+- `status` shows the holder, knobs, acquired and expiry times, and how the last
+  lease ended, with the knobs the app restored and any restore errors.
+
+The runner (section 7) acquires after its read-only preflight and before the
+first change, sends the id with every knob change, renews four times per TTL
+(between warmup and measure steps and readiness polls), renews once more before
+it ends each run's window, and releases after its restore. A refused renew stops
+the experiment and the run in progress is not used: either the app restored the
+knobs or another experiment owns them. In the restore the runner then reads the
+lease status. When nobody holds it, the runner restores as usual and also
+restarts the preview or Flashback for knobs the app put back without a restart.
+When another experiment holds it, the runner cancels only its own window and
+leaves the knobs, preview and recording to that experiment, and the restore is
+reported as not verified with the reason.
+
+Limits. The app restores knobs, not the rest of a dead runner's state: a
+recording the runner started keeps running and its open window stays open until
+someone ends or cancels them. A restored `preview-restart` or
+`flashback-restart` knob takes effect at the next restart of that part; the app
+does not restart the preview by itself. `ssctl perf lease` shows the lease and
+`ssctl perf lease release --force` breaks a stuck one (MCP
+`perf_experiment_lease`).
 
 ## 3. Automation commands
 
@@ -992,11 +1063,12 @@ Appended after `SetFlashbackGpuDecode = 57`; manifest revision 2 to 3.
 | 60 | `AddPerfMarker` | `{ text }` | `perf mark <text>` | `add_perf_marker` |
 | 61 | `FrameTrace` | `{ action: start\|stop\|status\|dump, capacity?, outputPath? }` | `perf trace ...` | `frame_trace` |
 | 62 | `GetTuningKnobs` | `{ filter? }` | `knobs` | `get_tuning_knobs` |
-| 63 | `SetTuningKnob` | `{ name, value?, reset? }` | `knob set\|reset` | `set_tuning_knob` |
-| 64 | `GetLogTail` | `{ maxEntries?, contains? }` | `log tail` | `get_log_tail` |
+| 63 | `SetTuningKnob` | `{ name, value?, reset?, lease? }` | `knob set\|reset` | `set_tuning_knob` |
+| 64 | `GetLogTail` | `{ maxEntries?, contains?, exclude? }` | `log tail` | `get_log_tail` |
 | 65 | `CaptureAudioOutput` | `{ seconds?, outputPath?, measureLatency? }` | `audio listen` | `listen_audio_output` |
 | 66 | `GetUiTree` | `{ root?, maxDepth?, interactiveOnly? }` | `ui tree` | `get_ui_tree` |
 | 67 | `InvokeUiElement` | `{ target, action?, value?, force? }` | `ui invoke` | `invoke_ui_element` |
+| 68 | `PerfExperimentLease` | `{ action: status\|acquire\|renew\|release, lease?, holder?, knobs?, ttlSeconds?, force? }` | `perf lease [status\|release --force]` | `perf_experiment_lease` |
 
 Tool-side only (no app command): `ssctl perf trace analyze <file>`,
 `ssctl perf experiment <spec.json>`, MCP `analyze_frame_trace`,
@@ -1012,6 +1084,13 @@ candidates, element state or analysis are how the agent recovers. The MCP tools
 return that `Data` as structured content on failure too, unlike the query tools.
 The ssctl `audio` and `ui` verbs and the three MCP tools are projections of these
 commands only.
+
+Command 68 (`PerfExperimentLease`, 2.12) was appended without another revision
+bump. It is ready-independent and returns `Data` without a snapshot; a refused
+request (`invalid-state` while another experiment holds the lease or the caller
+no longer does, `invalid-request` for a malformed one) still carries `Data` with
+the active holder and the last ended lease. ssctl and MCP expose only `status`
+and the forced `release`; `acquire` and `renew` belong to the experiment runner.
 
 ### 3.1 Perf report shape
 
@@ -1076,7 +1155,8 @@ The command-catalog payload shapes use `string` for `action` (the allowed
 values are listed in the command description), because the catalog shape
 grammar has no enumeration type. A rejected `SetTuningKnob` still returns
 `Data` with `Failure` (`UnknownKnob`, `WrongType`, `OutOfRange`, ...) beside
-the `invalid-request` error code.
+the `invalid-request` error code, except `Leased` (a knob a running experiment
+holds), which comes with `invalid-state`.
 
 ## 4. Invariants
 
@@ -1107,6 +1187,10 @@ Written before the code, per the testing policy:
   escaped; dump while running is consistent.
 - Knobs: unknown name, wrong type, and out-of-range values rejected; reset
   restores the launch value including "unset"; apply scope reported.
+- Log tail exclude (written before the code): a line with the exclude text in any case is never returned; `maxEntries` counts
+  only kept lines, so the tail reaches back past excluded spam; `contains` and `exclude` combine, and the same text in both
+  returns nothing; a null or empty exclude excludes nothing; an exclude that matches every line returns an empty tail and
+  leaves the counts alone.
 - Wire contract: command ids appended with the manifest revision bump;
   payload keys from the shared vocabulary.
 - Analyzer: malformed and truncated trace JSON produce an error, not a
@@ -1306,6 +1390,22 @@ Written before the code, per the testing policy:
   reason string (the string-to-code table is tested; a test of the call sites would assert on source text), which was checked by
   reading every pair.
 
+- Experiment lease, app side (written before the code): two experiments starting together produce exactly one holder and the
+  other is refused with the holder named and nothing changed; a same-id retry after a lost reply keeps the first baseline; a
+  hand change to a leased knob is refused and names the holder while the holder's own changes and unleased knobs still go
+  through; a holder that stops renewing loses the lease at expiry, the app restores each leased knob (reset or set to its
+  baseline, nothing written for a knob already there) and the lease is free; a renew after expiry, after a forced release or
+  with an id that never held it is refused with the reason; the holder's release leaves knobs alone and is harmless twice, another
+  client's release is refused unless forced, and a forced release restores the knobs; an expiry timer that fires just after a
+  renew does not end the lease; a TTL out of range, an unknown knob, or an empty, over-long or control-character id or holder is
+  rejected, never truncated, and takes no lease.
+- Experiment lease, runner side (written before the runner used it): a foreign lease rejects the run before any change and
+  sends no release; a lost acquire reply is released under the runner's own id; a lease lost mid-run fails the run, drops the
+  window that was open and still restores (restarting the preview the app's restore left stale), while a lease taken over by
+  another experiment leaves that experiment's knobs and preview alone; waits longer than the TTL renew in time; every knob
+  change and restore carries the lease id; the release comes after the restore on a fresh token whether the run completed,
+  failed or was canceled, and a failed release is reported; baselines come from the acquire reply, not the preflight read.
+
 Everything else is verified end to end against the live app (section 6).
 
 ## 6. Validation
@@ -1315,7 +1415,9 @@ Everything else is verified end to end against the live app (section 6).
 preview, a frame trace dumped and analyzed, a knob A/B experiment, an audio
 listen, and a UI tree read and invoke. Two scripts make the command surface
 repeatable against any build: `scripts/performance/Verify-PerfTelemetry.ps1`
-(report, window, marker, trace, knobs, log tail; 35 checks) and
+(report, window, marker, trace, knobs, the cadence timeline, the experiment
+lease's refusal, forced release and expiry, log tail with contains and exclude;
+47 checks) and
 `scripts/performance/Verify-AgentSenses.ps1` (audio listen, UI tree and
 invoke; 24 checks). Each writes `verify-result.json` and exits non-zero on
 any failed check. With a silent capture source the audio checks still pass
@@ -1400,9 +1502,12 @@ ssctl perf experiment scripts/performance/experiments/example-jitter-depth.json 
 or inline `specJson`, optional `outputDirectory`; it can take minutes and the
 MCP server runs one experiment at a time). It is a client of existing commands
 (`GetSnapshot`, `GetTuningKnobs`, `SetTuningKnob`, `SetPreviewEnabled`,
-`SetRecordingEnabled`, `RestartFlashback`, `PerfWindow`, `AddPerfMarker`), so a
-second experiment from another client against the same app would fight over the
-same knobs; run one at a time. Progress goes to stderr, the summary (or, with
+`SetRecordingEnabled`, `RestartFlashback`, `PerfWindow`, `AddPerfMarker`) and of
+the experiment lease (2.12): a second experiment from any client is rejected
+before it changes anything, with the holder named, and hand changes to the
+running experiment's knobs are refused. If a runner dies, its knobs come back
+when its lease expires (60 s); `ssctl perf lease release --force` frees a stuck
+lease at once. Progress goes to stderr, the summary (or, with
 `--json`, `result.json`) to stdout. Exit code 0 means every run completed and
 the restore was verified; anything else, including a spec the app rejects and
 a restore that could not be verified, is exit code 3.

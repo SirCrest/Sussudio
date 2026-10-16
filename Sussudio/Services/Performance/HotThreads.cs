@@ -109,7 +109,7 @@ public static class HotThreads
     public sealed class Registration : IDisposable
     {
         private IntPtr _handle;
-        private volatile bool _mmcss;
+        private readonly bool _mmcss;
 
         // The trace labels threads by managed id; this registration's label is removed when it retires, and only if the
         // id still maps to it (managed ids are recycled).
@@ -134,9 +134,6 @@ public static class HotThreads
         public int ThreadId { get; }
 
         internal long StartTimestamp { get; }
-
-        /// <summary>Records whether the thread's MMCSS registration succeeded (it usually happens after <see cref="Register"/>).</summary>
-        public void MarkMmcss(bool registered) => _mmcss = registered;
 
         public void Dispose() => Retire(this);
 

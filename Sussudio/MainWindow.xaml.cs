@@ -2036,7 +2036,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     {
         _previewAudioFadeController = new PreviewAudioFadeController(new PreviewAudioFadeControllerContext
         {
-            DispatcherQueue = _dispatcherQueue,
             VolumeController = ViewModel.PreviewVolumeController,
         });
     }
@@ -2044,11 +2043,11 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private void PrimePreviewAudioFadeIn()
         => _previewAudioFadeController.PrimeFadeIn();
 
-    private void StartPreviewAudioFadeIn(int durationMs = 900)
-        => _previewAudioFadeController.StartFadeIn(durationMs);
+    private void StartPreviewAudioFadeIn()
+        => _previewAudioFadeController.StartFadeIn();
 
-    private Task StartPreviewAudioFadeOutAsync(int durationMs = 450)
-        => _previewAudioFadeController.StartFadeOutAsync(durationMs);
+    private Task StartPreviewAudioFadeOutAsync()
+        => _previewAudioFadeController.StartFadeOutAsync();
 
     private void InitializePreviewButtonActionController()
     {
@@ -2058,7 +2057,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             SetPreviewStopRequestedByUser = SetPreviewStopRequestedByUser,
             GetPreviewStartupAttemptId = () => PreviewStartupAttemptId,
             StopPreviewFadeInTimer = StopPreviewFadeInTimer,
-            StartPreviewAudioFadeOutAsync = () => StartPreviewAudioFadeOutAsync(),
+            StartPreviewAudioFadeOutAsync = StartPreviewAudioFadeOutAsync,
             AnimatePreviewOutAsync = AnimatePreviewOutAsync,
             ClearPreviewReinitAnimation = operationName =>
             {
@@ -2084,7 +2083,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             DispatcherQueue = _dispatcherQueue,
             GetRenderer = () => _previewRendererHostController.Renderer,
             AnimatePreviewInAsync = AnimatePreviewInAsync,
-            StartPreviewAudioFadeIn = () => StartPreviewAudioFadeIn(),
+            StartPreviewAudioFadeIn = StartPreviewAudioFadeIn,
         });
     }
 

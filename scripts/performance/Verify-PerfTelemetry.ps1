@@ -2,13 +2,16 @@
 .SYNOPSIS
 End-to-end check of the performance telemetry commands against a running Sussudio app.
 .DESCRIPTION
-Drives ssctl through perf report, perf window, perf mark, perf trace, knobs, knob set/reset and log tail,
-saves every raw response under the output directory, and writes verify-result.json with one entry per check.
+Drives ssctl through perf report, perf window, perf mark, perf trace, knobs, knob set/reset, the performance
+timeline's cadence under a burst of state reads, the perf experiment lease and log tail, saves every raw response under the output directory, and writes verify-result.json with one entry per check.
 Exit code is 0 only when every check passed. Re-run it against any build to compare.
 
 Preconditions (not changed by this script): the app is running, ideally with live preview, so the
 histograms and counters have something to observe. The script starts no preview or recording. It sets and
 then resets one tuning knob (SUSSUDIO_DIAGNOSTICS_POLL_MS) and runs one window and one trace, then stops both.
+The lease checks take the experiment lease on that knob twice (raw acquire through tools/send-automation-command.ps1)
+and end it once by force and once by letting a 10 s lease expire; both must put the knob back. They are skipped,
+as a failed check, when another experiment already holds the lease.
 .EXAMPLE
 ./scripts/performance/Verify-PerfTelemetry.ps1 -OutputDirectory artifacts/perf-overhaul/slice1
 #>
@@ -67,15 +70,42 @@ function Invoke-Ssctl {
     return [pscustomobject]@{ Exit = $exit; Raw = $text; Response = $parsed }
 }
 
+# Sends one automation command the CLI does not expose (the lease acquire and renew belong to the experiment runner)
+# through the shared AutomationClient, saves the raw output and returns it parsed like Invoke-Ssctl.
+function Invoke-RawCommand {
+    param([string] $Label, [string] $Command, [hashtable] $Payload)
+    $argList = @('-NoProfile', '-File', (Join-Path $repoRoot 'tools/send-automation-command.ps1'), '-Command', $Command,
+        '-PayloadJson', ($Payload | ConvertTo-Json -Compress -Depth 5))
+    if (-not [string]::IsNullOrWhiteSpace($PipeName)) { $argList += @('-PipeName', $PipeName) }
+    $previousPreference = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        $text = (& powershell @argList 2>&1 | Out-String)
+        $exit = $LASTEXITCODE
+    }
+    finally {
+        $ErrorActionPreference = $previousPreference
+    }
+    Set-Content -LiteralPath (Join-Path $OutputDirectory "$Label.json") -Value $text -Encoding UTF8
+    $parsed = $null
+    $start = $text.IndexOf('{')
+    if ($start -ge 0) { try { $parsed = $text.Substring($start) | ConvertFrom-Json } catch { $parsed = $null } }
+    return [pscustomobject]@{ Exit = $exit; Raw = $text; Response = $parsed }
+}
+
+function Get-PollKnob($label) {
+    $found = @((Get-Data (Invoke-Ssctl $label @('knobs', 'POLL_MS'))).Knobs | Where-Object { $_.Name -eq 'SUSSUDIO_DIAGNOSTICS_POLL_MS' })
+    if ($found.Count -eq 1) { return $found[0] }
+    return $null
+}
+
 function Get-Data($result) {
     if ($null -ne $result.Response -and $result.Response.PSObject.Properties.Name -contains 'Data') { return $result.Response.Data }
     return $null
 }
 
-# Spacing of the diagnostics hub ticks, from the performance timeline. Only entries newer than $After count, so a
-# knob change is measured on ticks that ran under it. The snapshot refresh has occasional latency spikes of several
-# hundred milliseconds that dominate the median, so the lower quartile is the figure that follows the poll interval.
-function Get-HubIntervalStats {
+# Performance timeline entry timestamps newer than $After, oldest first, or $null when the response has no data.
+function Get-TimelineTimestamps {
     param([string] $Label, [DateTimeOffset] $After)
     $timeline = Invoke-Ssctl $Label @('timeline', '--max', '60')
     # Timestamps are read from the raw text (PowerShell 7 would turn them into culture-formatted DateTime values),
@@ -83,10 +113,18 @@ function Get-HubIntervalStats {
     $raw = $timeline.Raw
     $dataIndex = $raw.IndexOf('"Data"', [StringComparison]::Ordinal)
     if ($dataIndex -lt 0) { return $null }
-    $times = @([regex]::Matches($raw.Substring($dataIndex), '"TimestampUtc"\s*:\s*"([^"]+)"') | ForEach-Object {
+    return , @([regex]::Matches($raw.Substring($dataIndex), '"TimestampUtc"\s*:\s*"([^"]+)"') | ForEach-Object {
             [DateTimeOffset]::Parse([regex]::Unescape($_.Groups[1].Value), [Globalization.CultureInfo]::InvariantCulture)
         } | Where-Object { $_ -ge $After })
-    if ($times.Count -lt 6) { return $null }
+}
+
+# Spacing of the diagnostics hub ticks, from the performance timeline. Only entries newer than $After count, so a
+# knob change is measured on ticks that ran under it. The snapshot refresh has occasional latency spikes of several
+# hundred milliseconds that dominate the median, so the lower quartile is the figure that follows the poll interval.
+function Get-HubIntervalStats {
+    param([string] $Label, [DateTimeOffset] $After)
+    $times = Get-TimelineTimestamps $Label $After
+    if ($null -eq $times -or $times.Count -lt 6) { return $null }
     $allDeltas = @(for ($i = 1; $i -lt $times.Count; $i++) { ($times[$i] - $times[$i - 1]).TotalMilliseconds })
     $deltas = @($allDeltas | Where-Object { $_ -gt 0 } | Sort-Object)
     if ($deltas.Count -lt 5) { return $null }
@@ -213,6 +251,27 @@ else {
     Add-Check 'hub tick rate restored after reset' $false 'timeline had too few entries to measure'
 }
 
+# 6b. Cadence timeline: on-demand reads (each `ssctl state` refreshes the snapshot) add no timeline entries, so a
+# burst of reads leaves one entry per poll interval. Before the fix every read appended its own entry.
+$pollKnob = @((Get-Data (Invoke-Ssctl '06f-knobs-poll' @('knobs', 'POLL_MS'))).Knobs | Where-Object { $_.Name -eq 'SUSSUDIO_DIAGNOSTICS_POLL_MS' })
+$pollMs = if ($pollKnob.Count -eq 1 -and -not [string]::IsNullOrWhiteSpace($pollKnob[0].Value)) { [double]$pollKnob[0].Value } elseif ($pollKnob.Count -eq 1) { [double]$pollKnob[0].Default } else { 500.0 }
+$burstReads = 12
+$burstStart = [DateTimeOffset]::UtcNow
+for ($i = 0; $i -lt $burstReads; $i++) { $null = Invoke-Ssctl ('06g-burst-state-{0:00}' -f $i) @('state') }
+$burstEnd = [DateTimeOffset]::UtcNow
+Start-Sleep -Milliseconds ([int]($pollMs * 2))
+$burstTimes = Get-TimelineTimestamps '06h-timeline-after-burst' $burstStart
+if ($null -ne $burstTimes) {
+    $inBurst = @($burstTimes | Where-Object { $_ -le $burstEnd })
+    $burstMs = ($burstEnd - $burstStart).TotalMilliseconds
+    $maxTicks = [int][Math]::Ceiling($burstMs / $pollMs) + 1
+    $minSpacing = if ($inBurst.Count -ge 2) { (@(for ($i = 1; $i -lt $inBurst.Count; $i++) { ($inBurst[$i] - $inBurst[$i - 1]).TotalMilliseconds }) | Measure-Object -Minimum).Minimum } else { $null }
+    Add-Check 'on-demand reads add no timeline entries' ($inBurst.Count -le $maxTicks -and ($null -eq $minSpacing -or $minSpacing -ge ($pollMs / 2))) ("{0} entries in a {1:N0} ms burst of {2} state reads (at most {3} poll ticks at {4:N0} ms), smallest spacing {5} ms" -f $inBurst.Count, $burstMs, $burstReads, $maxTicks, $pollMs, $(if ($null -eq $minSpacing) { 'n/a' } else { '{0:N0}' -f $minSpacing }))
+}
+else {
+    Add-Check 'on-demand reads add no timeline entries' $false 'timeline response had no data'
+}
+
 # 7. Rejections: out of range, unknown name, credential.
 $tooLow = Invoke-Ssctl '07a-knob-set-out-of-range' @('knob', 'set', 'SUSSUDIO_DIAGNOSTICS_POLL_MS', '50')
 Add-Check 'out-of-range value is rejected, not clamped' ($tooLow.Exit -ne 0 -and (Get-Data $tooLow).Failure -eq 'OutOfRange') "exit=$($tooLow.Exit) failure=$((Get-Data $tooLow).Failure)"
@@ -225,12 +284,63 @@ $afterRejects = Invoke-Ssctl '07d-knobs-after-rejects' @('knobs', 'POLL_MS')
 $pollAfter = @((Get-Data $afterRejects).Knobs | Where-Object { $_.Name -eq 'SUSSUDIO_DIAGNOSTICS_POLL_MS' })
 Add-Check 'rejected sets left the knob at its launch value' ($pollAfter.Count -eq 1 -and $pollAfter[0].Overridden -eq $false) "overridden=$(if ($pollAfter.Count -eq 1) { $pollAfter[0].Overridden } else { 'n/a' })"
 
+# 7b. Experiment lease: one experiment at a time holds its knobs, a hand change is refused, and a forced release or an
+# expiry (the runner died) restores them. Section 2.12 of docs/architecture/performance-telemetry.md.
+$poll = 'SUSSUDIO_DIAGNOSTICS_POLL_MS'
+$holder = "Verify-PerfTelemetry.ps1 pid $PID"
+$leaseBefore = Get-Data (Invoke-Ssctl '07e-lease-status-before' @('perf', 'lease'))
+if ($null -eq $leaseBefore -or $null -ne $leaseBefore.Active) {
+    $who = if ($null -eq $leaseBefore) { 'no lease status' } else { $leaseBefore.Active.Holder }
+    Add-Check 'no experiment holds the lease before the lease checks' $false "skipped the lease checks: $who"
+}
+else {
+    $pollBefore = Get-PollKnob '07f-knobs-before-lease'
+    $leaseA = 'verify-' + [guid]::NewGuid().ToString('N').Substring(0, 12)
+    $acquire = Invoke-RawCommand '07g-lease-acquire' 'PerfExperimentLease' @{ action = 'acquire'; lease = $leaseA; holder = $holder; knobs = @($poll); ttlSeconds = 30 }
+    $acquireData = Get-Data $acquire
+    Add-Check 'lease acquire returns the baseline' ($null -ne $acquireData -and $acquire.Response.Success -eq $true -and @($acquireData.Baseline | Where-Object { $_.Name -eq $poll }).Count -eq 1) "success=$(if ($null -ne $acquire.Response) { $acquire.Response.Success } else { 'n/a' })"
+    $holderSet = Invoke-RawCommand '07h-knob-set-as-holder' 'SetTuningKnob' @{ name = $poll; value = '400'; lease = $leaseA }
+    Add-Check 'the lease holder can change its knob' ($null -ne $holderSet.Response -and $holderSet.Response.Success -eq $true) "success=$(if ($null -ne $holderSet.Response) { $holderSet.Response.Success } else { 'n/a' })"
+    $handSet = Invoke-Ssctl '07i-knob-set-by-hand-while-leased' @('knob', 'set', $poll, '300')
+    Add-Check 'a hand change to a leased knob is refused' ($handSet.Exit -ne 0 -and (Get-Data $handSet).Failure -eq 'Leased') "exit=$($handSet.Exit) failure=$((Get-Data $handSet).Failure)"
+    $second = Invoke-RawCommand '07j-lease-acquire-second' 'PerfExperimentLease' @{ action = 'acquire'; lease = 'verify-second'; holder = 'second experiment'; knobs = @($poll) }
+    Add-Check 'a second experiment is refused and told the holder' ($null -ne $second.Response -and $second.Response.Success -eq $false -and $second.Response.ErrorCode -eq 'invalid-state' -and (Get-Data $second).Active.Holder -eq $holder) "errorCode=$(if ($null -ne $second.Response) { $second.Response.ErrorCode } else { 'n/a' })"
+    $forced = Get-Data (Invoke-Ssctl '07k-lease-release-force' @('perf', 'lease', 'release', '--force'))
+    Add-Check 'a forced release ends the lease and restores the knob' ($null -ne $forced -and $null -eq $forced.Active -and $forced.LastEnded.Reason -eq 'Forced' -and @($forced.LastEnded.Restored).Count -eq 1) "reason=$(if ($null -ne $forced) { $forced.LastEnded.Reason } else { 'n/a' }) restored=$(if ($null -ne $forced) { @($forced.LastEnded.Restored) -join '; ' } else { 'n/a' })"
+    $pollAfterForce = Get-PollKnob '07l-knobs-after-force'
+    Add-Check 'the forced release put the knob back' ($null -ne $pollBefore -and $null -ne $pollAfterForce -and $pollAfterForce.Value -eq $pollBefore.Value) "before=$($pollBefore.Value) after=$($pollAfterForce.Value)"
+    $renewA = Invoke-RawCommand '07m-lease-renew-after-force' 'PerfExperimentLease' @{ action = 'renew'; lease = $leaseA }
+    Add-Check 'the forced-off holder learns it on its next renew' ($null -ne $renewA.Response -and $renewA.Response.Success -eq $false -and $renewA.Response.Message -like '*force*') "message=$(if ($null -ne $renewA.Response) { $renewA.Response.Message } else { 'n/a' })"
+
+    # A runner that dies stops renewing: the app restores the knob when the lease expires.
+    $leaseB = 'verify-' + [guid]::NewGuid().ToString('N').Substring(0, 12)
+    $null = Invoke-RawCommand '07n-lease-acquire-short' 'PerfExperimentLease' @{ action = 'acquire'; lease = $leaseB; holder = $holder; knobs = @($poll); ttlSeconds = 10 }
+    $null = Invoke-RawCommand '07o-knob-set-before-expiry' 'SetTuningKnob' @{ name = $poll; value = '400'; lease = $leaseB }
+    Start-Sleep -Seconds 13
+    $expired = Get-Data (Invoke-Ssctl '07p-lease-status-after-expiry' @('perf', 'lease'))
+    Add-Check 'an abandoned lease expires and the app restores the knob' ($null -ne $expired -and $null -eq $expired.Active -and $expired.LastEnded.Reason -eq 'Expired' -and @($expired.LastEnded.Restored).Count -eq 1) "reason=$(if ($null -ne $expired) { $expired.LastEnded.Reason } else { 'n/a' }) restored=$(if ($null -ne $expired) { @($expired.LastEnded.Restored) -join '; ' } else { 'n/a' })"
+    $pollAfterExpiry = Get-PollKnob '07q-knobs-after-expiry'
+    Add-Check 'the expiry put the knob back' ($null -ne $pollBefore -and $null -ne $pollAfterExpiry -and $pollAfterExpiry.Value -eq $pollBefore.Value) "before=$($pollBefore.Value) after=$($pollAfterExpiry.Value)"
+    $leaseLog = Get-Data (Invoke-Ssctl '07r-log-tail-lease-lines' @('log', 'tail', '--max', '20', '--contains', 'PERF_EXPERIMENT_LEASE'))
+    Add-Check 'lease acquire, force and expiry are logged' ($null -ne $leaseLog -and @($leaseLog.Lines | Where-Object { $_ -like '*PERF_EXPERIMENT_LEASE_FORCED*' }).Count -ge 1 -and @($leaseLog.Lines | Where-Object { $_ -like '*PERF_EXPERIMENT_LEASE_EXPIRED*' }).Count -ge 1) "lines=$(if ($null -ne $leaseLog) { @($leaseLog.Lines).Count } else { 'n/a' })"
+}
+
 # 8. Log tail.
 $tail = Invoke-Ssctl '08a-log-tail' @('log', 'tail', '--max', '20')
 $tailData = Get-Data $tail
 Add-Check 'log tail returns lines' ($tail.Exit -eq 0 -and @($tailData.Lines).Count -ge 1 -and @($tailData.Lines).Count -le 20) "lines=$(@($tailData.Lines).Count) total=$($tailData.TotalLines)"
 $knobLog = Invoke-Ssctl '08b-log-tail-knob-lines' @('log', 'tail', '--max', '20', '--contains', 'TUNING_KNOB_SET')
 Add-Check 'knob changes are logged' ($knobLog.Exit -eq 0 -and @((Get-Data $knobLog).Lines).Count -ge 2) "lines=$(@((Get-Data $knobLog).Lines).Count)"
+# Exclude the tag that dominates the tail: no returned line may carry it, and the budget is filled from older lines.
+$topTag = @($tailData.ByTag | Select-Object -First 1)
+if ($topTag.Count -eq 1) {
+    $excluded = Invoke-Ssctl '08c-log-tail-exclude-top-tag' @('log', 'tail', '--max', '20', '--exclude', $topTag[0].Key)
+    $excludedLines = @((Get-Data $excluded).Lines)
+    Add-Check 'log tail exclude drops the dominant tag' ($excluded.Exit -eq 0 -and $excludedLines.Count -ge 1 -and @($excludedLines | Where-Object { $_.IndexOf($topTag[0].Key, [StringComparison]::OrdinalIgnoreCase) -ge 0 }).Count -eq 0) "tag=$($topTag[0].Key) count=$($topTag[0].Count) lines=$($excludedLines.Count)"
+}
+else {
+    Add-Check 'log tail exclude drops the dominant tag' $false 'the tail reported no tag counts'
+}
 
 # 9. Final lifetime report with the marker and cleanup state.
 $final = Invoke-Ssctl '09-report-final' @('perf', 'report')

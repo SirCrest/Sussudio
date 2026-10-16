@@ -35,6 +35,11 @@ native handle/resource lifetime).
 `scripts/performance/Measure-PreviewScenario.ps1` records comparable observation
 runs through existing ssctl diagnostics; it does not reconfigure capture or
 start recording.
+`tests/Sussudio.Tests/XUnit.PreviewRendererSharedDeviceRaceTests.cs` injects the
+capture-device hand-over into the renderer's device-selection window.
+`scripts/performance/Test-PreviewFrameRateRestarts.ps1` is its live counterpart:
+it launches the app and checks that every `set fps` restart renders on the
+capture-shared device and reaches first visual.
 
 `Sussudio/Services/Preview/PreviewInputViewCache.cs` owns the eight-entry texture
 identity/subresource lookup and disposable-entry eviction policy. The renderer's
@@ -410,6 +415,8 @@ Automation diagnostics ownership:
   refresh orchestration, cached last-output file existence/size probing,
   process CPU/memory/GC/thread-pool sampling, latest-snapshot publication,
   timeline append, event notification, and auto-verification handoff, plus
+  the poll-tick versus on-demand refresh split (only the poll tick appends to
+  the timeline and advances the recent-counter and CPU baselines), plus
   manual recording/file verification commands, verification-profile adaptation,
   explicit verification events, automatic post-recording verification
   scheduling, and recording-start verification reset.
@@ -431,7 +438,7 @@ Automation diagnostics ownership:
   and HDR policy. Keep those computations beside the initializer.
 - Direct mappings in that initializer own capture command counters, requested
   and observed media formats, AV-sync, source and visual cadence, capture/recording
-  ingest, WASAPI state, recording integrity, recording and GPU/CUDA queues,
+  ingest, WASAPI state, recording integrity, recording and GPU queues,
   preview surface/display/D3D telemetry, MJPEG packet/jitter counters, recording
   output/verification evidence and process-resource fields. Recording integrity
   reads `CaptureRuntimeSnapshot` directly; there is no intermediate integrity
@@ -504,6 +511,12 @@ recording and audio sites call into it, never the other way round.
   `SUSSUDIO_DIAGNOSTICS_POLL_MS` (`AutomationDiagnosticsHub.RunLoopAsync`) and the two
   `auto|on|off` sensor knobs `SUSSUDIO_TELEMETRY_SENSORS` and `SUSSUDIO_PREVIEW_GPU_TIMING`
   (read through `TelemetrySensorModes`) are the live knobs wired so far.
+- `PerfExperimentLease.cs` owns the perf experiment lease (command 68): one
+  experiment at a time holds its knobs, `ChangeKnob` is the only automation path
+  to `TuningKnobStore` and refuses a leased knob without the lease id, and an
+  expiry timer (or a forced release) restores the leased knobs to the baseline
+  taken at acquire. Its lock is taken before the store's. `TuningKnobs.Lease` is
+  the process instance.
 - `HotThreads.cs` owns the dedicated-thread registry (`HotThreads.Register(role)`),
   per-thread CPU time/cycles/priority (a name, `mmcss/<n>` or `raw/<n>`) and the
   bounded retired list; retiring a registration also retires its trace thread
@@ -580,15 +593,15 @@ recording and audio sites call into it, never the other way round.
   unless asked), including the `Gpu`, `Dwm` and `Display` sections and the `Sensors`
   section.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.PerfTelemetry.cs`
-  owns the seven handlers for commands 58-64 (`GetPerfReport`, `PerfWindow`,
+  owns the handlers for commands 58-64 (`GetPerfReport`, `PerfWindow`,
   `AddPerfMarker`, `FrameTrace`, `GetTuningKnobs`, `SetTuningKnob`,
-  `GetLogTail`). They are ready-independent, return no snapshot, and the frame
+  `GetLogTail`) and 68 (`PerfExperimentLease`). They are ready-independent, return no snapshot, and the frame
   trace dump goes through the `WriteFile` path policy. The dispatcher is a
   partial class for this one command group because its handlers share the
   payload/path helpers in `AutomationCommandDispatcher.cs`.
-- Wire surface: command IDs 58-64 and manifest revision 3 live in
+- Wire surface: command IDs 58-64 and 68 and manifest revision 3 live in
   `Sussudio.Automation.Contracts/AutomationCommandCatalog.cs` and
-  `AutomationPipeProtocol.cs`. ssctl verbs are `perf report|window|mark|trace`,
+  `AutomationPipeProtocol.cs`. ssctl verbs are `perf report|window|mark|trace|lease`,
   `knobs`, `knob set|reset` and `log tail` in `tools/ssctl/CommandHandlers.Perf.cs`
   (rendering in `tools/ssctl/PerfFormatters.cs`); MCP tools are in
   `tools/McpServer/Tools/PerfTelemetryTools.cs`. AutomationClient and
@@ -599,8 +612,9 @@ recording and audio sites call into it, never the other way round.
   builder and formatter; a slow frame's pre-arrival and after-present stages are listed apart
   and never dominant) reads a trace dump offline, and `PerfExperimentRunner`
   (spec, session, statistics, result) runs a knob A/B experiment through the
-  existing automation commands and restores the app. Neither adds an app
-  command: ssctl `perf trace analyze` and `perf experiment` are in
+  existing automation commands under the experiment lease and restores the app;
+  `PerfExperimentSession` owns the acquire, renewals, lease-id stamping and
+  release. Neither adds an app command: ssctl `perf trace analyze` and `perf experiment` are in
   `tools/ssctl/CommandHandlers.Perf.cs`, the MCP tools `analyze_frame_trace` and
   `run_perf_experiment` are in `tools/McpServer/Tools/PerfAnalysisTools.cs`, and
   the example spec is `scripts/performance/experiments/example-jitter-depth.json`.
@@ -896,8 +910,8 @@ Important entry points:
   Flashback audio/video queue, force-rotate, backpressure, and GPU queue field
   projection; Flashback playback state/frame/segment/PTS/seek-cap/
   submit-failure/A/V drift, cadence, decode timing, audio-master, and command
-  telemetry sampling; and recording health orchestration, LibAv-only CUDA queue
-  projection, active recording backend selection, LibAv-vs-Flashback sink
+  telemetry sampling; and recording health orchestration, active recording
+  backend selection, LibAv-vs-Flashback sink
   fallback, failure precedence, backend-specific queue/counter normalization,
   and their private field records.
 - `CaptureService.PreviewLifecycle.cs` owns the video-preview start/stop transition
@@ -1073,8 +1087,8 @@ Entry points:
   encoder open/setup, open-state guards, FFmpeg error strings, structured libav
   exceptions, and D3D11 device-removed checks.
 - `LibAvEncoder.VideoFrames.cs` owns D3D11 hardware frame setup,
-  CUDA hardware frame context adoption, ArraySize=1 texture-pool creation,
-  hardware-frame fallback cleanup, D3D11 and CUDA hardware-frame submission,
+  ArraySize=1 texture-pool creation,
+  hardware-frame fallback cleanup, D3D11 hardware-frame submission,
   CPU packed-frame submission, packed-frame copy, forced-keyframe handling,
   GPU device-removed checks, hardware/software frame PTS/keyframe assignment,
   per-frame HDR side-data attachment/removal, HDR mastering-display metadata
@@ -2498,10 +2512,11 @@ Primary current owners:
   is the XAML-facing adapter. `Sussudio/ViewModels/ViewModelBuilders.cs` owns
   the view-model live-signal label formatting and pixel-format/codec suffix
   policy.
-- `Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs` owns preview-volume
-  fade-in/fade-out state, saved target volume, storyboard lifetime, volume
-  save suppression, preview start/stop/reinit event routing, and preview button
-  presentation/fade-in timing. `Sussudio/MainWindow.xaml.cs`
+- `Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs` owns when the
+  preview audio fades run (armed at prime, released once on first visual,
+  faded out on the stop button), preview start/stop/reinit event routing, and
+  preview button presentation/fade-in timing. The fades themselves are
+  volume-owner ramps, not XAML storyboards. `Sussudio/MainWindow.xaml.cs`
   is the XAML-facing adapter.
 - `Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs` owns preview
   reinit animation active state, first-visual transition clears, startup-reset
@@ -2521,13 +2536,22 @@ Primary current owners:
   orchestration, watchdog/telemetry timers, timeout configuration, timeout
   recovery, failure-stop scheduling, readiness-signal coordination,
   required/received state, missing-signal calculation and updates,
-  playback-progress diagnostics, startup signal log strings, GPU position
-  counter state, first-visual confirmation decisions, signal-list formatting,
-  timeout diagnostic payload formatting, playback-advance threshold checks, and
-  readiness result snapshots. `PreviewStartupSessionController` is the single
-  attempt owner; the readiness evaluator and signal formatter remain local
-  helpers without UI dependencies. The runtime sampler reads this owner's
-  signal snapshot and timeout directly.
+  playback-progress diagnostics, startup signal log strings, first-visual
+  confirmation decisions, signal-list formatting, timeout diagnostic payload
+  formatting, and the required/received readiness snapshot.
+  `PreviewStartupSessionController` is the single attempt owner; the readiness
+  signal state and signal formatter remain local helpers without UI
+  dependencies. The runtime sampler reads this owner's signal snapshot and
+  timeout directly. Both renderer strategies require only `FirstVisual`, which
+  `ConfirmFirstVisual` records; the MediaPlayer-era dual GPU signal path
+  (MediaOpened/FirstCaptureFrame/PlaybackAdvancing readiness and its
+  `PreviewGpuSignal*` snapshot fields) and its playback position telemetry
+  (the PositionChanged event counter and position, `PreviewGpuPosition*`
+  snapshot fields) left with the WinRT preview. The D3D11 renderer has no
+  playback position, so the playback snapshot log reports renderer state,
+  visibility and signals only. The `PreviewStartupSignalFlags` members stay
+  because the automation snapshot projects required/received signals as flag
+  values.
   `Sussudio/MainWindow.xaml.cs` supplies external UI/runtime callbacks to the
   session owner and keeps renderer-attached, first-visual, reset, signal-configuration,
   and watchdog adapters for its lifecycle and renderer collaborators. Construction
@@ -2697,8 +2721,10 @@ Primary current owners:
   delayed sampler shutdown, requested/effective preview volume, operation and
   writer generations, cancellation, teardown, priming, restoring, trace adapters,
   preview-audio ramp constants, easing, and async ramp-down/ramp-up execution.
-  `PreviewAudioFadeController` in `PreviewLifecycleControllers.cs` drives WinUI
-  animation through a private dependency property and a writer lease.
+  `PreviewAudioFadeController` in `PreviewLifecycleControllers.cs` runs the
+  preview-start and stop-button fades through that owner's ramp-up/ramp-down;
+  a storyboard cannot target a code-only dependency property (no XAML type
+  metadata), so do not reintroduce one for audio.
   `AudioControlBindingController` owns explicit user input and guards synchronous
   projection updates so animation readback cannot become a user request.
   `SetupBindings` initializes meters and the three audio selections directly.
@@ -3193,7 +3219,7 @@ Primary owners:
   validation, on/off and show/hide parsing, recording format normalization,
   snap action mapping, and assertion value parsing. It is a partial class: the
   performance-telemetry verbs live in `tools/ssctl/CommandHandlers.Perf.cs`
-  (`perf report|window|mark|trace|experiment`, `knobs`, `knob set|reset`,
+  (`perf report|window|mark|trace|experiment|lease`, `knobs`, `knob set|reset`,
   `log tail`; `perf trace dump` resolves its path client-side because the app
   does not share the CLI working directory, and `perf trace analyze` and
   `perf experiment` are tool-only) and render through
@@ -3255,9 +3281,10 @@ Primary owners:
   row/channel records, and the operator-facing verdict text. Its
   `minSampleSeconds` default (15) tracks `PreviewPacingSlowStageClassifier`'s
   minimum cadence window, which must stay below the 20 s cadence windows.
-- `tools/McpServer/Tools/PerfTelemetryTools.cs` owns the seven performance
+- `tools/McpServer/Tools/PerfTelemetryTools.cs` owns the eight performance
   telemetry MCP tools (`get_perf_report`, `perf_window`, `add_perf_marker`,
-  `frame_trace`, `get_tuning_knobs`, `set_tuning_knob`, `get_log_tail`). Each
+  `frame_trace`, `get_tuning_knobs`, `set_tuning_knob`, `perf_experiment_lease`,
+  `get_log_tail`). Each
   forwards one automation command and returns the app's structured `Data`
   payload unchanged.
 - Shared PresentMon option precedence and preview-present field extraction live
@@ -3473,7 +3500,7 @@ Primary owners:
   selected-device and initialized/preview/recording text, audio enablement,
   capture option, recording format, HDR, pipeline, compact UI setting text,
   preview, signal, clipping, reader and audio-frame text, video reader, encoder
-  queue, queue-latency, backpressure, failure, GPU/CUDA queue, freshness,
+  queue, queue-latency, backpressure, failure, GPU queue, freshness,
   diagnostics, thread-health row text, recording output, backend, integrity,
   audio-integrity and last-finalize text, diagnostic health, summary, evidence
   and frame-lane text, legacy performance, process CPU, memory, GC, thread-pool
