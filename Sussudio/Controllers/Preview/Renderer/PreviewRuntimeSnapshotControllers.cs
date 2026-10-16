@@ -36,16 +36,6 @@ internal sealed class PreviewRuntimeSnapshotSamplingController
             "Failed to enqueue preview snapshot operation.",
             cancellationToken);
 
-    /// <summary>
-    /// The producer epoch alone: the same signature read as a snapshot, without the
-    /// renderer percentile passes that <see cref="GetSnapshotAsync"/> pays for.
-    /// </summary>
-    public Task<long> GetEpochAsync(CancellationToken cancellationToken = default)
-        => _context.UiDispatchController.InvokeWithRetryAsync(
-            () => GetOrAdvancePreviewRuntimeSnapshotEpoch(BuildSignature()),
-            "Failed to enqueue preview snapshot epoch operation.",
-            cancellationToken);
-
     private PreviewRuntimeSnapshot BuildSnapshot()
     {
         var signature = BuildSignature();

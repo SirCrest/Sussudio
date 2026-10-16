@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -389,10 +390,25 @@ internal readonly record struct IntervalCadenceStatistics(
             }
         }
 
-        var sorted = (double[])samples.Clone();
-        Array.Sort(sorted);
-        var p95IntervalMs = PercentileHelpers.FromSorted(sorted, 0.95);
-        var p99IntervalMs = PercentileHelpers.FromSorted(sorted, 0.99);
+        // Percentiles need a sorted copy, and callers hand the same array back as RecentIntervalsMs, so the caller's
+        // order must survive. A pooled scratch replaces the per-call Clone (about 9 KB for a 1,100-sample window, four
+        // calls per hub tick). Only the first sampleCount elements are meaningful: a rented array is longer than asked
+        // for and holds whatever its previous renter left in it.
+        var scratch = ArrayPool<double>.Shared.Rent(sampleCount);
+        double p95IntervalMs;
+        double p99IntervalMs;
+        try
+        {
+            samples.CopyTo(scratch, 0);
+            var sorted = scratch.AsSpan(0, sampleCount);
+            sorted.Sort();
+            p95IntervalMs = PercentileHelpers.FromSorted(sorted, 0.95);
+            p99IntervalMs = PercentileHelpers.FromSorted(sorted, 0.99);
+        }
+        finally
+        {
+            ArrayPool<double>.Shared.Return(scratch);
+        }
 
         return new IntervalCadenceStatistics(
             SampleCount: sampleCount,

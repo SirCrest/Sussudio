@@ -69,7 +69,8 @@ public readonly record struct PreviewPacingClassification(
 
 public static class PreviewPacingSlowStageClassifier
 {
-    private const double MinSampleDurationMs = 30_000.0;
+    // Must stay below the 20 s cadence window (CadenceWindowSeconds) or sample-ready classification can never run.
+    private const double MinSampleDurationMs = 15_000.0;
     private const double OnePercentLowWarningRatio = 0.98;
     private const double P99OverBudgetRatio = 1.08;
     private const double RendererDropWarningPercent = 1.0;

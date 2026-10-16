@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Threading;
 using SharpGen.Runtime;
+using Sussudio.Services.Performance;
 using Vortice.Direct3D;
 using Vortice.Direct3D11;
 using Vortice.DXGI;
@@ -850,6 +851,7 @@ internal sealed partial class D3D11PreviewRenderer
     private void InitializeD3D()
     {
         CleanupD3DResources();
+        Interlocked.Increment(ref _displayGeneration);
 
         var (device, deviceContext, featureLevel, sharedDeviceAdopted) = SelectRenderDevice();
         _device3?.Dispose();
@@ -1216,7 +1218,7 @@ internal sealed partial class D3D11PreviewRenderer
         CleanupD3DResources();
         while (TryDequeuePendingFrame(out var stalePending))
         {
-            TrackFrameDropped(stalePending, "device-lost");
+            TrackFrameDropped(stalePending, "device-lost", PreviewDropReason.DeviceLost);
             stalePending.Dispose();
         }
 
@@ -1644,6 +1646,9 @@ internal sealed partial class D3D11PreviewRenderer
 
     private void CleanupD3DResources()
     {
+        // The timestamp queries belong to the device and context disposed below; release them first.
+        ReleaseGpuTiming("released: device or swap chain reset");
+
         // Keep every native owner intact until the panel acknowledges detach.
         UnbindSwapChainFromPanel();
         DisposeProcessorResources();

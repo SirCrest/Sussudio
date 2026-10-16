@@ -13,6 +13,7 @@ using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Win32;
 using Sussudio.Models;
+using Sussudio.Services.Performance;
 using Vortice.DXGI;
 
 namespace Sussudio;
@@ -442,6 +443,25 @@ public static class Logger
         }
     }
 
+    private static int _logTapFailureReported;
+
+    // The tap is a diagnostics convenience fed from the writer loop. A failure inside it must cost one tap line, never
+    // the writer: an escaped exception would end the loop, stop file output and let the bounded channel fill and drop.
+    private static void AddToLogTap(string entry)
+    {
+        try
+        {
+            LogTap.Add(entry);
+        }
+        catch (Exception ex)
+        {
+            if (Interlocked.Exchange(ref _logTapFailureReported, 1) == 0)
+            {
+                TraceFallback($"Suppressed exception in Logger.{nameof(AddToLogTap)} type={ex.GetType().Name}: {ex.Message}");
+            }
+        }
+    }
+
     private static async Task RunLogWriterAsync()
     {
         try
@@ -453,6 +473,7 @@ public static class Logger
                 while (entries < MaxDrainBatchEntries && LogChannel.Reader.TryRead(out var entry))
                 {
                     batch.Append(entry);
+                    AddToLogTap(entry);
                     entries++;
                 }
 

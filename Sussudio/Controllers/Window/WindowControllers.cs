@@ -60,15 +60,6 @@ internal sealed class WindowAutomationHostLifecycleController : IAsyncDisposable
             _tokenRequired);
     }
 
-    /// <summary>
-    /// Cheap producer-epoch probe for the preview runtime snapshot. Without it the hub
-    /// builds the full preview snapshot three times per tick (before, value, after).
-    /// </summary>
-    public Func<CancellationToken, Task<long>>? PreviewRuntimeEpochProvider
-    {
-        set => _diagnosticsHubImpl.PreviewRuntimeEpochProvider = value;
-    }
-
     public void Start()
     {
         if (Interlocked.Exchange(ref _started, 1) != 0)
@@ -895,6 +886,8 @@ internal sealed class WindowShutdownCleanupControllerContext
 
     public required Action StopTimers { get; init; }
 
+    public required Action StopTelemetrySensors { get; init; }
+
     public required Action StopStatsOverlay { get; init; }
 
     public required Action StopRecordingVisuals { get; init; }
@@ -941,6 +934,7 @@ internal sealed class WindowShutdownCleanupController
         _context.LifecycleController.MarkClosing();
         _context.DetachMeterActivationHandlers();
         _context.StopTimers();
+        _context.StopTelemetrySensors();
         _context.StopStatsOverlay();
         _context.StopRecordingVisuals();
         _context.DetachMainContentSizeChanged();

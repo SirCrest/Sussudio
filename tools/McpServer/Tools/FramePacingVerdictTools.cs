@@ -19,7 +19,7 @@ public static class FramePacingVerdictTools
     public static async Task<CallToolResult> get_frame_pacing_verdict(
         PipeClient pipeClient,
         [Description("Maximum performance timeline entries to inspect for counter deltas. Default 240 is roughly two minutes at 500ms samples.")] int maxTimelineEntries = 240,
-        [Description("Minimum per-channel cadence sample duration in seconds before lows are considered trustworthy. Default 30 seconds.")] double minSampleSeconds = 30,
+        [Description("Minimum per-channel cadence sample duration in seconds before lows are considered trustworthy. Default 15 seconds.")] double minSampleSeconds = 15,
         [Description("Optional target high-frame-rate FPS. Use 0 to infer from snapshot source/capture/playback fields.")] double targetFpsOverride = 0,
         CancellationToken cancellationToken = default)
     {

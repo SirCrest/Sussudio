@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Channels;
 using Sussudio.Models;
+using Sussudio.Services.Performance;
 using Sussudio.Services.Preview;
 using PlaybackCommand = Sussudio.Services.Flashback.FlashbackPlaybackCommandMailbox.Command;
 using CommandKind = Sussudio.Services.Flashback.FlashbackPlaybackCommandMailbox.CommandKind;
@@ -332,8 +333,18 @@ internal sealed partial class FlashbackPlaybackController
     private void UpdateCadenceMetrics(Stopwatch pacingStopwatch, double expectedFrameMs)
     {
         var frameNum = Interlocked.Increment(ref _playbackFrameCount);
-        var intervalMs = pacingStopwatch.Elapsed.TotalMilliseconds;
+        // One read of the stopwatch serves the metric, the trace span and the cadence tracker, so the three agree.
+        var intervalTicks = pacingStopwatch.ElapsedTicks;
+        var intervalMs = intervalTicks * 1000.0 / Stopwatch.Frequency;
         pacingStopwatch.Restart();
+        // The paced present interval of continuous playback. Its only caller is PaceAndDecodeFrame, so seek, scrub
+        // and step presents never reach it. The trace span ends now and is not tied to one frame (id -1). The guard
+        // keeps the extra QPC read (an argument is evaluated before Record can see the disabled flag) off a stopped trace.
+        PerfMetrics.FlashbackPlaybackPresentInterval.RecordTicks(intervalTicks);
+        if (FrameTrace.IsEnabled)
+        {
+            FrameTrace.Record(FrameTraceEventKind.FlashbackPlaybackPresent, Stopwatch.GetTimestamp() - intervalTicks, intervalTicks, -1);
+        }
         TrackPlaybackCadence(intervalMs, expectedFrameMs);
 
         if (frameNum % 60 == 0)
@@ -781,6 +792,7 @@ internal sealed partial class FlashbackPlaybackController
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
+            var decodeStartTick = Stopwatch.GetTimestamp();
             if (!FillHardwarePlaybackReadAhead(
                     decoder, prebufferedFrames, pacingStopwatch, frozenValidStart,
                     ref fileOpen, cancellationToken))
@@ -789,6 +801,12 @@ internal sealed partial class FlashbackPlaybackController
             {
                 return HandleEndOfSegment(decoder, commandChannel, pacingStopwatch, frozenValidStart, ref fileOpen, cancellationToken);
             }
+
+            // Steady-state continuous playback only: hardware read-ahead plus the next-frame read of this paced
+            // iteration, recorded on success. Seek, scrub, step and pause-forward decodes use other call paths.
+            var decodeTicks = Stopwatch.GetTimestamp() - decodeStartTick;
+            PerfMetrics.FlashbackPlaybackDecode.RecordTicks(decodeTicks);
+            FrameTrace.Record(FrameTraceEventKind.FlashbackPlaybackDecode, decodeStartTick, decodeTicks, -1);
             if (ShouldSnapLiveForSoftwarePlaybackBudget(decoder, out _, out _))
             {
                 ReleaseHeldFrameBestEffort(videoFrame, "software_decode_over_budget");

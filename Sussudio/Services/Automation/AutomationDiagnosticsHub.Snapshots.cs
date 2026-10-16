@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
 using Sussudio.Services.Capture;
+using Sussudio.Services.Performance;
 using Sussudio.Services.Runtime;
 using Sussudio.Services.Telemetry;
 using Sussudio.Services.Recording;
@@ -121,12 +122,21 @@ public sealed partial class AutomationDiagnosticsHub
     private async Task<AutomationSnapshot> RefreshSnapshotAsync(CancellationToken cancellationToken)
     {
         await _refreshGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        // Telemetry starts after the gate, so waiting behind another refresh is not counted as refresh cost. The
+        // allocation figure is process-wide (async continuations hop threads, so a per-thread counter would be wrong)
+        // and therefore an upper bound on what the refresh itself allocated.
+        var refreshStartTick = Stopwatch.GetTimestamp();
+        var allocatedBefore = GC.GetTotalAllocatedBytes(false);
         try
         {
             return await RefreshSnapshotCoreAsync(cancellationToken).ConfigureAwait(false);
         }
         finally
         {
+            var refreshTicks = Stopwatch.GetTimestamp() - refreshStartTick;
+            PerfMetrics.TelemetryHubRefresh.RecordTicks(refreshTicks);
+            PerfMetrics.TelemetryHubAlloc.Record(GC.GetTotalAllocatedBytes(false) - allocatedBefore);
+            FrameTrace.Record(FrameTraceEventKind.HubRefresh, refreshStartTick, refreshTicks, -1);
             _refreshGate.Release();
         }
     }
@@ -160,19 +170,16 @@ public sealed partial class AutomationDiagnosticsHub
             token => _snapshotQueryPort.GetRecordingStatsSnapshotAsync(token),
             snapshot => snapshot.CaptureSessionEpoch,
             cancellationToken).ConfigureAwait(false);
-        var previewRuntimeFragment = PreviewRuntimeEpochProvider is { } previewEpochProvider
-            ? await CaptureSnapshotFragmentAsync(
-                collectionEpoch,
-                previewEpochProvider,
-                _previewSnapshotProvider,
-                snapshot => snapshot.PreviewRuntimeEpoch,
-                cancellationToken).ConfigureAwait(false)
-            : await CaptureSnapshotFragmentAsync(
-                collectionEpoch,
-                _previewSnapshotProvider,
-                _previewSnapshotProvider,
-                snapshot => snapshot.PreviewRuntimeEpoch,
-                cancellationToken).ConfigureAwait(false);
+        // One provider call, no producer-epoch bracket: the preview snapshot is a single UI work item, so its fields and
+        // epoch are consistent by construction, exactly like the view-model fragment above. The provider has no
+        // epoch-only read, so the old before/value/after bracket cost three full builds (about 225 KB and three UI
+        // dispatches per tick) to watch a window of about 2 ms; the cross-fragment checks in
+        // BuildSnapshotMixedEpochReasons (for example view_model_preview_runtime) are unchanged.
+        var previewRuntimeFragment = await CaptureSnapshotFragmentAsync(
+            collectionEpoch,
+            _previewSnapshotProvider,
+            snapshot => snapshot.PreviewRuntimeEpoch,
+            cancellationToken).ConfigureAwait(false);
         var viewModelSnapshot = viewModelFragment.Value;
         var captureRuntime = captureRuntimeFragment.Value;
         var health = healthFragment.Value;
@@ -314,28 +321,6 @@ public sealed partial class AutomationDiagnosticsHub
             producerEpoch,
             ProducerChangedDuringCapture: false,
             DateTimeOffset.UtcNow);
-    }
-
-    private static async Task<SnapshotFragment<T>> CaptureSnapshotFragmentAsync<T>(
-        long collectionEpoch,
-        Func<CancellationToken, Task<T>> captureCurrentProducerState,
-        Func<CancellationToken, Task<T>> capture,
-        Func<T, long> getProducerEpoch,
-        CancellationToken cancellationToken)
-    {
-        var producerEpochBefore = getProducerEpoch(await captureCurrentProducerState(cancellationToken).ConfigureAwait(false));
-        var value = await capture(cancellationToken).ConfigureAwait(false);
-        var collectedUtc = DateTimeOffset.UtcNow;
-        var producerEpochAfter = getProducerEpoch(await captureCurrentProducerState(cancellationToken).ConfigureAwait(false));
-        var producerEpoch = getProducerEpoch(value);
-        return new SnapshotFragment<T>(
-            value,
-            collectionEpoch,
-            producerEpoch,
-            producerEpochBefore,
-            producerEpochAfter,
-            ProducerChangedDuringCapture(producerEpoch, producerEpochBefore, producerEpochAfter),
-            collectedUtc);
     }
 
     private static async Task<SnapshotFragment<T>> CaptureSnapshotFragmentAsync<T>(
@@ -891,19 +876,33 @@ public sealed partial class AutomationDiagnosticsHub
 
     private readonly record struct LastOutputProbe(bool Exists, long? SizeBytes, long OutputEpoch);
 
+    // Two kernel32 calls on the current-process pseudo-handle. Process.Refresh() plus WorkingSet64 and
+    // TotalProcessorTime re-enumerated every process on the machine: about 21 ms per tick.
     private ProcessResourceSnapshot CaptureProcessResourceSnapshot()
+        => CaptureProcessResourceSnapshot(HubProcessCounters.Read());
+
+    private ProcessResourceSnapshot CaptureProcessResourceSnapshot(HubProcessCounters.Reading read)
     {
-        // Memory & GC metrics are thread-safe and microsecond-cheap.
-        _currentProcess.Refresh();
-        var processCpuTotalMs = _currentProcess.TotalProcessorTime.TotalMilliseconds;
-        var processCpuPercent = CalculateProcessCpuPercent(processCpuTotalMs);
+        // A failed read repeats the last good reading. Zero memory would draw a cliff in the timeline and then a false
+        // growth spike on the next good read; the CPU baseline only moves on good reads, so the next one measures the
+        // whole interval since the last good read instead of a spike. Before any good read there is nothing to carry:
+        // memory reads zero and the CPU percentage is zero.
+        if (read.Valid)
+        {
+            _lastGoodProcessCounters = read;
+            _lastProcessCpuPercent = CalculateProcessCpuPercent(read.CpuTicks / HubProcessCounters.TicksPerMillisecond);
+        }
+
+        var counters = _lastGoodProcessCounters;
+        var processCpuTotalMs = counters.CpuTicks / HubProcessCounters.TicksPerMillisecond;
+        var processCpuPercent = _lastProcessCpuPercent;
         var gcMemoryInfo = GC.GetGCMemoryInfo();
         ThreadPool.GetAvailableThreads(out var threadPoolWorkerAvailable, out var threadPoolIoAvailable);
         ThreadPool.GetMaxThreads(out var threadPoolWorkerMax, out var threadPoolIoMax);
 
         return new ProcessResourceSnapshot(
-            MemoryWorkingSetMb: _currentProcess.WorkingSet64 / (1024.0 * 1024.0),
-            MemoryPrivateBytesMb: _currentProcess.PrivateMemorySize64 / (1024.0 * 1024.0),
+            MemoryWorkingSetMb: counters.WorkingSetBytes / (1024.0 * 1024.0),
+            MemoryPrivateBytesMb: counters.PrivateBytes / (1024.0 * 1024.0),
             MemoryManagedHeapMb: GC.GetTotalMemory(false) / (1024.0 * 1024.0),
             MemoryTotalAllocatedMb: GC.GetTotalAllocatedBytes(precise: false) / (1024.0 * 1024.0),
             ProcessCpuPercent: processCpuPercent,

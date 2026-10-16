@@ -196,6 +196,8 @@ internal static class SsctlHelpWriter
         WriteFlashbackSection(writer);
         WriteWindowSection(writer);
         WriteWaitVerifySection(writer);
+        WritePerformanceSection(writer);
+        WriteSensesSection(writer);
         WriteFlagsSection(writer);
     }
 
@@ -322,6 +324,31 @@ internal static class SsctlHelpWriter
         WriteCatalogHelpLine(writer, AutomationCommandKind.SetStatsSectionVisible);
         WriteCatalogHelpLine(writer, AutomationCommandKind.SetFrameTimeOverlayVisible);
         WriteCatalogHelpLine(writer, AutomationCommandKind.SetSettingsVisible);
+        writer.WriteLine();
+    }
+
+    private static void WritePerformanceSection(TextWriter writer)
+    {
+        writer.WriteLine("Performance:");
+        WriteCatalogHelpLine(writer, AutomationCommandKind.GetPerfReport, "[--json]");
+        WriteCatalogHelpLine(writer, AutomationCommandKind.PerfWindow, "[--json]");
+        WriteCatalogHelpLine(writer, AutomationCommandKind.AddPerfMarker);
+        WriteCatalogHelpLine(writer, AutomationCommandKind.FrameTrace);
+        WriteCatalogHelpLine(writer, AutomationCommandKind.GetTuningKnobs, "[--json]");
+        WriteCatalogHelpLine(writer, AutomationCommandKind.SetTuningKnob);
+        WriteCatalogHelpLine(writer, AutomationCommandKind.GetLogTail, "[--json]");
+        writer.WriteLine("  perf trace analyze <file> [--top N] [--json]   (offline: analyzes a dump from 'perf trace dump'; no app needed)");
+        writer.WriteLine("  perf experiment <spec.json> [--out DIR] [--json]   (knob A/B run; takes minutes; restores the app afterward)");
+        writer.WriteLine();
+    }
+
+    private static void WriteSensesSection(TextWriter writer)
+    {
+        writer.WriteLine("Senses (hear the app's own audio output; read and operate its UI):");
+        WriteCatalogHelpLine(writer, AutomationCommandKind.CaptureAudioOutput, "[--json]");
+        WriteCatalogHelpLine(writer, AutomationCommandKind.GetUiTree, "[--json]");
+        WriteCatalogHelpLine(writer, AutomationCommandKind.InvokeUiElement, "[--json]");
+        writer.WriteLine("    ui invoke actions: invoke|toggle|set-value|select|expand|collapse|focus|scroll-into-view (keyboard accelerators are listed by 'ui tree' but cannot be raised)");
         writer.WriteLine();
     }
 

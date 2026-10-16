@@ -68,6 +68,25 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
     private IntPtr[]? _hwPoolTextures; // individual ArraySize=1 D3D11 textures for the hw frames pool
     private int _hwPoolIndex; // round-robin index into _hwPoolTextures
 
+    // Which telemetry instruments this encoder feeds (recording or Flashback). Null records nothing, which is what
+    // tests and any other embedder get. Only the encode thread touches the encoder, so PerfFrameId needs no fence.
+    private readonly EncoderPerfMetrics? _perf;
+
+    public LibAvEncoder() : this(null)
+    {
+    }
+
+    public LibAvEncoder(EncoderPerfMetrics? perf)
+    {
+        _perf = perf;
+    }
+
+    /// <summary>
+    /// Trace id (the frame arrival timestamp, or -1) for the next <c>encode_submit</c> span. The owning sink sets it
+    /// on the encode thread right before each Send*Frame call; the encoder never reads it for any other purpose.
+    /// </summary>
+    internal long PerfFrameId { get; set; } = -1;
+
     /// <summary>No-op free callback for av_buffer_create; our pool textures outlive individual frames.</summary>
     private static readonly av_buffer_create_free HwPoolTextureFreeDelegate = (opaque, data) => { /* intentional no-op */ };
     private static readonly av_buffer_create_free_func HwPoolTextureFree = HwPoolTextureFreeDelegate;

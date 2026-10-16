@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
@@ -215,9 +216,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
                 }
             }
 
-            Logger.Log(
-                $"NATIVEXU_TOPOLOGY path='{ksInterface.Path}' nodeCount={nodeList.Count} " +
-                $"devSpecificNodes=[{string.Join(",", devSpecificIds)}]");
+            LogTopology(ksInterface.Path, nodeList.Count, devSpecificIds);
 
             var candidateNodes = devSpecificIds.Count > 0
                 ? nodeList.Where(node => node.IsDevSpecific)
@@ -570,10 +569,56 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
         }
 
         var rawData = NativeXuAtProtocol.StripAtFrameEnvelope(responseFrame, responseBytes);
+        LogAtResponse(name, cmdCode, responseFrameLen, rawData);
+        return new AtCommandResult(name, cmdCode, true, rawData, null, null);
+    }
+
+    // The poll re-reads every command each cycle and almost every answer is the same as the last one, so logging each
+    // read wrote thousands of identical lines (7,678 of 10,043 log-tap lines in one live window). A command's first
+    // answer and every change are logged at once. An unchanged answer is logged only under Logger.VerboseEnabled (Debug
+    // builds), and then at most once per UnchangedLogIntervalMs per command, as a sign that the poll is still reading.
+    // "Changed" is judged on the bytes the line shows (the first AtLogPreviewBytes): a change past them would print an
+    // identical line (RawTiming carries a counter in its last 8 bytes that moves on every read). Nothing parses these
+    // lines (they are for a person reading the log).
+    private const long UnchangedLogIntervalMs = 30_000;
+    private const int AtLogPreviewBytes = 32;
+
+    private sealed record LoggedAtResponse(byte[] Data, long LoggedAtMs);
+
+    private static readonly ConcurrentDictionary<int, LoggedAtResponse> LastLoggedAtResponses = new();
+
+    // The rolling poll re-reads the topology on every cycle too (about one identical line a second). It is logged when
+    // a path's node layout is first seen or changes.
+    private static readonly ConcurrentDictionary<string, string> LastLoggedTopologies = new(StringComparer.Ordinal);
+
+    private static void LogTopology(string path, int nodeCount, List<int> devSpecificIds)
+    {
+        var layout = $"nodeCount={nodeCount} devSpecificNodes=[{string.Join(",", devSpecificIds)}]";
+        if (LastLoggedTopologies.TryGetValue(path, out var last) && string.Equals(last, layout, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        LastLoggedTopologies[path] = layout;
+        Logger.Log($"NATIVEXU_TOPOLOGY path='{path}' {layout}");
+    }
+
+    private static void LogAtResponse(string name, int cmdCode, int responseFrameLen, byte[] rawData)
+    {
+        var nowMs = Environment.TickCount64;
+        LastLoggedAtResponses.TryGetValue(cmdCode, out var last);
+        var shown = rawData.AsSpan(0, Math.Min(AtLogPreviewBytes, rawData.Length));
+        var changed = last is null || !last.Data.AsSpan().SequenceEqual(shown);
+        if (!changed && !(Logger.VerboseEnabled && nowMs - last!.LoggedAtMs >= UnchangedLogIntervalMs))
+        {
+            return;
+        }
+
+        LastLoggedAtResponses[cmdCode] = new LoggedAtResponse(shown.ToArray(), nowMs);
+
         Logger.Log(
             $"NATIVEXU_AT cmd={name} code=0x{cmdCode:X2} frameLen={responseFrameLen} " +
-            $"rawBytes={rawData.Length} preview={GetHexPreview(rawData, rawData.Length, 32)}");
-        return new AtCommandResult(name, cmdCode, true, rawData, null, null);
+            $"rawBytes={rawData.Length} preview={GetHexPreview(rawData, rawData.Length, AtLogPreviewBytes)}");
     }
 
     private static bool SendAtSetCommand(

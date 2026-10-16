@@ -4,6 +4,7 @@ using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
+using Sussudio.Services.Performance;
 using Sussudio.Services.Runtime;
 
 namespace Sussudio
@@ -27,6 +28,9 @@ namespace Sussudio
                 logRoot = string.Empty;
             }
             Logger.Initialize(logRoot);
+            // Capture launch values before any automation command can change a knob; start the GC pause listener.
+            TuningKnobs.CaptureLaunchValues();
+            ProcessSensors.EnsureStarted();
             InitializeComponent();
 
             UnhandledException += App_UnhandledException;

@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
@@ -376,6 +377,7 @@ internal sealed unsafe partial class LibAvEncoder
             attachedHdrSideData = AttachHdrFrameSideDataToHwFrame(options);
         }
 
+        var submitStartTick = BeginEncodeSubmit();
         try
         {
             var sendResult = ffmpeg.avcodec_send_frame(_videoCodecCtx, _hwFrame);
@@ -387,6 +389,7 @@ internal sealed unsafe partial class LibAvEncoder
 
             ThrowIfError(sendResult, "avcodec_send_frame(hw)");
             DrainEncoderPackets();
+            EndEncodeSubmit(submitStartTick);
             _encodedFrameCount++;
         }
         catch
@@ -444,6 +447,7 @@ internal sealed unsafe partial class LibAvEncoder
             attachedHdrSideData = AttachHdrFrameSideDataToHwFrame(options);
         }
 
+        var submitStartTick = BeginEncodeSubmit();
         try
         {
             var sendResult = ffmpeg.avcodec_send_frame(_videoCodecCtx, _hwFrame);
@@ -455,6 +459,7 @@ internal sealed unsafe partial class LibAvEncoder
 
             ThrowIfError(sendResult, "avcodec_send_frame(cuda)");
             DrainEncoderPackets();
+            EndEncodeSubmit(submitStartTick);
             _encodedFrameCount++;
         }
         catch
@@ -512,6 +517,7 @@ internal sealed unsafe partial class LibAvEncoder
             attachedHdrSideData = AttachHdrFrameSideDataIfNeeded(options);
         }
 
+        var submitStartTick = BeginEncodeSubmit();
         try
         {
             var sendResult = ffmpeg.avcodec_send_frame(_videoCodecCtx, _videoFrame);
@@ -529,6 +535,7 @@ internal sealed unsafe partial class LibAvEncoder
             _videoFrame->pict_type = AVPictureType.AV_PICTURE_TYPE_NONE;
 
             DrainEncoderPackets();
+            EndEncodeSubmit(submitStartTick);
             _encodedFrameCount++;
         }
         catch
@@ -688,7 +695,9 @@ internal sealed unsafe partial class LibAvEncoder
         var isKeyframe = (packet->flags & ffmpeg.AV_PKT_FLAG_KEY) != 0;
         var keyframePts = packet->pts;
         var keyframePosition = isKeyframe && _formatCtx->pb != null ? ffmpeg.avio_tell(_formatCtx->pb) : -1L;
+        var muxStartTick = _perf is null ? 0 : Stopwatch.GetTimestamp();
         ThrowIfError(ffmpeg.av_interleaved_write_frame(_formatCtx, packet), "av_interleaved_write_frame");
+        _perf?.RecordMuxWrite(muxStartTick);
         Interlocked.Increment(ref _videoPacketsWritten);
         _totalBytesWritten += packetSize;
         if (isKeyframe && keyframePosition >= 0 && keyframePts != ffmpeg.AV_NOPTS_VALUE)
@@ -726,6 +735,13 @@ internal sealed unsafe partial class LibAvEncoder
             Logger.Log($"LIBAV_ENCODER_KEYFRAME_EVENT_WARN type={ex.GetType().Name} msg='{ex.Message}'");
         }
     }
+
+    // encode_submit spans one frame's avcodec_send_frame through the receive/drain loop on all three lanes (CPU, D3D11
+    // hardware frames, CUDA). It records on success only; a failed send ends the encode anyway. mux_write above is
+    // nested inside it and covers video packets only (audio packets are written by LibAvEncoder.Audio.cs).
+    private long BeginEncodeSubmit() => _perf is null ? 0 : Stopwatch.GetTimestamp();
+
+    private void EndEncodeSubmit(long startTick) => _perf?.RecordEncodeSubmit(startTick, PerfFrameId);
 
     private void CopyPackedFrameToVideoFrame(ReadOnlySpan<byte> frameData, LibAvEncoderOptions options)
     {

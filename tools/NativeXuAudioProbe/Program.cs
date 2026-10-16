@@ -109,6 +109,9 @@ return await NativeXuProbeDefaultExperiment.RunAsync(device);
 // of the app file logger and its background writer lifecycle.
 internal static class Logger
 {
+    // The probe is a diagnostic: it wants every AT response line, not only the first and the changes the app logs.
+    public static bool VerboseEnabled => true;
+
     public static void Log(string message)
         => Trace.TraceInformation(message);
 }

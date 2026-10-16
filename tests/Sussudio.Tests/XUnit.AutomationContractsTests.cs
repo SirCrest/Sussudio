@@ -288,7 +288,7 @@ public sealed class AutomationContractsProtocolXunitTests
         Assert.Equal("SussudioAutomation", AutomationPipeProtocol.DefaultPipeName);
         Assert.Equal("SUSSUDIO_AUTOMATION_PIPE", AutomationPipeProtocol.AutomationPipeEnvVar);
         Assert.Equal("SUSSUDIO_AUTOMATION_TOKEN", AutomationPipeProtocol.AutomationKeyEnvVar);
-        Assert.Equal(2, AutomationPipeProtocol.CommandManifestRevision);
+        Assert.Equal(3, AutomationPipeProtocol.CommandManifestRevision);
         Assert.Equal(5000, AutomationPipeProtocol.DefaultConnectTimeoutMs);
         Assert.Equal(15000, AutomationPipeProtocol.DefaultResponseTimeoutMs);
         Assert.Equal(60000, AutomationPipeProtocol.ExtendedResponseTimeoutMs);
@@ -2260,6 +2260,16 @@ static partial class Program
             "SetFrameTimeOverlayVisible" => "{\"visible\":false}",
             "SetFlashbackTimelineVisible" => "{\"visible\":false}",
             "SetFullScreenEnabled" => "{\"enabled\":false}",
+            "PerfWindow" => "{\"action\":\"list\"}",
+            "AddPerfMarker" => "{\"text\":\"harness readiness check\"}",
+            "FrameTrace" => "{\"action\":\"status\"}",
+            // Unknown name: the handler must reject it without touching the process environment.
+            "SetTuningKnob" => "{\"name\":\"SUSSUDIO_NOT_A_KNOB\",\"value\":\"1\"}",
+            // The agent senses have real side effects (a loopback capture, UI actions), so the harness sends payloads that
+            // validation rejects before any port is touched; the test only proves the readiness gate is bypassed.
+            "CaptureAudioOutput" => $"{{\"outputPath\":{JsonString(Path.Combine(tempRoot, "harness-not-a-wav.txt"))}}}",
+            "GetUiTree" => "{\"maxDepth\":0}",
+            "InvokeUiElement" => "{}",
             "Authenticate" or
             "GetSnapshot" or
             "GetDiagnostics" or
@@ -2274,6 +2284,9 @@ static partial class Program
             "RestartFlashback" or
             "GetAudioRampTrace" or
             "GetAutomationManifest" or
+            "GetPerfReport" or
+            "GetTuningKnobs" or
+            "GetLogTail" or
             "OpenRecordingsFolder" => "{}",
             _ => throw new InvalidOperationException(
                 $"Ready-independent automation command '{commandName}' needs a null-safe harness payload.")
@@ -7197,7 +7210,7 @@ public sealed class PreviewPacingClassifierTests
 
         Assert.Equal("InsufficientSample", GetStringProperty(result, "LikelySlowStage"));
         Assert.Equal("Low", GetStringProperty(result, "Confidence"));
-        Assert.Contains("requiredDurationMs=30000", GetStringProperty(result, "Evidence"));
+        Assert.Contains("requiredDurationMs=15000", GetStringProperty(result, "Evidence"));
     }
 
     [Fact(DisplayName = "Preview pacing classifier prefers source capture when source drops")]

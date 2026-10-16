@@ -9,6 +9,7 @@ using System.Runtime.Intrinsics;
 using System.Threading;
 using System.Threading.Channels;
 using FFmpeg.AutoGen;
+using Sussudio.Services.Performance;
 using Sussudio.Services.Runtime;
 
 namespace Sussudio.Services.Capture.Mjpeg;
@@ -134,7 +135,8 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
         int Width,
         int Height,
         long ArrivalTick,
-        long SeqNo);
+        long SeqNo,
+        long EnqueueTick);
 
     public int DecoderCount => _decoderCount;
 
@@ -194,8 +196,9 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
         Interlocked.Increment(ref _compressedFramesQueued);
         Interlocked.Increment(ref _compressedQueueDepth);
 
+        // EnqueueTick is stamped as the item is built, immediately before TryWrite, for mjpeg.queue_wait.
         if (!_workQueue.Writer.TryWrite(
-                new MjpegWorkItem(buffer, jpegData.Length, width, height, arrivalTick, seq)))
+                new MjpegWorkItem(buffer, jpegData.Length, width, height, arrivalTick, seq, Stopwatch.GetTimestamp())))
         {
             Interlocked.Add(ref _compressedQueueBytes, -jpegData.Length);
             DecrementCompressedQueueDepth("write_failed");
@@ -281,6 +284,8 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
         // alongside games; without MMCSS they are the first threads starved,
         // which is exactly the stutter the jitter buffer then has to hide.
         using var mmcss = MmcssThreadRegistration.TryRegister(_decodeMmcssTask, _decodeMmcssPriority, message => Logger.Log(message));
+        using var hotThread = HotThreads.Register("mjpeg.worker-" + workerIndex, mmcss is not null);
+        var workerTraceArg = (ushort)(workerIndex + 1);
 
         try
         {
@@ -299,6 +304,10 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
                 DecrementCompressedQueueDepth("dequeue");
                 Interlocked.Add(ref _compressedQueueBytes, -item.JpegLength);
                 Interlocked.Increment(ref _compressedFramesDequeued);
+
+                var queueWaitTicks = Stopwatch.GetTimestamp() - item.EnqueueTick;
+                PerfMetrics.MjpegQueueWait.RecordTicks(queueWaitTicks);
+                FrameTrace.Record(FrameTraceEventKind.MjpegQueueWait, item.EnqueueTick, queueWaitTicks, item.ArrivalTick);
 
                 if (ShouldShedStaleCompressedFrame(item.ArrivalTick))
                 {
@@ -350,6 +359,11 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
                         MarkKnownMissing(item.SeqNo, "decode_failed");
                         continue;
                     }
+
+                    // Success path only: a failed decode is counted by DecodeFailures, not timed as a decode.
+                    var decodeTicks = pooledFrame.DecodedTick - decodeStart;
+                    PerfMetrics.MjpegDecode.RecordTicks(decodeTicks);
+                    FrameTrace.Record(FrameTraceEventKind.MjpegDecode, decodeStart, decodeTicks, item.ArrivalTick, workerTraceArg);
 
                     if (_earlyPreviewForkEnabled)
                     {
@@ -1205,6 +1219,7 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
     private void EmitLoop()
     {
         using var mmcss = MmcssThreadRegistration.TryRegister(_decodeMmcssTask, _decodeMmcssPriority, message => Logger.Log(message));
+        using var hotThread = HotThreads.Register("mjpeg.emitter", mmcss is not null);
         while (!_stopped || HasAliveWorkers() || Volatile.Read(ref _reorderBufferDepth) > 0)
         {
             _emitSignal.WaitOne(8);
@@ -1252,8 +1267,16 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
 
             emittedAny = true;
 
-            RecordTimingSample(_reorderLatencyMs, ref _reorderLatencyCount, ref _reorderLatencyIndex, GetElapsedMilliseconds(frame.DecodedTick, Stopwatch.GetTimestamp()));
-            RecordTimingSample(_pipelineLatencyMs, ref _pipelineLatencyCount, ref _pipelineLatencyIndex, GetElapsedMilliseconds(frame.Frame.ArrivalTick, Stopwatch.GetTimestamp()));
+            // One emit-time stamp serves the reorder and pipeline latency windows and the pipeline metric below.
+            var emitTick = Stopwatch.GetTimestamp();
+            RecordTimingSample(_reorderLatencyMs, ref _reorderLatencyCount, ref _reorderLatencyIndex, GetElapsedMilliseconds(frame.DecodedTick, emitTick));
+            RecordTimingSample(_pipelineLatencyMs, ref _pipelineLatencyCount, ref _pipelineLatencyIndex, GetElapsedMilliseconds(frame.Frame.ArrivalTick, emitTick));
+
+            // Arrival to strict-order emit, recorded outside _reorderLock (TryTakeNextDecodedFrame has released it).
+            var pipelineStartTick = frame.Frame.ArrivalTick;
+            var pipelineTicks = emitTick - pipelineStartTick;
+            PerfMetrics.MjpegPipeline.RecordTicks(pipelineTicks);
+            FrameTrace.Record(FrameTraceEventKind.MjpegPipeline, pipelineStartTick, pipelineTicks, pipelineStartTick);
             var emitted = false;
 
             try

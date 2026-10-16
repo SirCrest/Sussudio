@@ -14,6 +14,7 @@ using Sussudio.Models;
 using Sussudio.Services.Capture;
 using Sussudio.Services.Contracts;
 using Sussudio.Services.Flashback;
+using Sussudio.Services.Performance;
 using Sussudio.Services.Runtime;
 using Sussudio.Tools;
 
@@ -23,7 +24,7 @@ namespace Sussudio.Services.Automation;
 // requests, validates payloads, delegates mutations to the view model, and
 // shapes every response with correlation and lifecycle fields for external
 // harnesses.
-public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
+public sealed partial class AutomationCommandDispatcher : IAutomationCommandDispatcher
 {
     // Trivial one-property capture and pipeline commands live with the ordered
     // port-mapped dispatcher that consumes them.
@@ -213,6 +214,14 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                 success: false,
                 status: AutomationResponseStatus.Error,
                 elapsedMs: (long)Math.Round(Stopwatch.GetElapsedTime(commandStartedAt).TotalMilliseconds));
+        }
+        finally
+        {
+            // Every exit of ExecuteAsync (preflight reject, handler result, each catch) lands here exactly once.
+            // The trace id is the command kind, so a dump shows which command a slow span was.
+            var commandTicks = Stopwatch.GetTimestamp() - commandStartedAt;
+            PerfMetrics.AutomationCommand.RecordTicks(commandTicks);
+            FrameTrace.Record(FrameTraceEventKind.AutomationCommand, commandStartedAt, commandTicks, (long)request.Command);
         }
     }
 
@@ -785,6 +794,36 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
 
             case AutomationCommandKind.SetMicrophoneVolume:
                 return await ExecuteSetMicrophoneVolumeCommandAsync(payload, correlationId, cancellationToken).ConfigureAwait(false);
+
+            case AutomationCommandKind.GetPerfReport:
+                return ExecuteGetPerfReportCommand(payload, correlationId);
+
+            case AutomationCommandKind.PerfWindow:
+                return ExecutePerfWindowCommand(payload, correlationId);
+
+            case AutomationCommandKind.AddPerfMarker:
+                return ExecuteAddPerfMarkerCommand(payload, correlationId);
+
+            case AutomationCommandKind.FrameTrace:
+                return await ExecuteFrameTraceCommandAsync(payload, correlationId, cancellationToken).ConfigureAwait(false);
+
+            case AutomationCommandKind.GetTuningKnobs:
+                return ExecuteGetTuningKnobsCommand(payload, correlationId);
+
+            case AutomationCommandKind.SetTuningKnob:
+                return ExecuteSetTuningKnobCommand(payload, correlationId);
+
+            case AutomationCommandKind.GetLogTail:
+                return ExecuteGetLogTailCommand(payload, correlationId);
+
+            case AutomationCommandKind.CaptureAudioOutput:
+                return await ExecuteCaptureAudioOutputCommandAsync(payload, correlationId, cancellationToken).ConfigureAwait(false);
+
+            case AutomationCommandKind.GetUiTree:
+                return await ExecuteGetUiTreeCommandAsync(payload, correlationId, cancellationToken).ConfigureAwait(false);
+
+            case AutomationCommandKind.InvokeUiElement:
+                return await ExecuteInvokeUiElementCommandAsync(payload, correlationId, cancellationToken).ConfigureAwait(false);
 
             default:
                 return CreateResponse(
@@ -1568,7 +1607,13 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
     {
         var maxEntries = GetInt(payload, AutomationPayloadKeys.MaxEntries) ?? 240;
         var timeline = _diagnosticsHub.GetPerformanceTimeline(maxEntries);
-        return CreateResponse(correlationId, "Performance timeline retrieved.", data: timeline);
+
+        // No embedded snapshot: the latest snapshot's TimestampUtc is, by construction, the final timeline entry's
+        // timestamp (each refresh appends one entry built from it). Attached to this response it made the JSON
+        // carry max+1 "TimestampUtc" values with a zero delta at the end for any consumer that scanned the raw
+        // text, and it added a full snapshot to a payload that is already hundreds of entries. The ring itself
+        // returns exactly min(count, max) entries; Data is the only payload consumers read from this command.
+        return CreateResponse(correlationId, "Performance timeline retrieved.", data: timeline, includeSnapshot: false);
     }
 
     private async Task<AutomationCommandResponse> ExecuteGetAudioRampTraceCommandAsync(

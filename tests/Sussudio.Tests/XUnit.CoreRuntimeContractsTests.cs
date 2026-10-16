@@ -777,6 +777,190 @@ public class RuntimeHelpersTests
         Assert.IsType<ArgumentException>(invocation.InnerException);
     }
 
+    // Failure modes of HubProcessCounters, which replaced Process.Refresh() + WorkingSet64 / PrivateMemorySize64 /
+    // TotalProcessorTime in the hub snapshot. The snapshot fields are a wire contract, so the numbers must mean
+    // the same thing: a unit slip (pages or KB for bytes, milliseconds for 100 ns ticks) or a wrong struct
+    // layout (reading PagefileUsage for PrivateUsage) would be silent in a live snapshot until someone compared.
+    // E2E compares hub values against the perf report's independent reading but cannot isolate a unit error from
+    // process growth, so this compares against the Process properties the hub used before, in the same process.
+    [Fact]
+    public void HubProcessCounters_ReadAgreesWithProcessMemoryAndCpuTime()
+    {
+        var type = SussudioAssembly.Load().GetType("Sussudio.Services.Automation.HubProcessCounters", throwOnError: true)!;
+        var reading = type.GetMethod("Read", BindingFlags.Public | BindingFlags.Static)!.Invoke(null, null)!;
+        T Field<T>(string name) => (T)reading.GetType().GetProperty(name)!.GetValue(reading)!;
+
+        using var process = Process.GetCurrentProcess();
+        process.Refresh();
+
+        Assert.True(Field<bool>("Valid"));
+
+        // Same counters read a moment apart in a live test host: allow drift, not a unit error (1024x or 8192x).
+        AssertWithin(process.WorkingSet64, Field<long>("WorkingSetBytes"));
+        AssertWithin(process.PrivateMemorySize64, Field<long>("PrivateBytes"));
+
+        // CPU is cumulative, so the later Process reading is never behind the earlier counter read, and the gap is
+        // the few milliseconds between the two calls (100 ns ticks; a millisecond reading would be 10,000x smaller).
+        var cpuTicks = Field<long>("CpuTicks");
+        var processTicks = process.TotalProcessorTime.Ticks;
+        Assert.InRange(processTicks - cpuTicks, 0L, TimeSpan.TicksPerSecond);
+
+        static void AssertWithin(long expected, long actual)
+            => Assert.InRange(actual, expected - Math.Max(64L << 20, expected / 4), expected + Math.Max(64L << 20, expected / 4));
+    }
+
+    // Failure modes of a failed counter read in the hub snapshot, listed before the code. E2E cannot make
+    // K32GetProcessMemoryInfo or GetProcessTimes fail in a live process.
+    //  1. A failed read after a good one must publish the last good working set and private bytes. Zero draws a
+    //     memory cliff in the timeline and then a false growth spike on the next good read.
+    //  2. A failed read must keep the CPU total, so the next good read is not a CPU spike.
+    //  3. A failed read before any good one has nothing to carry: it publishes zero, and the next good read is
+    //     published as read.
+    [Fact]
+    public void HubProcessCounters_AFailedReadCarriesTheLastGoodMemoryAndCpuTotal()
+    {
+        var assembly = SussudioAssembly.Load();
+        var hubType = assembly.GetType("Sussudio.Services.Automation.AutomationDiagnosticsHub", throwOnError: true)!;
+        var readingType = assembly.GetType("Sussudio.Services.Automation.HubProcessCounters+Reading", throwOnError: true)!;
+        var capture = hubType.GetMethod("CaptureProcessResourceSnapshot", BindingFlags.NonPublic | BindingFlags.Instance, [readingType])!;
+        var hub = RuntimeHelpers.GetUninitializedObject(hubType);
+        object Reading(bool valid, long workingSet, long privateBytes, long cpuTicks)
+            => Activator.CreateInstance(readingType, valid, workingSet, privateBytes, cpuTicks)!;
+        double Value(object snapshot, string name) => (double)snapshot.GetType().GetProperty(name)!.GetValue(snapshot)!;
+        object Capture(object reading) => capture.Invoke(hub, [reading])!;
+        var failed = Activator.CreateInstance(readingType)!;
+
+        var beforeAnyGood = Capture(failed);
+        Assert.Equal(0.0, Value(beforeAnyGood, "MemoryWorkingSetMb"));
+        Assert.Equal(0.0, Value(beforeAnyGood, "MemoryPrivateBytesMb"));
+
+        var good = Capture(Reading(true, 300L << 20, 500L << 20, 20_000_000));
+        Assert.Equal(300.0, Value(good, "MemoryWorkingSetMb"));
+        Assert.Equal(500.0, Value(good, "MemoryPrivateBytesMb"));
+        Assert.Equal(2_000.0, Value(good, "ProcessCpuTotalProcessorTimeMs"));
+
+        var carried = Capture(failed);
+        Assert.Equal(300.0, Value(carried, "MemoryWorkingSetMb"));
+        Assert.Equal(500.0, Value(carried, "MemoryPrivateBytesMb"));
+        Assert.Equal(2_000.0, Value(carried, "ProcessCpuTotalProcessorTimeMs"));
+        Assert.Equal(0.0, Value(carried, "ProcessCpuPercent"));
+
+        var next = Capture(Reading(true, 310L << 20, 505L << 20, 20_100_000));
+        Assert.Equal(310.0, Value(next, "MemoryWorkingSetMb"));
+        Assert.Equal(505.0, Value(next, "MemoryPrivateBytesMb"));
+        Assert.Equal(2_010.0, Value(next, "ProcessCpuTotalProcessorTimeMs"));
+    }
+
+    // Failure modes of the pooled-scratch Compute, listed before the code was written. E2E cannot reach them: the
+    // hub only ever feeds Compute steady 1,100-sample windows on one thread at a time.
+    //  1. Stale rent tail: ArrayPool returns an array longer than asked for, holding an earlier renter's values.
+    //     Sorting or selecting percentiles over Length instead of the sample count lets a big earlier window leak
+    //     into a small later one.
+    //  2. Window sizes at and around pool bucket boundaries (1, 15, 16, 17, 1023, 1024, 1025): off-by-one on the
+    //     slice that is sorted.
+    //  3. Ring wraparound: the window arrives from RingBufferHelpers.Copy with count equal to capacity and a
+    //     mid-ring index. Compute must leave the chronological order alone (callers publish the same array as
+    //     RecentIntervalsMs) and report the percentiles of a sorted private copy.
+    //  4. Concurrent callers: the scratch must be exclusive per call. A shared static buffer would hand one
+    //     thread another thread's window.
+    //  5. Empty window: rejected before any buffer is rented (RejectsEmptyWindow above); later calls still work.
+    // A concurrent writer to the live ring is not a Compute failure mode: Compute never sees the ring, only the
+    // private copy that RingBufferHelpers.Copy made under the owner's lock, and that read order is unchanged.
+
+    [Fact]
+    public void IntervalCadenceStatistics_PooledScratchIgnoresStaleTailFromAnEarlierLargerWindow()
+    {
+        // The pool hands the same thread its own buffer back within a size class (16, 1,024), so a full window of
+        // 1000 ms leaves 1000s in the tail that the smaller window of 1 ms in the same class must not see.
+        foreach (var (fullSize, smallSize) in new[] { (16, 10), (1024, 600) })
+        {
+            InvokeIntervalCadenceStatistics(Enumerable.Repeat(1000.0, fullSize).ToArray(), 1000.0);
+            var stats = InvokeIntervalCadenceStatistics(Enumerable.Repeat(1.0, smallSize).ToArray(), 1.0);
+
+            Assert.Equal(1.0, GetStat<double>(stats, "P95IntervalMs"));
+            Assert.Equal(1.0, GetStat<double>(stats, "P99IntervalMs"));
+            Assert.Equal(1.0, GetStat<double>(stats, "MaxIntervalMs"));
+        }
+    }
+
+    [Fact]
+    public void IntervalCadenceStatistics_PooledScratchMatchesSortedCopyAtBucketBoundaries()
+    {
+        var random = new Random(20261015);
+        // Large sizes first so each later, smaller window can land on a buffer with stale values in its tail.
+        foreach (var size in new[] { 2048, 1100, 1025, 1024, 1023, 33, 17, 16, 15, 5, 3, 2, 1 })
+        {
+            var samples = Enumerable.Range(0, size).Select(_ => Math.Round(random.NextDouble() * 40.0, 3)).ToArray();
+            AssertPercentilesMatchSortedCopy(samples);
+        }
+    }
+
+    [Fact]
+    public void IntervalCadenceStatistics_WrappedRingWindowKeepsChronologicalOrderAndMatchesSortedCopy()
+    {
+        // 1,500 writes into a 1,200-slot ring: full, with the write index 300 slots past the start.
+        var ring = new double[1200];
+        var count = 0;
+        var index = 0;
+        for (var i = 0; i < 1500; i++)
+        {
+            ring[index] = 10.0 + (i * 7919 % 101) / 10.0;
+            index = (index + 1) % ring.Length;
+            count = Math.Min(count + 1, ring.Length);
+        }
+
+        var window = (double[])ResolveCopyDouble().Invoke(null, new object?[] { ring, count, index, null })!;
+        var before = (double[])window.Clone();
+
+        AssertPercentilesMatchSortedCopy(window);
+        Assert.Equal(before, window);
+    }
+
+    [Fact]
+    public async Task IntervalCadenceStatistics_ConcurrentCallersEachGetTheirOwnWindowsPercentiles()
+    {
+        // Each thread's values sit in their own band (thread * 100 + 0..40) so another thread's window cannot
+        // produce the same percentiles by accident.
+        var failures = new System.Collections.Concurrent.ConcurrentBag<string>();
+        var workers = Enumerable.Range(0, 8).Select(thread => Task.Run(() =>
+        {
+            var random = new Random(thread);
+            for (var iteration = 0; iteration < 300; iteration++)
+            {
+                var size = 1 + random.Next(1500);
+                var samples = Enumerable.Range(0, size).Select(_ => thread * 100.0 + random.NextDouble() * 40.0).ToArray();
+                try
+                {
+                    AssertPercentilesMatchSortedCopy(samples);
+                }
+                catch (Exception ex)
+                {
+                    failures.Add($"thread {thread} iteration {iteration} size {size}: {ex.Message}");
+                    return;
+                }
+            }
+        })).ToArray();
+
+        await Task.WhenAll(workers);
+        Assert.Empty(failures);
+    }
+
+    private static void AssertPercentilesMatchSortedCopy(double[] samples)
+    {
+        var nearestRank = ResolveNearestRankIndex();
+        var sorted = (double[])samples.Clone();
+        Array.Sort(sorted);
+        var p95 = sorted[(int)nearestRank.Invoke(null, new object[] { sorted.Length, 0.95 })!];
+        var p99 = sorted[(int)nearestRank.Invoke(null, new object[] { sorted.Length, 0.99 })!];
+
+        var stats = InvokeIntervalCadenceStatistics(samples, 0);
+
+        Assert.Equal(samples.Length, GetStat<int>(stats, "SampleCount"));
+        Assert.Equal(p95, GetStat<double>(stats, "P95IntervalMs"));
+        Assert.Equal(p99, GetStat<double>(stats, "P99IntervalMs"));
+        Assert.Equal(sorted[^1], GetStat<double>(stats, "MaxIntervalMs"));
+    }
+
     private static object InvokeIntervalCadenceStatistics(double[] samples, double expectedIntervalMs)
     {
         var type = SussudioAssembly.Load().GetType(IntervalCadenceStatisticsType, throwOnError: true)!;

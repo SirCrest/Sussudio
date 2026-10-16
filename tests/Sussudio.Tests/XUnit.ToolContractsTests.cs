@@ -5440,6 +5440,23 @@ static partial class Program
             HelpLine(AutomationCommandKind.SetFrameTimeOverlayVisible),
             HelpLine(AutomationCommandKind.SetSettingsVisible),
             "",
+            "Performance:",
+            HelpLine(AutomationCommandKind.GetPerfReport, "[--json]"),
+            HelpLine(AutomationCommandKind.PerfWindow, "[--json]"),
+            HelpLine(AutomationCommandKind.AddPerfMarker),
+            HelpLine(AutomationCommandKind.FrameTrace),
+            HelpLine(AutomationCommandKind.GetTuningKnobs, "[--json]"),
+            HelpLine(AutomationCommandKind.SetTuningKnob),
+            HelpLine(AutomationCommandKind.GetLogTail, "[--json]"),
+            "  perf trace analyze <file> [--top N] [--json]   (offline: analyzes a dump from 'perf trace dump'; no app needed)",
+            "  perf experiment <spec.json> [--out DIR] [--json]   (knob A/B run; takes minutes; restores the app afterward)",
+            "",
+            "Senses (hear the app's own audio output; read and operate its UI):",
+            HelpLine(AutomationCommandKind.CaptureAudioOutput, "[--json]"),
+            HelpLine(AutomationCommandKind.GetUiTree, "[--json]"),
+            HelpLine(AutomationCommandKind.InvokeUiElement, "[--json]"),
+            "    ui invoke actions: invoke|toggle|set-value|select|expand|collapse|focus|scroll-into-view (keyboard accelerators are listed by 'ui tree' but cannot be raised)",
+            "",
             "Flags:",
             "  --json            Print raw JSON responses where supported",
             "  --pipe NAME       Named pipe (default: SussudioAutomation)",
@@ -7171,7 +7188,17 @@ static partial class Program
         ("SelectMicrophoneDevice", 54),
         ("SetMicrophoneVolume", 55),
         ("SetFlashbackBufferMinutes", 56),
-        ("SetFlashbackGpuDecode", 57)
+        ("SetFlashbackGpuDecode", 57),
+        ("GetPerfReport", 58),
+        ("PerfWindow", 59),
+        ("AddPerfMarker", 60),
+        ("FrameTrace", 61),
+        ("GetTuningKnobs", 62),
+        ("SetTuningKnob", 63),
+        ("GetLogTail", 64),
+        ("CaptureAudioOutput", 65),
+        ("GetUiTree", 66),
+        ("InvokeUiElement", 67)
     ];
 
     internal static Task AutomationCommandCatalog_CoversCommandsAndPolicyMetadata()
@@ -7422,7 +7449,9 @@ static partial class Program
             ["CapturePreviewFrame"] = ("WriteFile", "outputPath", false),
             ["CaptureWindowScreenshot"] = ("WriteFile", "outputPath", false),
             ["FlashbackExport"] = ("WriteFile", "outputPath", true),
-            ["VerifyFile"] = ("ReadFile", "filePath", true)
+            ["VerifyFile"] = ("ReadFile", "filePath", true),
+            ["FrameTrace"] = ("WriteFile", "outputPath", false),
+            ["CaptureAudioOutput"] = ("WriteFile", "outputPath", false)
         };
 
         var pathEntries = entries
@@ -7467,7 +7496,7 @@ static partial class Program
 
     internal static Task AutomationManifest_SerializationIsStable()
     {
-        const string ExpectedManifestSha256 = "54C31AFC222765BAA96AEAF28B5E9A6E233583EE23F55828DB4C629D47C82DE0";
+        const string ExpectedManifestSha256 = "27835FD4AAAFF929E74B125FA32E0159397898E63F1D7EFF6D90519AD0506E95";
         var catalogType = RequireAutomationContractType("Sussudio.Tools.AutomationCommandCatalog");
         var createManifestJson = RequireNonPublicStaticMethod(catalogType, "CreateManifestJson");
         var first = (string)createManifestJson.Invoke(null, Array.Empty<object>())!;

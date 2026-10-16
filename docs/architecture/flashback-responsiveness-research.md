@@ -400,7 +400,7 @@ Not done in this phase: inserting silence at WASAPI `DATA_DISCONTINUITY` gaps
 |---|---|
 | NVML polling demand-gated to the stats dock at 1 s; parked otherwise | `NvmlMonitor.SetPollingDemand`, `StatsOverlayCompositionController.SetSamplingDemand` |
 | Source (XU) telemetry refresh every fourth 500 ms tick; A/V drift sample unchanged | `CaptureService.RuntimeSnapshots.cs` telemetry loop |
-| Automation hub probes the preview producer epoch through a signature read; the full preview snapshot is built once per tick instead of three times | `AutomationDiagnosticsHub.PreviewRuntimeEpochProvider`, `PreviewRuntimeSnapshotSamplingController.GetEpochAsync` |
+| Automation hub reads the preview snapshot once per tick (one UI dispatch, one build) instead of three times. The before/after epoch bracket is gone because the snapshot is a single UI work item; this replaced an interim signature-read epoch probe when the performance-monitoring overhaul merged | `AutomationDiagnosticsHub.Snapshots.cs` `RefreshSnapshotCoreAsync` |
 | `DriveInfo.AvailableFreeSpace` probed on the pool, one in flight, result posted to the UI thread | `MainViewModel.UpdateDiskSpace` |
 | Waitable swap-chain wait = 1.5 measured refresh intervals (4..20 ms; 8 ms until measured) | `D3D11PreviewRenderer.ResolveFrameLatencyWaitTimeoutMs` |
 | DEVICE_HUNG and DRIVER_INTERNAL_ERROR classified as device loss; other render failures log the first five of a consecutive streak then every 300th, and a rendered frame ends the streak | `D3D11PreviewRenderer.Resources.cs` `IsDeviceLostException`, `D3D11PreviewRenderer.cs` `ShouldLogRenderFailure` |

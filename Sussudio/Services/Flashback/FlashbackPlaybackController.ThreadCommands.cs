@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Channels;
 using Sussudio.Models;
+using Sussudio.Services.Performance;
 using Sussudio.Services.Preview;
 using Sussudio.Services.Runtime;
 using CommandKind = Sussudio.Services.Flashback.FlashbackPlaybackCommandMailbox.CommandKind;
@@ -60,6 +61,7 @@ internal sealed partial class FlashbackPlaybackController
         // Without this, Sleep(8) at 120fps sleeps ~15ms (default granularity) -> half-speed.
         timeBeginPeriod(1);
         using var mmcss = MmcssThreadRegistration.TryRegister(_playbackMmcssTask, _playbackMmcssPriority, message => Logger.Log(message));
+        using var hotThread = HotThreads.Register("flashback.playback", mmcss is not null);
         using var pacingWaiter = new PrecisionWaiter();
         _pacingWaiter = pacingWaiter;
         try

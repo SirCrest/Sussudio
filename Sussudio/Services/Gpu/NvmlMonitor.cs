@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Threading;
+using Sussudio.Services.Performance;
 
 namespace Sussudio.Services.Gpu;
 
@@ -28,6 +29,21 @@ public sealed record NvmlSnapshot(
     public ulong? VramTotalMB => VramTotalBytes.HasValue ? VramTotalBytes.Value / (1024 * 1024) : null;
 }
 
+/// <summary>
+/// Who currently wants NVML values. The poll timer runs while any source is set and is parked when none is.
+/// </summary>
+[Flags]
+public enum NvmlPollingDemand
+{
+    None = 0,
+
+    /// <summary>The stats dock is showing the GPU rows.</summary>
+    StatsDock = 1,
+
+    /// <summary>The telemetry sensor supervisor: a measurement window is open, a frame trace runs, or the sensors knob is on.</summary>
+    TelemetrySensors = 2,
+}
+
 // Polls NVIDIA GPU utilization/encoder/decoder counters for stats overlays and
 // diagnostic sessions. Missing nvml.dll disables the feature without affecting
 // capture, preview, or recording.
@@ -40,7 +56,8 @@ public sealed class NvmlMonitor : IDisposable
     private readonly int _pollIntervalMs;
     private NvmlSnapshot? _latestSnapshot;
     private int _pollInProgress;
-    private int _pollingDemand;
+    private readonly object _demandGate = new();
+    private NvmlPollingDemand _pollingDemand;
     private bool _disposed;
 
     public NvmlMonitor(int pollIntervalMs = 1000)
@@ -97,40 +114,68 @@ public sealed class NvmlMonitor : IDisposable
 
     public NvmlSnapshot? GetLatestSnapshot() => Volatile.Read(ref _latestSnapshot);
 
+    /// <summary>The demand sources currently holding the poll timer running.</summary>
+    public NvmlPollingDemand PollingDemand
+    {
+        get
+        {
+            lock (_demandGate)
+            {
+                return _pollingDemand;
+            }
+        }
+    }
+
     /// <summary>
-    /// Starts polling when a consumer (the stats dock) is showing the values and parks
-    /// the timer again when it is not. The first poll runs immediately on demand.
+    /// Sets or clears one consumer's demand. Polling starts when the first source appears (the first poll runs
+    /// immediately) and the timer is parked when the last one leaves, so neither the stats dock nor the telemetry
+    /// sensors can stop the poll the other still needs. Returns true when this source's demand changed. Control plane
+    /// only: the gate serializes the timer changes, so two sources toggling at once cannot leave the timer parked while
+    /// demand is set.
     /// </summary>
-    public void SetPollingDemand(bool active)
+    public bool SetPollingDemand(NvmlPollingDemand source, bool active)
     {
         if (!_available || _disposed || _pollTimer == null)
         {
-            return;
+            return false;
         }
 
-        var requested = active ? 1 : 0;
-        if (Interlocked.Exchange(ref _pollingDemand, requested) == requested)
+        NvmlPollingDemand next;
+        lock (_demandGate)
         {
-            return;
-        }
-
-        try
-        {
-            if (active)
+            var previous = _pollingDemand;
+            next = active ? previous | source : previous & ~source;
+            if (next == previous)
             {
-                _pollTimer.Change(0, _pollIntervalMs);
-            }
-            else
-            {
-                _pollTimer.Change(Timeout.Infinite, Timeout.Infinite);
+                return false;
             }
 
-            Logger.Log($"NVML_MONITOR_DEMAND active={active} interval_ms={_pollIntervalMs}");
+            _pollingDemand = next;
+            var wasPolling = previous != NvmlPollingDemand.None;
+            var polling = next != NvmlPollingDemand.None;
+            if (wasPolling != polling)
+            {
+                try
+                {
+                    if (polling)
+                    {
+                        _pollTimer.Change(0, _pollIntervalMs);
+                    }
+                    else
+                    {
+                        _pollTimer.Change(Timeout.Infinite, Timeout.Infinite);
+                    }
+                }
+                catch (ObjectDisposedException)
+                {
+                    // Dispose won the race; nothing to schedule.
+                    return false;
+                }
+            }
         }
-        catch (ObjectDisposedException)
-        {
-            // Dispose won the race; nothing to schedule.
-        }
+
+        Logger.Log($"NVML_MONITOR_DEMAND sources={next} interval_ms={_pollIntervalMs}");
+        return true;
     }
 
     private void Poll(object? state)
@@ -189,6 +234,22 @@ public sealed class NvmlMonitor : IDisposable
             uint? memClock = null;
             if (nvmlDeviceGetClockInfo(_device, NVML_CLOCK_MEM, out var mClock) == NVML_SUCCESS)
                 memClock = mClock;
+
+            // One utilization sample per poll into the performance histograms, only for values NVML actually returned.
+            if (gpuUtil is { } gpuUtilSample)
+            {
+                PerfMetrics.GpuNvmlGpuUtil.Record(gpuUtilSample);
+            }
+
+            if (nvencUtil is { } nvencUtilSample)
+            {
+                PerfMetrics.GpuNvmlEncoderUtil.Record(nvencUtilSample);
+            }
+
+            if (nvdecUtil is { } nvdecUtilSample)
+            {
+                PerfMetrics.GpuNvmlDecoderUtil.Record(nvdecUtilSample);
+            }
 
             Volatile.Write(ref _latestSnapshot, new NvmlSnapshot(
                 _gpuName, gpuUtil, memUtil, nvdecUtil, nvencUtil,
