@@ -699,8 +699,6 @@
   "PreviewGpuPlaybackState": "previewRuntime.GpuPlaybackState",
   "PreviewGpuNaturalVideoWidth": 1061,
   "PreviewGpuNaturalVideoHeight": 1060,
-  "PreviewGpuPositionMs": 1064.25,
-  "PreviewGpuPositionEventCount": 1063,
   "PreviewHdrInputDetected": false,
   "PreviewToneMapMode": "previewHdrState.ToneMapMode",
   "PreviewColorContext": "captureRuntime.NegotiatedPixelFormat",

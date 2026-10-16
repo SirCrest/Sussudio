@@ -436,8 +436,6 @@ public sealed partial class AutomationDiagnosticsHub
             PreviewGpuPlaybackState = previewRuntime.GpuPlaybackState,
             PreviewGpuNaturalVideoWidth = previewRuntime.GpuNaturalVideoWidth,
             PreviewGpuNaturalVideoHeight = previewRuntime.GpuNaturalVideoHeight,
-            PreviewGpuPositionMs = previewRuntime.GpuPositionMs,
-            PreviewGpuPositionEventCount = previewRuntime.GpuPositionEventCount,
             PreviewHdrInputDetected = previewHdrState.InputDetected,
             PreviewToneMapMode = previewHdrState.ToneMapMode,
             PreviewColorContext = captureRuntime.NegotiatedPixelFormat,

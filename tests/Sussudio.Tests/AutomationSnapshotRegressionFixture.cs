@@ -23,6 +23,7 @@ internal static class AutomationSnapshotRegressionFixture
         },
         ["Sussudio.Models.PreviewRuntimeSnapshot"] = new[]
         {
+            "GpuPositionEventCount", "GpuPositionMs",
             "StartupGpuSignalFirstFrame", "StartupGpuSignalMediaOpened", "StartupGpuSignalPlaybackAdvancing"
         },
     };

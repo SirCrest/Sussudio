@@ -518,8 +518,6 @@
   "PreviewGpuPlaybackState": null,
   "PreviewGpuNaturalVideoWidth": 0,
   "PreviewGpuNaturalVideoHeight": 0,
-  "PreviewGpuPositionMs": 0,
-  "PreviewGpuPositionEventCount": 0,
   "PreviewHdrInputDetected": false,
   "PreviewToneMapMode": null,
   "PreviewColorContext": null,

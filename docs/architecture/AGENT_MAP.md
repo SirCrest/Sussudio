@@ -2514,18 +2514,22 @@ Primary current owners:
   orchestration, watchdog/telemetry timers, timeout configuration, timeout
   recovery, failure-stop scheduling, readiness-signal coordination,
   required/received state, missing-signal calculation and updates,
-  playback-progress diagnostics, startup signal log strings, GPU position
-  counter state, first-visual confirmation decisions, signal-list formatting,
-  timeout diagnostic payload formatting, and the required/received readiness
-  snapshot. `PreviewStartupSessionController` is the single attempt owner; the
-  readiness signal state and signal formatter remain local helpers without UI
+  playback-progress diagnostics, startup signal log strings, first-visual
+  confirmation decisions, signal-list formatting, timeout diagnostic payload
+  formatting, and the required/received readiness snapshot.
+  `PreviewStartupSessionController` is the single attempt owner; the readiness
+  signal state and signal formatter remain local helpers without UI
   dependencies. The runtime sampler reads this owner's signal snapshot and
   timeout directly. Both renderer strategies require only `FirstVisual`, which
   `ConfirmFirstVisual` records; the MediaPlayer-era dual GPU signal path
   (MediaOpened/FirstCaptureFrame/PlaybackAdvancing readiness and its
-  `PreviewGpuSignal*` snapshot fields) left with the WinRT preview. The
-  `PreviewStartupSignalFlags` members stay because the automation snapshot
-  projects required/received signals as flag values.
+  `PreviewGpuSignal*` snapshot fields) and its playback position telemetry
+  (the PositionChanged event counter and position, `PreviewGpuPosition*`
+  snapshot fields) left with the WinRT preview. The D3D11 renderer has no
+  playback position, so the playback snapshot log reports renderer state,
+  visibility and signals only. The `PreviewStartupSignalFlags` members stay
+  because the automation snapshot projects required/received signals as flag
+  values.
   `Sussudio/MainWindow.xaml.cs` supplies external UI/runtime callbacks to the
   session owner and keeps renderer-attached, first-visual, reset, signal-configuration,
   and watchdog adapters for its lifecycle and renderer collaborators. Construction

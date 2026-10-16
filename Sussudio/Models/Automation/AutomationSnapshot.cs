@@ -559,8 +559,6 @@ public sealed class AutomationSnapshot
     public string PreviewGpuPlaybackState { get; init; } = "None";
     public int PreviewGpuNaturalVideoWidth { get; init; }
     public int PreviewGpuNaturalVideoHeight { get; init; }
-    public double PreviewGpuPositionMs { get; init; }
-    public long PreviewGpuPositionEventCount { get; init; }
     public bool PreviewHdrInputDetected { get; init; }
     public string PreviewToneMapMode { get; init; } = "Unknown";
     public string? PreviewColorContext { get; init; }

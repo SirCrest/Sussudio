@@ -56,7 +56,6 @@ internal sealed class PreviewStartupSessionController
     private int _failureStopScheduled;
 
     private readonly PreviewStartupReadinessSignalController _readinessSignals = new();
-    private long _positionEventCount;
     private readonly PreviewStartupSessionControllerContext _context;
 
     public PreviewStartupSessionController(PreviewStartupSessionControllerContext context)
@@ -423,17 +422,13 @@ internal sealed class PreviewStartupSessionController
 
     public PreviewStartupReadinessSignalSnapshot SignalSnapshot => _readinessSignals.Snapshot;
 
-    public long PositionEventCount => Interlocked.Read(ref _positionEventCount);
-
     public void ResetSignalState()
     {
-        Interlocked.Exchange(ref _positionEventCount, 0);
         _readinessSignals.Reset();
     }
 
     public void ConfigureSignals(PreviewStartupStrategy strategy, PreviewStartupSignalFlags requiredSignals)
     {
-        Interlocked.Exchange(ref _positionEventCount, 0);
         var missingSignals = _readinessSignals.Configure(
             strategy,
             requiredSignals,
@@ -463,7 +458,6 @@ internal sealed class PreviewStartupSessionController
         _context.Log(
             $"PREVIEW_START_PLAYBACK_SNAPSHOT attempt={AttemptLabel} " +
             $"reason={reason} state={(snapshot.RendererIsRendering ? "Rendering" : "Idle")} " +
-            $"positionMs=0 " +
             $"gpuVisible={snapshot.GpuVisibility} " +
             $"required={PreviewStartupSignalFormatter.FormatSignalList(SignalSnapshot.RequiredSignals)} " +
             $"received={PreviewStartupSignalFormatter.FormatSignalList(SignalSnapshot.ReceivedSignals)} " +

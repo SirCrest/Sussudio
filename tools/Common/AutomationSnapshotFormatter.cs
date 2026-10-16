@@ -278,12 +278,6 @@ internal static class AutomationSnapshotFormatter
         builder.AppendLine("== Preview ==");
         var rendererMode = Get(snapshot, "PreviewRendererMode");
         builder.AppendLine($"Renderer: {rendererMode} | Startup: {Get(snapshot, "PreviewStartupState")} | First Visual: {Get(snapshot, "PreviewFirstVisualConfirmed")}");
-        if (rendererMode == "GpuMediaSource")
-        {
-            builder.AppendLine($"GPU Playback: {Get(snapshot, "PreviewGpuPlaybackState")} | Video: {Get(snapshot, "PreviewGpuNaturalVideoWidth")}x{Get(snapshot, "PreviewGpuNaturalVideoHeight")} | Position: {Get(snapshot, "PreviewGpuPositionMs")}ms | Events: {Get(snapshot, "PreviewGpuPositionEventCount")}");
-            return;
-        }
-
         if (IsPreviewD3DRendererMode(rendererMode))
         {
             AppendPreviewD3DSection(builder, snapshot);

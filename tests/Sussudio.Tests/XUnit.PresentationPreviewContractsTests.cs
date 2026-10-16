@@ -501,8 +501,8 @@ public sealed class PresentationPreviewRuntimePolicyContractsTests
         => global::Program.PreviewRuntimeSnapshotMapper_PreservesSampledStartupFields();
 
     [Fact]
-    public Task PreviewRuntimeSnapshotMapperPreservesRendererAndEventFields()
-        => global::Program.PreviewRuntimeSnapshotMapper_PreservesRendererAndEventFields();
+    public Task PreviewRuntimeSnapshotMapperPreservesGpuPlaybackFields()
+        => global::Program.PreviewRuntimeSnapshotMapper_PreservesGpuPlaybackFields();
 
     [Fact]
     public Task PreviewRuntimeD3DFrameCounterPolicyPreservesCpuFallbackCounters()
@@ -1882,7 +1882,6 @@ static partial class Program
         InvokePreviewStartup(attaching, "StartWatchdog");
 
         SetPropertyOrBackingField(controller, "RecoveryAttemptCount", 3);
-        SetPrivateField(controller, "_positionEventCount", 9L);
         InvokePreviewStartup(controller, "ScheduleFailureStop", "before-reset");
         recorder.Events.Clear();
         InvokePreviewStartup(controller, "ResetStartupTracking", true, true);
@@ -1894,7 +1893,6 @@ static partial class Program
         AssertEqual(null, GetPropertyValue(controller, "FirstVisualUtc"), "reset clears visual timestamp");
         AssertEqual(null, GetPropertyValue(controller, "MissingSignals"), "reset clears cached missing signals");
         AssertEqual(false, GetBoolProperty(controller, "FirstVisualConfirmed"), "reset clears first visual flag");
-        AssertEqual(0L, GetPropertyValue(controller, "PositionEventCount"), "reset clears position count");
         AssertEqual(Signals("None"), GetPropertyValue(SignalSnapshot(), "RequiredSignals"), "reset clears required signals");
         AssertEqual(Signals("None"), GetPropertyValue(SignalSnapshot(), "ReceivedSignals"), "reset clears received signals");
         AssertEqual("None", GetPropertyValue(SignalSnapshot(), "Strategy")?.ToString(), "reset clears strategy");
@@ -2174,7 +2172,7 @@ static partial class Program
         var epochMethod = samplerType.GetMethod("GetOrAdvancePreviewRuntimeSnapshotEpoch", BindingFlags.Instance | BindingFlags.NonPublic)
                           ?? throw new InvalidOperationException("GetOrAdvancePreviewRuntimeSnapshotEpoch method not found.");
         var signatureConstructor = signatureType.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
-            .Single(constructor => constructor.GetParameters().Length == 23);
+            .Single(constructor => constructor.GetParameters().Length == 22);
         var requestedUtc = DateTimeOffset.UtcNow.AddMilliseconds(-250);
 
         object CreateSignature(long framesDisplayed)
@@ -2201,8 +2199,7 @@ static partial class Program
                 "FirstVisual",
                 2,
                 "timeout",
-                false,
-                3L
+                false
             });
 
         var unchangedSignature = CreateSignature(framesDisplayed: 7);
@@ -2400,7 +2397,6 @@ static partial class Program
         AssertEqual("None", GetStringProperty(previewingState, "GpuPlaybackState"), "null D3D GPU playback state");
         AssertEqual(0, GetIntProperty(previewingState, "NaturalVideoWidth"), "null D3D natural video width");
         AssertEqual(0, GetIntProperty(previewingState, "NaturalVideoHeight"), "null D3D natural video height");
-        AssertEqual(0d, GetDoubleProperty(previewingState, "PositionMs"), "null D3D GPU position");
 
         var idleState = evaluate.Invoke(null, new object[] { null!, false })
                         ?? throw new InvalidOperationException("PreviewRuntimeD3DRendererStatePolicy returned null for idle.");
@@ -2741,7 +2737,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task PreviewRuntimeSnapshotMapper_PreservesRendererAndEventFields()
+    internal static Task PreviewRuntimeSnapshotMapper_PreservesGpuPlaybackFields()
     {
         var inputType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotInput");
         var projectionType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DProjection");
@@ -2752,20 +2748,18 @@ static partial class Program
 
         foreach (var sample in new[]
         {
-            (State: "Rendering", Width: 3840, Height: 2160, PositionMs: 1234.5d, EventCount: 42L),
-            (State: "Idle", Width: 1920, Height: 1080, PositionMs: 987.25d, EventCount: 17L)
+            (State: "Rendering", Width: 3840, Height: 2160),
+            (State: "Idle", Width: 1920, Height: 1080)
         })
         {
             var input = Activator.CreateInstance(inputType)
                         ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotInput.");
-            SetPropertyOrBackingField(input, "GpuPositionEventCount", sample.EventCount);
 
             var d3dProjection = Activator.CreateInstance(projectionType)
                                 ?? throw new InvalidOperationException("Failed to create PreviewRuntimeD3DProjection.");
             SetPropertyOrBackingField(d3dProjection, "GpuPlaybackState", sample.State);
             SetPropertyOrBackingField(d3dProjection, "GpuNaturalVideoWidth", sample.Width);
             SetPropertyOrBackingField(d3dProjection, "GpuNaturalVideoHeight", sample.Height);
-            SetPropertyOrBackingField(d3dProjection, "GpuPositionMs", sample.PositionMs);
 
             var health = Activator.CreateInstance(healthType, new object?[] { null, false, false })
                          ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotHealth.");
@@ -2775,8 +2769,6 @@ static partial class Program
             AssertEqual(sample.State, GetStringProperty(snapshot, "GpuPlaybackState"), "snapshot GPU playback state");
             AssertEqual(sample.Width, GetIntProperty(snapshot, "GpuNaturalVideoWidth"), "snapshot GPU natural width");
             AssertEqual(sample.Height, GetIntProperty(snapshot, "GpuNaturalVideoHeight"), "snapshot GPU natural height");
-            AssertEqual(sample.PositionMs, GetDoubleProperty(snapshot, "GpuPositionMs"), "snapshot GPU position");
-            AssertEqual(sample.EventCount, GetLongProperty(snapshot, "GpuPositionEventCount"), "snapshot GPU event count");
         }
 
         return Task.CompletedTask;
@@ -2818,7 +2810,6 @@ static partial class Program
         SetPropertyOrBackingField(input, "StartupRecoveryAttemptCount", 3);
         SetPropertyOrBackingField(input, "StartupLastFailureReason", "timeout");
         SetPropertyOrBackingField(input, "FirstVisualConfirmed", false);
-        SetPropertyOrBackingField(input, "GpuPositionEventCount", 7L);
 
         var snapshot = build.Invoke(null, new[] { input })
                        ?? throw new InvalidOperationException("PreviewRuntimeSnapshotController.Build returned null.");
@@ -2850,7 +2841,6 @@ static partial class Program
         AssertEqual("None", GetStringProperty(snapshot, "D3DInputColorSpace"), "D3D input color fallback");
         AssertEqual("None", GetStringProperty(snapshot, "D3DOutputColorSpace"), "D3D output color fallback");
         AssertEqual("None", GetStringProperty(snapshot, "GpuPlaybackState"), "GPU playback fallback");
-        AssertEqual(7L, GetLongProperty(snapshot, "GpuPositionEventCount"), "GPU position event count");
 
         return Task.CompletedTask;
     }
