@@ -9,6 +9,7 @@ using Sussudio.Models;
 using Sussudio.Services.Capture;
 using Sussudio.Services.Flashback;
 using Sussudio.Services.Runtime;
+using Sussudio.ViewModels;
 
 namespace Sussudio.Controllers;
 
@@ -153,11 +154,10 @@ internal sealed class MainViewModelRuntimeLifecycleControllerContext
     public required Action RefreshSourceTelemetrySummaryAge { get; init; }
     public required Func<bool> IsRecording { get; init; }
     public required Func<bool> IsPreviewing { get; init; }
-    public required Func<bool> IsFlashbackActive { get; init; }
     public required Func<TimeSpan> GetRecordingElapsed { get; init; }
     public required Action<string> SetRecordingTime { get; init; }
     public required Action UpdateRecordingStats { get; init; }
-    public required Action UpdateFlashbackBitrate { get; init; }
+    public required Action UpdateFlashbackBuffering { get; init; }
     public required Action UpdateFlashbackHealthStatus { get; init; }
     public required Action StopFlashbackHealthPresentation { get; init; }
     public required Action DisposeAudioDeviceWatcher { get; init; }
@@ -220,10 +220,7 @@ internal sealed class MainViewModelRuntimeLifecycleController
                 _context.UpdateRecordingStats();
             }
 
-            if (!_context.IsRecording() && _context.IsFlashbackActive())
-            {
-                _context.UpdateFlashbackBitrate();
-            }
+            _context.UpdateFlashbackBuffering();
 
             if (_context.IsPreviewing() || _context.IsRecording())
             {
@@ -1435,7 +1432,7 @@ internal sealed class MainViewModelRecordingTransitionController
             _context.RestartRecordingStopwatch();
             _context.ClearRecordingBitrateSamples();
             _context.SetRecordingSizeInfo("0 B");
-            _context.SetRecordingBitrateInfo("--");
+            _context.SetRecordingBitrateInfo(MainViewModel.LiveInfoUnavailable);
             _context.SetStatusText(StatusMessages.Recording);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)

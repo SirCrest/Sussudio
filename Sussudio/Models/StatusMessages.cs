@@ -84,7 +84,34 @@ internal static class StatusMessages
     // InfoBar copy. An InfoBar message is a full sentence and keeps its period, unlike the
     // footer fragments above; the other rules (ASCII, product-name casing) still apply.
     public const string FlashbackSnapToLiveNotice = "Returned to live after a playback error.";
-    public const string FlashbackNotRunningNotice = "Flashback is not running. Use Restart Flashback to retry.";
+    public const string FlashbackNotRunningNotice = "Flashback is not buffering.";
+    public const string RecordingRecoveryFallbackNotice = "The recording was not finalized.";
+    public const string RecordingUnavailableNoNvencNotice =
+        "The loaded FFmpeg build has no NVENC encoders. Close Sussudio, copy the FFmpeg DLLs that ship with Sussudio into its ffmpeg folder, and reopen it.";
+
+    /// <summary>
+    /// Recovery banner message from a stored failure reason. The banner title already says
+    /// the recording did not finish, so a leading "Recording failed" is dropped, along with
+    /// the parentheses some services wrap the remaining reason in.
+    /// </summary>
+    public static string RecordingRecoveryNotice(string? reason)
+    {
+        const string prefix = "Recording failed";
+        var text = Detail(reason);
+        if (StartsWithFailure(text, prefix))
+        {
+            text = text[prefix.Length..].TrimStart(':', ' ');
+        }
+
+        if (text.Length > 1 && text[0] == '(' && text[^1] == ')')
+        {
+            text = text[1..^1].Trim();
+        }
+
+        return text.Length == 0
+            ? RecordingRecoveryFallbackNotice
+            : char.ToUpperInvariant(text[0]) + text[1..] + ".";
+    }
 
     // Failures. The subject names the feature; Failed() joins the reason.
     public static string DeviceInitializationFailed(string? reason) => Failed("Device initialization", reason);
@@ -251,6 +278,7 @@ internal static class StatusMessages
         ["OpenRecordingsButton_Click"] = "Open recordings folder",
         ["ScreenshotButton_Click"] = "Screenshot",
         ["RecordingRecoveryOpenLocationButton_Click"] = "Open recording location",
+        ["RecordingUnavailableOpenFfmpegFolderButton_Click"] = "Open FFmpeg folder",
         ["FlashbackExportButton_Click"] = "Export",
         ["FlashbackSaveLast5mButton_Click"] = "Save",
         ["FlashbackEnabledToggle_Toggled"] = "Flashback change",

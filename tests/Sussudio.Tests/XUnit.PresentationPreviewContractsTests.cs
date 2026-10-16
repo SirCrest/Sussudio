@@ -1549,23 +1549,23 @@ static partial class Program
             formatTimeoutReason.Invoke(null, new object?[] { 10000, "FirstCaptureFrame+FirstVisual" })?.ToString(),
             "timeout reason with missing signals");
         AssertEqual(
-            "Preview failed: no visual confirmation",
+            "Preview failed: no picture reached the screen",
             formatTimeoutStatusText.Invoke(null, new object?[] { null })?.ToString(),
             "timeout status without missing signals");
         AssertEqual(
-            "Preview failed: no visual confirmation",
+            "Preview failed: no picture reached the screen",
             formatTimeoutStatusText.Invoke(null, new object?[] { "   " })?.ToString(),
             "timeout status with whitespace missing signals");
         AssertEqual(
-            "Preview failed: missing readiness signal (FirstCaptureFrame+FirstVisual)",
+            "Preview failed: no frames arrived from the capture device",
             formatTimeoutStatusText.Invoke(null, new object?[] { "FirstCaptureFrame+FirstVisual" })?.ToString(),
             "timeout status with missing signals");
         AssertEqual(
-            "Preview failed: missing readiness signal (FirstCaptureFrame+FirstVisual)",
+            "Preview failed: no frames arrived from the capture device",
             formatFailureStopStatusText.Invoke(null, new object?[] { "no-visual-confirmation-within-10000ms missing:FirstCaptureFrame+FirstVisual" })?.ToString(),
             "failure stop status for a timeout with missing signals repeats the readable timeout text");
         AssertEqual(
-            "Preview failed: no visual confirmation",
+            "Preview failed: no picture reached the screen",
             formatFailureStopStatusText.Invoke(null, new object?[] { "no-visual-confirmation-within-10000ms" })?.ToString(),
             "failure stop status for a timeout without missing signals repeats the readable timeout text");
         AssertEqual(
@@ -1617,7 +1617,7 @@ static partial class Program
             AssertEqual("FirstCaptureFrame+FirstVisual", GetStringProperty(controller, "MissingSignals"), "timeout caches owned missing signals");
             AssertEqual(reason, GetStringProperty(controller, "LastFailureReason"), "timeout failure reason");
             AssertEqual(reason, recorder.StopPreviewReasons.Single(), "timeout forces teardown");
-            AssertEqual("Preview failed: missing readiness signal (FirstCaptureFrame+FirstVisual)", recorder.StatusTexts[0], "timeout status");
+            AssertEqual("Preview failed: no frames arrived from the capture device", recorder.StatusTexts[0], "timeout status");
             AssertEqual(recorder.StatusTexts[0], recorder.StatusTexts[1], "failure stop republishes the readable timeout status");
             var timeoutEvents = string.Join("|", recorder.Events);
             AssertOccursBefore(timeoutEvents, "log:PREVIEW_START_STATE state=Failed", "reason=timeout renderer=null");

@@ -87,7 +87,8 @@ tests that pin which file owns a symbol; see AGENTS.md § Testing Policy.
 | Capture models | `Sussudio/Models/Capture/CaptureModels.cs` | Capture configuration, input media formats, health, cadence, and runtime DTOs. `MediaFormat` owns input frame-rate and pixel-format behavior beside `CaptureDevice`. |
 | Recording models | `Sussudio/Models/Recording/RecordingModels.cs` | Encoder capabilities, recording statistics, and integrity DTOs. `RecordingIntegrityStatus` and `RecordingIntegrityAudioStatus` define the typed integrity vocabulary; only the `AutomationSnapshot` projection turns these values into wire text. `EncoderSupport` owns recording-format-to-NVENC codec-name mapping. |
 | Flashback models | `Sussudio/Models/Flashback/FlashbackModels.cs` | Buffer options, session context, playback state, export progress/segments/requests, and force-rotation results. These types retain the `Sussudio.Models` namespace. |
-| Status messages | `Sussudio/Models/StatusMessages.cs` | Owns footer status-line wording (`MainViewModel.StatusText`) and the `CaptureService.StatusChanged` text that feeds it, plus the style rules: sentence-case fragments without a trailing period, `...` only for work in flight, `{Subject} failed: {reason}`, `; ` before a consequence, ASCII only. `Failed` does not double a `{Subject} failed` prefix; `Detail` collapses whitespace and drops trailing periods from exception and service text; `OperationFailed` maps internal UI operation names (log tokens) to readable subjects. Service result messages (`FinalizeResult.StatusMessage`, Flashback export results) are data read by automation and diagnostics tools and stay with their producers. Add a new footer message here rather than inline. |
+| Status messages | `Sussudio/Models/StatusMessages.cs` | Owns footer status-line wording (`MainViewModel.StatusText`) and the `CaptureService.StatusChanged` text that feeds it, plus the style rules: sentence-case fragments without a trailing period, `...` only for work in flight, `{Subject} failed: {reason}`, `; ` before a consequence, ASCII only. Notice-banner sentences (`*Notice`) also live here and, unlike footer fragments, are full sentences ending in a period. `Failed` does not double a `{Subject} failed` prefix; `Detail` collapses whitespace and drops trailing periods from exception and service text; `OperationFailed` maps internal UI operation names (log tokens) to readable subjects. Service result messages (`FinalizeResult.StatusMessage`, Flashback export results) are data read by automation and diagnostics tools and stay with their producers. Add a new footer message here rather than inline. |
+| Notice banners | `Sussudio/Themes/AppResources.xaml` (`NoticeBannerStyle`, severity palette), `Sussudio/MainWindow.xaml` (`NoticeStack`) | The app's InfoBar look: dark acrylic glass, per-severity wash, rail and glyph, an uppercase eyebrow `Title`, and the entrance animation in the `InfoBarVisible` state. `NoticeStack` stacks open banners, so none needs a hand-placed margin. `RecordingStatePresentationController` opens `RecordingUnavailableInfoBar` from `IsFfmpegMissing` (the loaded FFmpeg has no NVENC encoder, so the record button is disabled and cannot show a tooltip) and owns its Open FFmpeg folder action. Add a new warning as an InfoBar in `NoticeStack` with `NoticeBannerStyle`, not a stock InfoBar. The severity colors are repeated in code by `StatsOverlayCompositionController` and `FrameTimeGraphController`; change them together. |
 | Source telemetry | `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs`, `NativeXuAtProtocol.cs` | Native XU AT-command transport and source-signal protocol parsing. `LogAtResponse` and `LogTopology` log an AT answer or a node layout on first sight and on change only (plus a 30 s heartbeat per command under verbose logging), so the rolling poll does not flood the log tap. |
 | Performance telemetry | `Sussudio/Services/Performance/` (histograms, windows, frame trace, tuning knobs, hot threads, process sensors, log tap, report builder), `Sussudio/Services/Automation/AutomationCommandDispatcher.PerfTelemetry.cs` | Agent-facing latency/CPU/GC/trace telemetry and runtime tuning knobs. See [performance telemetry](#performance-telemetry) and `docs/architecture/performance-telemetry.md`. |
 | Agent senses (ears and fingers) | `Sussudio/Services/Performance/AudioOutputProbe.cs`, `Sussudio/Services/Automation/UiTargetResolver.cs`, `Sussudio/Controllers/Window/UiAutomationBridge.cs` | Hearing the app's own audio output (process loopback plus the capture-delivery tap) and reading and operating live UI controls through automation peers. See [agent senses](#agent-senses-ears-and-fingers) and `docs/architecture/performance-telemetry.md` sections 2.9 and 2.10. |
@@ -2419,6 +2420,15 @@ Primary current owners:
   Flashback export progress-bar value, visibility, and reset-on-complete
   semantics. `Sussudio/MainWindow.xaml.cs` wires the
   export progress presentation controller.
+- `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs` also owns the
+  Flashback health banner: its severity (only the not-buffering fault is a
+  warning; the snap-to-live notice is informational), Restart Flashback action
+  visibility, and open state. `MainViewModel.FlashbackState.cs` decides when a
+  health message exists (the not-buffering fault needs Flashback enabled and
+  video capture open, which includes the pipeline a normal preview stop keeps
+  for Flashback), and publishes `IsFlashbackBuffering` from the
+  one-second lifecycle tick; it drives the "capture device stays in use" hint
+  and clears the status-strip Flashback rate when buffering stops.
 - `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs` owns Flashback
   settings-control initialization, GPU decode toggle binding/sync, buffer
   duration combo selection/sync, and buffer-duration change logging.
@@ -2478,7 +2488,8 @@ Primary current owners:
   property-change routing, ViewModel-derived lockout/HDR/title/audio-meter
   policy application, delegated record-button chrome, recording glow, Rec pulse,
   starting spinner, normal/recording content, padding, enabled-state
-  application, and the circle/pill width morph. `MainWindow.xaml.cs`
+  application, the circle/pill width morph, and the recording-unavailable
+  banner that explains a record button disabled for missing NVENC encoders. `MainWindow.xaml.cs`
   wires the chrome controller, recording action adapter, and recording-state
   presentation adapter.
 - `Sussudio/Controllers/Recording/RecordingControlsControllers.cs` owns the recording

@@ -68,7 +68,15 @@ public partial class MainViewModel
     public partial long FlashbackBufferDiskBytes { get; set; }
 
     [ObservableProperty]
-    public partial string FlashbackBitrateInfo { get; set; } = "";
+    public partial string FlashbackBitrateInfo { get; set; } = LiveInfoUnavailable;
+
+    /// <summary>
+    /// True while the Flashback backend is buffering capture. It can outlive preview, so
+    /// the window shows that the capture device stays in use; the one-second lifecycle
+    /// tick keeps it current.
+    /// </summary>
+    [ObservableProperty]
+    public partial bool IsFlashbackBuffering { get; set; }
 
     [ObservableProperty]
     public partial double FlashbackExportProgress { get; set; }
@@ -329,7 +337,7 @@ public partial class MainViewModel
             FlashbackBufferFillPercent = 0;
             FlashbackBufferFilledDuration = TimeSpan.Zero;
             FlashbackBufferDiskBytes = 0;
-            FlashbackBitrateInfo = "";
+            FlashbackBitrateInfo = LiveInfoUnavailable;
             IsDiskWarningActive = false;
             FlashbackInPoint = null;
             FlashbackOutPoint = null;
@@ -418,7 +426,13 @@ public partial class MainViewModel
             return;
         }
 
-        if (IsFlashbackEnabled && !_sessionCoordinator.IsFlashbackActive)
+        // Flashback buffers what capture delivers, so it is expected to run whenever capture
+        // is open: during preview or recording, and after a normal preview stop, which keeps
+        // capture running for Flashback. Before the first preview, or after a teardown, not
+        // running is expected rather than a fault worth a banner.
+        if (IsFlashbackEnabled &&
+            (IsPreviewing || IsRecording || _sessionCoordinator.IsVideoCaptureOpen) &&
+            !_sessionCoordinator.IsFlashbackActive)
         {
             FlashbackHealthMessage = FlashbackDeadBackendHealthMessage;
         }
@@ -523,12 +537,33 @@ public partial class MainViewModel
     /// </summary>
     public void PreWarmFlashbackPlayback() => _sessionCoordinator.PreWarmFlashbackPlayback();
 
+    /// <summary>
+    /// One-second lifecycle tick: publishes whether the backend is buffering and, while it
+    /// is and nothing is recording, its write rate. A stopped backend clears the rate
+    /// rather than leaving its last value on the status strip.
+    /// </summary>
+    private void UpdateFlashbackBuffering()
+    {
+        IsFlashbackBuffering = _sessionCoordinator.IsFlashbackActive;
+        if (!IsFlashbackBuffering)
+        {
+            FlashbackBitrateInfo = LiveInfoUnavailable;
+            _flashbackBitrateSamples.Clear();
+            return;
+        }
+
+        if (!IsRecording)
+        {
+            UpdateFlashbackBitrate();
+        }
+    }
+
     private void UpdateFlashbackBitrate()
     {
         var diskBytes = _sessionCoordinator.FlashbackTotalBytesWritten;
         var now = Environment.TickCount64;
         var smoothed = _flashbackBitrateSamples.AddSampleAndCompute(now, diskBytes);
-        FlashbackBitrateInfo = smoothed.HasValue ? DisplayFormatters.FormatBitrate(smoothed.Value) : "";
+        FlashbackBitrateInfo = smoothed.HasValue ? DisplayFormatters.FormatBitrate(smoothed.Value) : LiveInfoUnavailable;
     }
 
     public IReadOnlyList<FlashbackSegmentInfo> GetFlashbackSegments()

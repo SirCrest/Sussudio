@@ -527,7 +527,7 @@ public sealed class ViewModelBuildersTests
         Assert.Contains("runtime.ReaderSourceSubtype ??", liveSignalText, StringComparison.Ordinal);
         Assert.Contains("runtime.LatestObservedFramePixelFormat ??", liveSignalText, StringComparison.Ordinal);
         Assert.Contains("\"hevc_nvenc\" => \" → HEVC\"", liveSignalText, StringComparison.Ordinal);
-        Assert.Contains("\"h264_nvenc\" => \" → H264\"", liveSignalText, StringComparison.Ordinal);
+        Assert.Contains("\"h264_nvenc\" => \" → H.264\"", liveSignalText, StringComparison.Ordinal);
         Assert.Contains("\"av1_nvenc\" => \" → AV1\"", liveSignalText, StringComparison.Ordinal);
         Assert.Contains("? unavailableText", liveSignalText, StringComparison.Ordinal);
         Assert.True(
@@ -619,7 +619,7 @@ public sealed class ViewModelBuildersTests
         SetPropertyOrBackingField(full, "IsHdr", true);
         SetPropertyOrBackingField(full, "TimestampUtc", now.AddSeconds(-17));
         Assert.Equal(
-            "Source: 3840x2160 @ 120000/1001 | HDR | Available/High | updated 17s ago",
+            "Source: 3840x2160 @ 119.88 fps · HDR · updated 17s ago",
             buildSourceSummary.Invoke(null, new[] { full, now }));
 
         var partial = Activator.CreateInstance(snapshotType)
@@ -629,16 +629,16 @@ public sealed class ViewModelBuildersTests
         SetPropertyOrBackingField(partial, "FrameRateExact", 59.94d);
         SetPropertyOrBackingField(partial, "TimestampUtc", now.AddSeconds(2));
         Assert.Equal(
-            "Source: ?x? @ 59.94 | HDR? | Stale/Low | updated now",
+            "Source: 59.94 fps · HDR unknown · updated now · stale",
             buildSourceSummary.Invoke(null, new[] { partial, now }));
 
         Assert.Equal("updated ?", buildAgeText.Invoke(null, new object?[] { null, now }));
         Assert.Equal(
-            "Target: Auto (3840 x 2160) @ 60 (exact 60000/1001) | HDR=Ready",
-            buildTargetSummary.Invoke(null, new object?[] { "Auto (3840 x 2160)", 59.94d, 60d, 60000d / 1001d, "60000/1001", "Ready" }));
+            "Target: Auto (3840 x 2160) @ 59.94 fps · HDR on next recording",
+            buildTargetSummary.Invoke(null, new object?[] { "Auto (3840 x 2160)", 59.94d, 60000d / 1001d, "Ready" }));
         Assert.Equal(
-            "Target: 1080p @ 0 (exact ?) | HDR=Unknown",
-            buildTargetSummary.Invoke(null, new object?[] { "1080p", 0d, null, null, null, " " }));
+            "Target: 1080p · HDR state unknown",
+            buildTargetSummary.Invoke(null, new object?[] { "1080p", 0d, null, " " }));
     }
 
     private static object CreateInput(Type type, params (string Property, object? Value)[] values)
@@ -995,7 +995,7 @@ public sealed class CaptureConfigurationModelsTests
         Assert.True(Get<bool>(filteredOptions[0], "IsEnabled"));
         var sdrOnlyResolution = filteredOptions.Single(option => Get<string>(option, "Value") == "1920x1080");
         Assert.False(Get<bool>(sdrOnlyResolution, "IsEnabled"));
-        Assert.Equal("HDR mode is not supported at this resolution.", Get<string>(sdrOnlyResolution, "DisableReason"));
+        Assert.Equal("HDR is not supported at this resolution.", Get<string>(sdrOnlyResolution, "DisableReason"));
 
         var unfilteredOptions = ((IEnumerable)buildResolutionOptions.Invoke(
                 null,
@@ -1815,7 +1815,7 @@ public class StatsPresentationTests
         Assert.Equal("119.88 fps", GetStringProperty(presentation, "SourceFrameRate"));
         Assert.Equal("On (BT.2020)", GetStringProperty(presentation, "SourceHdr"));
         Assert.Equal("YCbCr422", GetStringProperty(presentation, "SourceFormat"));
-        Assert.Equal("NativeXu (High)", GetStringProperty(presentation, "TelemetryOrigin"));
+        Assert.Equal("Capture card \u00b7 high confidence", GetStringProperty(presentation, "TelemetryOrigin"));
         Assert.Equal("119.80", GetStringProperty(presentation, "SourceFps"));
         Assert.Equal("8.33ms avg", GetStringProperty(presentation, "SourceAvg"));
         Assert.Equal("3 drops (0.3%)", GetStringProperty(presentation, "SourceDrops"));
@@ -1854,7 +1854,7 @@ public class StatsPresentationTests
 
         Assert.Equal("120 Hz", GetStringProperty(presentation, "SummaryVisualFps"));
         Assert.Equal("crop 120 Hz", GetStringProperty(presentation, "VisualFps"));
-        Assert.Equal("12.5% px / High", GetStringProperty(presentation, "VisualMotion"));
+        Assert.Equal("12.5% changed \u00b7 High", GetStringProperty(presentation, "VisualMotion"));
         Assert.Equal("Good", GetPropertyValue(presentation, "SummaryVisualFpsStatus")?.ToString());
         Assert.Equal("Good", GetPropertyValue(presentation, "VisualFpsStatus")?.ToString());
     }

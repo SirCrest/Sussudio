@@ -174,6 +174,14 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     public bool IsInitialized => _isInitialized;
     public bool IsVideoPreviewActive => _isVideoPreviewActive;
     public bool IsAudioPreviewActive => _isAudioPreviewActive;
+
+    /// <summary>
+    /// True while a video capture pipeline is open: during preview or recording, and after
+    /// a normal preview stop that keeps capture running for Flashback. A teardown, device
+    /// change, or Flashback disable with nothing else running closes it.
+    /// </summary>
+    public bool IsVideoCaptureOpen => _videoPipeline.Capture != null;
+
     public Task? GetPendingDeferredCaptureCleanupTask() => _videoPipeline.PendingDeferredCaptureCleanupTask;
     public CaptureSessionState SessionState => CurrentSessionState;
     public long SessionGeneration => CaptureSnapshotProducerEpoch();

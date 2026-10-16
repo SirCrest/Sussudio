@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
 using Sussudio.Models;
+using Sussudio.Services.Runtime;
 using Sussudio.ViewModels;
 using Windows.Storage.Pickers;
 
@@ -59,7 +60,6 @@ internal sealed class RecordingButtonChromeControllerContext
 {
     public required Border RecordingGlowBorder { get; init; }
     public required Storyboard RecordingGlowPulseStoryboard { get; init; }
-    public required Storyboard RecPulseStoryboard { get; init; }
     public required Button RecordButton { get; init; }
     public required UIElement RecordButtonNormalContent { get; init; }
     public required ProgressRing RecordButtonStartingContent { get; init; }
@@ -115,18 +115,6 @@ internal sealed class RecordingButtonChromeController
                 _context.RecordButtonNormalContent.Visibility = Visibility.Visible;
                 _context.RecordButton.Padding = new Thickness(0);
             });
-        }
-    }
-
-    public void ApplyRecordingPulse(bool isRecording)
-    {
-        if (isRecording)
-        {
-            _context.RecPulseStoryboard.Begin();
-        }
-        else
-        {
-            _context.RecPulseStoryboard.Stop();
         }
     }
 
@@ -193,6 +181,7 @@ internal sealed class RecordingStatePresentationControllerContext
 {
     public required MainViewModel ViewModel { get; init; }
     public required RecordingButtonChromeController RecordingButtonChrome { get; init; }
+    public required InfoBar RecordingUnavailableInfoBar { get; init; }
     public required Control AudioRecordToggle { get; init; }
     public required Control CustomAudioToggle { get; init; }
     public required Control MicrophoneToggle { get; init; }
@@ -260,7 +249,6 @@ internal sealed class RecordingStatePresentationController
         _context.ApplyHdrToggleEnabledState();
         _context.RefreshHdrHintText();
         _context.UpdateDeviceApplyButtonState();
-        _context.RecordingButtonChrome.ApplyRecordingPulse(isRecording);
 
         _context.ApplyWindowTitle();
     }
@@ -276,6 +264,23 @@ internal sealed class RecordingStatePresentationController
     {
         var state = BuildPresentationState();
         _context.RecordingButtonChrome.ApplyFfmpegMissingState(state);
+
+        // A disabled button shows no tooltip, so the banner gives the reason. The
+        // encoder probe runs once per process and the loaded DLLs stay bound, so
+        // only a restart with an NVENC build clears it.
+        var banner = _context.RecordingUnavailableInfoBar;
+        banner.Message = StatusMessages.RecordingUnavailableNoNvencNotice;
+        banner.IsOpen = _context.ViewModel.IsFfmpegMissing;
+    }
+
+    public async Task OpenFfmpegFolderAsync()
+    {
+        // Create the app-local folder when it is absent: it is where the DLLs belong,
+        // and the runtime search skips a folder that lacks them.
+        var directory = FfmpegRuntimeLocator.GetAppLocalRuntimeDirectory();
+        Directory.CreateDirectory(directory);
+        var folder = await Windows.Storage.StorageFolder.GetFolderFromPathAsync(directory);
+        await Windows.System.Launcher.LaunchFolderAsync(folder);
     }
 
     private RecordingStatePresentationState BuildPresentationState()
