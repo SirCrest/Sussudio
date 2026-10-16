@@ -1074,8 +1074,9 @@ and the forced `release`; `acquire` and `renew` belong to the experiment runner.
 ```
 
 Time metrics are reported in milliseconds; percent and byte metrics in their
-own units. `filter` is a name prefix (case-insensitive). Metrics with zero
-count are omitted unless `includeIdle` is true. `Gpu.Engines` is built from
+own units. `filter` is a name prefix (case-insensitive). Histograms with zero
+count and counters that counted nothing are omitted unless `includeIdle` is
+true. `Gpu.Engines` is built from
 the `gpu.*` percent metrics that have samples. `Gpu.DedicatedBytes` is this
 process's dedicated GPU memory from the PDH sensor, null while that sensor is
 stopped, pending or unavailable. `Gpu.Adapters` is read when the report is
@@ -1490,11 +1491,19 @@ not trusted from the acknowledgement. The restore restarts the same parts. Every
 performance window (at most 64 characters, unique), and a marker (`experiment
 variant <name> run <n> warmup` and `... measure`) is added at the start of the
 warmup and of the measure window so the runs can be found in a frame trace.
+With `recording: true` the runner reads the state before it starts each run's
+recording: the app treats a start while recording as done, so a recording
+someone started after preflight would otherwise be measured as the runner's and
+stopped at the end of the run. That run fails instead and the recording is left
+running. A start landing between that read and the runner's own command can
+still be taken.
 
 A verdict is `better` or `worse` only when the per-repeat range of the verdict
 statistic for the variant is entirely below or above the baseline's (lower is
 better); touching or overlapping ranges, a single repeat, or a metric with no
-samples in one variant are `inconclusive`. A counter is judged only when its
+samples in one variant are `inconclusive`. A window report leaves out a counter
+that counted nothing, so a run whose report lists counters without it counted 0
+for it; a report with no counter list at all leaves that run out. A counter is judged only when its
 name says it counts something bad (drops, stalls, late frames, errors, ...);
 any other counter reports `changed` for a separated difference instead of
 better or worse.

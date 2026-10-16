@@ -706,6 +706,16 @@ internal sealed class PerfExperimentSession
 
     private async Task StartRecordingAsync(CancellationToken cancellationToken)
     {
+        // The app treats a start while recording as done, so a recording someone started after preflight would be taken
+        // for the runner's own: measured, then stopped at the end of the run. Read the state first and leave that one
+        // alone. A start landing between this read and the command below can still be taken; the app's start does not
+        // say whether it started anything.
+        if (!_recordingStarted && (await _app.GetStateAsync(cancellationToken).ConfigureAwait(false)).Recording)
+        {
+            throw new PerfExperimentCommandException(
+                "A recording the runner did not start is running, so this run cannot record its own. The runner leaves that recording running.");
+        }
+
         // Marked before the command: if the request reaches the app and the reply is lost, restore still stops it.
         _recordingStarted = true;
         var reply = await _app.RequireAsync("SetRecordingEnabled", new Dictionary<string, object?> { ["enabled"] = true }, cancellationToken, "SetRecordingEnabled true").ConfigureAwait(false);
