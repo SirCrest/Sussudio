@@ -98,6 +98,11 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     // 0 (default) is off.
     private readonly int _previewInstallFaultFailures = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_CAPTURE_FAULT_PREVIEW_INSTALL_FAILURES", 0, 0, 100);
     private int _previewInstallFaultCount;
+    // Fault injection for the audio-graph rollback live check: the first N fresh preview starts fail where they would
+    // start the Flashback backend, after program audio and the microphone monitor started, whether or not Flashback
+    // is enabled. 0 (default) is off.
+    private readonly int _previewFlashbackFaultFailures = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_CAPTURE_FAULT_PREVIEW_FLASHBACK_FAILURES", 0, 0, 100);
+    private int _previewFlashbackFaultCount;
     private readonly object _disposalLock = new();
     private Task? _disposalTask;
     private bool _isInitialized;

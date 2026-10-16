@@ -935,11 +935,17 @@ Important entry points:
   its last, and `_videoPipeline` owns the half-started capture before the renderer
   handoff. A rollback that stops part way (the renderer never acknowledged) leaves
   the capture, Flashback backend and audio to the retained teardown instead of
-  orphaning a running capture in the failed start's frame.
+  orphaning a running capture in the failed start's frame. A completed rollback
+  releases the audio graph the start began, program audio and then the microphone
+  monitor, in the same order as the preview pipeline teardown, before it clears the
+  pending cleanup.
   `SUSSUDIO_CAPTURE_FAULT_PREVIEW_INSTALL_FAILURES` fails the first N fresh starts
   after their capture is running and before the pipeline installs it
   (`CAPTURE_FAULT_PREVIEW_INSTALL_FAILED`), for the `StartRollback` scenarios of
   `scripts/performance/Test-CaptureLateCleanupRecovery.ps1`.
+  `SUSSUDIO_CAPTURE_FAULT_PREVIEW_FLASHBACK_FAILURES` fails the first N fresh starts
+  where they would start the Flashback backend, after the audio graph started
+  (`CAPTURE_FAULT_PREVIEW_FLASHBACK_FAILED`), for its `AudioGraphRollback` scenario.
 - `CaptureService.cs` also owns `CaptureVideoPipelineResources`:
   active unified-video capture storage,
   preview-frame sink storage, negotiated video getters, and cached MJPEG
