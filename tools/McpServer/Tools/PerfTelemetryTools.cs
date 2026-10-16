@@ -8,8 +8,8 @@ namespace McpServer.Tools;
 
 [McpServerToolType]
 // MCP projection over the in-app performance telemetry (docs/architecture/performance-telemetry.md section 3): latency
-// histograms, measurement windows, the frame-trace flight recorder, tuning knobs and the log tail. Every tool returns
-// the app's structured payload unchanged; none of them interprets or recomputes a measurement.
+// histograms, measurement windows, the frame-trace flight recorder, tuning knobs, the experiment lease and the log tail.
+// Every tool returns the app's structured payload unchanged; none of them interprets or recomputes a measurement.
 public static class PerfTelemetryTools
 {
     [McpServerTool(UseStructuredContent = true), Description("Get the performance report: per-stage latency histograms (count, rate, mean, p50/p90/p99/p99.9, max), counters, hot-thread CPU, process memory/CPU/IO, GC, DWM refresh, GPU engines and active tuning overrides. Without window it covers the whole process lifetime. With window it returns the delta since that window began (see perf_window). Metrics with no samples are omitted unless includeIdle is true. Times are in milliseconds.")]
@@ -112,7 +112,7 @@ public static class PerfTelemetryTools
             .ConfigureAwait(false);
     }
 
-    [McpServerTool(UseStructuredContent = true), Description("Set a tuning knob (process environment variable) or, with reset true, restore its launch value. Values of the wrong type or outside the range are rejected, never clamped. The response states what must restart for the change to take effect. Overrides are not persisted across app launches.")]
+    [McpServerTool(UseStructuredContent = true), Description("Set a tuning knob (process environment variable) or, with reset true, restore its launch value. Values of the wrong type or outside the range are rejected, never clamped. The response states what must restart for the change to take effect. Overrides are not persisted across app launches. While a perf experiment holds the knob (see perf_experiment_lease), the change is refused with invalid-state and the error names the experiment.")]
     public static async Task<CallToolResult> set_tuning_knob(
         PipeClient pipeClient,
         [Description("Knob name, for example SUSSUDIO_DIAGNOSTICS_POLL_MS.")] string name,
@@ -133,6 +133,24 @@ public static class PerfTelemetryTools
         }
 
         return await SendStructuredAsync(pipeClient, AutomationCommandKind.SetTuningKnob, payload, "Tuning knob acknowledgement was not available.", cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    [McpServerTool(UseStructuredContent = true), Description("Read or break the perf experiment lease. A running experiment (run_perf_experiment or ssctl perf experiment) holds the tuning knobs it varies; while it does, set_tuning_knob refuses them. status shows the holder, its knobs and when the lease expires, plus how the last lease ended and which knobs the app restored. release with force true ends the lease of an experiment that is stuck or dead and restores its knobs to their values from when it began; a running experiment then stops at its next renewal. An experiment that dies without releasing loses the lease by itself within its time to live (60 s by default).")]
+    public static async Task<CallToolResult> perf_experiment_lease(
+        PipeClient pipeClient,
+        [Description("status (default) or release.")] string action = "status",
+        [Description("Required with release: ends another experiment's lease and restores its knobs.")] bool force = false,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var payload = new Dictionary<string, object?> { [AutomationPayloadKeys.Action] = action };
+        if (force)
+        {
+            payload[AutomationPayloadKeys.Force] = true;
+        }
+
+        return await SendStructuredAsync(pipeClient, AutomationCommandKind.PerfExperimentLease, payload, "Perf experiment lease data was not available.", cancellationToken)
             .ConfigureAwait(false);
     }
 

@@ -372,6 +372,10 @@ New live knobs added on this branch:
 
 Both are read as parsed modes. Text set by hand is case-insensitive, `1` and `true` mean `on`, `0` and `false` mean `off`, and anything unrecognised means `auto`; the knob store itself accepts only the three choices. The report's `Sensors` section states the mode in force.
 
+While a perf experiment holds a knob (2.12), an automation change to it without
+the experiment's lease id is refused with `invalid-state`, failure `Leased`, and a
+`TUNING_KNOB_REFUSED` log line; the error names the experiment.
+
 ### 2.6 Ingress clock
 
 The read loop compares each MF sample time with `QPC` converted to 100 ns.
@@ -885,6 +889,65 @@ request in the last N seconds". With the refresh now about 2 ms and 133 KB, the 
 already shown a 2,000 ms poll against 500 ms at noise level in CPU. If gating is still wanted, gate on recent request or an active
 recording and keep a floor tick, and decide that policy explicitly.
 
+### 2.12 Perf experiment lease
+
+`PerfExperimentLease` (`Sussudio/Services/Performance/PerfExperimentLease.cs`,
+command 68) gives one perf experiment at a time ownership of the tuning knobs it
+varies. Without it a second experiment, or a hand-typed `knob set`, could change
+knobs under a running experiment, and a runner that died left its knobs set.
+Every automation knob change goes through it; one lock covers the lease and is
+taken before the knob store's.
+
+- `acquire` takes the lease on a list of knobs with a client-chosen id (1 to 64
+  characters, the holder's capability, never shown to other clients), a holder
+  text (who runs it, 1 to 200 characters) and a time to live (10 to 600 s,
+  default 60). While another experiment holds it, `acquire` is refused with
+  `invalid-state` and the error and `Data.Active` name the holder. A retry with
+  the same id, after a lost reply, renews the lease and keeps the first baseline.
+  Malformed requests (a TTL out of range, an unknown knob, an empty id) are
+  rejected with `invalid-request`, never clamped.
+- The reply's `Baseline` is each leased knob's value and launch value when the
+  lease began, read under the knob store's lock. The runner restores to it, not
+  to its earlier preflight read, so a knob changed by hand between the two is
+  restored to the value it had when the experiment took it.
+- While the lease is held, `SetTuningKnob` on a leased knob without the lease
+  id is refused (2.5). Knobs outside the lease are unaffected, and a lease id
+  sent while no lease is active is ignored.
+- `renew` moves the expiry. A holder that stops renewing (a crash, a hang, a
+  killed tool) loses the lease at expiry: a timer restores every leased knob
+  that is not already at its baseline (a reset when the baseline was the launch
+  value, a set otherwise), logs `PERF_EXPERIMENT_LEASE_EXPIRED` and frees the
+  lease. A timer callback that races a renew re-arms instead of ending it.
+- `release` with the holder's id frees the lease and leaves the knobs alone,
+  because the holder restores them itself. `release` with `force` ends anyone's
+  lease and restores its knobs the same way (`PERF_EXPERIMENT_LEASE_FORCED`).
+  A renew by an id that no longer holds the lease is refused with
+  `invalid-state` and says whether the lease expired, was forced or was never
+  held (an app restart forgets every lease). Releasing a lease that already
+  ended succeeds; releasing another client's lease without `force` is refused.
+- `status` shows the holder, knobs, acquired and expiry times, and how the last
+  lease ended, with the knobs the app restored and any restore errors.
+
+The runner (section 7) acquires after its read-only preflight and before the
+first change, sends the id with every knob change, renews four times per TTL
+(between warmup and measure steps and readiness polls), renews once more before
+it ends each run's window, and releases after its restore. A refused renew stops
+the experiment and the run in progress is not used: either the app restored the
+knobs or another experiment owns them. In the restore the runner then reads the
+lease status. When nobody holds it, the runner restores as usual and also
+restarts the preview or Flashback for knobs the app put back without a restart.
+When another experiment holds it, the runner cancels only its own window and
+leaves the knobs, preview and recording to that experiment, and the restore is
+reported as not verified with the reason.
+
+Limits. The app restores knobs, not the rest of a dead runner's state: a
+recording the runner started keeps running and its open window stays open until
+someone ends or cancels them. A restored `preview-restart` or
+`flashback-restart` knob takes effect at the next restart of that part; the app
+does not restart the preview by itself. `ssctl perf lease` shows the lease and
+`ssctl perf lease release --force` breaks a stuck one (MCP
+`perf_experiment_lease`).
+
 ## 3. Automation commands
 
 Appended after `SetFlashbackGpuDecode = 57`; manifest revision 2 to 3.
@@ -896,11 +959,12 @@ Appended after `SetFlashbackGpuDecode = 57`; manifest revision 2 to 3.
 | 60 | `AddPerfMarker` | `{ text }` | `perf mark <text>` | `add_perf_marker` |
 | 61 | `FrameTrace` | `{ action: start\|stop\|status\|dump, capacity?, outputPath? }` | `perf trace ...` | `frame_trace` |
 | 62 | `GetTuningKnobs` | `{ filter? }` | `knobs` | `get_tuning_knobs` |
-| 63 | `SetTuningKnob` | `{ name, value?, reset? }` | `knob set\|reset` | `set_tuning_knob` |
+| 63 | `SetTuningKnob` | `{ name, value?, reset?, lease? }` | `knob set\|reset` | `set_tuning_knob` |
 | 64 | `GetLogTail` | `{ maxEntries?, contains? }` | `log tail` | `get_log_tail` |
 | 65 | `CaptureAudioOutput` | `{ seconds?, outputPath?, measureLatency? }` | `audio listen` | `listen_audio_output` |
 | 66 | `GetUiTree` | `{ root?, maxDepth?, interactiveOnly? }` | `ui tree` | `get_ui_tree` |
 | 67 | `InvokeUiElement` | `{ target, action?, value?, force? }` | `ui invoke` | `invoke_ui_element` |
+| 68 | `PerfExperimentLease` | `{ action: status\|acquire\|renew\|release, lease?, holder?, knobs?, ttlSeconds?, force? }` | `perf lease [status\|release --force]` | `perf_experiment_lease` |
 
 Tool-side only (no app command): `ssctl perf trace analyze <file>`,
 `ssctl perf experiment <spec.json>`, MCP `analyze_frame_trace`,
@@ -916,6 +980,13 @@ candidates, element state or analysis are how the agent recovers. The MCP tools
 return that `Data` as structured content on failure too, unlike the query tools.
 The ssctl `audio` and `ui` verbs and the three MCP tools are projections of these
 commands only.
+
+Command 68 (`PerfExperimentLease`, 2.12) was appended without another revision
+bump. It is ready-independent and returns `Data` without a snapshot; a refused
+request (`invalid-state` while another experiment holds the lease or the caller
+no longer does, `invalid-request` for a malformed one) still carries `Data` with
+the active holder and the last ended lease. ssctl and MCP expose only `status`
+and the forced `release`; `acquire` and `renew` belong to the experiment runner.
 
 ### 3.1 Perf report shape
 
@@ -980,7 +1051,8 @@ The command-catalog payload shapes use `string` for `action` (the allowed
 values are listed in the command description), because the catalog shape
 grammar has no enumeration type. A rejected `SetTuningKnob` still returns
 `Data` with `Failure` (`UnknownKnob`, `WrongType`, `OutOfRange`, ...) beside
-the `invalid-request` error code.
+the `invalid-request` error code, except `Leased` (a knob a running experiment
+holds), which comes with `invalid-state`.
 
 ## 4. Invariants
 
@@ -1195,6 +1267,22 @@ Written before the code, per the testing policy:
   reason string (the string-to-code table is tested; a test of the call sites would assert on source text), which was checked by
   reading every pair.
 
+- Experiment lease, app side (written before the code): two experiments starting together produce exactly one holder and the
+  other is refused with the holder named and nothing changed; a same-id retry after a lost reply keeps the first baseline; a
+  hand change to a leased knob is refused and names the holder while the holder's own changes and unleased knobs still go
+  through; a holder that stops renewing loses the lease at expiry, the app restores each leased knob (reset or set to its
+  baseline, nothing written for a knob already there) and the lease is free; a renew after expiry, after a forced release or
+  with an id that never held it is refused with the reason; the holder's release leaves knobs alone and is harmless twice, another
+  client's release is refused unless forced, and a forced release restores the knobs; an expiry timer that fires just after a
+  renew does not end the lease; a TTL out of range, an unknown knob, or an empty, over-long or control-character id or holder is
+  rejected, never truncated, and takes no lease.
+- Experiment lease, runner side (written before the runner used it): a foreign lease rejects the run before any change and
+  sends no release; a lost acquire reply is released under the runner's own id; a lease lost mid-run fails the run, drops the
+  window that was open and still restores (restarting the preview the app's restore left stale), while a lease taken over by
+  another experiment leaves that experiment's knobs and preview alone; waits longer than the TTL renew in time; every knob
+  change and restore carries the lease id; the release comes after the restore on a fresh token whether the run completed,
+  failed or was canceled, and a failed release is reported; baselines come from the acquire reply, not the preflight read.
+
 Everything else is verified end to end against the live app (section 6).
 
 ## 6. Validation
@@ -1204,7 +1292,8 @@ Everything else is verified end to end against the live app (section 6).
 preview, a frame trace dumped and analyzed, a knob A/B experiment, an audio
 listen, and a UI tree read and invoke. Two scripts make the command surface
 repeatable against any build: `scripts/performance/Verify-PerfTelemetry.ps1`
-(report, window, marker, trace, knobs, log tail; 35 checks) and
+(report, window, marker, trace, knobs, the cadence timeline, the experiment
+lease's refusal, forced release and expiry, log tail; 46 checks) and
 `scripts/performance/Verify-AgentSenses.ps1` (audio listen, UI tree and
 invoke; 24 checks). Each writes `verify-result.json` and exits non-zero on
 any failed check. With a silent capture source the audio checks still pass
@@ -1285,9 +1374,12 @@ ssctl perf experiment scripts/performance/experiments/example-jitter-depth.json 
 or inline `specJson`, optional `outputDirectory`; it can take minutes and the
 MCP server runs one experiment at a time). It is a client of existing commands
 (`GetSnapshot`, `GetTuningKnobs`, `SetTuningKnob`, `SetPreviewEnabled`,
-`SetRecordingEnabled`, `RestartFlashback`, `PerfWindow`, `AddPerfMarker`), so a
-second experiment from another client against the same app would fight over the
-same knobs; run one at a time. Progress goes to stderr, the summary (or, with
+`SetRecordingEnabled`, `RestartFlashback`, `PerfWindow`, `AddPerfMarker`) and of
+the experiment lease (2.12): a second experiment from any client is rejected
+before it changes anything, with the holder named, and hand changes to the
+running experiment's knobs are refused. If a runner dies, its knobs come back
+when its lease expires (60 s); `ssctl perf lease release --force` frees a stuck
+lease at once. Progress goes to stderr, the summary (or, with
 `--json`, `result.json`) to stdout. Exit code 0 means every run completed and
 the restore was verified; anything else, including a spec the app rejects and
 a restore that could not be verified, is exit code 3.

@@ -24,6 +24,12 @@ public sealed class PerfExperimentOptions
     /// <summary>Upper bound for the whole restore after a run, which uses its own token so a canceled run still restores.</summary>
     public TimeSpan CleanupTimeout { get; init; } = TimeSpan.FromSeconds(120);
 
+    /// <summary>
+    /// How long the app keeps the experiment lease without a renewal (10 to 600 s). The runner renews it four times per
+    /// TTL while it runs; if the runner dies, the app restores the leased knobs this long after the last renewal.
+    /// </summary>
+    public TimeSpan LeaseTimeToLive { get; init; } = TimeSpan.FromSeconds(60);
+
     /// <summary>One human-readable line per milestone (run starting, restore). Called on the runner's thread.</summary>
     public Action<string>? Progress { get; init; }
 }
@@ -119,6 +125,28 @@ public static class PerfExperimentRunner
         if (preflightProblems.Count > 0)
         {
             return Finish(PerfExperimentStatus.Rejected, null, preflightProblems);
+        }
+
+        // The lease comes before the first change: a second experiment is turned away here with nothing changed.
+        string? leaseProblem;
+        try
+        {
+            leaseProblem = await session.AcquireLeaseAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            await session.ReleaseUnconfirmedLeaseAsync().ConfigureAwait(false);
+            return Finish(PerfExperimentStatus.Canceled, "Canceled before the experiment started; nothing was changed.", Array.Empty<string>());
+        }
+        catch (Exception ex)
+        {
+            await session.ReleaseUnconfirmedLeaseAsync().ConfigureAwait(false);
+            return Finish(PerfExperimentStatus.Failed, $"Could not take the experiment lease; nothing was changed: {ex.Message}", Array.Empty<string>());
+        }
+
+        if (leaseProblem is not null)
+        {
+            return Finish(PerfExperimentStatus.Rejected, null, new[] { leaseProblem });
         }
 
         var artifacts = new ArtifactWriter(options, spec.Name, startedUtc, warnings);

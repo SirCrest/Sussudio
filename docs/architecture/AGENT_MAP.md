@@ -491,6 +491,12 @@ recording and audio sites call into it, never the other way round.
   `SUSSUDIO_DIAGNOSTICS_POLL_MS` (`AutomationDiagnosticsHub.RunLoopAsync`) and the two
   `auto|on|off` sensor knobs `SUSSUDIO_TELEMETRY_SENSORS` and `SUSSUDIO_PREVIEW_GPU_TIMING`
   (read through `TelemetrySensorModes`) are the live knobs wired so far.
+- `PerfExperimentLease.cs` owns the perf experiment lease (command 68): one
+  experiment at a time holds its knobs, `ChangeKnob` is the only automation path
+  to `TuningKnobStore` and refuses a leased knob without the lease id, and an
+  expiry timer (or a forced release) restores the leased knobs to the baseline
+  taken at acquire. Its lock is taken before the store's. `TuningKnobs.Lease` is
+  the process instance.
 - `HotThreads.cs` owns the dedicated-thread registry (`HotThreads.Register(role)`),
   per-thread CPU time/cycles/priority (a name, `mmcss/<n>` or `raw/<n>`) and the
   bounded retired list; retiring a registration also retires its trace thread
@@ -567,15 +573,15 @@ recording and audio sites call into it, never the other way round.
   unless asked), including the `Gpu`, `Dwm` and `Display` sections and the `Sensors`
   section.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.PerfTelemetry.cs`
-  owns the seven handlers for commands 58-64 (`GetPerfReport`, `PerfWindow`,
+  owns the handlers for commands 58-64 (`GetPerfReport`, `PerfWindow`,
   `AddPerfMarker`, `FrameTrace`, `GetTuningKnobs`, `SetTuningKnob`,
-  `GetLogTail`). They are ready-independent, return no snapshot, and the frame
+  `GetLogTail`) and 68 (`PerfExperimentLease`). They are ready-independent, return no snapshot, and the frame
   trace dump goes through the `WriteFile` path policy. The dispatcher is a
   partial class for this one command group because its handlers share the
   payload/path helpers in `AutomationCommandDispatcher.cs`.
-- Wire surface: command IDs 58-64 and manifest revision 3 live in
+- Wire surface: command IDs 58-64 and 68 and manifest revision 3 live in
   `Sussudio.Automation.Contracts/AutomationCommandCatalog.cs` and
-  `AutomationPipeProtocol.cs`. ssctl verbs are `perf report|window|mark|trace`,
+  `AutomationPipeProtocol.cs`. ssctl verbs are `perf report|window|mark|trace|lease`,
   `knobs`, `knob set|reset` and `log tail` in `tools/ssctl/CommandHandlers.Perf.cs`
   (rendering in `tools/ssctl/PerfFormatters.cs`); MCP tools are in
   `tools/McpServer/Tools/PerfTelemetryTools.cs`. AutomationClient and
@@ -586,8 +592,9 @@ recording and audio sites call into it, never the other way round.
   builder and formatter; a slow frame's pre-arrival and after-present stages are listed apart
   and never dominant) reads a trace dump offline, and `PerfExperimentRunner`
   (spec, session, statistics, result) runs a knob A/B experiment through the
-  existing automation commands and restores the app. Neither adds an app
-  command: ssctl `perf trace analyze` and `perf experiment` are in
+  existing automation commands under the experiment lease and restores the app;
+  `PerfExperimentSession` owns the acquire, renewals, lease-id stamping and
+  release. Neither adds an app command: ssctl `perf trace analyze` and `perf experiment` are in
   `tools/ssctl/CommandHandlers.Perf.cs`, the MCP tools `analyze_frame_trace` and
   `run_perf_experiment` are in `tools/McpServer/Tools/PerfAnalysisTools.cs`, and
   the example spec is `scripts/performance/experiments/example-jitter-depth.json`.

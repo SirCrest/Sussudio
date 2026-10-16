@@ -816,6 +816,9 @@ public sealed partial class AutomationCommandDispatcher : IAutomationCommandDisp
             case AutomationCommandKind.GetLogTail:
                 return ExecuteGetLogTailCommand(payload, correlationId);
 
+            case AutomationCommandKind.PerfExperimentLease:
+                return ExecutePerfExperimentLeaseCommand(payload, correlationId);
+
             case AutomationCommandKind.CaptureAudioOutput:
                 return await ExecuteCaptureAudioOutputCommandAsync(payload, correlationId, cancellationToken).ConfigureAwait(false);
 

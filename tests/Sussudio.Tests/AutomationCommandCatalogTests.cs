@@ -95,6 +95,7 @@ public sealed class AutomationCommandCatalogTests
         [65] = "CaptureAudioOutput",
         [66] = "GetUiTree",
         [67] = "InvokeUiElement",
+        [68] = "PerfExperimentLease",
     };
 
     // ── Wire-contract stability ──────────────────────────────────────────────
@@ -175,10 +176,11 @@ public sealed class AutomationCommandCatalogTests
         {
             "action", "actionId", "armed", "assertions", "authToken", "bitrateMbps", "capacity", "condition",
             "contains", "decoderCount", "deviceId", "deviceName", "enabled", "field", "filePath", "filter", "force",
-            "format", "frameRate", "gain", "height", "includeIdle", "interactiveOnly", "maxDepth", "maxEntries", "maxEvents",
-            "measureLatency", "microphoneVolumePercent", "minutes", "mode", "name", "op", "outputPath", "pollMs", "positionMs",
-            "preset", "previewVolumePercent", "quality", "reset", "resolution", "root", "seconds", "section",
-            "splitEncodeMode", "target", "text", "timeoutMs", "useSelectionRange", "value", "verificationProfile",
+            "format", "frameRate", "gain", "height", "holder", "includeIdle", "interactiveOnly", "knobs", "lease", "maxDepth",
+            "maxEntries", "maxEvents", "measureLatency", "microphoneVolumePercent", "minutes", "mode", "name", "op",
+            "outputPath", "pollMs", "positionMs", "preset", "previewVolumePercent", "quality", "reset", "resolution", "root",
+            "seconds", "section", "splitEncodeMode", "target", "text", "timeoutMs", "ttlSeconds", "useSelectionRange", "value",
+            "verificationProfile",
             "videoFormat", "visible", "width", "window", "x", "y"
         };
         var fields = typeof(AutomationPayloadKeys)

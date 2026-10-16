@@ -54,6 +54,7 @@
     <Compile Include="..\..\Sussudio\Services\Performance\PerfMarkers.cs" Link="Production\PerfMarkers.cs" />
     <Compile Include="..\..\Sussudio\Services\Performance\FrameTraceRecorder.cs" Link="Production\FrameTraceRecorder.cs" />
     <Compile Include="..\..\Sussudio\Services\Performance\TuningKnobStore.cs" Link="Production\TuningKnobStore.cs" />
+    <Compile Include="..\..\Sussudio\Services\Performance\PerfExperimentLease.cs" Link="Production\PerfExperimentLease.cs" />
     <Compile Include="..\..\Sussudio\Services\Performance\TuningKnobCatalog.cs" Link="Production\TuningKnobCatalog.cs" />
     <Compile Include="..\..\Sussudio\Services\Performance\LogTapBuffer.cs" Link="Production\LogTapBuffer.cs" />
     <Compile Include="..\..\Sussudio\Services\Performance\PerfIngressClock.cs" Link="Production\PerfIngressClock.cs" />
