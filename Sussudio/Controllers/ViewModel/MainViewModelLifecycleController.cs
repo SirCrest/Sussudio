@@ -556,6 +556,7 @@ internal sealed class MainViewModelPreviewLifecycleControllerContext
     public required Func<MainViewModelCaptureSelectionSnapshot, MainViewModelCaptureSelectionSnapshot, bool> RestoreCaptureSelectionSnapshotIfUnchanged { get; init; }
     public required Func<bool> IsInitialized { get; init; }
     public required Action<bool> SetIsInitialized { get; init; }
+    public required Func<bool> IsCaptureInitialized { get; init; }
     public required Func<bool> IsPreviewing { get; init; }
     public required Action<bool> SetIsPreviewing { get; init; }
     public required Func<bool> IsPreviewReinitializing { get; init; }
@@ -803,6 +804,8 @@ internal sealed class MainViewModelPreviewLifecycleController
             {
                 _context.SetIsPreviewing(false);
             }
+
+            ClearInitializedIfCaptureCleanedUp();
         }
 
         if (_context.IsAudioPreviewActive())
@@ -820,6 +823,19 @@ internal sealed class MainViewModelPreviewLifecycleController
         if (!_context.IsPreviewReinitializing())
         {
             _context.SetStatusText(StatusMessages.PreviewStopped);
+        }
+    }
+
+    // A stop that finds an earlier teardown half done finishes the full capture cleanup, which
+    // uninitializes the capture service. That stop succeeds, or is cancelled, without a capture
+    // error, so nothing else tells this view model. Only ever clear the flag: false while capture
+    // is still initialized is a deliberate re-init request (device apply, reinit) and must stand.
+    private void ClearInitializedIfCaptureCleanedUp()
+    {
+        if (_context.IsInitialized() && !_context.IsCaptureInitialized())
+        {
+            Logger.Log("PREVIEW_STOP_CAPTURE_UNINITIALIZED: the stop completed capture cleanup; the next start initializes.");
+            _context.SetIsInitialized(false);
         }
     }
 

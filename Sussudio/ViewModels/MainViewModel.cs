@@ -2939,6 +2939,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                     RestoreCaptureSelectionSnapshotIfUnchanged = viewModel.RestoreCaptureSelectionSnapshotIfUnchanged,
                     IsInitialized = () => viewModel.IsInitialized,
                     SetIsInitialized = value => viewModel.IsInitialized = value,
+                    IsCaptureInitialized = () => viewModel._captureService.IsInitialized,
                     IsPreviewing = () => viewModel.IsPreviewing,
                     SetIsPreviewing = value => viewModel.IsPreviewing = value,
                     IsPreviewReinitializing = () => viewModel.IsPreviewReinitializing,

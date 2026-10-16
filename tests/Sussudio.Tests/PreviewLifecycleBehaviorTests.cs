@@ -507,6 +507,8 @@ static partial class Program
                 Set(context, "SetStatusText", new Action<string>(value => { Record("status:" + value); Status = value; }));
             }
             Set(lifecycle, "SessionCoordinator", coordinator);
+            // The capture service stays initialized here; a stop never finishes a half-done capture cleanup.
+            Set(lifecycle, "IsCaptureInitialized", new Func<bool>(() => true));
             SetFactory(lifecycle, "BuildCaptureSettings", () =>
             {
                 BuildSettingsCalls++;

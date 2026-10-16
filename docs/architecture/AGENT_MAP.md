@@ -2805,6 +2805,9 @@ Primary current owners:
   lifecycle operations: device initialization, preview start/stop,
   selected-device apply, and the reinitialize facade. Failed initialization repairs
   visible state and faults the caller so automation publishes command failure.
+  A preview stop clears the initialized flag when capture is no longer initialized
+  afterwards (a stop that finished a half-done teardown ran the full capture cleanup);
+  it never sets the flag from capture state.
   It also owns the preview lifecycle graph-port contract for preview
   state/events, capture/session operations, source telemetry refresh, UI
   dispatch, audio-preview activity, and preview-volume ramp-down.
