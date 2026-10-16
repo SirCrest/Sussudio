@@ -15,7 +15,7 @@ public sealed class AutomationSnapshotRegressionTests
             RuntimeContractSource.GetRepoRoot(), "tests", "Sussudio.Tests", "Fixtures", "AutomationSnapshot", fixtureName)));
         var actual = AutomationSnapshotRegressionFixture.BuildResult(SussudioAssembly.Load(), populated);
 
-        Assert.Equal(807, expected.RootElement.EnumerateObject().Count());
+        Assert.Equal(809, expected.RootElement.EnumerateObject().Count());
         AssertJsonEquivalent(expected.RootElement, actual, "$");
     }
 
@@ -35,7 +35,7 @@ public sealed class AutomationSnapshotRegressionTests
         var actual = JsonSerializer.SerializeToElement(builder.Invoke(null, new[] { snapshot }), timelineType);
         var expected = fixture.RootElement.GetProperty("timeline");
 
-        Assert.Equal(159, expected.EnumerateObject().Count());
+        Assert.Equal(160, expected.EnumerateObject().Count());
         AssertJsonEquivalent(expected, actual, "$.timeline");
     }
 
@@ -65,8 +65,10 @@ public sealed class AutomationSnapshotRegressionTests
         Assert.Equal(12L, snapshot.GetProperty("EstimatedPipelineLatencyMs").GetInt64());
         Assert.Equal(33004L, snapshot.GetProperty("RecordingTotalBytes").GetInt64());
         Assert.Equal(41L, snapshot.GetProperty("PreviewD3DFrameStatsRecentMissedRefreshCount").GetInt64());
+        Assert.Equal(47L, snapshot.GetProperty("PreviewD3DFrameStatsRecentCadenceMissedRefreshCount").GetInt64());
         Assert.Equal(43L, snapshot.GetProperty("PreviewD3DFrameStatsRecentFailureCount").GetInt64());
         Assert.Equal(59L, snapshot.GetProperty("PreviewD3DFrameStatsMissedRefreshCount").GetInt64());
+        Assert.Equal(53L, snapshot.GetProperty("PreviewD3DFrameStatsCadenceMissedRefreshCount").GetInt64());
         Assert.Equal(61L, snapshot.GetProperty("PreviewD3DFrameStatsFailureCount").GetInt64());
         Assert.Equal("NotAttempted", snapshot.GetProperty("MuxResult").GetString());
         Assert.Equal("health-export-verification", snapshot.GetProperty("FlashbackExportVerificationFormat").GetString());

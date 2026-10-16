@@ -1627,7 +1627,11 @@ public readonly record struct PresentCadenceMetrics(
         long LastPresentDelta,
         long LastPresentRefreshDelta,
         long LastSyncRefreshDelta,
-        long MissedRefreshCount);
+        // Every refresh beyond one per present: grows at the source frame rate when the display refresh is a multiple
+        // of it (60 fps on 120 Hz) even with perfect pacing.
+        long MissedRefreshCount,
+        // Refreshes where a new source frame was due but the previous one was shown (PreviewRefreshCadencePolicy).
+        long CadenceMissedRefreshCount);
 
     private readonly object _presentCadenceLock = new();
     private readonly PreviewFrameTimeHistory _presentFrameTimeHistory = new();
@@ -1713,6 +1717,8 @@ public readonly record struct PresentCadenceMetrics(
     private long _dxgiFrameStatisticsLastPresentRefreshDelta;
     private long _dxgiFrameStatisticsLastSyncRefreshDelta;
     private long _dxgiFrameStatisticsMissedRefreshCount;
+    private long _dxgiFrameStatisticsCadenceMissedRefreshCount;
+    private long _dxgiFrameStatisticsLastCadenceMissedRefreshes;
     private long _dxgiFrameStatisticsFrameCounter;
     private long _dxgiFrameStatisticsLastSampleFrameCounter;
     private bool _dxgiFrameStatisticsHasBaseline;
@@ -1977,7 +1983,8 @@ public readonly record struct PresentCadenceMetrics(
                 LastPresentDelta: _dxgiFrameStatisticsLastPresentDelta,
                 LastPresentRefreshDelta: _dxgiFrameStatisticsLastPresentRefreshDelta,
                 LastSyncRefreshDelta: _dxgiFrameStatisticsLastSyncRefreshDelta,
-                MissedRefreshCount: _dxgiFrameStatisticsMissedRefreshCount);
+                MissedRefreshCount: _dxgiFrameStatisticsMissedRefreshCount,
+                CadenceMissedRefreshCount: _dxgiFrameStatisticsCadenceMissedRefreshCount);
         }
     }
 
@@ -2041,6 +2048,7 @@ public readonly record struct PresentCadenceMetrics(
                     _dxgiFrameStatisticsLastPresentDelta = presentCount - _dxgiFrameStatisticsPresentCount;
                     _dxgiFrameStatisticsLastPresentRefreshDelta = presentRefreshCount - _dxgiFrameStatisticsPresentRefreshCount;
                     _dxgiFrameStatisticsLastSyncRefreshDelta = syncRefreshCount - _dxgiFrameStatisticsSyncRefreshCount;
+                    _dxgiFrameStatisticsLastCadenceMissedRefreshes = 0;
                     if (_dxgiFrameStatisticsLastPresentDelta < 0 ||
                         _dxgiFrameStatisticsLastPresentRefreshDelta < 0 ||
                         _dxgiFrameStatisticsLastSyncRefreshDelta < 0 ||
@@ -2055,8 +2063,18 @@ public readonly record struct PresentCadenceMetrics(
                     else if (_dxgiFrameStatisticsLastPresentDelta > 0 &&
                              _dxgiFrameStatisticsLastPresentRefreshDelta > _dxgiFrameStatisticsLastPresentDelta)
                     {
+                        // Raw: every refresh beyond one per present, including the repeats a source slower than
+                        // the display needs by design. Cadence: only refreshes where a new frame was due.
                         _dxgiFrameStatisticsMissedRefreshCount +=
                             _dxgiFrameStatisticsLastPresentRefreshDelta - _dxgiFrameStatisticsLastPresentDelta;
+                        _dxgiFrameStatisticsLastCadenceMissedRefreshes = PreviewRefreshCadencePolicy.CountMissedRefreshes(
+                            _dxgiFrameStatisticsLastPresentDelta,
+                            _dxgiFrameStatisticsLastPresentRefreshDelta,
+                            PreviewRefreshCadencePolicy.RefreshesPerSourceFrame(
+                                _startupFps,
+                                Interlocked.Read(ref _measuredRefreshIntervalTicks),
+                                Stopwatch.Frequency));
+                        _dxgiFrameStatisticsCadenceMissedRefreshCount += _dxgiFrameStatisticsLastCadenceMissedRefreshes;
                     }
                 }
                 else
@@ -2064,6 +2082,7 @@ public readonly record struct PresentCadenceMetrics(
                     _dxgiFrameStatisticsLastPresentDelta = 0;
                     _dxgiFrameStatisticsLastPresentRefreshDelta = 0;
                     _dxgiFrameStatisticsLastSyncRefreshDelta = 0;
+                    _dxgiFrameStatisticsLastCadenceMissedRefreshes = 0;
                 }
 
                 _dxgiFrameStatisticsPresentCount = presentCount;
@@ -2675,6 +2694,7 @@ public readonly record struct PresentCadenceMetrics(
         long presentRefreshDelta;
         long syncRefreshDelta;
         long missedRefreshCount;
+        long lastCadenceMissedRefreshes;
         long frameStatisticsLastSampleFrameCounter;
         lock (_dxgiFrameStatisticsLock)
         {
@@ -2682,13 +2702,15 @@ public readonly record struct PresentCadenceMetrics(
             presentRefreshDelta = _dxgiFrameStatisticsLastPresentRefreshDelta;
             syncRefreshDelta = _dxgiFrameStatisticsLastSyncRefreshDelta;
             missedRefreshCount = _dxgiFrameStatisticsMissedRefreshCount;
+            lastCadenceMissedRefreshes = _dxgiFrameStatisticsLastCadenceMissedRefreshes;
             frameStatisticsLastSampleFrameCounter = _dxgiFrameStatisticsLastSampleFrameCounter;
         }
 
+        // A slip is a refresh where a new frame was due, not every refresh beyond one per present: a 60 fps source on
+        // a 120 Hz display spans two refreshes per frame by design and would otherwise fill the ring with on-time frames.
         var isRefreshSlip =
             frameStatisticsLastSampleFrameCounter == frameStatisticsFrameCounter &&
-            presentDelta > 0 &&
-            presentRefreshDelta > presentDelta;
+            lastCadenceMissedRefreshes > 0;
 
         return new SlowFrameDxgiSlipSnapshot(
             PresentDelta: presentDelta,

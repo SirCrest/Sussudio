@@ -91,7 +91,7 @@ tests that pin which file owns a symbol; see AGENTS.md § Testing Policy.
 | Portable release tooling | `tools/reliability-gates.ps1`, `tools/package-github-release.ps1`, `tools/release/release-helpers.ps1`, `Sussudio/ffmpeg/manifest.json` | Reliability gates, package assembly, shared release helpers, and native-runtime manifest. |
 | Flashback | `FlashbackDecoder.cs`, `FlashbackPlaybackController.cs`, `FlashbackPlaybackCommandMailbox.cs`, `FlashbackPlaybackController.PlaybackFrames.cs`, `FlashbackPlaybackController.ThreadCommands.cs`, `FlashbackEncoderSink.cs`, `FlashbackBufferManager.cs`, `FlashbackStartupCacheCleanup.cs`, `FlashbackExporter.cs`, `FlashbackExportOutputTransaction.cs`, `FlashbackExportPlanner.cs` | Buffer retention, encoding, playback, and transactional export. See [Flashback](#flashback) for per-owner lifetimes and invariants. |
 | Flashback playback command handlers | `FlashbackPlaybackController.ThreadCommands.cs` | Playback-thread dispatch, seek/scrub transitions, frame stepping, and terminal live restore. |
-| Preview rendering | `D3D11PreviewRenderer.cs`, `D3D11PreviewRenderer.RenderPasses.cs`, `D3D11PreviewRenderer.Resources.cs`, `D3D11PreviewRenderer.GpuTiming.cs`, `PreviewOutputSizePolicy.cs`, `PreviewScreenshotCapture.cs` | Render-thread scheduling with waitable presentation, render passes, GPU resource lifetime, GPU render timing, and screenshots. See [UI and presentation](#ui-shell-and-presentation). |
+| Preview rendering | `D3D11PreviewRenderer.cs`, `D3D11PreviewRenderer.RenderPasses.cs`, `D3D11PreviewRenderer.Resources.cs`, `D3D11PreviewRenderer.GpuTiming.cs`, `PreviewOutputSizePolicy.cs`, `PreviewRefreshCadencePolicy.cs`, `PreviewScreenshotCapture.cs` | Render-thread scheduling with waitable presentation, render passes, GPU resource lifetime, GPU render timing, missed refreshes against the source cadence, and screenshots. See [UI and presentation](#ui-shell-and-presentation). |
 | UI shell | `Sussudio/MainWindow.xaml.cs` composition root and XAML adapter; feature behavior lives in controllers under `Sussudio/Controllers/` | The single code-behind file wires XAML to feature controllers. See [UI and presentation](#ui-shell-and-presentation). |
 | Presentation | `MainViewModel.*.cs` facade/feature partial family, `Sussudio/ViewModels/MainViewModel.cs`, plus focused `Sussudio/ViewModels` policy/presentation helpers | View-model facade, feature state, and presentation policies. See [UI and presentation](#ui-shell-and-presentation). |
 
@@ -202,9 +202,15 @@ Preview renderer notes:
   slow-frame ring writer, slow-frame reason token classification, render-thread
   failure notification state, first-frame notification state, DXGI
   `GetFrameStatistics` sampling, optional DWM flush, counter deltas,
-  missed-refresh accounting, visible-frame tick estimation,
+  missed-refresh accounting (the raw refreshes-minus-presents count and the
+  cadence count), visible-frame tick estimation,
   `IPreviewDisplayClock` snapshot projection, and the DXGI refresh-slip snapshot
-  used by slow-frame diagnostics.
+  used by slow-frame diagnostics (a slip is a cadence miss, not a raw one).
+- `Sussudio/Services/Preview/PreviewRefreshCadencePolicy.cs` owns the pure rule
+  that turns one DXGI sample's present and refresh deltas into refreshes where a
+  new source frame was due but not shown: refreshes per source frame from the
+  source fps and the measured refresh interval, snapping within 1 % of a whole
+  number, and the floor-or-ceiling on-time span for fractional ratios.
 - `Sussudio/Services/Preview/PreviewScreenshotCapture.cs` owns preview-frame
   screenshot pixel analysis, mapped-frame buffer copying, BMP capture/header
   writing, 16-bit PNG frame capture, and the PNG container/chunk/CRC helpers.
@@ -338,7 +344,10 @@ Automation diagnostics ownership:
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs` owns
   preview jitter, MJPEG, D3D, and Flashback recording recent-counter baselines
   and delta updates because those baselines are sampled only by the snapshot
-  refresh loop.
+  refresh loop. The D3D frame-statistics deltas (raw missed refreshes, cadence
+  missed refreshes, failures) travel together as `D3DFrameStatsRecentCounters`
+  to the projection, the present-lane text and the slow-stage classifier, which
+  reads the cadence delta.
   The hub constructor should take `IAutomationSnapshotQueryPort` directly because
   snapshot refresh and verification are read-only over that port.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs` also

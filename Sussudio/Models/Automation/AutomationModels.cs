@@ -912,7 +912,10 @@ public sealed class PreviewRuntimeSnapshot
     public long D3DFrameStatsLastPresentDelta { get; init; }
     public long D3DFrameStatsLastPresentRefreshDelta { get; init; }
     public long D3DFrameStatsLastSyncRefreshDelta { get; init; }
+    // Raw: every refresh beyond one per present, so it grows at the source frame rate when the display refresh is a
+    // multiple of it. D3DFrameStatsCadenceMissedRefreshCount counts only refreshes where a new frame was due.
     public long D3DFrameStatsMissedRefreshCount { get; init; }
+    public long D3DFrameStatsCadenceMissedRefreshCount { get; init; }
     public long D3DLastSubmittedPreviewPresentId { get; init; }
     public long D3DLastSubmittedSourceSequenceNumber { get; init; }
     public long D3DLastSubmittedSourcePtsTicks { get; init; }
@@ -1001,6 +1004,7 @@ public sealed class PerformanceTimelineEntry
     public double PreviewD3DFrameLatencyWaitP95Ms { get; init; }
     public double PreviewD3DFrameLatencyWaitMaxMs { get; init; }
     public long PreviewD3DFrameStatsRecentMissedRefreshCount { get; init; }
+    public long PreviewD3DFrameStatsRecentCadenceMissedRefreshCount { get; init; }
     public long PreviewD3DFrameStatsRecentFailureCount { get; init; }
     public double PreviewD3DLastRenderedSchedulerToPresentMs { get; init; }
     public double PreviewD3DLastRenderedPipelineLatencyMs { get; init; }

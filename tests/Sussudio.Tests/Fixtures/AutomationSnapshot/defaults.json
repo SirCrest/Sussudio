@@ -503,6 +503,8 @@
   "PreviewD3DFrameStatsLastSyncRefreshDelta": 0,
   "PreviewD3DFrameStatsMissedRefreshCount": 0,
   "PreviewD3DFrameStatsRecentMissedRefreshCount": 0,
+  "PreviewD3DFrameStatsCadenceMissedRefreshCount": 0,
+  "PreviewD3DFrameStatsRecentCadenceMissedRefreshCount": 0,
   "PreviewD3DFrameStatsRecentFailureCount": 0,
   "PreviewD3DLastSubmittedPreviewPresentId": 0,
   "PreviewD3DLastSubmittedSourceSequenceNumber": 0,

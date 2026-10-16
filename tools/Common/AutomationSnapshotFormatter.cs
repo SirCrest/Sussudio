@@ -547,6 +547,7 @@ internal static class AutomationSnapshotFormatter
     private static void AppendPreviewD3DFrameStats(StringBuilder builder, JsonElement snapshot)
     {
         builder.AppendLine($"D3D DXGI stats: ok={Get(snapshot, "PreviewD3DFrameStatsSuccessCount")}/{Get(snapshot, "PreviewD3DFrameStatsSampleCount")} failures={Get(snapshot, "PreviewD3DFrameStatsFailureCount")} recentFailures={Get(snapshot, "PreviewD3DFrameStatsRecentFailureCount")} missedRefresh={Get(snapshot, "PreviewD3DFrameStatsMissedRefreshCount")} recentMissed={Get(snapshot, "PreviewD3DFrameStatsRecentMissedRefreshCount")} lastError={Get(snapshot, "PreviewD3DFrameStatsLastError", "")}");
+        builder.AppendLine($"D3D DXGI cadence: missedRefresh={Get(snapshot, "PreviewD3DFrameStatsCadenceMissedRefreshCount")} recentMissed={Get(snapshot, "PreviewD3DFrameStatsRecentCadenceMissedRefreshCount")} (refreshes where a new source frame was due but not shown)");
     }
 
     private static void AppendPreviewD3DFrameOwnership(StringBuilder builder, JsonElement snapshot)

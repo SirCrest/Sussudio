@@ -138,7 +138,7 @@ public sealed class PreviewPacingSlowStageClassifierTests
     [InlineData("RecentPreviewJitterDeadlineDrops")]
     [InlineData("RecentPreviewJitterUnderflows")]
     [InlineData("RecentRendererDropped")]
-    [InlineData("RecentD3DMissedRefreshes")]
+    [InlineData("RecentD3DCadenceMissedRefreshes")]
     [InlineData("RecentD3DStatsFailures")]
     [InlineData("RecentD3DFrameLatencyWaitTimeoutCount")]
     public void AnyHardIncidentBypassesTheSampleWindowGate(string counter)
@@ -157,7 +157,7 @@ public sealed class PreviewPacingSlowStageClassifierTests
             RecentPreviewJitterDeadlineDrops = counter == "RecentPreviewJitterDeadlineDrops" ? 1 : 0,
             RecentPreviewJitterUnderflows = counter == "RecentPreviewJitterUnderflows" ? 1 : 0,
             RecentRendererDropped = counter == "RecentRendererDropped" ? 1 : 0,
-            RecentD3DMissedRefreshes = counter == "RecentD3DMissedRefreshes" ? 1 : 0,
+            RecentD3DCadenceMissedRefreshes = counter == "RecentD3DCadenceMissedRefreshes" ? 1 : 0,
             RecentD3DStatsFailures = counter == "RecentD3DStatsFailures" ? 1 : 0,
             RecentD3DFrameLatencyWaitTimeoutCount = counter == "RecentD3DFrameLatencyWaitTimeoutCount" ? 1 : 0,
         };

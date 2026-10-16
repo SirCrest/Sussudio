@@ -542,8 +542,12 @@ public sealed class AutomationSnapshot
     public long PreviewD3DFrameStatsLastPresentDelta { get; init; }
     public long PreviewD3DFrameStatsLastPresentRefreshDelta { get; init; }
     public long PreviewD3DFrameStatsLastSyncRefreshDelta { get; init; }
+    // Raw refresh-minus-present counts (grow at the source frame rate on a display refreshing at a multiple of it);
+    // the Cadence pair counts only refreshes where a new source frame was due but the previous one was shown.
     public long PreviewD3DFrameStatsMissedRefreshCount { get; init; }
     public long PreviewD3DFrameStatsRecentMissedRefreshCount { get; init; }
+    public long PreviewD3DFrameStatsCadenceMissedRefreshCount { get; init; }
+    public long PreviewD3DFrameStatsRecentCadenceMissedRefreshCount { get; init; }
     public long PreviewD3DFrameStatsRecentFailureCount { get; init; }
     public long PreviewD3DLastSubmittedPreviewPresentId { get; init; }
     public long PreviewD3DLastSubmittedSourceSequenceNumber { get; init; }

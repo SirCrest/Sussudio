@@ -52,6 +52,7 @@ RTX 4090 and Ryzen 9 7950X. Artifacts: `artifacts/perf-overhaul/baseline/`.
 | D12 | The agent cannot read UI state (overlay, settings, InfoBars, section expansion, window rect) or press controls that have no purpose-built command (Flashback nudge and keyboard transport, timeline scrubbing). | Automation surface survey |
 | D13 | The DWM composed-frame rate was read as the display rate. With the preview presenting 4K60 on a 120 Hz display (independent flip or an overlay plane, so DWM does not compose it), `DwmGetCompositionTimingInfo` showed 0.057 composed frames per second, which looks like a stalled display. DWM's refresh counter is not a hardware vblank counter either: it advances with composition activity. **Fixed in slice 2b:** the report adds a `Display` section from the swap chain's DXGI frame statistics and classifies the DWM rate against the present rate (2.8.5). | Live: `Dwm.FramesComposedPerSec = 0.057` at 4K60 on a 120 Hz display; an idle 120 Hz desktop measured 0.2 refresh-counter increments per second |
 | D14 | `ssctl --json timeline --max N` printed N + 1 timestamps with the last one repeated. The timeline held exactly N entries; the response envelope embedded the cached snapshot (D10), and the snapshot's `TimestampUtc` equals the newest timeline entry's. **Fixed in slice 2b:** the timeline response carries no snapshot. | `AutomationCommandDispatcher.ExecuteGetPerformanceTimelineCommand`; `CreateResponse` default `includeSnapshot: true` |
+| D15 | `PreviewD3DFrameStatsMissedRefreshCount` counts every display refresh beyond one per present, so a source slower than the display reports a "miss" on every frame while pacing perfectly: 60.67 a second for 59.94 fps on the rig's 120 Hz display. The slow-stage classifier read any recent value above zero as a hard compositor signal, and every sampled frame qualified as a `dxgi_refresh_slip` for the slow-frame ring (10 of the 16 slow frames in a 60 fps window). **Fixed in the preview-renderer follow-ups:** the raw count keeps its meaning (it is a wire field) and a cadence count is added beside it (2.8.7); the classifier and the slip check read the cadence count. | Live: `artifacts/preview-renderer-followups/missed-refresh-cadence/result-before.json`; `D3D11PreviewRenderer.TrackDxgiFrameStatistics` |
 
 ### 1.3 Gaps an agent cannot work around today
 
@@ -595,6 +596,48 @@ least three quarters), `mixed` (between) and `unknown` (a reading is missing; a 
   sign that the poll is still reading. `NATIVEXU_TOPOLOGY` is logged when a path's node layout is first seen or changes. The
   rolling poll re-reads every command and the topology each cycle and used to write 7,678 of 10,043 tap lines in one live window
   with identical text. Nothing parses these lines.
+
+#### 2.8.7 Missed refreshes against the source cadence
+
+The renderer samples DXGI frame statistics every second present and differences `PresentCount` and `PresentRefreshCount` between
+samples. Two counts come out of each sample:
+
+- **Raw** (`PreviewD3DFrameStatsMissedRefreshCount`, `...RecentMissedRefreshCount`, timeline `PreviewD3DFrameStatsRecentMissedRefreshCount`):
+  refreshes minus presents whenever refreshes exceed presents. This is the original field and keeps its meaning. It counts every refresh
+  that repeated the previous frame, including the repeats a slower source needs by design, so with perfect pacing it grows at about
+  (refreshes per source frame - 1) x the present rate.
+- **Cadence** (`PreviewD3DFrameStatsCadenceMissedRefreshCount`, `...RecentCadenceMissedRefreshCount`, timeline
+  `PreviewD3DFrameStatsRecentCadenceMissedRefreshCount`; preview runtime `D3DFrameStatsCadenceMissedRefreshCount`): refreshes where a
+  new source frame was due but the display repeated the previous one. `PreviewRefreshCadencePolicy` takes refreshes per source frame
+  as the capture fps against the measured refresh interval (the swap chain's own `SyncQPCTime` and `SyncRefreshCount`, not the OS
+  display mode) and counts only refreshes beyond `ceil(presents x ratio)`. With a fractional ratio (2.4 for 50 fps on 120 Hz) an
+  on-time pair of frames spans either 4 or 5 refreshes depending on phase, so the ceiling is the on-time limit. A ratio within 1 % of a
+  whole number snaps to it: a measured 119.98 Hz would otherwise make `ceil(2 x 2.0003) = 5` the on-time span for two frames and hide
+  every single-refresh miss. 59.94 fps on 120 Hz snaps too, which counts its natural extra repeat (about one every 8 s) as a miss.
+  Below one refresh per frame (source faster than the display), or with either rate unknown, the cadence count equals the raw count.
+  It never exceeds the raw count.
+
+Readers: the slow-stage classifier's hard signal and `CompositorMiss` rule read the recent cadence delta (evidence token
+`dxgiRecentCadenceMissed`, which replaced `dxgiRecentMissed`). A slow frame is a `dxgi_refresh_slip` only when the sample taken on
+that frame had a cadence miss. The present lane, `ssctl state`, `ssctl timeline`, `get_performance_timeline` and
+`get_frame_pacing_verdict` show both counts. The diagnostic session's `missedRefreshDelta` still reads the raw count. The snapshot
+gains two keys (807 to 809); no existing key changed.
+
+Live, the rig's 120 Hz display (measured 119.998 Hz from DXGI), 30 s windows after 20 s of settling, under the heavy load of a
+video export running at the same time (`Measure-MissedRefreshCadence.ps1` beside the results):
+
+| Source | Presents | Refreshes per present | Raw per second | Cadence per second | Refresh-slip slow frames |
+|---|---|---|---|---|---|
+| 120 fps | 3,645 | 1.002 | 0.27 | 0.27 | 1 of 16 |
+| 59.94 fps | 1,810 | 2.006 | 60.67 | 3.87 | 2 of 16 (10 of 16 before) |
+| 50 fps | 1,512 | 2.400 | 70.57 | 1.10 | 1 of 16 |
+
+At a matched rate the two counts are identical. The cadence misses left at 59.94 fps are pairs of frames that spanned five refreshes
+instead of four, which is real judder; the accepted 59.94 overcount is about 0.12 a second of it. In these windows both builds
+classified the preview tail as `SourceCapture` or `Unknown`, rules that run before the compositor rule, so the classifier change
+is covered by the contract tests rather than by this run. In the before build's 50 fps window the frame statistics advanced
+(1,987 presents) but every sample's delta was zero or rejected, so neither count moved; the same window in the after build counted
+normally. That gap predates this change and is open.
 
 ### 2.9 Ears: audio output probe
 
@@ -1171,6 +1214,12 @@ Written before the code, per the testing policy:
   `Compute` only sees the private copy made under the owner's lock. `HubProcessCounters` reports the same working set, private
   bytes and CPU time as the `Process` properties it replaced, in the same process (a unit slip or the wrong struct member would be
   silent in a live snapshot).
+- Missed refreshes against the source cadence (written before the code, `PreviewRefreshCadencePolicyTests`): 60 fps on 120 Hz paced
+  on time counts nothing, and a frame held one extra refresh counts exactly one; a matched rate and a source faster than the display
+  keep the raw count; 60 fps on 144 Hz (2.4) accepts both on-time spans and counts one past the ceiling; a measured refresh a hair
+  off nominal (119.98 or 120.02 Hz) still counts a single miss; 59.94 fps on 120 Hz snaps to two refreshes a frame; an unknown,
+  zero, negative, NaN or infinite rate or ratio falls back to the raw count; no presents or no extra refreshes is never a miss; and
+  across a sweep of ratios and deltas the cadence count never exceeds the raw count.
 - Hub snapshot contract (not an isolated test): the 807 snapshot keys, their order and their value kinds are identical before and
   after, compared live (`artifacts/perf-overhaul/hub-cost/contract-compare.json`).
 
