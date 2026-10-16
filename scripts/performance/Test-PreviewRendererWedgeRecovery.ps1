@@ -14,13 +14,15 @@ Steps, each judged from app log markers and `ssctl --json state`:
                   the startup-failure stop abandons it (PREVIEW_RENDERER_ABANDONED),
                   and preview reports stopped.
   recovery-start  preview start: a fresh SwapChainPanel replaces the one the wedged
-                  swap chain is bound to, and preview reaches Rendering.
+                  swap chain is bound to, and preview reaches Rendering while the
+                  wedged thread is still held.
   late-release    (unless -CloseWhileWedged) the held call returns while the new
-                  renderer is live: no stray first-frame callback reaches the host
-                  and the live renderer keeps presenting.
+                  renderer is live: the abandoned thread exits with its cleanup
+                  complete, no stray first-frame callback reaches the host, and the
+                  live renderer keeps presenting.
   plain-cycle-N   -PlainCycles ordinary stop + start cycles that must reach Rendering.
-  close           window close exits the process (with -CloseWhileWedged, while the
-                  render thread is still held).
+  close           the app accepts window close and exits with code 0 (with
+                  -CloseWhileWedged, while the render thread is still held).
 
 -WedgeRendererStart 0 skips the fault and runs only the plain cycles (a control).
 Writes result.json and the app log under artifacts/preview-renderer-wedge/. Refuses
@@ -102,7 +104,9 @@ function Read-LogLines {
     finally {
         $stream.Dispose()
     }
-    return @($text -split "`r?`n")
+    if ($text.Length -eq 0) { return @() }
+    # Drop the empty element after the final newline, so a line count is the index of the next line written.
+    return @($text.TrimEnd("`r`n".ToCharArray()) -split "`r?`n")
 }
 
 function Get-Snapshot {
@@ -203,6 +207,8 @@ $launch = $null
 $close = $null
 try {
     $app = Start-Process -FilePath $AppPath -WorkingDirectory (Split-Path -Parent $AppPath) -PassThru
+    # Windows PowerShell reports ExitCode only for a process whose handle was opened before it exited.
+    $null = $app.Handle
 }
 finally {
     foreach ($key in $savedEnvironment.Keys) {
@@ -227,11 +233,9 @@ try {
     if ($launch.startupState -ne 'Rendering') { throw "Launch preview did not reach Rendering ($($launch.startupState))." }
     Start-Sleep -Seconds 2
 
-    $releaseSearchLine = $null
     if ($WedgeRendererStart -gt 0) {
         # wedged-restart: renderer #2 holds its render thread; the startup-failure stop must abandon it.
         $startLine = @(Read-LogLines).Count
-        $releaseSearchLine = $startLine
         $stop = Invoke-Ssctl -Arguments @('preview', 'stop') -TimeoutMs 30000
         $stoppedBefore = Wait-PreviewStopped
         $start = Invoke-Ssctl -Arguments @('preview', 'start') -TimeoutMs 30000
@@ -259,19 +263,24 @@ try {
         Write-Host "wedged-restart: held=$held abandoned=$abandoned stopped=$($step.previewStoppedAfterAbandon) passed=$($step.passed)"
 
         # recovery-start: the next renderer gets a fresh panel and renders while the old thread is still held.
+        # A hold that expires before the dwell ends would only show a restart after the wedge, so it fails the step.
         $startLine = @(Read-LogLines).Count
         $recovery = Invoke-RenderingStart -Name 'recovery-start' -StartLine $startLine
         $recoveryWindow = Get-LogWindow -StartLine $startLine
         $recovery.wedgeStillHeldWhenRendering = !(Test-LogMarker -Window $recoveryWindow -Pattern 'D3D11_PREVIEW_FAULT_WEDGE_RELEASED')
-        $recovery.passed = $recovery.passed -and $recovery.panelReplacedForAbandonedRenderer
+        $recovery.passed = $recovery.passed -and $recovery.panelReplacedForAbandonedRenderer -and $recovery.wedgeStillHeldWhenRendering
         $steps.Add([pscustomobject]$recovery)
-        Write-Host "recovery-start: state=$($recovery.startupState) rendered=$($recovery.renderedDuringDwell) freshPanel=$($recovery.panelReplacedForAbandonedRenderer) passed=$($recovery.passed)"
+        Write-Host "recovery-start: state=$($recovery.startupState) rendered=$($recovery.renderedDuringDwell) freshPanel=$($recovery.panelReplacedForAbandonedRenderer) held=$($recovery.wedgeStillHeldWhenRendering) passed=$($recovery.passed)"
 
         if (!$CloseWhileWedged) {
-            # late-release: the held call returns into an abandoned renderer while the new one is live.
-            $releaseLine = @(Read-LogLines).Count
+            # late-release: the held call returns into an abandoned renderer while the new one is live, and
+            # its thread then releases its own swap chain and device. The window starts where recovery's ended.
+            $releaseLine = $startLine + $recoveryWindow.Count
             $before = Get-Snapshot
-            $released = Wait-LogMarker -StartLine $releaseSearchLine -Pattern 'D3D11_PREVIEW_FAULT_WEDGE_RELEASED' -TimeoutSeconds 45
+            $released = Wait-LogMarker -StartLine $releaseLine -Pattern 'D3D11_PREVIEW_FAULT_WEDGE_RELEASED' -TimeoutSeconds 45
+            if ($released) {
+                $null = Wait-LogMarker -StartLine $releaseLine -Pattern 'D3D11_PREVIEW_RENDER_THREAD_(EXITED|CLEANUP_RETAINED)' -TimeoutSeconds 10
+            }
             Start-Sleep -Seconds 3
             $after = Get-Snapshot
             $window = Get-LogWindow -StartLine $releaseLine
@@ -289,15 +298,17 @@ try {
                 name = 'late-release'
                 released = $released
                 strayHostFirstFrameAfterRelease = Test-LogMarker -Window $afterRelease -Pattern 'PREVIEW_D3D11_FIRST_FRAME'
+                abandonedThreadExited = Test-LogMarker -Window $afterRelease -Pattern 'D3D11_PREVIEW_RENDER_THREAD_EXITED cleanup=complete'
                 abandonedCleanupRetained = Test-LogMarker -Window $afterRelease -Pattern 'D3D11_PREVIEW_RENDER_THREAD_CLEANUP_RETAINED'
                 stillRendering = $null -ne $after -and $after.PreviewStartupState -eq 'Rendering'
                 renderedAcrossRelease = $renderedAcrossRelease
                 markers = @($window | Where-Object { $_ -match $markerPattern })
             }
-            $step.passed = $released -and !$step.strayHostFirstFrameAfterRelease -and $step.stillRendering -and
+            $step.passed = $released -and $step.abandonedThreadExited -and !$step.abandonedCleanupRetained -and
+                !$step.strayHostFirstFrameAfterRelease -and $step.stillRendering -and
                 $null -ne $renderedAcrossRelease -and $renderedAcrossRelease -gt 30
             $steps.Add([pscustomobject]$step)
-            Write-Host "late-release: released=$released stray=$($step.strayHostFirstFrameAfterRelease) rendered=$renderedAcrossRelease passed=$($step.passed)"
+            Write-Host "late-release: released=$released exited=$($step.abandonedThreadExited) retained=$($step.abandonedCleanupRetained) stray=$($step.strayHostFirstFrameAfterRelease) rendered=$renderedAcrossRelease passed=$($step.passed)"
         }
     }
 
@@ -323,17 +334,28 @@ finally {
             $wedgeHeldAtClose = (Test-LogMarker -Window $all -Pattern 'D3D11_PREVIEW_FAULT_WEDGE_HOLD') -and
                 !(Test-LogMarker -Window $all -Pattern 'D3D11_PREVIEW_FAULT_WEDGE_RELEASED')
         }
-        $closeExit = (Invoke-Ssctl -Arguments @('window', 'close')).ExitCode
+        $closeCommand = Invoke-Ssctl -Arguments @('window', 'close')
         $exited = $app.WaitForExit(30000)
-        if (!$exited) { Stop-Process -Id $app.Id -Force }
+        if (!$exited) {
+            Stop-Process -Id $app.Id -Force
+            $null = $app.WaitForExit(5000)
+        }
+        $appExitCode = $null
+        if ($app.HasExited) { $appExitCode = $app.ExitCode }
         $window = Get-LogWindow -StartLine $closeLine
+        # ssctl exits 3 on a healthy close as well: the app tears its automation pipe down while answering
+        # WindowAction Close. The app's own log line shows the close was accepted, and its exit code shows a
+        # clean exit (FailFast and native crashes are nonzero).
         $close = [ordered]@{
-            windowCloseExitCode = $closeExit
+            windowCloseExitCode = $closeCommand.ExitCode
+            windowCloseOutput = $closeCommand.Output
+            closeRequestAccepted = Test-LogMarker -Window $window -Pattern 'WINDOW_CLOSED_TRIGGER requested=1'
             wedgeHeldAtClose = $wedgeHeldAtClose
             exitedWithin30s = $exited
+            appExitCode = $appExitCode
             markers = @($window | Where-Object { $_ -match $markerPattern })
         }
-        Write-Host "close: exited=$exited wedgeHeldAtClose=$wedgeHeldAtClose"
+        Write-Host "close: accepted=$($close.closeRequestAccepted) exited=$exited appExitCode=$appExitCode wedgeHeldAtClose=$wedgeHeldAtClose"
     }
     if (Test-Path -LiteralPath $logPath) {
         Copy-Item -LiteralPath $logPath -Destination (Join-Path $OutputDirectory 'Sussudio_Debug.log')
@@ -344,7 +366,7 @@ finally {
     $dirty = @(& git -C $repoRoot status --porcelain --untracked-files=no 2>$null).Count -gt 0
     $expectedSteps = $PlainCycles
     if ($WedgeRendererStart -gt 0) { $expectedSteps = $(if ($CloseWhileWedged) { 2 } else { 3 + $PlainCycles }) }
-    $closePassed = $null -ne $close -and $close.exitedWithin30s
+    $closePassed = $null -ne $close -and $close.closeRequestAccepted -and $close.exitedWithin30s -and $close.appExitCode -eq 0
     if ($CloseWhileWedged) { $closePassed = $closePassed -and $close.wedgeHeldAtClose }
     $allPassed = $steps.Count -eq $expectedSteps -and @($steps | Where-Object { !$_.passed }).Count -eq 0 -and $closePassed
     $report = [pscustomobject]@{

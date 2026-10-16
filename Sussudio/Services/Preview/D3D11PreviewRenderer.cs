@@ -1189,6 +1189,9 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         try
         {
             CleanupD3DResources();
+            // Positive evidence that the thread released its swap chain itself;
+            // an abandoned renderer has no other witness to its late cleanup.
+            Logger.Log("D3D11_PREVIEW_RENDER_THREAD_EXITED cleanup=complete");
         }
         catch (Exception ex)
         {
