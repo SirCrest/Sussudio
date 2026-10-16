@@ -944,7 +944,11 @@ taken before the knob store's.
   killed tool) loses the lease at expiry: a timer restores every leased knob
   that is not already at its baseline (a reset when the baseline was the launch
   value, a set otherwise), logs `PERF_EXPERIMENT_LEASE_EXPIRED` and frees the
-  lease. A timer callback that races a renew re-arms instead of ending it.
+  lease. A timer callback that races a renew re-arms instead of ending it. The
+  timer can run late (it needs a thread-pool thread, and the pool is starved by
+  the load an experiment measures), so every lease command and knob change first
+  ends a lease past its deadline the same way: an overdue lease is never renewed,
+  never refuses another client and never shows as held.
 - `release` with the holder's id frees the lease and leaves the knobs alone,
   because the holder restores them itself. `release` with `force` ends anyone's
   lease and restores its knobs the same way (`PERF_EXPERIMENT_LEASE_FORCED`).
@@ -1305,8 +1309,10 @@ Written before the code, per the testing policy:
   baseline, nothing written for a knob already there) and the lease is free; a renew after expiry, after a forced release or
   with an id that never held it is refused with the reason; the holder's release leaves knobs alone and is harmless twice, another
   client's release is refused unless forced, and a forced release restores the knobs; an expiry timer that fires just after a
-  renew does not end the lease; a TTL out of range, an unknown knob, or an empty, over-long or control-character id or holder is
-  rejected, never truncated, and takes no lease.
+  renew does not end the lease; with the deadline passed and the timer not yet run (written before the fix), the lease cannot be
+  renewed, status shows it expired with its knobs restored, the next experiment acquires against the restored values, a hand
+  change goes through, and the late callback neither ends the next lease nor restores again; a TTL out of range, an unknown
+  knob, or an empty, over-long or control-character id or holder is rejected, never truncated, and takes no lease.
 - Experiment lease, runner side (written before the runner used it): a foreign lease rejects the run before any change and
   sends no release; a lost acquire reply is released under the runner's own id; a lease lost mid-run fails the run, drops the
   window that was open and still restores (restarting the preview the app's restore left stale), while a lease taken over by

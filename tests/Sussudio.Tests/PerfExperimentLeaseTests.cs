@@ -24,7 +24,10 @@ namespace Sussudio.Tests;
 //  6. Ending: the holder's release frees the lease without touching knobs (the runner restores and reads back
 //     itself) and is harmless twice; a release by anyone else is refused unless forced, and a forced release
 //     restores the knobs exactly like an expiry, for an operator ending a wedged experiment.
-//  7. Timer races: an expiry callback that fires after a renew moved the deadline must not end the lease.
+//  7. Timer races: an expiry callback that fires after a renew moved the deadline must not end the lease. A callback
+//     that runs late (a thread pool starved by the load being measured) must not let an overdue lease be renewed,
+//     keep refusing another experiment or a hand change, or show as active; when it finally runs it must not end the
+//     next holder's lease or restore a second time.
 //  8. Malformed requests (unknown knob, empty or over-long or control-character id or holder, TTL out of range) are
 //     rejected, never clamped, and take no lease.
 public sealed class PerfExperimentLeaseTests
@@ -89,6 +92,9 @@ public sealed class PerfExperimentLeaseTests
                 timer.FireIfDue();
             }
         }
+
+        // A starved thread pool: the clock passes a timer's due time but its callback has not run yet.
+        public void AdvanceWithoutFiring(TimeSpan by) => Now += by;
 
         public void FireAllNow()
         {
@@ -466,6 +472,71 @@ public sealed class PerfExperimentLeaseTests
         rig.Time.Advance(TimeSpan.FromSeconds(61));
         Assert.Null(rig.Lease.Status().Active);
         Assert.Null(rig.Env.Get(DepthKnob.Name));
+    }
+
+    [Fact]
+    public void AnOverdueLeaseCannotBeRenewedBeforeItsLateTimerRuns()
+    {
+        var rig = Create();
+        Assert.True(AcquireA(rig, DepthKnob.Name).Success);
+        Assert.True(rig.Lease.ChangeKnob(DepthKnob.Name, "9", reset: false, IdA).Success);
+        rig.Time.AdvanceWithoutFiring(TimeSpan.FromSeconds(61));
+
+        var renew = rig.Lease.Renew(IdA, null);
+
+        Assert.False(renew.Success);
+        Assert.Equal(PerfExperimentLeaseFailure.NotHeld, renew.Failure);
+        Assert.Contains("expired", renew.Error);
+        Assert.Null(rig.Env.Get(DepthKnob.Name));
+    }
+
+    [Fact]
+    public void AnOverdueLeaseShowsAsExpiredBeforeItsLateTimerRuns()
+    {
+        var rig = Create();
+        Assert.True(AcquireA(rig, DepthKnob.Name).Success);
+        Assert.True(rig.Lease.ChangeKnob(DepthKnob.Name, "9", reset: false, IdA).Success);
+        rig.Time.AdvanceWithoutFiring(TimeSpan.FromSeconds(60));
+
+        var status = rig.Lease.Status();
+
+        Assert.Null(status.Active);
+        Assert.Equal(PerfExperimentLeaseEndReason.Expired, status.LastEnded!.Reason);
+        Assert.Null(rig.Env.Get(DepthKnob.Name));
+    }
+
+    [Fact]
+    public void AnOverdueLeaseLetsTheNextExperimentInAndTheLateTimerLeavesItsLeaseAlone()
+    {
+        var rig = Create();
+        Assert.True(AcquireA(rig, DepthKnob.Name).Success);
+        Assert.True(rig.Lease.ChangeKnob(DepthKnob.Name, "9", reset: false, IdA).Success);
+        rig.Time.AdvanceWithoutFiring(TimeSpan.FromSeconds(61));
+
+        var next = rig.Lease.Acquire(IdB, "b", new[] { DepthKnob.Name }, 60);
+
+        Assert.True(next.Success, next.Error);
+        Assert.Null(Assert.Single(next.Baseline).Value);
+        Assert.True(rig.Lease.ChangeKnob(DepthKnob.Name, "5", reset: false, IdB).Success);
+        rig.Time.FireAllNow();
+        Assert.NotNull(rig.Lease.Status().Active);
+        Assert.Equal("5", rig.Env.Get(DepthKnob.Name));
+    }
+
+    [Fact]
+    public void AHandChangeAfterTheDeadlineGoesThroughAndTheLateRestoreDoesNotUndoIt()
+    {
+        var rig = Create();
+        Assert.True(AcquireA(rig, DepthKnob.Name).Success);
+        Assert.True(rig.Lease.ChangeKnob(DepthKnob.Name, "9", reset: false, IdA).Success);
+        rig.Time.AdvanceWithoutFiring(TimeSpan.FromSeconds(61));
+
+        var change = rig.Lease.ChangeKnob(DepthKnob.Name, "7", reset: false, leaseId: null);
+
+        Assert.True(change.Success, change.Error);
+        rig.Time.FireAllNow();
+        Assert.Equal("7", rig.Env.Get(DepthKnob.Name));
+        Assert.Single(rig.Log, line => line.StartsWith("PERF_EXPERIMENT_LEASE_EXPIRED", StringComparison.Ordinal));
     }
 
     // ---- 8. malformed requests --------------------------------------------------------------------------------------

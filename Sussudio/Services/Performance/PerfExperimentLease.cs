@@ -60,8 +60,10 @@ public sealed record PerfExperimentLeaseResult(
 /// <see cref="ChangeKnob"/>, which refuses a leased knob to anyone without the lease id, so a second experiment or a
 /// hand-typed change cannot fight a running one. The holder renews within its TTL; a holder that stops (crashed,
 /// killed, stalled) loses the lease at expiry, and the app restores every leased knob to its value when the lease
-/// began, because nobody else will. Control-plane only: one lock, held while a knob is written, so a check and the
-/// write it allows can never interleave with another client's acquire. Lock order is lease, then store.
+/// began, because nobody else will. The deadline is checked on every operation as well as by the timer, so a timer
+/// that runs late never leaves an overdue lease in force. Control-plane only: one lock, held while a knob is written,
+/// so a check and the write it allows can never interleave with another client's acquire. Lock order is lease, then
+/// store.
 /// </summary>
 public sealed class PerfExperimentLease
 {
@@ -103,6 +105,7 @@ public sealed class PerfExperimentLease
     {
         lock (_gate)
         {
+            ExpireIfDueLocked();
             return ResultLocked();
         }
     }
@@ -147,6 +150,7 @@ public sealed class PerfExperimentLease
 
         lock (_gate)
         {
+            ExpireIfDueLocked();
             var now = _time.GetUtcNow();
             if (_active is { } active && active.Id != id)
             {
@@ -188,6 +192,7 @@ public sealed class PerfExperimentLease
 
         lock (_gate)
         {
+            ExpireIfDueLocked();
             if (_active is not { } active || active.Id != id)
             {
                 return Refuse(PerfExperimentLeaseFailure.NotHeld, NotHeldReasonLocked(id!));
@@ -218,6 +223,7 @@ public sealed class PerfExperimentLease
 
         lock (_gate)
         {
+            ExpireIfDueLocked();
             if (_active is not { } active)
             {
                 return ResultLocked();
@@ -250,6 +256,7 @@ public sealed class PerfExperimentLease
     {
         lock (_gate)
         {
+            ExpireIfDueLocked();
             var state = _knobs.Find(name);
             if (state is not null && _active is { } active && active.Id != leaseId
                 && active.Knobs.Contains(state.Definition.Name, StringComparer.Ordinal))
@@ -290,6 +297,18 @@ public sealed class PerfExperimentLease
                 return;
             }
 
+            EndLocked(PerfExperimentLeaseEndReason.Expired);
+        }
+    }
+
+    // The timer's callback needs a thread-pool thread, and the pool can be starved by exactly the load an experiment
+    // measures. So every operation first ends a lease that is past its deadline, as the timer would have: an overdue
+    // lease is never renewed, never refuses another client and never shows as held. The late callback then finds
+    // nothing due and re-arms for whoever holds the lease next.
+    private void ExpireIfDueLocked()
+    {
+        if (_active is { } active && _time.GetUtcNow() >= active.ExpiresUtc)
+        {
             EndLocked(PerfExperimentLeaseEndReason.Expired);
         }
     }
@@ -383,6 +402,7 @@ public sealed class PerfExperimentLease
     {
         lock (_gate)
         {
+            ExpireIfDueLocked();
             var current = ResultLocked();
             return current with { Success = false, Failure = failure, Error = error, Baseline = Array.Empty<PerfExperimentLeaseKnob>() };
         }
