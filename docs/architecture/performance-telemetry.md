@@ -386,7 +386,9 @@ says `old=<unset> new=<unset>`.
 The catalog (slice 1) lists 51 `SUSSUDIO_*` knobs. `SUSSUDIO_AUTOMATION_TOKEN`
 (credential), `SUSSUDIO_AUTOMATION_PIPE` (the pipe the command arrives on),
 `SUSSUDIO_LOG_ROOT` and `SUSSUDIO_RECOVERY_DIRECTORY` (storage roots read once
-at startup) are deliberately not settable at runtime; `knobs` lists them under
+at startup), and `SUSSUDIO_PREVIEW_FAULT_WEDGE_RENDERER_START` (fault injection
+that holds one preview render thread for 30 s) are deliberately not settable at
+runtime; `knobs` lists them under
 `Excluded` with the reason. MMCSS task-name knobs are string choices. `apply`
 scopes are read from each consumer's read site; where the read site could not
 be confirmed from source the catalog uses the stricter scope.

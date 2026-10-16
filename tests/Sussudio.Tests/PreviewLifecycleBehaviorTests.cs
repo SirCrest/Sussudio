@@ -187,8 +187,7 @@ static partial class Program
     {
         var harness = new PreviewLifecycleHarness { Initialized = true, Previewing = true };
         var releaseFirst = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var stops = 0;
-        harness.StopRenderer = () => ++stops == 1 ? releaseFirst.Task : Task.FromException(CreatePreviewRendererAbort());
+        harness.StopRenderer = () => releaseFirst.Task;
         var first = harness.Reinitialize("first");
         Assert.Equal(new[] { "reinit:first" }, harness.Reinitializations());
         var stale = useResultOverload ? harness.Reinitialize("stale") : harness.ReinitializeWithoutResult("stale");
@@ -196,7 +195,10 @@ static partial class Program
         Assert.False(stale.IsCompleted);
         Assert.False(latest.IsCompleted);
 
-        releaseFirst.SetException(CreatePreviewRendererAbort());
+        // The failed first reinit tears preview down, so every admitted waiter after it is a ready-state reinit that
+        // goes straight to device initialization. Each initialization attempt counts one settings build.
+        harness.BuildFailure = new InvalidOperationException("synthetic initialization failure");
+        releaseFirst.SetException(CreateRendererStopFailure());
         await Task.WhenAll(first, stale, latest).WaitAsync(TimeSpan.FromSeconds(5));
 
         Assert.False(await first);
@@ -205,10 +207,12 @@ static partial class Program
         {
             Assert.False(await (Task<bool>)stale);
         }
-        Assert.Equal(new[] { "reinit:first", "reinit:latest" }, harness.Reinitializations());
+        Assert.Equal(new[] { "reinit:first" }, harness.Reinitializations());
+        Assert.Equal(1, harness.BuildSettingsCalls);
+        Assert.False(harness.Previewing);
         Assert.False(harness.Reinitializing);
         Assert.False(await harness.Reinitialize("after-failure").WaitAsync(TimeSpan.FromSeconds(5)));
-        Assert.Equal(new[] { "reinit:first", "reinit:latest", "reinit:after-failure" }, harness.Reinitializations());
+        Assert.Equal(2, harness.BuildSettingsCalls);
     }
 
     internal static async Task PreviewLifecycle_OnlyLatestPendingCycleWaiterReinitializes(bool cycleFaults)
@@ -289,9 +293,8 @@ static partial class Program
         Assert.Equal(5, harness.BuildSettingsCalls);
     }
 
-    private static Exception CreatePreviewRendererAbort()
-        => (Exception)Activator.CreateInstance(RequireType("Sussudio.Controllers.PreviewRendererReinitStopTimeoutException"),
-            "synthetic renderer stop timeout", new TimeoutException("renderer is still active"))!;
+    private static Exception CreateRendererStopFailure()
+        => new InvalidOperationException("synthetic renderer stop failure");
 
     internal static async Task PreviewLifecycle_RecordingDuringPendingCyclePreventsReinitialize(bool recordingTransitioning)
     {
@@ -364,9 +367,14 @@ static partial class Program
         Assert.False(harness.Recording);
         Assert.Equal(1, harness.RecordingStopCalls);
 
-        releaseRenderer.SetException(CreatePreviewRendererAbort());
+        releaseRenderer.SetException(CreateRendererStopFailure());
         Assert.False(await reinitialize.WaitAsync(TimeSpan.FromSeconds(5)));
         Assert.False(harness.ReinitializeAdmitted);
+
+        // The failed reinit tore preview down. The harness has no capture backend to initialize again, so mark the
+        // session ready; the start below then checks only that the reinit guard has lifted.
+        Assert.False(harness.Initialized);
+        harness.Initialized = true;
         await harness.SetRecording(true);
         Assert.Equal(1, harness.RecordingStartCalls);
         Assert.True(harness.Recording);
@@ -479,7 +487,7 @@ static partial class Program
         public Task? PendingCycle;
         public Func<long, bool> CaptureErrorCurrent = _ => true;
         public Action? ObserveCallback;
-        public Func<Task> StopRenderer = () => Task.FromException(CreatePreviewRendererAbort());
+        public Func<Task> StopRenderer = () => Task.FromException(CreateRendererStopFailure());
         public Func<CancellationToken, Task> StartRecording = _ => Task.CompletedTask;
         public int RecordingStartCalls;
         public int RecordingStopCalls;

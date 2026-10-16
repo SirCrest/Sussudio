@@ -1459,7 +1459,9 @@ Primary current owners:
   `Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.cs` owns hosted preview
   renderer context, public runtime state, counters, start/stop/shutdown flow,
   renderer startup dimension/fps/HDR/min-present-interval planning, CPU fallback
-  attachment, D3D renderer startup and event/failure handling, cleanup, D3D reinit renderer-stop/timeout policy,
+  attachment, D3D renderer startup and event/failure handling, cleanup, the renderer-stop timeout policy for
+  every stop including capture pre-teardown and reinit (a renderer whose stop timed out is abandoned: its swap
+  chain stays on the old panel and the next start gets a fresh one),
   disposal, unsafe-window telemetry, stop tick accounting, and fresh
   SwapChainPanel replacement.
   `Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs` owns preview
