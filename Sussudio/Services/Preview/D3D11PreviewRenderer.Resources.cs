@@ -419,6 +419,9 @@ internal sealed partial class D3D11PreviewRenderer
     // device. The render thread compares it across a device selection to catch
     // a hand-over that landed before its own device existed.
     private int _sharedDeviceGeneration;
+    // The generation the render thread's latest shared-device decision saw,
+    // read under the same lock as _sharedDevice. Render thread only.
+    private int _decisionSharedDeviceGeneration;
     private int _sharedDeviceResetPending;
     private int _sharedDeviceActive;
     // Fault injection for PreviewRendererSharedDeviceRaceTests: runs on the render
@@ -1079,7 +1082,7 @@ internal sealed partial class D3D11PreviewRenderer
     // when one has been handed over, else a renderer-owned one.
     private (ID3D11Device Device, ID3D11DeviceContext DeviceContext, FeatureLevel FeatureLevel, bool SharedDeviceAdopted) SelectRenderDevice()
     {
-        var sharedDeviceAdopted = TryInitializeWithSharedDevice(out var featureLevel, out var sharedDeviceGeneration);
+        var sharedDeviceAdopted = TryInitializeWithSharedDevice(out var featureLevel);
         _afterSharedDeviceDecision?.Invoke();
         if (!sharedDeviceAdopted)
         {
@@ -1091,7 +1094,7 @@ internal sealed partial class D3D11PreviewRenderer
             throw new InvalidOperationException("D3D11 device initialization did not produce a valid device/context.");
         }
 
-        PublishRenderDeviceSelection(sharedDeviceAdopted, sharedDeviceGeneration);
+        PublishRenderDeviceSelection(sharedDeviceAdopted);
         return (_device, _deviceContext, featureLevel, sharedDeviceAdopted);
     }
 
@@ -1103,12 +1106,12 @@ internal sealed partial class D3D11PreviewRenderer
     // stores under: whichever side runs second sees the other and queues the reset.
     // Only a newer hand-over counts, so a device that failed adoption does not
     // reset in a loop.
-    private void PublishRenderDeviceSelection(bool sharedDeviceAdopted, int sharedDeviceGeneration)
+    private void PublishRenderDeviceSelection(bool sharedDeviceAdopted)
     {
         bool handOverMissed;
         lock (_lifecycleLock)
         {
-            handOverMissed = _sharedDeviceGeneration != sharedDeviceGeneration;
+            handOverMissed = _sharedDeviceGeneration != _decisionSharedDeviceGeneration;
             Interlocked.Exchange(ref _sharedDeviceActive, sharedDeviceAdopted && !handOverMissed ? 1 : 0);
             if (handOverMissed)
             {
@@ -1156,14 +1159,14 @@ internal sealed partial class D3D11PreviewRenderer
         }
     }
 
-    private bool TryInitializeWithSharedDevice(out FeatureLevel featureLevel, out int sharedDeviceGeneration)
+    private bool TryInitializeWithSharedDevice(out FeatureLevel featureLevel)
     {
         featureLevel = FeatureLevel.Level_11_0;
 
         ID3D11Device? sharedDevice = null;
         lock (_lifecycleLock)
         {
-            sharedDeviceGeneration = _sharedDeviceGeneration;
+            _decisionSharedDeviceGeneration = _sharedDeviceGeneration;
             if (_sharedDevice == null || _sharedDevice.NativePointer == IntPtr.Zero)
             {
                 return false;
