@@ -26,7 +26,6 @@ internal sealed class FlashbackCommandControllerContext
 internal sealed class FlashbackCommandController
 {
     private readonly FlashbackCommandControllerContext _context;
-    private bool _suppressFlashbackEnabledToggle;
 
     public FlashbackCommandController(FlashbackCommandControllerContext context)
     {
@@ -161,40 +160,18 @@ internal sealed class FlashbackCommandController
 
     public void ToggleEnabled(string operationName)
     {
-        if (_suppressFlashbackEnabledToggle)
+        // The toggle follows IsFlashbackEnabled (FlashbackSettingsBindingController), so a
+        // Toggled event that already matches it is that sync, not a user request.
+        // MainViewModel.SetFlashbackEnabledAsync owns the transition and its rollback.
+        var requestedEnabled = _context.FlashbackEnabledToggle.IsOn;
+        if (requestedEnabled == _context.ViewModel.IsFlashbackEnabled)
         {
             return;
         }
 
-        var requestedEnabled = _context.FlashbackEnabledToggle.IsOn;
         _ = _context.RunUiEventHandlerAsync(
-            () => ApplyFlashbackEnabledToggleAsync(requestedEnabled),
+            () => _context.ViewModel.SetFlashbackEnabledAsync(requestedEnabled),
             operationName);
-    }
-
-    private async Task ApplyFlashbackEnabledToggleAsync(bool requestedEnabled)
-    {
-        var previousEnabled = _context.ViewModel.IsFlashbackEnabled;
-        _context.ViewModel.IsFlashbackEnabled = requestedEnabled;
-        try
-        {
-            await _context.ViewModel.SetFlashbackEnabledAsync(requestedEnabled);
-        }
-        catch
-        {
-            _context.ViewModel.IsFlashbackEnabled = previousEnabled;
-            _suppressFlashbackEnabledToggle = true;
-            try
-            {
-                _context.FlashbackEnabledToggle.IsOn = previousEnabled;
-            }
-            finally
-            {
-                _suppressFlashbackEnabledToggle = false;
-            }
-
-            throw;
-        }
     }
 }
 
@@ -341,6 +318,16 @@ internal sealed class FlashbackSettingsBindingController
     {
         _context.FlashbackGpuDecodeToggle.Toggled += (s, e) =>
             _context.ViewModel.FlashbackGpuDecode = _context.FlashbackGpuDecodeToggle.IsOn;
+    }
+
+    // Settings toggle and automation both change IsFlashbackEnabled through
+    // MainViewModel.SetFlashbackEnabledAsync; the toggle only reflects the result.
+    public void SyncEnabledToggle()
+    {
+        if (_context.FlashbackEnabledToggle.IsOn != _context.ViewModel.IsFlashbackEnabled)
+        {
+            _context.FlashbackEnabledToggle.IsOn = _context.ViewModel.IsFlashbackEnabled;
+        }
     }
 
     public void SyncGpuDecodeToggle()
@@ -690,6 +677,8 @@ internal sealed class FlashbackPropertyChangedControllerContext
     public required Func<bool> IsExporting { get; init; }
     public required Action<bool> ApplyTimelineVisibility { get; init; }
     public required Action ApplyTimelineLockout { get; init; }
+    public required Action SyncEnabledSetting { get; init; }
+    public required Action RefreshStatusStripBitrate { get; init; }
     public required Func<bool> IsFlashbackEnabled { get; init; }
     public required Action<bool> UpdateFlashbackKeepAliveHint { get; init; }
     public required Action UpdateState { get; init; }
@@ -721,7 +710,9 @@ internal sealed class FlashbackPropertyChangedController
                 return true;
 
             case nameof(MainViewModel.IsFlashbackEnabled):
+                _context.SyncEnabledSetting();
                 _context.ApplyTimelineLockout();
+                _context.RefreshStatusStripBitrate();
                 _context.UpdateFlashbackKeepAliveHint(_context.IsFlashbackEnabled());
                 return true;
 
