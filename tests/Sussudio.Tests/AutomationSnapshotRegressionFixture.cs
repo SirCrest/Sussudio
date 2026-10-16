@@ -28,13 +28,20 @@ internal static class AutomationSnapshotRegressionFixture
         },
     };
 
+    // Inputs added after the expected JSON was captured. They take a fixed value without consuming an ordinal, so
+    // every captured field keeps the value the fixture recorded.
+    private static readonly Dictionary<string, object> FixtureFieldsAddedAfterCapture = new(StringComparer.Ordinal)
+    {
+        ["Sussudio.Models.PreviewRuntimeSnapshot.D3DFrameStatsCadenceMissedRefreshCount"] = 0L
+    };
+
     internal static JsonElement BuildResult(Assembly assembly, bool populated, object? healthOverride = null)
     {
         var hubType = assembly.GetType("Sussudio.Services.Automation.AutomationDiagnosticsHub", throwOnError: true)!;
         var method = hubType.GetMethod("BuildAutomationSnapshot", InstanceMembers)!;
         var hub = RuntimeHelpers.GetUninitializedObject(hubType);
         var parameters = method.GetParameters();
-        if (parameters.Length != 18)
+        if (parameters.Length != 17)
             throw new InvalidOperationException("Review the snapshot fixture after changing the captured input contract.");
 
         var sequence = 100;
@@ -94,9 +101,13 @@ internal static class AutomationSnapshotRegressionFixture
                 assembly.GetType("Sussudio.Models.PreviewStartupState", throwOnError: true)!, "RendererAttaching"));
             Set(preview, "EstimatedPipelineLatencyMs", 12.75);
             Set(preview, "D3DFrameStatsMissedRefreshCount", 59L);
+            Set(preview, "D3DFrameStatsCadenceMissedRefreshCount", 53L);
             Set(preview, "D3DFrameStatsFailureCount", 61L);
-            inputs["recentD3DMissedRefreshes"] = 41L;
-            inputs["recentD3DStatsFailures"] = 43L;
+            inputs["recentD3DFrameStats"] = Activator.CreateInstance(
+                assembly.GetType("Sussudio.Services.Automation.D3DFrameStatsRecentCounters", throwOnError: true)!,
+                41L,
+                47L,
+                43L);
         }
 
         if (healthOverride != null)
@@ -144,6 +155,12 @@ internal static class AutomationSnapshotRegressionFixture
         var retiredFieldIndex = 0;
         foreach (var property in properties)
         {
+            if (FixtureFieldsAddedAfterCapture.TryGetValue(type.FullName + "." + property.Name, out var addedFieldValue))
+            {
+                property.SetValue(instance, addedFieldValue);
+                continue;
+            }
+
             while (retiredFieldIndex < retiredFields.Length &&
                    StringComparer.Ordinal.Compare(retiredFields[retiredFieldIndex], property.Name) < 0)
             {

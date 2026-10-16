@@ -4078,13 +4078,13 @@ public sealed class PreviewPacingClassifierTests
     {
         var input = CreateBaselinePreviewPacingInput();
         SetPropertyOrBackingField(input, "PreviewD3DPresentCallP99Ms", 6d);
-        SetPropertyOrBackingField(input, "RecentD3DMissedRefreshes", 2L);
+        SetPropertyOrBackingField(input, "RecentD3DCadenceMissedRefreshes", 2L);
 
         var result = ClassifyPreviewPacing(input);
 
         Assert.Equal("CompositorMiss", GetStringProperty(result, "LikelySlowStage"));
         Assert.Equal("High", GetStringProperty(result, "Confidence"));
-        Assert.Contains("dxgiRecentMissed=2", GetStringProperty(result, "Evidence"));
+        Assert.Contains("dxgiRecentCadenceMissed=2", GetStringProperty(result, "Evidence"));
     }
 
     [Fact(DisplayName = "Preview pacing classifier flags dominant render upload")]

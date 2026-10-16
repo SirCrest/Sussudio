@@ -96,7 +96,7 @@ tests that pin which file owns a symbol; see AGENTS.md § Testing Policy.
 | Portable release tooling | `tools/reliability-gates.ps1`, `tools/package-github-release.ps1`, `tools/release/release-helpers.ps1`, `Sussudio/ffmpeg/manifest.json` | Reliability gates, package assembly, shared release helpers, and native-runtime manifest. |
 | Flashback | `FlashbackDecoder.cs`, `FlashbackPlaybackController.cs`, `FlashbackPlaybackCommandMailbox.cs`, `FlashbackPlaybackController.PlaybackFrames.cs`, `FlashbackPlaybackController.ThreadCommands.cs`, `FlashbackEncoderSink.cs`, `FlashbackBufferManager.cs`, `FlashbackStartupCacheCleanup.cs`, `FlashbackExporter.cs`, `FlashbackExportOutputTransaction.cs`, `FlashbackExportPlanner.cs` | Buffer retention, encoding, playback, and transactional export. See [Flashback](#flashback) for per-owner lifetimes and invariants. |
 | Flashback playback command handlers | `FlashbackPlaybackController.ThreadCommands.cs` | Playback-thread dispatch, seek/scrub transitions, frame stepping, and terminal live restore. |
-| Preview rendering | `D3D11PreviewRenderer.cs`, `D3D11PreviewRenderer.RenderPasses.cs`, `D3D11PreviewRenderer.Resources.cs`, `D3D11PreviewRenderer.GpuTiming.cs`, `PreviewOutputSizePolicy.cs`, `PreviewScreenshotCapture.cs` | Render-thread scheduling with waitable presentation, render passes, GPU resource lifetime, GPU render timing, and screenshots. See [UI and presentation](#ui-shell-and-presentation). |
+| Preview rendering | `D3D11PreviewRenderer.cs`, `D3D11PreviewRenderer.RenderPasses.cs`, `D3D11PreviewRenderer.Resources.cs`, `D3D11PreviewRenderer.GpuTiming.cs`, `PreviewOutputSizePolicy.cs`, `PreviewRefreshCadencePolicy.cs`, `PreviewScreenshotCapture.cs` | Render-thread scheduling with waitable presentation, render passes, GPU resource lifetime, GPU render timing, missed refreshes against the source cadence, and screenshots. See [UI and presentation](#ui-shell-and-presentation). |
 | UI shell | `Sussudio/MainWindow.xaml.cs` composition root and XAML adapter; feature behavior lives in controllers under `Sussudio/Controllers/` | The single code-behind file wires XAML to feature controllers. See [UI and presentation](#ui-shell-and-presentation). |
 | Presentation | `MainViewModel.*.cs` facade/feature partial family, `Sussudio/ViewModels/MainViewModel.cs`, plus focused `Sussudio/ViewModels` policy/presentation helpers | View-model facade, feature state, and presentation policies. See [UI and presentation](#ui-shell-and-presentation). |
 
@@ -120,7 +120,7 @@ do not use these rows as permission for cosmetic file-count churn.
 | System | Status | Current evidence | Closure guidance |
 |--------|--------|------------------|------------------|
 | CaptureService | Leave As-Is For Now | `Sussudio/Services/Capture/CaptureService.cs`, `Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs`, `Sussudio/Services/Capture/CaptureService.Flashback.cs`, `Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs`, `Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs`, and `Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs` form a six-file family in the generated baseline. The files now map to transition serialization/root state, preview lifecycle, Flashback backend/export/recording, health snapshots, recording lifecycle, and runtime snapshots. | Do not merge this family just to reduce partial count. A future boundary pass should happen only if one named behavior, such as Flashback export or snapshot assembly, can move behind an independently testable collaborator without changing capture/preview/recording hot-path ordering. |
-| AutomationDiagnosticsHub | Ready | `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs` owns the single `BuildAutomationSnapshot` initializer: captured domain inputs supply copy-only fields directly, while twelve computed/stateful projection helpers preserve normalization and sampling order. Flashback export, recording and playback fields share that initializer, including runtime-first null fallback for backend diagnostics. `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`, `Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs`, and `Sussudio/Services/Automation/AutomationDiagnosticsHub.Evaluation.cs` remain the polling/timeline, stateful refresh/alerts, and diagnostic verdict owners. The preview runtime fragment is one provider call with no producer-epoch bracket: the snapshot is built in a single UI work item, so its fields and epoch agree by construction, and the hub pays one UI dispatch and one build per tick instead of three. `tests/Sussudio.Tests/AutomationSnapshotRegressionTests.cs` protects every serialized field against populated/default input fixtures; ownership tests protect the collector/initializer boundary. | Preserve the 18 captured inputs, computation/sampling order, JSON field names and CLI/MCP/tool contracts. Keep raw mapping in the existing initializer and retain helpers only for computation or state sampling. |
+| AutomationDiagnosticsHub | Ready | `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs` owns the single `BuildAutomationSnapshot` initializer: captured domain inputs supply copy-only fields directly, while twelve computed/stateful projection helpers preserve normalization and sampling order. Flashback export, recording and playback fields share that initializer, including runtime-first null fallback for backend diagnostics. `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`, `Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs`, and `Sussudio/Services/Automation/AutomationDiagnosticsHub.Evaluation.cs` remain the polling/timeline, stateful refresh/alerts, and diagnostic verdict owners. The preview runtime fragment is one provider call with no producer-epoch bracket: its epoch tracks only the UI-thread signature, which one UI work item reads once, so the hub pays one UI dispatch and one build per tick instead of three. The renderer metrics in it are per-window copies taken while the render thread runs; no epoch covers them. `tests/Sussudio.Tests/AutomationSnapshotRegressionTests.cs` protects every serialized field against populated/default input fixtures; ownership tests protect the collector/initializer boundary. | Preserve the 18 captured inputs, computation/sampling order, JSON field names and CLI/MCP/tool contracts. Keep raw mapping in the existing initializer and retain helpers only for computation or state sampling. |
 | FlashbackPlaybackController | Ready | `Sussudio/Services/Flashback/FlashbackPlaybackController.cs`, `Sussudio/Services/Flashback/FlashbackPlaybackCommandMailbox.cs`, `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs`, and `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs` align to public playback state/command admission/metrics, a per-generation bounded command mailbox, playback-thread command execution, and frame decode/submit pacing. Existing Flashback contract tests and this map document command, frame, audio-master, marker, and lifecycle ownership. | Treat the mailbox and three controller partials as intentional. Keep the mailbox bounded and state-free: it owns queue admission, drop/coalescing, generation completion, yield, and queue telemetry; the controller owns public command/state admission; `ThreadCommands` owns decoder/state execution. Preserve playback command names, capacity, queue telemetry, live-restore behavior, A/V drift policy, and segment-edge recovery. |
 | D3D11PreviewRenderer | Ready | `Sussudio/Services/Preview/D3D11PreviewRenderer.cs`, `Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs`, and `Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs` now align to renderer facade/thread/submission/metrics, render-pass execution plus screenshot staging, and D3D resource/device/swap-chain/shader ownership; `D3D11PreviewRenderer.GpuTiming.cs` adds GPU render timing and the perf display-statistics hook. Presentation preview tests guard removed renderer shards, diagnostics contracts, device-lost recovery, present accounting, screenshots, and frame-ready signaling. | Treat the four-file split as intentional. Reopen only if a named resource/pass collaborator gains an independent test seam. Preserve preview pacing, swap-chain binding, device-lost recovery, screenshot capture, HDR pass behavior, and GPU synchronization boundaries. |
 
@@ -162,7 +162,10 @@ Preview renderer notes:
   device/swap-chain/video-processor fields, shared source-reader D3D manager
   lifecycle plus the `ILiveVideoSource` handoff contract, `InitializeD3D` orchestration,
   shared-vs-owned device setup, shared-device COM reference handoff/reinit
-  retirement/reset scheduling, device-lost classification and recovery, video
+  retirement/reset scheduling, the removed-shared-device fallback to an owned device,
+  device-lost classification (every removed-state DXGI HRESULT; failed `Present`,
+  `VideoProcessorBlt` and `ResizeBuffers` results keep their HRESULT through
+  `NativeCallFailed`) and recovery, video
   interface acquisition, media present duration setup, composition swap-chain
   creation, startup dimensions, HDR swap-chain capability probing, SDR
   swap-chain fallback, initial color-space selection, configured output size
@@ -199,14 +202,23 @@ Preview renderer notes:
   cadence, pipeline latency, render CPU timing, frame-latency wait metric state,
   sample tracking, expected-frame-rate window resizing, metric reset/clear
   lifecycle, read-only projections, recent sample copies, renderer metric record
-  structs, shared ring-copy, timing-summary, tick-to-ms, render-stage validation
+  structs, shared ring-copy, timing-summary (pipeline latency, render CPU and
+  frame-latency wait read their windows into pooled scratch under each ring lock
+  and sort it outside; only the present-cadence window is a fresh copy, because
+  it is published as `RecentIntervalsMs`), tick-to-ms, render-stage validation
   helpers, recent slow-frame snapshot access, thresholding, sample assembly, the
   slow-frame ring writer, slow-frame reason token classification, render-thread
   failure notification state, first-frame notification state, DXGI
   `GetFrameStatistics` sampling, optional DWM flush, counter deltas,
-  missed-refresh accounting, visible-frame tick estimation,
+  missed-refresh accounting (the raw refreshes-minus-presents count and the
+  cadence count), visible-frame tick estimation,
   `IPreviewDisplayClock` snapshot projection, and the DXGI refresh-slip snapshot
-  used by slow-frame diagnostics.
+  used by slow-frame diagnostics (a slip is a cadence miss, not a raw one).
+- `Sussudio/Services/Preview/PreviewRefreshCadencePolicy.cs` owns the pure rule
+  that turns one DXGI sample's present and refresh deltas into refreshes where a
+  new source frame was due but not shown: refreshes per source frame from the
+  source fps and the measured refresh interval, snapping within 1 % of a whole
+  number, and the floor-or-ceiling on-time span for fractional ratios.
 - `Sussudio/Services/Preview/PreviewScreenshotCapture.cs` owns preview-frame
   screenshot pixel analysis, mapped-frame buffer copying, BMP capture/header
   writing, 16-bit PNG frame capture, and the PNG container/chunk/CRC helpers.
@@ -339,7 +351,10 @@ Automation diagnostics ownership:
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs` owns
   preview jitter, MJPEG, D3D, and Flashback recording recent-counter baselines
   and delta updates because those baselines are sampled only by the snapshot
-  refresh loop.
+  refresh loop. The D3D frame-statistics deltas (raw missed refreshes, cadence
+  missed refreshes, failures) travel together as `D3DFrameStatsRecentCounters`
+  to the projection, the present-lane text and the slow-stage classifier, which
+  reads the cadence delta.
   The hub constructor should take `IAutomationSnapshotQueryPort` directly because
   snapshot refresh and verification are read-only over that port.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs` also
@@ -2149,7 +2164,8 @@ Primary current owners:
 - `Sussudio/Services/Gpu/NvmlMonitor.cs` owns NVML polling, gated by `NvmlPollingDemand` sources through `SetPollingDemand`: the stats dock sets `StatsDock` while it shows the values and `Sussudio/Services/Gpu/NvmlDemandSensor.cs` sets `TelemetrySensors` while the telemetry sensor supervisor has demand (a perf window, a frame trace or the sensors knob); the timer is parked while no source is set.
 - `Sussudio/Services/Runtime/RuntimeHelpers.cs` owns runtime helper types
   shared across multiple services: AtomicMax, AtomicCounter, QueueAdmission,
-  TelemetryAgeHelper, EnvironmentHelpers, RingBufferHelpers, EncodingTaskHelpers,
+  TelemetryAgeHelper, EnvironmentHelpers, RingBufferHelpers (allocating window
+  copies and the allocation-free `CopyNewest` into caller scratch), EncodingTaskHelpers,
   PercentileHelpers, IntervalCadenceStatistics (record struct), shared minimum-window-size Win32
   subclassing, bounded external process supervision contracts and runner,
   best-effort MMCSS worker registration, and `PrecisionWaiter` (a per-thread

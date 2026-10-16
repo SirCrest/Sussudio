@@ -40,7 +40,7 @@ public sealed class PerfHistogram
     private long _max;
 
     // Records begun and records finished. A snapshot that reads the same number for both, finished before its copy and
-    // begun after it, overlapped no write, so its buckets and sum describe exactly the same records.
+    // begun after it, overlapped no write, so its buckets, sum and max describe exactly the same records.
     private long _recordsBegun;
     private long _recordsFinished;
 
@@ -52,14 +52,16 @@ public sealed class PerfHistogram
             value = 0;
         }
 
-        // Max keeps the true value even when the bucket clamps, so an outlier beyond the range stays visible.
+        var clamped = value > MaxRecordableValue ? MaxRecordableValue : value;
+        Interlocked.Increment(ref _recordsBegun);
+
+        // Max keeps the true value even when the bucket clamps, so an outlier beyond the range stays visible. It is
+        // raised after the record is marked begun, so a snapshot that sees the new max also sees a record in flight.
         if (value > Volatile.Read(ref _max))
         {
             RaiseMax(value);
         }
 
-        var clamped = value > MaxRecordableValue ? MaxRecordableValue : value;
-        Interlocked.Increment(ref _recordsBegun);
         Interlocked.Increment(ref _buckets[BucketIndex(clamped)]);
         Interlocked.Add(ref _sum, clamped);
         Interlocked.Increment(ref _recordsFinished);
@@ -85,9 +87,10 @@ public sealed class PerfHistogram
     }
 
     /// <summary>
-    /// Copies the counts, sum and max. The sum and the counts come from the same records: a copy that overlapped a
-    /// write is retried, and if writes never pause the last copy's sum is clamped into the range its buckets allow, so
-    /// the mean is off by at most a bucket width. Buckets and the maximum only ever grow, so counts never go backwards.
+    /// Copies the counts, sum and max. The sum, the max and the counts come from the same records: a copy that
+    /// overlapped a write is retried, and if writes never pause the last copy's sum and max are clamped into the range
+    /// its buckets allow, so the mean and the max are each off by at most a bucket width. Buckets and the maximum only
+    /// ever grow, so counts never go backwards.
     /// </summary>
     public PerfHistogramSnapshot Snapshot()
     {
@@ -105,16 +108,19 @@ public sealed class PerfHistogram
                 count += value;
             }
 
+            // After the buckets, so the max is at least every value they hold, and before begun, so a max raised by a
+            // record the copy missed shows that record as in flight and the copy is not accepted as coherent.
+            var max = Volatile.Read(ref _max);
             var coherent = Volatile.Read(ref _recordsBegun) == finished;
             if (coherent || attempt == CoherentSnapshotAttempts)
             {
-                var max = Volatile.Read(ref _max);
+                var reportedMax = coherent ? max : PerfHistogramSnapshot.ClampMaxToBuckets(buckets, max);
                 return new PerfHistogramSnapshot(
                     buckets,
                     count,
                     coherent ? sum : PerfHistogramSnapshot.ClampSumToBuckets(buckets, sum),
-                    max,
-                    maxIsApproximate: false);
+                    reportedMax,
+                    maxIsApproximate: reportedMax != max);
             }
         }
     }
@@ -204,10 +210,16 @@ public sealed class PerfHistogramSnapshot
     /// <summary>Sum of recorded values (each clamped to the histogram range so it cannot overflow).</summary>
     public long Sum { get; }
 
-    /// <summary>Largest recorded value. Exact for a lifetime snapshot, a bucket upper bound for a delta.</summary>
+    /// <summary>
+    /// Largest recorded value. Exact for a lifetime snapshot unless <see cref="MaxIsApproximate"/>, a bucket upper bound
+    /// for a delta.
+    /// </summary>
     public long Max { get; }
 
-    /// <summary>True when <see cref="Max"/> is a bucket bound (delta snapshots) rather than an observed value.</summary>
+    /// <summary>
+    /// True when <see cref="Max"/> is a bucket bound rather than an observed value: every delta snapshot, and a lifetime
+    /// snapshot whose max was capped because writes never paused long enough for a coherent copy.
+    /// </summary>
     public bool MaxIsApproximate { get; }
 
     public double Mean => Count == 0 ? 0 : (double)Sum / Count;
@@ -299,5 +311,25 @@ public sealed class PerfHistogramSnapshot
         }
 
         return Math.Clamp(sum, lowest, highest);
+    }
+
+    /// <summary>
+    /// The max capped at the upper bound of the highest non-empty bucket, which holds the largest value the counts
+    /// describe; a max read after those buckets is never below that bucket. The top bucket also holds every value
+    /// above the range, so it caps nothing. No counts, no max.
+    /// </summary>
+    internal static long ClampMaxToBuckets(long[] buckets, long max)
+    {
+        for (var i = buckets.Length - 1; i >= 0; i--)
+        {
+            if (buckets[i] > 0)
+            {
+                return i == buckets.Length - 1
+                    ? max
+                    : Math.Min(max, PerfHistogram.BucketLowerBound(i) + PerfHistogram.BucketWidth(i) - 1);
+            }
+        }
+
+        return 0;
     }
 }

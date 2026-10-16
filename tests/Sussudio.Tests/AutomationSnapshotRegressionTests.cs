@@ -15,7 +15,7 @@ public sealed class AutomationSnapshotRegressionTests
             RuntimeContractSource.GetRepoRoot(), "tests", "Sussudio.Tests", "Fixtures", "AutomationSnapshot", fixtureName)));
         var actual = AutomationSnapshotRegressionFixture.BuildResult(SussudioAssembly.Load(), populated);
 
-        Assert.Equal(797, expected.RootElement.EnumerateObject().Count());
+        Assert.Equal(799, expected.RootElement.EnumerateObject().Count());
         AssertJsonEquivalent(expected.RootElement, actual, "$");
     }
 
@@ -35,7 +35,7 @@ public sealed class AutomationSnapshotRegressionTests
         var actual = JsonSerializer.SerializeToElement(builder.Invoke(null, new[] { snapshot }), timelineType);
         var expected = fixture.RootElement.GetProperty("timeline");
 
-        Assert.Equal(159, expected.EnumerateObject().Count());
+        Assert.Equal(160, expected.EnumerateObject().Count());
         AssertJsonEquivalent(expected, actual, "$.timeline");
     }
 

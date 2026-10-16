@@ -2792,6 +2792,7 @@ static partial class Program
                                    PreviewPacingSlowStageEvidence: synthetic duplicate cadence
                                    TimelineSamples: 2
                                    DxgiMissedRefreshRecentMax: 4
+                                   DxgiCadenceMissedRefreshRecentMax: 1
                                    PreviewDropDelta: 4
                                    PlaybackDropDelta: 2
                                    Evidence: captureReady=true previewReady=true playbackReady=true previewHalfRate=true playbackHalfRate=true
@@ -2841,11 +2842,13 @@ static partial class Program
                         "Data": [
                           {
                             "PreviewD3DFrameStatsRecentMissedRefreshCount": 2,
+                            "PreviewD3DFrameStatsRecentCadenceMissedRefreshCount": 1,
                             "MjpegPreviewJitterTotalDropped": 1,
                             "FlashbackPlaybackDroppedFrames": 0
                           },
                           {
                             "PreviewD3DFrameStatsRecentMissedRefreshCount": 4,
+                            "PreviewD3DFrameStatsRecentCadenceMissedRefreshCount": 0,
                             "MjpegPreviewJitterTotalDropped": 5,
                             "FlashbackPlaybackDroppedFrames": 2
                           }

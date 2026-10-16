@@ -53,8 +53,7 @@ public sealed partial class AutomationDiagnosticsHub
         long recentPreviewUnderflows,
         long recentPreviewDeadlineDrops,
         D3DRendererRecentCounters recentRenderer,
-        long recentD3DMissedRefreshes,
-        long recentD3DStatsFailures,
+        D3DFrameStatsRecentCounters recentD3DFrameStats,
         FlashbackRecordingRecentCounters recentFlashbackRecording)
     {
         var nowUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
@@ -84,8 +83,7 @@ public sealed partial class AutomationDiagnosticsHub
             recentPreviewUnderflows,
             recentPreviewDeadlineDrops,
             recentRenderer,
-            recentD3DMissedRefreshes,
-            recentD3DStatsFailures,
+            recentD3DFrameStats,
             playbackTargetFps,
             playbackCommandQueueAgeMs,
             playbackCommandFailureAgeMs,
@@ -137,8 +135,7 @@ public sealed partial class AutomationDiagnosticsHub
         long recentPreviewUnderflows,
         long recentPreviewDeadlineDrops,
         D3DRendererRecentCounters recentRenderer,
-        long recentD3DMissedRefreshes,
-        long recentD3DStatsFailures,
+        D3DFrameStatsRecentCounters recentD3DFrameStats,
         double playbackTargetFps,
         long playbackCommandQueueAgeMs,
         long playbackCommandFailureAgeMs,
@@ -151,10 +148,7 @@ public sealed partial class AutomationDiagnosticsHub
             recentPreviewUnderflows,
             recentPreviewDeadlineDrops);
         var renderLane = BuildRenderLane(previewRuntime, recentRenderer);
-        var presentLane = BuildPresentLane(
-            previewRuntime,
-            recentD3DMissedRefreshes,
-            recentD3DStatsFailures);
+        var presentLane = BuildPresentLane(previewRuntime, recentD3DFrameStats);
         var visualLane = BuildVisualLane(health);
         var mjpegDuplicateLane = FormatMjpegDuplicateCadenceDetail(health);
         var sourceSignalLane = BuildSourceSignalLane(health, sourceLane);
@@ -246,16 +240,15 @@ public sealed partial class AutomationDiagnosticsHub
 
     private static string BuildPresentLane(
         PreviewRuntimeSnapshot previewRuntime,
-        long recentD3DMissedRefreshes,
-        long recentD3DStatsFailures)
+        D3DFrameStatsRecentCounters recentD3DFrameStats)
     {
         var presentTarget = previewRuntime.DisplayCadenceExpectedIntervalMs > 0
             ? $"{previewRuntime.DisplayCadenceExpectedIntervalMs:0.##}ms"
             : "n/a";
         var dxgiStats = previewRuntime.D3DFrameStatsSuccessCount > 0
-            ? $" dxgiStats ok={previewRuntime.D3DFrameStatsSuccessCount}/{previewRuntime.D3DFrameStatsSampleCount} pc={previewRuntime.D3DFrameStatsPresentCount} prc={previewRuntime.D3DFrameStatsPresentRefreshCount} prDelta={previewRuntime.D3DFrameStatsLastPresentRefreshDelta} missed={previewRuntime.D3DFrameStatsMissedRefreshCount} recentMissed={recentD3DMissedRefreshes} recentFail={recentD3DStatsFailures}"
+            ? $" dxgiStats ok={previewRuntime.D3DFrameStatsSuccessCount}/{previewRuntime.D3DFrameStatsSampleCount} pc={previewRuntime.D3DFrameStatsPresentCount} prc={previewRuntime.D3DFrameStatsPresentRefreshCount} prDelta={previewRuntime.D3DFrameStatsLastPresentRefreshDelta} missed={previewRuntime.D3DFrameStatsMissedRefreshCount} recentMissed={recentD3DFrameStats.MissedRefreshes} cadenceMissed={previewRuntime.D3DFrameStatsCadenceMissedRefreshCount} recentCadenceMissed={recentD3DFrameStats.CadenceMissedRefreshes} recentFail={recentD3DFrameStats.Failures}"
             : previewRuntime.D3DFrameStatsSampleCount > 0
-                ? $" dxgiStats err={previewRuntime.D3DFrameStatsLastError} fail={previewRuntime.D3DFrameStatsFailureCount}/{previewRuntime.D3DFrameStatsSampleCount} recentFail={recentD3DStatsFailures}"
+                ? $" dxgiStats err={previewRuntime.D3DFrameStatsLastError} fail={previewRuntime.D3DFrameStatsFailureCount}/{previewRuntime.D3DFrameStatsSampleCount} recentFail={recentD3DFrameStats.Failures}"
                 : string.Empty;
 
         return $"present target={presentTarget} avg={previewRuntime.DisplayCadenceAverageIntervalMs:0.##}ms p95={previewRuntime.DisplayCadenceP95IntervalMs:0.##}ms p99={previewRuntime.DisplayCadenceP99IntervalMs:0.##}ms max={previewRuntime.DisplayCadenceMaxIntervalMs:0.##}ms slow={previewRuntime.DisplayCadenceSlowFramePercent:0.##}% rate={previewRuntime.DisplayCadenceObservedFps:0.##}fps 1pctLow={previewRuntime.DisplayCadenceOnePercentLowFps:0.##}fps sync={previewRuntime.D3DPresentSyncInterval} latency={previewRuntime.D3DMaxFrameLatency} buffers={previewRuntime.D3DSwapChainBufferCount} swap={previewRuntime.D3DSwapChainAddress}{dxgiStats}";

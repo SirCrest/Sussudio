@@ -240,6 +240,48 @@ public sealed class PerfHistogramTests
         await Task.WhenAll(writers);
     }
 
+    // Failure modes for the max, which a writer updates apart from the buckets: one that raises it before marking its
+    // record begun can be caught between the two by a snapshot that then accepts its copy as coherent, and one that
+    // raises it after the copy reaches a snapshot that gave up waiting for a quiet moment. Either reports a max that no
+    // bucket in the snapshot holds. The writer here climbs the buckets, so nearly every record is a new max in a new
+    // bucket, and every snapshot's max must lie inside its own highest non-empty bucket, or be zero when it has none.
+    [Fact]
+    public async Task SnapshotsTakenDuringWritesHaveAMaxInsideTheirHighestBucket()
+    {
+        var current = new PerfHistogram();
+        using var stop = new CancellationTokenSource();
+        var writer = Task.Run(() =>
+        {
+            while (!stop.IsCancellationRequested)
+            {
+                var histogram = new PerfHistogram();
+                Volatile.Write(ref current, histogram);
+                for (var bucket = 0; bucket < PerfHistogram.BucketCount; bucket++)
+                {
+                    histogram.Record(PerfHistogram.BucketLowerBound(bucket));
+                }
+            }
+        });
+
+        var deadline = Stopwatch.StartNew();
+        while (deadline.ElapsedMilliseconds < 300)
+        {
+            var snapshot = Volatile.Read(ref current).Snapshot();
+            if (snapshot.Count == 0)
+            {
+                Assert.Equal(0, snapshot.Max);
+                continue;
+            }
+
+            var highest = PerfHistogram.BucketIndex((long)snapshot.Percentile(100));
+            var lower = PerfHistogram.BucketLowerBound(highest);
+            Assert.InRange(snapshot.Max, lower, lower + PerfHistogram.BucketWidth(highest) - 1);
+        }
+
+        stop.Cancel();
+        await writer;
+    }
+
     [Theory]
     [InlineData(1, 10_000)]
     [InlineData(100, 5_000_000)]

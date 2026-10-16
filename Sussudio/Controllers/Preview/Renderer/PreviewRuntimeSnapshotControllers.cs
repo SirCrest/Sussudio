@@ -299,6 +299,7 @@ internal static class PreviewRuntimeSnapshotMapper
             D3DFrameStatsLastPresentRefreshDelta = d3dProjection.D3DFrameStatsLastPresentRefreshDelta,
             D3DFrameStatsLastSyncRefreshDelta = d3dProjection.D3DFrameStatsLastSyncRefreshDelta,
             D3DFrameStatsMissedRefreshCount = d3dProjection.D3DFrameStatsMissedRefreshCount,
+            D3DFrameStatsCadenceMissedRefreshCount = d3dProjection.D3DFrameStatsCadenceMissedRefreshCount,
             D3DLastSubmittedPreviewPresentId = d3dProjection.D3DLastSubmittedPreviewPresentId,
             D3DLastSubmittedSourceSequenceNumber = d3dProjection.D3DLastSubmittedSourceSequenceNumber,
             D3DLastSubmittedSourcePtsTicks = d3dProjection.D3DLastSubmittedSourcePtsTicks,
@@ -491,6 +492,7 @@ internal sealed class PreviewRuntimeD3DProjection
     public long D3DFrameStatsLastPresentRefreshDelta { get; private set; }
     public long D3DFrameStatsLastSyncRefreshDelta { get; private set; }
     public long D3DFrameStatsMissedRefreshCount { get; private set; }
+    public long D3DFrameStatsCadenceMissedRefreshCount { get; private set; }
     public bool D3DFrameLatencyWaitEnabled { get; private set; }
     public bool D3DFrameLatencyWaitHandleActive { get; private set; }
     public long D3DFrameLatencyWaitCallCount { get; private set; }
@@ -646,6 +648,7 @@ internal sealed class PreviewRuntimeD3DProjection
         D3DFrameStatsLastPresentRefreshDelta = frameStatistics?.LastPresentRefreshDelta ?? 0;
         D3DFrameStatsLastSyncRefreshDelta = frameStatistics?.LastSyncRefreshDelta ?? 0;
         D3DFrameStatsMissedRefreshCount = frameStatistics?.MissedRefreshCount ?? 0;
+        D3DFrameStatsCadenceMissedRefreshCount = frameStatistics?.CadenceMissedRefreshCount ?? 0;
     }
 
     private void ApplyFrameLatencyWait(D3D11PreviewRenderer.FrameLatencyWaitMetrics? frameLatencyWait)
