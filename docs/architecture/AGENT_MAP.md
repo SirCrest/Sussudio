@@ -918,6 +918,9 @@ Important entry points:
   rollback, fresh preview backend startup ordering, keep-pipeline-alive detach
   semantics, stopped-state/telemetry commit, preview pipeline disposal ordering,
   Flashback backend disposal, WASAPI disposal, and microphone cleanup.
+  `SUSSUDIO_CAPTURE_FAULT_PREVIEW_START_FAILURES` fails the first N video-preview
+  starts (`CAPTURE_FAULT_PREVIEW_START_FAILED`) for the live check
+  `scripts/performance/Test-PreviewStartFailureResolution.ps1`.
 - `CaptureService.cs` also owns `CaptureVideoPipelineResources`:
   active unified-video capture storage,
   preview-frame sink storage, negotiated video getters, and cached MJPEG

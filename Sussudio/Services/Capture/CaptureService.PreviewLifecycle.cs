@@ -6,6 +6,7 @@ using Sussudio.Services.Audio;
 using Sussudio.Services.Capture.Mjpeg;
 using Sussudio.Services.Gpu;
 using Sussudio.Services.Preview;
+using Sussudio.Services.Runtime;
 
 namespace Sussudio.Services.Capture;
 
@@ -13,12 +14,27 @@ namespace Sussudio.Services.Capture;
 // live input switching, microphone monitoring, and preview pipeline cleanup.
 public partial class CaptureService
 {
+    // Fault injection for the preview start failure live check: the first N video-preview starts fail
+    // before any start work, as a start on an uninitialized capture does. 0 (default) is off.
+    private readonly int _previewStartFaultFailures = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_CAPTURE_FAULT_PREVIEW_START_FAILURES", 0, 0, 100);
+    private int _previewStartFaultCount;
+
     public Task StartVideoPreviewAsync(CaptureSettings settings, CancellationToken cancellationToken = default)
         => RunTransitionAsync(CaptureSessionState.Previewing, async transitionToken =>
         {
             EnsureInitialized();
             if (_currentDevice == null) throw new InvalidOperationException("No selected video device is available for preview.");
             if (_isVideoPreviewActive) return;
+            if (_previewStartFaultFailures > 0)
+            {
+                var faultCount = Interlocked.Increment(ref _previewStartFaultCount);
+                if (faultCount <= _previewStartFaultFailures)
+                {
+                    Logger.Log($"CAPTURE_FAULT_PREVIEW_START_FAILED count={faultCount} of={_previewStartFaultFailures}");
+                    throw new InvalidOperationException("Injected fault: video preview start failed.");
+                }
+            }
+
             transitionToken.ThrowIfCancellationRequested();
             var previousSettings = _flashbackBackend.SettingsSnapshot ?? _currentSettings;
             var flashbackBackendSettingsChanged = _flashbackBackend.Sink != null &&
