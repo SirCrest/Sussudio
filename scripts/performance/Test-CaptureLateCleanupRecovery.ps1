@@ -238,9 +238,11 @@ try {
     $deadline = [DateTime]::UtcNow.AddSeconds(90)
     do {
         Start-Sleep -Milliseconds 500
-        $ready = (Invoke-Ssctl -Arguments @('state') -TimeoutMs 2000).ExitCode -eq 0
+        $probe = Invoke-Ssctl -Arguments @('state') -TimeoutMs 2000
+        $ready = $probe.ExitCode -eq 0
     } while (!$ready -and !$app.HasExited -and [DateTime]::UtcNow -lt $deadline)
-    if (!$ready) { throw 'The app did not answer on its automation pipe within 90 s.' }
+    # A stale ssctl is refused with a manifest mismatch; the last reply says so.
+    if (!$ready) { throw "The app did not answer on its automation pipe within 90 s. Last ssctl reply (exit $($probe.ExitCode)): $($probe.Output)" }
 
     $launchOutcome = Wait-StartupOutcome
     $launch = [ordered]@{
