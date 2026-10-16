@@ -46,7 +46,7 @@ RTX 4090 and Ryzen 9 7950X. Artifacts: `artifacts/perf-overhaul/baseline/`.
 | D6 | Measured but never exported: NVML GPU/NVENC/NVDEC utilization, clocks, power (stats UI only); input-view cache statistics (log only); mux and rotation phase timings (log only); WASAPI engine period (init log only); per-reason renderer drops (only the last reason is kept). | `NvmlMonitor`, `D3D11PreviewRenderer.RenderPasses.cs`, `LibAvEncoder.LastMuxPhaseTiming` |
 | D7 | Misleading values: encoder `_droppedFrameCount` counts failures, not load drops; byte counters are packet bytes, not disk writes; `SourceReaderFrameChannelDepth` is the recording queue depth; integrity `AudioFramesArrived`, `AudioFramesWrittenToSink` and `AudioSamplesEncoded` are the same number; `EstimatedPipelineLatencyMs` is truncated to a `long`; capture A/V drift is frame-count based with hard-coded 48 kHz and nominal fps; the MJPEG summary reports an interop-copy time that is never measured. | Survey, section 1 notes |
 | D8 | PresentMon, the only display-truth source, needs administrator rights or the Performance Log Users group. Without it the agent has no OS-level present data. | Live: `failed to start trace session: access denied` |
-| D9 | The diagnostics hub polls every 500 ms whether or not anyone reads it, building an 807-field, 121 KB snapshot with about four UI-thread dispatches per tick (the preview runtime snapshot is requested three times by overload shape) and copying and sorting about seven 1,200-sample rings. Its own cost is not measured, so the observer effect is unknown. `SnapshotUpdated` has no subscribers. **Measured and reduced in the hub observer-cost slice (2.11):** a refresh cost 22 ms (p50) and 324 KB; it now costs 1.8 ms and 133 KB. | Live: `ssctl --json state` = 121,261 bytes; about 0.4 MB/s steady allocation; `PreviewRuntimeSnapshotControllers.cs`, `MainViewModel.cs` snapshot dispatch |
+| D9 | The diagnostics hub polls every 500 ms whether or not anyone reads it, building an 807-field, 121 KB snapshot with about four UI-thread dispatches per tick (the preview runtime snapshot is requested three times by overload shape) and copying and sorting about seven 1,200-sample rings. Its own cost is not measured, so the observer effect is unknown. `SnapshotUpdated` has no subscribers. **Measured and reduced in the hub observer-cost slice (2.11):** a refresh cost 22 ms (p50) and 324 KB; it now costs 1.8 ms and 133 KB, and 77 KB since the renderer's summary windows moved to pooled scratch. | Live: `ssctl --json state` = 121,261 bytes; about 0.4 MB/s steady allocation; `PreviewRuntimeSnapshotControllers.cs`, `MainViewModel.cs` snapshot dispatch |
 | D10 | Every automation acknowledgement embeds the cached snapshot (`CreateResponse(includeSnapshot: true)` by default), so a burst of control commands serializes about 120 KB each. | `AutomationCommandDispatcher.CreateResponse` |
 | D11 | Full-rate frame data never reaches the agent: the frame-time graph's 10 s QPC history is UI-only, and the hub exposes only the latest 64 of 4,096 frame-ledger events every 500 ms. The 2-minute performance timeline omits audio, A/V sync, recording, encoder, NVML and MJPEG fields. | `PreviewFrameTimeHistory`, `FrameLedger`, `PerformanceTimelineEntry` |
 | D12 | The agent cannot read UI state (overlay, settings, InfoBars, section expansion, window rect) or press controls that have no purpose-built command (Flashback nudge and keyboard transport, timeline scrubbing). | Automation surface survey |
@@ -907,12 +907,39 @@ until it was under 10 % of a core). An earlier before run that overlapped anothe
 `raw/overlapped-with-other-validate/` and not used. The deterministic numbers (allocation) are robust to that; the timing numbers
 carry the noise their ranges show.
 
-What is left (133 KB a tick): the preview build is about 66 KB of it (derived from the probe: 75 KB a build minus the 9 KB sort clone), almost all ring copies in `D3D11PreviewRenderer.Get*Metrics`
-(about nine copies of a 1,200-sample ring per snapshot, each 9.6 KB, plus the caller's own copy that `Compute` no longer clones). A
-`Compute(ReadOnlySpan<double>)` overload fed from pooled scratch filled under the ring lock would remove most of it; it is the
-renderer's file and the existing contract test resolves `Compute(double[], double)` by reflection, so it was left. Health (23 KB) and
-capture runtime (18 KB) are the next two. Alert message strings (8 KB, about 0.06 ms) are built eagerly each tick; making them lazy
-touches about thirty call sites of the alert path for 2.5 % of the allocation, so it was not done.
+What was left after it (133 KB a tick): the preview build was about 66 KB of it (derived from the probe: 75 KB a build minus the
+9 KB sort clone), almost all ring copies in `D3D11PreviewRenderer.Get*Metrics`: seven copies of the recent window per snapshot, each
+9.6 KB at 60 fps (the window is 20 s of frames, at least 600, so 2,400 samples and 19.2 KB at 120 fps). Six of them fed only the
+timing summaries (pipeline latency, the four render-CPU stages, frame-latency wait). Those now copy into a buffer rented from
+`ArrayPool<double>.Shared` under each ring lock (`RingBufferHelpers.CopyNewest`), sort it in place outside the lock and return it;
+the lock covers the same copy as before, minus the allocation. The seventh, the present-cadence window, stays a fresh array: it is
+published as `RecentIntervalsMs` (the snapshot's `PreviewCadenceRecentIntervalsMs`, read by the frame-pacing verdict and the
+stats-overlay graph), and `Compute(double[], double)` already sorts it in pooled scratch. That is also why there is no
+`Compute(ReadOnlySpan<double>)` overload: its only caller would be a window that has to be an array anyway. The reflection-pinned
+`Compute(double[], double)` and `RingBufferHelpers.Copy` signatures are unchanged.
+
+A/B, interleaved ABBA, 67d99e2f9 against that change, three 30 s perf windows a leg after 15 s of warm-up, steady preview at 59.94 fps,
+same `ssctl`, every leg closed with `window close`. Mean of six windows per build, range in brackets (raw windows, per-window load and
+the rerun scripts under `artifacts/preview-renderer-followups/hub-ring-scratch/`, summary in its `result.json`):
+
+| | Before | After |
+|---|---|---|
+| `telemetry.hub_alloc` per refresh | 132.8 KB (131.6-134.1) | 76.7 KB (75.0-78.0) |
+| Hub allocation rate | 261 KB/s | 151 KB/s |
+| Process allocation rate (`Gc.AllocatedBytes`) | 424 KB/s | 320 KB/s |
+| `telemetry.hub_refresh` p50 | 4.0 ms (2.6-6.1) | 3.5 ms (2.3-5.1) |
+| `telemetry.hub_refresh` p99 | 16.0 ms (11.4-21.2) | 16.4 ms (5.4-24.8) |
+| Process CPU, perf report | 52.7 % of a core (41.3-66.0) | 46.0 % (34.1-56.0) |
+
+The allocation fell by 56.2 KB a refresh (KB here are 1,024 bytes), against 56.3 KB for six arrays of the 1,199-sample window at
+59.94 fps, and the snapshot kept its 809 keys, their order and their value kinds. The timing rows are not a result: 15 to 26 of 32 logical cores outside Sussudio were busy (a video
+export), the second pair ran about 8 cores busier than the first, and that swing (refresh p50 2.5-2.9 ms in the first pair, 4.5-5.2 ms
+in the second) is larger than any gap between the builds. Preview drops during the windows were 0, 6, 2 and 0 a leg; the after-a drops
+(`stale-before-render`) came with a 26.6 ms `preview.render_total` stall and nine Flashback GPU drops in the same window, which the
+getters, running on the hub thread, cannot cause.
+
+Health (23 KB) and capture runtime (18 KB) are now the largest fragments. Alert message strings (8 KB, about 0.06 ms) are built
+eagerly each tick; making them lazy touches about thirty call sites of the alert path for 8 KB of the 77 KB, so it was not done.
 
 Demand gating (not done; recommendation only). Pausing the hub while no automation client is connected is not safe as an on/off
 switch. The loop is also the app's own observer, not only a cache for clients: auto-verification of a finished recording runs from the
@@ -1220,6 +1247,14 @@ Written before the code, per the testing policy:
   off nominal (119.98 or 120.02 Hz) still counts a single miss; 59.94 fps on 120 Hz snaps to two refreshes a frame; an unknown,
   zero, negative, NaN or infinite rate or ratio falls back to the raw count; no presents or no extra refreshes is never a miss; and
   across a sweep of ratios and deltas the cadence count never exceeds the raw count.
+- Renderer summary windows (written before the code, `PreviewRendererMetricWindowTests`, driving the real getters): a pooled
+  buffer that holds an earlier, larger window's 1000 ms values reports the smaller 1 ms window; the four render-CPU rings read
+  into one buffer each summarize only their own ring; full rings with the write index mid-ring, exactly full rings and partial
+  rings with garbage beyond the count all match a sort of a private copy (average summed over the sorted values, nearest-rank
+  p95/p99, max); empty windows report zero summaries and the frame-latency wait keeps its counters; eight threads reading two
+  renderers with disjoint value bands never see each other's window; and a read of a 1,200-sample window allocates under 2 KB a
+  call (the old reads allocated 9.6 KB, 38.4 KB and 9.6 KB, and that test failed on them). A concurrent render-thread writer is not
+  a new failure mode: the copy still happens under the same lock.
 - Hub snapshot contract (not an isolated test): the 807 snapshot keys, their order and their value kinds are identical before and
   after, compared live (`artifacts/perf-overhaul/hub-cost/contract-compare.json`).
 

@@ -197,7 +197,10 @@ Preview renderer notes:
   cadence, pipeline latency, render CPU timing, frame-latency wait metric state,
   sample tracking, expected-frame-rate window resizing, metric reset/clear
   lifecycle, read-only projections, recent sample copies, renderer metric record
-  structs, shared ring-copy, timing-summary, tick-to-ms, render-stage validation
+  structs, shared ring-copy, timing-summary (pipeline latency, render CPU and
+  frame-latency wait read their windows into pooled scratch under each ring lock
+  and sort it outside; only the present-cadence window is a fresh copy, because
+  it is published as `RecentIntervalsMs`), tick-to-ms, render-stage validation
   helpers, recent slow-frame snapshot access, thresholding, sample assembly, the
   slow-frame ring writer, slow-frame reason token classification, render-thread
   failure notification state, first-frame notification state, DXGI
@@ -2108,7 +2111,8 @@ Primary current owners:
   serialized load/save, temporary-file replacement, and failure reporting.
 - `Sussudio/Services/Runtime/RuntimeHelpers.cs` owns runtime helper types
   shared across multiple services: AtomicMax, AtomicCounter, QueueAdmission,
-  TelemetryAgeHelper, EnvironmentHelpers, RingBufferHelpers, EncodingTaskHelpers,
+  TelemetryAgeHelper, EnvironmentHelpers, RingBufferHelpers (allocating window
+  copies and the allocation-free `CopyNewest` into caller scratch), EncodingTaskHelpers,
   PercentileHelpers, IntervalCadenceStatistics (record struct), shared minimum-window-size Win32
   subclassing, bounded external process supervision contracts and runner, and
   best-effort MMCSS worker registration. `ProcessRunResult` retains independent

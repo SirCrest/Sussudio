@@ -221,20 +221,34 @@ internal static class RingBufferHelpers
         }
 
         var result = new double[take];
-        CopyRingSegments(window, index, take, result);
+        CopyRingSegments(window, index, result);
         return result;
+    }
+
+    // Fills destination with the newest destination.Length samples in chronological
+    // order without allocating, for an owner that summarizes pooled scratch instead
+    // of a copy it would drop.
+    public static void CopyNewest(double[] window, int count, int index, Span<double> destination)
+    {
+        if (destination.Length > count)
+        {
+            throw new ArgumentOutOfRangeException(nameof(destination), destination.Length, "Cannot copy more samples than the window holds.");
+        }
+
+        CopyRingSegments(window, index, destination);
     }
 
     // At most two contiguous segments; avoids a modulo per element while the
     // caller holds a lock that a hot thread also takes.
-    private static void CopyRingSegments<T>(T[] window, int index, int take, T[] result)
+    private static void CopyRingSegments<T>(T[] window, int index, Span<T> result)
     {
+        var take = result.Length;
         var start = (index - take + window.Length) % window.Length;
         var firstSegment = Math.Min(take, window.Length - start);
-        Array.Copy(window, start, result, 0, firstSegment);
+        window.AsSpan(start, firstSegment).CopyTo(result);
         if (firstSegment < take)
         {
-            Array.Copy(window, 0, result, firstSegment, take - firstSegment);
+            window.AsSpan(0, take - firstSegment).CopyTo(result[firstSegment..]);
         }
     }
 
@@ -249,7 +263,7 @@ internal static class RingBufferHelpers
         }
 
         var result = new int[take];
-        CopyRingSegments(window, index, take, result);
+        CopyRingSegments(window, index, result);
         return result;
     }
 }

@@ -1797,6 +1797,8 @@ public readonly record struct PresentCadenceMetrics(
                     SlowFramePercent: 0);
             }
 
+            // Unlike the summary reads below, this copy is kept: it is published as RecentIntervalsMs (the snapshot's
+            // PreviewCadenceRecentIntervalsMs and the stats overlay graph). Compute sorts in its own pooled scratch.
             samples = RingBufferHelpers.Copy(_presentIntervalWindowMs, _presentIntervalCount, _presentIntervalIndex);
         }
 
@@ -1863,26 +1865,37 @@ public readonly record struct PresentCadenceMetrics(
     public PipelineLatencyMetrics GetPipelineLatencyMetrics()
     {
         // The render thread takes this lock once per presented frame. Copy the
-        // window under the lock and sort the copy outside it so a stats poll
-        // never holds the render thread for a full-window sort.
-        double[] samples;
+        // window into pooled scratch under the lock and sort it outside, so a
+        // stats poll neither holds the render thread for a full-window sort nor
+        // allocates a copy of the window (the hub reads this every tick).
+        double[] scratch;
+        int count;
         lock (_pipelineLatencyLock)
         {
-            if (_pipelineLatencyCount <= 0)
+            count = _pipelineLatencyCount;
+            if (count <= 0)
             {
                 return default;
             }
 
-            samples = RingBufferHelpers.Copy(_pipelineLatencyWindowMs, _pipelineLatencyCount, _pipelineLatencyIndex, _pipelineLatencyCount);
+            scratch = ArrayPool<double>.Shared.Rent(count);
+            RingBufferHelpers.CopyNewest(_pipelineLatencyWindowMs, count, _pipelineLatencyIndex, scratch.AsSpan(0, count));
         }
 
-        var timing = SummarizeCpuStageTiming(samples);
-        return new PipelineLatencyMetrics(
-            timing.SampleCount,
-            timing.AverageMs,
-            timing.P95Ms,
-            timing.P99Ms,
-            timing.MaxMs);
+        try
+        {
+            var timing = SummarizeCpuStageTiming(scratch.AsSpan(0, count));
+            return new PipelineLatencyMetrics(
+                timing.SampleCount,
+                timing.AverageMs,
+                timing.P95Ms,
+                timing.P99Ms,
+                timing.MaxMs);
+        }
+        finally
+        {
+            ArrayPool<double>.Shared.Return(scratch);
+        }
     }
 
     public double[] GetRecentPipelineLatencyMs(int maxSamples)
@@ -1895,40 +1908,73 @@ public readonly record struct PresentCadenceMetrics(
 
     public RenderCpuTimingMetrics GetRenderCpuTimingMetrics()
     {
-        double[] uploadSamples;
-        double[] renderSamples;
-        double[] presentSamples;
-        double[] totalSamples;
+        // The four stage rings share one count and write index, so one pooled
+        // scratch holds their windows back to back: copied under the lock,
+        // sorted outside it.
+        double[] scratch;
+        int count;
         lock (_renderCpuTimingLock)
         {
-            uploadSamples = RingBufferHelpers.Copy(_inputUploadCpuTimingWindowMs, _renderCpuTimingCount, _renderCpuTimingIndex, _renderCpuTimingCount);
-            renderSamples = RingBufferHelpers.Copy(_renderSubmitCpuTimingWindowMs, _renderCpuTimingCount, _renderCpuTimingIndex, _renderCpuTimingCount);
-            presentSamples = RingBufferHelpers.Copy(_presentCallTimingWindowMs, _renderCpuTimingCount, _renderCpuTimingIndex, _renderCpuTimingCount);
-            totalSamples = RingBufferHelpers.Copy(_renderTotalCpuTimingWindowMs, _renderCpuTimingCount, _renderCpuTimingIndex, _renderCpuTimingCount);
+            count = _renderCpuTimingCount;
+            if (count <= 0)
+            {
+                return default;
+            }
+
+            scratch = ArrayPool<double>.Shared.Rent(count * 4);
+            RingBufferHelpers.CopyNewest(_inputUploadCpuTimingWindowMs, count, _renderCpuTimingIndex, scratch.AsSpan(0, count));
+            RingBufferHelpers.CopyNewest(_renderSubmitCpuTimingWindowMs, count, _renderCpuTimingIndex, scratch.AsSpan(count, count));
+            RingBufferHelpers.CopyNewest(_presentCallTimingWindowMs, count, _renderCpuTimingIndex, scratch.AsSpan(count * 2, count));
+            RingBufferHelpers.CopyNewest(_renderTotalCpuTimingWindowMs, count, _renderCpuTimingIndex, scratch.AsSpan(count * 3, count));
         }
 
-        return new RenderCpuTimingMetrics(
-            SummarizeCpuStageTiming(uploadSamples),
-            SummarizeCpuStageTiming(renderSamples),
-            SummarizeCpuStageTiming(presentSamples),
-            SummarizeCpuStageTiming(totalSamples));
+        try
+        {
+            return new RenderCpuTimingMetrics(
+                SummarizeCpuStageTiming(scratch.AsSpan(0, count)),
+                SummarizeCpuStageTiming(scratch.AsSpan(count, count)),
+                SummarizeCpuStageTiming(scratch.AsSpan(count * 2, count)),
+                SummarizeCpuStageTiming(scratch.AsSpan(count * 3, count)));
+        }
+        finally
+        {
+            ArrayPool<double>.Shared.Return(scratch);
+        }
     }
 
     public FrameLatencyWaitMetrics GetFrameLatencyWaitMetrics()
     {
-        // Copy under the lock, sort outside it: the render thread takes this
-        // lock before every frame's waitable-object wait.
-        double[] waitSamples;
+        // Copy into pooled scratch under the lock, sort outside it: the render
+        // thread takes this lock before every frame's waitable-object wait.
+        double[]? scratch = null;
+        int count;
         lock (_frameLatencyWaitTimingLock)
         {
-            waitSamples = RingBufferHelpers.Copy(
-                _frameLatencyWaitTimingWindowMs,
-                _frameLatencyWaitTimingCount,
-                _frameLatencyWaitTimingIndex,
-                _frameLatencyWaitTimingWindowMs.Length);
+            count = _frameLatencyWaitTimingCount;
+            if (count > 0)
+            {
+                scratch = ArrayPool<double>.Shared.Rent(count);
+                RingBufferHelpers.CopyNewest(
+                    _frameLatencyWaitTimingWindowMs,
+                    count,
+                    _frameLatencyWaitTimingIndex,
+                    scratch.AsSpan(0, count));
+            }
         }
 
-        var timing = SummarizeCpuStageTiming(waitSamples);
+        CpuStageTimingMetrics timing = default;
+        if (scratch != null)
+        {
+            try
+            {
+                timing = SummarizeCpuStageTiming(scratch.AsSpan(0, count));
+            }
+            finally
+            {
+                ArrayPool<double>.Shared.Return(scratch);
+            }
+        }
+
         var lastTicks = Interlocked.Read(ref _frameLatencyWaitLastTicks);
         return new FrameLatencyWaitMetrics(
             Enabled: _waitableSwapChainEnabled,
@@ -2745,14 +2791,15 @@ public readonly record struct PresentCadenceMetrics(
         reason = reason.Length == 0 ? token : $"{reason}+{token}";
     }
 
-    private static CpuStageTimingMetrics SummarizeCpuStageTiming(double[] samples)
+    // Sorts samples in place: callers pass private scratch, never a published window.
+    private static CpuStageTimingMetrics SummarizeCpuStageTiming(Span<double> samples)
     {
-        if (samples.Length == 0)
+        if (samples.IsEmpty)
         {
             return new CpuStageTimingMetrics(0, 0, 0, 0, 0);
         }
 
-        Array.Sort(samples);
+        samples.Sort();
         var sum = 0.0;
         var max = 0.0;
         for (var i = 0; i < samples.Length; i++)
