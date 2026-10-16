@@ -691,7 +691,12 @@ never does). Disarmed it costs one volatile read of a static reference; armed it
 is a QPC stamp and a copy into the ring, with no lock and no allocation. The
 reader validates what it copied, so a snapshot that raced the writer loses the
 overwritten prefix and never returns torn samples; a packet larger than the
-ring is rejected and counted (`Diagnostics.TapRejectedPackets`). Both streams
+ring is rejected and counted (`Diagnostics.TapRejectedPackets`). A loopback
+packet is placed by the engine's QPC position unless that is zero or flagged
+`AUDCLNT_BUFFERFLAGS_TIMESTAMP_ERROR` (a flagged position can hold any value):
+such a packet continues the previous one sample-exactly, and packets before the
+first trusted position are placed back from it (`LoopbackPacketTimeline`). A
+capture with no trusted position is `unavailable`, not guessed. Both streams
 are laid on a common 48 kHz QPC timeline and reduced to 1 ms RMS envelopes,
 cross-correlated over -20 to +1000 ms, and the best lag is refined within 3 ms
 at sample level when the raw waveforms correlate (`Resolution` is `sample`, else
@@ -1208,7 +1213,9 @@ Written before the code, per the testing policy:
   packets or timestamps are `unavailable`; delivery jitter does not move the
   result; a gap in the loopback stream does not break alignment around it; a
   mismatched waveform (inverted polarity) falls back to `envelope-1ms` and says
-  so.
+  so; loopback positions flagged as timestamp errors (10 s off, or beyond a
+  signed 64-bit time, first and mid-stream) do not place their packets, and a
+  stream with no trusted position is `unavailable` (written before the fix).
 - Tap ring (slice 4): an unwritten ring snapshots to nothing; packets round-trip
   exactly with their start times; a ring written past capacity returns only the
   newest whole packets, contiguous and uncorrupted; a write that laps the ring
