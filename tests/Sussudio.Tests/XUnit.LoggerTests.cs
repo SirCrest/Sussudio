@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Runtime.Loader;
+using System.Text.RegularExpressions;
 using Xunit;
 
 namespace Sussudio.Tests;
@@ -60,10 +61,13 @@ public sealed class LoggerTests
 
         await logger.Shutdown();
 
-        var dropped = (long)logger.Type.GetProperty("DroppedMessageCount", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)!;
-        Assert.True(dropped > 0);
+        // The saturation warnings are the logger's own account of what it lost: each drop is reported in one warning,
+        // and the last warning's running total covers them all.
         var content = File.ReadAllText(logger.FilePath);
-        Assert.Contains("log channel saturated", content);
+        var warnings = Regex.Matches(content, @"log channel saturated, dropped_in_batch=(\d+) dropped_total=(\d+)");
+        Assert.NotEmpty(warnings);
+        var dropped = warnings.Sum(warning => long.Parse(warning.Groups[1].Value));
+        Assert.Equal(dropped, long.Parse(warnings[^1].Groups[2].Value));
         var written = content.Split('\n').Count(line => line.Contains("[test] queued-", StringComparison.Ordinal));
         Assert.Equal(9000L, written + dropped);
     }
