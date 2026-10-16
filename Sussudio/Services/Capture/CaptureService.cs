@@ -93,6 +93,11 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     // handler runs, as a renderer stop timeout does, and leave capture cleanup half done. 0 (default) is off.
     private readonly int _preCleanupFaultFailures = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_CAPTURE_FAULT_PRE_CLEANUP_FAILURES", 0, 0, 100);
     private int _preCleanupFaultCount;
+    // Fault injection for the start-rollback live check: the first N fresh preview starts fail after their capture
+    // is running and before the pipeline installs it, so the rollback starts from a capture nothing owns yet.
+    // 0 (default) is off.
+    private readonly int _previewInstallFaultFailures = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_CAPTURE_FAULT_PREVIEW_INSTALL_FAILURES", 0, 0, 100);
+    private int _previewInstallFaultCount;
     private readonly object _disposalLock = new();
     private Task? _disposalTask;
     private bool _isInitialized;

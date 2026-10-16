@@ -280,6 +280,16 @@ public partial class CaptureService
             Logger.LogFatalBreadcrumb($"PREVIEW_START phase=starting");
             unifiedVideoCapture.Start();
             Logger.LogFatalBreadcrumb($"PREVIEW_START phase=started");
+            if (_previewInstallFaultFailures > 0)
+            {
+                var faultCount = Interlocked.Increment(ref _previewInstallFaultCount);
+                if (faultCount <= _previewInstallFaultFailures)
+                {
+                    Logger.Log($"CAPTURE_FAULT_PREVIEW_INSTALL_FAILED count={faultCount} of={_previewInstallFaultFailures}");
+                    throw new InvalidOperationException("Injected fault: the preview start failed before the pipeline installed its running capture.");
+                }
+            }
+
             _videoPipeline.InstallCapture(unifiedVideoCapture);
             // Duplicated inline (rather than shared with its twin in
             // CaptureService.RecordingLifecycle.cs) because CaptureServiceOwnershipTests
@@ -307,6 +317,16 @@ public partial class CaptureService
         {
             Logger.Log($"Unified preview start failed: {ex.Message}");
             var previewStartRollbackToken = CancellationToken.None;
+            // The rollback tears down a half-started preview pipeline. Cleanup stays pending from here to the
+            // last release, and the pipeline owns the capture before the renderer handoff, so a step that throws
+            // (a renderer that never acknowledged its stop) leaves what it skipped to the retained teardown,
+            // which stops the renderer before it releases anything.
+            MarkCleanupRequired(CaptureCleanupScope.PreviewPipeline);
+            if (unifiedVideoCapture != null && _videoPipeline.Capture == null)
+            {
+                _videoPipeline.InstallCapture(unifiedVideoCapture);
+            }
+
             await StopPreviewRendererBeforeCaptureCleanupAsync(previewStartRollbackToken).ConfigureAwait(false);
             await DisposeFlashbackPreviewBackendAsync(previewStartRollbackToken).ConfigureAwait(false);
             _videoPipeline.ClearCapture();
@@ -324,6 +344,7 @@ public partial class CaptureService
             }
 
             await RollbackPreviewAudioCaptureStartupAsync(wasapiCapture).ConfigureAwait(false);
+            Volatile.Write(ref _cleanupRequired, 0);
 
             throw;
         }

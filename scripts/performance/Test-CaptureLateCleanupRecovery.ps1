@@ -41,11 +41,32 @@ the Flashback session directory on disk:
                             teardown first. The Flashback session is retired (purge=False),
                             its segment files are still on disk, and preview renders.
 
+  StartRollback (also SUSSUDIO_CAPTURE_FAULT_PREVIEW_INSTALL_FAILURES=1: the launch auto-start
+  fails after its capture is running and before the pipeline installs it, so its rollback
+  starts from a capture nothing else owns)
+    failed-launch-start     The rollback's renderer handoff hits fault 1 after the install
+                            fault. The start fails, preview stays stopped, the view model
+                            stays initialized, capture is Faulted, and no preview session
+                            starts. The half-started capture is retained, not orphaned.
+    failed-recovery-start   As in StopThenStart: the start's finish hits fault 2, and no new
+                            capture is created (no second open of the device).
+    recovery-start          The finish stops and releases the half-started capture, then a
+                            fresh capture opens the same device and renders, without a
+                            capture re-initialize.
+    plain-cycle-flashback-off / plain-cycle-flashback-on
+
+  StartRollbackReleased (install fault 1, no handoff fault)
+    failed-launch-start     The launch auto-start fails on the install fault; the rollback's
+                            handoff passes and the rollback releases the capture itself.
+    recovery-start          Nothing is retained, so nothing is finished; a fresh capture
+                            opens the device and renders.
+    plain-cycle-flashback-off
+
   Control (no fault): the two plain cycles only.
 
--Scenario All runs StopThenStart and ReinitThenStart. Writes result.json and one app log
-per launch under artifacts/capture-late-cleanup/. Refuses to start while any Sussudio
-instance runs: the app is single instance and owns the capture device.
+-Scenario All runs StopThenStart, ReinitThenStart, StartRollback and StartRollbackReleased.
+Writes result.json and one app log per launch under artifacts/capture-late-cleanup/. Refuses
+to start while any Sussudio instance runs: the app is single instance and owns the capture device.
 .EXAMPLE
 ./scripts/performance/Test-CaptureLateCleanupRecovery.ps1 -Label fix
 #>
@@ -54,7 +75,7 @@ param(
     [ValidatePattern('^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$')]
     [string] $Label = 'late-cleanup',
 
-    [ValidateSet('All', 'StopThenStart', 'ReinitThenStart', 'Control')]
+    [ValidateSet('All', 'StopThenStart', 'ReinitThenStart', 'StartRollback', 'StartRollbackReleased', 'Control')]
     [string] $Scenario = 'All',
 
     [ValidateRange(5, 120)]
@@ -93,15 +114,25 @@ if ($running.Count -gt 0) {
     throw "Sussudio is already running (PID $($running.Id -join ', ')); it owns the capture device. Close it first."
 }
 
-$scenarioNames = $(if ($Scenario -eq 'All') { @('StopThenStart', 'ReinitThenStart') } else { @($Scenario) })
+# @() keeps a single scenario an array; $() would unroll it to a string with no Count under strict mode.
+$scenarioNames = @(if ($Scenario -eq 'All') { 'StopThenStart', 'ReinitThenStart', 'StartRollback', 'StartRollbackReleased' } else { $Scenario })
 $pipeName = "SussudioAutomation.late-cleanup-$PID"
 # The app rotates its prior log at startup, so each launch starts a fresh file.
 $logPath = Join-Path $repoRoot 'temp/logs/Sussudio_Debug.log'
 $faultVariable = 'SUSSUDIO_CAPTURE_FAULT_PRE_CLEANUP_FAILURES'
-# Fault 1 fails the teardown, fault 2 fails the first finish of it, the third handoff passes.
+$installFaultVariable = 'SUSSUDIO_CAPTURE_FAULT_PREVIEW_INSTALL_FAILURES'
+# Fault 1 fails the teardown (or the start rollback), fault 2 fails the first finish of it, the third handoff passes.
 $faultFailures = 2
+# Per scenario: renderer handoff faults, fresh-start install faults, and whether the launch auto-start must fail.
+$scenarioFaults = @{
+    StopThenStart = @{ PreCleanup = $faultFailures; Install = 0; LaunchFails = $false }
+    ReinitThenStart = @{ PreCleanup = $faultFailures; Install = 0; LaunchFails = $false }
+    StartRollback = @{ PreCleanup = $faultFailures; Install = 1; LaunchFails = $true }
+    StartRollbackReleased = @{ PreCleanup = 0; Install = 1; LaunchFails = $true }
+    Control = @{ PreCleanup = 0; Install = 0; LaunchFails = $false }
+}
 $retiredMarkerName = '.flashback-retired-session'
-$markerPattern = 'CAPTURE_FAULT_PRE_CLEANUP_FAILED|CAPTURE_RETAINED_CLEANUP_|PREVIEW_STOP_CAPTURE_UNINITIALIZED|CAPTURE_INIT|PREVIEW_START requested|PREVIEW_START phase=create_uvc|PREVIEW_SESSION_STARTED|PREVIEW_START_FAILURE_STOP|PREVIEW_RENDERER_ATTACH_FAILED|PREVIEW_D3D11_FIRST_FRAME|PREVIEW_START_TIMEOUT|REINIT_FAILED_CLEANUP|FLASHBACK_BUFFER_INIT|FLASHBACK_BUFFER_CLEANUP_RETIRE|FLASHBACK_BUFFER_DISPOSE|FLASHBACK_PREVIEW_DISPOSE_OK|FLASHBACK_CACHE_BUDGET_CLEANUP|FLASHBACK_STALE_SESSION_CLEANUP|CAP-COORD|Capture not initialized|Capture cleanup must complete'
+$markerPattern = 'CAPTURE_FAULT_PRE_CLEANUP_FAILED|CAPTURE_FAULT_PREVIEW_INSTALL_FAILED|CAPTURE_RETAINED_CLEANUP_|PREVIEW_STOP_CAPTURE_UNINITIALIZED|CAPTURE_INIT|PREVIEW_START requested|PREVIEW_START phase=(create_uvc|started)|Unified preview start failed|Unified preview rollback dispose|PREVIEW_PIPELINE_VIDEO_STOP_BEFORE_FLASHBACK_DISPOSE|UNIFIED_VIDEO_REINIT_RETIRE_SHARED_D3D_MANAGER|PREVIEW_SESSION_STARTED|PREVIEW_START_FAILURE_STOP|PREVIEW_RENDERER_ATTACH_FAILED|PREVIEW_D3D11_FIRST_FRAME|PREVIEW_START_TIMEOUT|REINIT_FAILED_CLEANUP|FLASHBACK_BUFFER_INIT|FLASHBACK_BUFFER_CLEANUP_RETIRE|FLASHBACK_BUFFER_DISPOSE|FLASHBACK_PREVIEW_DISPOSE_OK|FLASHBACK_CACHE_BUDGET_CLEANUP|FLASHBACK_STALE_SESSION_CLEANUP|CAP-COORD|Capture not initialized|Capture cleanup must complete'
 # A preview session that starts or a renderer that attaches while cleanup is retained.
 $spuriousAttachPattern = 'PREVIEW_SESSION_STARTED|PREVIEW_RENDERER_ATTACH_FAILED|PREVIEW_START_FAILURE_STOP'
 
@@ -146,6 +177,15 @@ function Test-LogMarker {
 function Select-Markers {
     param([string[]] $Window)
     return @($Window | Where-Object { $_ -match $markerPattern })
+}
+
+# The index of the first line in $Window matching $Pattern, or -1; orders markers within a step.
+function Get-MarkerIndex {
+    param([string[]] $Window, [string] $Pattern)
+    for ($i = 0; $i -lt $Window.Count; $i++) {
+        if ($Window[$i] -match $Pattern) { return $i }
+    }
+    return -1
 }
 
 # Polls the log after $StartLine until $Pattern appears or the step deadline passes.
@@ -310,11 +350,12 @@ function Invoke-FlashbackToggle {
 }
 
 function Start-App {
-    param([int] $FaultFailures)
+    param([int] $FaultFailures, [int] $InstallFaultFailures, [switch] $ExpectLaunchFailure)
     $applied = @{ SUSSUDIO_AUTOMATION_PIPE = $pipeName }
     if ($FaultFailures -gt 0) { $applied[$faultVariable] = [string]$FaultFailures }
+    if ($InstallFaultFailures -gt 0) { $applied[$installFaultVariable] = [string]$InstallFaultFailures }
     $saved = @{}
-    foreach ($key in @($applied.Keys) + $faultVariable) {
+    foreach ($key in @($applied.Keys) + $faultVariable + $installFaultVariable) {
         if ($saved.ContainsKey($key)) { continue }
         $saved[$key] = [Environment]::GetEnvironmentVariable($key, 'Process')
         $value = $null
@@ -338,6 +379,19 @@ function Start-App {
     } while (!$ready -and !$script:app.HasExited -and [DateTime]::UtcNow -lt $deadline)
     # A stale ssctl is refused with a manifest mismatch; the last reply says so.
     if (!$ready) { throw "The app did not answer on its automation pipe within 90 s. Last ssctl reply (exit $($probe.ExitCode)): $($probe.Output)" }
+
+    if ($ExpectLaunchFailure) {
+        # The launch auto-start is the first fresh start, so the install fault fails it; the scenario judges it.
+        $failed = Wait-LogMarker -StartLine 0 -Pattern 'CAP-COORD-FAIL\] StartVideoPreview'
+        $script:launch = [ordered]@{
+            environment = $applied
+            startFailureLogged = $failed
+            state = Get-InitState (Get-SettledSnapshot)
+        }
+        Write-Host "launch: expected start failure logged=$failed"
+        if (!$failed) { throw 'The launch auto-start did not fail on the injected install fault.' }
+        return
+    }
 
     $launchOutcome = Wait-StartupOutcome
     $launch = [ordered]@{
@@ -402,7 +456,27 @@ function Invoke-StopThenStart {
     $steps.Add([pscustomobject]$step)
     Write-Host "faulted-stop: fault=$faultFired stopFailed=$($step.stopFailed) spuriousAttach=$($step.spuriousAttach) passed=$($step.passed)"
 
-    # failed-recovery-start: the start finishes the retained teardown first, and fault 2 fails that.
+    Invoke-FailedRecoveryStart
+
+    # recovery-start: the third handoff passes; the teardown finishes and a fresh pipeline renders
+    # on the capture session that is still initialized.
+    $startLine = @(Read-LogLines).Count
+    $recovery = Invoke-RenderingStart -Name 'recovery-start' -StartLine $startLine
+    $window = Get-LogWindow -StartLine $startLine
+    $recovery.finishCompleted = Test-LogMarker -Window $window -Pattern 'CAPTURE_RETAINED_CLEANUP_COMPLETED requested=Previewing scope=PreviewPipeline initialized=True'
+    $recovery.passed = $recovery.passed -and $recovery.finishCompleted -and !$recovery.captureInitialized -and
+        !$recovery.flagClearedByStop -and !$recovery.attachFailed
+    $steps.Add([pscustomobject]$recovery)
+    Write-Host "recovery-start: state=$($recovery.startupState) finished=$($recovery.finishCompleted) reinit=$($recovery.captureInitialized) rendered=$($recovery.renderedDuringDwell) passed=$($recovery.passed)"
+
+    Invoke-PlainCycle -Name 'plain-cycle-flashback-off'
+    Invoke-FlashbackToggle -State on
+    Start-Sleep -Seconds 2
+    Invoke-PlainCycle -Name 'plain-cycle-flashback-on'
+}
+
+# failed-recovery-start: a start finishes the retained teardown first, and fault 2 fails that finish.
+function Invoke-FailedRecoveryStart {
     $startLine = @(Read-LogLines).Count
     $start = Invoke-Ssctl -Arguments @('preview', 'start') -TimeoutMs 30000
     $faultFired = Wait-LogMarker -StartLine $startLine -Pattern 'CAPTURE_FAULT_PRE_CLEANUP_FAILED count=2 '
@@ -429,22 +503,85 @@ function Invoke-StopThenStart {
         !$step.spuriousAttach -and $null -ne $state -and !$state.isPreviewing -and $state.viewModelInitialized
     $steps.Add([pscustomobject]$step)
     Write-Host "failed-recovery-start: fault=$faultFired finishBegan=$($step.finishBegan) completed=$($step.finishCompleted) spuriousAttach=$($step.spuriousAttach) passed=$($step.passed)"
+}
 
-    # recovery-start: the third handoff passes; the teardown finishes and a fresh pipeline renders
-    # on the capture session that is still initialized.
+# failed-launch-start: the launch auto-start fails on the install fault with its capture running and
+# not yet installed. With -HandoffFaults the rollback's renderer handoff hits fault 1 after that.
+function Invoke-FailedLaunchStart {
+    param([switch] $HandoffFaults)
+    $window = @(Read-LogLines)
+    $state = $script:launch.state
+    $installIndex = Get-MarkerIndex -Window $window -Pattern 'CAPTURE_FAULT_PREVIEW_INSTALL_FAILED count=1 '
+    $handoffIndex = Get-MarkerIndex -Window $window -Pattern 'CAPTURE_FAULT_PRE_CLEANUP_FAILED count=1 '
+    $step = [ordered]@{
+        name = 'failed-launch-start'
+        installFaultFired = $installIndex -ge 0
+        handoffFaultFired = $handoffIndex -ge 0
+        handoffFaultedInRollback = $installIndex -ge 0 -and $handoffIndex -gt $installIndex
+        rollbackRan = Test-LogMarker -Window $window -Pattern 'Unified preview start failed'
+        rollbackDisposeWarned = Test-LogMarker -Window $window -Pattern 'Unified preview rollback dispose warning'
+        startFailed = Test-LogMarker -Window $window -Pattern 'CAP-COORD-FAIL\] StartVideoPreview'
+        capturesCreated = @($window | Where-Object { $_ -match 'PREVIEW_START phase=create_uvc' }).Count
+        spuriousAttach = Test-LogMarker -Window $window -Pattern $spuriousAttachPattern
+        stateAfter = $state
+        markers = Select-Markers $window
+    }
+    $handoffAsExpected = $(if ($HandoffFaults) { $step.handoffFaultedInRollback } else { !$step.handoffFaultFired })
+    $step.passed = $step.installFaultFired -and $handoffAsExpected -and $step.rollbackRan -and $step.startFailed -and
+        $step.capturesCreated -eq 1 -and !$step.spuriousAttach -and $null -ne $state -and !$state.isPreviewing -and
+        $state.viewModelInitialized -and $state.captureSessionState -eq 'Faulted'
+    $steps.Add([pscustomobject]$step)
+    Write-Host "failed-launch-start: install=$($step.installFaultFired) handoff=$($step.handoffFaultFired) rollback=$($step.rollbackRan) captures=$($step.capturesCreated) passed=$($step.passed)"
+}
+
+function Invoke-StartRollback {
+    Invoke-FailedLaunchStart -HandoffFaults
+    Invoke-FailedRecoveryStart
+
+    # recovery-start: the third handoff passes. The finish stops and releases the capture the
+    # launch rollback left behind, then a fresh capture opens the same device and renders.
+    # Before the fix the pipeline never owned that capture, so the finish had no video to stop.
     $startLine = @(Read-LogLines).Count
     $recovery = Invoke-RenderingStart -Name 'recovery-start' -StartLine $startLine
     $window = Get-LogWindow -StartLine $startLine
-    $recovery.finishCompleted = Test-LogMarker -Window $window -Pattern 'CAPTURE_RETAINED_CLEANUP_COMPLETED requested=Previewing scope=PreviewPipeline initialized=True'
-    $recovery.passed = $recovery.passed -and $recovery.finishCompleted -and !$recovery.captureInitialized -and
-        !$recovery.flagClearedByStop -and !$recovery.attachFailed
+    $beginIndex = Get-MarkerIndex -Window $window -Pattern 'CAPTURE_RETAINED_CLEANUP_BEGIN requested=Previewing scope=PreviewPipeline'
+    $videoStopIndex = Get-MarkerIndex -Window $window -Pattern 'PREVIEW_PIPELINE_VIDEO_STOP_BEFORE_FLASHBACK_DISPOSE'
+    $completedIndex = Get-MarkerIndex -Window $window -Pattern 'CAPTURE_RETAINED_CLEANUP_COMPLETED requested=Previewing scope=PreviewPipeline initialized=True'
+    $recovery.finishCompleted = $completedIndex -ge 0
+    $recovery.finishStoppedRetainedVideo = $beginIndex -ge 0 -and $videoStopIndex -gt $beginIndex -and $completedIndex -gt $videoStopIndex
+    # Presence, not order: the [FATAL] breadcrumb is written synchronously and can land ahead of the queued
+    # COMPLETED line. The transition runs its start only after the finish completes, under one lock hold.
+    $recovery.freshCaptureCreated = Test-LogMarker -Window $window -Pattern 'PREVIEW_START phase=create_uvc'
+    $recovery.passed = $recovery.passed -and $recovery.finishCompleted -and $recovery.finishStoppedRetainedVideo -and
+        $recovery.freshCaptureCreated -and !$recovery.captureInitialized -and !$recovery.flagClearedByStop -and !$recovery.attachFailed
     $steps.Add([pscustomobject]$recovery)
-    Write-Host "recovery-start: state=$($recovery.startupState) finished=$($recovery.finishCompleted) reinit=$($recovery.captureInitialized) rendered=$($recovery.renderedDuringDwell) passed=$($recovery.passed)"
+    Write-Host "recovery-start: state=$($recovery.startupState) finished=$($recovery.finishCompleted) videoStopped=$($recovery.finishStoppedRetainedVideo) rendered=$($recovery.renderedDuringDwell) passed=$($recovery.passed)"
 
+    # Flashback can be toggled only once nothing is retained.
+    Invoke-FlashbackToggle -State off
     Invoke-PlainCycle -Name 'plain-cycle-flashback-off'
     Invoke-FlashbackToggle -State on
     Start-Sleep -Seconds 2
     Invoke-PlainCycle -Name 'plain-cycle-flashback-on'
+}
+
+function Invoke-StartRollbackReleased {
+    Invoke-FailedLaunchStart
+
+    # recovery-start: the rollback released everything itself, so nothing is finished and a fresh
+    # capture opens the same device and renders.
+    $startLine = @(Read-LogLines).Count
+    $recovery = Invoke-RenderingStart -Name 'recovery-start' -StartLine $startLine
+    $window = Get-LogWindow -StartLine $startLine
+    $recovery.finishBegan = Test-LogMarker -Window $window -Pattern 'CAPTURE_RETAINED_CLEANUP_BEGIN'
+    $recovery.freshCaptureCreated = Test-LogMarker -Window $window -Pattern 'PREVIEW_START phase=create_uvc'
+    $recovery.passed = $recovery.passed -and !$recovery.finishBegan -and $recovery.freshCaptureCreated -and
+        !$recovery.captureInitialized -and !$recovery.flagClearedByStop -and !$recovery.attachFailed
+    $steps.Add([pscustomobject]$recovery)
+    Write-Host "recovery-start: state=$($recovery.startupState) finishBegan=$($recovery.finishBegan) rendered=$($recovery.renderedDuringDwell) passed=$($recovery.passed)"
+
+    Invoke-FlashbackToggle -State off
+    Invoke-PlainCycle -Name 'plain-cycle-flashback-off'
 }
 
 function Invoke-ReinitThenStart {
@@ -523,9 +660,11 @@ function Invoke-Control {
     Invoke-PlainCycle -Name 'plain-cycle-flashback-on'
 }
 
-$expectedStepCounts = @{ StopThenStart = 5; ReinitThenStart = 2; Control = 2 }
+$expectedStepCounts = @{ StopThenStart = 5; ReinitThenStart = 2; StartRollback = 5; StartRollbackReleased = 3; Control = 2 }
 New-Item -ItemType Directory -Force -Path $OutputDirectory | Out-Null
 $scenarioResults = New-Object System.Collections.Generic.List[object]
+# Stays false unless the report is computed, so an error while writing it still exits 1.
+$allPassed = $false
 try {
     foreach ($name in $scenarioNames) {
         $steps = New-Object System.Collections.Generic.List[object]
@@ -535,10 +674,13 @@ try {
         $failure = $null
         Write-Host "== $name =="
         try {
-            Start-App -FaultFailures $(if ($name -eq 'Control') { 0 } else { $faultFailures })
+            $faults = $scenarioFaults[$name]
+            Start-App -FaultFailures $faults.PreCleanup -InstallFaultFailures $faults.Install -ExpectLaunchFailure:$faults.LaunchFails
             switch ($name) {
                 'StopThenStart' { Invoke-StopThenStart }
                 'ReinitThenStart' { Invoke-ReinitThenStart }
+                'StartRollback' { Invoke-StartRollback }
+                'StartRollbackReleased' { Invoke-StartRollbackReleased }
                 'Control' { Invoke-Control }
             }
         }
@@ -559,6 +701,7 @@ try {
             stepsPassed = @($steps | Where-Object { $_.passed }).Count
             stepsRun = $steps.Count
             stepsExpected = $expectedStepCounts[$name]
+            faults = $scenarioFaults[$name]
             log = "$name.Sussudio_Debug.log"
             launch = $script:launch
             steps = $steps
@@ -570,9 +713,9 @@ finally {
     $ErrorActionPreference = 'Continue'
     $commit = (& git -C $repoRoot rev-parse HEAD 2>$null | Out-String).Trim()
     $dirty = @(& git -C $repoRoot status --porcelain --untracked-files=no 2>$null).Count -gt 0
-    $allPassed = $scenarioResults.Count -eq $scenarioNames.Count -and @($scenarioResults | Where-Object { !$_.passed }).Count -eq 0
+    $passed = $scenarioResults.Count -eq $scenarioNames.Count -and @($scenarioResults | Where-Object { !$_.passed }).Count -eq 0
     $report = [pscustomobject]@{
-        schema = 'sussudio.capture-late-cleanup-recovery/v2'
+        schema = 'sussudio.capture-late-cleanup-recovery/v3'
         label = $Label
         scenario = $Scenario
         generatedUtc = [DateTime]::UtcNow.ToString('o')
@@ -580,14 +723,14 @@ finally {
         trackedChangesPresent = $dirty
         appPath = $AppPath
         appDllSha256 = (Get-FileHash (Join-Path (Split-Path -Parent $AppPath) 'Sussudio.dll')).Hash
-        faultFailures = $faultFailures
-        passed = $allPassed
+        passed = $passed
         scenarios = $scenarioResults
-        doesNotProve = 'The teardown failures are injected exceptions at the capture pre-cleanup renderer handoff, not real renderer stop timeouts. Exercised: a preview-stop teardown and a reinit teardown, each finished late by a start or an initialize. Not exercised: a retained full capture cleanup (fatal capture error), recording, the start-rollback and post-recording idle-release handoffs, and cancellation of a finish. Judged from log markers, state counters and the Flashback session directory on disk; not colour, HDR, audio, or recording.'
+        doesNotProve = 'The teardown failures are injected exceptions at the capture pre-cleanup renderer handoff, not real renderer stop timeouts, and the start failure is an injected exception between a running capture and its install, not a real start failure with a renderer attached mid-start. Exercised: a preview-stop teardown, a reinit teardown and a fresh-start rollback, each finished late by a start or an initialize, and a fresh-start rollback that releases its capture itself. Not exercised: a retained full capture cleanup (fatal capture error), recording, the post-recording idle-release handoff, a start rollback after preview audio or the Flashback backend started, and cancellation of a finish. Device release is inferred from the finish stopping the retained video and a fresh capture opening the same device and rendering, not from a handle count. Judged from log markers, state counters and the Flashback session directory on disk; not colour, HDR, audio, or recording.'
     }
     $resultPath = Join-Path $OutputDirectory 'result.json'
-    $report | ConvertTo-Json -Depth 8 | Out-File -LiteralPath $resultPath -Encoding utf8
+    $report | ConvertTo-Json -Depth 8 | Out-File -LiteralPath $resultPath -Encoding utf8 -ErrorAction Stop
+    $allPassed = $passed
     Write-Host "result: $resultPath passed=$allPassed"
 }
 
-if (!$allPassed) { exit 1 }
+if ($allPassed -ne $true) { exit 1 }
