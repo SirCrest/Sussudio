@@ -2437,8 +2437,9 @@ Primary current owners:
   health message exists (the not-buffering fault needs Flashback enabled and
   video capture open, which includes the pipeline a normal preview stop keeps
   for Flashback), and publishes `IsFlashbackBuffering` from the
-  one-second lifecycle tick; it clears the status-strip Flashback rate when
-  buffering stops.
+  one-second lifecycle tick (`MainViewModel.OnIsPreviewingChanged` also
+  republishes it as a preview start or stop commits); the tick clears the
+  status-strip Flashback rate when buffering stops.
 - The "capture device stays in use" hint on the unavailable-preview placeholder
   shows only while `IsFlashbackEnabled && IsFlashbackBuffering`; the rule is
   `MainWindow.UpdateFlashbackKeepAliveHint()`, and the Flashback property-change

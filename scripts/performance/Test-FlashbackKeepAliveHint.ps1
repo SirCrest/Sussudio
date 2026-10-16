@@ -18,7 +18,9 @@ samples the hint through `ssctl ui tree` for -SampleWindowMs after its command r
                          with no placeholder reveal to refresh it.
   enable-without-capture `flashback enable` with nothing open buffers nothing: hidden.
   fresh-start-stop       a start that begins Flashback buffering anew, stopped as soon as the
-                         snapshot reports it buffering: visible from the first sample.
+                         snapshot reports it buffering, usually before the one-second tick has
+                         seen it: visible from the first sample, so the stop itself must
+                         republish buffering.
 A hidden hint is judged from the element's own Visibility (its own Collapsed reason), so a
 placeholder mid-fade is not mistaken for a hidden hint.
 Writes result.json and the app log under artifacts/flashback-keepalive-hint/. Refuses to start
@@ -408,7 +410,7 @@ finally {
         stepsExpected = $expectedSteps
         steps = $steps
         close = $close
-        doesNotProve = 'Hint samples come from `ssctl ui tree`, one ssctl process per sample (roughly 100-300 ms apart), so a hint shown for less than one sample interval could be missed. The buffering state reaches the hint through MainViewModel.IsFlashbackBuffering, which the one-second lifecycle tick refreshes, so a change can show up to a second late; the steps sample after the state has settled and do not bound that lag. The start failures are an injected exception at the top of the capture video-preview start transition, not a real device failure. A Flashback backend failure or auto-restart while preview is stopped, a disable refused during recording, and a reinitialize whose restart fails are not exercised live. Visibility is read from the element tree, not from rendered pixels.'
+        doesNotProve = 'Hint samples come from `ssctl ui tree`, one ssctl process per sample (roughly 100-300 ms apart), so a hint shown for less than one sample interval could be missed. The buffering state reaches the hint through MainViewModel.IsFlashbackBuffering, which a committed preview start or stop republishes at once (fresh-start-stop stops within a second of buffering starting, before the tick can see it) and the one-second lifecycle tick refreshes otherwise, so a change the backend makes on its own can show up to a second late; the disable step samples after the setting settles and does not bound that lag. The start failures are an injected exception at the top of the capture video-preview start transition, not a real device failure. A Flashback backend failure or auto-restart while preview is stopped, a disable refused during recording, and a reinitialize whose restart fails are not exercised live. Visibility is read from the element tree, not from rendered pixels.'
     }
     $resultPath = Join-Path $OutputDirectory 'result.json'
     $report | ConvertTo-Json -Depth 6 | Out-File -LiteralPath $resultPath -Encoding utf8
