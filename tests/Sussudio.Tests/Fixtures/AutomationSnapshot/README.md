@@ -10,4 +10,6 @@ These expected results were captured from the `BuildAutomationSnapshot` implemen
 
 Fields removed since the capture are listed per input type in `RetiredFixtureFields`; each still takes its sequence number, so every remaining populated value is unchanged. The five `RecordingCuda*` fields left with the dead CUDA recording lane, the three `PreviewGpuSignal*` fields left with the dead dual GPU preview-startup signal path, and `PreviewGpuPositionMs`/`PreviewGpuPositionEventCount` left with the MediaPlayer-era preview position telemetry, which has reported only 0 since the D3D11 renderer replaced that preview.
 
+Enum inputs take `ordinal % memberCount`, so removing members moves the pick. `previewRuntime.StartupStrategy` is set explicitly to its captured `CpuSoftwareBitmap` because removing the never-assigned `GpuMediaSourceNoFrameReader`/`GpuMediaSourceWithFrameReader` members would otherwise turn ordinal 1083 into `D3D11VideoProcessor`.
+
 The tests compare every serialized field by name, JSON kind and value, including nested records and ordered arrays. Change expected data only for an intentional contract change after reviewing the field differences; running the tests never regenerates these files.

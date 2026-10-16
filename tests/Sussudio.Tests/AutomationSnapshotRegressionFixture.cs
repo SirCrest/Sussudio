@@ -92,6 +92,9 @@ internal static class AutomationSnapshotRegressionFixture
             var preview = inputs["previewRuntime"]!;
             Set(preview, "StartupState", Enum.Parse(
                 assembly.GetType("Sussudio.Models.PreviewStartupState", throwOnError: true)!, "RendererAttaching"));
+            // Pinned to the captured value; removing strategy members moves the ordinal pick.
+            Set(preview, "StartupStrategy", Enum.Parse(
+                assembly.GetType("Sussudio.Models.PreviewStartupStrategy", throwOnError: true)!, "CpuSoftwareBitmap"));
             Set(preview, "EstimatedPipelineLatencyMs", 12.75);
             Set(preview, "D3DFrameStatsMissedRefreshCount", 59L);
             Set(preview, "D3DFrameStatsFailureCount", 61L);
