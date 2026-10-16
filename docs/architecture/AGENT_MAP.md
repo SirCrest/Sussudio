@@ -35,6 +35,11 @@ native handle/resource lifetime).
 `scripts/performance/Measure-PreviewScenario.ps1` records comparable observation
 runs through existing ssctl diagnostics; it does not reconfigure capture or
 start recording.
+`tests/Sussudio.Tests/XUnit.PreviewRendererSharedDeviceRaceTests.cs` injects the
+capture-device hand-over into the renderer's device-selection window.
+`scripts/performance/Test-PreviewFrameRateRestarts.ps1` is its live counterpart:
+it launches the app and checks that every `set fps` restart renders on the
+capture-shared device and reaches first visual.
 
 `Sussudio/Services/Preview/PreviewInputViewCache.cs` owns the eight-entry texture
 identity/subresource lookup and disposable-entry eviction policy. The renderer's
@@ -155,7 +160,8 @@ Preview renderer notes:
   device/swap-chain/video-processor fields, shared source-reader D3D manager
   lifecycle plus the `ILiveVideoSource` handoff contract, `InitializeD3D` orchestration,
   shared-vs-owned device setup, shared-device COM reference handoff/reinit
-  retirement/reset scheduling, device-lost classification and recovery, video
+  retirement/reset scheduling (including a hand-over that lands while the render
+  thread is still selecting its device), device-lost classification and recovery, video
   interface acquisition, media present duration setup, composition swap-chain
   creation, startup dimensions, HDR swap-chain capability probing, SDR
   swap-chain fallback, initial color-space selection, configured output size
