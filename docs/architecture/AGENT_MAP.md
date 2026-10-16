@@ -824,9 +824,22 @@ Important entry points:
   Cleanup awaits the renderer handoff before capture ownership is transferred or
   released. UI cancellation limits admission; admitted stop work remains awaited.
   Failed cleanup retains capture, renderer registrations, and coordination locks,
-  blocks new session/sink admission, and can be retried. Disposal callers share
-  one owned task; a caller timeout does not retire its resources or start a second
-  cleanup operation. The original fatal capture cause remains the published error.
+  blocks new session/sink admission, and can be retried. It also records its scope:
+  a preview pipeline teardown or a full capture cleanup. A retry re-runs that scope,
+  so a finished teardown keeps capture initialized and retires Flashback segments
+  (kept on disk for bounded startup cleanup) exactly as a teardown stop does; only
+  a finished full cleanup uninitializes capture and purges them. Apart from explicit
+  cleanup, a video-preview stop or an initialize finishes either scope and a
+  video-preview start finishes a teardown, each then running its own transition
+  under the same lock hold; every other transition refuses (`CAPTURE_RETAINED_CLEANUP_*`).
+  A teardown stop that fails still commits preview stopped, and stops the audio
+  monitor with it, so a published capture error never mirrors preview back on over
+  retained resources and no audio plays behind a stopped preview.
+  `SUSSUDIO_CAPTURE_FAULT_PRE_CLEANUP_FAILURES` fails the first N renderer handoffs
+  for the live check `scripts/performance/Test-CaptureLateCleanupRecovery.ps1`.
+  Disposal callers share one owned task; a caller timeout does not retire its
+  resources or start a second cleanup operation. The original fatal capture cause
+  remains the published error.
 - `CaptureService.Flashback.cs` owns Flashback public state, segment
   access, enable/disable transition gating, restart entry points, committed
   restart orchestration after preview backend teardown, buffer/GPU settings
@@ -922,6 +935,15 @@ Important entry points:
   rollback, fresh preview backend startup ordering, keep-pipeline-alive detach
   semantics, stopped-state/telemetry commit, preview pipeline disposal ordering,
   Flashback backend disposal, WASAPI disposal, and microphone cleanup.
+  The start rollback is a pending preview pipeline teardown from its first step to
+  its last, and `_videoPipeline` owns the half-started capture before the renderer
+  handoff. A rollback that stops part way (the renderer never acknowledged) leaves
+  the capture, Flashback backend and audio to the retained teardown instead of
+  orphaning a running capture in the failed start's frame.
+  `SUSSUDIO_CAPTURE_FAULT_PREVIEW_INSTALL_FAILURES` fails the first N fresh starts
+  after their capture is running and before the pipeline installs it
+  (`CAPTURE_FAULT_PREVIEW_INSTALL_FAILED`), for the `StartRollback` scenarios of
+  `scripts/performance/Test-CaptureLateCleanupRecovery.ps1`.
 - `CaptureService.cs` also owns `CaptureVideoPipelineResources`:
   active unified-video capture storage,
   preview-frame sink storage, negotiated video getters, and cached MJPEG
@@ -2820,6 +2842,9 @@ Primary current owners:
   lifecycle operations: device initialization, preview start/stop,
   selected-device apply, and the reinitialize facade. Failed initialization repairs
   visible state and faults the caller so automation publishes command failure.
+  A preview stop that leaves capture uninitialized (it finished a half-done full
+  capture cleanup) clears the initialized flag, and the recording flag when that
+  cleanup finalized the recording; it never sets either flag from capture state.
   It also owns the preview lifecycle graph-port contract for preview
   state/events, capture/session operations, source telemetry refresh, UI
   dispatch, audio-preview activity, and preview-volume ramp-down.
