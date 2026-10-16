@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using Sussudio.Services.Capture.Mjpeg;
 using Sussudio.Services.Contracts;
+using Sussudio.Services.Performance;
 using Sussudio.Services.Preview;
 using Sussudio.Services.Runtime;
 
@@ -140,6 +141,9 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
     private readonly List<BufferedFrame> _frames = new();
     private readonly AutoResetEvent _signal = new(false);
     private readonly Func<IPreviewFrameSink?> _getPreviewSink;
+    private const int UnprimedIdleWaitMs = 20;
+    private const int SuppressedIdleWaitMs = 250;
+
     private readonly Func<bool> _isPreviewSuppressed;
     private readonly PreviewFrameProbe? _previewFrameProbe;
     private readonly long _frameIntervalTicks;
@@ -274,6 +278,7 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
     private void EmitLoop()
     {
         using var mmcss = MmcssThreadRegistration.TryRegister(_mmcssTask, _mmcssPriority, message => Logger.Log(message));
+        using var hotThread = HotThreads.Register("mjpeg.jitter", mmcss is not null);
         CreateHighResolutionTimer();
         try
         {
@@ -297,7 +302,14 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
                 var targetDepth = Volatile.Read(ref _targetDepth);
                 if (GetDepth() < targetDepth)
                 {
-                    _signal.WaitOne(2);
+                    // Every Enqueue, ReprimeAfterPreviewResume and Dispose sets the
+                    // signal, so the timeout is only a safety net. While preview
+                    // submission is suppressed (Flashback playback) input is dropped
+                    // at Enqueue and nothing arrives to wait for, so the idle wait is
+                    // long instead of a 500 Hz poll.
+                    _signal.WaitOne(Volatile.Read(ref _previewSubmissionSuppressed) != 0
+                        ? SuppressedIdleWaitMs
+                        : UnprimedIdleWaitMs);
                     continue;
                 }
 
@@ -425,7 +437,7 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
         Volatile.Write(ref _previewSubmissionSuppressed, 1);
         Interlocked.Exchange(ref _resumeReprimeMissBudget, 1);
         Interlocked.Exchange(ref _resumeReprimeStartTick, Stopwatch.GetTimestamp());
-        ClearQueue("suppressed");
+        ClearQueue("suppressed", JitterDropReason.Suppressed);
     }
 
     public void ReprimeAfterPreviewResume()
@@ -500,7 +512,7 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
             while (_frames.Count >= _maxDepth)
             {
                 var dropped = RemoveOldestFrame();
-                RecordDroppedFrame(dropped.SequenceNumber, "queue-full");
+                RecordDroppedFrame(dropped.SequenceNumber, "queue-full", JitterDropReason.QueueFull);
                 dropped.Dispose();
                 Interlocked.Increment(ref _totalDropped);
             }
@@ -575,7 +587,7 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
 
         if (frame.SequenceNumber < _nextPreviewSequence)
         {
-            RecordDroppedFrame(frame.SequenceNumber, "late-sequence");
+            RecordDroppedFrame(frame.SequenceNumber, "late-sequence", JitterDropReason.LateSequence);
             frame.Dispose();
             Interlocked.Increment(ref _totalDropped);
             Interlocked.Increment(ref _deadlineDropCount);
@@ -638,7 +650,7 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
         if (nextOrdered >= 0)
         {
             var skipped = Math.Max(1, _frames[nextOrdered].SequenceNumber - _nextPreviewSequence);
-            RecordDroppedFrame(_nextPreviewSequence, "missing-sequence");
+            RecordDroppedFrame(_nextPreviewSequence, "missing-sequence", JitterDropReason.MissingSequence, skipped);
             _nextPreviewSequence = _frames[nextOrdered].SequenceNumber;
             Interlocked.Add(ref _deadlineDropCount, skipped);
             Interlocked.Add(ref _totalDropped, skipped);
@@ -692,22 +704,36 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
     }
 
     private void ClearQueue()
-        => ClearQueue("cleared");
+        => ClearQueue("cleared", JitterDropReason.Cleared);
 
-    private void ClearQueue(string reason)
+    private void ClearQueue(string reason, JitterDropReason code)
     {
+        // The loop only counts; the per-reason counter and the last-drop state are written once, after the lock is
+        // released, for the whole run (the last frame's sequence is what the per-frame calls would have left).
+        var cleared = 0;
+        var lastSequence = 0L;
         lock (_sync)
         {
             foreach (var frame in _frames)
             {
-                RecordDroppedFrame(frame.SequenceNumber, reason);
+                lastSequence = frame.SequenceNumber;
                 frame.Dispose();
-                Interlocked.Increment(ref _totalDropped);
-                Interlocked.Increment(ref _clearedDropCount);
+                cleared++;
+            }
+
+            if (cleared > 0)
+            {
+                Interlocked.Add(ref _totalDropped, cleared);
+                Interlocked.Add(ref _clearedDropCount, cleared);
             }
 
             _frames.Clear();
             _nextPreviewSequence = -1;
+        }
+
+        if (cleared > 0)
+        {
+            RecordDroppedFrame(lastSequence, reason, code, cleared);
         }
     }
 
@@ -737,6 +763,7 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
                 Interlocked.Exchange(ref _lastUnderflowQpc, nowTick);
                 Volatile.Write(ref _lastUnderflowQueueDepth, 0);
                 Volatile.Write(ref _lastUnderflowReason, "resume-reprime");
+                PerfMetrics.PreviewJitterUnderflows.Increment((int)JitterUnderflowReason.ResumeReprime);
                 Interlocked.Exchange(ref _lastUnderflowInputAgeTicks, 0);
                 Interlocked.Exchange(ref _lastUnderflowOutputAgeTicks, 0);
                 return true;
@@ -836,11 +863,16 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
         Interlocked.Exchange(ref _lastSelectedSourceLatencyTicks, latencyTicks);
     }
 
-    private void RecordDroppedFrame(long sourceSequenceNumber, string reason)
+    // frameCount is above one when a run is recorded in one step (missing sequence numbers skipped together, or a
+    // cleared queue), so the per-reason counters add up to TotalDropped. Several callers hold _sync: each passes the
+    // reason's table entry as a literal, so nothing here switches on a string, and the counter add is one interlocked
+    // add. The reason string is kept for the snapshot's last-drop field.
+    private void RecordDroppedFrame(long sourceSequenceNumber, string reason, JitterDropReason code, long frameCount = 1)
     {
         Interlocked.Exchange(ref _lastDroppedSourceSequenceNumber, sourceSequenceNumber);
         Interlocked.Exchange(ref _lastDropQpc, Stopwatch.GetTimestamp());
         Volatile.Write(ref _lastDropReason, reason);
+        PerfMetrics.PreviewJitterDrops.Counter((int)code).Add(frameCount);
     }
 
     private void RecordUnderflow(long nowTick)
@@ -861,6 +893,7 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
         Interlocked.Exchange(ref _lastUnderflowQpc, nowTick);
         Volatile.Write(ref _lastUnderflowQueueDepth, depth);
         Volatile.Write(ref _lastUnderflowReason, reason);
+        PerfMetrics.PreviewJitterUnderflows.Increment((int)JitterReasons.ClassifyUnderflow(reason));
 
         var lastInputTick = Interlocked.Read(ref _lastInputTick);
         var inputAgeTicks = lastInputTick > 0 && nowTick > lastInputTick ? nowTick - lastInputTick : 0;
@@ -955,6 +988,13 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
     private void SubmitFrame(IPreviewFrameSink sink, BufferedFrame frame)
     {
         var submitTick = Stopwatch.GetTimestamp();
+
+        // Enqueue to submit, measured to the submit stamp (not the post-submit clock read). SubmitFrame runs on the
+        // emit thread outside _sync.
+        var residenceTicks = submitTick - frame.EnqueueTick;
+        PerfMetrics.PreviewJitterResidence.RecordTicks(residenceTicks);
+        FrameTrace.Record(FrameTraceEventKind.PreviewJitterResidence, frame.EnqueueTick, residenceTicks, frame.ArrivalTick);
+
         var previewPresentId = Interlocked.Increment(ref _nextPreviewPresentId);
         try
         {
@@ -1024,7 +1064,7 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
         }
         catch (Exception ex)
         {
-            RecordDroppedFrame(frame.SequenceNumber, "submit-failed");
+            RecordDroppedFrame(frame.SequenceNumber, "submit-failed", JitterDropReason.SubmitFailed);
             Interlocked.Increment(ref _totalDropped);
             Logger.Log($"MJPEG_PREVIEW_JITTER_SUBMIT_FAIL type={ex.GetType().Name} msg={ex.Message}");
         }
@@ -1117,7 +1157,7 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
                     _nextPreviewSequence = frame.SequenceNumber + 1;
                 }
 
-                RecordDroppedFrame(frame.SequenceNumber, "hard-deadline");
+                RecordDroppedFrame(frame.SequenceNumber, "hard-deadline", JitterDropReason.HardDeadline);
                 frame.Dispose();
                 Interlocked.Increment(ref _totalDropped);
                 Interlocked.Increment(ref _deadlineDropCount);
@@ -1151,7 +1191,7 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
                     _nextPreviewSequence = frame.SequenceNumber + 1;
                 }
 
-                RecordDroppedFrame(frame.SequenceNumber, "soft-deadline");
+                RecordDroppedFrame(frame.SequenceNumber, "soft-deadline", JitterDropReason.SoftDeadline);
                 frame.Dispose();
                 Interlocked.Increment(ref _totalDropped);
                 Interlocked.Increment(ref _deadlineDropCount);

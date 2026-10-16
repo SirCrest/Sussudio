@@ -11,7 +11,29 @@ internal static class AutomationSnapshotRegressionFixture
 {
     private const BindingFlags InstanceMembers = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
     private static readonly DateTimeOffset FixtureTime = new(2026, 9, 12, 0, 0, 0, TimeSpan.Zero);
-    private static readonly string[] RetiredCaptureRuntimeFixtureFields = { "MuxAttempted", "MuxSucceeded" };
+    // Fields removed since the fixtures were captured, in ordinal order per input type. Each still consumes its sequence
+    // number so every remaining populated value matches the captured JSON.
+    private static readonly Dictionary<string, string[]> RetiredFixtureFields = new(StringComparer.Ordinal)
+    {
+        ["Sussudio.Models.CaptureRuntimeSnapshot"] = new[] { "MuxAttempted", "MuxSucceeded" },
+        ["Sussudio.Models.CaptureHealthSnapshot"] = new[]
+        {
+            "RecordingCudaFramesDropped", "RecordingCudaFramesEnqueued", "RecordingCudaQueueCapacity",
+            "RecordingCudaQueueDepth", "RecordingCudaQueueMaxDepth"
+        },
+        ["Sussudio.Models.PreviewRuntimeSnapshot"] = new[]
+        {
+            "GpuPositionEventCount", "GpuPositionMs",
+            "StartupGpuSignalFirstFrame", "StartupGpuSignalMediaOpened", "StartupGpuSignalPlaybackAdvancing"
+        },
+    };
+
+    // Inputs added after the expected JSON was captured. They take a fixed value without consuming an ordinal, so
+    // every captured field keeps the value the fixture recorded.
+    private static readonly Dictionary<string, object> FixtureFieldsAddedAfterCapture = new(StringComparer.Ordinal)
+    {
+        ["Sussudio.Models.PreviewRuntimeSnapshot.D3DFrameStatsCadenceMissedRefreshCount"] = 0L
+    };
 
     internal static JsonElement BuildResult(Assembly assembly, bool populated, object? healthOverride = null)
     {
@@ -19,7 +41,7 @@ internal static class AutomationSnapshotRegressionFixture
         var method = hubType.GetMethod("BuildAutomationSnapshot", InstanceMembers)!;
         var hub = RuntimeHelpers.GetUninitializedObject(hubType);
         var parameters = method.GetParameters();
-        if (parameters.Length != 18)
+        if (parameters.Length != 17)
             throw new InvalidOperationException("Review the snapshot fixture after changing the captured input contract.");
 
         var sequence = 100;
@@ -77,11 +99,18 @@ internal static class AutomationSnapshotRegressionFixture
             var preview = inputs["previewRuntime"]!;
             Set(preview, "StartupState", Enum.Parse(
                 assembly.GetType("Sussudio.Models.PreviewStartupState", throwOnError: true)!, "RendererAttaching"));
+            // Pinned to the captured value; removing strategy members moves the ordinal pick.
+            Set(preview, "StartupStrategy", Enum.Parse(
+                assembly.GetType("Sussudio.Models.PreviewStartupStrategy", throwOnError: true)!, "CpuSoftwareBitmap"));
             Set(preview, "EstimatedPipelineLatencyMs", 12.75);
             Set(preview, "D3DFrameStatsMissedRefreshCount", 59L);
+            Set(preview, "D3DFrameStatsCadenceMissedRefreshCount", 53L);
             Set(preview, "D3DFrameStatsFailureCount", 61L);
-            inputs["recentD3DMissedRefreshes"] = 41L;
-            inputs["recentD3DStatsFailures"] = 43L;
+            inputs["recentD3DFrameStats"] = Activator.CreateInstance(
+                assembly.GetType("Sussudio.Services.Automation.D3DFrameStatsRecentCounters", throwOnError: true)!,
+                41L,
+                47L,
+                43L);
         }
 
         if (healthOverride != null)
@@ -123,12 +152,18 @@ internal static class AutomationSnapshotRegressionFixture
         var instance = Empty(type)!;
         var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
             .OrderBy(property => property.Name, StringComparer.Ordinal).ToArray();
-        var retiredFields = type.FullName == "Sussudio.Models.CaptureRuntimeSnapshot"
-            ? RetiredCaptureRuntimeFixtureFields
+        var retiredFields = type.FullName is not null && RetiredFixtureFields.TryGetValue(type.FullName, out var retired)
+            ? retired
             : Array.Empty<string>();
         var retiredFieldIndex = 0;
         foreach (var property in properties)
         {
+            if (FixtureFieldsAddedAfterCapture.TryGetValue(type.FullName + "." + property.Name, out var addedFieldValue))
+            {
+                property.SetValue(instance, addedFieldValue);
+                continue;
+            }
+
             while (retiredFieldIndex < retiredFields.Length &&
                    StringComparer.Ordinal.Compare(retiredFields[retiredFieldIndex], property.Name) < 0)
             {

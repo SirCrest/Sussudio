@@ -89,13 +89,17 @@ public sealed class FlashbackExportPlannerTests
         Assert.True(NeedsStablePaths(ForceRotate("CanceledBeforeCommit")));
     }
 
-    [Fact]
-    public void FailedForceRotateUsesExportFailureText()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FailedForceRotateUsesExportFailureText(bool requireCompleteLiveEdge)
     {
-        var plan = PlanLiveEdge(ForceRotate("Failed"), requireCompleteLiveEdge: false, new[] { "one.ts" });
+        var plan = PlanLiveEdge(ForceRotate("Failed"), requireCompleteLiveEdge, new[] { "one.ts" });
 
         Assert.Equal("ForceRotateFailed", Get<object>(plan, "FailureKind").ToString());
         Assert.Equal("Flashback export failed: live-edge segment rotation failed.", Get<string>(plan, "FailureMessage"));
+        Assert.False(Get<bool>(plan, "ForceRotateFallbackUsed"));
+        Assert.Null(GetNullable(plan, "SegmentPaths"));
     }
 
     [Fact]
@@ -183,15 +187,16 @@ public sealed class FlashbackExportPlannerTests
     }
 
     [Fact]
-    public void RequestSkeletonPreservesExportPolicy()
+    public void PlannedRequestsDisableFastStartDespiteTheModelDefault()
     {
-        var requestPlan = CreateRequest(null, Array.Empty<object>(), "active.ts");
-        var request = Get<object>(requestPlan, "Request");
+        // FlashbackExportRequest.FastStart defaults to true; the planner must override it
+        // for both the active-file fallback and the segmented request.
+        var fallback = Get<object>(CreateRequest(null, Array.Empty<object>(), "active.ts"), "Request");
+        Assert.False(Get<bool>(fallback, "FastStart"));
 
-        Assert.False(Get<bool>(request, "FastStart"));
-        Assert.Equal(TimeSpan.Zero, Get<TimeSpan>(request, "InPoint"));
-        Assert.Equal(TimeSpan.FromSeconds(10), Get<TimeSpan>(request, "OutPoint"));
-        Assert.Equal("output.mp4", Get<string>(request, "OutputPath"));
+        var segment = New(PathSnapshotType, "one.ts", "C:\\segments\\one.ts");
+        var segmented = Get<object>(CreateRequest(new[] { segment }, Array.Empty<object>(), "active.ts"), "Request");
+        Assert.False(Get<bool>(segmented, "FastStart"));
     }
 
     [Theory]

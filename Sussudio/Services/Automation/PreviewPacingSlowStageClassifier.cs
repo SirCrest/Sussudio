@@ -48,7 +48,9 @@ public sealed class PreviewPacingClassificationInput
     public double PreviewD3DFrameLatencyWaitMaxMs { get; init; }
     public long PreviewD3DFrameLatencyWaitTimeoutCount { get; init; }
     public long RecentD3DFrameLatencyWaitTimeoutCount { get; init; }
-    public long RecentD3DMissedRefreshes { get; init; }
+    // Refreshes where a new source frame was due but not shown. Not the raw refresh-minus-present count, which grows
+    // with perfect pacing whenever the display refreshes faster than the source.
+    public long RecentD3DCadenceMissedRefreshes { get; init; }
     public long RecentD3DStatsFailures { get; init; }
     public string PreviewD3DLastDropReason { get; init; } = string.Empty;
     public int VisualCadenceSampleCount { get; init; }
@@ -69,7 +71,8 @@ public readonly record struct PreviewPacingClassification(
 
 public static class PreviewPacingSlowStageClassifier
 {
-    private const double MinSampleDurationMs = 30_000.0;
+    // Must stay below the 20 s cadence window (CadenceWindowSeconds) or sample-ready classification can never run.
+    private const double MinSampleDurationMs = 15_000.0;
     private const double OnePercentLowWarningRatio = 0.98;
     private const double P99OverBudgetRatio = 1.08;
     private const double RendererDropWarningPercent = 1.0;
@@ -202,7 +205,7 @@ public static class PreviewPacingSlowStageClassifier
            input.RecentPreviewJitterDeadlineDrops > 0 ||
            input.RecentPreviewJitterUnderflows > 0 ||
            input.RecentRendererDropped > 0 ||
-           input.RecentD3DMissedRefreshes > 0 ||
+           input.RecentD3DCadenceMissedRefreshes > 0 ||
            input.RecentD3DStatsFailures > 0 ||
            input.RecentD3DFrameLatencyWaitTimeoutCount > 0;
 
@@ -332,14 +335,14 @@ public static class PreviewPacingSlowStageClassifier
         double targetFrameMs,
         out PreviewPacingClassification classification)
     {
-        if (input.RecentD3DMissedRefreshes > 0 || input.RecentD3DStatsFailures > 0)
+        if (input.RecentD3DCadenceMissedRefreshes > 0 || input.RecentD3DStatsFailures > 0)
         {
             classification = new PreviewPacingClassification(
                 "CompositorMiss",
                 "High",
                 Format(
-                    "dxgiRecentMissed={0} dxgiRecentFailures={1} previewP99={2:0.##}ms target={3:0.###}ms.",
-                    input.RecentD3DMissedRefreshes,
+                    "dxgiRecentCadenceMissed={0} dxgiRecentFailures={1} previewP99={2:0.##}ms target={3:0.###}ms.",
+                    input.RecentD3DCadenceMissedRefreshes,
                     input.RecentD3DStatsFailures,
                     input.PreviewCadenceP99IntervalMs,
                     targetFrameMs));

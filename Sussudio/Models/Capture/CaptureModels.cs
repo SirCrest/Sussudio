@@ -821,11 +821,6 @@ public class CaptureDiagnosticsSnapshot
     public int RecordingGpuQueueMaxDepth { get; init; }
     public long RecordingGpuFramesEnqueued { get; init; }
     public long RecordingGpuFramesDropped { get; init; }
-    public int RecordingCudaQueueDepth { get; init; }
-    public int RecordingCudaQueueCapacity { get; init; }
-    public int RecordingCudaQueueMaxDepth { get; init; }
-    public long RecordingCudaFramesEnqueued { get; init; }
-    public long RecordingCudaFramesDropped { get; init; }
     public long AudioDropsQueueSaturated { get; init; }
     public long AudioDropsBacklogEviction { get; init; }
     public long AudioChunksDropped { get; init; }

@@ -1,19 +1,32 @@
 using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Threading.Channels;
-using FFmpeg.AutoGen;
 using Xunit;
 
 namespace Sussudio.Tests;
 
-public sealed class LibAvCudaFailureTests
+// The recording sink's encode loop owns every failure on its lanes. A send that throws must end the session the same
+// way whichever lane carried the frame; the D3D11 lane is the lane that queues native references, so it carries the
+// check (the CUDA lane that used to was never constructed and was removed). Failure modes:
+//  - the send exception is swallowed or retried instead of latched (EncodingFailed, _encodingFailure);
+//  - OnEncodingFailed fires more than once, off the encode-loop thread, or not at all when the subscriber throws;
+//  - the sink keeps admitting work (_started stays true) or counts the failed frame as submitted or encoded;
+//  - the texture being sent, or one still queued behind it, is leaked or released twice, or the depth stays nonzero;
+//  - a later dispose, or a second one, replaces the first failure, notifies again or releases a texture again.
+[SupportedOSPlatform("windows")]
+public sealed class LibAvRecordingSinkFailureTests
 {
     private const BindingFlags PrivateInstance = BindingFlags.Instance | BindingFlags.NonPublic;
-    private static readonly TimeSpan DeadlockGuard = TimeSpan.FromSeconds(5);
+
+    // Hang guard only: a passing run finishes in milliseconds, and a broken loop that swallows the failure waits on
+    // its open writers until this lapses.
+    private static readonly TimeSpan DeadlockGuard = TimeSpan.FromSeconds(30);
 
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public async Task CudaSendFailureIsLatchedByOwnerAndReleasesQueuedFrames(bool callbackThrows)
+    public async Task GpuSendFailureIsLatchedByOwnerAndReleasesQueuedTextures(bool callbackThrows)
     {
         var assembly = SussudioAssembly.Load();
         assembly.GetType("Sussudio.Services.Runtime.FfmpegRuntimeInit", true)!
@@ -22,8 +35,8 @@ public sealed class LibAvCudaFailureTests
         var sink = Activator.CreateInstance(sinkType)!;
         await using var sinkLifetime = (IAsyncDisposable)sink;
         using var cancellation = new CancellationTokenSource();
-        using var firstFrame = new TrackedFrame(cancellation.Cancel);
-        using var queuedFrame = new TrackedFrame();
+        using var sentTexture = new TrackedComReference();
+        using var queuedTexture = new TrackedComReference();
         Task? owner = null;
         try
         {
@@ -41,16 +54,16 @@ public sealed class LibAvCudaFailureTests
 
             Queue("_videoQueue");
             Queue("_audioQueue");
-            var cudaQueue = Queue("_cudaQueue");
-            var writer = cudaQueue.GetType().GetProperty("Writer")!.GetValue(cudaQueue)!;
-            var packetType = sinkType.GetNestedType("CudaFramePacket", BindingFlags.NonPublic)!;
-            foreach (var frame in new[] { firstFrame, queuedFrame })
+            var gpuQueue = Queue("_gpuQueue");
+            var writer = gpuQueue.GetType().GetProperty("Writer")!.GetValue(gpuQueue)!;
+            var packetType = sinkType.GetNestedType("GpuFramePacket", BindingFlags.NonPublic)!;
+            foreach (var texture in new[] { sentTexture, queuedTexture })
             {
-                var packet = Activator.CreateInstance(packetType, frame.Pointer)!;
+                // The producer's AddRef travels with the packet; the sink owns releasing it.
+                var packet = Activator.CreateInstance(packetType, texture.AddQueueReference(), 0)!;
                 Assert.True((bool)writer.GetType().GetMethod("TryWrite")!.Invoke(writer, new[] { packet })!);
-                frame.TransferToQueue();
             }
-            Set("_cudaQueueDepth", 2);
+            Set("_gpuQueueDepth", 2);
             Set("_started", true);
             Set("_cts", cancellation);
 
@@ -65,9 +78,8 @@ public sealed class LibAvCudaFailureTests
                 if (callbackThrows) throw new IOException("Notification subscriber failed.");
             }));
 
-            // The concrete unopened encoder fails before touching frame data. Keep writers
-            // open: first-frame release cancels a broken loop instead of letting it report
-            // an unrelated finalization failure after swallowing the send exception.
+            // The concrete unopened encoder fails before touching the texture. Writers stay open, so only the
+            // failure path can end the loop.
             var encode = sinkType.GetMethod("EncodingLoop", PrivateInstance)!
                 .CreateDelegate<Action<CancellationToken>>(sink);
             var ownerThread = 0;
@@ -87,13 +99,13 @@ public sealed class LibAvCudaFailureTests
             Assert.Same(failure, Get("_encodingFailure"));
             Assert.Equal(ownerThread, notificationThread);
             Assert.False((bool)Get("_started")!);
-            Assert.Equal(0, (int)Get("_cudaQueueDepth")!);
-            var reader = cudaQueue.GetType().GetProperty("Reader")!.GetValue(cudaQueue)!;
+            Assert.Equal(0, (int)Get("_gpuQueueDepth")!);
+            var reader = gpuQueue.GetType().GetProperty("Reader")!.GetValue(gpuQueue)!;
             Assert.Equal(0, (int)reader.GetType().GetProperty("Count")!.GetValue(reader)!);
             Assert.Equal(0L, (long)Get("_videoFramesSubmittedToEncoder")!);
             Assert.Equal(0L, (long)Get("_encodedVideoFrames")!);
-            Assert.Equal(1, firstFrame.ReleaseCount);
-            Assert.Equal(1, queuedFrame.ReleaseCount);
+            Assert.Equal(0, sentTexture.UnreleasedQueueReferences);
+            Assert.Equal(0, queuedTexture.UnreleasedQueueReferences);
 
             await ((IAsyncDisposable)sink).DisposeAsync();
             await ((Task)sinkType.GetProperty("CleanupCompletionTask", PrivateInstance)!.GetValue(sink)!)
@@ -101,8 +113,8 @@ public sealed class LibAvCudaFailureTests
             await ((IAsyncDisposable)sink).DisposeAsync();
             Assert.Same(failure, Get("_encodingFailure"));
             Assert.Equal(1, notifications);
-            Assert.Equal(1, firstFrame.ReleaseCount);
-            Assert.Equal(1, queuedFrame.ReleaseCount);
+            Assert.Equal(0, sentTexture.UnreleasedQueueReferences);
+            Assert.Equal(0, queuedTexture.UnreleasedQueueReferences);
         }
         finally
         {
@@ -110,59 +122,48 @@ public sealed class LibAvCudaFailureTests
             if (owner == null || !owner.IsCompleted) cancellation.Cancel();
             if (owner != null) await owner.WaitAsync(DeadlockGuard);
             await ((IAsyncDisposable)sink).DisposeAsync();
-            GC.KeepAlive(firstFrame);
-            GC.KeepAlive(queuedFrame);
         }
     }
 
-    private sealed unsafe class TrackedFrame : IDisposable
+    // A real COM identity (a CCW over a managed object) standing in for an ID3D11Texture2D: on this path the sink only
+    // AddRefs and Releases the pointer, never calls through it. The count is read from IUnknown itself, so a leak reads
+    // positive and a double release reads negative. A guard reference keeps one extra release from destroying it.
+    private sealed class TrackedComReference : IDisposable
     {
-        private AVFrame* _frame;
-        private readonly av_buffer_create_free _release;
-        private int _releaseCount;
+        private readonly object _target = new();
+        private readonly int _baseline;
+        private IntPtr _unknown;
 
-        public TrackedFrame(Action? released = null)
+        public TrackedComReference()
         {
-            _release = (_, data) =>
-            {
-                ffmpeg.av_free(data);
-                Interlocked.Increment(ref _releaseCount);
-                released?.Invoke();
-            };
-            _frame = ffmpeg.av_frame_alloc();
-            if (_frame == null) throw new OutOfMemoryException("Could not allocate test AVFrame.");
-            AVBufferRef* buffer = null;
-            byte* data = null;
-            try
-            {
-                data = (byte*)ffmpeg.av_malloc(16);
-                if (data == null) throw new OutOfMemoryException("Could not allocate tracked frame data.");
-                buffer = ffmpeg.av_buffer_create(data, 16, _release, null, 0);
-                if (buffer == null) throw new OutOfMemoryException("Could not allocate tracked AVBuffer.");
-                data = null;
-                if (ffmpeg.av_frame_new_side_data_from_buf(
-                        _frame, AVFrameSideDataType.AV_FRAME_DATA_SEI_UNREGISTERED, buffer) == null)
-                    throw new OutOfMemoryException("Could not attach tracked frame data.");
-                buffer = null;
-            }
-            catch
-            {
-                ffmpeg.av_free(data);
-                ffmpeg.av_buffer_unref(&buffer);
-                Dispose();
-                throw;
-            }
+            _unknown = Marshal.GetIUnknownForObject(_target);
+            Marshal.AddRef(_unknown);
+            _baseline = CurrentCount();
         }
 
-        public IntPtr Pointer => (IntPtr)_frame;
-        public int ReleaseCount => Volatile.Read(ref _releaseCount);
-        public void TransferToQueue() => _frame = null;
+        public int UnreleasedQueueReferences => CurrentCount() - _baseline;
+
+        public IntPtr AddQueueReference()
+        {
+            Marshal.AddRef(_unknown);
+            return _unknown;
+        }
+
+        private int CurrentCount()
+        {
+            var count = Marshal.AddRef(_unknown);
+            Marshal.Release(_unknown);
+            return count - 1;
+        }
+
         public void Dispose()
         {
-            var frame = _frame;
-            _frame = null;
-            ffmpeg.av_frame_free(&frame);
-            GC.KeepAlive(_release);
+            var unknown = _unknown;
+            _unknown = IntPtr.Zero;
+            if (unknown == IntPtr.Zero) return;
+            Marshal.Release(unknown);
+            Marshal.Release(unknown);
+            GC.KeepAlive(_target);
         }
     }
 }

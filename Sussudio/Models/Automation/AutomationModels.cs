@@ -286,8 +286,6 @@ public sealed class DiagnosticsEvent
 public enum PreviewStartupStrategy
 {
     None,
-    GpuMediaSourceNoFrameReader,
-    GpuMediaSourceWithFrameReader,
     CpuSoftwareBitmap,
     DirectShow,
     D3D11VideoProcessor
@@ -822,9 +820,6 @@ public sealed class PreviewRuntimeSnapshot
     public string? StartupAttemptId { get; init; }
     public double? StartupElapsedMs { get; init; }
     public int StartupTimeoutMs { get; init; }
-    public bool StartupGpuSignalMediaOpened { get; init; }
-    public bool StartupGpuSignalFirstFrame { get; init; }
-    public bool StartupGpuSignalPlaybackAdvancing { get; init; }
     public PreviewStartupSignalFlags StartupRequiredSignals { get; init; }
     public PreviewStartupSignalFlags StartupReceivedSignals { get; init; }
     public PreviewStartupStrategy StartupStrategy { get; init; }
@@ -912,7 +907,10 @@ public sealed class PreviewRuntimeSnapshot
     public long D3DFrameStatsLastPresentDelta { get; init; }
     public long D3DFrameStatsLastPresentRefreshDelta { get; init; }
     public long D3DFrameStatsLastSyncRefreshDelta { get; init; }
+    // Raw: every refresh beyond one per present, so it grows at the source frame rate when the display refresh is a
+    // multiple of it. D3DFrameStatsCadenceMissedRefreshCount counts only refreshes where a new frame was due.
     public long D3DFrameStatsMissedRefreshCount { get; init; }
+    public long D3DFrameStatsCadenceMissedRefreshCount { get; init; }
     public long D3DLastSubmittedPreviewPresentId { get; init; }
     public long D3DLastSubmittedSourceSequenceNumber { get; init; }
     public long D3DLastSubmittedSourcePtsTicks { get; init; }
@@ -938,8 +936,6 @@ public sealed class PreviewRuntimeSnapshot
     public string GpuPlaybackState { get; init; } = "None";
     public int GpuNaturalVideoWidth { get; init; }
     public int GpuNaturalVideoHeight { get; init; }
-    public double GpuPositionMs { get; init; }
-    public long GpuPositionEventCount { get; init; }
 }
 
 public sealed class PerformanceTimelineEntry
@@ -1001,6 +997,7 @@ public sealed class PerformanceTimelineEntry
     public double PreviewD3DFrameLatencyWaitP95Ms { get; init; }
     public double PreviewD3DFrameLatencyWaitMaxMs { get; init; }
     public long PreviewD3DFrameStatsRecentMissedRefreshCount { get; init; }
+    public long PreviewD3DFrameStatsRecentCadenceMissedRefreshCount { get; init; }
     public long PreviewD3DFrameStatsRecentFailureCount { get; init; }
     public double PreviewD3DLastRenderedSchedulerToPresentMs { get; init; }
     public double PreviewD3DLastRenderedPipelineLatencyMs { get; init; }

@@ -6,6 +6,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Sussudio.Services.Performance;
 using Sussudio.Services.Runtime;
 
 namespace Sussudio.Services.Capture;
@@ -1104,6 +1105,11 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             _readLoopMmcssPriority,
             message => Logger.Log(message));
 
+        // The read loop runs on a thread-pool thread, so the registration is disposed when the loop exits and the
+        // pool thread stops being reported as the capture thread.
+        using var hotThread = HotThreads.Register("capture.read", mmcss is not null);
+        var telemetry = new MfReadLoopTelemetry();
+
         while (!ct.IsCancellationRequested)
         {
             IMFSourceReader? reader;
@@ -1122,6 +1128,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             try
             {
                 var readStartedTickMs = Environment.TickCount64;
+                telemetry.BeginReadSample();
                 Volatile.Write(ref _isReadSampleOutstanding, 1);
                 Interlocked.Exchange(ref _readSampleOutstandingStartTickMs, readStartedTickMs);
 
@@ -1167,12 +1174,22 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                 }
 
                 var arrivalTick = Stopwatch.GetTimestamp();
+                telemetry.OnSampleArrived(arrivalTick, mfTimestamp100ns);
                 if (mfTimestamp100ns > 0)
                 {
                     TrackSourceCadence(mfTimestamp100ns);
                 }
 
-                DeliverFrame(sample, onFrame, onDualFrame, arrivalTick);
+                var deliverStartTick = Stopwatch.GetTimestamp();
+                try
+                {
+                    DeliverFrame(sample, onFrame, onDualFrame, arrivalTick);
+                }
+                finally
+                {
+                    telemetry.OnDelivered(deliverStartTick, arrivalTick);
+                }
+
                 Interlocked.Exchange(ref _lastFrameDeliveredTickMs, Environment.TickCount64);
                 Interlocked.Increment(ref _framesDelivered);
             }
@@ -1183,6 +1200,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             catch (Exception ex)
             {
                 Interlocked.Increment(ref _framesDropped);
+                PerfMetrics.CaptureReadErrors.Increment();
                 Logger.Log(
                     "MF_SOURCE_READER_FRAME_ERROR " +
                     $"type={ex.GetType().Name} " +

@@ -2279,9 +2279,45 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         RecordingBitrateInfo = smoothed.HasValue ? DisplayFormatters.FormatBitrate(smoothed.Value) : LiveInfoUnavailable;
     }
 
+    private int _diskSpaceProbeInFlight;
+
     private void UpdateDiskSpace()
     {
-        DiskSpaceInfo = OutputDriveSpacePresentationBuilder.Build(OutputPath);
+        // DriveInfo.AvailableFreeSpace is a synchronous volume query (tens of ms on a
+        // busy or network drive); the 1 s timer runs on the UI thread, so probe on the
+        // pool and post the text back. One probe at a time.
+        if (Interlocked.CompareExchange(ref _diskSpaceProbeInFlight, 1, 0) != 0)
+        {
+            return;
+        }
+
+        var outputPath = OutputPath;
+        _ = Task.Run(() =>
+        {
+            string info;
+            try
+            {
+                info = OutputDriveSpacePresentationBuilder.Build(outputPath);
+            }
+            catch
+            {
+                Interlocked.Exchange(ref _diskSpaceProbeInFlight, 0);
+                return;
+            }
+
+            var posted = _dispatcherQueue.TryEnqueue(() =>
+            {
+                Interlocked.Exchange(ref _diskSpaceProbeInFlight, 0);
+                if (Volatile.Read(ref _disposeState) == 0)
+                {
+                    DiskSpaceInfo = info;
+                }
+            });
+            if (!posted)
+            {
+                Interlocked.Exchange(ref _diskSpaceProbeInFlight, 0);
+            }
+        });
     }
 
     private bool EnqueueUiOperation(Func<Task> operation, string operationName, bool allowDuringDispose = false)

@@ -25,8 +25,7 @@ public sealed partial class AutomationDiagnosticsHub
         LastOutputProbe lastOutput,
         ProcessResourceSnapshot processResources,
         RecordingVerificationResult? lastVerification,
-        long recentD3DMissedRefreshes,
-        long recentD3DStatsFailures)
+        D3DFrameStatsRecentCounters recentD3DFrameStats)
     {
         var snapshotStatus = BuildSnapshotStatusProjection(viewModelSnapshot, captureRuntime, snapshotCollection);
         var snapshotEvaluation = BuildSnapshotEvaluationProjection(performance, diagnostic, previewPacingClassification);
@@ -341,9 +340,6 @@ public sealed partial class AutomationDiagnosticsHub
             PreviewAttemptId = previewStartup.AttemptId,
             PreviewStartupElapsedMs = previewStartup.ElapsedMs,
             PreviewStartupTimeoutMs = previewStartup.TimeoutMs,
-            PreviewGpuSignalMediaOpened = previewStartup.GpuSignalMediaOpened,
-            PreviewGpuSignalFirstFrame = previewStartup.GpuSignalFirstFrame,
-            PreviewGpuSignalPlaybackAdvancing = previewStartup.GpuSignalPlaybackAdvancing,
             PreviewStartupRequiredSignals = previewStartup.RequiredSignals,
             PreviewStartupReceivedSignals = previewStartup.ReceivedSignals,
             PreviewStartupStrategy = previewStartup.Strategy,
@@ -415,8 +411,10 @@ public sealed partial class AutomationDiagnosticsHub
             PreviewD3DFrameStatsLastPresentRefreshDelta = previewRuntime.D3DFrameStatsLastPresentRefreshDelta,
             PreviewD3DFrameStatsLastSyncRefreshDelta = previewRuntime.D3DFrameStatsLastSyncRefreshDelta,
             PreviewD3DFrameStatsMissedRefreshCount = previewRuntime.D3DFrameStatsMissedRefreshCount,
-            PreviewD3DFrameStatsRecentMissedRefreshCount = recentD3DMissedRefreshes,
-            PreviewD3DFrameStatsRecentFailureCount = recentD3DStatsFailures,
+            PreviewD3DFrameStatsRecentMissedRefreshCount = recentD3DFrameStats.MissedRefreshes,
+            PreviewD3DFrameStatsCadenceMissedRefreshCount = previewRuntime.D3DFrameStatsCadenceMissedRefreshCount,
+            PreviewD3DFrameStatsRecentCadenceMissedRefreshCount = recentD3DFrameStats.CadenceMissedRefreshes,
+            PreviewD3DFrameStatsRecentFailureCount = recentD3DFrameStats.Failures,
             PreviewD3DLastSubmittedPreviewPresentId = previewRuntime.D3DLastSubmittedPreviewPresentId,
             PreviewD3DLastSubmittedSourceSequenceNumber = previewRuntime.D3DLastSubmittedSourceSequenceNumber,
             PreviewD3DLastSubmittedSourcePtsTicks = previewRuntime.D3DLastSubmittedSourcePtsTicks,
@@ -439,8 +437,6 @@ public sealed partial class AutomationDiagnosticsHub
             PreviewGpuPlaybackState = previewRuntime.GpuPlaybackState,
             PreviewGpuNaturalVideoWidth = previewRuntime.GpuNaturalVideoWidth,
             PreviewGpuNaturalVideoHeight = previewRuntime.GpuNaturalVideoHeight,
-            PreviewGpuPositionMs = previewRuntime.GpuPositionMs,
-            PreviewGpuPositionEventCount = previewRuntime.GpuPositionEventCount,
             PreviewHdrInputDetected = previewHdrState.InputDetected,
             PreviewToneMapMode = previewHdrState.ToneMapMode,
             PreviewColorContext = captureRuntime.NegotiatedPixelFormat,
@@ -481,11 +477,6 @@ public sealed partial class AutomationDiagnosticsHub
             RecordingGpuQueueMaxDepth = health.RecordingGpuQueueMaxDepth,
             RecordingGpuFramesEnqueued = health.RecordingGpuFramesEnqueued,
             RecordingGpuFramesDropped = health.RecordingGpuFramesDropped,
-            RecordingCudaQueueDepth = health.RecordingCudaQueueDepth,
-            RecordingCudaQueueCapacity = health.RecordingCudaQueueCapacity,
-            RecordingCudaQueueMaxDepth = health.RecordingCudaQueueMaxDepth,
-            RecordingCudaFramesEnqueued = health.RecordingCudaFramesEnqueued,
-            RecordingCudaFramesDropped = health.RecordingCudaFramesDropped,
             FlashbackEncodingFailed = health.FlashbackEncodingFailed,
             FlashbackEncodingFailureType = health.FlashbackEncodingFailureType,
             FlashbackEncodingFailureMessage = health.FlashbackEncodingFailureMessage,
@@ -1503,9 +1494,6 @@ public sealed partial class AutomationDiagnosticsHub
             AttemptId = previewRuntime.StartupAttemptId,
             ElapsedMs = previewRuntime.StartupElapsedMs,
             TimeoutMs = previewRuntime.StartupTimeoutMs,
-            GpuSignalMediaOpened = previewRuntime.StartupGpuSignalMediaOpened,
-            GpuSignalFirstFrame = previewRuntime.StartupGpuSignalFirstFrame,
-            GpuSignalPlaybackAdvancing = previewRuntime.StartupGpuSignalPlaybackAdvancing,
             RequiredSignals = previewRuntime.StartupRequiredSignals,
             ReceivedSignals = previewRuntime.StartupReceivedSignals,
             Strategy = previewRuntime.StartupStrategy.ToString(),
@@ -1524,9 +1512,6 @@ public sealed partial class AutomationDiagnosticsHub
         public string? AttemptId { get; init; }
         public double? ElapsedMs { get; init; }
         public int TimeoutMs { get; init; }
-        public bool GpuSignalMediaOpened { get; init; }
-        public bool GpuSignalFirstFrame { get; init; }
-        public bool GpuSignalPlaybackAdvancing { get; init; }
         public PreviewStartupSignalFlags RequiredSignals { get; init; }
         public PreviewStartupSignalFlags ReceivedSignals { get; init; }
         public string Strategy { get; init; }

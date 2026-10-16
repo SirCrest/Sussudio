@@ -5,7 +5,9 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using SharpGen.Runtime;
 using Sussudio.Models;
+using Sussudio.Services.Performance;
 using Vortice.Direct3D;
 using Vortice.Direct3D11;
 using Vortice.DXGI;
@@ -452,12 +454,22 @@ internal sealed partial class D3D11PreviewRenderer
                 }
 
                 _vpStreamArray[0] = new VideoProcessorStream { Enable = true, InputSurface = inputView };
-                var renderStart = Stopwatch.GetTimestamp();
-                var bltResult = _videoContext.VideoProcessorBlt(_videoProcessor, _outputView, _outputFrameIndex++, 1, _vpStreamArray);
-                renderTicks += Stopwatch.GetTimestamp() - renderStart;
+                Result bltResult;
+                var gpuTimingSlot = BeginGpuTiming(frame.ArrivalTick, GpuTimingPath.VideoProcessor);
+                try
+                {
+                    var renderStart = Stopwatch.GetTimestamp();
+                    bltResult = _videoContext.VideoProcessorBlt(_videoProcessor, _outputView, _outputFrameIndex++, 1, _vpStreamArray);
+                    renderTicks += Stopwatch.GetTimestamp() - renderStart;
+                }
+                finally
+                {
+                    EndGpuTiming(gpuTimingSlot);
+                }
+
                 if (bltResult.Failure)
                 {
-                    throw new InvalidOperationException($"VideoProcessorBlt failed: 0x{bltResult.Code:X8}.");
+                    throw NativeCallFailed("VideoProcessorBlt", bltResult);
                 }
 
                 PresentAndTrackFrame(
@@ -542,9 +554,18 @@ internal sealed partial class D3D11PreviewRenderer
             _deviceContext.PSSetShaderResources(0, 2, _srvArray2);
             UpdateViewportConstantBuffer(viewport);
 
-            var renderStart = Stopwatch.GetTimestamp();
-            _deviceContext.Draw(3, 0);
-            renderTicks += Stopwatch.GetTimestamp() - renderStart;
+            var gpuTimingSlot = BeginGpuTiming(frame.ArrivalTick, GpuTimingPath.Nv12Shader);
+            try
+            {
+                var renderStart = Stopwatch.GetTimestamp();
+                _deviceContext.Draw(3, 0);
+                renderTicks += Stopwatch.GetTimestamp() - renderStart;
+            }
+            finally
+            {
+                EndGpuTiming(gpuTimingSlot);
+            }
+
             _deviceContext.PSSetShaderResources(0, 2, _srvNullArray2);
 
             PresentAndTrackFrame(
@@ -662,9 +683,19 @@ internal sealed partial class D3D11PreviewRenderer
 
             UpdateViewportConstantBuffer(viewport);
 
-            var renderStart = Stopwatch.GetTimestamp();
-            _deviceContext.Draw(3, 0);
-            renderTicks += Stopwatch.GetTimestamp() - renderStart;
+            // The HDR upload and copy above are not part of the GPU timing span (see D3D11PreviewRenderer.GpuTiming.cs).
+            var gpuTimingSlot = BeginGpuTiming(frame.ArrivalTick, GpuTimingPath.HdrShader);
+            try
+            {
+                var renderStart = Stopwatch.GetTimestamp();
+                _deviceContext.Draw(3, 0);
+                renderTicks += Stopwatch.GetTimestamp() - renderStart;
+            }
+            finally
+            {
+                EndGpuTiming(gpuTimingSlot);
+            }
+
             _deviceContext.PSSetShaderResources(0, 2, _srvNullArray2);
 
             var passthrough = ReferenceEquals(pixelShader, _hdrPassthroughPS);
@@ -708,7 +739,7 @@ internal sealed partial class D3D11PreviewRenderer
         presentTicks += presentEnd - presentStart;
         if (presentResult.Failure)
         {
-            throw new InvalidOperationException($"SwapChain.Present failed: 0x{presentResult.Code:X8}.");
+            throw NativeCallFailed("SwapChain.Present", presentResult);
         }
 
         NotifyFirstFrameRendered(firstFrameMessage);
@@ -718,10 +749,34 @@ internal sealed partial class D3D11PreviewRenderer
         TrackDxgiFrameStatistics();
         var estimatedVisibleTick = EstimateVisibleTick(presentEnd);
         TrackFramePresented(frame, presentEnd, estimatedVisibleTick);
-        TrackPipelineLatency(frame.ArrivalTick, estimatedVisibleTick);
+        TrackPipelineLatency(frame, estimatedVisibleTick);
         var totalTicks = Stopwatch.GetTimestamp() - totalStart;
         TrackRenderCpuTiming(inputUploadTicks, renderTicks, presentTicks, totalTicks);
+        TraceRenderedFrame(frame.ArrivalTick, totalStart, totalTicks, inputUploadTicks, renderTicks, presentStart, presentEnd - presentStart);
         RecordSlowFrameDiagnostic(frame, presentIntervalMs, inputUploadTicks, renderTicks, presentTicks, totalTicks, presentEnd, estimatedVisibleTick);
+    }
+
+    // Frame-trace spans for one presented frame. Stage durations are exact; the render-stage starts are not carried
+    // out of the render passes, so input upload is anchored at the start of the render and render submit ends where
+    // Present begins. Joined to the other stages by the frame's arrival timestamp.
+    private static void TraceRenderedFrame(
+        long arrivalTick,
+        long totalStart,
+        long totalTicks,
+        long inputUploadTicks,
+        long renderTicks,
+        long presentStart,
+        long presentTicks)
+    {
+        if (!FrameTrace.IsEnabled)
+        {
+            return;
+        }
+
+        FrameTrace.Record(FrameTraceEventKind.PreviewRenderTotal, totalStart, totalTicks, arrivalTick);
+        FrameTrace.Record(FrameTraceEventKind.PreviewInputUpload, totalStart, inputUploadTicks, arrivalTick);
+        FrameTrace.Record(FrameTraceEventKind.PreviewRenderSubmit, presentStart - renderTicks, renderTicks, arrivalTick);
+        FrameTrace.Record(FrameTraceEventKind.PreviewPresent, presentStart, presentTicks, arrivalTick);
     }
 
     public Task<PreviewFrameCaptureResult> CaptureNextFrameAsync(string outputPath)

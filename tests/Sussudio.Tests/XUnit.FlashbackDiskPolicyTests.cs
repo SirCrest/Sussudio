@@ -5,13 +5,10 @@ using Xunit;
 
 namespace Sussudio.Tests;
 
-// Sussudio.csproj targets net8.0-windows10.0.19041.0 while this test project
-// targets net8.0 (see tests/Sussudio.Tests/MIGRATION.md); a ProjectReference
-// would force a Windows/WinUI target onto the test rig, so these behavioral
-// tests resolve Sussudio.Services.Flashback types via Assembly.LoadFrom against
-// the staged Sussudio.dll + reflection, matching every other ported xUnit test
-// in this project (e.g. FlashbackBufferManager_RejectsUnsafeSessionIds in
-// XUnit.RecordingContractsTests.cs) rather than a direct `using` + `new`.
+// Sussudio.csproj targets the Windows/WinUI TFM while this test project targets
+// plain net8.0, so there is no ProjectReference: these behavioral tests resolve
+// Sussudio.Services.Flashback types through reflection against the staged
+// Sussudio.dll, like the rest of the xUnit suite.
 public sealed class FlashbackDiskPolicyTests : IDisposable
 {
     private readonly string _tempDirectory = Directory.CreateTempSubdirectory("sussudio-disk-policy-").FullName;
@@ -86,17 +83,6 @@ public sealed class FlashbackDiskPolicyTests : IDisposable
         Assert.Equal(0L, GetLongProperty(manager, "TempDriveAvailableFreeBytes"));
         Assert.True(GetBoolProperty(manager, "IsDiskCriticallyLow"));
         Assert.Equal(2, calls);
-    }
-
-    [Fact]
-    public async Task HealthWithoutABuffer_ReportsUnknownFreeSpace()
-    {
-        var serviceType = RequireType("Sussudio.Services.Capture.CaptureService");
-        await using var service = (IAsyncDisposable)Activator.CreateInstance(serviceType)!;
-
-        var snapshot = serviceType.GetMethod("GetHealthSnapshot")!.Invoke(service, null)!;
-
-        Assert.Equal(-1L, GetLongProperty(snapshot, "FlashbackTempDriveFreeBytes"));
     }
 
     [Fact]

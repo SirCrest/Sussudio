@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -82,8 +83,8 @@ internal static class AtomicCounter
 // Both sinks publish onto a bounded Channel from a hot capture callback, and both
 // need the same three steps: claim a depth slot, record the high-water mark when
 // the write lands, and give the slot back when the channel refuses. That sequence
-// was open-coded seven times across the two sinks (video, gpu, cuda and audio
-// lanes) and every copy was byte-identical, so a drift in one lane would have been
+// was open-coded seven times across the two sinks (video, gpu, a since-removed
+// cuda lane and audio lanes) and every copy was byte-identical, so a drift in one lane would have been
 // invisible. The rollback stays a caller-supplied delegate because each sink tags
 // its underflow diagnostic with its own log prefix.
 internal static class QueueAdmission
@@ -92,7 +93,7 @@ internal static class QueueAdmission
     // group converts without allocating per call.
     internal delegate void DepthRollback(ref int depth, string queueName);
 
-    // Video/gpu/cuda lanes: the observed depth feeds the lane's high-water mark.
+    // Video/gpu lanes: the observed depth feeds the lane's high-water mark.
     public static bool TryWrite<T>(
         Channel<T> queue,
         T packet,
@@ -220,20 +221,34 @@ internal static class RingBufferHelpers
         }
 
         var result = new double[take];
-        CopyRingSegments(window, index, take, result);
+        CopyRingSegments(window, index, result);
         return result;
+    }
+
+    // Fills destination with the newest destination.Length samples in chronological
+    // order without allocating, for an owner that summarizes pooled scratch instead
+    // of a copy it would drop.
+    public static void CopyNewest(double[] window, int count, int index, Span<double> destination)
+    {
+        if (destination.Length > count)
+        {
+            throw new ArgumentOutOfRangeException(nameof(destination), destination.Length, "Cannot copy more samples than the window holds.");
+        }
+
+        CopyRingSegments(window, index, destination);
     }
 
     // At most two contiguous segments; avoids a modulo per element while the
     // caller holds a lock that a hot thread also takes.
-    private static void CopyRingSegments<T>(T[] window, int index, int take, T[] result)
+    private static void CopyRingSegments<T>(T[] window, int index, Span<T> result)
     {
+        var take = result.Length;
         var start = (index - take + window.Length) % window.Length;
         var firstSegment = Math.Min(take, window.Length - start);
-        Array.Copy(window, start, result, 0, firstSegment);
+        window.AsSpan(start, firstSegment).CopyTo(result);
         if (firstSegment < take)
         {
-            Array.Copy(window, 0, result, firstSegment, take - firstSegment);
+            window.AsSpan(0, take - firstSegment).CopyTo(result[firstSegment..]);
         }
     }
 
@@ -248,7 +263,7 @@ internal static class RingBufferHelpers
         }
 
         var result = new int[take];
-        CopyRingSegments(window, index, take, result);
+        CopyRingSegments(window, index, result);
         return result;
     }
 }
@@ -389,10 +404,25 @@ internal readonly record struct IntervalCadenceStatistics(
             }
         }
 
-        var sorted = (double[])samples.Clone();
-        Array.Sort(sorted);
-        var p95IntervalMs = PercentileHelpers.FromSorted(sorted, 0.95);
-        var p99IntervalMs = PercentileHelpers.FromSorted(sorted, 0.99);
+        // Percentiles need a sorted copy, and callers hand the same array back as RecentIntervalsMs, so the caller's
+        // order must survive. A pooled scratch replaces the per-call Clone (about 9 KB for a 1,100-sample window, four
+        // calls per hub tick). Only the first sampleCount elements are meaningful: a rented array is longer than asked
+        // for and holds whatever its previous renter left in it.
+        var scratch = ArrayPool<double>.Shared.Rent(sampleCount);
+        double p95IntervalMs;
+        double p99IntervalMs;
+        try
+        {
+            samples.CopyTo(scratch, 0);
+            var sorted = scratch.AsSpan(0, sampleCount);
+            sorted.Sort();
+            p95IntervalMs = PercentileHelpers.FromSorted(sorted, 0.95);
+            p99IntervalMs = PercentileHelpers.FromSorted(sorted, 0.99);
+        }
+        finally
+        {
+            ArrayPool<double>.Shared.Return(scratch);
+        }
 
         return new IntervalCadenceStatistics(
             SampleCount: sampleCount,
@@ -869,4 +899,116 @@ internal sealed class MmcssThreadRegistration : IDisposable
     [DllImport("avrt.dll", ExactSpelling = true, SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool AvRevertMmThreadCharacteristics(IntPtr avrtHandle);
+}
+
+/// <summary>
+/// Frame-pacing wait for a dedicated thread: a high-resolution waitable timer covers the bulk
+/// of the interval and a short spin covers the last fraction of a millisecond. Without the
+/// timer (pre-1803 Windows) it sleeps and spins the last 2 ms, the former pacing behaviour.
+/// One instance per thread; it owns a kernel timer handle.
+/// </summary>
+internal sealed class PrecisionWaiter : IDisposable
+{
+    private const uint CreateWaitableTimerHighResolution = 0x00000002;
+    private const uint TimerAllAccess = 0x001F0003;
+    private const uint WaitObject0 = 0;
+    private static readonly long SpinTailTicks = Math.Max(1, Stopwatch.Frequency / 4000); // 0.25 ms
+    private static readonly long SleepTailTicks = Math.Max(1, 2 * Stopwatch.Frequency / 1000); // 2 ms
+
+    private IntPtr _timer;
+
+    public PrecisionWaiter()
+    {
+        try
+        {
+            _timer = CreateWaitableTimerExW(IntPtr.Zero, IntPtr.Zero, CreateWaitableTimerHighResolution, TimerAllAccess);
+        }
+        catch (Exception)
+        {
+            _timer = IntPtr.Zero;
+        }
+    }
+
+    public bool IsHighResolution => _timer != IntPtr.Zero;
+
+    /// <summary>Returns once <paramref name="stopwatch"/> reaches <paramref name="targetTicks"/>.</summary>
+    public void WaitUntil(Stopwatch stopwatch, long targetTicks)
+    {
+        if (_timer == IntPtr.Zero)
+        {
+            SleepAndSpinUntil(stopwatch, targetTicks);
+            return;
+        }
+
+        var remaining = targetTicks - stopwatch.ElapsedTicks;
+        while (remaining > SpinTailTicks)
+        {
+            var waitTicks = remaining - SpinTailTicks;
+            // Relative due time in 100 ns units (negative means relative).
+            var dueTime = -(long)Math.Max(1, waitTicks * 10_000_000.0 / Stopwatch.Frequency);
+            if (!SetWaitableTimer(_timer, ref dueTime, 0, IntPtr.Zero, IntPtr.Zero, false))
+            {
+                SleepAndSpinUntil(stopwatch, targetTicks);
+                return;
+            }
+
+            var timeoutMs = (uint)Math.Max(1, waitTicks * 1000 / Stopwatch.Frequency + 2);
+            if (WaitForSingleObject(_timer, timeoutMs) != WaitObject0)
+            {
+                break;
+            }
+
+            remaining = targetTicks - stopwatch.ElapsedTicks;
+        }
+
+        while (stopwatch.ElapsedTicks < targetTicks)
+        {
+            Thread.SpinWait(1);
+        }
+    }
+
+    /// <summary>Sleep for the coarse remainder, then spin the last 2 ms (scheduler granularity is 1-15 ms).</summary>
+    public static void SleepAndSpinUntil(Stopwatch stopwatch, long targetTicks)
+    {
+        var remaining = targetTicks - stopwatch.ElapsedTicks;
+        if (remaining > SleepTailTicks)
+        {
+            var sleepMs = (int)((remaining - SleepTailTicks) * 1000 / Stopwatch.Frequency);
+            if (sleepMs > 0)
+            {
+                Thread.Sleep(sleepMs);
+            }
+        }
+
+        while (stopwatch.ElapsedTicks < targetTicks)
+        {
+            Thread.SpinWait(1);
+        }
+    }
+
+    public void Dispose()
+    {
+        var timer = _timer;
+        if (timer == IntPtr.Zero)
+        {
+            return;
+        }
+
+        _timer = IntPtr.Zero;
+        CloseHandle(timer);
+    }
+
+    [DllImport("kernel32.dll", ExactSpelling = true, SetLastError = true)]
+    private static extern IntPtr CreateWaitableTimerExW(IntPtr timerAttributes, IntPtr timerName, uint flags, uint desiredAccess);
+
+    [DllImport("kernel32.dll", ExactSpelling = true, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool SetWaitableTimer(IntPtr timer, ref long dueTime, int period, IntPtr completionRoutine, IntPtr argToCompletionRoutine, [MarshalAs(UnmanagedType.Bool)] bool resume);
+
+    [DllImport("kernel32.dll", ExactSpelling = true, SetLastError = true)]
+    private static extern uint WaitForSingleObject(IntPtr handle, uint milliseconds);
+
+    [DllImport("kernel32.dll", ExactSpelling = true, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool CloseHandle(IntPtr handle);
 }

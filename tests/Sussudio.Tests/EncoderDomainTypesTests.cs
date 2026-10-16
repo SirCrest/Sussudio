@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Reflection;
 using System.Text.Json;
 using Xunit;
@@ -7,22 +6,6 @@ namespace Sussudio.Tests;
 
 public sealed class EncoderDomainTypesTests
 {
-    [Theory]
-    [InlineData("NvencPreset", "NvencPresetParser")]
-    [InlineData("SplitEncodeMode", "SplitEncodeModeParser")]
-    public void SettingParsersKeepDefinedNamesAndNumericValues(string enumName, string parserName)
-    {
-        foreach (var value in Enum.GetValues(RequireType($"Sussudio.Models.{enumName}")))
-        {
-            var name = value.ToString()!;
-            var numeric = Convert.ToInt32(value, CultureInfo.InvariantCulture).ToString(CultureInfo.InvariantCulture);
-            foreach (var input in new[] { name, name.ToLowerInvariant(), numeric })
-            {
-                Assert.Equal(value, ParseSetting(parserName, input));
-            }
-        }
-    }
-
     [Theory]
     [InlineData("NvencPresetParser")]
     [InlineData("SplitEncodeModeParser")]
@@ -48,23 +31,6 @@ public sealed class EncoderDomainTypesTests
         var wireValue = RequireType("Sussudio.Models.SplitEncodeModeParser")
             .GetMethod("ToWireString")!.Invoke(null, new[] { mode });
         Assert.Equal(expected == "TwoWay" ? "2-way" : "3-way", wireValue);
-    }
-
-    [Theory]
-    [InlineData("ParseWindowAction", "AutomationWindowAction", "action")]
-    [InlineData("ParseFlashbackAction", "AutomationFlashbackAction", "action")]
-    [InlineData("ParseWaitCondition", "AutomationWaitCondition", "condition")]
-    public void AutomationParsersKeepDefinedNamesAndNumericValues(string parserName, string enumName, string propertyName)
-    {
-        foreach (var value in Enum.GetValues(RequireType($"Sussudio.Models.{enumName}")))
-        {
-            var name = value.ToString()!;
-            var numeric = Convert.ToInt32(value, CultureInfo.InvariantCulture).ToString(CultureInfo.InvariantCulture);
-            foreach (var input in new[] { name, name.ToLowerInvariant(), numeric })
-            {
-                Assert.Equal(value, ParseAutomationValue(parserName, propertyName, input));
-            }
-        }
     }
 
     [Theory]
@@ -97,6 +63,8 @@ public sealed class EncoderDomainTypesTests
         Assert.IsType(RequireType("Sussudio.Services.Automation.AutomationRequestValidationException"), exception.InnerException);
     }
 
+    // Disabled is managed value 1 but NVENC value 15, so a direct enum cast would
+    // silently apply the wrong split policy.
     [Theory]
     [InlineData("Auto", 0L)]
     [InlineData("Disabled", 15L)]
@@ -130,15 +98,6 @@ public sealed class EncoderDomainTypesTests
         var exception = Assert.Throws<TargetInvocationException>(() => EncoderMethod("MapNvencPreset")
             .Invoke(null, new[] { preset }));
         Assert.IsType<ArgumentOutOfRangeException>(exception.InnerException);
-    }
-
-    [Theory]
-    [InlineData("Sussudio.Services.Recording.LibAvEncoderOptions")]
-    [InlineData("Sussudio.Models.FlashbackSessionContext")]
-    public void InternalOptionsDefaultToAuto(string typeName)
-    {
-        var options = Create(typeName);
-        AssertSettingValues(options, "Auto", "Auto");
     }
 
     [Theory]

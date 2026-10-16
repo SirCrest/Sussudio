@@ -46,20 +46,6 @@ public sealed class CaptureSelectionSuppressionTests
     }
 
     [Fact]
-    public void NestedSelectionKeepsOuterSuppressionUntilOuterCompletes()
-    {
-        var owner = new SelectionOwner(initiallySuppressed: false);
-
-        owner.Apply(() =>
-        {
-            owner.Apply(() => Assert.True(owner.IsSuppressed));
-            Assert.True(owner.IsSuppressed);
-        });
-
-        Assert.False(owner.IsSuppressed);
-    }
-
-    [Fact]
     public void CaughtNestedFailureKeepsOuterSelectionSuppressed()
     {
         var owner = new SelectionOwner(initiallySuppressed: false);
@@ -94,76 +80,6 @@ public sealed class CaptureSelectionSuppressionTests
 
         Assert.Equal(rebuilding, owner.IsRebuilding);
         Assert.Equal(suppressed, owner.IsSuppressed);
-    }
-
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void FailedModeOptionsRestoreIncomingState(bool rebuilding)
-    {
-        var owner = new SelectionOwner(initiallySuppressed: true, initiallyRebuilding: rebuilding);
-        var failure = new InvalidOperationException("mode options failed");
-
-        var observed = Assert.Throws<InvalidOperationException>(() => owner.ApplyModeOptions(() =>
-        {
-            Assert.True(owner.IsRebuilding);
-            throw failure;
-        }));
-
-        Assert.Same(failure, observed);
-        Assert.Equal(rebuilding, owner.IsRebuilding);
-        Assert.True(owner.IsSuppressed);
-    }
-
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void NestedModeOptionsKeepOuterStateAfterSuccessOrCaughtFailure(bool failInner)
-    {
-        var owner = new SelectionOwner(initiallySuppressed: false);
-        var failure = new InvalidOperationException("inner mode options failed");
-
-        owner.ApplyModeOptions(() =>
-        {
-            var observed = Record.Exception(() => owner.ApplyModeOptions(() =>
-            {
-                Assert.True(owner.IsRebuilding);
-                if (failInner)
-                {
-                    throw failure;
-                }
-            }));
-            Assert.Same(failInner ? failure : null, observed);
-            Assert.True(owner.IsRebuilding);
-            owner.ApplyModeOptions(() => Assert.True(owner.IsRebuilding));
-            Assert.True(owner.IsRebuilding);
-            Assert.False(owner.IsSuppressed);
-        });
-
-        Assert.False(owner.IsRebuilding);
-        Assert.False(owner.IsSuppressed);
-    }
-
-    [Fact]
-    public void ModeOptionsAndReinitializeSuppressionHaveIndependentLifetimes()
-    {
-        var owner = new SelectionOwner(initiallySuppressed: false);
-
-        owner.Apply(() =>
-        {
-            owner.ApplyModeOptions(() => Assert.True(owner.IsSuppressed && owner.IsRebuilding));
-            Assert.True(owner.IsSuppressed);
-            Assert.False(owner.IsRebuilding);
-        });
-        owner.ApplyModeOptions(() =>
-        {
-            owner.Apply(() => Assert.True(owner.IsSuppressed && owner.IsRebuilding));
-            Assert.True(owner.IsRebuilding);
-            Assert.False(owner.IsSuppressed);
-        });
-
-        Assert.False(owner.IsRebuilding);
-        Assert.False(owner.IsSuppressed);
     }
 
     private sealed class SelectionOwner

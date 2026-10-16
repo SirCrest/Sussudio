@@ -1,8 +1,10 @@
+using System.Collections.Concurrent;
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Threading;
 using SharpGen.Runtime;
+using Sussudio.Services.Performance;
 using Vortice.Direct3D;
 using Vortice.Direct3D11;
 using Vortice.DXGI;
@@ -414,8 +416,19 @@ internal sealed partial class D3D11PreviewRenderer
     private int _hdrInputConfiguredHeight;
     private bool _hdrPlaneViewsUnavailable;
     private ID3D11Device? _sharedDevice;
+    // Bumped under _lifecycleLock whenever SetSharedDevice stores a different
+    // device. The render thread compares it across a device selection to catch
+    // a hand-over that landed before its own device existed.
+    private int _sharedDeviceGeneration;
+    // The generation the render thread's latest shared-device decision saw,
+    // read under the same lock as _sharedDevice. Render thread only.
+    private int _decisionSharedDeviceGeneration;
     private int _sharedDeviceResetPending;
     private int _sharedDeviceActive;
+    // Fault injection for PreviewRendererSharedDeviceRaceTests: runs on the render
+    // thread between the shared-device decision and renderer-owned device creation,
+    // the window a concurrent hand-over has to be caught in. The app never sets it.
+    private Action? _afterSharedDeviceDecision = null;
 
     // Shader resources live beside device, swap-chain, and top-level D3D cleanup state.
     [ComImport]
@@ -646,7 +659,17 @@ internal sealed partial class D3D11PreviewRenderer
         }
     }
 
+    // Bytecode is a pure function of (source, entry point, profile). D3DCompile costs
+    // milliseconds per shader and InitializeD3D runs on every device loss and reinit,
+    // so each shader is compiled once per process.
+    private static readonly ConcurrentDictionary<(string Source, string EntryPoint, string Profile), byte[]> ShaderBytecodeCache = new();
+
     private static byte[] CompileShader(string hlslSource, string entryPoint, string profile)
+        => ShaderBytecodeCache.GetOrAdd(
+            (hlslSource, entryPoint, profile),
+            static key => CompileShaderUncached(key.Source, key.EntryPoint, key.Profile));
+
+    private static byte[] CompileShaderUncached(string hlslSource, string entryPoint, string profile)
     {
         var sourceBytes = System.Text.Encoding.UTF8.GetBytes(hlslSource);
         var shaderBlob = IntPtr.Zero;
@@ -764,6 +787,7 @@ internal sealed partial class D3D11PreviewRenderer
         }
 
         ID3D11Device? previous;
+        bool resetQueued;
         lock (_lifecycleLock)
         {
             // Recording start and preview re-attach re-apply the device the
@@ -781,20 +805,30 @@ internal sealed partial class D3D11PreviewRenderer
             Marshal.AddRef(sharedDevice.NativePointer);
             previous = _sharedDevice;
             _sharedDevice = new ID3D11Device(sharedDevice.NativePointer);
+            if (previous == null || previous.NativePointer != sharedDevice.NativePointer)
+            {
+                _sharedDeviceGeneration++;
+            }
+
+            Interlocked.Exchange(ref _sharedDeviceActive, 0);
+
+            // The render thread flips _isRendering before its first InitializeD3D().
+            // A hand-over that lands before that initialization owns a device is
+            // either read by its shared-device decision or caught by
+            // PublishRenderDeviceSelection; queuing a reset here would immediately
+            // unbind/dispose/recreate the freshly bound swap chain. Only reset
+            // once D3D resources actually exist.
+            resetQueued = Volatile.Read(ref _isRendering) != 0 &&
+                (_device != null || _swapChain != null);
+            if (resetQueued)
+            {
+                Interlocked.Exchange(ref _sharedDeviceResetPending, 1);
+            }
         }
 
         previous?.Dispose();
-        Interlocked.Exchange(ref _sharedDeviceActive, 0);
-
-        // The render thread flips _isRendering before its first InitializeD3D().
-        // If the capture service applies the shared device in that startup
-        // window, the initial InitializeD3D() will already consume _sharedDevice;
-        // queuing a reset would immediately unbind/dispose/recreate the freshly
-        // bound swap chain. Only reset once D3D resources actually exist.
-        if (Volatile.Read(ref _isRendering) != 0 &&
-            (_device != null || _swapChain != null))
+        if (resetQueued)
         {
-            Interlocked.Exchange(ref _sharedDeviceResetPending, 1);
             SignalFrameReady("shared_device_reset");
         }
     }
@@ -817,23 +851,11 @@ internal sealed partial class D3D11PreviewRenderer
     private void InitializeD3D()
     {
         CleanupD3DResources();
+        Interlocked.Increment(ref _displayGeneration);
 
-        var sharedDeviceActive = TryInitializeWithSharedDevice(out var featureLevel);
-        if (!sharedDeviceActive)
-        {
-            CreateRendererOwnedDevice(out featureLevel);
-        }
-
-        if (_device == null || _deviceContext == null)
-        {
-            throw new InvalidOperationException("D3D11 device initialization did not produce a valid device/context.");
-        }
-
-        var device = _device;
-        var deviceContext = _deviceContext;
+        var (device, deviceContext, featureLevel, sharedDeviceAdopted) = SelectRenderDevice();
         _device3?.Dispose();
         _device3 = device.QueryInterfaceOrNull<ID3D11Device3>();
-        Interlocked.Exchange(ref _sharedDeviceActive, sharedDeviceActive ? 1 : 0);
 
         _multithread = device.QueryInterfaceOrNull<ID3D11Multithread>();
         _multithread?.SetMultithreadProtected(true);
@@ -857,7 +879,7 @@ internal sealed partial class D3D11PreviewRenderer
         BindSwapChainToPanel(swapChain);
         CompileTonemapShaders();
 
-        Logger.Log($"D3D11_PREVIEW_DEVICE_CREATED featureLevel={featureLevel} shared={sharedDeviceActive}.");
+        Logger.Log($"D3D11_PREVIEW_DEVICE_CREATED featureLevel={featureLevel} shared={sharedDeviceAdopted}.");
         Logger.Log($"D3D11_PREVIEW_SWAPCHAIN_CREATED width={pixelWidth} height={pixelHeight} buffers={_swapChainBufferCount} renderQueue={_maxPendingFrames} sync={_presentSyncInterval} latency={_dxgiMaxFrameLatency} waitable={_waitableSwapChainEnabled}.");
     }
 
@@ -935,7 +957,7 @@ internal sealed partial class D3D11PreviewRenderer
             flags);
         if (result.Failure)
         {
-            throw new InvalidOperationException($"D3D11 preview ResizeBuffers failed: 0x{result.Code:X8}.");
+            throw NativeCallFailed("D3D11 preview ResizeBuffers", result);
         }
 
         _configuredOutputWidth = target.Width;
@@ -1058,6 +1080,54 @@ internal sealed partial class D3D11PreviewRenderer
         }
     }
 
+    // Chooses the device this initialization renders on: the capture-shared device
+    // when one has been handed over, else a renderer-owned one.
+    private (ID3D11Device Device, ID3D11DeviceContext DeviceContext, FeatureLevel FeatureLevel, bool SharedDeviceAdopted) SelectRenderDevice()
+    {
+        var sharedDeviceAdopted = TryInitializeWithSharedDevice(out var featureLevel);
+        _afterSharedDeviceDecision?.Invoke();
+        if (!sharedDeviceAdopted)
+        {
+            CreateRendererOwnedDevice(out featureLevel);
+        }
+
+        if (_device == null || _deviceContext == null)
+        {
+            throw new InvalidOperationException("D3D11 device initialization did not produce a valid device/context.");
+        }
+
+        PublishRenderDeviceSelection(sharedDeviceAdopted);
+        return (_device, _deviceContext, featureLevel, sharedDeviceAdopted);
+    }
+
+    // Every preview start creates a renderer and hands it the capture device just
+    // after Start(), so the render thread's decision races that hand-over. One that
+    // lands after the decision but before _device exists skips SetSharedDevice's
+    // reset gate; left alone the renderer would stay on its own device with
+    // submission inactive. Compare generations under the lock SetSharedDevice
+    // stores under: whichever side runs second sees the other and queues the reset.
+    // Only a newer hand-over counts, so a device that failed adoption does not
+    // reset in a loop.
+    private void PublishRenderDeviceSelection(bool sharedDeviceAdopted)
+    {
+        bool handOverMissed;
+        lock (_lifecycleLock)
+        {
+            handOverMissed = _sharedDeviceGeneration != _decisionSharedDeviceGeneration;
+            Interlocked.Exchange(ref _sharedDeviceActive, sharedDeviceAdopted && !handOverMissed ? 1 : 0);
+            if (handOverMissed)
+            {
+                Interlocked.Exchange(ref _sharedDeviceResetPending, 1);
+            }
+        }
+
+        if (handOverMissed)
+        {
+            Logger.Log($"D3D11_PREVIEW_SHARED_DEVICE_HANDOVER_DURING_INIT adopted={sharedDeviceAdopted} action=reset");
+            SignalFrameReady("shared_device_handover_during_init");
+        }
+    }
+
     private void CreateRendererOwnedDevice(out FeatureLevel featureLevel)
     {
         var featureLevels = new[] { FeatureLevel.Level_11_0 };
@@ -1098,6 +1168,7 @@ internal sealed partial class D3D11PreviewRenderer
         ID3D11Device? sharedDevice = null;
         lock (_lifecycleLock)
         {
+            _decisionSharedDeviceGeneration = _sharedDeviceGeneration;
             if (_sharedDevice == null || _sharedDevice.NativePointer == IntPtr.Zero)
             {
                 return false;
@@ -1109,6 +1180,17 @@ internal sealed partial class D3D11PreviewRenderer
 
         try
         {
+            // A removed capture-shared device stays dead. Adopting it during device-lost recovery would fail at
+            // swap-chain creation and end the render thread, so fall back to a renderer-owned device; the capture
+            // restart hands over a fresh device through SetSharedDevice, whose reset moves the preview back onto it.
+            var removedReason = sharedDevice.DeviceRemovedReason;
+            if (removedReason.Failure)
+            {
+                Logger.Log($"D3D11_PREVIEW_SHARED_DEVICE_REMOVED reason=0x{removedReason.Code:X8}; falling back to renderer-owned device.");
+                sharedDevice.Dispose();
+                return false;
+            }
+
             _device = sharedDevice;
             sharedDevice = null;
             _deviceContext = _device.ImmediateContext;
@@ -1134,7 +1216,10 @@ internal sealed partial class D3D11PreviewRenderer
 
     private void HandleDeviceLost(Exception ex)
     {
-        Logger.Log($"D3D11_PREVIEW_DEVICE_LOST type={ex.GetType().Name} action=recreate");
+        // The removed reason (hung, reset, driver update) is only readable before cleanup releases the device.
+        var device = _device;
+        var removedReason = device != null && device.NativePointer != IntPtr.Zero ? device.DeviceRemovedReason.Code : 0;
+        Logger.Log($"D3D11_PREVIEW_DEVICE_LOST type={ex.GetType().Name} hr=0x{ex.HResult:X8} removedReason=0x{removedReason:X8} shared={Volatile.Read(ref _sharedDeviceActive)} action=recreate");
 
         // If Stop() is pending, bail. Stop() will unbind the swap chain from
         // the panel while D3D resources are still alive, then the finally block
@@ -1147,7 +1232,7 @@ internal sealed partial class D3D11PreviewRenderer
         CleanupD3DResources();
         while (TryDequeuePendingFrame(out var stalePending))
         {
-            TrackFrameDropped(stalePending, "device-lost");
+            TrackFrameDropped(stalePending, "device-lost", PreviewDropReason.DeviceLost);
             stalePending.Dispose();
         }
 
@@ -1162,20 +1247,25 @@ internal sealed partial class D3D11PreviewRenderer
 
     private static bool IsDeviceLostException(Exception ex)
     {
-        if (ex is SharpGenException sharpGenException)
+        var hresult = ex switch
         {
-            return sharpGenException.ResultCode == Vortice.DXGI.ResultCode.DeviceRemoved ||
-                   sharpGenException.ResultCode == Vortice.DXGI.ResultCode.DeviceReset;
-        }
+            SharpGenException sharpGenException => sharpGenException.ResultCode.Code,
+            COMException comException => comException.HResult,
+            _ => 0,
+        };
 
-        if (ex is COMException comException)
-        {
-            return comException.HResult == unchecked((int)0x887A0005) ||
-                   comException.HResult == unchecked((int)0x887A0007);
-        }
-
-        return false;
+        // Every DXGI code that leaves the device removed: nothing created on it works again, so only a new device and
+        // swap chain recover. Any other failure stays a per-frame render failure.
+        return hresult == Vortice.DXGI.ResultCode.DeviceRemoved.Code ||
+               hresult == Vortice.DXGI.ResultCode.DeviceReset.Code ||
+               hresult == Vortice.DXGI.ResultCode.DeviceHung.Code ||
+               hresult == Vortice.DXGI.ResultCode.DriverInternalError.Code;
     }
+
+    // HRESULT-returning calls (Present, VideoProcessorBlt, ResizeBuffers) throw with their Result intact, so
+    // IsDeviceLostException routes a removed device to HandleDeviceLost exactly as it routes Vortice-thrown failures.
+    private static SharpGenException NativeCallFailed(string operation, Result result)
+        => new(result, $"{operation} failed: 0x{result.Code:X8}.", null);
 
     private void EnsureInputResources(int width, int height, bool isHdr)
     {
@@ -1569,6 +1659,9 @@ internal sealed partial class D3D11PreviewRenderer
 
     private void CleanupD3DResources()
     {
+        // The timestamp queries belong to the device and context disposed below; release them first.
+        ReleaseGpuTiming("released: device or swap chain reset");
+
         // Keep every native owner intact until the panel acknowledges detach.
         UnbindSwapChainFromPanel();
         DisposeProcessorResources();

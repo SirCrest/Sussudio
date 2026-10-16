@@ -71,6 +71,15 @@ internal sealed class FlashbackBufferManager : IDisposable
     private readonly ConcurrentDictionary<string, PendingEvictedSegmentDelete> _parkedEvictionDeletes =
         new(StringComparer.OrdinalIgnoreCase);
 
+    // Keyframes the writer muxed, per segment path in PTS order. Playback seeks by byte
+    // offset to the IDR at or before a target instead of bisecting an index-less MPEG-TS
+    // file and decoding forward from an arbitrary packet. Bounded per segment; entries are
+    // dropped with the segment.
+    private const int MaxKeyframesPerSegment = 4096;
+    private readonly Dictionary<string, List<FlashbackKeyframeLocation>> _keyframeIndex =
+        new(StringComparer.OrdinalIgnoreCase);
+    private FlashbackPlaybackStreamHints? _playbackStreamHints;
+
     public FlashbackBufferManager(FlashbackBufferOptions? options = null)
     {
         _options = options ?? new FlashbackBufferOptions();
@@ -315,6 +324,146 @@ internal sealed class FlashbackBufferManager : IDisposable
     public double EncodeFrameRate { get; set; }
 
     /// <summary>
+    /// Stream parameters of the segments the current writer produces, so the playback decoder
+    /// can open them without probe-decoding. Null until a writer session starts.
+    /// </summary>
+    public FlashbackPlaybackStreamHints? PlaybackStreamHints
+    {
+        get
+        {
+            lock (_indexLock)
+            {
+                return _playbackStreamHints;
+            }
+        }
+        set
+        {
+            lock (_indexLock)
+            {
+                _playbackStreamHints = value;
+            }
+        }
+    }
+
+    /// <summary>True when <paramref name="path"/> lies in the current session directory.</summary>
+    public bool IsSessionSegmentPath(string? path)
+        => !string.IsNullOrWhiteSpace(path) && IsPathInSessionDirectory(path);
+
+    /// <summary>
+    /// Records a keyframe the writer muxed into <paramref name="path"/>. Called on the encode
+    /// thread once per GOP; entries for a path must arrive in PTS order and out-of-order ones
+    /// are ignored so lookups can bisect. Paths outside the session directory (a recording
+    /// output routed through the same encoder) are not indexed.
+    /// </summary>
+    public void RecordKeyframe(string path, TimeSpan pts, long bytePosition)
+    {
+        if (string.IsNullOrWhiteSpace(path) || bytePosition < 0)
+        {
+            return;
+        }
+
+        lock (_indexLock)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            var key = NormalizeKeyframeIndexKey(path);
+            if (!_keyframeIndex.TryGetValue(key, out var entries))
+            {
+                if (!IsPathInSessionDirectory(path))
+                {
+                    return;
+                }
+
+                entries = new List<FlashbackKeyframeLocation>(512);
+                _keyframeIndex[key] = entries;
+            }
+
+            if (entries.Count > 0 && pts <= entries[^1].Pts)
+            {
+                return;
+            }
+
+            if (entries.Count >= MaxKeyframesPerSegment)
+            {
+                entries.RemoveAt(0);
+            }
+
+            entries.Add(new FlashbackKeyframeLocation(pts, bytePosition));
+        }
+    }
+
+    /// <summary>
+    /// Finds the recorded keyframe at or before <paramref name="target"/> in <paramref name="path"/>.
+    /// False when the segment has no index (written before indexing existed, or recovered
+    /// from an earlier session) or the target precedes its first recorded keyframe.
+    /// </summary>
+    public bool TryFindKeyframeAtOrBefore(string path, TimeSpan target, out FlashbackKeyframeLocation keyframe)
+    {
+        keyframe = default;
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return false;
+        }
+
+        lock (_indexLock)
+        {
+            if (!_keyframeIndex.TryGetValue(NormalizeKeyframeIndexKey(path), out var entries) || entries.Count == 0)
+            {
+                return false;
+            }
+
+            var low = 0;
+            var high = entries.Count - 1;
+            var found = -1;
+            while (low <= high)
+            {
+                var mid = (low + high) >> 1;
+                if (entries[mid].Pts <= target)
+                {
+                    found = mid;
+                    low = mid + 1;
+                }
+                else
+                {
+                    high = mid - 1;
+                }
+            }
+
+            if (found < 0)
+            {
+                return false;
+            }
+
+            keyframe = entries[found];
+            return true;
+        }
+    }
+
+    // Must be called under _indexLock.
+    private void RemoveKeyframeIndexUnsafe(string? path)
+    {
+        if (!string.IsNullOrWhiteSpace(path))
+        {
+            _keyframeIndex.Remove(NormalizeKeyframeIndexKey(path));
+        }
+    }
+
+    private static string NormalizeKeyframeIndexKey(string path)
+    {
+        try
+        {
+            return Path.GetFullPath(path);
+        }
+        catch (Exception)
+        {
+            return path;
+        }
+    }
+
+    /// <summary>
     /// Called by the encoder on each video frame to update the latest PTS.
     /// </summary>
     public void UpdateLatestPts(TimeSpan pts)
@@ -455,6 +604,7 @@ internal sealed class FlashbackBufferManager : IDisposable
                     _completedSegmentBytes = SubtractNonNegative(_completedSegmentBytes, oldest.SizeBytes);
                     _totalDiskBytes = SubtractNonNegative(_totalDiskBytes, oldest.SizeBytes);
                     _completedSegments.RemoveAt(0);
+                    RemoveKeyframeIndexUnsafe(oldest.Path);
                 }
 
                 if (reclaimed > 0)
@@ -512,6 +662,8 @@ internal sealed class FlashbackBufferManager : IDisposable
             _activeSegmentPath = null;
             Interlocked.Exchange(ref _activeSegmentStartPtsTicks, -1);
             _completedSegments.Clear();
+            _keyframeIndex.Clear();
+            _playbackStreamHints = null;
             _completedSegmentBytes = 0;
             _completedSegmentSequence = 0;
             _nextSegmentIndex = 0;
@@ -572,6 +724,7 @@ internal sealed class FlashbackBufferManager : IDisposable
             // run fully. This ensures the session directory is empty before the
             // Directory.Delete call below, preventing orphaned multi-GB segment files.
             var (purgedSegments, purgedBytes) = PurgeAllSegmentsCore();
+            _keyframeIndex.Clear();
             Logger.Log($"FLASHBACK_BUFFER_DISPOSE_PURGE segments={purgedSegments} bytes={purgedBytes}");
 
             _disposed = true;
@@ -738,6 +891,7 @@ internal sealed class FlashbackBufferManager : IDisposable
                 if (TryDeleteFile(_completedSegments[i].Path))
                 {
                     freedBytes = AddNonNegativeSaturated(freedBytes, _completedSegments[i].SizeBytes);
+                    RemoveKeyframeIndexUnsafe(_completedSegments[i].Path);
                     _completedSegments.RemoveAt(i);
                 }
             }
@@ -752,6 +906,7 @@ internal sealed class FlashbackBufferManager : IDisposable
                 if (TryDeleteFile(_activeSegmentPath))
                 {
                     freedBytes = AddNonNegativeSaturated(freedBytes, activeSegmentBytes);
+                    RemoveKeyframeIndexUnsafe(_activeSegmentPath);
                     _activeSegmentPath = null;
                     Interlocked.Exchange(ref _activeSegmentStartPtsTicks, -1);
                     _previousActiveSegmentBytes = 0;
@@ -972,7 +1127,11 @@ internal sealed class FlashbackBufferManager : IDisposable
         if (string.IsNullOrWhiteSpace(path)) return;
         lock (_indexLock)
         {
-            if (!_disposed) TryDeleteFile(path);
+            if (!_disposed)
+            {
+                RemoveKeyframeIndexUnsafe(path);
+                TryDeleteFile(path);
+            }
         }
     }
 
@@ -1026,6 +1185,7 @@ internal sealed class FlashbackBufferManager : IDisposable
 
             if (!IsSameSegmentPath(generatedPath, restoreActivePath))
             {
+                RemoveKeyframeIndexUnsafe(generatedPath);
                 TryDeleteFile(generatedPath);
             }
         }
@@ -1589,6 +1749,7 @@ internal sealed class FlashbackBufferManager : IDisposable
                     evictedBytes = AddNonNegativeSaturated(evictedBytes, oldest.SizeBytes);
                     _completedSegmentBytes = SubtractNonNegative(_completedSegmentBytes, oldest.SizeBytes);
                     _completedSegments.RemoveAt(0);
+                    RemoveKeyframeIndexUnsafe(oldest.Path);
                     evictedCount++;
                 }
                 else
@@ -1612,6 +1773,7 @@ internal sealed class FlashbackBufferManager : IDisposable
                 evictedBytes = AddNonNegativeSaturated(evictedBytes, oldest.SizeBytes);
                 _completedSegmentBytes = SubtractNonNegative(_completedSegmentBytes, oldest.SizeBytes);
                 _completedSegments.RemoveAt(0);
+                RemoveKeyframeIndexUnsafe(oldest.Path);
                 evictedCount++;
             }
             else

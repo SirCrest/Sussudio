@@ -121,6 +121,25 @@ internal static class McpToolResultFactory
         return result;
     }
 
+    // For commands whose failure carries the evidence the caller needs to recover (an ambiguous UI target lists its
+    // candidates, a silent audio capture still returns its analysis). A failed response with an object payload keeps
+    // that payload as the structured content and appends it to the text, and is still an error. Everything else
+    // behaves exactly like FromStructuredResponse.
+    internal static CallToolResult FromStructuredResponseKeepingFailureData(JsonElement response, string propertyName, string missingMessage)
+    {
+        if (AutomationSnapshotFormatter.IsSuccess(response) ||
+            !response.TryGetProperty(propertyName, out var payload) ||
+            payload.ValueKind != JsonValueKind.Object)
+        {
+            return FromStructuredResponse(response, propertyName, missingMessage);
+        }
+
+        var text = AppendErrorCode(response, GetMessage(response)) + Environment.NewLine + payload.GetRawText();
+        var result = FromText(text, isError: true);
+        result.StructuredContent = payload.Clone();
+        return result;
+    }
+
     internal static CallToolResult FromResponse(JsonElement response, string text)
     {
         var isError = !AutomationSnapshotFormatter.IsSuccess(response);

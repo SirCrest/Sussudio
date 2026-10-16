@@ -1,0 +1,24 @@
+{
+  "name": "jitter depth",
+  "description": "Does a shallower or deeper MJPEG preview jitter buffer change present cadence, ingress-to-visible latency and jitter drops? Needs a live MJPEG source; the first variant is the baseline and runs with whatever the app has now.",
+  "warmupSeconds": 5,
+  "measureSeconds": 20,
+  "repeats": 3,
+  "verdictStatistic": "p99",
+  "metrics": [
+    "preview.present_interval",
+    "preview.ingress_to_visible",
+    "preview.jitter_residence",
+    "preview.jitter_drop.",
+    "preview.jitter_underflow."
+  ],
+  "variants": [
+    { "name": "baseline", "knobs": {} },
+    { "name": "target-depth-2", "knobs": { "SUSSUDIO_PREVIEW_JITTER_TARGET_DEPTH": 2 } },
+    { "name": "target-depth-5", "knobs": { "SUSSUDIO_PREVIEW_JITTER_TARGET_DEPTH": 5 } },
+    {
+      "name": "target-depth-5-latency-2",
+      "knobs": { "SUSSUDIO_PREVIEW_JITTER_TARGET_DEPTH": 5, "SUSSUDIO_PREVIEW_DXGI_MAX_FRAME_LATENCY": 2 }
+    }
+  ]
+}

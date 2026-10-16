@@ -10,6 +10,13 @@ using Xunit;
 
 namespace Sussudio.Tests;
 
+// Isolated failure modes of audio priming and the frame hand-off around it, driven
+// through the real decoder and fixture media. Priming reads audio ahead and stashes the
+// video packets it passes inside the decoder; nothing is decoded ahead and nothing is
+// rewound. The ways this can fail: a command arrives mid-prime, cancellation during the
+// read or during a temporary-EOF retry, audio overshooting the target, the stash bound,
+// stash ordering after priming, and the retained-frame hand-off on pause/resume, nudge,
+// exact resume, source replacement and the terminal commands.
 public sealed class FlashbackPrebufferBehaviorTests : IClassFixture<BundledRuntime>
 {
     private readonly BundledRuntime _runtime;
@@ -17,7 +24,7 @@ public sealed class FlashbackPrebufferBehaviorTests : IClassFixture<BundledRunti
     public FlashbackPrebufferBehaviorTests(BundledRuntime runtime) => _runtime = runtime;
 
     [Fact]
-    public void OneCpuFrameIsRetainedAndConsumedOnceWithoutRewinding()
+    public void PrimingStashesPassedVideoPacketsAndFeedsThemBeforeTheDemuxer()
     {
         using var session = new PrebufferSession(_runtime);
         var initialData = Read<IntPtr>(session.InitialFrame, "Data");
@@ -29,79 +36,34 @@ public sealed class FlashbackPrebufferBehaviorTests : IClassFixture<BundledRunti
 
         session.Prime();
 
-        Assert.Equal(1, session.HeldFrameCount);
-        Assert.Equal(1, session.Commands.PendingCount);
-        var retained = session.ReadPlaybackFrame();
-        Assert.Equal(session.ResumeTarget, Read<TimeSpan>(retained, "Pts"));
-        Assert.Equal(initialData, Read<IntPtr>(retained, "Data"));
+        // One video packet was read before the queued Stop was seen; it waits in the decoder.
         Assert.Equal(0, session.HeldFrameCount);
+        Assert.True(session.HasPendingDecoderFrame);
+        Assert.Equal(1, session.StashedVideoPackets);
+        Assert.Equal(1, session.Commands.PendingCount);
+        Assert.Equal(session.ResumeTarget, Read<TimeSpan>(session.ReadPlaybackFrame(), "Pts"));
+        // The stashed packet is decoded before the demuxer is read again: no gap, no repeat.
         Assert.Equal(session.ResumeTarget + TimeSpan.FromMilliseconds(20),
             Read<TimeSpan>(session.ReadPlaybackFrame(), "Pts"));
+        Assert.Equal(session.ResumeTarget + TimeSpan.FromMilliseconds(40),
+            Read<TimeSpan>(session.ReadPlaybackFrame(), "Pts"));
+        Assert.Equal(0, session.StashedVideoPackets);
         Assert.True(session.Commands.ReadStop());
     }
 
     [Fact]
-    public void ASecondCpuFrameClearsTheWholeQueueAndRewindsToTheResumeTarget()
+    public void PrimingStopsAsSoonAsTheAudioTargetIsBufferedAndTheGateRejectsOlderAudio()
     {
         using var session = new PrebufferSession(_runtime);
         session.Commands.OnPeek = count =>
         {
-            if (count == 3) session.Commands.EnqueueStop();
+            if (count == 1) session.SendAudio(TimeSpan.FromSeconds(1), milliseconds: 200);
         };
 
         session.Prime();
 
-        Assert.Equal(3, session.Commands.PeekCount);
-        Assert.Equal(0, session.HeldFrameCount);
-        Assert.Equal(1, session.Commands.PendingCount);
-        Assert.Equal(session.ResumeTarget, Read<TimeSpan>(session.ReadPlaybackFrame(), "Pts"));
-        Assert.Equal(session.ResumeTarget + TimeSpan.FromMilliseconds(20),
-            Read<TimeSpan>(session.ReadPlaybackFrame(), "Pts"));
-    }
-
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void HardwareMarkedFramesAreReleasedWhenPrimingReturnsWithTheDecoderRewound(bool afterRetainedCpuFrame)
-    {
-        using var session = new PrebufferSession(_runtime);
-        var native = session.CreateHardwareMarkedFrame();
-        Assert.Equal(2, native.ReferenceCount);
-        if (!afterRetainedCpuFrame) session.SetPendingDecoderFrame(native.Frame);
-        session.Commands.OnPeek = count =>
-        {
-            if (afterRetainedCpuFrame && count == 2)
-            {
-                Assert.Equal(1, session.HeldFrameCount);
-                session.SetPendingDecoderFrame(native.Frame);
-            }
-            if (count == (afterRetainedCpuFrame ? 3 : 2)) session.Commands.EnqueueStop();
-        };
-
-        session.Prime();
-
-        // The frame owns a real AVBuffer reference, but no D3D11 texture. This
-        // executes the hardware-frame ownership branch, not GPU decode/display.
-        Assert.Equal(1, native.ReferenceCount);
-        Assert.Equal(0, session.HeldFrameCount);
-        Assert.Equal(session.ResumeTarget, Read<TimeSpan>(session.ReadPlaybackFrame(), "Pts"));
-        session.ClearFrames();
-        Assert.Equal(1, native.ReferenceCount);
-    }
-
-    [Fact]
-    public void RewindPreservesBufferedAudioAndRejectsAlreadyAcceptedTimestamps()
-    {
-        using var session = new PrebufferSession(_runtime);
-        session.Commands.OnPeek = count =>
-        {
-            if (count != 3) return;
-            session.SendAudio(TimeSpan.FromSeconds(1), milliseconds: 200);
-            session.Commands.EnqueueStop();
-        };
-
-        session.Prime();
-
+        Assert.Equal(1, session.Commands.PeekCount);
+        Assert.Equal(0, session.StashedVideoPackets);
         Assert.Equal(0, session.HeldFrameCount);
         Assert.Equal(200, session.BufferedAudioMs);
         Assert.Equal(TimeSpan.FromSeconds(1).Ticks, session.LastAcceptedAudioPts);
@@ -117,33 +79,43 @@ public sealed class FlashbackPrebufferBehaviorTests : IClassFixture<BundledRunti
         Assert.Equal(TimeSpan.FromMilliseconds(1100).Ticks, session.LastAcceptedAudioPts);
     }
 
-    [Theory]
-    [InlineData(180, false)]
-    [InlineData(250, false)]
-    [InlineData(251, true)]
-    public void AudioBeyondTheDiscardLimitFlushesVideoAndRestartsTheAudioGate(int bufferedMs, bool discarded)
+    [Fact]
+    public void PrimingLeavesAPendingHardwareFrameUntouched()
     {
         using var session = new PrebufferSession(_runtime);
+        var native = session.CreateHardwareMarkedFrame();
+        Assert.Equal(2, native.ReferenceCount);
+        session.SetPendingDecoderFrame(native.Frame);
         session.Commands.OnPeek = count =>
         {
-            if (count == 2) session.SendAudio(TimeSpan.FromSeconds(1), bufferedMs);
+            if (count == 2) session.Commands.EnqueueStop();
         };
 
         session.Prime();
 
-        Assert.Equal(2, session.Commands.PeekCount);
-        Assert.Equal(discarded ? 0 : 1, session.HeldFrameCount);
-        Assert.Equal(discarded ? 0 : bufferedMs, session.BufferedAudioMs);
-        Assert.Equal(discarded ? 0 : 1, session.AudioQueueDepth);
-        Assert.Equal(discarded ? 0 : TimeSpan.FromSeconds(1).Ticks, session.LastAcceptedAudioPts);
+        // The frame owns a real AVBuffer reference, but no D3D11 texture. Priming never
+        // touches the pending slot, so the reference survives until the frame is read.
+        Assert.Equal(2, native.ReferenceCount);
+        Assert.Equal(0, session.HeldFrameCount);
+        var pending = session.ReadPlaybackFrame();
+        AssertSameFrameFields(native.Frame, pending);
+        session.ReleaseReadFrame(pending);
+        Assert.Equal(1, native.ReferenceCount);
+    }
+
+    [Fact]
+    public void PrimingStopsAtTheStashBoundWithoutAudio()
+    {
+        using var session = new PrebufferSession(_runtime);
+
+        var stop = session.Prime(maxStashedVideoPackets: 3);
+
+        Assert.Equal("StashFull", stop);
+        Assert.Equal(3, session.StashedVideoPackets);
+        Assert.Equal(0, session.BufferedAudioMs);
         Assert.Equal(session.ResumeTarget, Read<TimeSpan>(session.ReadPlaybackFrame(), "Pts"));
         Assert.Equal(session.ResumeTarget + TimeSpan.FromMilliseconds(20),
             Read<TimeSpan>(session.ReadPlaybackFrame(), "Pts"));
-
-        session.SendAudio(session.ResumeTarget - TimeSpan.FromMilliseconds(1), milliseconds: 20);
-        Assert.Equal(discarded ? 0 : bufferedMs, session.BufferedAudioMs);
-        session.SendAudio(session.ResumeTarget + TimeSpan.FromMilliseconds(40), milliseconds: 20);
-        Assert.Equal(discarded ? 20 : bufferedMs, session.BufferedAudioMs);
     }
 
     [Fact]
@@ -157,7 +129,10 @@ public sealed class FlashbackPrebufferBehaviorTests : IClassFixture<BundledRunti
         Assert.True(session.AudioQueueDepth > 0);
         Assert.True(session.LastAcceptedAudioPts > session.ResumeTarget.Ticks);
         Assert.Equal(0, session.HeldFrameCount);
+        Assert.True(session.StashedVideoPackets > 0);
         Assert.Equal(session.ResumeTarget, Read<TimeSpan>(session.ReadPlaybackFrame(), "Pts"));
+        var next = Read<TimeSpan>(session.ReadPlaybackFrame(), "Pts");
+        Assert.True(next > session.ResumeTarget);
         session.FlushAudio();
         Assert.Equal(0, session.BufferedAudioMs);
         Assert.Equal(0, session.AudioQueueDepth);
@@ -189,7 +164,7 @@ public sealed class FlashbackPrebufferBehaviorTests : IClassFixture<BundledRunti
     }
 
     [Fact]
-    public void ACommandAlreadyWaitingPreventsDecodeAndRemainsAvailableToItsOwner()
+    public void ACommandAlreadyWaitingPreventsReadingAndRemainsAvailableToItsOwner()
     {
         using var session = new PrebufferSession(_runtime);
         session.Commands.EnqueueStop();
@@ -197,6 +172,7 @@ public sealed class FlashbackPrebufferBehaviorTests : IClassFixture<BundledRunti
         session.Prime();
 
         Assert.Equal(0, session.HeldFrameCount);
+        Assert.Equal(0, session.StashedVideoPackets);
         Assert.True(session.HasPendingDecoderFrame);
         Assert.Equal(session.ResumeTarget, Read<TimeSpan>(session.ReadPlaybackFrame(), "Pts"));
         Assert.True(session.Commands.ReadStop());
@@ -204,7 +180,7 @@ public sealed class FlashbackPrebufferBehaviorTests : IClassFixture<BundledRunti
     }
 
     [Fact]
-    public void CancellationAfterRetentionLeavesTheFrameForProductionQueueCleanup()
+    public void CancellationDuringPrimingIsObservedAndTheStashIsReleasedWithTheFile()
     {
         using var session = new PrebufferSession(_runtime);
         using var cancellation = new CancellationTokenSource();
@@ -216,13 +192,15 @@ public sealed class FlashbackPrebufferBehaviorTests : IClassFixture<BundledRunti
         var error = Assert.Throws<OperationCanceledException>(() => session.Prime(cancellation.Token));
 
         Assert.Equal(cancellation.Token, error.CancellationToken);
-        Assert.Equal(1, session.HeldFrameCount);
-        // Prime borrows this queue from the playback-thread owner. Invoke its
-        // real cleanup method; this test does not run the thread-exit lifecycle.
-        session.ClearFrames();
+        Assert.Equal(2, session.Commands.PeekCount);
         Assert.Equal(0, session.HeldFrameCount);
-        session.ClearFrames();
-        Assert.Equal(0, session.HeldFrameCount);
+        // Two packets were read before the token was checked again. The pending frame
+        // and the stash belong to the decoder and go with the file.
+        Assert.Equal(2, session.StashedVideoPackets);
+        Assert.True(session.HasPendingDecoderFrame);
+        session.CloseDecoderFile();
+        Assert.Equal(0, session.StashedVideoPackets);
+        Assert.False(session.HasPendingDecoderFrame);
     }
 
     [Fact]
@@ -241,6 +219,7 @@ public sealed class FlashbackPrebufferBehaviorTests : IClassFixture<BundledRunti
         Assert.Equal(cancellation.Token, error.CancellationToken);
         Assert.Equal(2, session.Commands.PeekCount);
         Assert.Equal(0, session.HeldFrameCount);
+        Assert.Equal(0, session.StashedVideoPackets);
         Assert.False(session.HasPendingDecoderFrame);
     }
 
@@ -409,7 +388,7 @@ public sealed class FlashbackPrebufferBehaviorTests : IClassFixture<BundledRunti
     [Theory]
     [InlineData("GoLive", true)]
     [InlineData("Stop", false)]
-    public void TerminalCommandsReleaseNativeQueueReferencesAndDisposeTheRealDecoder(string commandKind, bool keepRunning)
+    public void TerminalCommandsReleaseNativeQueueReferencesAndCloseOrDisposeTheRealDecoder(string commandKind, bool keepRunning)
     {
         using var session = new PrebufferSession(_runtime);
         var native = session.RetainNativeFrame();
@@ -419,9 +398,19 @@ public sealed class FlashbackPrebufferBehaviorTests : IClassFixture<BundledRunti
 
         Assert.Equal(0, session.HeldFrameCount);
         Assert.Equal(1, native.ReferenceCount);
-        Assert.Null(GetField(session.Worker, "Decoder"));
         Assert.False((bool)GetField(session.Worker, "FileOpen")!);
-        Assert.True((bool)GetField(session.Decoder, "_disposed")!);
+        Assert.False(Read<bool>(session.Decoder, "IsOpen"));
+        if (keepRunning)
+        {
+            // Go Live keeps the decoder warm; only the segment file is released.
+            Assert.Same(session.Decoder, GetField(session.Worker, "Decoder"));
+            Assert.False((bool)GetField(session.Decoder, "_disposed")!);
+        }
+        else
+        {
+            Assert.Null(GetField(session.Worker, "Decoder"));
+            Assert.True((bool)GetField(session.Decoder, "_disposed")!);
+        }
         Assert.Equal("Live", Read<object>(session.Controller, "State").ToString());
         session.ClearFrames();
         Assert.Equal(1, native.ReferenceCount);
@@ -491,7 +480,7 @@ public sealed class FlashbackPrebufferBehaviorTests : IClassFixture<BundledRunti
                 SetField(_controller, "_audioPlayback", _audio);
                 SetField(_controller, "_currentOpenFilePath", _path);
                 Invoke(_decoder, "Initialize", IntPtr.Zero, IntPtr.Zero);
-                Invoke(_decoder, "OpenFile", _path);
+                Invoke(_decoder, "OpenFile", _path, null);
                 SetField(_worker, "FileOpen", true);
                 Assert.True((bool)Invoke(_decoder, "SeekTo", ResumeTarget, CancellationToken.None)!);
                 InitialFrame = GetField(_decoder, "_pendingVideoFrame")!;
@@ -521,12 +510,20 @@ public sealed class FlashbackPrebufferBehaviorTests : IClassFixture<BundledRunti
         public double BufferedAudioMs => Read<double>(_audio, "PlaybackBufferedDurationMs");
         public long LastAcceptedAudioPts => (long)GetField(_controller, "_lastAudioPtsTicks")!;
         public bool HasPendingDecoderFrame => (bool)GetField(_decoder, "_hasPendingVideoFrame")!;
+        public int StashedVideoPackets => Read<int>(_decoder, "StashedVideoPacketCount");
 
+        /// <summary>Runs the controller's priming step. Returns the decoder's stop reason when called directly.</summary>
         public void Prime(CancellationToken cancellationToken = default)
         {
-            object?[] arguments = { _decoder, _frames, Commands.Reader, true, ResumeTarget, "behavior_test", cancellationToken, false };
-            Invoke(_controller, "PrimePlaybackAudioBuffer", arguments);
-            Assert.True((bool)arguments[3]!);
+            Invoke(_controller, "PrimePlaybackAudioBuffer", _decoder, Commands.Reader, ResumeTarget, "behavior_test", cancellationToken);
+        }
+
+        public string Prime(int maxStashedVideoPackets)
+        {
+            Func<bool> shouldStop = () => Commands.Peek();
+            object?[] arguments = { shouldStop, maxStashedVideoPackets, CancellationToken.None, 0 };
+            var stop = Invoke(_decoder, "PrebufferAudio", arguments)!;
+            return stop.ToString()!;
         }
 
         public object ReadPlaybackFrame()
@@ -536,15 +533,11 @@ public sealed class FlashbackPrebufferBehaviorTests : IClassFixture<BundledRunti
             return arguments[2]!;
         }
 
+        /// <summary>Models a read-ahead CPU frame: the pending picture is moved into the worker's queue.</summary>
         public object RetainInitialCpuFrame()
         {
-            Commands.OnPeek = count =>
-            {
-                if (count == 2) Commands.EnqueueStop();
-            };
-            try { Prime(); }
-            finally { Commands.OnPeek = null; }
-            Assert.True(Commands.ReadStop());
+            var frame = ReadPlaybackFrame();
+            Invoke(_frames, "Enqueue", frame);
             Assert.Equal(1, HeldFrameCount);
             return PeekRetainedFrame();
         }
@@ -642,6 +635,7 @@ public sealed class FlashbackPrebufferBehaviorTests : IClassFixture<BundledRunti
             SetField(_decoder, "_hasPendingVideoFrame", true);
         }
 
+        public void CloseDecoderFile() => Invoke(_decoder, "CloseFile");
         public void ClearFrames() => Invoke(_controller, "ClearPrebufferedFrames", _frames, "behavior_test_cleanup");
         public void FlushAudio() => Invoke(_audio, "Flush");
 
@@ -699,7 +693,7 @@ public sealed class FlashbackPrebufferBehaviorTests : IClassFixture<BundledRunti
     }
 
     // This wrapper schedules external arrivals at a real channel boundary. It
-    // contains no prebuffer decisions, frame queue, audio policy, or rewind logic.
+    // contains no prebuffer decisions, frame queue, or audio policy.
     private interface ICommandBoundary
     {
         object Reader { get; }
@@ -708,6 +702,7 @@ public sealed class FlashbackPrebufferBehaviorTests : IClassFixture<BundledRunti
         int PendingCount { get; }
         void EnqueueStop();
         bool ReadStop();
+        bool Peek();
     }
 
     private sealed class CommandBoundary<T> : ChannelReader<T>, ICommandBoundary
@@ -722,6 +717,7 @@ public sealed class FlashbackPrebufferBehaviorTests : IClassFixture<BundledRunti
         public int PendingCount => _channel.Reader.Count;
         public void EnqueueStop() => Assert.True(_channel.Writer.TryWrite(_stop));
         public bool ReadStop() => _channel.Reader.TryRead(out var item) && EqualityComparer<T>.Default.Equals(_stop, item);
+        public bool Peek() => TryPeek(out _);
         public override bool TryRead([MaybeNullWhen(false)] out T item) => _channel.Reader.TryRead(out item);
         public override ValueTask<bool> WaitToReadAsync(CancellationToken cancellationToken = default) =>
             _channel.Reader.WaitToReadAsync(cancellationToken);

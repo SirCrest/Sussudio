@@ -19,7 +19,7 @@ public static class FramePacingVerdictTools
     public static async Task<CallToolResult> get_frame_pacing_verdict(
         PipeClient pipeClient,
         [Description("Maximum performance timeline entries to inspect for counter deltas. Default 240 is roughly two minutes at 500ms samples.")] int maxTimelineEntries = 240,
-        [Description("Minimum per-channel cadence sample duration in seconds before lows are considered trustworthy. Default 30 seconds.")] double minSampleSeconds = 30,
+        [Description("Minimum per-channel cadence sample duration in seconds before lows are considered trustworthy. Default 15 seconds.")] double minSampleSeconds = 15,
         [Description("Optional target high-frame-rate FPS. Use 0 to infer from snapshot source/capture/playback fields.")] double targetFpsOverride = 0,
         CancellationToken cancellationToken = default)
     {
@@ -108,6 +108,7 @@ public static class FramePacingVerdictTools
 
     private sealed record TimelineRow(
         long DxgiRecentMissed,
+        long DxgiRecentCadenceMissed,
         long MjpegJitterDropped,
         long PlaybackDroppedFrames);
 
@@ -132,6 +133,7 @@ public static class FramePacingVerdictTools
         {
             rows.Add(new TimelineRow(
                 AutomationSnapshotFormatter.GetLong(item, "PreviewD3DFrameStatsRecentMissedRefreshCount"),
+                AutomationSnapshotFormatter.GetLong(item, "PreviewD3DFrameStatsRecentCadenceMissedRefreshCount"),
                 AutomationSnapshotFormatter.GetLong(item, "MjpegPreviewJitterTotalDropped"),
                 AutomationSnapshotFormatter.GetLong(item, "FlashbackPlaybackDroppedFrames")));
         }
@@ -300,6 +302,7 @@ public static class FramePacingVerdictTools
         var first = timeline.FirstOrDefault();
         var last = timeline.LastOrDefault();
         var dxgiMissedMax = timeline.Count == 0 ? 0 : timeline.Max(row => row.DxgiRecentMissed);
+        var dxgiCadenceMissedMax = timeline.Count == 0 ? 0 : timeline.Max(row => row.DxgiRecentCadenceMissed);
         var previewDropDelta = first is null || last is null ? 0 : NonNegativeDelta(last.MjpegJitterDropped, first.MjpegJitterDropped);
         var playbackDropDelta = first is null || last is null ? 0 : NonNegativeDelta(last.PlaybackDroppedFrames, first.PlaybackDroppedFrames);
         var visualChangeFps = AutomationSnapshotFormatter.GetDouble(snapshot, "VisualCadenceChangeObservedFps");
@@ -337,6 +340,7 @@ public static class FramePacingVerdictTools
         builder.AppendLine($"PreviewPacingSlowStageEvidence: {previewPacingEvidence}");
         builder.AppendLine($"TimelineSamples: {timeline.Count}");
         builder.AppendLine($"DxgiMissedRefreshRecentMax: {dxgiMissedMax}");
+        builder.AppendLine($"DxgiCadenceMissedRefreshRecentMax: {dxgiCadenceMissedMax}");
         builder.AppendLine($"PreviewDropDelta: {previewDropDelta}");
         builder.AppendLine($"PlaybackDropDelta: {playbackDropDelta}");
         builder.AppendLine($"Evidence: captureReady={FormatBool(captureReady)} previewReady={FormatBool(previewReady)} playbackReady={FormatBool(playbackReady)} previewHalfRate={FormatBool(previewHalfRate)} playbackHalfRate={FormatBool(playbackHalfRate)}");

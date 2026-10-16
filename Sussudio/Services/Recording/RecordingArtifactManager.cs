@@ -132,6 +132,10 @@ internal static class RecordingFinalizationRecoveryArtifacts
     internal const string UnresolvedMarkerSuffix = ".recording-finalization-unresolved.txt";
     private const string ActiveMarkerSuffix = ".recording-active.txt";
     private const string RecoveryDirectoryName = "RecordingRecovery";
+    // Isolation seam for the stable recovery root. The test assembly points it at a
+    // private temp directory for its whole process, so suites never write markers
+    // into, or restore them from, the user's real folder. Unset in production.
+    private const string RecoveryDirectoryOverrideEnvVar = "SUSSUDIO_RECOVERY_DIRECTORY";
 
     internal static bool IsUnresolvedMarkerPath(string? path)
         => !string.IsNullOrWhiteSpace(path) &&
@@ -461,7 +465,7 @@ internal static class RecordingFinalizationRecoveryArtifacts
 
     private static string GetStableRecoveryDirectory()
     {
-        var overrideDirectory = Environment.GetEnvironmentVariable("SUSSUDIO_RECOVERY_DIRECTORY");
+        var overrideDirectory = Environment.GetEnvironmentVariable(RecoveryDirectoryOverrideEnvVar);
         return !string.IsNullOrWhiteSpace(overrideDirectory)
             ? overrideDirectory
             : Path.Combine(

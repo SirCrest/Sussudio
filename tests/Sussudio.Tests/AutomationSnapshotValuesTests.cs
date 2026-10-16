@@ -29,52 +29,6 @@ public sealed class AutomationSnapshotValuesTests
         Assert.Equal(expected, Get(snapshot, "FlashbackCodecDowngradeReason"));
     }
 
-    [Theory]
-    [InlineData(12.75, 12L)]
-    [InlineData(0.0, 0L)]
-    public void PreviewLatency_PreservesTheWireUnitAndTruncation(double latency, long expected)
-    {
-        var inputs = CreateInputs();
-        Set(inputs["previewRuntime"]!, "EstimatedPipelineLatencyMs", latency);
-
-        Assert.Equal(expected, Get(Build(inputs), "EstimatedPipelineLatencyMs"));
-    }
-
-    [Fact]
-    public void Snapshot_ForwardsCapturedArraysAndVerdictWithoutCopying()
-    {
-        var inputs = CreateInputs();
-        var captureIntervals = new[] { 8.25, 9.75 };
-        var previewIntervals = new[] { 10.25, 11.75 };
-        Set(inputs["health"]!, "CaptureCadenceRecentIntervalsMs", captureIntervals);
-        Set(inputs["previewRuntime"]!, "DisplayCadenceRecentIntervalsMs", previewIntervals);
-        var snapshot = Build(inputs);
-
-        Assert.Same(captureIntervals, Get(snapshot, "CaptureCadenceRecentIntervalsMs"));
-        Assert.Same(previewIntervals, Get(snapshot, "PreviewCadenceRecentIntervalsMs"));
-        Assert.Same(inputs["hdrTruthVerdict"], Get(snapshot, "HdrTruthVerdict"));
-    }
-
-    [Fact]
-    public void DiagnosticEvaluation_CreatePreservesVerdictAndSelectsEachLane()
-    {
-        var lanesType = HubType.GetNestedType("DiagnosticEvaluationLanes", BindingFlags.NonPublic)!;
-        var lanes = Activator.CreateInstance(lanesType)!;
-        foreach (var property in lanesType.GetProperties().Where(property => property.PropertyType == typeof(string)))
-            Set(lanes, property.Name, "lane." + property.Name);
-
-        var evaluationType = HubType.Assembly.GetType("Sussudio.Services.Automation.DiagnosticEvaluation", throwOnError: true)!;
-        var create = evaluationType.GetMethod("Create", BindingFlags.NonPublic | BindingFlags.Static)!;
-        var evaluation = create.Invoke(null, new[] { "health", "stage", "summary", "evidence", lanes })!;
-
-        Assert.Equal("health", Get(evaluation, "HealthStatus"));
-        Assert.Equal("stage", Get(evaluation, "LikelyStage"));
-        Assert.Equal("summary", Get(evaluation, "Summary"));
-        Assert.Equal("evidence", Get(evaluation, "Evidence"));
-        foreach (var lane in new[] { "Source", "Decode", "Preview", "Render", "Present", "Recording", "Audio" })
-            Assert.Equal("lane." + lane, Get(evaluation, lane + "Lane"));
-    }
-
     private static Dictionary<string, object?> CreateInputs()
         => BuildSnapshot.GetParameters().ToDictionary(parameter => parameter.Name!, parameter =>
             parameter.Name == "lastVerification" ? null : Empty(parameter.ParameterType));

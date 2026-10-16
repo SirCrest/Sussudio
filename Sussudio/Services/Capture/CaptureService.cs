@@ -156,6 +156,10 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private long _captureSnapshotProducerEpoch;
     private CaptureSnapshotProducerSignature _lastCaptureSnapshotProducerSignature;
     private const int TelemetryPollIntervalMs = 500;
+    // Source (XU) telemetry is 24 to 52 synchronous USB control transfers to the streaming
+    // device per refresh. The A/V drift sample keeps the 500 ms tick; the device is asked
+    // every fourth tick (2 s), starting with the first.
+    private const int SourceTelemetryRefreshEveryTicks = 4;
     private const int TelemetryPollStopDrainTimeoutMs = 750;
 
     public event EventHandler<string>? StatusChanged;
@@ -1318,10 +1322,6 @@ internal sealed class CaptureVideoPipelineResources
     public Task? PendingDeferredCaptureCleanupTask { get; private set; }
     public UnifiedVideoCapture.MjpegPipelineTimingMetrics LastMjpegPipelineTimingMetrics { get; private set; }
     public ParallelMjpegDecodePipeline.PipelineTimingMetrics? LastFullMjpegPipelineTimingMetrics { get; private set; }
-
-    public int NegotiatedVideoWidth => Capture?.Width ?? 0;
-    public int NegotiatedVideoHeight => Capture?.Height ?? 0;
-    public double NegotiatedVideoFps => Capture?.Fps ?? 0;
 
     public void InstallCapture(UnifiedVideoCapture capture)
     {

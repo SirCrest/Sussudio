@@ -22,6 +22,7 @@ namespace Sussudio.Controllers;
 internal sealed class WindowAutomationHostLifecycleController : IAsyncDisposable
 {
     private readonly IAutomationDiagnosticsHub _diagnosticsHub;
+    private readonly AutomationDiagnosticsHub _diagnosticsHubImpl;
     private readonly NamedPipeAutomationServer _pipeServer;
     private readonly bool _tokenRequired;
     private readonly string _pipeName;
@@ -40,10 +41,11 @@ internal sealed class WindowAutomationHostLifecycleController : IAsyncDisposable
         }
 
         var automationPorts = AutomationViewModelPorts.From(viewModel);
-        _diagnosticsHub = new AutomationDiagnosticsHub(
+        _diagnosticsHubImpl = new AutomationDiagnosticsHub(
             automationPorts.SnapshotQuery,
             previewSnapshotProvider,
             new RecordingVerifier());
+        _diagnosticsHub = _diagnosticsHubImpl;
         var automationDispatcher = new AutomationCommandDispatcher(
             automationPorts,
             _diagnosticsHub,
@@ -884,6 +886,8 @@ internal sealed class WindowShutdownCleanupControllerContext
 
     public required Action StopTimers { get; init; }
 
+    public required Action StopTelemetrySensors { get; init; }
+
     public required Action StopStatsOverlay { get; init; }
 
     public required Action StopRecordingVisuals { get; init; }
@@ -930,6 +934,7 @@ internal sealed class WindowShutdownCleanupController
         _context.LifecycleController.MarkClosing();
         _context.DetachMeterActivationHandlers();
         _context.StopTimers();
+        _context.StopTelemetrySensors();
         _context.StopStatsOverlay();
         _context.StopRecordingVisuals();
         _context.DetachMainContentSizeChanged();

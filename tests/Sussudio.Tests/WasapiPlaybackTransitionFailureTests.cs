@@ -14,6 +14,15 @@ public sealed class WasapiPlaybackTransitionFailureTests
     private const int FailureHr = unchecked((int)0x80004005);
     private const BindingFlags InstanceFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
 
+    // Hang guards, not timing claims. Every wait bounded by these returns as soon
+    // as the worker latches the failure or reaches the state, so a passing run
+    // never sleeps for them; they only stop a deadlock from hanging the suite.
+    // They were 0.5-3 s, which a loaded machine exceeds: the transition wait
+    // lapsed before the worker reached the failing call, returned false instead
+    // of throwing, and left nothing to assert on.
+    private const int DeadlockGuardMs = 30_000;
+    private static readonly TimeSpan DeadlockGuard = TimeSpan.FromMilliseconds(DeadlockGuardMs);
+
     [Theory]
     [InlineData("Stop", false)]
     [InlineData("Reset", false)]
@@ -29,8 +38,9 @@ public sealed class WasapiPlaybackTransitionFailureTests
         var error = Record.Exception(() =>
         {
             fixture.RequestTransition();
-            fixture.WaitForTransition(1000);
+            fixture.WaitForTransition(DeadlockGuardMs);
         });
+        Assert.True(error is not null, $"The {operation} failure did not reach the transition waiter within {DeadlockGuard}.");
 
         if (managedFailure)
         {
@@ -43,7 +53,7 @@ public sealed class WasapiPlaybackTransitionFailureTests
             Assert.Equal($"IAudioClient.{operation}({(operation == "Start" ? "resume" : "pause")}) failed with HRESULT 0x80004005.", nativeError.Message);
         }
         Assert.Contains("RenderThreadMain", error!.StackTrace, StringComparison.Ordinal);
-        await fixture.WorkerExited.WaitAsync(TimeSpan.FromSeconds(1));
+        await fixture.WorkerExited.WaitAsync(DeadlockGuard);
         Assert.Equal(0, fixture.Read<int>("_started"));
         Assert.Equal(operation == "Start" ? 1 : 0, fixture.Read<int>("_renderingPaused"));
         Assert.Equal(1, fixture.Read<int>("_resourcesReleased"));
@@ -66,14 +76,14 @@ public sealed class WasapiPlaybackTransitionFailureTests
         using var fixture = new PlaybackFixture(operation, holdFailure: true);
         fixture.PrepareTransition();
         fixture.RequestTransition();
-        Assert.True(fixture.Client.FailureEntered.Wait(TimeSpan.FromSeconds(1)));
+        Assert.True(fixture.Client.FailureEntered.Wait(DeadlockGuard));
 
         var elapsed = Stopwatch.StartNew();
         Assert.False(fixture.WaitForTransition(30));
         Assert.True(elapsed.Elapsed < TimeSpan.FromSeconds(1));
 
         Exception? error = null;
-        var waiter = new Thread(() => error = Record.Exception(() => fixture.WaitForTransition(1000)))
+        var waiter = new Thread(() => error = Record.Exception(() => fixture.WaitForTransition(DeadlockGuardMs)))
         {
             IsBackground = true
         };
@@ -82,16 +92,16 @@ public sealed class WasapiPlaybackTransitionFailureTests
         {
             Assert.True(SpinWait.SpinUntil(
                 () => (waiter.ThreadState & System.Threading.ThreadState.WaitSleepJoin) != 0,
-                TimeSpan.FromMilliseconds(500)));
+                DeadlockGuard));
         }
         finally
         {
             fixture.Client.ReleaseFailure.Set();
         }
 
-        Assert.True(waiter.Join(TimeSpan.FromSeconds(2)));
+        Assert.True(waiter.Join(DeadlockGuard));
         Assert.Equal(FailureHr, Assert.IsType<COMException>(error).HResult);
-        await fixture.WorkerExited.WaitAsync(TimeSpan.FromSeconds(1));
+        await fixture.WorkerExited.WaitAsync(DeadlockGuard);
         Assert.Same(error, Record.Exception(() => fixture.WaitForTransition(0)));
     }
 
@@ -102,9 +112,9 @@ public sealed class WasapiPlaybackTransitionFailureTests
     {
         using var fixture = new PlaybackFixture(successHr: successHr);
         fixture.Pause();
-        Assert.True(fixture.WaitPaused(1000));
+        Assert.True(fixture.WaitPaused(DeadlockGuardMs));
         fixture.Resume();
-        Assert.True(fixture.WaitRunning(1000));
+        Assert.True(fixture.WaitRunning(DeadlockGuardMs));
         Assert.Equal(1, fixture.Client.StopCalls);
         Assert.Equal(1, fixture.Client.ResetCalls);
         Assert.Equal(2, fixture.Client.StartCalls);
@@ -179,7 +189,7 @@ public sealed class WasapiPlaybackTransitionFailureTests
         {
             if (_failureOperation != "Start") return;
             Pause();
-            Assert.True(WaitPaused(1000));
+            Assert.True(WaitPaused(DeadlockGuardMs));
         }
 
         private object? Invoke(string method, params object[] arguments)
@@ -238,7 +248,7 @@ public sealed class WasapiPlaybackTransitionFailureTests
             }
             if (operation != failureOperation || FailureEntered.IsSet) return successHr;
             FailureEntered.Set();
-            if (holdFailure && !ReleaseFailure.Wait(TimeSpan.FromSeconds(3)))
+            if (holdFailure && !ReleaseFailure.Wait(DeadlockGuard))
                 throw new TimeoutException("Synthetic transition failure gate was not released.");
             if (managedFailure) throw ManagedFailure;
             return FailureHr;

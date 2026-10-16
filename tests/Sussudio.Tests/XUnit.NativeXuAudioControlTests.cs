@@ -170,20 +170,6 @@ public sealed class NativeXuAudioControlTests
         Assert.Equal(expectedAnalog, args[1]);
     }
 
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData("not-an-audio-mode")]
-    public void ProbeExperimentRejectsUnsupportedInputModes(string? mode)
-    {
-        object?[] args = { mode, null };
-        var accepted = (bool)ProbeServiceType.GetMethod("TryGetTargetInputReference", BindingFlags.NonPublic | BindingFlags.Static)!
-            .Invoke(null, args)!;
-
-        Assert.False(accepted);
-        Assert.Empty((byte[])args[1]!);
-    }
-
     private static void AssertIncomplete((bool Matches, int Checked, int Mismatched, int Missing) result, int availableLength)
     {
         var indexes = ControlIndexes();

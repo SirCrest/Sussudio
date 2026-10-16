@@ -288,6 +288,7 @@ internal static class Formatters
                 PreviewD3DFrameLatencyWaitTimeouts = AutomationSnapshotFormatter.GetLong(item, "PreviewD3DFrameLatencyWaitTimeoutCount"),
                 PreviewD3DFrameLatencyWaitP95Ms = AutomationSnapshotFormatter.GetDouble(item, "PreviewD3DFrameLatencyWaitP95Ms"),
                 PreviewD3DRecentMissed = AutomationSnapshotFormatter.GetLong(item, "PreviewD3DFrameStatsRecentMissedRefreshCount"),
+                PreviewD3DRecentCadenceMissed = AutomationSnapshotFormatter.GetLong(item, "PreviewD3DFrameStatsRecentCadenceMissedRefreshCount"),
                 PreviewD3DRecentFailures = AutomationSnapshotFormatter.GetLong(item, "PreviewD3DFrameStatsRecentFailureCount"),
                 LatencyMs = AutomationSnapshotFormatter.GetLong(item, "PipelineLatencyMs"),
                 CpuPct = AutomationSnapshotFormatter.GetDouble(item, "ProcessCpuPercent"),
@@ -375,6 +376,7 @@ internal static class Formatters
         builder.AppendLine($"D3D Pipe P95:   {FormatOneDecimalInvariant(first.PreviewD3DPipelineP95Ms)}ms -> {FormatOneDecimalInvariant(last.PreviewD3DPipelineP95Ms)}ms (delta: {FormatSignedOneDecimalInvariant(last.PreviewD3DPipelineP95Ms - first.PreviewD3DPipelineP95Ms)}ms)");
         builder.AppendLine($"D3D Wait P95:   {FormatOneDecimalInvariant(first.PreviewD3DFrameLatencyWaitP95Ms)}ms -> {FormatOneDecimalInvariant(last.PreviewD3DFrameLatencyWaitP95Ms)}ms (timeouts: {first.PreviewD3DFrameLatencyWaitTimeouts} -> {last.PreviewD3DFrameLatencyWaitTimeouts})");
         builder.AppendLine($"D3D Missed:     {first.PreviewD3DRecentMissed} -> {last.PreviewD3DRecentMissed} (latest-window delta: {last.PreviewD3DRecentMissed - first.PreviewD3DRecentMissed:+0;-0;0})");
+        builder.AppendLine($"D3D Cad Missed: {first.PreviewD3DRecentCadenceMissed} -> {last.PreviewD3DRecentCadenceMissed} (latest-window delta: {last.PreviewD3DRecentCadenceMissed - first.PreviewD3DRecentCadenceMissed:+0;-0;0})");
         builder.AppendLine($"D3D Stat Fails: {first.PreviewD3DRecentFailures} -> {last.PreviewD3DRecentFailures} (latest-window delta: {last.PreviewD3DRecentFailures - first.PreviewD3DRecentFailures:+0;-0;0})");
         builder.AppendLine($"Capture Rate:   {FormatOneDecimalInvariant(first.CaptureFps)}fps -> {FormatOneDecimalInvariant(last.CaptureFps)}fps (derived avg)");
         builder.AppendLine($"Capture 1% Low: {FormatOneDecimalInvariant(first.CaptureOnePercentLowFps)}fps -> {FormatOneDecimalInvariant(last.CaptureOnePercentLowFps)}fps");
@@ -418,6 +420,7 @@ internal static class Formatters
         public long PreviewD3DFrameLatencyWaitTimeouts { get; init; }
         public double PreviewD3DFrameLatencyWaitP95Ms { get; init; }
         public long PreviewD3DRecentMissed { get; init; }
+        public long PreviewD3DRecentCadenceMissed { get; init; }
         public long PreviewD3DRecentFailures { get; init; }
         public long LatencyMs { get; init; }
         public double CpuPct { get; init; }

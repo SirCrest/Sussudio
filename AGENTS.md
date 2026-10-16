@@ -48,6 +48,7 @@ Agents have repeatedly made these mistakes in this repo. Check for them before f
 - Highly prefer E2E tests as the sole testing mechanism. Use them to verify complex features work: drive the live app through `ssctl` diagnostic sessions or the MCP tools (`run_diagnostic_session`, `control_recording`, `wait_for_condition`, `verify_recording`, `assert_snapshot`). At the end of E2E tests, produce a verifiable and repeatable artifact — a recording checked by `verify_recording`/`RecordingVerifier`, a diagnostic-session report, or a JSON result under `artifacts/` — that another agent can re-run and re-check.
 - If you must test a system in isolation, first write down all the ways it could fail, then write the code. Isolated tests are for failure modes E2E cannot reach: fault injection, cancellation, races, timeouts, shutdown, crash recovery, malformed input, and wire contracts consumed by external tools.
 - Do not write tests that assert on source text, file layout, file existence, or which file owns a method. They catch refactors, not bugs.
+- Test-harness code (child-process runners, fixtures, skip classifiers) gets its own tests only when a harness bug could turn a failing test into a pass or a skip. A harness bug that makes tests fail, hang, or error is already caught by the tests that use it.
 
 ## Validation
 
@@ -85,7 +86,7 @@ Run before starting work in an area, and after finishing a cleanup slice:
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\architecture\Report-DeadSurface.ps1
 ```
 
-It writes `artifacts/dead-surface.json` and reports production code that nothing uses: environment variables read but never set or documented, private fields assigned but never read, and private methods with no call site.
+It writes `artifacts/dead-surface.json` and reports production code that nothing uses: environment variables read but never set or documented, private fields assigned but never read, private methods with no call site, and public, internal or protected methods that nothing in the repo names except their own declarations. The last category skips methods a framework or the runtime can call without naming them: overrides, virtual, abstract, extern and partial methods, attributed methods, pattern-bound names such as `GetEnumerator`, and every method of a type whose partial family derives from a type the repo does not declare.
 
 **Every reported item is either deleted, or annotated in place with a comment saying why it must stay.** There is no third option. A report that is read and then ignored is worse than no report, because the next agent cannot tell a deliberate keeper from an oversight.
 

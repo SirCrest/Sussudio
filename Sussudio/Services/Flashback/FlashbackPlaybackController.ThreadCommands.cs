@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Channels;
 using Sussudio.Models;
+using Sussudio.Services.Performance;
 using Sussudio.Services.Preview;
 using Sussudio.Services.Runtime;
 using CommandKind = Sussudio.Services.Flashback.FlashbackPlaybackCommandMailbox.CommandKind;
@@ -16,15 +17,6 @@ internal sealed partial class FlashbackPlaybackController
 {
     // --- Playback thread ---
 
-    // Forward-decode budget for pause-from-live (used below): one GOP at the
-    // current encode frame rate, clamped so a zero/bogus frame rate can't
-    // starve the budget or spin the decode loop indefinitely.
-    private const int PauseFromLiveMinForwardDecodeFrames = 30;
-    private const int PauseFromLiveMaxForwardDecodeFramesCap = 240;
-
-    private int PauseFromLiveMaxForwardDecodeFrames =>
-        Math.Clamp((int)Math.Ceiling(_bufferManager.EncodeFrameRate), PauseFromLiveMinForwardDecodeFrames, PauseFromLiveMaxForwardDecodeFramesCap);
-
     private static readonly TimeSpan PlaybackThreadStopTimeout = TimeSpan.FromSeconds(3);
     private static readonly TimeSpan PreviewDetachThreadStopTimeout = TimeSpan.FromSeconds(10);
 
@@ -35,6 +27,8 @@ internal sealed partial class FlashbackPlaybackController
     private Thread? _playbackThread;
     private int _playbackThreadStarted;
     private CancellationTokenSource? _playCts;
+    // Owned by the playback thread for its lifetime; frame pacing waits on it.
+    private PrecisionWaiter? _pacingWaiter;
 
     [DllImport("winmm.dll", ExactSpelling = true)]
     private static extern uint timeBeginPeriod(uint uMilliseconds);
@@ -46,6 +40,7 @@ internal sealed partial class FlashbackPlaybackController
     private sealed class PlaybackWorkerState
     {
         public FlashbackDecoder? Decoder;
+        public IntPtr DecoderDevicePtr; // D3D11 device the decoder was created on; zero for software
         public readonly Stopwatch PacingStopwatch = new();
         public TimeSpan FrameDuration = TimeSpan.Zero;
         public bool IsPlaying;
@@ -66,9 +61,12 @@ internal sealed partial class FlashbackPlaybackController
         // Without this, Sleep(8) at 120fps sleeps ~15ms (default granularity) -> half-speed.
         timeBeginPeriod(1);
         using var mmcss = MmcssThreadRegistration.TryRegister(_playbackMmcssTask, _playbackMmcssPriority, message => Logger.Log(message));
+        using var hotThread = HotThreads.Register("flashback.playback", mmcss is not null);
+        using var pacingWaiter = new PrecisionWaiter();
+        _pacingWaiter = pacingWaiter;
         try
         {
-            Logger.Log("FLASHBACK_PLAYBACK_THREAD_ENTER");
+            Logger.Log($"FLASHBACK_PLAYBACK_THREAD_ENTER high_resolution_timer={pacingWaiter.IsHighResolution}");
             while (true)
             {
                 PlaybackCommand cmd;
@@ -276,6 +274,7 @@ internal sealed partial class FlashbackPlaybackController
         FlashbackPlaybackCommandMailbox.Generation commandGeneration)
     {
         ClearPrebufferedFrames(prebufferedFrames, "thread_exit");
+        _pacingWaiter = null;
         timeEndPeriod(1);
         _commandMailbox.Complete(commandGeneration);
         DrainAbandonedCommandsOnThreadExit(commandGeneration);
@@ -310,12 +309,34 @@ internal sealed partial class FlashbackPlaybackController
         }
     }
 
+    // Every return to live restores the live picture first, then live audio (which waits on
+    // the WASAPI thread), and only then releases playback resources. The user sees live
+    // before anything is torn down.
     private void RestoreLiveAfterNoFile(string operation)
     {
-        ReleasePlaybackFrameForLive(operation);
-        RestoreLiveAudio();
         SafeResumePreviewSubmission(operation);
+        RestoreLiveAudio();
+        ReleasePlaybackFrameForLive(operation);
         SafeResumeRendering(operation);
+        SetState(FlashbackPlaybackState.Live, operation);
+    }
+
+    /// <summary>
+    /// Go Live: the decoder stays warm (its D3D11VA device context and codec setup are reused
+    /// by the next interaction); only the segment file is closed so eviction can delete it.
+    /// </summary>
+    private void RestoreLiveKeepingDecoder(PlaybackWorkerState worker, string operation)
+    {
+        SafeResumePreviewSubmission(operation);
+        RestoreLiveAudio();
+        ClearPrebufferedFrames(worker.PrebufferedFrames, operation);
+        ReleasePlaybackFrameForLive(operation);
+        if (worker.Decoder != null)
+        {
+            CloseDecoderFileBestEffort(worker.Decoder, operation);
+        }
+
+        MarkDecoderPlaybackFileClosed(ref worker.FileOpen);
         SetState(FlashbackPlaybackState.Live, operation);
     }
 
@@ -324,13 +345,38 @@ internal sealed partial class FlashbackPlaybackController
         string operation,
         bool isInvoluntaryLiveReturn = false)
     {
+        SafeResumePreviewSubmission(operation);
+        RestoreLiveAudio();
         ClearPrebufferedFrames(worker.PrebufferedFrames, operation);
-        CleanupDecoder(ref worker.Decoder, ref worker.FileOpen);
         Interlocked.Exchange(ref _lastAudioPtsTicks, 0);
         Interlocked.Exchange(ref _lastVideoPtsTicks, 0);
-        RestoreLiveAudio();
-        SafeResumePreviewSubmission(operation);
+        CleanupDecoder(ref worker.Decoder, ref worker.FileOpen);
         SetState(FlashbackPlaybackState.Live, operation, isInvoluntaryLiveReturn);
+    }
+
+    /// <summary>
+    /// The playback thread's decoder survives Go Live. It is rebuilt only when the D3D11 device
+    /// it was created on changes (preview re-attach, GPU decode toggled).
+    /// </summary>
+    private FlashbackDecoder EnsureWorkerDecoder(PlaybackWorkerState worker)
+    {
+        ResolveDecoderDevice(out var devicePtr, out var contextPtr);
+        if (worker.Decoder != null)
+        {
+            if (worker.DecoderDevicePtr == devicePtr)
+            {
+                return worker.Decoder;
+            }
+
+            Logger.Log($"FLASHBACK_PLAYBACK_DECODER_RECREATE reason=device_changed old=0x{worker.DecoderDevicePtr:X} new=0x{devicePtr:X}");
+            ClearPrebufferedFrames(worker.PrebufferedFrames, "decoder_recreate");
+            CleanupDecoder(ref worker.Decoder, ref worker.FileOpen);
+        }
+
+        var decoder = CreateDecoder(devicePtr, contextPtr);
+        worker.Decoder = decoder;
+        worker.DecoderDevicePtr = devicePtr;
+        return decoder;
     }
 
     private static void DisposePlaybackCtsBestEffort(CancellationTokenSource? cts, string operation)
@@ -415,7 +461,7 @@ internal sealed partial class FlashbackPlaybackController
         worker.IsPlaying = false;
         worker.IsScrubbing = false;
         worker.PendingExactResumeTarget = null;
-        RestoreLiveForPlaybackThreadExit(worker, "go_live");
+        RestoreLiveKeepingDecoder(worker, "go_live");
         Logger.Log("FLASHBACK_PLAYBACK_GO_LIVE");
     }
 
@@ -448,7 +494,7 @@ internal sealed partial class FlashbackPlaybackController
 
         if (State == FlashbackPlaybackState.Live)
             worker.FrozenValidStart = _bufferManager.ValidStartPts;
-        worker.Decoder ??= CreateDecoder();
+        worker.Decoder = EnsureWorkerDecoder(worker);
         var prevFile = _currentOpenFilePath;
         var pendingPlayTarget = ClampPlaybackTargetToMinimumLiveLead(
             worker.PendingExactResumeTarget ?? SaturatingAdd(PlaybackPosition, worker.FrozenValidStart),
@@ -500,11 +546,11 @@ internal sealed partial class FlashbackPlaybackController
         worker.FrameDuration = ResolveFrameDuration(worker.Decoder);
         RestoreAudioCallback(worker.Decoder, seekTarget.Ticks);
         SafeFlushPlayback("play");
-        // Retained frames precede the decoder's position. Consume them before
-        // priming decodes ahead, invalidates their borrowed data, or rewinds.
+        // Retained read-ahead frames sit between the displayed frame and the demuxer
+        // position; priming reads past them, so only prime when none are held.
         if (!resumeWithoutSeek || worker.PrebufferedFrames.Count == 0)
         {
-            PrimePlaybackAudioBuffer(worker.Decoder, worker.PrebufferedFrames, commandChannel, ref worker.FileOpen, seekTarget, "play", cts.Token);
+            PrimePlaybackAudioBuffer(worker.Decoder, commandChannel, seekTarget, "play", cts.Token);
         }
         SafeResumePlaybackRendering("play");
         worker.PacingStopwatch.Restart();
@@ -528,50 +574,39 @@ internal sealed partial class FlashbackPlaybackController
         }
         else if (State == FlashbackPlaybackState.Live)
         {
+            cts.Token.ThrowIfCancellationRequested();
+            if (_bufferManager.LatestPts <= TimeSpan.Zero)
+            {
+                // Nothing has been written yet, so there is nothing to pause into.
+                worker.PendingExactResumeTarget = null;
+                ClearPrebufferedFrames(worker.PrebufferedFrames, "pause_from_live_no_file");
+                SetNoFileFailure(CommandKind.Pause, TimeSpan.Zero);
+                RestoreLiveAfterNoFile("pause_from_live_no_file");
+                Logger.Log("FLASHBACK_PLAYBACK_PAUSE_FROM_LIVE_NO_FILE pos_ms=0");
+                return;
+            }
+
+            // Freeze what is on screen. Stopping live submission leaves the renderer on the
+            // last presented frame, so nothing is decoded now; the paused position is the
+            // live edge, and the first scrub, nudge or play seeks exactly to it.
             SafeSuppressPreviewSubmission("pause_from_live");
             SuppressLiveAudio();
             SafePauseRendering("pause_from_live");
+            ClearPrebufferedFrames(worker.PrebufferedFrames, "pause_from_live");
 
             worker.FrozenValidStart = _bufferManager.ValidStartPts;
-            var pauseTarget = ResolvePauseFromLiveTarget(worker.FrozenValidStart);
-            var pausePos = ClampPosition(SaturatingSubtract(pauseTarget, worker.FrozenValidStart), worker.FrozenValidStart);
-            if (_commandMailbox.ShouldYieldPauseFromLiveToQueuedSeekOrPlay(commandChannel))
+            var liveEdge = _bufferManager.LatestPts;
+            if (liveEdge < worker.FrozenValidStart)
             {
-                PlaybackPosition = pausePos;
-                worker.PendingExactResumeTarget = SaturatingAdd(pausePos, worker.FrozenValidStart);
-                SetState(FlashbackPlaybackState.Paused, "user");
-                Logger.Log($"FLASHBACK_PLAYBACK_PAUSE_FROM_LIVE_DEFER_DISPLAY pos_ms={(long)pausePos.TotalMilliseconds}");
-                return;
-            }
-            ClearPrebufferedFrames(worker.PrebufferedFrames, "pause_from_live");
-            worker.Decoder ??= CreateDecoder();
-            EnsureFileOpen(worker.Decoder, ref worker.FileOpen, SaturatingAdd(pausePos, worker.FrozenValidStart));
-            cts.Token.ThrowIfCancellationRequested();
-            if (!IsDecoderFileReady(worker.Decoder, worker.FileOpen))
-            {
-                worker.PendingExactResumeTarget = null;
-                SetNoFileFailure(CommandKind.Pause, pausePos);
-                RestoreLiveAfterNoFile("pause_from_live_no_file");
-                Logger.Log($"FLASHBACK_PLAYBACK_PAUSE_FROM_LIVE_NO_FILE pos_ms={(long)pausePos.TotalMilliseconds}");
-                return;
+                liveEdge = worker.FrozenValidStart;
             }
 
-            if (!SeekAndDisplayKeyframe(worker.Decoder, ref worker.FileOpen, pausePos, worker.FrozenValidStart, CommandKind.Pause, cts.Token))
-            {
-                worker.PendingExactResumeTarget = null;
-                RestoreLiveAfterSeekDisplayFailure(worker.Decoder, ref worker.FileOpen, "pause_from_live_display_failed");
-                return;
-            }
-
-            // The displayed keyframe can be up to one GOP behind pauseTarget, so
-            // decode forward to land closer to the actual pause point. A decode
-            // failure here just leaves the keyframe on screen -- no snap-to-live.
-            DecodeForwardToPauseTarget(worker.Decoder, commandChannel, pauseTarget, worker.FrozenValidStart, PauseFromLiveMaxForwardDecodeFrames, cts.Token);
-
-            worker.PendingExactResumeTarget = SaturatingAdd(PlaybackPosition, worker.FrozenValidStart);
-
+            var pausePos = ClampPosition(SaturatingSubtract(liveEdge, worker.FrozenValidStart), worker.FrozenValidStart);
+            PlaybackPosition = pausePos;
+            Interlocked.Exchange(ref _lastVideoPtsTicks, liveEdge.Ticks);
+            worker.PendingExactResumeTarget = SaturatingAdd(pausePos, worker.FrozenValidStart);
             SetState(FlashbackPlaybackState.Paused, "user");
-            Logger.Log($"FLASHBACK_PLAYBACK_PAUSE_FROM_LIVE pos_ms={(long)PlaybackPosition.TotalMilliseconds} target_ms={(long)pauseTarget.TotalMilliseconds} frozen_frame=true");
+            Logger.Log($"FLASHBACK_PLAYBACK_PAUSE_FROM_LIVE pos_ms={(long)pausePos.TotalMilliseconds} live_edge_ms={(long)liveEdge.TotalMilliseconds} frozen_frame=live");
         }
     }
 
@@ -618,7 +653,7 @@ internal sealed partial class FlashbackPlaybackController
             SetState(FlashbackPlaybackState.Paused, "user");
             return;
         }
-        worker.Decoder ??= CreateDecoder();
+        worker.Decoder = EnsureWorkerDecoder(worker);
         EnsureFileOpen(worker.Decoder, ref worker.FileOpen, seekResumeTarget);
         cts.Token.ThrowIfCancellationRequested();
         if (!IsDecoderFileReady(worker.Decoder, worker.FileOpen))
@@ -630,7 +665,9 @@ internal sealed partial class FlashbackPlaybackController
             return;
         }
 
-        if (!SeekAndDisplayKeyframe(worker.Decoder, ref worker.FileOpen, cmd.Position, worker.FrozenValidStart, CommandKind.Seek, cts.Token))
+        // A click that lands in Paused shows the exact frame. When playback resumes right
+        // after, the keyframe is an immediate preview and the exact seek below takes over.
+        if (!SeekAndDisplayFrame(worker.Decoder, ref worker.FileOpen, cmd.Position, worker.FrozenValidStart, CommandKind.Seek, exact: !_wasPlayingBeforeScrub, cts.Token))
         {
             worker.IsPlaying = false;
             worker.IsScrubbing = false;
@@ -661,7 +698,7 @@ internal sealed partial class FlashbackPlaybackController
             worker.FrameDuration = ResolveFrameDuration(worker.Decoder);
             RestoreAudioCallback(worker.Decoder, coalescedSeekTarget.Ticks);
             SafeFlushPlayback("seek_resume");
-            PrimePlaybackAudioBuffer(worker.Decoder, worker.PrebufferedFrames, commandChannel, ref worker.FileOpen, coalescedSeekTarget, "seek_resume", cts.Token);
+            PrimePlaybackAudioBuffer(worker.Decoder, commandChannel, coalescedSeekTarget, "seek_resume", cts.Token);
             SafeResumePlaybackRendering("seek_resume");
             worker.PacingStopwatch.Restart();
         }
@@ -704,8 +741,8 @@ internal sealed partial class FlashbackPlaybackController
         SafePauseRendering("begin_scrub");
         SetState(FlashbackPlaybackState.Scrubbing, "user");
 
-        cmd = cmd with { Position = ClampPosition(cmd.Position, worker.FrozenValidStart) };
-        worker.Decoder ??= CreateDecoder();
+        cmd = cmd with { Position = ClampScrubPosition(cmd.Position, worker.FrozenValidStart) };
+        worker.Decoder = EnsureWorkerDecoder(worker);
         EnsureFileOpen(worker.Decoder, ref worker.FileOpen, SaturatingAdd(cmd.Position, worker.FrozenValidStart));
         cts.Token.ThrowIfCancellationRequested();
         if (!IsDecoderFileReady(worker.Decoder, worker.FileOpen))
@@ -717,7 +754,7 @@ internal sealed partial class FlashbackPlaybackController
             RestoreLiveAfterNoFile("scrub_no_file");
             return;
         }
-        if (!SeekAndDisplayKeyframe(worker.Decoder, ref worker.FileOpen, cmd.Position, worker.FrozenValidStart, CommandKind.BeginScrub, cts.Token))
+        if (!SeekAndDisplayFrame(worker.Decoder, ref worker.FileOpen, cmd.Position, worker.FrozenValidStart, CommandKind.BeginScrub, exact: false, cts.Token))
         {
             worker.IsScrubbing = false;
             worker.PendingExactResumeTarget = null;
@@ -753,14 +790,14 @@ internal sealed partial class FlashbackPlaybackController
             newer = _commandMailbox.ResolveLatestPositionAndReleaseCoalescingSlot(newer);
             cmd = newer;
         }
-        cmd = cmd with { Position = ClampPosition(cmd.Position, worker.FrozenValidStart) };
+        cmd = cmd with { Position = ClampScrubPosition(cmd.Position, worker.FrozenValidStart) };
         if (_commandMailbox.ShouldYieldScrubUpdateToQueuedControl(commandChannel))
         {
             PlaybackPosition = cmd.Position;
             MarkCommandNoOp(CommandKind.UpdateScrub, "superseded_by_control", cmd.Position);
             return;
         }
-        worker.Decoder ??= CreateDecoder();
+        worker.Decoder = EnsureWorkerDecoder(worker);
         EnsureFileOpen(worker.Decoder, ref worker.FileOpen, SaturatingAdd(cmd.Position, worker.FrozenValidStart));
         cts.Token.ThrowIfCancellationRequested();
         if (!IsDecoderFileReady(worker.Decoder, worker.FileOpen))
@@ -772,7 +809,7 @@ internal sealed partial class FlashbackPlaybackController
             Logger.Log($"FLASHBACK_PLAYBACK_SCRUB_UPDATE_NO_FILE pos_ms={(long)cmd.Position.TotalMilliseconds}");
             return;
         }
-        if (!SeekAndDisplayKeyframe(worker.Decoder, ref worker.FileOpen, cmd.Position, worker.FrozenValidStart, CommandKind.UpdateScrub, cts.Token))
+        if (!SeekAndDisplayFrame(worker.Decoder, ref worker.FileOpen, cmd.Position, worker.FrozenValidStart, CommandKind.UpdateScrub, exact: false, cts.Token))
         {
             worker.IsScrubbing = false;
             worker.PendingExactResumeTarget = null;
@@ -828,7 +865,7 @@ internal sealed partial class FlashbackPlaybackController
             {
                 RestoreAudioCallback(worker.Decoder, endScrubTarget.Ticks);
                 SafeFlushPlayback("end_scrub_resume");
-                PrimePlaybackAudioBuffer(worker.Decoder, worker.PrebufferedFrames, commandChannel, ref worker.FileOpen, endScrubTarget, "end_scrub_resume", cts.Token);
+                PrimePlaybackAudioBuffer(worker.Decoder, commandChannel, endScrubTarget, "end_scrub_resume", cts.Token);
                 SafeResumePlaybackRendering("end_scrub_resume");
             }
             worker.PacingStopwatch.Restart();
@@ -836,6 +873,13 @@ internal sealed partial class FlashbackPlaybackController
         else
         {
             worker.PendingExactResumeTarget = endScrubTarget;
+            // The drag showed keyframes; the release point gets its exact frame. A failure
+            // here leaves the last keyframe on screen rather than leaving scrub mode.
+            if (worker.Decoder is { IsOpen: true } &&
+                !SeekAndDisplayFrame(worker.Decoder, ref worker.FileOpen, endScrubPosition, worker.FrozenValidStart, CommandKind.EndScrub, exact: true, cts.Token))
+            {
+                Logger.Log($"FLASHBACK_PLAYBACK_END_SCRUB_EXACT_DISPLAY_SKIPPED pos_ms={(long)endScrubPosition.TotalMilliseconds}");
+            }
         }
         SetState(worker.IsPlaying ? FlashbackPlaybackState.Playing : FlashbackPlaybackState.Paused, "user");
         var endScrubBufDur = _bufferManager.BufferedDuration;
@@ -847,10 +891,12 @@ internal sealed partial class FlashbackPlaybackController
         PlaybackCommand cmd,
         CancellationTokenSource cts)
     {
+        // Nudges queued behind this one folded their deltas into it.
+        cmd = _commandMailbox.ResolveLatestPositionAndReleaseCoalescingSlot(cmd);
         worker.PendingExactResumeTarget = null;
         var nudgedPos = SaturatingAdd(PlaybackPosition, cmd.Delta);
         nudgedPos = ClampPosition(nudgedPos, worker.FrozenValidStart);
-        worker.Decoder ??= CreateDecoder();
+        worker.Decoder = EnsureWorkerDecoder(worker);
         var previousFile = _currentOpenFilePath;
         EnsureFileOpen(worker.Decoder, ref worker.FileOpen, SaturatingAdd(nudgedPos, worker.FrozenValidStart));
         cts.Token.ThrowIfCancellationRequested();
@@ -866,11 +912,21 @@ internal sealed partial class FlashbackPlaybackController
             return;
         }
 
-        if (!IsSamePlaybackPath(previousFile, _currentOpenFilePath))
+        var sameFile = IsSamePlaybackPath(previousFile, _currentOpenFilePath);
+        if (!sameFile)
         {
             ClearPrebufferedFrames(worker.PrebufferedFrames, "nudge_source_changed");
         }
-        if (cmd.Delta.Ticks > 0)
+
+        // A step of up to two frames forward from a frame the decoder itself just produced is
+        // simply the next decode. Anything else (a fresh file, a paused live frame, a backward
+        // or longer step) is an exact seek.
+        var frameDuration = ResolveFrameDuration(worker.Decoder);
+        var displayedPtsTicks = Interlocked.Read(ref _lastVideoPtsTicks);
+        var decoderAtDisplayedFrame = sameFile &&
+            (worker.PrebufferedFrames.Count > 0 ||
+             (displayedPtsTicks > 0 && worker.Decoder.CurrentPosition.Ticks == displayedPtsTicks));
+        if (cmd.Delta.Ticks > 0 && cmd.Delta <= frameDuration + frameDuration && decoderAtDisplayedFrame)
         {
             var got = TryReadNextPlaybackFrame(worker.Decoder, worker.PrebufferedFrames, out var nudgeFrame, cts.Token);
             if (got)
@@ -879,18 +935,34 @@ internal sealed partial class FlashbackPlaybackController
                 {
                     return;
                 }
+
+                Interlocked.Exchange(ref _lastVideoPtsTicks, nudgeFrame.Pts.Ticks);
                 var actualPos = SaturatingSubtract(nudgeFrame.Pts, worker.FrozenValidStart);
                 if (actualPos < TimeSpan.Zero) actualPos = TimeSpan.Zero;
                 PlaybackPosition = actualPos;
                 return;
             }
         }
+
         ClearPrebufferedFrames(worker.PrebufferedFrames, "nudge_seek");
-        if (!SeekAndDisplayKeyframe(worker.Decoder, ref worker.FileOpen, nudgedPos, worker.FrozenValidStart, CommandKind.Nudge, cts.Token))
+        if (!SeekAndDisplayFrame(worker.Decoder, ref worker.FileOpen, nudgedPos, worker.FrozenValidStart, CommandKind.Nudge, exact: true, cts.Token))
         {
             worker.IsPlaying = false;
             worker.IsScrubbing = false;
             RestoreLiveAfterSeekDisplayFailure(worker.Decoder, ref worker.FileOpen, "nudge_display_failed");
         }
+    }
+
+    // Scrub targets stay behind the live edge by the same lead as play and end-scrub targets, so
+    // a drag to the right edge shows a frame that is already on disk instead of snapping to live.
+    private TimeSpan ClampScrubPosition(TimeSpan position, TimeSpan frozenValidStart)
+    {
+        var clamped = ClampPosition(position, frozenValidStart);
+        var target = ClampPlaybackTargetToMinimumLiveLead(
+            SaturatingAdd(clamped, frozenValidStart),
+            frozenValidStart,
+            "scrub",
+            log: false);
+        return ClampPosition(SaturatingSubtract(target, frozenValidStart), frozenValidStart);
     }
 }

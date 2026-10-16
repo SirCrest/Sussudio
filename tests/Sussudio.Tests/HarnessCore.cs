@@ -1,4 +1,4 @@
-﻿using System.Collections;
+﻿﻿using System.Collections;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq.Expressions;
@@ -154,148 +154,6 @@ static partial class Program
             || (segment.StartsWith("net", StringComparison.OrdinalIgnoreCase)
                 && segment.Length > 3
                 && char.IsDigit(segment[3]));
-
-    private enum ConfigSetterExpectation
-    {
-        Set,
-        InitOnly,
-        None
-    }
-
-    private enum ConfigNullability
-    {
-        NotApplicable,
-        NotNull,
-        Nullable
-    }
-
-    private enum ConfigPropertyScope
-    {
-        Instance,
-        Static
-    }
-
-    private sealed record ConfigPropertySpec(
-        string Name,
-        Type Type,
-        ConfigSetterExpectation Setter,
-        ConfigNullability Nullability = ConfigNullability.NotApplicable,
-        ConfigNullability ElementNullability = ConfigNullability.NotApplicable,
-        ConfigPropertyScope Scope = ConfigPropertyScope.Instance,
-        bool IsRequired = false);
-
-    private static ConfigPropertySpec ConfigProperty(
-        string name,
-        Type type,
-        ConfigSetterExpectation setter,
-        ConfigNullability Nullability = ConfigNullability.NotApplicable,
-        ConfigNullability ElementNullability = ConfigNullability.NotApplicable,
-        ConfigPropertyScope scope = ConfigPropertyScope.Instance,
-        bool isRequired = false)
-        => new(name, type, setter, Nullability, ElementNullability, scope, isRequired);
-
-    private static ConfigPropertySpec ConfigString(
-        string name,
-        ConfigSetterExpectation setter,
-        ConfigNullability nullability)
-        => ConfigProperty(name, typeof(string), setter, nullability);
-
-    private static ConfigPropertySpec RequiredConfigString(
-        string name,
-        ConfigSetterExpectation setter)
-        => ConfigProperty(name, typeof(string), setter, ConfigNullability.NotNull, isRequired: true);
-
-    private static ConfigPropertySpec RequiredConfigProperty(
-        string name,
-        Type type,
-        ConfigSetterExpectation setter)
-        => ConfigProperty(name, type, setter, isRequired: true);
-
-    private static void AssertDeclaredConfigProperties(Type type, ConfigPropertySpec[] expectedProperties)
-    {
-        var instanceFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly;
-        var staticFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.DeclaredOnly;
-        var actualNames = type.GetProperties(instanceFlags | staticFlags)
-            .Select(property => property.Name)
-            .OrderBy(name => name, StringComparer.Ordinal)
-            .ToArray();
-        var expectedNames = expectedProperties
-            .Select(property => property.Name)
-            .OrderBy(name => name, StringComparer.Ordinal)
-            .ToArray();
-        if (!actualNames.SequenceEqual(expectedNames))
-        {
-            throw new InvalidOperationException(
-                $"{type.Name} public property set changed. Expected: {string.Join(", ", expectedNames)}; actual: {string.Join(", ", actualNames)}.");
-        }
-
-        foreach (var expected in expectedProperties)
-        {
-            var flags = expected.Scope == ConfigPropertyScope.Static ? staticFlags : instanceFlags;
-            var property = type.GetProperty(expected.Name, flags)
-                ?? throw new InvalidOperationException($"{type.Name}.{expected.Name} was not found.");
-            AssertEqual(expected.Type, property.PropertyType, $"{type.Name}.{expected.Name} property type");
-            AssertEqual(
-                expected.IsRequired,
-                property.GetCustomAttribute<RequiredMemberAttribute>() != null,
-                $"{type.Name}.{expected.Name} required-member metadata");
-            if (property.GetMethod == null || !property.GetMethod.IsPublic)
-            {
-                throw new InvalidOperationException($"{type.Name}.{expected.Name} must expose a public getter.");
-            }
-
-            if (expected.Setter == ConfigSetterExpectation.None)
-            {
-                if (property.SetMethod != null)
-                {
-                    throw new InvalidOperationException($"{type.Name}.{expected.Name} must not expose a setter.");
-                }
-            }
-            else
-            {
-                if (property.SetMethod == null || !property.SetMethod.IsPublic)
-                {
-                    throw new InvalidOperationException($"{type.Name}.{expected.Name} must expose a public setter.");
-                }
-
-                var isInitOnly = IsInitOnlySetter(property);
-                AssertEqual(
-                    expected.Setter == ConfigSetterExpectation.InitOnly,
-                    isInitOnly,
-                    $"{type.Name}.{expected.Name} init-only setter");
-            }
-
-            if (expected.Nullability != ConfigNullability.NotApplicable)
-            {
-                var nullability = new NullabilityInfoContext().Create(property);
-                var expectedState = expected.Nullability == ConfigNullability.Nullable
-                    ? NullabilityState.Nullable
-                    : NullabilityState.NotNull;
-                AssertEqual(expectedState, nullability.ReadState, $"{type.Name}.{expected.Name} read nullability");
-                if (expected.Setter != ConfigSetterExpectation.None)
-                {
-                    AssertEqual(expectedState, nullability.WriteState, $"{type.Name}.{expected.Name} write nullability");
-                }
-
-                if (expected.ElementNullability != ConfigNullability.NotApplicable)
-                {
-                    var elementNullability = property.PropertyType.IsArray
-                        ? nullability.ElementType
-                        : nullability.GenericTypeArguments.FirstOrDefault();
-                    if (elementNullability == null)
-                    {
-                        throw new InvalidOperationException($"{type.Name}.{expected.Name} did not expose element nullability.");
-                    }
-
-                    var expectedElementState = expected.ElementNullability == ConfigNullability.Nullable
-                        ? NullabilityState.Nullable
-                        : NullabilityState.NotNull;
-                    AssertEqual(expectedElementState, elementNullability.ReadState, $"{type.Name}.{expected.Name} element read nullability");
-                    AssertEqual(expectedElementState, elementNullability.WriteState, $"{type.Name}.{expected.Name} element write nullability");
-                }
-            }
-        }
-    }
 
     private static bool IsInitOnlySetter(PropertyInfo property)
         => property.SetMethod?.ReturnParameter.GetRequiredCustomModifiers()
@@ -464,35 +322,6 @@ static partial class Program
             $"Could not locate repository root from '{AppContext.BaseDirectory}'.");
     }
 
-    private static string ReadFlashbackPlaybackControllerSource()
-    {
-        var parts = new[]
-        {
-            ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs").Replace("\r\n", "\n")
-        };
-
-        return string.Join("\n", parts);
-    }
-
-    private static string ReadFlashbackEncoderSinkSource()
-        => ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
-            .Replace("\r\n", "\n");
-
-    private static string ReadFlashbackExporterSource()
-    {
-        return ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs").Replace("\r\n", "\n");
-    }
-
-    private static string ReadFlashbackDecoderSource()
-        => ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
-            .Replace("\r\n", "\n");
-
-    private static string ReadFlashbackBufferManagerSource()
-        => ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
-            .Replace("\r\n", "\n");
-
     private static (int, int) GetTupleValues(object tuple)
     {
         var item1 = tuple.GetType().GetField("Item1")?.GetValue(tuple);
@@ -562,17 +391,6 @@ static partial class Program
         return false;
     }
 
-    private static Dictionary<string, string> ReadMainViewModelCodeFiles()
-    {
-        return Directory
-            .GetFiles(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels"), "MainViewModel*.cs")
-            .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(
-                path => Path.GetFileName(path),
-                path => StripCSharpCommentsAndStringContents(File.ReadAllText(path).Replace("\r\n", "\n")),
-                StringComparer.OrdinalIgnoreCase);
-    }
-
     private static string ReadMainViewModelControllerGraphSource()
     {
         var source = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
@@ -587,9 +405,6 @@ static partial class Program
 
     private static void AssertMemberContains(string source, string memberName, string token)
         => AssertContains(ExtractMemberCode(source, memberName), token);
-
-    private static void AssertMemberDoesNotContain(string source, string memberName, string token)
-        => AssertDoesNotContain(ExtractMemberCode(source, memberName), token);
 
     private static string ExtractMemberCode(string source, string memberName)
     {
@@ -637,31 +452,6 @@ static partial class Program
         return source.Substring(start, end - start);
     }
 
-    internal static string ExtractDeclaredMemberCode(string source, string declarationToken)
-    {
-        var code = StripCSharpCommentsAndStringContents(source);
-        var start = code.IndexOf(declarationToken, StringComparison.Ordinal);
-        if (start < 0)
-        {
-            throw new InvalidOperationException($"Declaration '{declarationToken}' was not found.");
-        }
-
-        var openBrace = code.IndexOf('{', start);
-        var semicolon = code.IndexOf(';', start);
-        if (semicolon >= 0 && (openBrace < 0 || semicolon < openBrace))
-        {
-            return source.Substring(start, semicolon - start + 1);
-        }
-
-        if (openBrace < 0)
-        {
-            throw new InvalidOperationException($"Declaration '{declarationToken}' has no body.");
-        }
-
-        var closeBrace = FindMatchingBrace(code, openBrace);
-        return source.Substring(start, closeBrace - start + 1);
-    }
-
     private static int FindMatchingBrace(string source, int openBraceIndex)
     {
         var depth = 0;
@@ -690,15 +480,6 @@ static partial class Program
         {
             throw new InvalidOperationException(
                 $"Assertion failed for {fieldName}: pattern '{pattern}' was not found.");
-        }
-    }
-
-    private static void AssertNoRegex(string value, string pattern, string fieldName)
-    {
-        if (Regex.IsMatch(value, pattern, RegexOptions.Singleline))
-        {
-            throw new InvalidOperationException(
-                $"Assertion failed for {fieldName}: forbidden pattern '{pattern}' was found.");
         }
     }
 
@@ -832,65 +613,6 @@ static partial class Program
 
     private static string ReadMainWindowCompositionSource()
         => ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-
-    private static string ReadMainWindowCaptureSelectionBindingsAdapterSource()
-        => ReadMainWindowAdapterSource("Sussudio/MainWindow.xaml.cs");
-
-    private static string ReadMainWindowFlashbackAdapterSource()
-        => ReadMainWindowCompositionSource();
-
-    private static string ReadMainWindowPreviewRendererAdapterSource()
-        => ReadMainWindowAdapterSource("Sussudio/MainWindow.xaml.cs");
-
-    private static string ReadMainWindowPreviewStartupAdapterSource()
-        => ReadMainWindowAdapterSource("Sussudio/MainWindow.xaml.cs");
-
-    private static string ReadMainWindowPreviewTransitionsAdapterSource()
-        => ReadMainWindowAdapterSource("Sussudio/MainWindow.xaml.cs");
-
-    private static string ReadMainWindowPropertyChangedPreviewAdapterSource()
-        => ReadMainWindowAdapterSource("Sussudio/MainWindow.xaml.cs");
-
-    private static string ReadMainWindowShellChromeAdapterSource()
-        => ReadMainWindowAdapterSource("Sussudio/MainWindow.xaml.cs");
-
-    private static string ReadMainWindowAdapterSource(params string[] files)
-        => string.Join(
-            "\n",
-            files.Select(file => ReadRepoFile(file).Replace("\r\n", "\n")));
-
-    private static string ReadAutomationSnapshotFamilyText()
-    {
-        return ReadRepoFile("Sussudio/Models/Automation/AutomationSnapshot.cs")
-            .Replace("\r\n", "\n");
-    }
-
-    private static string ReadAutomationSnapshotInitializerText()
-    {
-        var source = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
-            .Replace("\r\n", "\n");
-        return ExtractMemberCodeFromDeclaration(
-            source,
-            "private AutomationSnapshot BuildAutomationSnapshot(");
-    }
-
-    private static string ExtractMemberCodeFromDeclaration(string source, string declarationToken)
-    {
-        var startIndex = source.IndexOf(declarationToken, StringComparison.Ordinal);
-        if (startIndex < 0)
-        {
-            throw new InvalidOperationException($"Declaration '{declarationToken}' was not found.");
-        }
-
-        var openBrace = source.IndexOf('{', startIndex);
-        if (openBrace < 0)
-        {
-            throw new InvalidOperationException($"Declaration '{declarationToken}' has no body.");
-        }
-
-        var closeBrace = FindMatchingBrace(source, openBrace);
-        return source.Substring(startIndex, closeBrace - startIndex + 1);
-    }
 
     private static object BuildDevice(string id = "device-1")
     {
@@ -1216,23 +938,6 @@ static partial class Program
                 candidate.GetParameters().Length == 0);
         return method.MakeGenericMethod(itemType).Invoke(null, null)
                ?? throw new InvalidOperationException($"Failed to create channel for '{fieldName}'.");
-    }
-
-    private static object CreateSizedArrayFieldValue(Type declaringType, string fieldName, int length)
-    {
-        var field = declaringType.GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic)
-            ?? throw new InvalidOperationException($"Missing private field '{fieldName}' on '{declaringType.Name}'.");
-        var elementType = field.FieldType.GetElementType()
-            ?? throw new InvalidOperationException($"Field '{fieldName}' on '{declaringType.Name}' was not an array.");
-        return Array.CreateInstance(elementType, length);
-    }
-
-    private static object CreateFieldInstance(Type declaringType, string fieldName)
-    {
-        var field = declaringType.GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic)
-            ?? throw new InvalidOperationException($"Missing private field '{fieldName}' on '{declaringType.Name}'.");
-        return Activator.CreateInstance(field.FieldType)
-               ?? throw new InvalidOperationException($"Failed to create field instance for '{fieldName}'.");
     }
 
     private static object? GetPrivateField(object instance, string fieldName)
@@ -2020,27 +1725,6 @@ static partial class Program
         AssertEqual(GetExpectedAutomationCommandValue(commandName), request.GetProperty("command").GetInt32(), $"{commandName} command id");
     }
 
-    private static void AssertMcpCommandRoutingTestsUseCommandIdHelper()
-    {
-        var repoRoot = GetRepoRoot();
-        var testRoot = System.IO.Path.Combine(repoRoot, "tests", "Sussudio.Tests");
-        foreach (var file in System.IO.Directory.GetFiles(testRoot, "McpToolSurface.CommandRouting*.Tests.cs"))
-        {
-            var relativePath = System.IO.Path.GetRelativePath(repoRoot, file).Replace('\\', '/');
-            var text = System.IO.File.ReadAllText(file).Replace("\r\n", "\n");
-            if (text.Contains("GetProperty(\"command\").GetInt32()", StringComparison.Ordinal))
-            {
-                throw new InvalidOperationException(
-                    $"{relativePath} must use AssertAutomationCommandId for captured request.command checks.");
-            }
-
-            if (text.Contains("GetExpectedAutomationCommandValue(", StringComparison.Ordinal))
-            {
-                throw new InvalidOperationException($"{relativePath} must not bypass AssertAutomationCommandId.");
-            }
-        }
-    }
-
     private static void AssertContainsOrdinal(string value, string token)
     {
         if (!value.Contains(token, StringComparison.Ordinal))
@@ -2371,12 +2055,6 @@ static partial class Program
 namespace Sussudio.Tests
 {
     internal static class MainWindowCompositionSource
-    {
-        public static string Read()
-            => RuntimeContractSource.ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-    }
-
-    internal static class MainWindowStatsOverlaySource
     {
         public static string Read()
             => RuntimeContractSource.ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");

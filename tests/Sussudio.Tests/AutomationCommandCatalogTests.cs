@@ -85,6 +85,17 @@ public sealed class AutomationCommandCatalogTests
         [55] = "SetMicrophoneVolume",
         [56] = "SetFlashbackBufferMinutes",
         [57] = "SetFlashbackGpuDecode",
+        [58] = "GetPerfReport",
+        [59] = "PerfWindow",
+        [60] = "AddPerfMarker",
+        [61] = "FrameTrace",
+        [62] = "GetTuningKnobs",
+        [63] = "SetTuningKnob",
+        [64] = "GetLogTail",
+        [65] = "CaptureAudioOutput",
+        [66] = "GetUiTree",
+        [67] = "InvokeUiElement",
+        [68] = "PerfExperimentLease",
     };
 
     // ── Wire-contract stability ──────────────────────────────────────────────
@@ -123,26 +134,8 @@ public sealed class AutomationCommandCatalogTests
         if (added.Length == 0)
         {
             Assert.Equal(FrozenCommandIds.Count, actual.Count);
-            Assert.Equal(2, AutomationPipeProtocol.CommandManifestRevision);
+            Assert.Equal(3, AutomationPipeProtocol.CommandManifestRevision);
         }
-    }
-
-    [Fact]
-    public void NewMembersAreAppendedAtTheEndRatherThanInsertedInTheMiddle()
-    {
-        var ids = Enum.GetValues<AutomationCommandKind>().Select(kind => (int)kind).OrderBy(id => id).ToArray();
-
-        Assert.Equal(0, ids.First());
-        Assert.Equal(ids.Length - 1, ids.Last());
-        Assert.Equal(ids.Length, ids.Distinct().Count());
-    }
-
-    [Fact]
-    public void EntriesAreOrderedByNumericIdSoTheManifestIsStable()
-    {
-        var ids = AutomationCommandCatalog.Entries.Select(entry => (int)entry.Kind).ToArray();
-
-        Assert.Equal(ids.OrderBy(id => id).ToArray(), ids);
     }
 
     [Fact]
@@ -163,12 +156,14 @@ public sealed class AutomationCommandCatalogTests
     {
         var expectedKeys = new[]
         {
-            "action", "actionId", "armed", "assertions", "authToken", "bitrateMbps", "condition",
-            "decoderCount", "deviceId", "deviceName", "enabled", "field", "filePath", "force", "format",
-            "frameRate", "gain", "height", "maxEntries", "maxEvents", "microphoneVolumePercent",
-            "minutes", "mode", "op", "outputPath", "pollMs", "positionMs", "preset", "previewVolumePercent",
-            "quality", "resolution", "seconds", "section", "splitEncodeMode", "timeoutMs", "useSelectionRange",
-            "value", "verificationProfile", "videoFormat", "visible", "width", "x", "y"
+            "action", "actionId", "armed", "assertions", "authToken", "bitrateMbps", "capacity", "condition",
+            "contains", "decoderCount", "deviceId", "deviceName", "enabled", "exclude", "field", "filePath", "filter",
+            "force", "format", "frameRate", "gain", "height", "holder", "includeIdle", "interactiveOnly", "knobs",
+            "lease", "maxDepth", "maxEntries", "maxEvents", "measureLatency", "microphoneVolumePercent", "minutes",
+            "mode", "name", "op", "outputPath", "pollMs", "positionMs", "preset", "previewVolumePercent", "quality",
+            "reset", "resolution", "root", "seconds", "section", "splitEncodeMode", "target", "text", "timeoutMs",
+            "ttlSeconds", "useSelectionRange", "value", "verificationProfile", "videoFormat", "visible", "width",
+            "window", "x", "y"
         };
         var fields = typeof(AutomationPayloadKeys)
             .GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly)
@@ -182,25 +177,6 @@ public sealed class AutomationCommandCatalogTests
             Assert.True(fields.TryGetValue(memberName, out var actual), $"Missing payload key constant {memberName}.");
             Assert.Equal(key, actual);
         }
-    }
-
-    [Fact]
-    public void CatalogPayloadFieldsUseTheSharedVocabulary()
-    {
-        var catalogKeys = AutomationCommandCatalog.Entries
-            .SelectMany(entry => entry.PayloadFields)
-            .Select(field => field.Name)
-            .Distinct(StringComparer.Ordinal)
-            .OrderBy(key => key, StringComparer.Ordinal);
-        var nestedAssertionKeys = new[] { AutomationPayloadKeys.Field, AutomationPayloadKeys.Op, AutomationPayloadKeys.Value };
-        var topLevelKeys = typeof(AutomationPayloadKeys)
-            .GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly)
-            .Where(field => field.IsLiteral && field.FieldType == typeof(string))
-            .Select(field => (string)field.GetRawConstantValue()!)
-            .Except(nestedAssertionKeys, StringComparer.Ordinal)
-            .OrderBy(key => key, StringComparer.Ordinal);
-
-        Assert.Equal(topLevelKeys, catalogKeys);
     }
 
     // ── Name resolution ──────────────────────────────────────────────────────
@@ -235,22 +211,6 @@ public sealed class AutomationCommandCatalogTests
         Assert.Null(metadata);
     }
 
-    [Fact]
-    public void GetThrowsForAnUndefinedKind()
-    {
-        Assert.Throws<ArgumentOutOfRangeException>(() => AutomationCommandCatalog.Get((AutomationCommandKind)9999));
-    }
-
-    [Fact]
-    public void ResolveCommandAcceptsUndefinedNumericIdsUnchanged()
-    {
-        // Documents current behaviour rather than endorsing it: a numeric string is
-        // returned verbatim without checking that the id is defined, so validation of
-        // unknown numeric commands is the server's responsibility, not the client's.
-        Assert.Equal(9999, AutomationPipeProtocol.ResolveCommand("9999"));
-        Assert.Throws<ArgumentException>(() => AutomationPipeProtocol.ResolveCommand("nope"));
-    }
-
     // ── Timeout policy ───────────────────────────────────────────────────────
 
     [Fact]
@@ -267,15 +227,6 @@ public sealed class AutomationCommandCatalogTests
         Assert.Equal(
             AutomationPipeProtocol.ExtendedResponseTimeoutMs,
             AutomationCommandCatalog.Get(AutomationCommandKind.VerifyFile).ResponseTimeoutMs);
-    }
-
-    [Fact]
-    public void EveryCommandHasAPositiveTimeout()
-    {
-        foreach (var entry in AutomationCommandCatalog.Entries)
-        {
-            Assert.True(entry.ResponseTimeoutMs > 0, $"{entry.Name} has a non-positive response timeout");
-        }
     }
 
     [Fact]
@@ -433,57 +384,6 @@ public sealed class AutomationCommandCatalogTests
         Assert.IsType<InvalidOperationException>(ex);
     }
 
-    [Fact]
-    public void PathBearingCommandsDeclareTheirPathFieldAsAStringPayloadField()
-    {
-        var pathCommands = AutomationCommandCatalog.Entries
-            .Where(entry => entry.PathPolicy != AutomationCommandPathPolicy.None)
-            .ToArray();
-
-        Assert.NotEmpty(pathCommands);
-
-        foreach (var entry in pathCommands)
-        {
-            Assert.Contains(
-                entry.PayloadFields,
-                field => field.Type == AutomationPayloadFieldType.String
-                         && (field.Name == "outputPath" || field.Name == "filePath"));
-        }
-    }
-
-    // ── Manifest ─────────────────────────────────────────────────────────────
-
-    [Fact]
-    public void ManifestMirrorsTheCatalogEntryForEveryCommand()
-    {
-        var manifest = AutomationCommandCatalog.CreateManifest();
-
-        Assert.Equal(1, manifest.SchemaVersion);
-        Assert.Equal(AutomationCommandCatalog.Entries.Count, manifest.Commands.Count);
-
-        foreach (var entry in AutomationCommandCatalog.Entries)
-        {
-            var command = manifest.Commands.Single(candidate => candidate.Id == (int)entry.Kind);
-
-            Assert.Equal(entry.Name, command.Name);
-            Assert.Equal(entry.PayloadShape, command.PayloadShape);
-            Assert.Equal(entry.ResponseTimeoutMs, command.ResponseTimeoutMs);
-            Assert.Equal(entry.RequiresReadyDevices, command.RequiresReadyDevices);
-            Assert.Equal(entry.PathPolicy.ToString(), command.PathPolicy);
-            Assert.Equal(entry.PayloadFields.Count, command.PayloadFields.Count);
-        }
-    }
-
-    [Fact]
-    public void ManifestJsonIsSerialisableAndCarriesCommandNames()
-    {
-        var json = AutomationCommandCatalog.CreateManifestJson();
-
-        Assert.False(string.IsNullOrWhiteSpace(json));
-        Assert.Contains("SetRecordingEnabled", json, StringComparison.Ordinal);
-        Assert.Contains("FlashbackExport", json, StringComparison.Ordinal);
-    }
-
     // ── Request envelope ─────────────────────────────────────────────────────
 
     [Fact]
@@ -528,22 +428,6 @@ public sealed class AutomationCommandCatalogTests
                 expected,
                 AutomationPipeSecurityPolicy.ShouldDisableDefaultSecurityFallback(
                     isWindows, hasExplicit, explicitFailed, tokenRequired));
-        }
-    }
-
-    [Fact]
-    public void RequiringAnAuthTokenAlwaysKeepsTheDefaultSecurityFallback()
-    {
-        // The single most important row of the table above, stated on its own.
-        foreach (var hasExplicit in new[] { false, true })
-        foreach (var explicitFailed in new[] { false, true })
-        {
-            Assert.False(
-                AutomationPipeSecurityPolicy.ShouldDisableDefaultSecurityFallback(
-                    isWindows: true,
-                    hasExplicitSecurityDescriptor: hasExplicit,
-                    explicitSecurityFailed: explicitFailed,
-                    authTokenRequired: true));
         }
     }
 

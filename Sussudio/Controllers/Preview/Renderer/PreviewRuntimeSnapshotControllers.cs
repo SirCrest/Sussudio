@@ -38,48 +38,12 @@ internal sealed class PreviewRuntimeSnapshotSamplingController
 
     private PreviewRuntimeSnapshot BuildSnapshot()
     {
-        var startupSession = _context.StartupSessionController;
-        var startupSignalSnapshot = startupSession.SignalSnapshot;
-        var startupMissingSignals = startupSession.MissingSignals;
-        if (string.IsNullOrWhiteSpace(startupMissingSignals) &&
-            startupSession.ShouldRefreshMissingSignalsForSnapshot)
-        {
-            startupMissingSignals = startupSession.BuildMissingSignals();
-        }
-
-        var rendererHost = _context.RendererHostController;
-        var signature = new PreviewRuntimeSnapshotSignature(
-            _context.ViewModel.IsPreviewing,
-            rendererHost.IsCpuPreviewSourceAttached,
-            _context.IsGpuElementVisible(),
-            _context.IsCpuElementVisible(),
-            _context.IsPlaceholderVisible(),
-            rendererHost.FramesArrived,
-            rendererHost.FramesDisplayed,
-            rendererHost.FramesDropped,
-            rendererHost.LastPresentedTick,
-            rendererHost.PreviewMinPresentationIntervalMs,
-            startupSession.State,
-            startupSession.IsWaitingForFirstVisual,
-            startupSession.AttemptId,
-            startupSession.RequestedUtc,
-            startupSession.VisualTimeoutMs,
-            startupSignalSnapshot.GpuSignalMediaOpened,
-            startupSignalSnapshot.GpuSignalFirstFrame,
-            startupSignalSnapshot.GpuSignalPlaybackAdvancing,
-            startupSignalSnapshot.RequiredSignals,
-            startupSignalSnapshot.ReceivedSignals,
-            startupSignalSnapshot.Strategy,
-            startupMissingSignals,
-            startupSession.RecoveryAttemptCount,
-            startupSession.LastFailureReason,
-            startupSession.FirstVisualConfirmed,
-            startupSession.PositionEventCount);
+        var signature = BuildSignature();
         var previewRuntimeEpoch = GetOrAdvancePreviewRuntimeSnapshotEpoch(signature);
         return PreviewRuntimeSnapshotController.Build(new PreviewRuntimeSnapshotInput
         {
             PreviewRuntimeEpoch = previewRuntimeEpoch,
-            D3DRenderer = rendererHost.Renderer,
+            D3DRenderer = _context.RendererHostController.Renderer,
             IsPreviewing = signature.IsPreviewing,
             PreviewSourceAttached = signature.PreviewSourceAttached,
             GpuElementVisible = signature.GpuElementVisible,
@@ -95,18 +59,51 @@ internal sealed class PreviewRuntimeSnapshotSamplingController
             StartupAttemptId = signature.StartupAttemptId,
             StartupRequestedUtc = signature.StartupRequestedUtc,
             StartupTimeoutMs = signature.StartupTimeoutMs,
-            StartupGpuSignalMediaOpened = signature.StartupGpuSignalMediaOpened,
-            StartupGpuSignalFirstFrame = signature.StartupGpuSignalFirstFrame,
-            StartupGpuSignalPlaybackAdvancing = signature.StartupGpuSignalPlaybackAdvancing,
             StartupRequiredSignals = signature.StartupRequiredSignals,
             StartupReceivedSignals = signature.StartupReceivedSignals,
             StartupStrategy = signature.StartupStrategy,
             StartupMissingSignals = signature.StartupMissingSignals,
             StartupRecoveryAttemptCount = signature.StartupRecoveryAttemptCount,
             StartupLastFailureReason = signature.StartupLastFailureReason,
-            FirstVisualConfirmed = signature.FirstVisualConfirmed,
-            GpuPositionEventCount = signature.GpuPositionEventCount
+            FirstVisualConfirmed = signature.FirstVisualConfirmed
         });
+    }
+
+    private PreviewRuntimeSnapshotSignature BuildSignature()
+    {
+        var startupSession = _context.StartupSessionController;
+        var startupSignalSnapshot = startupSession.SignalSnapshot;
+        var startupMissingSignals = startupSession.MissingSignals;
+        if (string.IsNullOrWhiteSpace(startupMissingSignals) &&
+            startupSession.ShouldRefreshMissingSignalsForSnapshot)
+        {
+            startupMissingSignals = startupSession.BuildMissingSignals();
+        }
+
+        var rendererHost = _context.RendererHostController;
+        return new PreviewRuntimeSnapshotSignature(
+            _context.ViewModel.IsPreviewing,
+            rendererHost.IsCpuPreviewSourceAttached,
+            _context.IsGpuElementVisible(),
+            _context.IsCpuElementVisible(),
+            _context.IsPlaceholderVisible(),
+            rendererHost.FramesArrived,
+            rendererHost.FramesDisplayed,
+            rendererHost.FramesDropped,
+            rendererHost.LastPresentedTick,
+            rendererHost.PreviewMinPresentationIntervalMs,
+            startupSession.State,
+            startupSession.IsWaitingForFirstVisual,
+            startupSession.AttemptId,
+            startupSession.RequestedUtc,
+            startupSession.VisualTimeoutMs,
+            startupSignalSnapshot.RequiredSignals,
+            startupSignalSnapshot.ReceivedSignals,
+            startupSignalSnapshot.Strategy,
+            startupMissingSignals,
+            startupSession.RecoveryAttemptCount,
+            startupSession.LastFailureReason,
+            startupSession.FirstVisualConfirmed);
     }
 
     private long GetOrAdvancePreviewRuntimeSnapshotEpoch(PreviewRuntimeSnapshotSignature signature)
@@ -140,17 +137,13 @@ internal readonly record struct PreviewRuntimeSnapshotSignature(
     string? StartupAttemptId,
     DateTimeOffset? StartupRequestedUtc,
     int StartupTimeoutMs,
-    bool StartupGpuSignalMediaOpened,
-    bool StartupGpuSignalFirstFrame,
-    bool StartupGpuSignalPlaybackAdvancing,
     PreviewStartupSignalFlags StartupRequiredSignals,
     PreviewStartupSignalFlags StartupReceivedSignals,
     PreviewStartupStrategy StartupStrategy,
     string? StartupMissingSignals,
     int StartupRecoveryAttemptCount,
     string? StartupLastFailureReason,
-    bool FirstVisualConfirmed,
-    long GpuPositionEventCount);
+    bool FirstVisualConfirmed);
 
 internal sealed class PreviewRuntimeSnapshotInput
 {
@@ -171,9 +164,6 @@ internal sealed class PreviewRuntimeSnapshotInput
     public string? StartupAttemptId { get; init; }
     public DateTimeOffset? StartupRequestedUtc { get; init; }
     public int StartupTimeoutMs { get; init; }
-    public bool StartupGpuSignalMediaOpened { get; init; }
-    public bool StartupGpuSignalFirstFrame { get; init; }
-    public bool StartupGpuSignalPlaybackAdvancing { get; init; }
     public PreviewStartupSignalFlags StartupRequiredSignals { get; init; }
     public PreviewStartupSignalFlags StartupReceivedSignals { get; init; }
     public PreviewStartupStrategy StartupStrategy { get; init; }
@@ -181,7 +171,6 @@ internal sealed class PreviewRuntimeSnapshotInput
     public int StartupRecoveryAttemptCount { get; init; }
     public string? StartupLastFailureReason { get; init; }
     public bool FirstVisualConfirmed { get; init; }
-    public long GpuPositionEventCount { get; init; }
 }
 
 internal static class PreviewRuntimeSnapshotController
@@ -222,9 +211,6 @@ internal static class PreviewRuntimeSnapshotMapper
             StartupAttemptId = input.StartupAttemptId,
             StartupElapsedMs = health.StartupElapsedMs,
             StartupTimeoutMs = input.StartupTimeoutMs,
-            StartupGpuSignalMediaOpened = input.StartupGpuSignalMediaOpened,
-            StartupGpuSignalFirstFrame = input.StartupGpuSignalFirstFrame,
-            StartupGpuSignalPlaybackAdvancing = input.StartupGpuSignalPlaybackAdvancing,
             StartupRequiredSignals = input.StartupRequiredSignals,
             StartupReceivedSignals = input.StartupReceivedSignals,
             StartupStrategy = input.StartupStrategy,
@@ -313,6 +299,7 @@ internal static class PreviewRuntimeSnapshotMapper
             D3DFrameStatsLastPresentRefreshDelta = d3dProjection.D3DFrameStatsLastPresentRefreshDelta,
             D3DFrameStatsLastSyncRefreshDelta = d3dProjection.D3DFrameStatsLastSyncRefreshDelta,
             D3DFrameStatsMissedRefreshCount = d3dProjection.D3DFrameStatsMissedRefreshCount,
+            D3DFrameStatsCadenceMissedRefreshCount = d3dProjection.D3DFrameStatsCadenceMissedRefreshCount,
             D3DLastSubmittedPreviewPresentId = d3dProjection.D3DLastSubmittedPreviewPresentId,
             D3DLastSubmittedSourceSequenceNumber = d3dProjection.D3DLastSubmittedSourceSequenceNumber,
             D3DLastSubmittedSourcePtsTicks = d3dProjection.D3DLastSubmittedSourcePtsTicks,
@@ -335,9 +322,7 @@ internal static class PreviewRuntimeSnapshotMapper
             EstimatedPipelineLatencyMs = d3dProjection.EstimatedPipelineLatencyMs,
             GpuPlaybackState = d3dProjection.GpuPlaybackState,
             GpuNaturalVideoWidth = d3dProjection.GpuNaturalVideoWidth,
-            GpuNaturalVideoHeight = d3dProjection.GpuNaturalVideoHeight,
-            GpuPositionMs = d3dProjection.GpuPositionMs,
-            GpuPositionEventCount = input.GpuPositionEventCount
+            GpuNaturalVideoHeight = d3dProjection.GpuNaturalVideoHeight
         };
     }
 }
@@ -440,7 +425,6 @@ internal sealed class PreviewRuntimeD3DProjection
     public string GpuPlaybackState { get; private set; } = "None";
     public int GpuNaturalVideoWidth { get; private set; }
     public int GpuNaturalVideoHeight { get; private set; }
-    public double GpuPositionMs { get; private set; }
     public int DisplayCadenceSampleCount { get; private set; }
     public double DisplayCadenceObservedFps { get; private set; }
     public double DisplayCadenceExpectedIntervalMs { get; private set; }
@@ -508,6 +492,7 @@ internal sealed class PreviewRuntimeD3DProjection
     public long D3DFrameStatsLastPresentRefreshDelta { get; private set; }
     public long D3DFrameStatsLastSyncRefreshDelta { get; private set; }
     public long D3DFrameStatsMissedRefreshCount { get; private set; }
+    public long D3DFrameStatsCadenceMissedRefreshCount { get; private set; }
     public bool D3DFrameLatencyWaitEnabled { get; private set; }
     public bool D3DFrameLatencyWaitHandleActive { get; private set; }
     public long D3DFrameLatencyWaitCallCount { get; private set; }
@@ -576,7 +561,6 @@ internal sealed class PreviewRuntimeD3DProjection
         GpuPlaybackState = rendererState.GpuPlaybackState;
         GpuNaturalVideoWidth = rendererState.NaturalVideoWidth;
         GpuNaturalVideoHeight = rendererState.NaturalVideoHeight;
-        GpuPositionMs = rendererState.PositionMs;
     }
 
     private void ApplyDisplayCadence(D3D11PreviewRenderer.PresentCadenceMetrics? displayCadence)
@@ -664,6 +648,7 @@ internal sealed class PreviewRuntimeD3DProjection
         D3DFrameStatsLastPresentRefreshDelta = frameStatistics?.LastPresentRefreshDelta ?? 0;
         D3DFrameStatsLastSyncRefreshDelta = frameStatistics?.LastSyncRefreshDelta ?? 0;
         D3DFrameStatsMissedRefreshCount = frameStatistics?.MissedRefreshCount ?? 0;
+        D3DFrameStatsCadenceMissedRefreshCount = frameStatistics?.CadenceMissedRefreshCount ?? 0;
     }
 
     private void ApplyFrameLatencyWait(D3D11PreviewRenderer.FrameLatencyWaitMetrics? frameLatencyWait)
@@ -732,8 +717,7 @@ internal readonly record struct PreviewRuntimeD3DRendererState(
     PreviewSlowFrameDiagnostic[] RecentSlowFrames,
     string GpuPlaybackState,
     int NaturalVideoWidth,
-    int NaturalVideoHeight,
-    double PositionMs);
+    int NaturalVideoHeight);
 
 internal static class PreviewRuntimeD3DRendererStatePolicy
 {
@@ -754,6 +738,5 @@ internal static class PreviewRuntimeD3DRendererStatePolicy
             RecentSlowFrames: d3d?.GetRecentSlowFrameDiagnostics() ?? Array.Empty<PreviewSlowFrameDiagnostic>(),
             GpuPlaybackState: d3d == null ? "None" : (d3d.IsRendering ? "Rendering" : "Idle"),
             NaturalVideoWidth: d3d?.NaturalWidth ?? 0,
-            NaturalVideoHeight: d3d?.NaturalHeight ?? 0,
-            PositionMs: 0);
+            NaturalVideoHeight: d3d?.NaturalHeight ?? 0);
 }
