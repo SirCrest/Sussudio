@@ -846,7 +846,9 @@ usually does), which is `action-failed` with the reason. Statuses: `invoked`,
 `not-found`, `ambiguous`, `hidden`, `disabled`, `invalid-action`,
 `action-unsupported`, `invalid-value` (a bad value, including a select that
 matches no item or several), `action-failed`, `window-unavailable`. Every attempt
-is logged as `AUTO-UI-INVOKE`.
+is logged as `AUTO-UI-INVOKE`. The request's timeout stops an action only before
+the UI thread starts it; once started, the settle and re-read still run and the
+reply says the action ran, never that it was canceled.
 
 CLI: `ssctl ui tree [--root NAME] [--depth N] [--all] [--json]` and
 `ssctl ui invoke <target> [action] [value] [--force] [--json]`. MCP:

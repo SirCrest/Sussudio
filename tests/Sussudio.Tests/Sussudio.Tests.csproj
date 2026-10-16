@@ -77,6 +77,7 @@
     <Compile Include="..\..\Sussudio\Services\Automation\UiAutomationModels.cs" Link="Production\UiAutomationModels.cs" />
     <Compile Include="..\..\Sussudio\Services\Automation\UiTargetResolver.cs" Link="Production\UiTargetResolver.cs" />
     <Compile Include="..\..\Sussudio\Services\Automation\UiActionPlanner.cs" Link="Production\UiActionPlanner.cs" />
+    <Compile Include="..\..\Sussudio\Services\Automation\UiInvokeSequence.cs" Link="Production\UiInvokeSequence.cs" />
     <Compile Include="..\..\Sussudio\Services\Automation\UiSelectionMatcher.cs" Link="Production\UiSelectionMatcher.cs" />
     <Compile Include="..\..\Sussudio\Services\Automation\UiVisibilityRules.cs" Link="Production\UiVisibilityRules.cs" />
     <Compile Include="..\..\Sussudio\Services\Automation\UiDisplayMemberPath.cs" Link="Production\UiDisplayMemberPath.cs" />

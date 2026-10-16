@@ -665,9 +665,11 @@ Fingers:
   supports), `UiSelectionMatcher` (item text or `#N`), `UiSelectionVia` (the
   truthful `Via` text of the three select routes: item-data peer, container peer,
   `Selector.SelectedIndex`), `UiDisplayMemberPath` (item text from
-  `ItemsControl.DisplayMemberPath`) and `UiVisibilityRules` (effective
-  visibility). `UiAutomationModels.cs` owns the wire DTOs and status
-  constants.
+  `ItemsControl.DisplayMemberPath`), `UiVisibilityRules` (effective
+  visibility) and `UiInvokeSequence` (the order of one invoke: perform, settle,
+  read back; the request's cancellation stops the action only before the UI
+  thread starts it, and the result reports an action that ran).
+  `UiAutomationModels.cs` owns the wire DTOs and status constants.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.UiAutomation.cs` owns
   the command 66 and 67 handlers and the status to error-code mapping
   (`invalid-request` for what rewording fixes, `command-failed` for live UI state).
