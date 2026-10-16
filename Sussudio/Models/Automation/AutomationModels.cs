@@ -286,8 +286,6 @@ public sealed class DiagnosticsEvent
 public enum PreviewStartupStrategy
 {
     None,
-    GpuMediaSourceNoFrameReader,
-    GpuMediaSourceWithFrameReader,
     CpuSoftwareBitmap,
     DirectShow,
     D3D11VideoProcessor
