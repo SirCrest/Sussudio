@@ -3135,7 +3135,7 @@ Primary owners:
   validation, on/off and show/hide parsing, recording format normalization,
   snap action mapping, and assertion value parsing. It is a partial class: the
   performance-telemetry verbs live in `tools/ssctl/CommandHandlers.Perf.cs`
-  (`perf report|window|mark|trace|experiment`, `knobs`, `knob set|reset`,
+  (`perf report|window|mark|trace|experiment|lease`, `knobs`, `knob set|reset`,
   `log tail`; `perf trace dump` resolves its path client-side because the app
   does not share the CLI working directory, and `perf trace analyze` and
   `perf experiment` are tool-only) and render through
@@ -3197,9 +3197,10 @@ Primary owners:
   row/channel records, and the operator-facing verdict text. Its
   `minSampleSeconds` default (15) tracks `PreviewPacingSlowStageClassifier`'s
   minimum cadence window, which must stay below the 20 s cadence windows.
-- `tools/McpServer/Tools/PerfTelemetryTools.cs` owns the seven performance
+- `tools/McpServer/Tools/PerfTelemetryTools.cs` owns the eight performance
   telemetry MCP tools (`get_perf_report`, `perf_window`, `add_perf_marker`,
-  `frame_trace`, `get_tuning_knobs`, `set_tuning_knob`, `get_log_tail`). Each
+  `frame_trace`, `get_tuning_knobs`, `set_tuning_knob`, `perf_experiment_lease`,
+  `get_log_tail`). Each
   forwards one automation command and returns the app's structured `Data`
   payload unchanged.
 - Shared PresentMon option precedence and preview-present field extraction live
