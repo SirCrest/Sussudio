@@ -86,6 +86,8 @@ internal static class StatusMessages
     public const string FlashbackSnapToLiveNotice = "Returned to live after a playback error.";
     public const string FlashbackNotRunningNotice = "Flashback is not buffering.";
     public const string RecordingRecoveryFallbackNotice = "The recording was not finalized.";
+    public const string RecordingUnavailableNoNvencNotice =
+        "The loaded FFmpeg build has no NVENC encoders. Close Sussudio, copy the FFmpeg DLLs that ship with Sussudio into its ffmpeg folder, and reopen it.";
 
     /// <summary>
     /// Recovery banner message from a stored failure reason. The banner title already says
@@ -276,6 +278,7 @@ internal static class StatusMessages
         ["OpenRecordingsButton_Click"] = "Open recordings folder",
         ["ScreenshotButton_Click"] = "Screenshot",
         ["RecordingRecoveryOpenLocationButton_Click"] = "Open recording location",
+        ["RecordingUnavailableOpenFfmpegFolderButton_Click"] = "Open FFmpeg folder",
         ["FlashbackExportButton_Click"] = "Export",
         ["FlashbackSaveLast5mButton_Click"] = "Save",
         ["FlashbackEnabledToggle_Toggled"] = "Flashback change",

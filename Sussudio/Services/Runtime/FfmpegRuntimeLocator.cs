@@ -24,6 +24,7 @@ internal static class FfmpegRuntimeLocator
         $"avutil-{ffmpeg.LIBAVUTIL_VERSION_MAJOR}.dll",
         $"swresample-{ffmpeg.LIBSWRESAMPLE_VERSION_MAJOR}.dll"
     };
+    private const string AppLocalRuntimeFolderName = "ffmpeg";
     private static Task<EncoderSupport>? _encoderProbeTask;
     private static readonly object EncoderProbeLock = new();
     private static Task<SplitEncodeSupport>? _splitEncodeSupportTask;
@@ -44,6 +45,11 @@ internal static class FfmpegRuntimeLocator
 
         return AppContext.BaseDirectory;
     }
+
+    // The ffmpeg folder next to the app. It is searched first, so DLLs placed here
+    // win over any FFmpeg found under Program Files or on PATH.
+    internal static string GetAppLocalRuntimeDirectory()
+        => Path.Combine(GetAssemblyBaseDirectory(), AppLocalRuntimeFolderName);
 
     internal static bool TryResolveNativeRuntimeRoot(out string runtimeRoot)
         => TryResolveNativeRuntimeRoot(preferredBaseDirectory: null, out runtimeRoot);
@@ -112,7 +118,7 @@ internal static class FfmpegRuntimeLocator
             : GetAssemblyBaseDirectory();
         if (!string.IsNullOrWhiteSpace(assemblyDir))
         {
-            yield return Path.Combine(assemblyDir, "ffmpeg");
+            yield return Path.Combine(assemblyDir, AppLocalRuntimeFolderName);
             yield return assemblyDir;
         }
 

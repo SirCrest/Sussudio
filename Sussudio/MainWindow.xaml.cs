@@ -864,6 +864,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         {
             ViewModel = ViewModel,
             RecordingButtonChrome = _recordingButtonChromeController,
+            RecordingUnavailableInfoBar = RecordingUnavailableInfoBar,
             AudioRecordToggle = AudioRecordToggle,
             CustomAudioToggle = CustomAudioToggle,
             MicrophoneToggle = MicrophoneToggle,
@@ -1107,6 +1108,11 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     {
         _ = RunUiEventHandlerAsync(() => OpenRecordingsFolderFromButtonAsync(), nameof(OpenRecordingsButton_Click));
     }
+
+    private void RecordingUnavailableOpenFfmpegFolderButton_Click(object sender, RoutedEventArgs e)
+        => _ = RunUiEventHandlerAsync(
+            _recordingStatePresentationController.OpenFfmpegFolderAsync,
+            nameof(RecordingUnavailableOpenFfmpegFolderButton_Click));
 
     private void ScreenshotButton_Click(object sender, RoutedEventArgs e)
     {

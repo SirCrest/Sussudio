@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
 using Sussudio.Models;
+using Sussudio.Services.Runtime;
 using Sussudio.ViewModels;
 using Windows.Storage.Pickers;
 
@@ -180,6 +181,7 @@ internal sealed class RecordingStatePresentationControllerContext
 {
     public required MainViewModel ViewModel { get; init; }
     public required RecordingButtonChromeController RecordingButtonChrome { get; init; }
+    public required InfoBar RecordingUnavailableInfoBar { get; init; }
     public required Control AudioRecordToggle { get; init; }
     public required Control CustomAudioToggle { get; init; }
     public required Control MicrophoneToggle { get; init; }
@@ -262,6 +264,23 @@ internal sealed class RecordingStatePresentationController
     {
         var state = BuildPresentationState();
         _context.RecordingButtonChrome.ApplyFfmpegMissingState(state);
+
+        // A disabled button shows no tooltip, so the banner gives the reason. The
+        // encoder probe runs once per process and the loaded DLLs stay bound, so
+        // only a restart with an NVENC build clears it.
+        var banner = _context.RecordingUnavailableInfoBar;
+        banner.Message = StatusMessages.RecordingUnavailableNoNvencNotice;
+        banner.IsOpen = _context.ViewModel.IsFfmpegMissing;
+    }
+
+    public async Task OpenFfmpegFolderAsync()
+    {
+        // Create the app-local folder when it is absent: it is where the DLLs belong,
+        // and the runtime search skips a folder that lacks them.
+        var directory = FfmpegRuntimeLocator.GetAppLocalRuntimeDirectory();
+        Directory.CreateDirectory(directory);
+        var folder = await Windows.Storage.StorageFolder.GetFolderFromPathAsync(directory);
+        await Windows.System.Launcher.LaunchFolderAsync(folder);
     }
 
     private RecordingStatePresentationState BuildPresentationState()

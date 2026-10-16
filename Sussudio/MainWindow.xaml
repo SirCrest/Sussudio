@@ -231,6 +231,24 @@
                     </TransitionCollection>
                 </StackPanel.ChildrenTransitions>
 
+                <!-- The record button stays disabled while the loaded FFmpeg has no NVENC
+                     encoder, and a disabled button shows no tooltip, so this banner carries
+                     the reason. The recording-state presentation controller opens it. -->
+                <InfoBar x:Name="RecordingUnavailableInfoBar"
+                         AutomationProperties.AutomationId="RecordingUnavailableInfoBar"
+                         Style="{StaticResource NoticeBannerStyle}"
+                         Title="RECORDING UNAVAILABLE"
+                         Severity="Error"
+                         IsOpen="False"
+                         IsClosable="False">
+                    <InfoBar.ActionButton>
+                        <Button x:Name="RecordingUnavailableOpenFfmpegFolderButton"
+                                AutomationProperties.AutomationId="RecordingUnavailableOpenFfmpegFolderButton"
+                                Content="Open FFmpeg folder"
+                                Click="RecordingUnavailableOpenFfmpegFolderButton_Click"/>
+                    </InfoBar.ActionButton>
+                </InfoBar>
+
                 <!-- Eviction is paused while a recording or export reads the buffer. -->
                 <InfoBar x:Name="DiskWarningInfoBar"
                          AutomationProperties.AutomationId="DiskWarningInfoBar"
