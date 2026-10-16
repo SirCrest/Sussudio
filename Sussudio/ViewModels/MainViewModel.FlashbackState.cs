@@ -19,6 +19,8 @@ public partial class MainViewModel
     private readonly SemaphoreSlim _flashbackExportRequestGate = new(1, 1);
     private int _flashbackExportOperationId;
     private int _flashbackSettingsRestartGeneration;
+    // UI-thread only: the latest enable request owns IsFlashbackEnabled.
+    private int _flashbackEnabledRequestGeneration;
     private bool _suppressFlashbackSettingsUpdate;
     private static readonly int[] SupportedFlashbackBufferMinutes = { 1, 2, 5, 10, 15, 30 };
 
@@ -95,8 +97,64 @@ public partial class MainViewModel
     }
 
     // Live Flashback enablement, restart, buffer-duration, and GPU-decode setting changes.
-    public Task SetFlashbackEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
-        => _sessionCoordinator.SetFlashbackEnabledAsync(enabled, cancellationToken);
+
+    /// <summary>
+    /// The one Flashback enable transition, shared by the settings toggle and automation.
+    /// Publishes the requested state first so the toggle, timeline lockout and keep-alive
+    /// hint follow at once, then restores the previous state if the backend refuses,
+    /// unless a newer request has taken ownership of <see cref="IsFlashbackEnabled"/>.
+    /// </summary>
+    public async Task SetFlashbackEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
+    {
+        var request = await InvokeOnUiThreadAsync(
+            () =>
+            {
+                var previousEnabled = IsFlashbackEnabled;
+                IsFlashbackEnabled = enabled;
+                return (PreviousEnabled: previousEnabled, Generation: ++_flashbackEnabledRequestGeneration);
+            },
+            cancellationToken).ConfigureAwait(false);
+
+        try
+        {
+            await _sessionCoordinator.SetFlashbackEnabledAsync(enabled, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log(
+                $"FLASHBACK_ENABLE_REQUEST_FAILED requested={enabled} restore={request.PreviousEnabled} " +
+                $"type={ex.GetType().Name} error='{ex.Message}'");
+            await RestoreFlashbackEnabledAfterFailedRequestAsync(request.PreviousEnabled, request.Generation)
+                .ConfigureAwait(false);
+            throw;
+        }
+    }
+
+    private async Task RestoreFlashbackEnabledAfterFailedRequestAsync(bool previousEnabled, int generation)
+    {
+        try
+        {
+            await InvokeOnUiThreadAsync(
+                () =>
+                {
+                    if (generation != _flashbackEnabledRequestGeneration)
+                    {
+                        Logger.Log($"FLASHBACK_ENABLE_RESTORE_SKIPPED reason=superseded generation={generation}");
+                        return false;
+                    }
+
+                    IsFlashbackEnabled = previousEnabled;
+                    return true;
+                },
+                CancellationToken.None).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            // Only a dispatcher that is shutting down refuses this; the caller's
+            // original failure is the one worth reporting.
+            Logger.Log($"FLASHBACK_ENABLE_RESTORE_FAILED type={ex.GetType().Name} error='{ex.Message}'");
+        }
+    }
 
     public async Task SetFlashbackBufferMinutesAsync(int minutes, CancellationToken cancellationToken = default)
     {

@@ -2413,18 +2413,21 @@ Primary current owners:
 - `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs` also owns
   Flashback command semantics for in/out points, clear, play/pause, Go Live,
   fullscreen keyboard shortcuts including left/right nudge rejection logging,
-  export, save-last-5m, enable-toggle rollback, apply/restart, and the XAML
-  command event-handler surface adapter.
+  export, save-last-5m, forwarding enable-toggle changes that differ from
+  `IsFlashbackEnabled`, apply/restart, and the XAML command event-handler
+  surface adapter.
 - `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs` also owns
   Flashback export progress-bar value, visibility, and reset-on-complete
   semantics. `Sussudio/MainWindow.xaml.cs` wires the
   export progress presentation controller.
 - `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs` owns Flashback
-  settings-control initialization, GPU decode toggle binding/sync, buffer
-  duration combo selection/sync, and buffer-duration change logging.
+  settings-control initialization, enable toggle sync from
+  `IsFlashbackEnabled`, GPU decode toggle binding/sync, buffer duration combo
+  selection/sync, and buffer-duration change logging.
   `Sussudio/MainWindow.xaml.cs` is the XAML-facing settings
-  adapter; enable toggle rollback and apply/restart command behavior live in
-  `FlashbackUiControllers.cs`.
+  adapter; apply/restart command behavior lives in `FlashbackUiControllers.cs`,
+  and the enable transition with its rollback lives in
+  `MainViewModel.FlashbackState.cs`.
 - `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs` owns Flashback status
   and playback-position polling timers. `Sussudio/MainWindow.xaml.cs`
   is the XAML-facing adapter; playhead anchor timing lives with Flashback UI
@@ -3006,9 +3009,12 @@ Primary current owners:
   `MainViewModel.cs` owns automation HDR and true-HDR
   preview recording-time guard enforcement and availability checks alongside
   HDR mode change side effects.
-  `MainViewModel.FlashbackState.cs` owns automation Flashback
-  enable/restart routing through the capture session coordinator alongside
-  buffer/GPU setting reactions.
+  `MainViewModel.FlashbackState.cs` owns the one Flashback enable transition
+  shared by the settings toggle and automation: it publishes
+  `IsFlashbackEnabled`, applies it through the capture session coordinator,
+  and restores the previous value on failure unless a newer request has
+  superseded it. It also owns automation restart routing alongside buffer/GPU
+  setting reactions.
   `MainViewModel.cs` owns automation device refresh,
   capture-device selection, audio-input selection, and custom audio-input
   enablement.

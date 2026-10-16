@@ -473,6 +473,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             IsExporting = () => ViewModel.IsFlashbackExporting,
             ApplyTimelineVisibility = show => _flashbackTimelineController.ApplyVisibility(show),
             ApplyTimelineLockout = () => _flashbackTimelineController.ApplyLockout(),
+            SyncEnabledSetting = () => _flashbackSettingsBindingController.SyncEnabledToggle(),
             IsFlashbackEnabled = () => ViewModel.IsFlashbackEnabled,
             UpdateFlashbackKeepAliveHint = UpdateFlashbackKeepAliveHint,
             UpdateState = UpdateFlashbackStateUI,
