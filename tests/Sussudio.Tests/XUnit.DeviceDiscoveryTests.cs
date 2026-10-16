@@ -1017,6 +1017,7 @@ public sealed class DeviceDiscoveryTests
             SetDelegate(context, "IsInitialized", _ => false);
             SetDelegate(context, "ShouldStartAudioPreview", _ => false);
             SetDelegate(context, "RaisePreviewStartRequested", _ => { PreviewStarts++; return null; });
+            SetDelegate(context, "RaisePreviewStartFailed", _ => null);
             SetDelegate(context, "SetStatusText", _ => null);
             SetDelegate(context, "SetIsInitialized", _ => null);
             return Activator.CreateInstance(RequireType("Sussudio.Controllers.MainViewModelPreviewLifecycleController"), context)!;

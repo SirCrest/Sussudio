@@ -83,6 +83,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
         ViewModel.PropertyChanged += ViewModel_PropertyChanged;
         ViewModel.PreviewStartRequested += ViewModel_PreviewStartRequested;
+        ViewModel.PreviewStartFailed += ViewModel_PreviewStartFailed;
         ViewModel.PreviewStopRequested += ViewModel_PreviewStopRequested;
         ViewModel.PreviewReinitRequested += ViewModel_PreviewReinitRequested;
         ViewModel.PreviewRendererStopRequested += ViewModel_PreviewRendererStopRequested;
@@ -672,6 +673,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     {
         ViewModel.PropertyChanged -= ViewModel_PropertyChanged;
         ViewModel.PreviewStartRequested -= ViewModel_PreviewStartRequested;
+        ViewModel.PreviewStartFailed -= ViewModel_PreviewStartFailed;
         ViewModel.PreviewStopRequested -= ViewModel_PreviewStopRequested;
         ViewModel.PreviewReinitRequested -= ViewModel_PreviewReinitRequested;
     }
@@ -1892,6 +1894,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             ViewModel = ViewModel,
             ShouldBeginPreviewStartupAttempt = () => _previewStartupSessionController.ShouldBeginAttempt,
             BeginPreviewStartupAttempt = _previewStartupSessionController.BeginStartupAttempt,
+            AdmitPreviewStartRequest = _previewStartupSessionController.AdmitStartRequest,
+            ResolvePreviewStartFailure = _previewStartupSessionController.ResolveStartFailure,
             PrimePreviewAudioFadeIn = () => _previewAudioFadeController.PrimeFadeIn(),
             IsPreviewReinitAnimating = () => IsPreviewReinitAnimating,
             PreparePreviewStartupPresentation = () => _previewTransitionAnimationController.PrepareStartupPresentation(),
@@ -2035,8 +2039,11 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private void SetPreviewStopRequestedByUser(bool value)
         => _previewLifecycleEventController.SetStopRequestedByUser(value);
 
-    private void ViewModel_PreviewStartRequested(object? sender, EventArgs e)
-        => _previewLifecycleEventController.HandlePreviewStartRequested();
+    private void ViewModel_PreviewStartRequested(object? sender, PreviewStartRequest e)
+        => _previewLifecycleEventController.HandlePreviewStartRequested(e.RequestId);
+
+    private void ViewModel_PreviewStartFailed(object? sender, PreviewStartFailure e)
+        => _previewLifecycleEventController.HandlePreviewStartFailed(e);
 
     private void ViewModel_PreviewStopRequested(object? sender, EventArgs e)
         => _previewLifecycleEventController.HandlePreviewStopRequested();

@@ -1285,7 +1285,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     internal Task StopRecordingForEmergencyAsync(CancellationToken cancellationToken = default)
         => _sessionCoordinator.StopRecordingForEmergencyAsync(cancellationToken);
 
-    public event EventHandler? PreviewStartRequested;
+    public event EventHandler<PreviewStartRequest>? PreviewStartRequested;
+    public event EventHandler<PreviewStartFailure>? PreviewStartFailed;
     public event EventHandler? PreviewStopRequested;
     public event Func<string, Task>? PreviewReinitRequested;
     public event Func<Task>? PreviewRendererStopRequested;
@@ -2963,7 +2964,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                     ShouldStartAudioPreview = () => viewModel.IsAudioPreviewEnabled && viewModel.IsAudioEnabled,
                     IsAudioPreviewActive = () => viewModel._captureService.IsAudioPreviewActive,
                     SetStatusText = value => viewModel.StatusText = value,
-                    RaisePreviewStartRequested = () => viewModel.PreviewStartRequested?.Invoke(viewModel, EventArgs.Empty),
+                    RaisePreviewStartRequested = request => viewModel.PreviewStartRequested?.Invoke(viewModel, request),
+                    RaisePreviewStartFailed = failure => viewModel.PreviewStartFailed?.Invoke(viewModel, failure),
                     RaisePreviewStopRequested = () => viewModel.PreviewStopRequested?.Invoke(viewModel, EventArgs.Empty),
                     ApplyLatestSourceTelemetryForPreviewStart = () =>
                         viewModel._sourceTelemetryController.ApplySourceTelemetrySnapshot(

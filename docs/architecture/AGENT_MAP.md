@@ -950,6 +950,9 @@ Important entry points:
   `SUSSUDIO_CAPTURE_FAULT_PREVIEW_FLASHBACK_FAILURES` fails the first N fresh starts
   where they would start the Flashback backend, after the audio graph started
   (`CAPTURE_FAULT_PREVIEW_FLASHBACK_FAILED`), for its `AudioGraphRollback` scenario.
+  `SUSSUDIO_CAPTURE_FAULT_PREVIEW_START_FAILURES` fails the first N video-preview
+  starts (`CAPTURE_FAULT_PREVIEW_START_FAILED`) for the live check
+  `scripts/performance/Test-PreviewStartFailureResolution.ps1`.
 - `CaptureService.cs` also owns `CaptureVideoPipelineResources`:
   active unified-video capture storage,
   preview-frame sink storage, negotiated video getters, and cached MJPEG
@@ -2504,7 +2507,9 @@ Primary current owners:
   unavailable-placeholder fades, startup/unavailable presentation prep, preview
   reinit animation active state, first-visual transition clears, startup-reset
   preservation, completion presentation decisions, and the
-  `D3D11_RENDERER_REINIT_FLAG` / `PREVIEW_REINIT_ANIMATE_*` logs.
+  `D3D11_RENDERER_REINIT_FLAG` / `PREVIEW_REINIT_ANIMATE_*` logs. Element
+  opacity fades hand off: a new fade stops the one it replaces on that element,
+  and a replaced fade-out never collapses the element after a later fade-in.
   `Sussudio/MainWindow.xaml.cs` wires
   preview-transition animation callbacks; video-shadow fade callbacks route
   through the preview surface shadow controller in this owner.
@@ -2568,7 +2573,13 @@ Primary current owners:
   formatting, and the required/received readiness snapshot.
   `PreviewStartupSessionController` is the single attempt owner; the readiness
   signal state and signal formatter remain local helpers without UI
-  dependencies. The runtime sampler reads this owner's signal snapshot and
+  dependencies. It also resolves a start that ended before its capture session
+  ran: each `PreviewStartRequest` begins or joins the attempt and the latest one
+  owns it, so only that request's `PreviewStartFailure` resolves the attempt, once
+  and only while it is still `StartingSession` (a failure becomes `Failed` with
+  its reason, a cancellation resets to `Idle`). A superseded, duplicate or late
+  outcome logs `PREVIEW_START_FAILURE_IGNORED`; once the renderer attach began,
+  `HandlePreviewStartedAsync` owns the outcome. The runtime sampler reads this owner's signal snapshot and
   timeout directly. Both renderer strategies require only `FirstVisual`, which
   `ConfirmFirstVisual` records; the MediaPlayer-era dual GPU signal path
   (MediaOpened/FirstCaptureFrame/PlaybackAdvancing readiness and its
@@ -2590,7 +2601,9 @@ Primary current owners:
   readable timeout status after teardown.
   `Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs` owns preview-
   specific ViewModel event lifecycle and the preview property-change router for
-  preview start/stop/reinit state.
+  preview start/stop/reinit state. `HandlePreviewStartFailed` hands a pre-session
+  start outcome to the session owner and reveals the unavailable placeholder
+  when that resolved the attempt, unless a reinitialize owns the presentation.
   `Sussudio/MainWindow.xaml.cs` wires preview button
   presentation callbacks and
   preserves preview event-handler signatures and delegates into the controller.
@@ -2848,6 +2861,10 @@ Primary current owners:
   lifecycle operations: device initialization, preview start/stop,
   selected-device apply, and the reinitialize facade. Failed initialization repairs
   visible state and faults the caller so automation publishes command failure.
+  Each preview start numbers its request, and a start that fails or is cancelled
+  before the capture session runs raises `PreviewStartFailed` for that request
+  (`PREVIEW_START_ABORTED`) before the exception propagates, so every start path
+  (button, automation, device scan, reinitialize) resolves its startup attempt.
   A preview stop that leaves capture uninitialized (it finished a half-done full
   capture cleanup) clears the initialized flag, and the recording flag when that
   cleanup finalized the recording; it never sets either flag from capture state.

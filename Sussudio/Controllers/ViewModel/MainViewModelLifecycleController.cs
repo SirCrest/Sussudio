@@ -563,7 +563,8 @@ internal sealed class MainViewModelPreviewLifecycleControllerContext
     public required Func<bool> ShouldStartAudioPreview { get; init; }
     public required Func<bool> IsAudioPreviewActive { get; init; }
     public required Action<string> SetStatusText { get; init; }
-    public required Action RaisePreviewStartRequested { get; init; }
+    public required Action<PreviewStartRequest> RaisePreviewStartRequested { get; init; }
+    public required Action<PreviewStartFailure> RaisePreviewStartFailed { get; init; }
     public required Action RaisePreviewStopRequested { get; init; }
     public required Action ApplyLatestSourceTelemetryForPreviewStart { get; init; }
 }
@@ -588,6 +589,7 @@ internal sealed class MainViewModelPreviewLifecycleController
     public bool IsReinitializeAdmitted => _previewReinitializeController.IsReinitializeAdmitted;
 
     private int _audioStartsForPreviewStart;
+    private long _previewStartRequestSequence;
 
     // True while StartPreviewAsync is starting audio as part of a preview start. The service's
     // "Audio preview started" event is queued before that command completes, so it arrives
@@ -635,19 +637,45 @@ internal sealed class MainViewModelPreviewLifecycleController
             _previewReinitializeController.ResetPendingPreviewRestartCancellation();
         }
 
-        _context.RaisePreviewStartRequested();
-        Logger.Log($"PREVIEW_START requested initialized={_context.IsInitialized()} audio={_context.ShouldStartAudioPreview()}");
+        var request = new PreviewStartRequest(Interlocked.Increment(ref _previewStartRequestSequence));
+        _context.RaisePreviewStartRequested(request);
+        Logger.Log(
+            $"PREVIEW_START requested request={request.RequestId} " +
+            $"initialized={_context.IsInitialized()} audio={_context.ShouldStartAudioPreview()}");
 
-        if (!_context.IsInitialized())
+        // Until the capture session runs, nothing but this request can resolve the startup attempt
+        // it began or joined, so a start that ends here reports its outcome before it propagates.
+        // Once IsPreviewing is set the renderer attach owns the attempt's outcome.
+        bool alreadyPreviewing;
+        var failurePhase = "capture-start-failed";
+        try
         {
-            await InitializeDeviceAsync(cancellationToken);
-        }
+            if (!_context.IsInitialized())
+            {
+                failurePhase = "capture-init-failed";
+                await InitializeDeviceAsync(cancellationToken);
+                failurePhase = "capture-start-failed";
+            }
 
-        // A start while preview is already running (for example a device refresh that keeps the
-        // same device) leaves video untouched and produces no new first visual.
-        var alreadyPreviewing = _context.IsPreviewing();
-        var settings = _context.BuildCaptureSettings();
-        await _context.SessionCoordinator.StartVideoPreviewAsync(settings, cancellationToken).ConfigureAwait(true);
+            // A start while preview is already running (for example a device refresh that keeps the
+            // same device) leaves video untouched and produces no new first visual.
+            alreadyPreviewing = _context.IsPreviewing();
+            var settings = _context.BuildCaptureSettings();
+            await _context.SessionCoordinator.StartVideoPreviewAsync(settings, cancellationToken).ConfigureAwait(true);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            ReportPreviewStartFailure(new PreviewStartFailure(request.RequestId, "start-canceled", Canceled: true));
+            throw;
+        }
+        catch (Exception ex)
+        {
+            ReportPreviewStartFailure(new PreviewStartFailure(
+                request.RequestId,
+                $"{failurePhase}:{StatusMessages.Detail(ex.Message)}",
+                Canceled: false));
+            throw;
+        }
 
         _context.SetIsPreviewing(true);
         // The capture session is running but nothing is on screen yet; the preview startup
@@ -672,6 +700,22 @@ internal sealed class MainViewModelPreviewLifecycleController
 
         _context.ApplyLatestSourceTelemetryForPreviewStart();
         Logger.Log($"PREVIEW_START_READY audio={_context.ShouldStartAudioPreview()}");
+    }
+
+    private void ReportPreviewStartFailure(PreviewStartFailure failure)
+    {
+        Logger.Log(
+            $"PREVIEW_START_ABORTED request={failure.RequestId} " +
+            $"canceled={failure.Canceled} reason={failure.Reason}");
+        try
+        {
+            _context.RaisePreviewStartFailed(failure);
+        }
+        catch (Exception ex)
+        {
+            // The start's own exception is the caller's answer; a failing listener must not replace it.
+            Logger.LogException(ex);
+        }
     }
 
     public Task SetPreviewEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
