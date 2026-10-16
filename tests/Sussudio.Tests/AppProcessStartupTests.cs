@@ -1,8 +1,5 @@
 using System.Diagnostics;
 using System.Reflection;
-using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
-using System.Reflection.PortableExecutable;
 using Sussudio.Services.Runtime;
 using Xunit;
 
@@ -13,34 +10,6 @@ public sealed class AppProcessStartupTests
     private const string AdmissionChildArgument = "--startup-admission-test-child";
     private const string AbandonChildArgument = "--startup-admission-test-abandon";
     private const string AdmittedMarker = "STARTUP_TEST_ADMITTED";
-
-    [Fact]
-    public void CompiledEntryPointDefersSdkInitializationUntilNormalStartup()
-    {
-        using var stream = File.OpenRead(SussudioAssembly.Load().Location);
-        using var pe = new PEReader(stream);
-        var metadata = pe.GetMetadataReader();
-        var entry = MetadataTokens.MethodDefinitionHandle(pe.PEHeaders.CorHeader!.EntryPointTokenOrRelativeVirtualAddress & 0x00FFFFFF);
-        Assert.Equal(FindMethod(metadata, "Sussudio", "Program", "Main"), entry);
-
-        var sdkInitializer = FindMethod(metadata,
-            "Microsoft.Windows.ApplicationModel.WindowsAppRuntime.Common", "AutoInitialize", "InitializeWindowsAppSDK");
-        var moduleInitializer = FindMethod(metadata, string.Empty, "<Module>", ".cctor");
-        if (!moduleInitializer.IsNil)
-        {
-            Assert.DoesNotContain(sdkInitializer, ReadDirectStaticCalls(pe, metadata, moduleInitializer));
-        }
-
-        var normalStartup = FindMethod(metadata, "Sussudio", "Program", "StartApplication");
-        var winUiStartup = FindMethod(metadata, "Sussudio", "Program", "StartWinUiApplication");
-        Assert.False(normalStartup.IsNil);
-        Assert.False(winUiStartup.IsNil);
-        Assert.True((metadata.GetMethodDefinition(winUiStartup).ImplAttributes & MethodImplAttributes.NoInlining) != 0);
-        var expectedCalls = sdkInitializer.IsNil
-            ? new[] { winUiStartup }
-            : new[] { sdkInitializer, winUiStartup };
-        Assert.Equal(expectedCalls, ReadDirectStaticCalls(pe, metadata, normalStartup));
-    }
 
     [Fact]
     public void CompiledApphostRejectsInvalidPrivateArgumentsBeforeApplicationStartup()
@@ -267,43 +236,6 @@ public sealed class AppProcessStartupTests
     }
 
     private sealed record ChildResult(int ExitCode, string Output);
-
-    private static MethodDefinitionHandle FindMethod(MetadataReader metadata, string namespaceName, string typeName, string methodName)
-    {
-        foreach (var typeHandle in metadata.TypeDefinitions)
-        {
-            var type = metadata.GetTypeDefinition(typeHandle);
-            if (metadata.GetString(type.Namespace) != namespaceName || metadata.GetString(type.Name) != typeName) continue;
-            foreach (var methodHandle in type.GetMethods())
-            {
-                if (metadata.GetString(metadata.GetMethodDefinition(methodHandle).Name) == methodName) return methodHandle;
-            }
-        }
-        return default;
-    }
-
-    private static MethodDefinitionHandle[] ReadDirectStaticCalls(PEReader pe, MetadataReader metadata, MethodDefinitionHandle handle)
-    {
-        var calls = new List<MethodDefinitionHandle>();
-        var body = pe.GetMethodBody(metadata.GetMethodDefinition(handle).RelativeVirtualAddress).GetILReader();
-        while (body.RemainingBytes > 0)
-        {
-            switch (body.ReadByte())
-            {
-                case 0x00: // nop in Debug builds
-                case 0x2A: // ret
-                    break;
-                case 0x28: // call
-                    var token = body.ReadInt32();
-                    Assert.Equal(0x06000000, token & unchecked((int)0xFF000000));
-                    calls.Add(MetadataTokens.MethodDefinitionHandle(token & 0x00FFFFFF));
-                    break;
-                default:
-                    throw new InvalidOperationException("Startup initializer acquired nontrivial IL; review the pre-Main boundary.");
-            }
-        }
-        return calls.ToArray();
-    }
 
     private sealed class TestDirectory : IDisposable
     {

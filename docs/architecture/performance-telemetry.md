@@ -47,13 +47,14 @@ RTX 4090 and Ryzen 9 7950X. Artifacts: `artifacts/perf-overhaul/baseline/`.
 | D6 | Measured but never exported: NVML GPU/NVENC/NVDEC utilization, clocks, power (stats UI only); input-view cache statistics (log only); mux and rotation phase timings (log only); WASAPI engine period (init log only); per-reason renderer drops (only the last reason is kept). | `NvmlMonitor`, `D3D11PreviewRenderer.RenderPasses.cs`, `LibAvEncoder.LastMuxPhaseTiming` |
 | D7 | Misleading values: encoder `_droppedFrameCount` counts failures, not load drops; byte counters are packet bytes, not disk writes; `SourceReaderFrameChannelDepth` is the recording queue depth; integrity `AudioFramesArrived`, `AudioFramesWrittenToSink` and `AudioSamplesEncoded` are the same number; `EstimatedPipelineLatencyMs` is truncated to a `long`; capture A/V drift is frame-count based with hard-coded 48 kHz and nominal fps; the MJPEG summary reports an interop-copy time that is never measured. | Survey, section 1 notes |
 | D8 | PresentMon, the only display-truth source, needs administrator rights or the Performance Log Users group. Without it the agent has no OS-level present data. | Live: `failed to start trace session: access denied` |
-| D9 | The diagnostics hub polls every 500 ms whether or not anyone reads it, building an 807-field, 121 KB snapshot with about four UI-thread dispatches per tick (the preview runtime snapshot is requested three times by overload shape) and copying and sorting about seven 1,200-sample rings. Its own cost is not measured, so the observer effect is unknown. `SnapshotUpdated` has no subscribers. **Measured and reduced in the hub observer-cost slice (2.11):** a refresh cost 22 ms (p50) and 324 KB; it now costs 1.8 ms and 133 KB. | Live: `ssctl --json state` = 121,261 bytes; about 0.4 MB/s steady allocation; `PreviewRuntimeSnapshotControllers.cs`, `MainViewModel.cs` snapshot dispatch |
+| D9 | The diagnostics hub polls every 500 ms whether or not anyone reads it, building an 807-field, 121 KB snapshot with about four UI-thread dispatches per tick (the preview runtime snapshot is requested three times by overload shape) and copying and sorting about seven 1,200-sample rings. Its own cost is not measured, so the observer effect is unknown. `SnapshotUpdated` has no subscribers. **Measured and reduced in the hub observer-cost slice (2.11):** a refresh cost 22 ms (p50) and 324 KB; it now costs 1.8 ms and 133 KB, and 77 KB since the renderer's summary windows moved to pooled scratch. | Live: `ssctl --json state` = 121,261 bytes; about 0.4 MB/s steady allocation; `PreviewRuntimeSnapshotControllers.cs`, `MainViewModel.cs` snapshot dispatch |
 | D10 | Every automation acknowledgement embeds the cached snapshot (`CreateResponse(includeSnapshot: true)` by default), so a burst of control commands serializes about 120 KB each. | `AutomationCommandDispatcher.CreateResponse` |
 | D11 | Full-rate frame data never reaches the agent: the frame-time graph's 10 s QPC history is UI-only, and the hub exposes only the latest 64 of 4,096 frame-ledger events every 500 ms. The 2-minute performance timeline omits audio, A/V sync, recording, encoder, NVML and MJPEG fields. | `PreviewFrameTimeHistory`, `FrameLedger`, `PerformanceTimelineEntry` |
 | D12 | The agent cannot read UI state (overlay, settings, InfoBars, section expansion, window rect) or press controls that have no purpose-built command (Flashback nudge and keyboard transport, timeline scrubbing). | Automation surface survey |
 | D13 | The DWM composed-frame rate was read as the display rate. With the preview presenting 4K60 on a 120 Hz display (independent flip or an overlay plane, so DWM does not compose it), `DwmGetCompositionTimingInfo` showed 0.057 composed frames per second, which looks like a stalled display. DWM's refresh counter is not a hardware vblank counter either: it advances with composition activity. **Fixed in slice 2b:** the report adds a `Display` section from the swap chain's DXGI frame statistics and classifies the DWM rate against the present rate (2.8.5). | Live: `Dwm.FramesComposedPerSec = 0.057` at 4K60 on a 120 Hz display; an idle 120 Hz desktop measured 0.2 refresh-counter increments per second |
 | D14 | `ssctl --json timeline --max N` printed N + 1 timestamps with the last one repeated. The timeline held exactly N entries; the response envelope embedded the cached snapshot (D10), and the snapshot's `TimestampUtc` equals the newest timeline entry's. **Fixed in slice 2b:** the timeline response carries no snapshot. | `AutomationCommandDispatcher.ExecuteGetPerformanceTimelineCommand`; `CreateResponse` default `includeSnapshot: true` |
 | D15 | The performance timeline was not a cadence timeline. Every on-demand refresh (`GetSnapshot`, `AssertSnapshot`, the recording toggle, a recording or file verification) appended an entry and advanced the baselines behind the "recent" counters and process CPU percent. A client polling `ssctl state` therefore packed extra entries between poll ticks, and the next tick's entry covered only the time since that read, so a missed refresh counted in the on-demand snapshot never appeared in the timeline. **Fixed in the loose-ends slice:** only the poll tick appends and advances baselines (`SnapshotRefreshKind`); an on-demand snapshot's "recent" counts and CPU percent cover the time since the last poll tick. The wire shape is unchanged. | `AutomationDiagnosticsHub.Snapshots.cs` `RefreshSnapshotCoreAsync`; `Verify-PerfTelemetry.ps1` timeline cadence check |
+| D16 | `PreviewD3DFrameStatsMissedRefreshCount` counts every display refresh beyond one per present, so a source slower than the display reports a "miss" on every frame while pacing perfectly: 60.67 a second for 59.94 fps on the rig's 120 Hz display. The slow-stage classifier read any recent value above zero as a hard compositor signal, and every sampled frame qualified as a `dxgi_refresh_slip` for the slow-frame ring (10 of the 16 slow frames in a 60 fps window). **Fixed in the preview-renderer follow-ups:** the raw count keeps its meaning (it is a wire field) and a cadence count is added beside it (2.8.7); the classifier and the slip check read the cadence count. | Live: `artifacts/preview-renderer-followups/missed-refresh-cadence/result-before.json`; `D3D11PreviewRenderer.TrackDxgiFrameStatistics` |
 
 ### 1.3 Gaps an agent cannot work around today
 
@@ -91,14 +92,18 @@ bytes or percent otherwise).
   update `max`. Negative values clamp to 0. Recording never throws.
 - `Record(long value)`: four interlocked operations (records begun, the
   bucket, the sum, records finished) and a CAS only when a new maximum is
-  seen. No allocation, no lock. Safe from any number of threads.
+  seen, made after the record is marked begun. No allocation, no lock. Safe
+  from any number of threads.
 - `Snapshot()`: copies counts, sum and max. Concurrent writers may land in
-  the copy or not, but the sum and the counts always describe the same
-  records: a copy during which a record began or was still in flight is
-  retried (up to four tries), and if writes never pause, the last copy's
-  sum is clamped into the range its own buckets allow, so the mean is off
-  by at most a bucket width, never by a whole outlier. Counts never go
-  backwards.
+  the copy or not, but the sum, the max and the counts always describe the
+  same records. The max is read after the buckets and before the
+  records-begun count, so a max raised by a record the copy missed shows that
+  record in flight. A copy during which a record began or was still in
+  flight is retried (up to four tries), and if writes never pause, the last
+  copy's sum is clamped into the range its own buckets allow and its max is
+  capped at the top of its highest non-empty bucket (and then reported as
+  approximate), so the mean and the max are each off by at most a bucket
+  width, never by a whole outlier. Counts and the max never go backwards.
 - `PerfHistogramSnapshot.Subtract(baseline)`: per-bucket delta clamped at
   zero. Percentiles of a delta are exact to bucket precision; the delta's
   sum is kept inside the delta buckets' range (exact when both snapshots
@@ -628,6 +633,48 @@ least three quarters), `mixed` (between) and `unknown` (a reading is missing; a 
   still 358 of 1,139 lines in a later live tail) returns the same number of lines reaching further back. The per-caller and
   per-tag counts are lifetime totals and ignore both filters, which is how the source to exclude is found.
 
+#### 2.8.7 Missed refreshes against the source cadence
+
+The renderer samples DXGI frame statistics every second present and differences `PresentCount` and `PresentRefreshCount` between
+samples. Two counts come out of each sample:
+
+- **Raw** (`PreviewD3DFrameStatsMissedRefreshCount`, `...RecentMissedRefreshCount`, timeline `PreviewD3DFrameStatsRecentMissedRefreshCount`):
+  refreshes minus presents whenever refreshes exceed presents. This is the original field and keeps its meaning. It counts every refresh
+  that repeated the previous frame, including the repeats a slower source needs by design, so with perfect pacing it grows at about
+  (refreshes per source frame - 1) x the present rate.
+- **Cadence** (`PreviewD3DFrameStatsCadenceMissedRefreshCount`, `...RecentCadenceMissedRefreshCount`, timeline
+  `PreviewD3DFrameStatsRecentCadenceMissedRefreshCount`; preview runtime `D3DFrameStatsCadenceMissedRefreshCount`): refreshes where a
+  new source frame was due but the display repeated the previous one. `PreviewRefreshCadencePolicy` takes refreshes per source frame
+  as the capture fps against the measured refresh interval (the swap chain's own `SyncQPCTime` and `SyncRefreshCount`, not the OS
+  display mode) and counts only refreshes beyond `ceil(presents x ratio)`. With a fractional ratio (2.4 for 50 fps on 120 Hz) an
+  on-time pair of frames spans either 4 or 5 refreshes depending on phase, so the ceiling is the on-time limit. A ratio within 1 % of a
+  whole number snaps to it: a measured 119.98 Hz would otherwise make `ceil(2 x 2.0003) = 5` the on-time span for two frames and hide
+  every single-refresh miss. 59.94 fps on 120 Hz snaps too, which counts its natural extra repeat (about one every 8 s) as a miss.
+  Below one refresh per frame (source faster than the display), or with either rate unknown, the cadence count equals the raw count.
+  It never exceeds the raw count.
+
+Readers: the slow-stage classifier's hard signal and `CompositorMiss` rule read the recent cadence delta (evidence token
+`dxgiRecentCadenceMissed`, which replaced `dxgiRecentMissed`). A slow frame is a `dxgi_refresh_slip` only when the sample taken on
+that frame had a cadence miss. The present lane, `ssctl state`, `ssctl timeline`, `get_performance_timeline` and
+`get_frame_pacing_verdict` show both counts. The diagnostic session's `missedRefreshDelta` still reads the raw count. The snapshot
+gains two keys; no existing key changed.
+
+Live, the rig's 120 Hz display (measured 119.998 Hz from DXGI), 30 s windows after 20 s of settling, under the heavy load of a
+video export running at the same time (`Measure-MissedRefreshCadence.ps1` beside the results):
+
+| Source | Presents | Refreshes per present | Raw per second | Cadence per second | Refresh-slip slow frames |
+|---|---|---|---|---|---|
+| 120 fps | 3,645 | 1.002 | 0.27 | 0.27 | 1 of 16 |
+| 59.94 fps | 1,810 | 2.006 | 60.67 | 3.87 | 2 of 16 (10 of 16 before) |
+| 50 fps | 1,512 | 2.400 | 70.57 | 1.10 | 1 of 16 |
+
+At a matched rate the two counts are identical. The cadence misses left at 59.94 fps are pairs of frames that spanned five refreshes
+instead of four, which is real judder; the accepted 59.94 overcount is about 0.12 a second of it. In these windows both builds
+classified the preview tail as `SourceCapture` or `Unknown`, rules that run before the compositor rule, so the classifier change
+is covered by the contract tests rather than by this run. In the before build's 50 fps window the frame statistics advanced
+(1,987 presents) but every sample's delta was zero or rejected, so neither count moved; the same window in the after build counted
+normally. That gap predates this change and is open.
+
 ### 2.9 Ears: audio output probe
 
 `CaptureAudioOutput` (command 65) hears what Sussudio actually plays: it records
@@ -866,9 +913,12 @@ Three changes, each measured:
   (D15): an on-demand good read updates the carried memory and CPU total but not the percentage a later failed read repeats.
 - The preview fragment makes one provider call. The old overload shape called the provider as producer-epoch probe, value and
   producer-epoch probe, so every tick built the full preview snapshot three times and hopped to the UI thread three times to watch a
-  window of about 2 ms. One UI work item is consistent by construction, like the view-model fragment, so the before and after
-  epochs the old bracket compared are now equal by definition and `preview_runtime_producer_changed` cannot fire; the cross-fragment
-  checks in `BuildSnapshotMixedEpochReasons` (for example `view_model_preview_runtime`) are unchanged. The provider has no
+  window of about 2 ms. The epoch it compared, `PreviewRuntimeEpoch`, advances only when the UI-thread signature changes (visibility,
+  startup state; the host frame counters in it are never incremented, so frame progress never moved it), and one UI work item reads
+  that signature once, so `preview_runtime_producer_changed` cannot fire. The renderer metrics the snapshot projects are separate
+  per-window copies the render thread keeps updating; no epoch covered them before or after this change, and one that advanced per
+  frame would mark healthy ticks as mixed. The cross-fragment checks in `BuildSnapshotMixedEpochReasons` (for example
+  `view_model_preview_runtime`) are unchanged. The provider has no
   epoch-only read; adding one would change the constructor wiring that two source-text tests pin, for a check that watched a window
   the single hop no longer has. It removed about 150 KB and two UI dispatches a tick.
 - `IntervalCadenceStatistics.Compute` sorts in a pooled scratch instead of cloning the window. Callers still pass the array they
@@ -899,12 +949,39 @@ until it was under 10 % of a core). An earlier before run that overlapped anothe
 `raw/overlapped-with-other-validate/` and not used. The deterministic numbers (allocation) are robust to that; the timing numbers
 carry the noise their ranges show.
 
-What is left (133 KB a tick): the preview build is about 66 KB of it (derived from the probe: 75 KB a build minus the 9 KB sort clone), almost all ring copies in `D3D11PreviewRenderer.Get*Metrics`
-(about nine copies of a 1,200-sample ring per snapshot, each 9.6 KB, plus the caller's own copy that `Compute` no longer clones). A
-`Compute(ReadOnlySpan<double>)` overload fed from pooled scratch filled under the ring lock would remove most of it; it is the
-renderer's file and the existing contract test resolves `Compute(double[], double)` by reflection, so it was left. Health (23 KB) and
-capture runtime (18 KB) are the next two. Alert message strings (8 KB, about 0.06 ms) are built eagerly each tick; making them lazy
-touches about thirty call sites of the alert path for 2.5 % of the allocation, so it was not done.
+What was left after it (133 KB a tick): the preview build was about 66 KB of it (derived from the probe: 75 KB a build minus the
+9 KB sort clone), almost all ring copies in `D3D11PreviewRenderer.Get*Metrics`: seven copies of the recent window per snapshot, each
+9.6 KB at 60 fps (the window is 20 s of frames, at least 600, so 2,400 samples and 19.2 KB at 120 fps). Six of them fed only the
+timing summaries (pipeline latency, the four render-CPU stages, frame-latency wait). Those now copy into a buffer rented from
+`ArrayPool<double>.Shared` under each ring lock (`RingBufferHelpers.CopyNewest`), sort it in place outside the lock and return it;
+the lock covers the same copy as before, minus the allocation. The seventh, the present-cadence window, stays a fresh array: it is
+published as `RecentIntervalsMs` (the snapshot's `PreviewCadenceRecentIntervalsMs`, read by the frame-pacing verdict and the
+stats-overlay graph), and `Compute(double[], double)` already sorts it in pooled scratch. That is also why there is no
+`Compute(ReadOnlySpan<double>)` overload: its only caller would be a window that has to be an array anyway. The reflection-pinned
+`Compute(double[], double)` and `RingBufferHelpers.Copy` signatures are unchanged.
+
+A/B, interleaved ABBA, 67d99e2f9 against that change, three 30 s perf windows a leg after 15 s of warm-up, steady preview at 59.94 fps,
+same `ssctl`, every leg closed with `window close`. Mean of six windows per build, range in brackets (raw windows, per-window load and
+the rerun scripts under `artifacts/preview-renderer-followups/hub-ring-scratch/`, summary in its `result.json`):
+
+| | Before | After |
+|---|---|---|
+| `telemetry.hub_alloc` per refresh | 132.8 KB (131.6-134.1) | 76.7 KB (75.0-78.0) |
+| Hub allocation rate | 261 KB/s | 151 KB/s |
+| Process allocation rate (`Gc.AllocatedBytes`) | 424 KB/s | 320 KB/s |
+| `telemetry.hub_refresh` p50 | 4.0 ms (2.6-6.1) | 3.5 ms (2.3-5.1) |
+| `telemetry.hub_refresh` p99 | 16.0 ms (11.4-21.2) | 16.4 ms (5.4-24.8) |
+| Process CPU, perf report | 52.7 % of a core (41.3-66.0) | 46.0 % (34.1-56.0) |
+
+The allocation fell by 56.2 KB a refresh (KB here are 1,024 bytes), against 56.3 KB for six arrays of the 1,199-sample window at
+59.94 fps, and the snapshot kept its 809 keys, their order and their value kinds. The timing rows are not a result: 15 to 26 of 32 logical cores outside Sussudio were busy (a video
+export), the second pair ran about 8 cores busier than the first, and that swing (refresh p50 2.5-2.9 ms in the first pair, 4.5-5.2 ms
+in the second) is larger than any gap between the builds. Preview drops during the windows were 0, 6, 2 and 0 a leg; the after-a drops
+(`stale-before-render`) came with a 26.6 ms `preview.render_total` stall and nine Flashback GPU drops in the same window, which the
+getters, running on the hub thread, cannot cause.
+
+Health (23 KB) and capture runtime (18 KB) are now the largest fragments. Alert message strings (8 KB, about 0.06 ms) are built
+eagerly each tick; making them lazy touches about thirty call sites of the alert path for 8 KB of the 77 KB, so it was not done.
 
 Demand gating (not done; recommendation only). Pausing the hub while no automation client is connected is not safe as an on/off
 switch. The loop is also the app's own observer, not only a cache for clients: auto-verification of a finished recording runs from the
@@ -1119,7 +1196,8 @@ Written before the code, per the testing policy:
 - Wire contract: command ids appended with the manifest revision bump;
   payload keys from the shared vocabulary.
 - Analyzer: malformed and truncated trace JSON produce an error, not a
-  crash; frames missing stages are counted, not dropped.
+  crash; frames missing stages are counted, not dropped; abandoned events
+  are reported with a warning, not passed over.
 - Hitch cause (live window 3, written before the code): a late arrival that
   explains the interval is named over an automation command, UI stall or hub
   refresh that overlapped longer; a GC pause overlapping a late arrival is
@@ -1279,6 +1357,20 @@ Written before the code, per the testing policy:
   `Compute` only sees the private copy made under the owner's lock. `HubProcessCounters` reports the same working set, private
   bytes and CPU time as the `Process` properties it replaced, in the same process (a unit slip or the wrong struct member would be
   silent in a live snapshot).
+- Missed refreshes against the source cadence (written before the code, `PreviewRefreshCadencePolicyTests`): 60 fps on 120 Hz paced
+  on time counts nothing, and a frame held one extra refresh counts exactly one; a matched rate and a source faster than the display
+  keep the raw count; 60 fps on 144 Hz (2.4) accepts both on-time spans and counts one past the ceiling; a measured refresh a hair
+  off nominal (119.98 or 120.02 Hz) still counts a single miss; 59.94 fps on 120 Hz snaps to two refreshes a frame; an unknown,
+  zero, negative, NaN or infinite rate or ratio falls back to the raw count; no presents or no extra refreshes is never a miss; and
+  across a sweep of ratios and deltas the cadence count never exceeds the raw count.
+- Renderer summary windows (written before the code, `PreviewRendererMetricWindowTests`, driving the real getters): a pooled
+  buffer that holds an earlier, larger window's 1000 ms values reports the smaller 1 ms window; the four render-CPU rings read
+  into one buffer each summarize only their own ring; full rings with the write index mid-ring, exactly full rings and partial
+  rings with garbage beyond the count all match a sort of a private copy (average summed over the sorted values, nearest-rank
+  p95/p99, max); empty windows report zero summaries and the frame-latency wait keeps its counters; eight threads reading two
+  renderers with disjoint value bands never see each other's window; and a read of a 1,200-sample window allocates under 2 KB a
+  call (the old reads allocated 9.6 KB, 38.4 KB and 9.6 KB, and that test failed on them). A concurrent render-thread writer is not
+  a new failure mode: the copy still happens under the same lock.
 - Hub snapshot contract (not an isolated test): the 807 snapshot keys, their order and their value kinds are identical before and
   after, compared live (`artifacts/perf-overhaul/hub-cost/contract-compare.json`).
 
@@ -1393,6 +1485,10 @@ frames are listed with their per-stage breakdown. The report has:
 Arrival comes from the QPC `id` and the dump's metadata. A dump with no
 metadata, or ids that are not QPC ticks (sequence numbers from an older
 build), falls back to each frame's earliest event and says so in a warning.
+The report carries the dump's `overwritten` and `abandoned` counts and warns
+when either is above zero: a wrap loses the earliest frames, and an abandoned
+event (2.4) can leave any frame missing a stage. A dump from an app that
+predates `abandoned` reports zero.
 Input that is not a complete trace (empty, not JSON, truncated, a missing
 file) is exit code 3 with the reason; `--json` prints the same failure as
 `{"Success":false,"Message":...}` on stdout. Open the same file in

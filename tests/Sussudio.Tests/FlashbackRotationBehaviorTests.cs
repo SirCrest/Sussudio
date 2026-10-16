@@ -15,6 +15,45 @@ public sealed class FlashbackRotationBehaviorTests : IClassFixture<BundledRuntim
     public FlashbackRotationBehaviorTests(BundledRuntime runtime) => _runtime = runtime;
 
     [Fact]
+    public async Task StartWithAnAlreadyCancelledTokenRefusesBeforeClaimingTheStartedState()
+    {
+        // Failure modes this guards: the pre-start cancellation check is removed, so a
+        // cancelled start claims the started state and opens native resources nothing will
+        // stop; or the check runs after the started flag is claimed, so a later retry is
+        // rejected forever as "already started". Neither is reachable from a live session.
+        var directory = Directory.CreateTempSubdirectory("sussudio-sink-start-");
+        try
+        {
+            var options = Activator.CreateInstance(_runtime.Type("Sussudio.Models.FlashbackBufferOptions"))!;
+            Set(options, "TempDirectory", directory.FullName);
+            Set(options, "FreeDiskBytesProvider", (Func<long>)(() => long.MaxValue));
+            var sink = Activator.CreateInstance(_runtime.Type("Sussudio.Services.Flashback.FlashbackEncoderSink"), options)!;
+            var context = Activator.CreateInstance(_runtime.Type("Sussudio.Models.FlashbackSessionContext"))!;
+            Set(context, "Width", 64);
+            Set(context, "Height", 64);
+            Set(context, "FrameRate", 30d);
+            Set(context, "CodecName", "libx264");
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+            {
+                var pending = Invoke(sink, "StartAsync", context, TimeSpan.Zero, new CancellationToken(canceled: true));
+                if (pending is Task task)
+                {
+                    await task;
+                }
+            });
+
+            Assert.False((bool)GetField(sink, "_started")!);
+            Assert.Null(GetField(sink, "_encodingTask"));
+            await ((IAsyncDisposable)sink).DisposeAsync();
+        }
+        finally
+        {
+            directory.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task PreflightFailuresKeepTheOutputUsableAndSuccessfulRotationResetsRetries()
     {
         await using var session = new RotationSession(_runtime);

@@ -25,8 +25,7 @@ public sealed partial class AutomationDiagnosticsHub
         LastOutputProbe lastOutput,
         ProcessResourceSnapshot processResources,
         RecordingVerificationResult? lastVerification,
-        long recentD3DMissedRefreshes,
-        long recentD3DStatsFailures)
+        D3DFrameStatsRecentCounters recentD3DFrameStats)
     {
         var snapshotStatus = BuildSnapshotStatusProjection(viewModelSnapshot, captureRuntime, snapshotCollection);
         var snapshotEvaluation = BuildSnapshotEvaluationProjection(performance, diagnostic, previewPacingClassification);
@@ -412,8 +411,10 @@ public sealed partial class AutomationDiagnosticsHub
             PreviewD3DFrameStatsLastPresentRefreshDelta = previewRuntime.D3DFrameStatsLastPresentRefreshDelta,
             PreviewD3DFrameStatsLastSyncRefreshDelta = previewRuntime.D3DFrameStatsLastSyncRefreshDelta,
             PreviewD3DFrameStatsMissedRefreshCount = previewRuntime.D3DFrameStatsMissedRefreshCount,
-            PreviewD3DFrameStatsRecentMissedRefreshCount = recentD3DMissedRefreshes,
-            PreviewD3DFrameStatsRecentFailureCount = recentD3DStatsFailures,
+            PreviewD3DFrameStatsRecentMissedRefreshCount = recentD3DFrameStats.MissedRefreshes,
+            PreviewD3DFrameStatsCadenceMissedRefreshCount = previewRuntime.D3DFrameStatsCadenceMissedRefreshCount,
+            PreviewD3DFrameStatsRecentCadenceMissedRefreshCount = recentD3DFrameStats.CadenceMissedRefreshes,
+            PreviewD3DFrameStatsRecentFailureCount = recentD3DFrameStats.Failures,
             PreviewD3DLastSubmittedPreviewPresentId = previewRuntime.D3DLastSubmittedPreviewPresentId,
             PreviewD3DLastSubmittedSourceSequenceNumber = previewRuntime.D3DLastSubmittedSourceSequenceNumber,
             PreviewD3DLastSubmittedSourcePtsTicks = previewRuntime.D3DLastSubmittedSourcePtsTicks,

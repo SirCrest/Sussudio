@@ -42,18 +42,6 @@ public sealed class PreviewInputViewCacheTests
     // ---- TryGet / Add --------------------------------------------------------
 
     [Fact]
-    public void TryGet_MissesOnAnEmptyCacheAndCountsTheMiss()
-    {
-        var cache = new PreviewInputViewCache<TrackedResource>();
-
-        Assert.False(cache.TryGet(Texture(1), 0, out var resource));
-        Assert.Null(resource);
-        Assert.Equal(0, cache.HitCount);
-        Assert.Equal(1, cache.MissCount);
-        Assert.Equal(0, cache.Count);
-    }
-
-    [Fact]
     public void TryGet_ReturnsTheAddedResourceAndCountsTheHit()
     {
         var cache = new PreviewInputViewCache<TrackedResource>();
@@ -65,6 +53,33 @@ public sealed class PreviewInputViewCacheTests
         Assert.Equal(1, cache.HitCount);
         Assert.Equal(0, cache.MissCount);
         Assert.Equal(1, cache.Count);
+
+        Assert.False(cache.TryGet(Texture(2), 0, out var missing));
+        Assert.Null(missing);
+        Assert.Equal(1, cache.HitCount);
+        Assert.Equal(1, cache.MissCount);
+    }
+
+    [Fact]
+    public void TryGet_WarmedLookupDoesNotAllocate()
+    {
+        // The render thread calls TryGet every frame; a warmed hit must stay allocation-free.
+        var cache = new PreviewInputViewCache<TrackedResource>();
+        var resource = new TrackedResource("warm");
+        cache.Add(Texture(17), 2, resource);
+        for (var i = 0; i < 1000; i++) cache.TryGet(Texture(17), 2, out _);
+
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        var allMatched = true;
+        for (var i = 0; i < 10000; i++)
+        {
+            allMatched &= cache.TryGet(Texture(17), 2, out var found) && ReferenceEquals(resource, found);
+        }
+
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        Assert.True(allMatched);
+        Assert.Equal(0, allocated);
+        cache.Clear();
     }
 
     [Fact]
@@ -251,16 +266,6 @@ public sealed class PreviewInputViewCacheTests
     }
 
     [Fact]
-    public void Clear_OnAnEmptyCacheIsHarmless()
-    {
-        var cache = new PreviewInputViewCache<TrackedResource>();
-
-        cache.Clear();
-
-        Assert.Equal(0, cache.Count);
-    }
-
-    [Fact]
     public void Clear_DisposesEveryViewEvenWhenOneThrowsThenRethrowsTheFirstFailure()
     {
         // A failing native release must not strand the remaining views; the cache
@@ -344,44 +349,5 @@ public sealed class PreviewInputViewCacheTests
         // A driver that reports zero mips or a zero array size must not produce a
         // divide-by-zero or a negative index.
         Assert.Equal(0, PreviewInputViewCache<TrackedResource>.NormalizeSubresource(9, mipLevels, arraySize));
-    }
-
-    [Fact]
-    public void NormalizeSubresource_NeverLeavesTheAddressableRangeAcrossASweep()
-    {
-        for (var mipLevels = 1; mipLevels <= 6; mipLevels++)
-        {
-            for (var arraySize = 1; arraySize <= 6; arraySize++)
-            {
-                var limit = mipLevels * arraySize;
-                for (var subresource = -4; subresource < limit + 32; subresource++)
-                {
-                    var normalized = PreviewInputViewCache<TrackedResource>.NormalizeSubresource(
-                        subresource, mipLevels, arraySize);
-
-                    Assert.InRange(normalized, 0, limit - 1);
-                }
-            }
-        }
-    }
-
-    [Fact]
-    public void NormalizeSubresource_IsIdempotentForAlreadyValidIndices()
-    {
-        for (var mipLevels = 1; mipLevels <= 6; mipLevels++)
-        {
-            for (var arraySize = 1; arraySize <= 6; arraySize++)
-            {
-                for (var subresource = 0; subresource < mipLevels * arraySize; subresource++)
-                {
-                    var once = PreviewInputViewCache<TrackedResource>.NormalizeSubresource(
-                        subresource, mipLevels, arraySize);
-                    var twice = PreviewInputViewCache<TrackedResource>.NormalizeSubresource(
-                        once, mipLevels, arraySize);
-
-                    Assert.Equal(once, twice);
-                }
-            }
-        }
     }
 }

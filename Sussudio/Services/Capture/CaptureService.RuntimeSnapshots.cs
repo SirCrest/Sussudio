@@ -1912,15 +1912,6 @@ public partial class CaptureService
         }, cts.Token);
     }
 
-    private void StopTelemetryPoll()
-    {
-        lock (_telemetryPollSync)
-        {
-            Volatile.Write(ref _sourceTelemetryPollingRequested, false);
-            StopTelemetryPollLocked();
-        }
-    }
-
     private void StopTelemetryPollLocked()
     {
         Interlocked.Increment(ref _telemetryPollGeneration);

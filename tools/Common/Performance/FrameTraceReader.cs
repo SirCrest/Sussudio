@@ -241,6 +241,9 @@ internal sealed class FrameTraceCapture
 
     public long Overwritten { get; set; }
 
+    /// <summary>Events the recorder counted but never stored; zero in a dump from an app that predates the field.</summary>
+    public long Abandoned { get; set; }
+
     public bool? Running { get; set; }
 
     public double MinUs { get; set; } = double.PositiveInfinity;
@@ -563,6 +566,7 @@ internal static class FrameTraceReader
         Recorded,
         Retained,
         Overwritten,
+        Abandoned,
         Running,
         Other,
     }
@@ -780,6 +784,7 @@ internal static class FrameTraceReader
                     : reader.ValueTextEquals("recorded"u8) ? MetaKey.Recorded
                     : reader.ValueTextEquals("retained"u8) ? MetaKey.Retained
                     : reader.ValueTextEquals("overwritten"u8) ? MetaKey.Overwritten
+                    : reader.ValueTextEquals("abandoned"u8) ? MetaKey.Abandoned
                     : reader.ValueTextEquals("running"u8) ? MetaKey.Running
                     : MetaKey.Other;
                 return;
@@ -834,6 +839,13 @@ internal static class FrameTraceReader
                     if (TryReadLong(ref reader, token, out var overwritten))
                     {
                         Capture.Overwritten = overwritten;
+                    }
+
+                    break;
+                case MetaKey.Abandoned:
+                    if (TryReadLong(ref reader, token, out var abandoned))
+                    {
+                        Capture.Abandoned = abandoned;
                     }
 
                     break;

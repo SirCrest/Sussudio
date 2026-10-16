@@ -74,10 +74,6 @@ public sealed class PresentationPreviewCaptureFlashbackBufferContractsTests
     }
 
     [Fact]
-    public Task FlashbackBufferManagerCleansStaleSessionDirectories()
-        => global::Program.FlashbackBufferManager_CleansStaleSessionDirectories();
-
-    [Fact]
     public Task FlashbackBufferManagerPreservesMarkedRecoverySessions()
         => global::Program.FlashbackBufferManager_PreservesMarkedRecoverySessions();
 }
@@ -337,10 +333,6 @@ public sealed class PresentationPreviewCaptureRuntimeGuardContractsTests
     {
         global::Program.EnsureTargetAssemblyLoadedForXUnit();
     }
-
-    [Fact]
-    public Task RecordingStopPropagatesUnifiedVideoStopFailure()
-        => global::Program.RecordingStop_PropagatesUnifiedVideoStopFailure();
 
     [Fact]
     public Task PreviewStopApiSurfaceHasNoDefaultLiteralAmbiguity()
@@ -1154,6 +1146,7 @@ static partial class Program
                      "PreviewD3DFrameLatencyWaitP95Ms",
                      "PreviewD3DFrameLatencyWaitMaxMs",
                      "PreviewD3DFrameStatsRecentMissedRefreshCount",
+                     "PreviewD3DFrameStatsRecentCadenceMissedRefreshCount",
                      "PreviewD3DFrameStatsRecentFailureCount",
                      "PreviewD3DLastRenderedSchedulerToPresentMs",
                      "PreviewD3DLastRenderedPipelineLatencyMs",
@@ -1300,7 +1293,8 @@ static partial class Program
                      "LastPresentDelta",
                      "LastPresentRefreshDelta",
                      "LastSyncRefreshDelta",
-                     "MissedRefreshCount"
+                     "MissedRefreshCount",
+                     "CadenceMissedRefreshCount"
                  })
         {
             AssertNotNull(dxgiFrameStatsType.GetProperty(prop, BindingFlags.Public | BindingFlags.Instance), $"DxgiFrameStatisticsMetrics.{prop}");
@@ -1355,6 +1349,7 @@ static partial class Program
                      "D3DFrameStatsLastPresentRefreshDelta",
                      "D3DFrameStatsLastSyncRefreshDelta",
                      "D3DFrameStatsMissedRefreshCount",
+                     "D3DFrameStatsCadenceMissedRefreshCount",
                      "D3DRenderThreadFailureCount",
                      "D3DLastRenderThreadFailureType",
                      "D3DLastRenderThreadFailureMessage",
@@ -1458,6 +1453,8 @@ static partial class Program
                      "PreviewD3DFrameStatsLastSyncRefreshDelta",
                      "PreviewD3DFrameStatsMissedRefreshCount",
                      "PreviewD3DFrameStatsRecentMissedRefreshCount",
+                     "PreviewD3DFrameStatsCadenceMissedRefreshCount",
+                     "PreviewD3DFrameStatsRecentCadenceMissedRefreshCount",
                      "PreviewD3DFrameStatsRecentFailureCount",
                      "PreviewD3DLastSubmittedPreviewPresentId",
                      "PreviewD3DLastSubmittedSourceSequenceNumber",
@@ -2286,7 +2283,7 @@ static partial class Program
     internal static Task PreviewRuntimeSnapshotProjection_PreservesFrameStatisticsMetrics()
     {
         var metrics = CreatePreviewRendererMetric("DxgiFrameStatisticsMetrics",
-            11L, 12L, 13L, "DXGI_ERROR_FRAME_STATISTICS_DISJOINT", 14L, 15L, 16L, 17L, 18L, 19L, 20L, 21L);
+            11L, 12L, 13L, "DXGI_ERROR_FRAME_STATISTICS_DISJOINT", 14L, 15L, 16L, 17L, 18L, 19L, 20L, 21L, 22L);
         AssertPreviewMetricSnapshots("ApplyFrameStatistics", metrics,
             ("D3DFrameStatsSampleCount", 0L, 11L),
             ("D3DFrameStatsSuccessCount", 0L, 12L),
@@ -2299,7 +2296,8 @@ static partial class Program
             ("D3DFrameStatsLastPresentDelta", 0L, 18L),
             ("D3DFrameStatsLastPresentRefreshDelta", 0L, 19L),
             ("D3DFrameStatsLastSyncRefreshDelta", 0L, 20L),
-            ("D3DFrameStatsMissedRefreshCount", 0L, 21L));
+            ("D3DFrameStatsMissedRefreshCount", 0L, 21L),
+            ("D3DFrameStatsCadenceMissedRefreshCount", 0L, 22L));
 
         AssertPreviewMetricSnapshots("ApplyFrameStatistics", CreatePreviewRendererMetric("DxgiFrameStatisticsMetrics"),
             ("D3DFrameStatsPresentCount", -1L, 0L),

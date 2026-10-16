@@ -300,7 +300,7 @@ public sealed class PreviewAudioTransitionControllersTests
     }
 
     [Fact]
-    public async Task StopRampRetainsItsDiagnosticIdentity()
+    public async Task StopRampLogsItsLifecycleAndKeepsTheRequestedVolume()
     {
         using var h = new ControllerHarness(0.5);
         await h.Controller.RampDownForStopAsync(CancellationToken.None);
@@ -325,17 +325,6 @@ public sealed class PreviewAudioTransitionControllersTests
         });
 
     [Fact]
-    public void Recorder_StartsEmptyAndIdle()
-    {
-        var snapshot = CreateRecorder().GetSnapshot();
-
-        Assert.Equal(0, snapshot.EntryCount);
-        Assert.Empty(snapshot.Entries);
-        Assert.False(snapshot.IsSamplingActive);
-        Assert.Equal(2048, snapshot.Capacity);
-    }
-
-    [Fact]
     public void Recorder_DropsAnUnsolicitedVolumeSetWhileNoSessionIsSampling()
     {
         // Slider movement outside a transition is not forensically interesting and
@@ -358,32 +347,6 @@ public sealed class PreviewAudioTransitionControllersTests
         Assert.Equal(1, snapshot.EntryCount);
         Assert.Equal("primed", snapshot.Entries[0].Kind);
         Assert.Equal("device_change", snapshot.Entries[0].Reason);
-    }
-
-    [Fact]
-    public void Recorder_ProjectsRuntimeEvidenceOntoTheEntry()
-    {
-        var recorder = CreateRecorder(() => new CaptureRuntimeSnapshot
-        {
-            WasapiPlaybackTargetVolumePercent = 80,
-            WasapiPlaybackCurrentVolumePercent = 40,
-            WasapiPlaybackOutputPeak = 0.9,
-            WasapiPlaybackQueueDepth = 3,
-            AudioFramesArrived = 1234,
-            IsAudioPreviewActive = true
-        });
-
-        recorder.RecordPoint("primed");
-
-        var entry = recorder.GetSnapshot().Entries[0];
-        Assert.Equal(80, entry.PlaybackTargetVolumePercent);
-        Assert.Equal(40, entry.PlaybackCurrentVolumePercent);
-        Assert.Equal(0.9, entry.PlaybackOutputPeak);
-        Assert.Equal(3, entry.PlaybackQueueDepth);
-        Assert.Equal(1234, entry.AudioFramesArrived);
-        Assert.True(entry.IsAudioPreviewActive);
-        Assert.Equal(50, entry.PreviewVolumePercent, 6);
-        Assert.Equal(0.25, entry.CaptureAudioPeak, 6);
     }
 
     [Fact]

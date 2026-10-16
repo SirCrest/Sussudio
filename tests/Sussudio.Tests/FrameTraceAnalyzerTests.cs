@@ -42,6 +42,9 @@ namespace Sussudio.Tests;
 //     why, instead of printing nothing.
 // 21. The app's own telemetry refresh (telemetry.hub_refresh) overlapping a hitch is named as a cause when it is long
 //     enough to matter, and a sub-millisecond one is not blamed.
+// 22. Events the recorder counted but never stored (`abandoned`: a writer lapped by the ring or by a newer trace): the
+//     frames they belonged to may be missing stages, so the count is reported with a warning, like a wrap. A dump
+//     from an app that predates the field, or one that abandoned nothing, has no such warning.
 public sealed class FrameTraceAnalyzerTests
 {
     private const long Frequency = 10_000_000;
@@ -59,6 +62,9 @@ public sealed class FrameTraceAnalyzerTests
         private readonly List<Ev> _events = new();
         public bool IncludeMetadata { get; set; } = true;
         public long Overwritten { get; set; }
+
+        // Null leaves the field out, as an app that predates it did.
+        public long? Abandoned { get; set; }
 
         public void Span(string name, double startMs, double durMs, long? id, int tid = 1)
             => _events.Add(new Ev(name, "X", startMs * 1000d, durMs * 1000d, tid, id));
@@ -160,6 +166,11 @@ public sealed class FrameTraceAnalyzerTests
                 json.Append(",\"recorded\":").Append(_events.Count.ToString(CultureInfo.InvariantCulture));
                 json.Append(",\"retained\":").Append(_events.Count.ToString(CultureInfo.InvariantCulture));
                 json.Append(",\"overwritten\":").Append(Overwritten.ToString(CultureInfo.InvariantCulture));
+                if (Abandoned is { } abandoned)
+                {
+                    json.Append(",\"abandoned\":").Append(abandoned.ToString(CultureInfo.InvariantCulture));
+                }
+
                 json.Append(",\"running\":false}");
             }
 
@@ -994,6 +1005,31 @@ public sealed class FrameTraceAnalyzerTests
 
         Assert.Equal(1234, analysis.Trace.Overwritten);
         Assert.Contains(analysis.Warnings, w => w.Contains("wrap", StringComparison.OrdinalIgnoreCase) || w.Contains("overwritten", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void EventsAWriterAbandonedAreReportedBecauseTheirFramesMayBeIncomplete()
+    {
+        var trace = Steady(10);
+        trace.Abandoned = 3;
+        var analysis = FrameTraceAnalyzer.AnalyzeJson(trace.Build());
+
+        Assert.Equal(3, analysis.Trace.Abandoned);
+        Assert.Contains(analysis.Warnings, w => w.Contains("abandoned", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains("abandoned", analysis.FormatSummary(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData(0L)]
+    public void ADumpThatAbandonedNothingHasNoAbandonedWarning(long? abandoned)
+    {
+        var trace = Steady(10);
+        trace.Abandoned = abandoned;
+        var analysis = FrameTraceAnalyzer.AnalyzeJson(trace.Build());
+
+        Assert.Equal(0, analysis.Trace.Abandoned);
+        Assert.DoesNotContain(analysis.Warnings, w => w.Contains("abandoned", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]

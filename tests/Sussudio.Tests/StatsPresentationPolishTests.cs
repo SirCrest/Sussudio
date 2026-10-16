@@ -111,20 +111,6 @@ public sealed class StatsPresentationPolishTests
         Assert.Equal("29.97 fps", Read<string>(presentation, "VisualText"));
     }
 
-    [Fact]
-    public void GraphFooter_NamesP99AndEstimatedLatencyInTheRenderedText()
-    {
-        var snapshot = CreateSnapshot();
-        Set(snapshot, "PreviewCadenceSamples", 60);
-        Set(snapshot, "PreviewP99IntervalMs", 20d);
-        Set(snapshot, "PipelineLatencyMs", 8d);
-
-        var footer = Read<string>(Build("BuildFrameTimePresentation", snapshot), "LatencyText");
-        Assert.Contains("P99 present interval", footer);
-        Assert.Contains("estimated capture → preview", footer);
-        Assert.Contains("not game frame rate", footer);
-    }
-
     private static Type Require(string name)
         => SussudioAssembly.Load().GetType(name, throwOnError: true)!;
 

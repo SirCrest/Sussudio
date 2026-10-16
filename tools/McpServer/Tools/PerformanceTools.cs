@@ -124,6 +124,7 @@ public static class PerformanceTimelineTools
         row.PreviewD3DFrameLatencyWaitP95Ms = AutomationSnapshotFormatter.GetDouble(item, "PreviewD3DFrameLatencyWaitP95Ms");
         row.PreviewD3DFrameLatencyWaitMaxMs = AutomationSnapshotFormatter.GetDouble(item, "PreviewD3DFrameLatencyWaitMaxMs");
         row.PreviewD3DRecentMissed = AutomationSnapshotFormatter.GetLong(item, "PreviewD3DFrameStatsRecentMissedRefreshCount");
+        row.PreviewD3DRecentCadenceMissed = AutomationSnapshotFormatter.GetLong(item, "PreviewD3DFrameStatsRecentCadenceMissedRefreshCount");
         row.PreviewD3DRecentFailures = AutomationSnapshotFormatter.GetLong(item, "PreviewD3DFrameStatsRecentFailureCount");
         row.PreviewD3DSchedulerToPresentMs = AutomationSnapshotFormatter.GetDouble(item, "PreviewD3DLastRenderedSchedulerToPresentMs");
         row.PreviewD3DLastPipelineLatencyMs = AutomationSnapshotFormatter.GetDouble(item, "PreviewD3DLastRenderedPipelineLatencyMs");
@@ -358,6 +359,7 @@ public static class PerformanceTimelineTools
         builder.AppendLine($"D3D Sched->Prs: {first.PreviewD3DSchedulerToPresentMs:F1}ms -> {last.PreviewD3DSchedulerToPresentMs:F1}ms (latest rendered frame)");
         builder.AppendLine($"D3D Last Pipe:  {first.PreviewD3DLastPipelineLatencyMs:F1}ms -> {last.PreviewD3DLastPipelineLatencyMs:F1}ms (latest rendered frame)");
         builder.AppendLine($"D3D Missed:     {first.PreviewD3DRecentMissed} -> {last.PreviewD3DRecentMissed} (latest-window delta: {last.PreviewD3DRecentMissed - first.PreviewD3DRecentMissed:+0;-0;0})");
+        builder.AppendLine($"D3D Cad Missed: {first.PreviewD3DRecentCadenceMissed} -> {last.PreviewD3DRecentCadenceMissed} (latest-window delta: {last.PreviewD3DRecentCadenceMissed - first.PreviewD3DRecentCadenceMissed:+0;-0;0})");
         builder.AppendLine($"D3D Stat Fails: {first.PreviewD3DRecentFailures} -> {last.PreviewD3DRecentFailures} (latest-window delta: {last.PreviewD3DRecentFailures - first.PreviewD3DRecentFailures:+0;-0;0})");
         builder.AppendLine($"D3D Last Drop:  {FormatOptional(last.PreviewD3DLastDropReason)}");
         builder.AppendLine($"Preview Slow Stage: {FormatOptional(first.PreviewPacingLikelySlowStage)}/{FormatOptional(first.PreviewPacingSlowStageConfidence)} -> {FormatOptional(last.PreviewPacingLikelySlowStage)}/{FormatOptional(last.PreviewPacingSlowStageConfidence)} evidence={FormatOptional(last.PreviewPacingSlowStageEvidence)}");
@@ -564,6 +566,7 @@ public static class PerformanceTimelineTools
             $"total={CountOverBudget(entries, static row => row.PreviewD3DTotalP99Ms, targetFrameBudgetMs)} " +
             $"wait={CountOverBudget(entries, static row => row.PreviewD3DFrameLatencyWaitP95Ms, targetFrameBudgetMs)} " +
             $"dxgiMissedSamples={CountWhere(entries, static row => row.PreviewD3DRecentMissed > 0)} " +
+            $"dxgiCadenceMissedSamples={CountWhere(entries, static row => row.PreviewD3DRecentCadenceMissed > 0)} " +
             $"dxgiFailureSamples={CountWhere(entries, static row => row.PreviewD3DRecentFailures > 0)} " +
             $"jitterDropsDelta={NonNegativeDelta(last.MjpegPreviewJitterTotalDropped, first.MjpegPreviewJitterTotalDropped)} " +
             $"clearedDropsDelta={NonNegativeDelta(last.MjpegPreviewJitterClearedDropCount, first.MjpegPreviewJitterClearedDropCount)} " +
@@ -670,6 +673,7 @@ public static class PerformanceTimelineTools
         public double PreviewD3DFrameLatencyWaitP95Ms { get; set; }
         public double PreviewD3DFrameLatencyWaitMaxMs { get; set; }
         public long PreviewD3DRecentMissed { get; set; }
+        public long PreviewD3DRecentCadenceMissed { get; set; }
         public long PreviewD3DRecentFailures { get; set; }
         public double PreviewD3DSchedulerToPresentMs { get; set; }
         public double PreviewD3DLastPipelineLatencyMs { get; set; }

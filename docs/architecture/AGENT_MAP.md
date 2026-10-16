@@ -29,7 +29,7 @@ Preview performance regression coverage includes
 `tests/Sussudio.Tests/PreviewFrameTimeHistoryTests.cs` (history and geometry),
 `tests/Sussudio.Tests/XUnit.StatsUiSamplerTests.cs` (fanout, cadence, and demand),
 `tests/Sussudio.Tests/StatsPresentationPolishTests.cs` (dock motion and labels),
-`tests/Sussudio.Tests/XUnit.PreviewRendererPerformanceTests.cs` (bounded cache),
+`tests/Sussudio.Tests/PreviewInputViewCacheTests.cs` (bounded cache and warm-lookup allocation),
 and `tests/Sussudio.Tests/XUnit.PreviewRendererLifecycleTests.cs` (queue/reset and
 native handle/resource lifetime).
 `scripts/performance/Measure-PreviewScenario.ps1` records comparable observation
@@ -96,7 +96,7 @@ tests that pin which file owns a symbol; see AGENTS.md § Testing Policy.
 | Portable release tooling | `tools/reliability-gates.ps1`, `tools/package-github-release.ps1`, `tools/release/release-helpers.ps1`, `Sussudio/ffmpeg/manifest.json` | Reliability gates, package assembly, shared release helpers, and native-runtime manifest. |
 | Flashback | `FlashbackDecoder.cs`, `FlashbackPlaybackController.cs`, `FlashbackPlaybackCommandMailbox.cs`, `FlashbackPlaybackController.PlaybackFrames.cs`, `FlashbackPlaybackController.ThreadCommands.cs`, `FlashbackEncoderSink.cs`, `FlashbackBufferManager.cs`, `FlashbackStartupCacheCleanup.cs`, `FlashbackExporter.cs`, `FlashbackExportOutputTransaction.cs`, `FlashbackExportPlanner.cs` | Buffer retention, encoding, playback, and transactional export. See [Flashback](#flashback) for per-owner lifetimes and invariants. |
 | Flashback playback command handlers | `FlashbackPlaybackController.ThreadCommands.cs` | Playback-thread dispatch, seek/scrub transitions, frame stepping, and terminal live restore. |
-| Preview rendering | `D3D11PreviewRenderer.cs`, `D3D11PreviewRenderer.RenderPasses.cs`, `D3D11PreviewRenderer.Resources.cs`, `D3D11PreviewRenderer.GpuTiming.cs`, `PreviewOutputSizePolicy.cs`, `PreviewScreenshotCapture.cs` | Render-thread scheduling with waitable presentation, render passes, GPU resource lifetime, GPU render timing, and screenshots. See [UI and presentation](#ui-shell-and-presentation). |
+| Preview rendering | `D3D11PreviewRenderer.cs`, `D3D11PreviewRenderer.RenderPasses.cs`, `D3D11PreviewRenderer.Resources.cs`, `D3D11PreviewRenderer.GpuTiming.cs`, `PreviewOutputSizePolicy.cs`, `PreviewRefreshCadencePolicy.cs`, `PreviewScreenshotCapture.cs` | Render-thread scheduling with waitable presentation, render passes, GPU resource lifetime, GPU render timing, missed refreshes against the source cadence, and screenshots. See [UI and presentation](#ui-shell-and-presentation). |
 | UI shell | `Sussudio/MainWindow.xaml.cs` composition root and XAML adapter; feature behavior lives in controllers under `Sussudio/Controllers/` | The single code-behind file wires XAML to feature controllers. See [UI and presentation](#ui-shell-and-presentation). |
 | Presentation | `MainViewModel.*.cs` facade/feature partial family, `Sussudio/ViewModels/MainViewModel.cs`, plus focused `Sussudio/ViewModels` policy/presentation helpers | View-model facade, feature state, and presentation policies. See [UI and presentation](#ui-shell-and-presentation). |
 
@@ -120,7 +120,7 @@ do not use these rows as permission for cosmetic file-count churn.
 | System | Status | Current evidence | Closure guidance |
 |--------|--------|------------------|------------------|
 | CaptureService | Leave As-Is For Now | `Sussudio/Services/Capture/CaptureService.cs`, `Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs`, `Sussudio/Services/Capture/CaptureService.Flashback.cs`, `Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs`, `Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs`, and `Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs` form a six-file family in the generated baseline. The files now map to transition serialization/root state, preview lifecycle, Flashback backend/export/recording, health snapshots, recording lifecycle, and runtime snapshots. | Do not merge this family just to reduce partial count. A future boundary pass should happen only if one named behavior, such as Flashback export or snapshot assembly, can move behind an independently testable collaborator without changing capture/preview/recording hot-path ordering. |
-| AutomationDiagnosticsHub | Ready | `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs` owns the single `BuildAutomationSnapshot` initializer: captured domain inputs supply copy-only fields directly, while twelve computed/stateful projection helpers preserve normalization and sampling order. Flashback export, recording and playback fields share that initializer, including runtime-first null fallback for backend diagnostics. `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`, `Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs`, and `Sussudio/Services/Automation/AutomationDiagnosticsHub.Evaluation.cs` remain the polling/timeline, stateful refresh/alerts, and diagnostic verdict owners. The preview runtime fragment is one provider call with no producer-epoch bracket: the snapshot is built in a single UI work item, so its fields and epoch agree by construction, and the hub pays one UI dispatch and one build per tick instead of three. `tests/Sussudio.Tests/AutomationSnapshotRegressionTests.cs` protects every serialized field against populated/default input fixtures; ownership tests protect the collector/initializer boundary. | Preserve the 18 captured inputs, computation/sampling order, JSON field names and CLI/MCP/tool contracts. Keep raw mapping in the existing initializer and retain helpers only for computation or state sampling. |
+| AutomationDiagnosticsHub | Ready | `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs` owns the single `BuildAutomationSnapshot` initializer: captured domain inputs supply copy-only fields directly, while twelve computed/stateful projection helpers preserve normalization and sampling order. Flashback export, recording and playback fields share that initializer, including runtime-first null fallback for backend diagnostics. `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`, `Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs`, and `Sussudio/Services/Automation/AutomationDiagnosticsHub.Evaluation.cs` remain the polling/timeline, stateful refresh/alerts, and diagnostic verdict owners. The preview runtime fragment is one provider call with no producer-epoch bracket: its epoch tracks only the UI-thread signature, which one UI work item reads once, so the hub pays one UI dispatch and one build per tick instead of three. The renderer metrics in it are per-window copies taken while the render thread runs; no epoch covers them. `tests/Sussudio.Tests/AutomationSnapshotRegressionTests.cs` protects every serialized field against populated/default input fixtures; ownership tests protect the collector/initializer boundary. | Preserve the 18 captured inputs, computation/sampling order, JSON field names and CLI/MCP/tool contracts. Keep raw mapping in the existing initializer and retain helpers only for computation or state sampling. |
 | FlashbackPlaybackController | Ready | `Sussudio/Services/Flashback/FlashbackPlaybackController.cs`, `Sussudio/Services/Flashback/FlashbackPlaybackCommandMailbox.cs`, `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs`, and `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs` align to public playback state/command admission/metrics, a per-generation bounded command mailbox, playback-thread command execution, and frame decode/submit pacing. Existing Flashback contract tests and this map document command, frame, audio-master, marker, and lifecycle ownership. | Treat the mailbox and three controller partials as intentional. Keep the mailbox bounded and state-free: it owns queue admission, drop/coalescing, generation completion, yield, and queue telemetry; the controller owns public command/state admission; `ThreadCommands` owns decoder/state execution. Preserve playback command names, capacity, queue telemetry, live-restore behavior, A/V drift policy, and segment-edge recovery. |
 | D3D11PreviewRenderer | Ready | `Sussudio/Services/Preview/D3D11PreviewRenderer.cs`, `Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs`, and `Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs` now align to renderer facade/thread/submission/metrics, render-pass execution plus screenshot staging, and D3D resource/device/swap-chain/shader ownership; `D3D11PreviewRenderer.GpuTiming.cs` adds GPU render timing and the perf display-statistics hook. Presentation preview tests guard removed renderer shards, diagnostics contracts, device-lost recovery, present accounting, screenshots, and frame-ready signaling. | Treat the four-file split as intentional. Reopen only if a named resource/pass collaborator gains an independent test seam. Preserve preview pacing, swap-chain binding, device-lost recovery, screenshot capture, HDR pass behavior, and GPU synchronization boundaries. |
 
@@ -162,7 +162,10 @@ Preview renderer notes:
   device/swap-chain/video-processor fields, shared source-reader D3D manager
   lifecycle plus the `ILiveVideoSource` handoff contract, `InitializeD3D` orchestration,
   shared-vs-owned device setup, shared-device COM reference handoff/reinit
-  retirement/reset scheduling, device-lost classification and recovery, video
+  retirement/reset scheduling, the removed-shared-device fallback to an owned device,
+  device-lost classification (every removed-state DXGI HRESULT; failed `Present`,
+  `VideoProcessorBlt` and `ResizeBuffers` results keep their HRESULT through
+  `NativeCallFailed`) and recovery, video
   interface acquisition, media present duration setup, composition swap-chain
   creation, startup dimensions, HDR swap-chain capability probing, SDR
   swap-chain fallback, initial color-space selection, configured output size
@@ -199,14 +202,23 @@ Preview renderer notes:
   cadence, pipeline latency, render CPU timing, frame-latency wait metric state,
   sample tracking, expected-frame-rate window resizing, metric reset/clear
   lifecycle, read-only projections, recent sample copies, renderer metric record
-  structs, shared ring-copy, timing-summary, tick-to-ms, render-stage validation
+  structs, shared ring-copy, timing-summary (pipeline latency, render CPU and
+  frame-latency wait read their windows into pooled scratch under each ring lock
+  and sort it outside; only the present-cadence window is a fresh copy, because
+  it is published as `RecentIntervalsMs`), tick-to-ms, render-stage validation
   helpers, recent slow-frame snapshot access, thresholding, sample assembly, the
   slow-frame ring writer, slow-frame reason token classification, render-thread
   failure notification state, first-frame notification state, DXGI
   `GetFrameStatistics` sampling, optional DWM flush, counter deltas,
-  missed-refresh accounting, visible-frame tick estimation,
+  missed-refresh accounting (the raw refreshes-minus-presents count and the
+  cadence count), visible-frame tick estimation,
   `IPreviewDisplayClock` snapshot projection, and the DXGI refresh-slip snapshot
-  used by slow-frame diagnostics.
+  used by slow-frame diagnostics (a slip is a cadence miss, not a raw one).
+- `Sussudio/Services/Preview/PreviewRefreshCadencePolicy.cs` owns the pure rule
+  that turns one DXGI sample's present and refresh deltas into refreshes where a
+  new source frame was due but not shown: refreshes per source frame from the
+  source fps and the measured refresh interval, snapping within 1 % of a whole
+  number, and the floor-or-ceiling on-time span for fractional ratios.
 - `Sussudio/Services/Preview/PreviewScreenshotCapture.cs` owns preview-frame
   screenshot pixel analysis, mapped-frame buffer copying, BMP capture/header
   writing, 16-bit PNG frame capture, and the PNG container/chunk/CRC helpers.
@@ -253,10 +265,9 @@ Entry points:
   before releasing resources, with UTF-8 and newline framing preserved.
 - `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns the golden
   numeric command-ID adapter plus shared automation/tool contract legacy
-  `Program` implementations for catalog/manifest/path-policy reliability,
-  shared snapshot formatter behavior/source ownership, PresentMon parser and
-  source ownership, ssctl pipe transport, KS audio-node probe ownership, and
-  EGAVDS probe ownership. Routing tests should assert captured
+  `Program` implementations for catalog/manifest/path-policy checks,
+  shared snapshot formatter behavior, PresentMon parser, ssctl pipe transport,
+  KS audio-node probe ownership, and EGAVDS probe ownership. Routing tests should assert captured
   `request.command` values through `AssertAutomationCommandId`, not raw numbers
   or direct golden-table lookups.
 
@@ -340,7 +351,10 @@ Automation diagnostics ownership:
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs` owns
   preview jitter, MJPEG, D3D, and Flashback recording recent-counter baselines
   and delta updates because those baselines are sampled only by the snapshot
-  refresh loop.
+  refresh loop. The D3D frame-statistics deltas (raw missed refreshes, cadence
+  missed refreshes, failures) travel together as `D3DFrameStatsRecentCounters`
+  to the projection, the present-lane text and the slow-stage classifier, which
+  reads the cadence delta.
   The hub constructor should take `IAutomationSnapshotQueryPort` directly because
   snapshot refresh and verification are read-only over that port.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs` also
@@ -436,10 +450,8 @@ Automation diagnostics ownership:
 - `tests/Sussudio.Tests/AutomationSnapshotRegressionTests.cs` compares all
   serialized fields, nested values and ordered arrays for deterministic populated
   and default inputs. `tests/Sussudio.Tests/AutomationSnapshotValuesTests.cs`
-  separately verifies null/empty backend precedence, latency truncation and
-  reference forwarding. Keep those frozen expected values independent of the
-  mapping implementation; ownership tests protect the collector/initializer
-  boundary rather than requiring copy-only projection types. The 807-field
+  separately verifies null/empty backend precedence. Keep those frozen expected
+  values independent of the mapping implementation. The 807-field
   fixtures retain their synthetic null arrays; health playback alone now projects
   to `N/A` or the explicitly seeded `Paused` state. Model and automation contract
   tests cover every typed playback state and absence across reflection JSON,
@@ -2077,20 +2089,15 @@ Primary current owners:
   `ExpectedAutomationCommands()` adapter used by protocol/MCP helpers.
 - `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` also owns shared
   implementations for automation command catalog metadata, manifest projection,
-  path policy validation, manifest serialization, reliability-gates script
-  contract tests, and the direct `AutomationToolContractsProtocolXunitTests`
-  coverage for automation client timeout policy, advanced command-map
-  alignment, pipe-connect failure, tool delegation, script freshness, and
-  response-state contracts. It uses
-  `RuntimeContractSource.ReadAutomationPipeClientSource()` for the shared
-  automation pipe protocol/client source family.
+  path policy validation, manifest serialization, and the direct
+  `AutomationToolContractsProtocolXunitTests` coverage for automation client
+  timeout policy, pipe-connect failure, tool delegation, and response-state
+  contracts.
 - `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs` owns the
-  xUnit execution surface for catalog, manifest, path-policy, and
-  reliability-gates checks after their removal from the legacy offline harness
-  catalog.
-- `tests/Sussudio.Tests/AutomationSnapshotValuesTests.cs` checks snapshot
-  field values, default values, JSON property names, similarly named fields
-  across projection groups, and retained conversion/fallback behavior.
+  xUnit execution surface for catalog, manifest, and path-policy checks after
+  their removal from the legacy offline harness catalog.
+- `tests/Sussudio.Tests/AutomationSnapshotValuesTests.cs` checks backend value
+  precedence between runtime, health, and default sources.
 - `tests/Sussudio.Tests/XUnit.FlashbackFailureTests.cs` checks structured
   export causes through real validation failures, misleading filenames,
   cancellation, artifact preservation, diagnostics, and output publication.
@@ -2098,37 +2105,35 @@ Primary current owners:
   unsafe-native-path guard.
 - `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns the shared/ssctl
   snapshot formatter contract family: typed accessors, core section formatting,
-  section-order, Flashback opt-in smoke checks, source ownership, Flashback
-  output rendering, and Preview D3D output rendering.
+  section-order, Flashback opt-in smoke checks, Flashback output rendering, and
+  Preview D3D output rendering.
   `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns the xUnit execution
   surface for those shared snapshot formatter checks plus the focused formatter
   JSON parsing and shared snapshot-field alignment checks.
-- `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns ssctl formatted
-  snapshot and timeline output smoke checks plus ssctl formatter source
-  ownership assertions after their removal from the legacy offline harness
-  catalog.
+- `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns the ssctl formatted
+  options and timeline output goldens after their removal from the legacy
+  offline harness catalog.
 - `tests/Sussudio.Tests/XUnit.CoreRuntimeContractsTests.cs` owns
-  `RuntimeContractSource`, including shared tool source-family readers used by
-  legacy harness and xUnit contract tests. Its current-directory `.git` lookup
-  also resolves relative assembly paths for `SussudioAssembly`. The offline
+  `RuntimeContractSource`, whose repository-root lookup resolves fixture paths
+  and relative assembly paths for `SussudioAssembly`. Its `ReadRepoFile` reader
+  serves the remaining source-text tests, which the testing policy is retiring. The offline
   harness retains its separate assembly-directory solution-root lookup.
 - `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns pipe-captured ssctl
   routing contract checks for device, capture controls, recordings, Flashback,
   window, manifest, observability, automation-flow, UI visibility, and
-  verification commands, ssctl handler partial-family source ownership
-  assertions, ssctl help/catalog force-flag coverage, the source-family reader,
+  verification commands, ssctl help/catalog force-flag coverage,
   routing-capture helpers, and `AssertSsctlCommandRequest`, which routes
   captured ssctl `request.command` checks through the shared golden command
   table instead of per-test numeric IDs. Keep the `SsctlCommandHandlerContractsTests`
   wrappers and backing `Program` method bodies together in this tool-contract
   owner unless the routing harness gains independent fixture state.
 - `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns tool-probe
-  behavior and source-ownership contracts for PresentMon parser swap-chain
+  behavior contracts for PresentMon parser swap-chain
   selection, artifact filtering, CSV field versions, app-present correlation,
   ssctl pipe transport command/retry/error shaping, KS audio-node probe
   ownership, and EGAVDS probe ownership.
 - `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns the xUnit execution
-  surface for PresentMon parser/source-ownership, ssctl pipe transport, KS
+  surface for PresentMon parser, ssctl pipe transport, KS
   audio-node, EGAVDS probe, RTK I2C unsafe-native-path, NVML snapshot, and
   CaptureSessionSnapshot tool-model checks after their removal from the legacy
   offline harness catalog. Keep the public wrapper classes in this file unless
@@ -2161,7 +2166,8 @@ Primary current owners:
 - `Sussudio/Services/Gpu/NvmlMonitor.cs` owns NVML polling, gated by `NvmlPollingDemand` sources through `SetPollingDemand`: the stats dock sets `StatsDock` while it shows the values and `Sussudio/Services/Gpu/NvmlDemandSensor.cs` sets `TelemetrySensors` while the telemetry sensor supervisor has demand (a perf window, a frame trace or the sensors knob); the timer is parked while no source is set.
 - `Sussudio/Services/Runtime/RuntimeHelpers.cs` owns runtime helper types
   shared across multiple services: AtomicMax, AtomicCounter, QueueAdmission,
-  TelemetryAgeHelper, EnvironmentHelpers, RingBufferHelpers, EncodingTaskHelpers,
+  TelemetryAgeHelper, EnvironmentHelpers, RingBufferHelpers (allocating window
+  copies and the allocation-free `CopyNewest` into caller scratch), EncodingTaskHelpers,
   PercentileHelpers, IntervalCadenceStatistics (record struct), shared minimum-window-size Win32
   subclassing, bounded external process supervision contracts and runner,
   best-effort MMCSS worker registration, and `PrecisionWaiter` (a per-thread
@@ -2223,13 +2229,11 @@ Primary current owners:
   diagnostics, contracts/metrics ownership, runtime capture, render setup, and
   render pipeline checks.
 - `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs`
-  owns automation diagnostics projection ownership plus preview pacing
-  classifier source ownership, automation-snapshot wiring assertions, and
-  behavioral classifier cases.
-- `tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs` also owns the former
-  legacy recording-model execution surface for LibAv sink loop/source-ownership
-  checks, capture runtime failure/runtime-flag checks, and the large Flashback
-  buffer manager behavior/source-ownership group.
+  owns the automation diagnostics mixed-epoch projection check and the
+  behavioral preview pacing classifier cases.
+- `tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs` also owns the
+  `FlashbackBufferManagerBehaviorTests` group: segment lifecycle, purge,
+  eviction, recovery, and failure handling against temp directories.
 - `tests/Sussudio.Tests/XUnit.FlashbackContractsTests.cs` owns the xUnit
   execution surface for Flashback buffer option sizing, session/playback/export
   DTO contracts, and the former legacy Flashback exporter, decoder, playback,
@@ -2303,11 +2307,10 @@ Primary current owners:
 - `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns MCP performance
   timeline contract, Flashback timeline formatting, PresentMon MCP correlation
   and option precedence coverage, and frame-pacing verdict tests. Keep the
-  xUnit wrappers and backing `Program` method bodies for shared
-  performance-tool source loading, timeline source-ownership assertions,
+  xUnit wrappers and backing `Program` method bodies for
   rendering text contracts, Flashback command-counter formatting checks,
   `PerformanceTimelineEntry` projection contracts, PresentMon correlation
-  coverage, and frame-pacing verdict source-shape plus behavior checks together
+  coverage, and frame-pacing verdict behavior checks together
   in this tool-contract owner unless a distinct fixture or reusable helper
   boundary emerges.
 - `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns MCP wait, window
@@ -2328,9 +2331,7 @@ Primary current owners:
   recovery-preserve, segment diagnostics, PTS clamp, byte accounting,
   same-path extension tests, segment position lookup, next-segment path lookup,
   path normalization, segment-start PTS, segment range query, active path,
-  segment-count, segment-list behavior, and buffer-manager source ownership
-  assertions for root state, segment mutation/query, lifecycle, purge, and
-  eviction-pause placement. It also owns Flashback buffer startup-generated
+  segment-count, and segment-list behavior. It also owns Flashback buffer startup-generated
   segment cleanup, legacy root cleanup, stale session directory cleanup,
   session-recovery scanner ownership, unrelated temp-directory preservation,
   startup-cache budget, session-id and segment-extension validation, eviction
@@ -2340,11 +2341,8 @@ Primary current owners:
 - `tests/Sussudio.Tests/XUnit.FlashbackContractsTests.cs` owns Flashback encoder
   sink xUnit wrappers and consolidated backing `Program` methods for frame-rate,
   option, startup rollback, runtime counter, PTS guard, queue rejection,
-  lifecycle cleanup, packet-validation, drain-loop ordering, force-rotate,
-  segment-registration recovery, and broad source-ownership assertions for
-  root/startup, queueing, encoding-loop, force-rotate, recording,
-  runtime-state, and packet-buffer locality after their removal from the legacy
-  harness catalog.
+  lifecycle cleanup, codec-name mapping, and initial encoder PTS resolution
+  after their removal from the legacy harness catalog.
 - `tests/Sussudio.Tests/XUnit.FlashbackContractsTests.cs` owns Flashback
   exporter xUnit wrappers and backing `Program` methods for request-surface
   smoke tests, path/request validation, cancellation precedence, cancelled
@@ -2352,7 +2350,7 @@ Primary current owners:
   mapping, range validation, buffered-packet failure cleanup,
   progress/finalization assertions, timestamp saturation, segment template
   selection, stream-layout validation, requested-segment skip policy,
-  source-ownership tests, task-wrapper infrastructure, disposal timeout/native
+  task-wrapper infrastructure, disposal timeout/native
   state lifetime guards, stream-count/template stream-copy owner/call-site
   tests, segment path, duplicate path, missing segment, output path validation,
   source-overwrite guard, unique/identity-checked temp-output tests,
@@ -2363,10 +2361,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/XUnit.FlashbackContractsTests.cs` owns Flashback
   playback xUnit wrappers and backing `Program` methods for root state,
   pre-initialize command no-ops, no-op/coalesced command state,
-  command-position clamping, saturating timestamp arithmetic, segment-open
-  recovery, near-live snap, snap-live identity cleanup, pause-from-live display,
-  paused nudge, live-preview transition, audio guard, audio-master
-  projection/source ownership, fMP4 reopen, seek-display, seek recovery, in/out
+  segment-open recovery, near-live snap, snap-live identity cleanup,
+  live-preview transition, audio guard, audio-master projection, fMP4 reopen,
+  seek-display, seek recovery, in/out
   marker API, normalization, disposal, marker clamp, frame-duration, decoded-PTS
   cadence projection/telemetry, decode metrics reset/projection, decoded-frame
   submit-failure, preview frame submission, held-frame ownership, and
@@ -2384,17 +2381,15 @@ Primary current owners:
   Prebuffer behavior lives in the dedicated behavioral suite.
 - `tests/Sussudio.Tests/XUnit.FlashbackContractsTests.cs` owns the xUnit
   execution surface and backing `Program` methods for the former legacy
-  Flashback playback startup, command-queue, source-shape, cadence, submission,
+  Flashback playback startup, command-queue, cadence, submission,
   reopen, transition-guard, and metric-reset checks after their removal from
   the legacy harness catalog. It includes Flashback playback command queue
-  capacity/drop-oldest, scrub-coalescing source ownership, seek-slot
+  capacity/drop-oldest, scrub coalescing, seek-slot
   barrier/failure behavior, playback thread recovery, command dispatch, thread
   lifecycle, and command telemetry coverage.
 - `tests/Sussudio.Tests/XUnit.FlashbackContractsTests.cs` owns the xUnit
   execution surface and legacy `Program` implementations for Flashback decoder
-  audio, timestamp, stream-bound, validation, lifetime, callback,
-  source-shape, D3D11VA setup, support/logging, frame-buffer,
-  source-ownership, state/lifetime, frame-validation, and cancellation checks
+  frame-buffer sizing, disposal lifetime, and decoder behavior theory checks
   after their removal from the legacy harness catalog.
 - `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs` owns Flashback
   timeline visibility, lockout, toggle synchronization, timeline track layout

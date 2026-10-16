@@ -194,8 +194,8 @@ public sealed class DiagnosticFlashbackRangeFailureTests
         }
         finally
         {
-            // Baseline intentionally fails the ownership assertion. Release its
-            // pending sender and wait for the observable final audio restoration.
+            // Release both pending senders even if an assertion above failed, so the scenario
+            // unwinds, then wait for the observable final audio restoration.
             exportReply.TrySetResult(RangeFixture.Success());
             toggleReply.TrySetResult(RangeFixture.Success());
             await restoreObserved.Task.WaitAsync(RangeFixture.WaitLimit);

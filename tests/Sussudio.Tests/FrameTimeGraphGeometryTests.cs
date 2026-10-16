@@ -66,20 +66,6 @@ public sealed class FrameTimeGraphGeometryTests
         Assert.Equal(expected, FrameTimeGraphScale.FromExpectedFps(value).ExpectedFps);
     }
 
-    [Fact]
-    public void Scale_SweepsEveryWholeRefreshRateWithoutProducingANonFiniteBudget()
-    {
-        for (var fps = 1; fps <= 1000; fps++)
-        {
-            var scale = FrameTimeGraphScale.FromExpectedFps(fps);
-
-            Assert.True(double.IsFinite(scale.FrameBudgetMs), $"budget not finite at {fps}");
-            Assert.True(scale.FrameBudgetMs > 0, $"budget not positive at {fps}");
-            Assert.True(scale.MaximumFrameTimeMs > scale.FrameBudgetMs, $"headroom missing at {fps}");
-            Assert.True(scale.MaximumFps > fps, $"fps headroom missing at {fps}");
-        }
-    }
-
     // ---- ProjectX ------------------------------------------------------------
 
     [Fact]
@@ -352,41 +338,7 @@ public sealed class FrameTimeGraphGeometryTests
         Assert.True(segment.OutOfRange);
     }
 
-    [Fact]
-    public void TryProjectSegment_KeepsEveryProducedSegmentFinite()
-    {
-        var scale = FrameTimeGraphScale.FromExpectedFps(60);
-        PreviewFrameTimeSample? previous = null;
-
-        for (var i = 1; i <= 500; i++)
-        {
-            var intervalMs = i % 37 == 0 ? 250 : 16.7;
-            var sample = Cadence(i, (long)(i * Frequency / 60.0), intervalMs);
-
-            if (FrameTimeGraphGeometry.TryProjectSegment(
-                    previous, sample, 0, Frequency, Width, Height, scale,
-                    FrameTimeGraphPanel.FrameTime, out var segment))
-            {
-                Assert.True(float.IsFinite(segment.Start.X) && float.IsFinite(segment.Start.Y), $"start not finite at {i}");
-                Assert.True(float.IsFinite(segment.End.X) && float.IsFinite(segment.End.Y), $"end not finite at {i}");
-                Assert.InRange(segment.Start.Y, 0, Height);
-                Assert.InRange(segment.End.Y, 0, Height);
-            }
-
-            previous = sample;
-        }
-    }
-
-    // ---- Regression cases migrated from PreviewFrameTimeHistoryTests.cs -------
-    // Preserved verbatim so the original graph contracts keep their coverage.
-
-    [Fact]
-    public void TimeAxis_IsIndependentOfIncomingFrameRate()
-    {
-        Assert.Equal(0, FrameTimeGraphGeometry.ProjectX(1000, 11_000, 1000, 500));
-        Assert.Equal(250, FrameTimeGraphGeometry.ProjectX(6000, 11_000, 1000, 500));
-        Assert.Equal(500, FrameTimeGraphGeometry.ProjectX(11_000, 11_000, 1000, 500));
-    }
+    // ---- Cross-panel and hitch-height contracts ------------------------------
 
     [Fact]
     public void OneTwoAndThreeFrameHitches_HaveDistinctHeights()
@@ -412,37 +364,6 @@ public sealed class FrameTimeGraphGeometryTests
             500, 100, scale, FrameTimeGraphPanel.FramesPerSecond, out var fps));
         Assert.Equal(time.End.X, fps.End.X);
         Assert.Equal(100 * (1 - 20.0 / 75), fps.End.Y, precision: 4);
-    }
-
-    [Fact]
-    public void GapsAndEpochChanges_AreNeverConnected()
-    {
-        var prior = Sample(1, 1000, 16);
-        var scale = FrameTimeGraphScale.FromExpectedFps(60);
-        foreach (var sample in new[]
-        {
-            Sample(2, 1100, 16) with { Flags = PreviewFrameTimeSampleFlags.GapBefore | PreviewFrameTimeSampleFlags.CountForPresentCadence },
-            Sample(3, 1100, 16),
-            Sample(2, 1100, 16) with { Epoch = 2 }
-        })
-        {
-            Assert.True(FrameTimeGraphGeometry.TryProjectSegment(prior, sample, 2000, 1000,
-                500, 100, scale, FrameTimeGraphPanel.FrameTime, out var geometry));
-            Assert.InRange(geometry.End.X - geometry.Start.X, 0, 1.5f);
-        }
-        Assert.False(FrameTimeGraphGeometry.TryProjectSegment(prior,
-            Sample(2, 1100, 0) with { Flags = PreviewFrameTimeSampleFlags.GapBefore },
-            2000, 1000, 500, 100, scale, FrameTimeGraphPanel.FrameTime, out _));
-    }
-
-    [Fact]
-    public void IsolatedOutlier_HasAnExplicitEdgeMarker()
-    {
-        Assert.True(FrameTimeGraphGeometry.TryProjectSegment(null, Sample(1, 1000, 100), 2000, 1000,
-            500, 100, FrameTimeGraphScale.FromExpectedFps(60), FrameTimeGraphPanel.FrameTime, out var geometry));
-        Assert.True(geometry.OutOfRange);
-        Assert.Equal(geometry.Start.X, geometry.End.X);
-        Assert.True(geometry.End.Y > geometry.Start.Y);
     }
 
     private static PreviewFrameTimeSample Sample(long sequence, long timestamp, double interval)

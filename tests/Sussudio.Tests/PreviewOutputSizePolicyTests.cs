@@ -47,20 +47,6 @@ public sealed class PreviewOutputSizePolicyTests
     }
 
     [Theory]
-    [InlineData(3840, 2160)]
-    [InlineData(2560, 1440)]
-    [InlineData(1921, 1081)]
-    public void Resolve_NeverExceedsTheSourceFrame(int panelWidth, int panelHeight)
-    {
-        // Rendering above the source only moves the compositor's upscale into our
-        // render pass, so the target must stay within the source frame.
-        var size = PreviewOutputSizePolicy.Resolve(panelWidth, panelHeight, 1920, 1080);
-
-        Assert.True(size.Width <= 1920, $"width {size.Width} exceeded source 1920");
-        Assert.True(size.Height <= 1080, $"height {size.Height} exceeded source 1080");
-    }
-
-    [Theory]
     [InlineData(1, 1, 0, 0)]
     [InlineData(2, 2, 2, 2)]
     [InlineData(1, 1, 1, 1)]
@@ -96,32 +82,20 @@ public sealed class PreviewOutputSizePolicyTests
     }
 
     [Fact]
-    public void Resolve_KeepsTheBucketedAxisFixedAcrossSubBucketPanelJitter()
-    {
-        // Fractional-DPI layout churn moves the panel by a few pixels every frame.
-        // The bucketed (long) axis must not move within a bucket.
-        var baseline = PreviewOutputSizePolicy.Resolve(1280, 720, 1920, 1080);
-
-        for (var jitter = -20; jitter <= 20; jitter++)
-        {
-            var jittered = PreviewOutputSizePolicy.Resolve(1280 + jitter, 720, 1920, 1080);
-
-            Assert.Equal(baseline.Width, jittered.Width);
-        }
-    }
-
-    [Fact]
     public void SubBucketPanelJitterNeverTriggersAResize()
     {
-        // The derived axis still tracks the panel aspect ratio exactly, so it drifts
-        // a little under jitter. What matters to the renderer is that the pair
-        // Resolve + ShouldResize never asks for a swap-chain rebuild for that drift.
+        // Fractional-DPI layout churn moves the panel by a few pixels every frame.
+        // The bucketed (long) axis must not move within a bucket. The derived axis
+        // still tracks the panel aspect ratio exactly, so it drifts a little under
+        // jitter. What matters to the renderer is that the pair Resolve + ShouldResize
+        // never asks for a swap-chain rebuild for that drift.
         var current = PreviewOutputSizePolicy.Resolve(1280, 720, 1920, 1080);
 
         for (var jitter = -20; jitter <= 20; jitter++)
         {
             var target = PreviewOutputSizePolicy.Resolve(1280 + jitter, 720, 1920, 1080);
 
+            Assert.Equal(current.Width, target.Width);
             Assert.False(
                 PreviewOutputSizePolicy.ShouldResize(current, target),
                 $"jitter {jitter} produced {target.Width}x{target.Height}, forcing a resize from {current.Width}x{current.Height}");

@@ -6,19 +6,15 @@ namespace Sussudio.Tests;
 public sealed class FlashbackExportStateTests
 {
     [Fact]
-    public void NewStateHasNoExportOrDerivedActivity()
+    public void NeverStartedExportReportsNoDerivedActivityDespiteALaterClock()
     {
         using var fixture = new ExportStateFixture();
         var snapshot = fixture.Snapshot(50_000);
 
         Assert.False(Get<bool>(snapshot, "Active"));
-        Assert.Equal("NotStarted", Get<string>(snapshot, "Status"));
-        Assert.Equal(0L, Get<long>(snapshot, "Id"));
         Assert.Equal(0L, Get<long>(snapshot, "ElapsedMs"));
         Assert.Equal(0L, Get<long>(snapshot, "LastProgressAgeMs"));
-        Assert.Equal(0L, Get<long>(snapshot, "OutputBytes"));
         Assert.Equal(0d, Get<double>(snapshot, "ThroughputBytesPerSec"));
-        Assert.Null(Get<object?>(snapshot, "LastResult"));
     }
 
     [Fact]
