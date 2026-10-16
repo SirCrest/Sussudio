@@ -2944,6 +2944,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                     SetIsPreviewing = value => viewModel.IsPreviewing = value,
                     IsPreviewReinitializing = () => viewModel.IsPreviewReinitializing,
                     IsRecording = () => viewModel.IsRecording,
+                    SetIsRecording = value => viewModel.IsRecording = value,
+                    IsCaptureRecording = () => viewModel._captureService.IsRecording,
                     ShouldStartAudioPreview = () => viewModel.IsAudioPreviewEnabled && viewModel.IsAudioEnabled,
                     IsAudioPreviewActive = () => viewModel._captureService.IsAudioPreviewActive,
                     SetStatusText = value => viewModel.StatusText = value,
