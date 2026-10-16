@@ -629,7 +629,8 @@ least three quarters), `mixed` (between) and `unknown` (a reading is missing; a 
   still needs, so a perf window fills `gpu.nvml.*` with the dock hidden, and an idle app with the dock hidden makes no NVML call.
 - Log tap: the logger writer keeps the last 4,096 lines and per-caller and per-tag line counts for spam detection. A tap that
   throws never ends the writer loop: the failure is reported once through the logger's fallback trace and the next line is
-  written normally. `NATIVEXU_AT` (the capture card's AT-command answers) is logged when a command's answer is first seen or
+  written normally. Lines the logger drops because its queue is full never reach the tap, so the tap gets the same
+  `[Logger] Warning: log channel saturated, dropped_in_batch=N dropped_total=M` line the file gets. `NATIVEXU_AT` (the capture card's AT-command answers) is logged when a command's answer is first seen or
   changes in the bytes the line shows (its first 32), and, only with `Logger.VerboseEnabled`, once per 30 s per command as a
   sign that the poll is still reading. `NATIVEXU_TOPOLOGY` is logged when a path's node layout is first seen or changes. The
   rolling poll re-reads every command and the topology each cycle and used to write 7,678 of 10,043 tap lines in one live window

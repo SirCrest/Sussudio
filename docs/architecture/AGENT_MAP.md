@@ -59,7 +59,7 @@ tests that pin which file owns a symbol; see AGENTS.md § Testing Policy.
 | Capture runtime | `Sussudio/Services/Capture/CaptureService.cs`, `CaptureService.PreviewLifecycle.cs`, `CaptureService.Flashback.cs`, `CaptureService.HealthSnapshots.cs`, `CaptureService.RecordingLifecycle.cs`, `CaptureService.RuntimeSnapshots.cs` | Lifecycle transitions, resource ownership, recording/Flashback orchestration, and snapshots. See [capture](#capture-runtime) for the responsibility split. |
 | App shell | `Sussudio/Program.cs`, `Sussudio/Services/Runtime/AppProcessStartup.cs`, `Sussudio/App.xaml.cs` | Private native probe routing, single-instance admission before explicit app logging initialization, WinUI startup, and recoverable/fatal exception policy. |
 | App surface helpers | `Sussudio/AppSurface.cs` | Display formatters and XAML converters; preserve public binding type names. |
-| App runtime | `Sussudio/AppRuntime.cs` | Repository/log paths and an explicit idempotent Logger.Initialize(logRoot) lifetime; getters and early diagnostics do not start shared-file logging. The admitted App and validated private probe select their own roots before bounded asynchronous logging, rotation, fatal breadcrumbs, and best-effort system diagnostics. |
+| App runtime | `Sussudio/AppRuntime.cs`, `Sussudio/Services/Runtime/LogWriterBatch.cs` | Repository/log paths and an explicit idempotent Logger.Initialize(logRoot) lifetime; getters and early diagnostics do not start shared-file logging. The admitted App and validated private probe select their own roots before bounded asynchronous logging, rotation, fatal breadcrumbs, and best-effort system diagnostics. `LogWriterBatch` is one pass of the writer task: a bounded drain into the file text that hands the log tap every line the file gets, the dropped-lines warning included. |
 | App project build workflow | `Sussudio/Sussudio.csproj`, `Sussudio/Sussudio.Build.targets` | Project identity and dependencies in the project; publish/staging policy and deferred Windows App SDK initialization in imported targets. The SDK initializer body is retained in an obj copy, with its module hook removed so `Program` invokes it only after normal process admission. |
 | Device discovery | `Sussudio/Services/Capture/DeviceService.cs`, `Sussudio/Services/Capture/MfInterop.cs`, `Sussudio/Services/Capture/MfDeviceEnumerator.cs` | Enumeration, capability/format probing, endpoint association, and shared Media Foundation helpers. |
 | Native XU KS bridge | `Sussudio/Services/NativeXu/KsExtensionUnitNative.cs` | KS interface discovery, topology parsing, native transfers, and transport gates. |
@@ -567,7 +567,8 @@ recording and audio sites call into it, never the other way round.
   (spec 2.8.4); the renderer side is `D3D11PreviewRenderer.GpuTiming.cs` (Preview rendering).
 - `LogTapBuffer.cs` and `LogTap.cs` own the 4,096-line log ring with per-caller
   and per-tag counts, fed by the logger's writer task (`AppRuntime.RunLogWriterAsync`
-  isolates a tap failure so it never ends the writer loop).
+  isolates a tap failure so it never ends the writer loop; `LogWriterBatch` gives the
+  tap the dropped-lines warning as well).
 - `PerfReportBuilder.cs` owns the perf report DTOs and builds lifetime and
   window reports (microseconds reported as milliseconds, idle metrics omitted
   unless asked), including the `Gpu`, `Dwm` and `Display` sections and the `Sensors`
