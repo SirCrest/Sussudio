@@ -54,6 +54,18 @@ namespace Sussudio.Tests
             => global::Program.PreviewLifecycle_CoordinatorFailureFaultsStartup();
 
         [Fact]
+        public Task PreSessionStartFailuresReportTheirRequest()
+            => global::Program.PreviewLifecycle_PreSessionStartFailuresReportTheirRequest();
+
+        [Fact]
+        public Task CanceledStartReportsWithdrawnRequest()
+            => global::Program.PreviewLifecycle_CanceledStartReportsWithdrawnRequest();
+
+        [Fact]
+        public Task StartFailureHandlerFaultKeepsStartError()
+            => global::Program.PreviewLifecycle_StartFailureHandlerFaultKeepsStartError();
+
+        [Fact]
         public Task MissingDeviceFaultsInitialization()
             => global::Program.PreviewLifecycle_MissingDeviceFaultsInitialization();
 
@@ -128,6 +140,81 @@ static partial class Program
         Assert.Equal(1, harness.BuildSettingsCalls);
         Assert.Contains("start-requested", harness.Trace);
         Assert.DoesNotContain("telemetry", harness.Trace);
+    }
+
+    // A start that fails before its capture session runs reports one outcome for the request it
+    // raised, so the startup session can resolve that request's attempt instead of leaving it starting.
+    internal static async Task PreviewLifecycle_PreSessionStartFailuresReportTheirRequest()
+    {
+        static long RequestId(object value) => (long)GetPropertyValue(value, "RequestId")!;
+        static string Reason(object value) => (string)GetPropertyValue(value, "Reason")!;
+        static bool Canceled(object value) => (bool)GetPropertyValue(value, "Canceled")!;
+
+        // Initialize failure names the initialize phase.
+        var harness = new PreviewLifecycleHarness(await CreateDisposedPreviewCoordinatorAsync());
+        await Assert.ThrowsAsync<ObjectDisposedException>(() => harness.Start());
+        var initRequest = Assert.Single(harness.StartRequests);
+        var initFailure = Assert.Single(harness.StartFailures);
+        Assert.Equal(RequestId(initRequest), RequestId(initFailure));
+        Assert.False(Canceled(initFailure));
+        Assert.StartsWith("capture-init-failed:", Reason(initFailure), StringComparison.Ordinal);
+        Assert.Contains("CaptureSessionCoordinator", Reason(initFailure));
+        Assert.DoesNotContain('\n', Reason(initFailure));
+        Assert.DoesNotContain('\r', Reason(initFailure));
+
+        // Capture start failure on an initialized session names the start phase, under a new request.
+        harness.Initialized = true;
+        await Assert.ThrowsAsync<ObjectDisposedException>(() => harness.Start());
+        Assert.Equal(2, harness.StartRequests.Count);
+        Assert.Equal(2, harness.StartFailures.Count);
+        Assert.True(RequestId(harness.StartRequests[1]) > RequestId(initRequest));
+        Assert.Equal(RequestId(harness.StartRequests[1]), RequestId(harness.StartFailures[1]));
+        Assert.StartsWith("capture-start-failed:", Reason(harness.StartFailures[1]), StringComparison.Ordinal);
+        Assert.False(harness.Previewing);
+
+        // A settings build failure is a capture start failure, and so is a cancellation the caller did not ask for.
+        harness.BuildFailure = new InvalidOperationException("synthetic settings failure");
+        await Assert.ThrowsAsync<InvalidOperationException>(() => harness.Start());
+        Assert.Equal("capture-start-failed:synthetic settings failure", Reason(harness.StartFailures[2]));
+        harness.BuildFailure = new OperationCanceledException("synthetic internal cancellation");
+        await Assert.ThrowsAsync<OperationCanceledException>(() => harness.Start());
+        Assert.False(Canceled(harness.StartFailures[3]));
+        Assert.Equal("capture-start-failed:synthetic internal cancellation", Reason(harness.StartFailures[3]));
+        Assert.Equal(4, harness.StartRequests.Count);
+        Assert.Equal(4, harness.StartFailures.Count);
+        Assert.DoesNotContain("telemetry", harness.Trace);
+    }
+
+    // A start the caller cancels after its request was raised withdraws that request; it is not a failure.
+    internal static async Task PreviewLifecycle_CanceledStartReportsWithdrawnRequest()
+    {
+        var harness = new PreviewLifecycleHarness();
+        using var cancellation = new CancellationTokenSource();
+        harness.OnStartRequested = cancellation.Cancel;
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => harness.Start(cancellation.Token));
+
+        var request = Assert.Single(harness.StartRequests);
+        var outcome = Assert.Single(harness.StartFailures);
+        Assert.Equal(GetPropertyValue(request, "RequestId"), GetPropertyValue(outcome, "RequestId"));
+        Assert.Equal(true, GetPropertyValue(outcome, "Canceled"));
+        Assert.Equal("start-canceled", GetPropertyValue(outcome, "Reason"));
+        Assert.Equal(0, harness.BuildSettingsCalls);
+    }
+
+    // The outcome notification is a side channel: a throwing handler must not replace the start's own error.
+    internal static async Task PreviewLifecycle_StartFailureHandlerFaultKeepsStartError()
+    {
+        var harness = new PreviewLifecycleHarness(await CreateDisposedPreviewCoordinatorAsync())
+        {
+            StartFailedHandlerFailure = new InvalidOperationException("synthetic handler failure")
+        };
+
+        await Assert.ThrowsAsync<ObjectDisposedException>(() => harness.Start());
+
+        Assert.Single(harness.StartFailures);
+        Assert.False(harness.Initialized);
+        Assert.False(harness.Previewing);
     }
 
     internal static async Task PreviewLifecycle_MissingDeviceFaultsInitialization()
@@ -485,6 +572,10 @@ static partial class Program
         public int RecordingStopCalls;
         public int VolumeRestoreCalls;
         public long RestoredVolumeGeneration;
+        public Action? OnStartRequested;
+        public Exception? StartFailedHandlerFailure;
+        public List<object> StartRequests { get; } = [];
+        public List<object> StartFailures { get; } = [];
         public bool ReinitializeAdmitted => (bool)_controller.GetType().GetProperty("IsReinitializeAdmitted")!.GetValue(_controller)!;
         public ConcurrentQueue<string> Trace { get; } = new();
 
@@ -529,7 +620,18 @@ static partial class Program
             });
             Set(lifecycle, "ShouldStartAudioPreview", new Func<bool>(() => false));
             Set(lifecycle, "IsAudioPreviewActive", new Func<bool>(() => AudioPreviewActive));
-            Set(lifecycle, "RaisePreviewStartRequested", new Action(() => Record("start-requested")));
+            SetObjectAction(lifecycle, "RaisePreviewStartRequested", request =>
+            {
+                Record("start-requested");
+                StartRequests.Add(request);
+                OnStartRequested?.Invoke();
+            });
+            SetObjectAction(lifecycle, "RaisePreviewStartFailed", failure =>
+            {
+                Record("start-failed");
+                StartFailures.Add(failure);
+                if (StartFailedHandlerFailure is not null) throw StartFailedHandlerFailure;
+            });
             Set(lifecycle, "RaisePreviewStopRequested", new Action(() => Record("stop-requested")));
             Set(lifecycle, "ApplyLatestSourceTelemetryForPreviewStart", new Action(() => Record("telemetry")));
             SetFactory(reinitialize, "SelectedFormat", () => format);

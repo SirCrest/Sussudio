@@ -98,6 +98,8 @@ internal sealed class PreviewLifecycleEventControllerContext
     public required MainViewModel ViewModel { get; init; }
     public required Func<bool> ShouldBeginPreviewStartupAttempt { get; init; }
     public required Action BeginPreviewStartupAttempt { get; init; }
+    public required Action<long> AdmitPreviewStartRequest { get; init; }
+    public required Func<PreviewStartFailure, bool, bool> ResolvePreviewStartFailure { get; init; }
     public required Action PrimePreviewAudioFadeIn { get; init; }
     public required Func<bool> IsPreviewReinitAnimating { get; init; }
     public required Action PreparePreviewStartupPresentation { get; init; }
@@ -150,18 +152,27 @@ internal sealed class PreviewLifecycleEventController
         }
     }
 
-    public void HandlePreviewStartRequested()
+    public void HandlePreviewStartRequested(long requestId)
     {
         _stopRequestedByUser = false;
-        if (_context.ShouldBeginPreviewStartupAttempt())
-        {
-            _context.BeginPreviewStartupAttempt();
-        }
+        _context.AdmitPreviewStartRequest(requestId);
 
         _context.PrimePreviewAudioFadeIn();
         if (!_context.ViewModel.IsPreviewReinitializing && !_context.IsPreviewReinitAnimating())
         {
             _context.PreparePreviewStartupPresentation();
+        }
+    }
+
+    // A start that ended before its capture session ran never reaches HandlePreviewStartedAsync,
+    // so its outcome resolves the attempt here. While a reinitialize runs or animates, the reinit
+    // completion presentation owns the placeholder.
+    public void HandlePreviewStartFailed(PreviewStartFailure failure)
+    {
+        var reinitOwnsPresentation = _context.ViewModel.IsPreviewReinitializing || _context.IsPreviewReinitAnimating();
+        if (_context.ResolvePreviewStartFailure(failure, reinitOwnsPresentation) && !reinitOwnsPresentation)
+        {
+            _context.RevealPreviewUnavailablePlaceholder();
         }
     }
 

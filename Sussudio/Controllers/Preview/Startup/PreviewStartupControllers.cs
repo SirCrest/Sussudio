@@ -55,6 +55,10 @@ internal sealed class PreviewStartupSessionController
     private DispatcherQueueTimer? _telemetryTimer;
     private int _failureStopScheduled;
 
+    // The start request whose pre-session outcome resolves the current attempt; 0 when none does.
+    // A new attempt or a reset forgets it, so a late outcome cannot touch a newer attempt.
+    private long _owningStartRequestId;
+
     private readonly PreviewStartupReadinessSignalController _readinessSignals = new();
     private readonly PreviewStartupSessionControllerContext _context;
 
@@ -94,6 +98,7 @@ internal sealed class PreviewStartupSessionController
 
     private bool BeginAttemptCore(string attemptId, DateTimeOffset requestedUtc)
     {
+        _owningStartRequestId = 0;
         RecoveryAttemptCount = 0;
         AttemptId = attemptId;
         RequestedUtc = requestedUtc;
@@ -122,6 +127,51 @@ internal sealed class PreviewStartupSessionController
         _context.Log(
             $"PREVIEW_START_REQUESTED attempt={AttemptId} " +
             $"device={_context.GetSelectedDeviceName() ?? "none"}");
+    }
+
+    /// <summary>
+    /// Begins an attempt for a start request, or lets the request join the attempt in progress.
+    /// Either way the request now owns the attempt's pre-session outcome.
+    /// </summary>
+    public void AdmitStartRequest(long requestId)
+    {
+        if (ShouldBeginAttempt)
+        {
+            BeginStartupAttempt();
+        }
+
+        _owningStartRequestId = requestId;
+    }
+
+    /// <summary>
+    /// Resolves the attempt from a start that ended before its capture session ran: a failure
+    /// becomes Failed with its reason, and a cancellation withdraws the attempt to Idle. Only the
+    /// owning request's first outcome counts, and only while the attempt is still starting its
+    /// session; once the renderer attach began it owns the attempt's outcome.
+    /// </summary>
+    public bool ResolveStartFailure(PreviewStartFailure failure, bool preserveReinitAnimation)
+    {
+        if (failure.RequestId != _owningStartRequestId || State != PreviewStartupState.StartingSession)
+        {
+            _context.Log(
+                $"PREVIEW_START_FAILURE_IGNORED request={failure.RequestId} " +
+                $"owner={(_owningStartRequestId == 0 ? "none" : _owningStartRequestId.ToString())} " +
+                $"attempt={AttemptLabel} state={State} reason={failure.Reason}");
+            return false;
+        }
+
+        _owningStartRequestId = 0;
+        if (failure.Canceled)
+        {
+            _context.Log($"PREVIEW_START_CANCELED request={failure.RequestId} attempt={AttemptLabel}");
+            ResetStartupTracking(preserveReinitAnimation: preserveReinitAnimation);
+            return true;
+        }
+
+        SetStartupState(PreviewStartupState.Failed, failure.Reason);
+        StopWatchdog();
+        _context.StopOverlay();
+        return true;
     }
 
     private bool SetStateCore(PreviewStartupState state, string? reason = null)
@@ -204,6 +254,7 @@ internal sealed class PreviewStartupSessionController
     {
         var shouldLogIdle = !IsTerminal;
 
+        _owningStartRequestId = 0;
         AttemptId = null;
         RequestedUtc = null;
         RendererAttachedUtc = null;
