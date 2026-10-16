@@ -30,11 +30,19 @@ public sealed class PerfHistogram
     /// <summary>Largest value with its own bucket; larger values clamp into the top bucket.</summary>
     public const long MaxRecordableValue = (1L << 32) - 1;
 
+    // A snapshot that overlaps a write tries again this many times before it settles for a sum bounded by its buckets.
+    private const int CoherentSnapshotAttempts = 4;
+
     private static readonly double TicksToMicroseconds = 1_000_000d / Stopwatch.Frequency;
 
     private readonly long[] _buckets = new long[BucketCount];
     private long _sum;
     private long _max;
+
+    // Records begun and records finished. A snapshot that reads the same number for both, finished before its copy and
+    // begun after it, overlapped no write, so its buckets and sum describe exactly the same records.
+    private long _recordsBegun;
+    private long _recordsFinished;
 
     /// <summary>Records one value. Negative values clamp to zero, values above the range clamp into the top bucket.</summary>
     public void Record(long value)
@@ -51,8 +59,10 @@ public sealed class PerfHistogram
         }
 
         var clamped = value > MaxRecordableValue ? MaxRecordableValue : value;
+        Interlocked.Increment(ref _recordsBegun);
         Interlocked.Increment(ref _buckets[BucketIndex(clamped)]);
         Interlocked.Add(ref _sum, clamped);
+        Interlocked.Increment(ref _recordsFinished);
     }
 
     /// <summary>Records a Stopwatch tick duration, converted to microseconds. Negative durations record as zero.</summary>
@@ -75,21 +85,38 @@ public sealed class PerfHistogram
     }
 
     /// <summary>
-    /// Copies the counts. Writers racing the copy may land in it or not; every bucket, the total and the maximum
-    /// only ever grow, so successive snapshots never go backwards.
+    /// Copies the counts, sum and max. The sum and the counts come from the same records: a copy that overlapped a
+    /// write is retried, and if writes never pause the last copy's sum is clamped into the range its buckets allow, so
+    /// the mean is off by at most a bucket width. Buckets and the maximum only ever grow, so counts never go backwards.
     /// </summary>
     public PerfHistogramSnapshot Snapshot()
     {
         var buckets = new long[BucketCount];
-        long count = 0;
-        for (var i = 0; i < buckets.Length; i++)
+        for (var attempt = 1; ; attempt++)
         {
-            var value = Volatile.Read(ref _buckets[i]);
-            buckets[i] = value;
-            count += value;
-        }
+            // Each read is an acquire, so they happen in this order: finished, then the copy, then begun.
+            var finished = Volatile.Read(ref _recordsFinished);
+            var sum = Volatile.Read(ref _sum);
+            long count = 0;
+            for (var i = 0; i < buckets.Length; i++)
+            {
+                var value = Volatile.Read(ref _buckets[i]);
+                buckets[i] = value;
+                count += value;
+            }
 
-        return new PerfHistogramSnapshot(buckets, count, Volatile.Read(ref _sum), Volatile.Read(ref _max), maxIsApproximate: false);
+            var coherent = Volatile.Read(ref _recordsBegun) == finished;
+            if (coherent || attempt == CoherentSnapshotAttempts)
+            {
+                var max = Volatile.Read(ref _max);
+                return new PerfHistogramSnapshot(
+                    buckets,
+                    count,
+                    coherent ? sum : PerfHistogramSnapshot.ClampSumToBuckets(buckets, sum),
+                    max,
+                    maxIsApproximate: false);
+            }
+        }
     }
 
     /// <summary>Bucket index for a value; negatives map to 0 and values above the range to the top bucket.</summary>
@@ -239,11 +266,8 @@ public sealed class PerfHistogramSnapshot
             }
         }
 
-        var sum = Sum - baseline.Sum;
-        if (sum < 0 || count == 0)
-        {
-            sum = 0;
-        }
+        // Exact when both snapshots are; otherwise kept inside the delta's own buckets, which also floors it at zero.
+        var sum = ClampSumToBuckets(delta, Sum - baseline.Sum);
 
         long max = 0;
         if (highest >= 0)
@@ -256,5 +280,24 @@ public sealed class PerfHistogramSnapshot
         }
 
         return new PerfHistogramSnapshot(delta, count, sum, max, maxIsApproximate: true);
+    }
+
+    /// <summary>The sum moved into the range the bucket counts allow: every value lies between its bucket's bounds.</summary>
+    internal static long ClampSumToBuckets(long[] buckets, long sum)
+    {
+        long lowest = 0;
+        long highest = 0;
+        for (var i = 0; i < buckets.Length; i++)
+        {
+            var count = buckets[i];
+            if (count > 0)
+            {
+                var lower = PerfHistogram.BucketLowerBound(i);
+                lowest += count * lower;
+                highest += count * (lower + PerfHistogram.BucketWidth(i) - 1);
+            }
+        }
+
+        return Math.Clamp(sum, lowest, highest);
     }
 }

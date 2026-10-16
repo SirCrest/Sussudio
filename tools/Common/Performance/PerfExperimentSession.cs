@@ -705,10 +705,22 @@ internal sealed class PerfExperimentSession
     private async Task StopRecordingAsync(CancellationToken cancellationToken)
     {
         var reply = await _app.RequireAsync("SetRecordingEnabled", new Dictionary<string, object?> { ["enabled"] = false }, cancellationToken, "SetRecordingEnabled false").ConfigureAwait(false);
-        _recordingStarted = false;
-        if (reply.Snapshot is { } snapshot && PerfJson.GetBool(snapshot, "IsRecording") == true)
+        ReleaseRecordingIfStopped(reply);
+    }
+
+    // An acknowledged stop is not a stopped recording. The runner gives up ownership only when the reply's snapshot shows
+    // the recording gone; a reply that still shows it fails, and one without a snapshot leaves restore to read the state.
+    private void ReleaseRecordingIfStopped(PerfReply reply)
+    {
+        var isRecording = reply.Snapshot is { } snapshot ? PerfJson.GetBool(snapshot, "IsRecording") : null;
+        if (isRecording == true)
         {
             throw new PerfExperimentCommandException("SetRecordingEnabled false failed: the app still reports a recording after the stop request.");
+        }
+
+        if (isRecording == false)
+        {
+            _recordingStarted = false;
         }
     }
 
@@ -804,13 +816,15 @@ internal sealed class PerfExperimentSession
             }
 
             var state = await _app.GetStateAsync(token).ConfigureAwait(false);
-            if (state.Recording)
+            if (!state.Recording)
             {
-                await _app.RequireAsync("SetRecordingEnabled", new Dictionary<string, object?> { ["enabled"] = false }, token, "SetRecordingEnabled false").ConfigureAwait(false);
-                actions.Add("stopped the recording the runner started");
+                _recordingStarted = false;
+                return;
             }
 
-            _recordingStarted = false;
+            var reply = await _app.RequireAsync("SetRecordingEnabled", new Dictionary<string, object?> { ["enabled"] = false }, token, "SetRecordingEnabled false").ConfigureAwait(false);
+            ReleaseRecordingIfStopped(reply);
+            actions.Add("stopped the recording the runner started");
         }).ConfigureAwait(false);
 
         // When the lease lapsed the app put the knobs back itself, without restarting anything, so the restore below

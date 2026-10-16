@@ -262,17 +262,6 @@ internal sealed partial class FlashbackPlaybackController
             : ContinuousPlaybackNearLiveSnapMinimum;
     }
 
-    private TimeSpan ResolvePauseFromLiveTarget(TimeSpan frozenValidStart)
-    {
-        var latestPts = _bufferManager.LatestPts;
-        if (latestPts <= frozenValidStart)
-        {
-            return frozenValidStart;
-        }
-
-        return ClampPlaybackTargetToMinimumLiveLead(latestPts, frozenValidStart, "pause_from_live");
-    }
-
     private TimeSpan ResolveFrameDuration(FlashbackDecoder decoder)
     {
         // The encode rate is authoritative when present. Decoder/container metadata
@@ -439,12 +428,18 @@ internal sealed partial class FlashbackPlaybackController
         }
     }
 
-    private bool SeekAndDisplayKeyframe(
+    /// <summary>
+    /// Seeks the decoder and shows one frame: the keyframe at or before the position (a drag
+    /// preview, about one IDR decode) or, with <paramref name="exact"/>, the frame at the
+    /// position itself (one IDR plus up to one GOP of forward decode).
+    /// </summary>
+    private bool SeekAndDisplayFrame(
         FlashbackDecoder decoder,
         ref bool fileOpen,
         TimeSpan bufferPosition,
         TimeSpan validStartPts,
         CommandKind kind,
+        bool exact,
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -479,7 +474,10 @@ internal sealed partial class FlashbackPlaybackController
                 bufferPosition = ClampNonNegative(SaturatingSubtract(filePts, validStartPts));
             }
 
-            if (!decoder.SeekToKeyframe(filePts, cancellationToken))
+            var sought = exact
+                ? decoder.SeekTo(filePts, cancellationToken)
+                : decoder.SeekToKeyframe(filePts, cancellationToken);
+            if (!sought)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 // Active fMP4 segment: demuxer caches fragment index at open time.
@@ -489,8 +487,11 @@ internal sealed partial class FlashbackPlaybackController
                 {
                     if (!ShouldSkipActiveFmp4ReopenNearLive(filePts, "seek_keyframe"))
                     {
-                        Logger.Log($"FLASHBACK_PLAYBACK_SEEK_REOPEN_ACTIVE offset_ms={(long)filePts.TotalMilliseconds}");
-                        if (TryReopenCurrentFileAndSeekKeyframe(decoder, ref fileOpen, filePts, "seek_keyframe", cancellationToken))
+                        Logger.Log($"FLASHBACK_PLAYBACK_SEEK_REOPEN_ACTIVE offset_ms={(long)filePts.TotalMilliseconds} exact={exact}");
+                        var reopened = exact
+                            ? TryReopenCurrentFileAndSeek(decoder, ref fileOpen, filePts, "seek_exact", cancellationToken)
+                            : TryReopenCurrentFileAndSeekKeyframe(decoder, ref fileOpen, filePts, "seek_keyframe", cancellationToken);
+                        if (reopened)
                             goto seekSuccess;
                     }
                 }
@@ -512,7 +513,7 @@ internal sealed partial class FlashbackPlaybackController
                 ref filePts,
                 cancellationToken);
 
-            Logger.Log($"FLASHBACK_PLAYBACK_SEEK_OK pos_ms={(long)PlaybackPosition.TotalMilliseconds} file_pts_ms={(long)filePts.TotalMilliseconds} got_frame={gotFrame}");
+            Logger.Log($"FLASHBACK_PLAYBACK_SEEK_OK pos_ms={(long)PlaybackPosition.TotalMilliseconds} file_pts_ms={(long)filePts.TotalMilliseconds} got_frame={gotFrame} exact={exact}");
             return gotFrame;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -582,67 +583,6 @@ internal sealed partial class FlashbackPlaybackController
         }
 
         return gotFrame;
-    }
-
-    /// <summary>
-    /// After a pause-from-live keyframe seek, forward-decodes toward the live-derived
-    /// pause target (<paramref name="pauseTargetFilePts"/>, absolute file PTS) so the
-    /// displayed frame matches what the user saw at the moment they hit pause, instead
-    /// of being up to one GOP stale. Intermediate frames are released; only the final
-    /// frame is submitted. On decode failure or if a newer command is already queued,
-    /// bails out and leaves whatever keyframe is already on screen.
-    /// </summary>
-    private void DecodeForwardToPauseTarget(
-        FlashbackDecoder decoder,
-        ChannelReader<PlaybackCommand> commandChannel,
-        TimeSpan pauseTargetFilePts,
-        TimeSpan frozenValidStart,
-        int maxForwardDecodeFrames,
-        CancellationToken cancellationToken)
-    {
-        var displayedFilePts = TimeSpan.FromTicks(Interlocked.Read(ref _lastVideoPtsTicks));
-        if (displayedFilePts >= pauseTargetFilePts)
-        {
-            return;
-        }
-
-        for (var decodedCount = 0; decodedCount < maxForwardDecodeFrames; decodedCount++)
-        {
-            if (commandChannel.TryPeek(out _))
-            {
-                // A newer command already arrived -- keep the keyframe already
-                // displayed rather than spend time closing the gap for a frame
-                // that command is about to replace anyway.
-                Logger.Log($"FLASHBACK_PLAYBACK_PAUSE_FORWARD_DECODE_YIELD frames_decoded={decodedCount}");
-                return;
-            }
-
-            cancellationToken.ThrowIfCancellationRequested();
-            if (!TryDecodeNextVideoFrameWithMetrics(decoder, out var frame, cancellationToken))
-            {
-                Logger.Log($"FLASHBACK_PLAYBACK_PAUSE_FORWARD_DECODE_NO_FRAME frames_decoded={decodedCount}");
-                return;
-            }
-
-            var budgetExhausted = decodedCount == maxForwardDecodeFrames - 1;
-            if (frame.Pts < pauseTargetFilePts && !budgetExhausted)
-            {
-                ReleaseHeldFrameBestEffort(frame, "pause_forward_decode_skip");
-                continue;
-            }
-
-            if (!TrySubmitAndHoldFrame(frame, "pause_forward_decode"))
-            {
-                return;
-            }
-
-            Interlocked.Exchange(ref _lastVideoPtsTicks, frame.Pts.Ticks);
-            var actualPosition = ClampNonNegative(SaturatingSubtract(frame.Pts, frozenValidStart));
-            PlaybackPosition = actualPosition;
-            Logger.Log(
-                $"FLASHBACK_PLAYBACK_PAUSE_FORWARD_DECODE_OK frames_decoded={decodedCount + 1} pos_ms={(long)actualPosition.TotalMilliseconds} budget={maxForwardDecodeFrames}");
-            return;
-        }
     }
 
     private void RecordSeekDisplayDecodeFailure(CommandKind kind, TimeSpan bufferPosition, TimeSpan filePts)
@@ -1086,7 +1026,7 @@ internal sealed partial class FlashbackPlaybackController
         {
             decoder.CloseFile();
             fileOpen = false;
-            decoder.OpenFile(nextFile);
+            OpenDecoderFile(decoder, nextFile);
             fileOpen = true;
             _currentOpenFilePath = nextFile;
             _decoderHwAccel = decoder.IsD3D11HwAccelerated ? "D3D11VA" : "Software";
@@ -1298,13 +1238,13 @@ internal sealed partial class FlashbackPlaybackController
         bool resumeRendering,
         bool isInvoluntaryLiveReturn)
     {
+        SafeResumePreviewSubmission(operation);
+        RestoreLiveAudio();
         CloseDecoderFileBestEffort(decoder, operation);
         fileOpen = false;
         _currentOpenFilePath = null;
         _decoderHwAccel = "N/A";
         ReleasePlaybackFrameForLive(operation);
-        RestoreLiveAudio();
-        SafeResumePreviewSubmission(operation);
         if (resumeRendering)
         {
             SafeResumeRendering(operation);

@@ -156,6 +156,10 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private long _captureSnapshotProducerEpoch;
     private CaptureSnapshotProducerSignature _lastCaptureSnapshotProducerSignature;
     private const int TelemetryPollIntervalMs = 500;
+    // Source (XU) telemetry is 24 to 52 synchronous USB control transfers to the streaming
+    // device per refresh. The A/V drift sample keeps the 500 ms tick; the device is asked
+    // every fourth tick (2 s), starting with the first.
+    private const int SourceTelemetryRefreshEveryTicks = 4;
     private const int TelemetryPollStopDrainTimeoutMs = 750;
 
     public event EventHandler<string>? StatusChanged;

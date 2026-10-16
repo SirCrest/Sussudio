@@ -11,8 +11,9 @@ namespace Sussudio.Services.Performance;
 public sealed record TelemetrySensorsStatus(bool Active, string Reason, string Mode, IReadOnlyList<string> Details);
 
 /// <summary>
-/// Process-wide owner of the demand-driven telemetry sensors: the UI responsiveness probe and the PDH GPU engine
-/// sampler. <see cref="Configure"/> (called once from the main window) builds them and wires the three demand inputs
+/// Process-wide owner of the demand-driven telemetry sensors: the UI responsiveness probe, the PDH GPU engine
+/// sampler and, when the host passes one, the NVML poll. <see cref="Configure"/> (called once from the main window)
+/// builds them and wires the three demand inputs
 /// (open measurement windows, a running frame trace, the knob store) to a <see cref="TelemetrySensorSupervisor"/>
 /// through their <c>Changed</c> events, so an idle app holds no sensor thread and no timer. The GPU timestamp queries
 /// of the preview renderer follow the same demand through <see cref="IsGpuTimingWanted"/> but are owned by the
@@ -38,13 +39,15 @@ public static class TelemetrySensors
     /// <summary>
     /// Builds the sensors and starts watching demand. <paramref name="uiEnqueue"/> is the main window's non-blocking
     /// dispatcher enqueue (<c>DispatcherQueue.TryEnqueue</c>); null skips the UI probe (a host without a UI thread).
-    /// A second call tears the first configuration down and replaces it.
+    /// <paramref name="hostSensor"/> is a sensor whose device the host owns (the NVML poll); the supervisor only
+    /// starts and stops it, and the host keeps disposing it. A second call tears the first configuration down and
+    /// replaces it.
     /// </summary>
-    public static void Configure(Func<Action, bool>? uiEnqueue)
+    public static void Configure(Func<Action, bool>? uiEnqueue, IDemandSensor? hostSensor = null)
     {
         Shutdown();
 
-        var sensors = new List<IDemandSensor>(2);
+        var sensors = new List<IDemandSensor>(3);
         if (uiEnqueue is not null)
         {
             sensors.Add(new UiResponsivenessProbe(uiEnqueue));
@@ -52,6 +55,10 @@ public static class TelemetrySensors
 
         var gpuEngines = new GpuEngineSensor(() => new NativePdhGpuCounterReader(), Environment.ProcessId);
         sensors.Add(gpuEngines);
+        if (hostSensor is not null)
+        {
+            sensors.Add(hostSensor);
+        }
 
         var supervisor = new TelemetrySensorSupervisor(
             () => TelemetrySensorModes.Parse(Environment.GetEnvironmentVariable(TelemetrySensorModes.SensorsKnob)),

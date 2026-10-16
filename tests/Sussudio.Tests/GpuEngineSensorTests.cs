@@ -7,8 +7,9 @@ namespace Sussudio.Tests;
 // Failure modes of the PDH GPU engine sensor (docs/architecture/performance-telemetry.md sections 2.8 and 5):
 // instance names of another process that share a pid prefix, malformed instance names, NaN/negative/infinite
 // counter values, a first sample or an absent instance that must never read as 0 %, counters that become unavailable
-// or throw mid-run, open failures with backoff, Stop during a backoff, restart, and a stale memory figure surviving
-// a stop. The counters are a fake reader; the static PerfMetrics histograms are read as deltas.
+// or throw mid-run, open failures with backoff, Stop during a backoff, restart, a stale memory figure surviving
+// a stop, and a stop that times out on a blocked read. The counters are a fake reader; the static PerfMetrics
+// histograms are read as deltas.
 public sealed class GpuEngineSensorTests
 {
     private const int Pid = 4242;
@@ -373,5 +374,166 @@ public sealed class GpuEngineSensorTests
         SpinWait.SpinUntil(() => sensor.Status.DedicatedBytes is not null, TimeSpan.FromSeconds(15));
         Assert.NotNull(sensor.Status.DedicatedBytes);
         sensor.Stop();
+    }
+
+    // Failure modes of a stop whose bounded wait times out because a PDH call does not return: Stop must still return;
+    // a Start before the call returns must not run a second reader beside the first; the late call's sample must not
+    // be recorded; the old thread, as it finally exits, must not mark the new generation stopped or clear its memory
+    // figure; and a Stop before the call returns must cancel the start it was holding.
+    [Fact]
+    public void AStartWhileAStoppedReadIsStillBlockedWaitsForItInsteadOfRunningASecondReader()
+    {
+        var readers = new BlockingReaders();
+        var sensor = new GpuEngineSensor(readers.Create, Pid, periodMs: 5, stopJoinTimeoutMs: 50);
+        var before = EngineMark.Now();
+        try
+        {
+            Assert.True(sensor.Start());
+            Assert.True(readers.FirstReadEntered.Wait(TimeSpan.FromSeconds(15)));
+
+            var stopwatch = Stopwatch.StartNew();
+            sensor.Stop();
+            Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(2), "Stop was not bounded");
+            Assert.StartsWith("gpu_engines: stopping", sensor.Describe());
+
+            Assert.True(sensor.Start());
+            Assert.False(sensor.Start());
+            Assert.Contains("restarts when it returns", sensor.Describe());
+            Thread.Sleep(100);
+            Assert.Equal(1, readers.Created);
+
+            readers.ReleaseFirstRead.Set();
+            SpinWait.SpinUntil(() => sensor.Status.Samples >= 2, TimeSpan.FromSeconds(15));
+            var status = sensor.Status;
+            Assert.True(status.Samples >= 2, "the held start never ran");
+            Assert.Equal(GpuEngineSensorState.Running, status.State);
+            Assert.Equal(BlockingReaders.NewGenerationBytes, status.DedicatedBytes);
+            Assert.StartsWith("gpu_engines: running", sensor.Describe());
+            Assert.Equal(2, readers.Created);
+            Assert.Equal(1, readers.MaxOpen);
+        }
+        finally
+        {
+            readers.ReleaseFirstRead.Set();
+            sensor.Stop();
+        }
+
+        Assert.Equal(GpuEngineSensorState.Stopped, sensor.Status.State);
+        Assert.Equal(0, readers.Open);
+
+        // Only the new generation's 10 % samples were recorded; the blocked read's 77.77 % was dropped.
+        var after = EngineMark.Now();
+        Assert.Equal(1000 * (after.Count3d - before.Count3d), after.Sum3d - before.Sum3d);
+    }
+
+    [Fact]
+    public void AStopBeforeTheBlockedReadReturnsCancelsTheHeldStart()
+    {
+        var readers = new BlockingReaders();
+        var sensor = new GpuEngineSensor(readers.Create, Pid, periodMs: 5, stopJoinTimeoutMs: 50);
+        try
+        {
+            Assert.True(sensor.Start());
+            Assert.True(readers.FirstReadEntered.Wait(TimeSpan.FromSeconds(15)));
+            sensor.Stop();
+            Assert.True(sensor.Start());
+            sensor.Stop();
+            Assert.DoesNotContain("restarts", sensor.Describe());
+
+            readers.ReleaseFirstRead.Set();
+            SpinWait.SpinUntil(() => sensor.Describe() == "gpu_engines: stopped", TimeSpan.FromSeconds(15));
+            Assert.Equal("gpu_engines: stopped", sensor.Describe());
+            Thread.Sleep(50);
+            Assert.Equal(1, readers.Created);
+            Assert.Equal(0, readers.Open);
+            Assert.Null(sensor.Status.DedicatedBytes);
+
+            // Once the old thread is gone a start runs at once.
+            Assert.True(sensor.Start());
+            SpinWait.SpinUntil(() => sensor.Status.Samples >= 1, TimeSpan.FromSeconds(15));
+            Assert.Equal(2, readers.Created);
+        }
+        finally
+        {
+            readers.ReleaseFirstRead.Set();
+            sensor.Stop();
+        }
+    }
+
+    // Generation 0's first read blocks until released, then returns a sample that must never be recorded; every later
+    // reader returns 10 % and NewGenerationBytes. Counts readers created and readers open at once.
+    private sealed class BlockingReaders
+    {
+        public const long NewGenerationBytes = 512L * 1024 * 1024;
+
+        private int _created;
+        private int _open;
+        private int _maxOpen;
+
+        public ManualResetEventSlim FirstReadEntered { get; } = new(false);
+
+        public ManualResetEventSlim ReleaseFirstRead { get; } = new(false);
+
+        public int Created => Volatile.Read(ref _created);
+
+        public int Open => Volatile.Read(ref _open);
+
+        public int MaxOpen => Volatile.Read(ref _maxOpen);
+
+        public IGpuCounterReader Create() => new Reader(this, Interlocked.Increment(ref _created) - 1);
+
+        private sealed class Reader : IGpuCounterReader
+        {
+            private readonly BlockingReaders _owner;
+            private readonly int _generation;
+            private bool _opened;
+
+            public Reader(BlockingReaders owner, int generation)
+            {
+                _owner = owner;
+                _generation = generation;
+            }
+
+            public string? Open(int processId)
+            {
+                _opened = true;
+                var open = Interlocked.Increment(ref _owner._open);
+                int max;
+                while (open > (max = Volatile.Read(ref _owner._maxOpen))
+                    && Interlocked.CompareExchange(ref _owner._maxOpen, open, max) != max)
+                {
+                }
+
+                return null;
+            }
+
+            public GpuCounterReadResult Read(List<GpuCounterItem> engines, List<GpuCounterItem> memory, out string? detail)
+            {
+                engines.Clear();
+                memory.Clear();
+                detail = null;
+                if (_generation == 0)
+                {
+                    _owner.FirstReadEntered.Set();
+                    _owner.ReleaseFirstRead.Wait(TimeSpan.FromSeconds(15));
+                    engines.Add(Engine(Pid, "3D", 77.77));
+                    memory.Add(Memory(Pid, 999));
+                    return GpuCounterReadResult.Valid;
+                }
+
+                engines.Add(Engine(Pid, "3D", 10));
+                memory.Add(Memory(Pid, NewGenerationBytes));
+                return GpuCounterReadResult.Valid;
+            }
+
+            public void Dispose()
+            {
+                if (_opened)
+                {
+                    _opened = false;
+                    Interlocked.Decrement(ref _owner._open);
+                }
+            }
+        }
     }
 }

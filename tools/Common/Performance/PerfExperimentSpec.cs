@@ -73,6 +73,25 @@ public sealed class PerfExperimentSpec
 
     public required IReadOnlyList<PerfExperimentVariant> Variants { get; init; }
 
+    /// <summary>The spec in the schema <see cref="Parse"/> reads, with every default written out, so the file reruns the same experiment.</summary>
+    public string ToJson()
+    {
+        var spec = new Dictionary<string, object?> { ["name"] = Name };
+        if (Description is not null)
+        {
+            spec["description"] = Description;
+        }
+
+        spec["warmupSeconds"] = WarmupSeconds;
+        spec["measureSeconds"] = MeasureSeconds;
+        spec["repeats"] = Repeats;
+        spec["recording"] = Recording;
+        spec["metrics"] = Metrics;
+        spec["verdictStatistic"] = VerdictStatistic;
+        spec["variants"] = Variants.Select(v => new Dictionary<string, object?> { ["name"] = v.Name, ["knobs"] = v.Knobs });
+        return JsonSerializer.Serialize(spec, new JsonSerializerOptions { WriteIndented = true });
+    }
+
     /// <summary>Reads and parses a spec file. An unreadable file is a <see cref="PerfExperimentSpecException"/> naming the path.</summary>
     public static PerfExperimentSpec Load(string path)
     {

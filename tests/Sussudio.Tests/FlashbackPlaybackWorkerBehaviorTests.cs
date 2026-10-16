@@ -72,7 +72,7 @@ public sealed class FlashbackPlaybackWorkerBehaviorTests
     [Theory]
     [InlineData("GoLive", true)]
     [InlineData("Stop", false)]
-    public void LiveAndStopDisposeTheWorkerDecoderAndPreserveTheDispatchLoopDecision(string commandKind, bool keepRunning)
+    public void LiveAndStopReleaseTheWorkerFileAndPreserveTheDispatchLoopDecision(string commandKind, bool keepRunning)
     {
         using var session = new WorkerSession(commandKind);
         using var cancellation = new CancellationTokenSource();
@@ -81,8 +81,21 @@ public sealed class FlashbackPlaybackWorkerBehaviorTests
 
         Assert.Equal(keepRunning, session.Execute(commandKind, cancellation));
 
-        Assert.Null(Field(session.Worker, "Decoder"));
-        Assert.True((bool)Field(session.Decoder, "_disposed")!);
+        if (keepRunning)
+        {
+            // Go Live keeps the decoder warm for the next interaction; only the file is closed.
+            Assert.Same(session.Decoder, Field(session.Worker, "Decoder"));
+            Assert.False((bool)Field(session.Decoder, "_disposed")!);
+            Assert.False(Read<bool>(session.Decoder, "IsOpen"));
+            Assert.Null(Field(session.Controller, "_currentOpenFilePath"));
+        }
+        else
+        {
+            Assert.Null(Field(session.Worker, "Decoder"));
+            Assert.True((bool)Field(session.Decoder, "_disposed")!);
+        }
+
+        Assert.False((bool)Field(session.Worker, "FileOpen")!);
         Assert.False((bool)Field(session.Worker, "IsPlaying")!);
         Assert.False((bool)Field(session.Worker, "IsScrubbing")!);
         Assert.Null(Field(session.Worker, "PendingExactResumeTarget"));
@@ -133,6 +146,32 @@ public sealed class FlashbackPlaybackWorkerBehaviorTests
         Assert.Equal(2L, Read<long>(session.Mailbox, "CommandsProcessed"));
         Assert.Equal(1L, Read<long>(session.Mailbox, "ScrubUpdatesCoalesced"));
         Assert.Equal(0, Read<int>(session.Mailbox, "PendingCommands"));
+        session.AssertCommandCompleted();
+    }
+
+    [Fact]
+    public void PauseFromLiveFreezesAtTheLiveEdgeWithoutOpeningAFile()
+    {
+        using var session = new WorkerSession("Pause");
+        using var cancellation = new CancellationTokenSource();
+        session.SetBufferedDuration(TimeSpan.FromSeconds(10));
+
+        Assert.True(session.Execute("Pause", cancellation));
+
+        // The paused position and the exact resume target are the live edge; the first
+        // scrub, nudge or play decodes from there. Pausing itself opens and decodes nothing.
+        Assert.Equal("Paused", Read<object>(session.Controller, "State").ToString());
+        Assert.Equal(string.Empty, Read<string>(session.Controller, "LastCommandFailure"));
+        Assert.Equal(TimeSpan.FromSeconds(10), Read<TimeSpan>(session.Controller, "PlaybackPosition"));
+        Assert.Equal(TimeSpan.FromSeconds(10), Field(session.Worker, "PendingExactResumeTarget"));
+        Assert.Equal(TimeSpan.FromSeconds(10).Ticks, Field(session.Controller, "_lastVideoPtsTicks"));
+        Assert.False((bool)Field(session.Worker, "IsPlaying")!);
+        Assert.False((bool)Field(session.Worker, "FileOpen")!);
+        Assert.Null(Field(session.Controller, "_currentOpenFilePath"));
+        Assert.Same(session.Decoder, Field(session.Worker, "Decoder"));
+        Assert.False(Read<bool>(session.Decoder, "IsOpen"));
+        Assert.False((bool)Field(session.Decoder, "_disposed")!);
+        session.AssertFramesCleared();
         session.AssertCommandCompleted();
     }
 

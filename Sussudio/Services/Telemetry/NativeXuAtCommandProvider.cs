@@ -1184,18 +1184,32 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
     {
         var details = new List<SourceTelemetryDetailEntry>();
 
-        AddDetail(details, "Signal Details", "Video Format", aviInfoFrame.ColorSpace);
-        AddDetail(details, "Signal Details", "Colorimetry", aviInfoFrame.Colorimetry);
-        AddDetail(details, "Signal Details", "Quantization", aviInfoFrame.Quantization);
+        // Rows follow the signal path so the stats dock reads top to bottom: the HDMI
+        // signal and link entering the card, the card's color processing, its UVC/USB
+        // side toward the host, then audio and firmware. Each group stays contiguous;
+        // the dock starts a new group header whenever the group name changes.
+        AddDetail(details, "HDMI Signal", "VIC", vicCode?.ToString(CultureInfo.InvariantCulture));
+        AddDetail(details, "HDMI Signal", "Vert Freq", vfreqHz100.HasValue ? $"{vfreqHz100.Value / 100.0:0.##} Hz" : null, vfreqHz100?.ToString(CultureInfo.InvariantCulture));
+        AddDetail(details, "HDMI Signal", "Video Format", aviInfoFrame.ColorSpace);
+        AddDetail(details, "HDMI Signal", "Colorimetry", aviInfoFrame.Colorimetry);
+        AddDetail(details, "HDMI Signal", "Quantization", aviInfoFrame.Quantization);
         AddDetail(
             details,
-            "Signal Details",
+            "HDMI Signal",
             "HDR Transfer",
             ResolveHdrTransferFunction(hdrInfo.Eotf),
             hdrInfo.Eotf?.ToString(CultureInfo.InvariantCulture));
+
+        AddAtDetail(details, "HDMI Link / HDCP", "HDCP Mode", results.HdcpMode, FormatHdcpModeDetail);
+        AddAtDetail(details, "HDMI Link / HDCP", "HDCP Version", results.HdcpVersion, FormatHdcpVersionDetail);
+        AddAtDetail(details, "HDMI Link / HDCP", "RX/TX HDCP", results.RxTxHdcpVersion, FormatRxTxHdcpVersionDetail);
+        AddAtDetail(details, "HDMI Link / HDCP", "TX Hot Plug", results.TxHpd, FormatModeInt32Detail);
+        AddAtDetail(details, "HDMI Link / HDCP", "TX EDID Valid", results.TxEdidValid, FormatValidByteDetail);
+        AddAtDetail(details, "HDMI Link / HDCP", "TX VRR", results.TxVrr, FormatModeInt32Detail);
+
         AddDetail(
             details,
-            "Signal Details",
+            "Color Processing",
             "HDR to SDR",
             hdr2SdrState switch
             {
@@ -1204,8 +1218,18 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
                 _ => null
             },
             hdr2SdrState?.ToString(CultureInfo.InvariantCulture));
-        AddDetail(details, "Signal Details", "VIC", vicCode?.ToString(CultureInfo.InvariantCulture));
-        AddDetail(details, "Signal Details", "Vert Freq", vfreqHz100.HasValue ? $"{vfreqHz100.Value / 100.0:0.##} Hz" : null, vfreqHz100?.ToString(CultureInfo.InvariantCulture));
+        AddAtDetail(details, "Color Processing", "HDR2SDR Status", results.Hdr2SdrExtended, FormatModeInt32Detail);
+        AddAtDetail(details, "Color Processing", "HDR2SDR Color", results.Hdr2SdrColorParam, FormatHexDetail);
+        AddAtDetail(details, "Color Processing", "Color Range", results.ColorRangeSetting, FormatCodeByteDetail);
+
+        AddAtDetail(details, TelemetryLabels.GroupCaptureCard, "UVC Format", results.UvcVideoFormat, FormatHexDetail);
+        AddAtDetail(details, TelemetryLabels.GroupCaptureCard, "UVC Timing", results.UvcOutputTiming, FormatHexDetail);
+        AddAtDetail(details, TelemetryLabels.GroupCaptureCard, "UVC Error", results.UvcErrStatus, FormatCodeByteDetail);
+
+        AddAtDetail(details, "USB Link", "USB Protocol", results.UsbHostProtocol, FormatUsbHostProtocolDetail);
+        AddAtDetail(details, "USB Link", "USB Speed", results.UsbForceSpeed, FormatCodeByteDetail);
+        AddAtDetail(details, "USB Link", "USB Link State", results.UsbLinkState, FormatCodeByteDetail);
+        AddAtDetail(details, "USB Link", "USB CDC", results.UsbCdc, FormatCodeByteDetail);
 
         AddAtDetail(details, TelemetryLabels.GroupAudioInput, "Input Source", effectiveInputSource, FormatInputSourceDetail);
         AddAtDetail(details, TelemetryLabels.GroupAudioInput, "Audio Format", results.AudioFormat, FormatAudioFormatDetail);
@@ -1218,27 +1242,9 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
         AddAtDetail(details, "Audio / USB", "UAC Out2 Mute", results.UacOut2Mute, FormatMuteByteDetail);
         AddAtDetail(details, "Audio / USB", "UAC Out2 Mixer", results.UacOut2MixerSource, FormatDecimalInt16Detail);
 
-        AddAtDetail(details, "Link / Protection", "USB Protocol", results.UsbHostProtocol, FormatUsbHostProtocolDetail);
-        AddAtDetail(details, "Link / Protection", "USB CDC", results.UsbCdc, FormatCodeByteDetail);
-        AddAtDetail(details, "Link / Protection", "USB Link State", results.UsbLinkState, FormatCodeByteDetail);
-        AddAtDetail(details, "Link / Protection", "USB Speed", results.UsbForceSpeed, FormatCodeByteDetail);
-        AddAtDetail(details, "Link / Protection", "TX Hot Plug", results.TxHpd, FormatModeInt32Detail);
-        AddAtDetail(details, "Link / Protection", "TX VRR", results.TxVrr, FormatModeInt32Detail);
-        AddAtDetail(details, "Link / Protection", "TX EDID Valid", results.TxEdidValid, FormatValidByteDetail);
-        AddAtDetail(details, "Link / Protection", "HDCP Mode", results.HdcpMode, FormatHdcpModeDetail);
-        AddAtDetail(details, "Link / Protection", "HDCP Version", results.HdcpVersion, FormatHdcpVersionDetail);
-        AddAtDetail(details, "Link / Protection", "RX/TX HDCP", results.RxTxHdcpVersion, FormatRxTxHdcpVersionDetail);
-
-        AddAtDetail(details, "Capture Card / UVC", "UVC Timing", results.UvcOutputTiming, FormatHexDetail);
-        AddAtDetail(details, "Capture Card / UVC", "UVC Format", results.UvcVideoFormat, FormatHexDetail);
-        AddAtDetail(details, "Capture Card / UVC", "UVC Error", results.UvcErrStatus, FormatCodeByteDetail);
-
-        AddAtDetail(details, "Raw / Firmware", "HDR2SDR Status", results.Hdr2SdrExtended, FormatModeInt32Detail);
-        AddAtDetail(details, "Raw / Firmware", "Customer Version", results.CustomerVersion, FormatAsciiOrHexDetail);
-        AddAtDetail(details, "Raw / Firmware", "Rescue Version", results.RescueVersion, FormatDecimalInt32Detail);
-        AddAtDetail(details, "Raw / Firmware", "HDR2SDR Color", results.Hdr2SdrColorParam, FormatHexDetail);
-        AddAtDetail(details, "Raw / Firmware", "Color Range", results.ColorRangeSetting, FormatCodeByteDetail);
-        AddAtDetail(details, "Raw / Firmware", "Raw Timing", results.RawTiming, FormatHexDetail);
+        AddAtDetail(details, "Firmware / Raw", "Customer Version", results.CustomerVersion, FormatAsciiOrHexDetail);
+        AddAtDetail(details, "Firmware / Raw", "Rescue Version", results.RescueVersion, FormatDecimalInt32Detail);
+        AddAtDetail(details, "Firmware / Raw", "Raw Timing", results.RawTiming, FormatHexDetail);
 
         return details;
     }

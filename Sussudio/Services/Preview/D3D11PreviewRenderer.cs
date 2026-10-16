@@ -967,6 +967,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
 
             var framesRenderedBefore = Interlocked.Read(ref _framesRendered);
             RenderFrame(frame);
+            EndRenderFailureStreak();
             if (Interlocked.Read(ref _framesRendered) == framesRenderedBefore)
             {
                 TrackFrameDropped(frame, "render-skipped", PreviewDropReason.RenderSkipped);
@@ -985,9 +986,10 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             {
                 HandleDeviceLost(ex);
             }
-            else
+            else if (ShouldLogRenderFailure(out var renderFailureStreak))
             {
-                Logger.Log($"D3D11_PREVIEW_RENDER_FAILED type={ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
+                // A persistent failure would otherwise log once per frame at the capture rate.
+                Logger.Log($"D3D11_PREVIEW_RENDER_FAILED streak={renderFailureStreak} type={ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
             }
 
             TrackFrameDropped(frame, "render-failed", PreviewDropReason.RenderFailed);
@@ -1115,7 +1117,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         }
 
         var waitStart = Stopwatch.GetTimestamp();
-        var result = WaitForSingleObject(waitHandle, 8);
+        var result = WaitForSingleObject(waitHandle, ResolveFrameLatencyWaitTimeoutMs());
         var waitTicks = Stopwatch.GetTimestamp() - waitStart;
         TrackFrameLatencyWait(result, waitTicks);
         // Happens before a frame is chosen, so the span carries no frame id.
@@ -1124,6 +1126,27 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         {
             Logger.Log($"D3D11_PREVIEW_WAITABLE_SWAPCHAIN_WAIT result={result}.");
         }
+    }
+
+    // Until DXGI frame statistics have measured the display, assume a fast panel.
+    private const uint DefaultFrameLatencyWaitTimeoutMs = 8;
+
+    /// <summary>
+    /// One and a half measured refresh intervals, clamped to 4..20 ms: a normal vblank
+    /// signal arrives inside the window at any refresh rate (a fixed 8 ms timed out
+    /// every frame at 60 Hz), and a stalled compositor cannot hold the render thread
+    /// for more than about two frames.
+    /// </summary>
+    private uint ResolveFrameLatencyWaitTimeoutMs()
+    {
+        var refreshTicks = Volatile.Read(ref _measuredRefreshIntervalTicks);
+        if (refreshTicks <= 0)
+        {
+            return DefaultFrameLatencyWaitTimeoutMs;
+        }
+
+        var refreshMs = refreshTicks * 1000.0 / Stopwatch.Frequency;
+        return (uint)Math.Clamp(Math.Ceiling(refreshMs * 1.5), 4.0, 20.0);
     }
 
     private void DisposeFrameLatencyWaitHandle()
@@ -1636,6 +1659,30 @@ public readonly record struct PresentCadenceMetrics(
     private double[] _renderTotalCpuTimingWindowMs = new double[1200];
     private int _renderCpuTimingCount;
     private int _renderCpuTimingIndex;
+    // Consecutive non-device-loss render failures. A rendered frame ends the streak, so a
+    // later, unrelated failure logs in full instead of being absorbed by an earlier storm.
+    private long _renderFailureStreak;
+
+    private bool ShouldLogRenderFailure(out long streak)
+    {
+        streak = Interlocked.Increment(ref _renderFailureStreak);
+        return streak <= 5 || streak % 300 == 0;
+    }
+
+    private void EndRenderFailureStreak()
+    {
+        if (Volatile.Read(ref _renderFailureStreak) == 0)
+        {
+            return;
+        }
+
+        var streak = Interlocked.Exchange(ref _renderFailureStreak, 0);
+        if (streak > 5)
+        {
+            Logger.Log($"D3D11_PREVIEW_RENDER_RECOVERED failed_frames={streak}");
+        }
+    }
+
     private readonly object _frameLatencyWaitTimingLock = new();
     private double[] _frameLatencyWaitTimingWindowMs = new double[1200];
     private int _frameLatencyWaitTimingCount;

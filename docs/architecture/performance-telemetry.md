@@ -89,15 +89,21 @@ bytes or percent otherwise).
   reported value of a bucket is its midpoint: relative error at most 1.6 %.
 - Range: 0 to 2^32 - 1. Larger values clamp into the top bucket and still
   update `max`. Negative values clamp to 0. Recording never throws.
-- `Record(long value)`: one `Interlocked.Increment` on the bucket, one
-  `Interlocked.Add` on the sum, and a CAS only when a new maximum is seen.
-  No allocation, no lock. Safe from any number of threads.
+- `Record(long value)`: four interlocked operations (records begun, the
+  bucket, the sum, records finished) and a CAS only when a new maximum is
+  seen. No allocation, no lock. Safe from any number of threads.
 - `Snapshot()`: copies counts, sum and max. Concurrent writers may land in
-  the copy or not; counts never go backwards.
+  the copy or not, but the sum and the counts always describe the same
+  records: a copy during which a record began or was still in flight is
+  retried (up to four tries), and if writes never pause, the last copy's
+  sum is clamped into the range its own buckets allow, so the mean is off
+  by at most a bucket width, never by a whole outlier. Counts never go
+  backwards.
 - `PerfHistogramSnapshot.Subtract(baseline)`: per-bucket delta clamped at
   zero. Percentiles of a delta are exact to bucket precision; the delta's
-  max is the upper bound of the highest non-empty delta bucket, clamped to
-  the lifetime max, and is reported as approximate.
+  sum is kept inside the delta buckets' range (exact when both snapshots
+  are), and its max is the upper bound of the highest non-empty delta
+  bucket, clamped to the lifetime max, and is reported as approximate.
 
 ### 2.2 `PerfMetrics` catalog
 
@@ -184,7 +190,7 @@ drift):
 | `flashback.playback_decode`, `flashback.playback_present_interval` | `FlashbackPlaybackController.PaceAndDecodeFrame` and `UpdateCadenceMetrics` |
 | `audio.capture_interval`, `audio.capture_drain`; `audio.capture` | `WasapiAudioCapture.CaptureThreadMain`, beside the existing `TrackCaptureCallback` (its TickCount64 trackers are unchanged) |
 | `audio.render_interval`, `audio.render_queue_ms`, `audio.render_underrun` | `WasapiAudioPlayback.RenderAvailableFrames` (interval and queue depth per render event, before `_chunkLock`); underrun counter beside each `_renderSilenceCount` increment |
-| `gpu.nvml.*` | `NvmlMonitor` poll, for each value NVML returned |
+| `gpu.nvml.*` | `NvmlMonitor` poll, for each value NVML returned; the poll runs while the stats dock or the sensor demand wants it (2.8.6) |
 | `telemetry.hub_refresh`, `telemetry.hub_alloc`; `telemetry.hub_refresh` | `AutomationDiagnosticsHub.RefreshSnapshotAsync`, after the refresh gate, including a failed refresh |
 | `automation.command`; `automation.command` | `AutomationCommandDispatcher.ExecuteAsync` finally block; the trace id is the command kind |
 
@@ -294,9 +300,14 @@ site costs one volatile read.
   object reports `recorded`, `retained`, `overwritten` (events that left the
   ring) and `abandoned` (events dropped by the stale-writer rule above).
 - `start` reuses the previous trace's ring when its capacity is unchanged and
-  no dump is reading it (the slots are cleared, so no old stamp can match a new
-  index); otherwise it allocates. Repeated traces therefore do not each
-  allocate a ring on the large object heap.
+  no dump is reading it; otherwise it allocates. Repeated traces therefore do
+  not each allocate a ring on the large object heap. The ring's head carries a
+  trace generation above a 40-bit event count. Reuse advances the generation,
+  so no stamp of the previous trace can match a new index (the slots are not
+  cleared), and a writer that read the active trace before `stop` records with
+  the generation it read: if it resumes after the reuse, its claim lands in the
+  new generation and the event is dropped and counted as `abandoned` instead of
+  entering the new trace with an old timestamp.
 - Markers (`perf mark`) and thread names are kept beside the ring and
   emitted as instant and metadata events. Thread names are labels by managed
   thread id, set by `HotThreads.Register`. When a registration retires its label
@@ -367,7 +378,7 @@ New live knobs added on this branch:
 | Knob | Default | Effect |
 |---|---|---|
 | `SUSSUDIO_DIAGNOSTICS_POLL_MS` | 500 | diagnostics hub poll interval, 100-10000 (slice 1) |
-| `SUSSUDIO_TELEMETRY_SENSORS` | auto | live, `auto\|on\|off`: `auto` runs the demand-driven sensors (UI probe, GPU engine counters) while a perf window is open or a frame trace runs; `on` always; `off` never (2.8.1) |
+| `SUSSUDIO_TELEMETRY_SENSORS` | auto | live, `auto\|on\|off`: `auto` runs the demand-driven sensors (UI probe, GPU engine counters, the NVML poll's sensor demand) while a perf window is open or a frame trace runs; `on` always; `off` never (2.8.1) |
 | `SUSSUDIO_PREVIEW_GPU_TIMING` | auto | live, `auto\|on\|off`: D3D11 timestamp queries around the preview render pass; `on` and `off` win, `auto` follows the sensor demand, `off` creates no query objects, and the WARP software adapter never runs them (2.8.4) |
 
 Both are read as parsed modes. Text set by hand is case-insensitive, `1` and `true` mean `on`, `0` and `false` mean `off`, and anything unrecognised means `auto`; the knob store itself accepts only the three choices. The report's `Sensors` section states the mode in force.
@@ -458,8 +469,8 @@ demand exists and what each sensor is doing (3.1).
 the last word for GPU timing: `on` and `off` win, and `auto` follows the sensor demand, including the sensors knob (sensors `off`
 also quiets automatic GPU timing).
 
-`TelemetrySensorSupervisor` (`SensorDemand.cs`) starts and stops the thread sensors (`IDemandSensor`: the UI probe and the GPU
-engine sensor) and has no timer or poll of its own. The owners of the three demand inputs raise `Changed` after a real change,
+`TelemetrySensorSupervisor` (`SensorDemand.cs`) starts and stops the demand sensors (`IDemandSensor`: the UI probe, the GPU
+engine sensor and `NvmlDemandSensor`) and has no timer or poll of its own. The owners of the three demand inputs raise `Changed` after a real change,
 outside their locks, with handler exceptions swallowed: `PerfWindowSet`, `FrameTraceRecorder` and `TuningKnobStore`. The
 `TelemetrySensors` facade (configured by `MainWindow` at startup, stopped by window shutdown cleanup) subscribes once and calls
 `Reevaluate()`. Start and stop are idempotent. A sensor that throws on start or stop is reported as `supervisor: <error>` in
@@ -504,6 +515,12 @@ PDH that cannot open or read is `unavailable`: the sensor retries with backoff a
 every reader it abandons is disposed. A genuine 0 % is recorded as 0. The details line reads `gpu_engines: stopped`,
 `gpu_engines: unavailable, retrying (open_failures=.., last_error=..)` or `gpu_engines: running samples=N`, with a note after three
 pending ticks. `Gpu.DedicatedBytes` is null whenever the sensor is stopped, pending or unavailable.
+
+Stop waits at most 3 s for the sensor thread. A PDH call that has not returned by then keeps the thread, and its counters, owned by
+the sensor until it does: the details line reads `gpu_engines: stopping, a counter call has not returned`. A start in that time is
+held (`; restarts when it returns`) and the old thread starts its successor as it exits, so two sensor threads never run side by
+side and the old one cannot mark the new one stopped. The late call's sample is dropped. A stop before it returns cancels the held
+start.
 
 VRAM is not a thread. `GpuMemorySensor.Read()` runs when a report is built: it enumerates the DXGI adapters and calls
 `IDXGIAdapter3.QueryVideoMemoryInfo` on the local and non-local segment groups, so `Gpu.Adapters` holds instantaneous per-process
@@ -593,7 +610,10 @@ least three quarters), `mixed` (between) and `unknown` (a reading is missing; a 
 - GC: collection counts, `GC.GetTotalPauseDuration`, allocated bytes, and a runtime `EventListener` for per-GC pause (`gc.pause`,
   trace events).
 - DWM: `DwmGetCompositionTimingInfo` refresh period, composed-pass count and refresh counter (2.8.5).
-- NVML values recorded at each existing NVML poll.
+- NVML values recorded at each NVML poll. The poll timer runs while any `NvmlPollingDemand` source holds it: `StatsDock` while
+  the stats dock shows the GPU rows, and `TelemetrySensors` while the sensor demand above is active (`NvmlDemandSensor`, details
+  line `nvml: parked`, `nvml: polling for <sources>` or `nvml: unavailable ...`). Neither source can park the timer the other
+  still needs, so a perf window fills `gpu.nvml.*` with the dock hidden, and an idle app with the dock hidden makes no NVML call.
 - Log tap: the logger writer keeps the last 4,096 lines and per-caller and per-tag line counts for spam detection. A tap that
   throws never ends the writer loop: the failure is reported once through the logger's fallback trace and the next line is
   written normally. `NATIVEXU_AT` (the capture card's AT-command answers) is logged when a command's answer is first seen or
@@ -839,6 +859,9 @@ Three changes, each measured:
   on the current-process pseudo-handle, instead of `Process.Refresh()`, which enumerates every process on the machine. The values
   are the same counters (`WorkingSetSize`, `PrivateUsage`, kernel plus user ticks); the hub's working set and private bytes now match
   the perf report's `ProcessSensors` reading to 0.1 MB in both after runs (421.9 and 550.7 MB in one of them). It removed the 22 ms and 14 KB.
+  A failed read publishes the hub's last good reading (memory and CPU percentage), never zero, and the CPU baseline only moves on
+  good reads; before the first good read memory reads zero. The CPU baseline and the carried percentage belong to the poll tick
+  (D15): an on-demand good read updates the carried memory and CPU total but not the percentage a later failed read repeats.
 - The preview fragment makes one provider call. The old overload shape called the provider as producer-epoch probe, value and
   producer-epoch probe, so every tick built the full preview snapshot three times and hopped to the UI thread three times to watch a
   window of about 2 ms. One UI work item is consistent by construction, like the view-model fragment, so the before and after
@@ -1454,7 +1477,8 @@ preview is running again, and the state is read back. `result.json` says whether
 and lists anything that was not. Artifacts go to `--out DIR` or
 `artifacts/perf-experiments/<timestamp>-<name>`: `result.json` (settings, runs,
 per-metric statistics and verdicts, restore, warnings), `summary.md`,
-`spec.json` (the variants as run) and `reports/NN-variant-rN.json`, the raw
+`spec.json` (the whole spec as run, every default written out, so
+`ssctl perf experiment` reruns it as is) and `reports/NN-variant-rN.json`, the raw
 window report of each run. A failure to write them is a warning and never
 changes the status or skips the restore.
 

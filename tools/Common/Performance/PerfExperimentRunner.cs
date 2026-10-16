@@ -256,7 +256,7 @@ public static class PerfExperimentRunner
                 return;
             }
 
-            TryWrite("spec.json", JsonSerializer.Serialize(spec.Variants.Select(v => new { v.Name, v.Knobs }), IndentedJson));
+            TryWrite("spec.json", spec.ToJson());
             TryWrite("result.json", result.ToJson());
             TryWrite("summary.md", result.ToMarkdown());
         }

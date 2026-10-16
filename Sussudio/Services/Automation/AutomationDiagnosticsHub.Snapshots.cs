@@ -265,7 +265,7 @@ public sealed partial class AutomationDiagnosticsHub
             snapshot => snapshot.OutputEpoch);
         var processResourcesFragment = CaptureSnapshotFragment(
             collectionEpoch,
-            () => CaptureProcessResourceSnapshot(pollTick),
+            () => CaptureProcessResourceSnapshot(advance: pollTick),
             _ => 0L);
         var snapshotCollection = BuildSnapshotCollectionStamp(
             collectionEpoch,
@@ -905,16 +905,33 @@ public sealed partial class AutomationDiagnosticsHub
 
     private readonly record struct LastOutputProbe(bool Exists, long? SizeBytes, long OutputEpoch);
 
+    // Two kernel32 calls on the current-process pseudo-handle. Process.Refresh() plus WorkingSet64 and
+    // TotalProcessorTime re-enumerated every process on the machine: about 21 ms per tick.
     private ProcessResourceSnapshot CaptureProcessResourceSnapshot(bool advance)
+        => CaptureProcessResourceSnapshot(HubProcessCounters.Read(), advance);
+
+    private ProcessResourceSnapshot CaptureProcessResourceSnapshot(HubProcessCounters.Reading read, bool advance)
     {
-        // Two kernel32 calls on the current-process pseudo-handle. Process.Refresh() plus WorkingSet64 and
-        // TotalProcessorTime re-enumerated every process on the machine: about 21 ms per tick. A failed read reports
-        // zero memory and an unchanged CPU total, so it cannot look like a CPU spike on the next good read.
-        var counters = HubProcessCounters.Read();
-        var processCpuTotalMs = counters.Valid
-            ? counters.CpuTicks / HubProcessCounters.TicksPerMillisecond
-            : _lastProcessCpuTotalMs;
-        var processCpuPercent = CalculateProcessCpuPercent(processCpuTotalMs, advance);
+        // A failed read repeats the last good reading. Zero memory would draw a cliff in the timeline and then a false
+        // growth spike on the next good read; the CPU baseline only moves on good reads, so the next one measures the
+        // whole interval since the last good read instead of a spike. Before any good read there is nothing to carry:
+        // memory reads zero and the CPU percentage is zero.
+        // The CPU percentage is an interval measurement, so like the other baselines it belongs to the poll tick
+        // (see SnapshotRefreshKind): an on-demand read reports the percentage since the last tick and leaves both the
+        // baseline and the carried percentage alone. The carried reading is a point in time, so any good read updates it.
+        var processCpuPercent = _lastProcessCpuPercent;
+        if (read.Valid)
+        {
+            _lastGoodProcessCounters = read;
+            processCpuPercent = CalculateProcessCpuPercent(read.CpuTicks / HubProcessCounters.TicksPerMillisecond, advance);
+            if (advance)
+            {
+                _lastProcessCpuPercent = processCpuPercent;
+            }
+        }
+
+        var counters = _lastGoodProcessCounters;
+        var processCpuTotalMs = counters.CpuTicks / HubProcessCounters.TicksPerMillisecond;
         var gcMemoryInfo = GC.GetGCMemoryInfo();
         ThreadPool.GetAvailableThreads(out var threadPoolWorkerAvailable, out var threadPoolIoAvailable);
         ThreadPool.GetMaxThreads(out var threadPoolWorkerMax, out var threadPoolIoMax);

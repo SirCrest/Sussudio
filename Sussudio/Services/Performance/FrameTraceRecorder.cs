@@ -25,7 +25,9 @@ public readonly record struct FrameTraceStartResult(bool Success, string? Error,
 /// record call is one volatile read and a return. <c>Start</c> allocates a ring, <c>Stop</c> freezes it (kept until
 /// the next start so it can still be dumped), and <c>TryWriteChromeTrace</c> writes Chrome Trace Event JSON that
 /// Perfetto and chrome://tracing open. Writers that already passed the enabled check when <c>Stop</c> runs may land
-/// one last event in the frozen buffer; that is harmless and bounded.
+/// one last event in the frozen buffer; that is harmless and bounded. They can never land it in the next trace, even
+/// when that trace reuses the ring: a writer records with the generation it read together with the buffer, and the
+/// ring drops an event whose generation has ended.
 /// </summary>
 public sealed class FrameTraceRecorder
 {
@@ -35,7 +37,7 @@ public sealed class FrameTraceRecorder
     private readonly object _gate = new();
     private readonly PerfMarkerLog _markers;
     private readonly PerfThreadNames _threads;
-    private volatile FrameTraceBuffer? _active;
+    private volatile ActiveTrace? _active;
     private FrameTraceBuffer? _frozen;
 
     // Dumps currently walking a ring (guarded by _gate). A ring is reused for the next trace only when this is zero.
@@ -59,24 +61,24 @@ public sealed class FrameTraceRecorder
 
     public void Record(FrameTraceEventKind kind, long startTimestamp, long durationTicks, long id, ushort arg = 0)
     {
-        var buffer = _active;
-        if (buffer is null)
+        var trace = _active;
+        if (trace is null)
         {
             return;
         }
 
-        buffer.Record(kind, startTimestamp, durationTicks, id, arg);
+        trace.Buffer.RecordForTrace(trace.Generation, kind, startTimestamp, durationTicks, id, arg);
     }
 
     public void RecordInstant(FrameTraceEventKind kind, long timestamp, long id, ushort arg = 0)
     {
-        var buffer = _active;
-        if (buffer is null)
+        var trace = _active;
+        if (trace is null)
         {
             return;
         }
 
-        buffer.RecordInstant(kind, timestamp, id, arg);
+        trace.Buffer.RecordInstantForTrace(trace.Generation, kind, timestamp, id, arg);
     }
 
     /// <summary>
@@ -91,7 +93,7 @@ public sealed class FrameTraceRecorder
         {
             if (_active is { } running)
             {
-                return new FrameTraceStartResult(false, "A frame trace is already running; stop it before starting another.", running.Capacity);
+                return new FrameTraceStartResult(false, "A frame trace is already running; stop it before starting another.", running.Buffer.Capacity);
             }
 
             FrameTraceBuffer buffer;
@@ -108,7 +110,7 @@ public sealed class FrameTraceRecorder
             }
 
             _frozen = null;
-            _active = buffer;
+            _active = new ActiveTrace(buffer, buffer.Generation);
             result = new FrameTraceStartResult(true, null, buffer.Capacity);
         }
 
@@ -125,8 +127,8 @@ public sealed class FrameTraceRecorder
         {
             if (_active is { } running)
             {
-                running.Freeze();
-                _frozen = running;
+                running.Buffer.Freeze();
+                _frozen = running.Buffer;
                 _active = null;
                 stopped = true;
             }
@@ -165,7 +167,7 @@ public sealed class FrameTraceRecorder
         FrameTraceBuffer? buffer;
         lock (_gate)
         {
-            buffer = _active ?? _frozen;
+            buffer = _active?.Buffer ?? _frozen;
             if (buffer is not null)
             {
                 _dumpsInProgress++;
@@ -356,7 +358,7 @@ public sealed class FrameTraceRecorder
 
     private FrameTraceStatus StatusLocked()
     {
-        var buffer = _active ?? _frozen;
+        var buffer = _active?.Buffer ?? _frozen;
         if (buffer is null)
         {
             return new FrameTraceStatus(false, false, 0, 0, 0, 0, null, 0);
@@ -374,6 +376,9 @@ public sealed class FrameTraceRecorder
             buffer.StartedUtc,
             durationMs);
     }
+
+    // The running trace as one reference, so a writer reads the buffer and its generation in a single volatile read.
+    private sealed record ActiveTrace(FrameTraceBuffer Buffer, int Generation);
 
     private static void WriteMetadata(Utf8JsonWriter writer, string kind, int pid, int tid, string name)
     {

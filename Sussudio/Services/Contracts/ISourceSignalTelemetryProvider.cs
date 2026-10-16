@@ -69,6 +69,7 @@ namespace Sussudio.Models
     public static class TelemetryLabels
     {
         public const string GroupAudioInput = "Audio / Input";
+        public const string GroupCaptureCard = "Capture Card / UVC";
         public const string AdcAnalog = "ADC (Analog)";
         public const string AnalogGain = "Analog Gain";
     }
