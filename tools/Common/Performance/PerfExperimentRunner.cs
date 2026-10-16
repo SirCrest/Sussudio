@@ -175,7 +175,8 @@ public static class PerfExperimentRunner
                     warnings.Add($"Variant {variant.Name} run {repeat} returned a window report with no metrics; the pipeline recorded nothing in the window.");
                 }
 
-                samples.Add(new PerfRunSamples(schedule[i].Variant, repeat, runSamples));
+                var countersListed = outcome.Report is { } listed && PerfExperimentStatistics.ListsCounters(listed);
+                samples.Add(new PerfRunSamples(schedule[i].Variant, repeat, runSamples, countersListed));
                 var reportFile = outcome.Report is { } data ? artifacts.WriteRunReport(i + 1, variant.Name, repeat, data) : null;
                 runs.Add(new PerfExperimentRun(variant.Name, repeat, outcome.Window, reportFile, PerfMath.Round(outcome.DurationMs)));
             }

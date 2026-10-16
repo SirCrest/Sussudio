@@ -513,3 +513,60 @@ public static class AudioLatencyAnalyzer
         return true;
     }
 }
+
+/// <summary>
+/// Places the probe's process-loopback packets on the QPC timeline (100 ns units) for the latency analyzer. The engine's
+/// position is used unless it is zero or flagged <c>AUDCLNT_BUFFERFLAGS_TIMESTAMP_ERROR</c>; a flagged position can hold
+/// any value, so such a packet continues the previous one sample-exactly instead. Packets before the first trusted
+/// position have nothing to continue and are placed back from it by <see cref="FillLeading"/>. A capture with no trusted
+/// position keeps zero starts, which the analyzer refuses rather than guess. The flag stays on each packet, so the
+/// analysis still counts it.
+/// </summary>
+internal sealed class LoopbackPacketTimeline
+{
+    private readonly int _sampleRate;
+
+    // Where the next packet starts if its own position is not trusted; zero until a trusted position arrives.
+    private long _nextStart100Ns;
+
+    public LoopbackPacketTimeline(int sampleRate) => _sampleRate = sampleRate;
+
+    /// <summary>The start of the next packet, from the engine's position and <c>GetBuffer</c> flags.</summary>
+    public long Place(ulong qpcPosition, uint flags, int frames)
+    {
+        var trusted = qpcPosition != 0 && (flags & AudioPacketFlags.TimestampError) == 0;
+        var start = trusted ? checked((long)qpcPosition) : _nextStart100Ns;
+        if (start > 0)
+        {
+            _nextStart100Ns = start + Duration100Ns(frames);
+        }
+
+        return start;
+    }
+
+    /// <summary>Places the packets that arrived before the first trusted position back from it. Run once, after the capture.</summary>
+    public void FillLeading(Span<AudioPacket> packets)
+    {
+        var first = 0;
+        while (first < packets.Length && packets[first].StartTime100Ns <= 0)
+        {
+            first++;
+        }
+
+        if (first == packets.Length)
+        {
+            return;
+        }
+
+        var anchor = packets[first];
+        for (var index = 0; index < first; index++)
+        {
+            packets[index] = packets[index] with
+            {
+                StartTime100Ns = anchor.StartTime100Ns - Duration100Ns(anchor.FrameOffset - packets[index].FrameOffset),
+            };
+        }
+    }
+
+    private long Duration100Ns(long frames) => (long)Math.Round(frames * (double)QpcMath.HundredNsPerSecond / _sampleRate);
+}

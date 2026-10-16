@@ -42,25 +42,20 @@ internal sealed class UiAutomationBridge
         return result!;
     }
 
-    public async Task<UiInvokeResult> InvokeAsync(UiInvokeRequest request, CancellationToken cancellationToken)
+    public Task<UiInvokeResult> InvokeAsync(UiInvokeRequest request, CancellationToken cancellationToken)
+        => UiInvokeSequence.RunAsync<Attempt, UiInvokeResult>(
+            _context.InvokeOnUiThreadAsync,
+            () => PerformAction(request),
+            attempt => attempt.Final,
+            attempt => Invoked(request, attempt),
+            // The peer call returned, but the control may still be mid-transition (bindings, animations, a flyout
+            // opening): let the UI settle, then describe the element as it is now.
+            token => Task.Delay(UiTreeLimits.SettleDelayMs, token),
+            cancellationToken);
+
+    private UiInvokeResult Invoked(UiInvokeRequest request, Attempt attempt)
     {
-        Attempt? attempt = null;
-        await _context.InvokeOnUiThreadAsync(() => attempt = PerformAction(request), cancellationToken).ConfigureAwait(false);
-        if (attempt!.Final is { } early)
-        {
-            return early;
-        }
-
-        // The peer call returned, but the control may still be mid-transition (bindings, animations, a flyout opening):
-        // let the UI settle, then describe the element as it is now.
-        await Task.Delay(UiTreeLimits.SettleDelayMs, cancellationToken).ConfigureAwait(false);
-
-        UiNode? element = null;
-        var detached = false;
-        await _context.InvokeOnUiThreadAsync(
-            () => (element, detached) = ReadBack(attempt.Element!, attempt.Path!),
-            cancellationToken).ConfigureAwait(false);
-
+        var (element, detached) = ReadBack(attempt.Element!, attempt.Path!);
         var message = attempt.Message!;
         if (detached)
         {

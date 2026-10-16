@@ -329,7 +329,7 @@ public static class AudioOutputProbe
             started = true;
             var waitHandle = captureEvent.SafeWaitHandle.DangerousGetHandle();
             var captureClock = Stopwatch.StartNew();
-            var previousEnd100Ns = 0L;
+            var timeline = new LoopbackPacketTimeline(SampleRate);
             while (captureClock.Elapsed.TotalSeconds < seconds && !result.Truncated)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -338,9 +338,10 @@ public static class AudioOutputProbe
                     result.WaitTimeouts++;
                 }
 
-                DrainPackets(captureClient, result, captureClock, ref previousEnd100Ns);
+                DrainPackets(captureClient, result, captureClock, timeline);
             }
 
+            timeline.FillLeading(result.Packets.AsSpan(0, result.PacketCount));
             return result;
         }
         finally
@@ -368,7 +369,7 @@ public static class AudioOutputProbe
         }
     }
 
-    private static unsafe void DrainPackets(IAudioCaptureClient captureClient, LoopbackCapture result, Stopwatch captureClock, ref long previousEnd100Ns)
+    private static unsafe void DrainPackets(IAudioCaptureClient captureClient, LoopbackCapture result, Stopwatch captureClock, LoopbackPacketTimeline timeline)
     {
         for (var pass = 0; pass < MaxPacketsPerDrain; pass++)
         {
@@ -409,21 +410,9 @@ public static class AudioOutputProbe
                     new ReadOnlySpan<float>((void*)data, destination.Length).CopyTo(destination);
                 }
 
-                // A packet whose timestamp the engine flagged as unreliable (reported as zero) continues the previous one;
-                // the flag stays on the packet so the analysis still counts it. A stream with no timestamps at all is
-                // refused by the latency analyzer, not guessed here.
-                var start100Ns = checked((long)qpcPosition);
-                if (start100Ns == 0 && previousEnd100Ns > 0)
-                {
-                    start100Ns = previousEnd100Ns;
-                }
-
+                var start100Ns = timeline.Place(qpcPosition, flags, (int)frames);
                 result.Packets[result.PacketCount++] = new AudioPacket(result.Frames, (int)frames, start100Ns, flags);
                 result.Frames += frames;
-                if (start100Ns > 0)
-                {
-                    previousEnd100Ns = start100Ns + (long)Math.Round(frames * (double)QpcMath.HundredNsPerSecond / SampleRate);
-                }
             }
             finally
             {

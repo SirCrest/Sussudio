@@ -651,6 +651,80 @@ public sealed class FrameTraceTests
             .Count(e => e.GetProperty("name").GetString() == "capture.read"));
     }
 
+    // A dump of a large ring. Failure modes, listed before the fix:
+    // 1. The JSON writer holds the whole trace until its first write to the stream, so a full ring (4,194,304 events,
+    //    hundreds of megabytes of JSON) sits in memory and nothing reaches the file before the end.
+    // 2. A request that times out, or an app shutting down, cancels the dump, but the walk ignores the token and writes
+    //    every event, keeping the pipe connection and the ring's dump hold for as long as that takes.
+    // 3. A canceled dump keeps its hold on the ring, so the next trace allocates a second ring beside it.
+
+    private static FrameTraceRecorder FullStoppedRecorder(int capacity)
+    {
+        var recorder = NewRecorder();
+        Assert.True(recorder.Start(capacity).Success);
+        var start = Stopwatch.GetTimestamp();
+        for (var i = 0; i < capacity; i++)
+        {
+            recorder.Record(FrameTraceEventKind.CaptureRead, start + i, 1, i);
+        }
+
+        recorder.Stop();
+        return recorder;
+    }
+
+    [Fact]
+    public void ADumpStreamsAsItWalksInsteadOfHoldingTheWholeTrace()
+    {
+        var recorder = FullStoppedRecorder(1 << 16);
+        using var sink = new LargestWriteStream();
+
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        Assert.True(recorder.TryWriteChromeTrace(sink, out var error), error);
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+
+        // 65,536 events are several megabytes of JSON.
+        Assert.True(sink.Written > 4_000_000, $"only {sink.Written} bytes were written");
+        Assert.True(sink.LargestWrite <= 256 * 1024, $"the dump held {sink.LargestWrite} bytes before writing them");
+        Assert.True(allocated < 1_000_000, $"the dump allocated {allocated} bytes");
+    }
+
+    [Fact]
+    public void ACanceledDumpStopsAtTheNextChunkAndTheNextTraceReusesTheRing()
+    {
+        const int capacity = 1 << 16;
+        var recorder = FullStoppedRecorder(capacity);
+        using var inner = new MemoryStream();
+        using var blocking = new BlockingFirstWriteStream(inner);
+        using var cancellation = new CancellationTokenSource();
+        Exception? failure = null;
+        var dump = new Thread(() =>
+        {
+            try
+            {
+                recorder.TryWriteChromeTrace(blocking, out _, cancellation.Token);
+            }
+            catch (Exception ex)
+            {
+                failure = ex;
+            }
+        })
+        { IsBackground = true };
+        dump.Start();
+
+        // The dump parks in its first write, part way through the walk; the request is canceled while it waits.
+        Assert.True(blocking.Entered.Wait(TimeSpan.FromSeconds(10)), "the dump never wrote while it walked");
+        cancellation.Cancel();
+        blocking.Release.Set();
+        Assert.True(dump.Join(TimeSpan.FromSeconds(10)));
+
+        Assert.IsAssignableFrom<OperationCanceledException>(failure);
+        Assert.True(inner.Length < 1_000_000, $"the canceled dump went on to write {inner.Length} bytes");
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        Assert.True(recorder.Start(capacity).Success);
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        Assert.True(allocated < 200_000, $"the canceled dump kept its hold on the ring ({allocated} bytes allocated)");
+    }
+
     [Fact]
     public void RetiringAThreadNameRemovesItOnlyWhileTheIdStillMapsToThatRegistration()
     {
@@ -779,6 +853,48 @@ internal static class FrameTraceBufferTestExtensions
         }
 
         return events;
+    }
+}
+
+/// <summary>A write-only stream that discards what it is given and remembers the largest single write.</summary>
+internal sealed class LargestWriteStream : Stream
+{
+    public long Written { get; private set; }
+
+    public int LargestWrite { get; private set; }
+
+    public override bool CanRead => false;
+
+    public override bool CanSeek => false;
+
+    public override bool CanWrite => true;
+
+    public override long Length => Written;
+
+    public override long Position
+    {
+        get => Written;
+        set => throw new NotSupportedException();
+    }
+
+    public override void Write(byte[] buffer, int offset, int count) => Note(count);
+
+    public override void Write(ReadOnlySpan<byte> buffer) => Note(buffer.Length);
+
+    public override void Flush()
+    {
+    }
+
+    public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+    public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+    public override void SetLength(long value) => throw new NotSupportedException();
+
+    private void Note(int count)
+    {
+        Written += count;
+        LargestWrite = Math.Max(LargestWrite, count);
     }
 }
 

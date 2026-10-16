@@ -53,6 +53,27 @@ namespace Sussudio.Tests;
 //     fresh token; a failed release is reported, not hidden.
 // 20. Baselines come from the acquire response, read by the app under the lease, so a knob changed by hand between
 //     preflight and the lease is restored to the value it had when the lease began.
+//
+// A knob several parts of the pipeline read (Apply pipeline-restart: HDR force-off), written before the runner modeled
+// it:
+//
+// 21. Preview, Flashback and a recording each read the knob when they start. A run that restarts only the preview
+//     measures a Flashback still running with the previous variant's value, and a restore leaves Flashback on the
+//     experiment value. Every run must start each part that is running on the variant's value, and the restore must
+//     restart the same parts.
+// 22. A recording the runner did not start holds the capture, so restarting the preview does not rebuild it: rejected
+//     before anything changes.
+//
+// What the app's window report leaves out, and other clients acting during an experiment, written before the runner
+// handled them:
+//
+// 23. The app leaves a counter out of a window report when it counted nothing in that window. A run whose report
+//     left it out counted zero; dropping that run instead compares only the runs that counted something, so a
+//     baseline of [0, 10, 10] against [5, 5, 5] reads as better. A report with no counter list at all is a gap, not
+//     a zero.
+// 24. Someone starts a recording after preflight, between two runs. The app treats a start while recording as done,
+//     so the runner would measure that recording as its own and stop it at the end of the run. The run fails naming
+//     it instead, and the restore leaves it running.
 public sealed class PerfExperimentRunnerTests : IDisposable
 {
     private const string Depth = "SUSSUDIO_PREVIEW_JITTER_TARGET_DEPTH";
@@ -60,6 +81,7 @@ public sealed class PerfExperimentRunnerTests : IDisposable
     private const string Poll = "SUSSUDIO_DIAGNOSTICS_POLL_MS";
     private const string RecordingKnob = "SUSSUDIO_TEST_RECORDING_KNOB";
     private const string FlashbackKnob = "SUSSUDIO_TEST_FLASHBACK_KNOB";
+    private const string PipelineKnob = "SUSSUDIO_TEST_PIPELINE_KNOB";
     private const string AppKnob = "SUSSUDIO_TEST_APP_KNOB";
     private const string ChoiceKnob = "SUSSUDIO_TEST_CHOICE";
     private const string BoolKnob = "SUSSUDIO_MJPEG_LOAD_SHED";
@@ -88,6 +110,7 @@ public sealed class PerfExperimentRunnerTests : IDisposable
             new(Poll, "int", "500", 100, 10000, null, "live"),
             new(RecordingKnob, "int", "8", 1, 64, null, "recording-start"),
             new(FlashbackKnob, "int", "4", 1, 16, null, "flashback-restart"),
+            new(PipelineKnob, "bool", "0", 0, 1, null, "pipeline-restart"),
             new(AppKnob, "int", "1000", 100, 10000, null, "app-restart"),
             new(ChoiceKnob, "choice", "Playback", null, null, new[] { "Playback", "Pro Audio" }, "preview-restart"),
             new(BoolKnob, "bool", "1", 0, 1, null, "preview-restart"),
@@ -97,6 +120,16 @@ public sealed class PerfExperimentRunnerTests : IDisposable
         private readonly Dictionary<string, string?> _launch = new(StringComparer.Ordinal);
         private readonly Dictionary<string, string?> _effective = new(StringComparer.Ordinal);
         private readonly HashSet<string> _openWindows = new(StringComparer.Ordinal);
+
+        // The pipeline knob as each part of the pipeline last read it. Each part reads it when it starts; a preview start
+        // does not while a recording holds the capture, because the app then reattaches the preview to that capture.
+        private readonly Dictionary<string, string?> _pipelineReadBy = new(StringComparer.Ordinal)
+        {
+            ["preview"] = null,
+            ["flashback"] = null,
+            ["recording"] = null,
+        };
+
         private int _lagRemaining;
         private bool _reportedPreviewing = true;
         private int _windowsEnded;
@@ -167,6 +200,9 @@ public sealed class PerfExperimentRunnerTests : IDisposable
         /// <summary>The app handles the command and then the reply is lost.</summary>
         public Func<string, JsonObject, bool>? LoseReplyWhen { get; set; }
 
+        /// <summary>Runs before the app handles each command: someone using the app between the runner's commands.</summary>
+        public Action<string, JsonObject>? BeforeHandle { get; set; }
+
         public string? LeaseId => _leaseId;
 
         public TimeSpan VirtualNow => Delays.Aggregate(TimeSpan.Zero, (sum, delay) => sum + delay);
@@ -182,6 +218,12 @@ public sealed class PerfExperimentRunnerTests : IDisposable
         public string? Value(string name) => _values[name];
 
         public string? Effective(string name) => _effective[name];
+
+        /// <summary>The pipeline knob as <paramref name="part"/> (preview, flashback or recording) last read it.</summary>
+        public string? PipelineValueIn(string part) => _pipelineReadBy[part];
+
+        /// <summary>What each part was running with when each performance window began, in begin order.</summary>
+        public List<(string? Preview, string? Flashback, string? Recording)> PipelineAtWindowBegin { get; } = new();
 
         public void SeedKnob(string name, string? launch, string? current)
         {
@@ -344,6 +386,7 @@ public sealed class PerfExperimentRunnerTests : IDisposable
                 }));
             }
 
+            BeforeHandle?.Invoke(command, body);
             var reply = Handle(command, body);
             if (LoseReplyWhen?.Invoke(command, body) == true)
             {
@@ -417,6 +460,11 @@ public sealed class PerfExperimentRunnerTests : IDisposable
                         {
                             _effective[knob.Name] = _values[knob.Name];
                         }
+
+                        if (!Recording)
+                        {
+                            _pipelineReadBy["preview"] = _values[PipelineKnob];
+                        }
                     }
 
                     return Ok(snapshot: SnapshotNode());
@@ -439,6 +487,8 @@ public sealed class PerfExperimentRunnerTests : IDisposable
                         {
                             _effective[knob.Name] = _values[knob.Name];
                         }
+
+                        _pipelineReadBy["recording"] = _values[PipelineKnob];
                     }
 
                     Recording = enabled;
@@ -451,6 +501,7 @@ public sealed class PerfExperimentRunnerTests : IDisposable
                         _effective[knob.Name] = _values[knob.Name];
                     }
 
+                    _pipelineReadBy["flashback"] = _values[PipelineKnob];
                     return Ok(snapshot: SnapshotNode());
                 case "AddPerfMarker":
                     Markers.Add(body["text"]!.GetValue<string>());
@@ -472,6 +523,7 @@ public sealed class PerfExperimentRunnerTests : IDisposable
             {
                 case "begin":
                     _openWindows.Add(name);
+                    PipelineAtWindowBegin.Add((_pipelineReadBy["preview"], _pipelineReadBy["flashback"], _pipelineReadBy["recording"]));
                     return Ok(new JsonObject { ["Action"] = "begin", ["Name"] = name });
                 case "end":
                     if (!_openWindows.Remove(name))
@@ -591,12 +643,15 @@ public sealed class PerfExperimentRunnerTests : IDisposable
                 ["Metrics"] = new JsonArray(
                     MetricNode("preview.present_interval", 1200, 16.67, 16.67, presentP99, presentP99 + 2, presentP99 + 4),
                     MetricNode("capture.deliver", 1200, 0.4, 0.4, deliverP99, deliverP99 + 0.5, deliverP99 + 1.0)),
-                ["Counters"] = new JsonArray(new JsonObject
-                {
-                    ["Name"] = "preview.drop.stale-before-render",
-                    ["Delta"] = depth >= 3 ? 2 : 0,
-                    ["RatePerSec"] = 0.1,
-                }),
+                // Like the app, a counter that counted nothing in the window is left out of the report.
+                ["Counters"] = depth >= 3
+                    ? new JsonArray(new JsonObject
+                    {
+                        ["Name"] = "preview.drop.stale-before-render",
+                        ["Delta"] = 2,
+                        ["RatePerSec"] = 0.1,
+                    })
+                    : new JsonArray(),
                 ["Threads"] = new JsonArray(new JsonObject { ["Role"] = "preview.render", ["CpuPercent"] = 5.0 + depth }),
                 ["Process"] = new JsonObject { ["CpuPercentOfOneCore"] = 20.0 + depth },
             };
@@ -646,7 +701,7 @@ public sealed class PerfExperimentRunnerTests : IDisposable
 
     private static void AssertKnobsAtBaseline(FakeApp app)
     {
-        foreach (var name in new[] { Depth, Latency, Poll, RecordingKnob, FlashbackKnob, AppKnob, ChoiceKnob, BoolKnob })
+        foreach (var name in new[] { Depth, Latency, Poll, RecordingKnob, FlashbackKnob, PipelineKnob, AppKnob, ChoiceKnob, BoolKnob })
         {
             Assert.Null(app.Value(name));
         }
@@ -820,6 +875,19 @@ public sealed class PerfExperimentRunnerTests : IDisposable
         Assert.False(app.Touched());
     }
 
+    [Fact]
+    public async Task APipelineKnobIsRejectedWhileARecordingTheRunnerDidNotStartHoldsTheCapture()
+    {
+        var app = new FakeApp { Recording = true, FlashbackActive = true };
+        var result = await RunAsync(app, Spec("{\"name\":\"A\"},{\"name\":\"B\",\"knobs\":{\"" + PipelineKnob + "\":\"1\"}}"));
+
+        Assert.Equal(PerfExperimentStatus.Rejected, result.Status);
+        Assert.Contains(result.Problems, p => p.Contains(PipelineKnob, StringComparison.Ordinal)
+            && p.Contains("recording", StringComparison.OrdinalIgnoreCase));
+        Assert.False(app.Touched());
+        Assert.True(app.Recording);
+    }
+
     // ---- the happy path ---------------------------------------------------------------------------------------
 
     [Fact]
@@ -983,6 +1051,65 @@ public sealed class PerfExperimentRunnerTests : IDisposable
         Assert.Null(app.Effective(FlashbackKnob));
     }
 
+    [Fact]
+    public async Task APipelineKnobRestartsPreviewFlashbackAndTheRecordingSoEveryRunMeasuresItsOwnValue()
+    {
+        var app = new FakeApp { FlashbackActive = true };
+        var result = await RunAsync(app, Spec(
+            "{\"name\":\"A\"},{\"name\":\"B\",\"knobs\":{\"" + PipelineKnob + "\":\"1\"}}", repeats: 2, extra: ",\"recording\":true"));
+
+        Assert.Equal(PerfExperimentStatus.Completed, result.Status);
+        Assert.Equal(result.Runs.Count, app.PipelineAtWindowBegin.Count);
+        for (var run = 0; run < result.Runs.Count; run++)
+        {
+            var expected = result.Runs[run].Variant == "B" ? "1" : null;
+            Assert.Equal((expected, expected, expected), app.PipelineAtWindowBegin[run]);
+        }
+
+        Assert.Null(app.Value(PipelineKnob));
+        Assert.Null(app.PipelineValueIn("preview"));
+        Assert.Null(app.PipelineValueIn("flashback"));
+        Assert.False(app.Recording);
+        Assert.True(result.Restore.Verified);
+    }
+
+    [Fact]
+    public async Task APipelineKnobWithFlashbackOffRestartsOnlyThePreview()
+    {
+        var app = new FakeApp { FlashbackActive = false };
+        var result = await RunAsync(app, Spec("{\"name\":\"A\"},{\"name\":\"B\",\"knobs\":{\"" + PipelineKnob + "\":\"1\"}}", repeats: 2));
+
+        Assert.Equal(PerfExperimentStatus.Completed, result.Status);
+        Assert.DoesNotContain(app.Calls, c => c.Command == "RestartFlashback");
+        for (var run = 0; run < result.Runs.Count; run++)
+        {
+            Assert.Equal(result.Runs[run].Variant == "B" ? "1" : null, app.PipelineAtWindowBegin[run].Preview);
+        }
+
+        Assert.Null(app.Value(PipelineKnob));
+        Assert.Null(app.PipelineValueIn("preview"));
+        Assert.True(result.Restore.Verified);
+    }
+
+    [Fact]
+    public async Task APipelineKnobLeftSetByAFailedRunIsRestoredInPreviewAndFlashback()
+    {
+        var app = new FakeApp { FlashbackActive = true };
+        var begins = 0;
+        app.FailWhen = (command, payload) =>
+            command == "PerfWindow" && payload["action"]!.GetValue<string>() == "begin" && ++begins == 2;
+
+        var result = await RunAsync(app, Spec("{\"name\":\"A\"},{\"name\":\"B\",\"knobs\":{\"" + PipelineKnob + "\":\"1\"}}"));
+
+        // Run B set the knob and started preview and Flashback on it before its window failed to open.
+        Assert.Equal(PerfExperimentStatus.Failed, result.Status);
+        Assert.Contains(app.Calls, c => c.Command == "SetTuningKnob" && c.Payload["value"]?.GetValue<string>() == "1");
+        Assert.Null(app.Value(PipelineKnob));
+        Assert.Null(app.PipelineValueIn("preview"));
+        Assert.Null(app.PipelineValueIn("flashback"));
+        Assert.True(result.Restore.Verified);
+    }
+
     // ---- failure and cancellation always restore ---------------------------------------------------------------
 
     [Theory]
@@ -1067,6 +1194,37 @@ public sealed class PerfExperimentRunnerTests : IDisposable
         Assert.Equal(PerfExperimentStatus.Failed, result.Status);
         Assert.False(app.Recording);
         Assert.Equal(1, app.RecordingsStarted);
+        AssertKnobsAtBaseline(app);
+    }
+
+    // Failure mode 24: a recording someone started between two runs is not the runner's to measure or stop.
+    [Fact]
+    public async Task ARecordingSomeoneStartsBetweenRunsIsNeitherMeasuredNorStopped()
+    {
+        var app = new FakeApp();
+        var phase = 0;
+        app.BeforeHandle = (command, payload) =>
+        {
+            if (phase == 1)
+            {
+                // Started by hand just after the runner stopped its first recording.
+                app.Recording = true;
+                phase = 2;
+            }
+            else if (phase == 0 && command == "SetRecordingEnabled" && !payload["enabled"]!.GetValue<bool>())
+            {
+                phase = 1;
+            }
+        };
+
+        var result = await RunAsync(app, Spec(BaselineAndDepth2, extra: ",\"recording\":true"));
+
+        Assert.Equal(PerfExperimentStatus.Failed, result.Status);
+        Assert.Contains("did not start", result.Error, StringComparison.Ordinal);
+        Assert.True(app.Recording);
+        Assert.Equal(1, app.RecordingsStarted);
+        Assert.Single(app.Calls, c => c.Command == "SetRecordingEnabled" && !c.Payload["enabled"]!.GetValue<bool>());
+        Assert.Single(app.Calls, c => c.Command == "PerfWindow" && c.Payload["action"]!.GetValue<string>() == "begin");
         AssertKnobsAtBaseline(app);
     }
 
@@ -1247,6 +1405,44 @@ public sealed class PerfExperimentRunnerTests : IDisposable
         var deliver = Assert.Single(result.Metrics, m => m.Name == "capture.deliver");
         Assert.Equal("inconclusive", deliver.Variants[1].Verdict.Value);
         Assert.Contains("no samples", deliver.Variants[1].Verdict.Reason, StringComparison.OrdinalIgnoreCase);
+    }
+
+    // Failure mode 23: a counter the app left out of a report counted zero in that run.
+    [Fact]
+    public async Task ACounterLeftOutOfAReportCountedZeroInThatRun()
+    {
+        var app = new FakeApp();
+        var window = 0;
+        app.ReportFactory = _ =>
+        {
+            // A B B A A B: variant A counts 0, 10 and 10 drops and the app leaves the 0 out; variant B counts 5 in
+            // each run, but its last report has no counter list at all.
+            var index = window++;
+            var report = new JsonObject
+            {
+                ["Metrics"] = new JsonArray(FakeApp.MetricNode("preview.present_interval", 1000, 16.7, 16.7, 20.0, 22, 24)),
+                ["Process"] = new JsonObject { ["CpuPercentOfOneCore"] = 20.0 },
+            };
+            if (index != 5)
+            {
+                var count = index switch { 0 => 0, 3 or 4 => 10, _ => 5 };
+                report["Counters"] = count == 0
+                    ? new JsonArray()
+                    : new JsonArray(new JsonObject { ["Name"] = "preview.drop.stale-before-render", ["Delta"] = count, ["RatePerSec"] = count / 10.0 });
+            }
+
+            return report;
+        };
+
+        var result = await RunAsync(app, Spec(BaselineAndDepth2));
+
+        var drops = Assert.Single(result.Metrics, m => m.Name == "preview.drop.stale-before-render");
+        Assert.Equal(new[] { 0.0, 10.0, 10.0 }, drops.Variants[0].Stats["delta"].Values);
+        Assert.Equal(new[] { 0.0, 1.0, 1.0 }, drops.Variants[0].Stats["ratePerSec"].Values);
+        // 0 to 10 against 5: the ranges overlap, so no claim.
+        Assert.Equal("inconclusive", drops.Variants[1].Verdict.Value);
+        // The report without a counter list is a gap, not a third zero.
+        Assert.Equal(new[] { 5.0, 5.0 }, drops.Variants[1].Stats["delta"].Values);
     }
 
     [Fact]

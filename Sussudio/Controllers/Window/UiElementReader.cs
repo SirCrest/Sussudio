@@ -369,7 +369,7 @@ internal static class UiElementReader
 
         if (peer is null)
         {
-            return new UiElementFacts(patterns, false, null, null, null);
+            return new UiElementFacts(patterns, false, null, null, false, null);
         }
 
         foreach (var name in new[]
@@ -397,14 +397,16 @@ internal static class UiElementReader
 
         double? minimum = null;
         double? maximum = null;
+        var rangeReadOnly = false;
         if (TryGetPattern(peer, PatternInterface.RangeValue) is IRangeValueProvider rangeProvider)
         {
             minimum = Read(() => (double?)rangeProvider.Minimum);
             maximum = Read(() => (double?)rangeProvider.Maximum);
+            rangeReadOnly = Read(() => (bool?)rangeProvider.IsReadOnly) ?? false;
         }
 
         var expandState = Read(() => (TryGetPattern(peer, PatternInterface.ExpandCollapse) as IExpandCollapseProvider)?.ExpandCollapseState.ToString());
-        return new UiElementFacts(patterns, valueReadOnly, minimum, maximum, expandState);
+        return new UiElementFacts(patterns, valueReadOnly, minimum, maximum, rangeReadOnly, expandState);
     }
 
     private static IReadOnlyList<string> ListPatterns(AutomationPeer peer)
