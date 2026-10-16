@@ -2516,11 +2516,16 @@ Primary current owners:
   required/received state, missing-signal calculation and updates,
   playback-progress diagnostics, startup signal log strings, GPU position
   counter state, first-visual confirmation decisions, signal-list formatting,
-  timeout diagnostic payload formatting, playback-advance threshold checks, and
-  readiness result snapshots. `PreviewStartupSessionController` is the single
-  attempt owner; the readiness evaluator and signal formatter remain local
-  helpers without UI dependencies. The runtime sampler reads this owner's
-  signal snapshot and timeout directly.
+  timeout diagnostic payload formatting, and the required/received readiness
+  snapshot. `PreviewStartupSessionController` is the single attempt owner; the
+  readiness signal state and signal formatter remain local helpers without UI
+  dependencies. The runtime sampler reads this owner's signal snapshot and
+  timeout directly. Both renderer strategies require only `FirstVisual`, which
+  `ConfirmFirstVisual` records; the MediaPlayer-era dual GPU signal path
+  (MediaOpened/FirstCaptureFrame/PlaybackAdvancing readiness and its
+  `PreviewGpuSignal*` snapshot fields) left with the WinRT preview. The
+  `PreviewStartupSignalFlags` members stay because the automation snapshot
+  projects required/received signals as flag values.
   `Sussudio/MainWindow.xaml.cs` supplies external UI/runtime callbacks to the
   session owner and keeps renderer-attached, first-visual, reset, signal-configuration,
   and watchdog adapters for its lifecycle and renderer collaborators. Construction

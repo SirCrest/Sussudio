@@ -59,9 +59,6 @@ internal sealed class PreviewRuntimeSnapshotSamplingController
             StartupAttemptId = signature.StartupAttemptId,
             StartupRequestedUtc = signature.StartupRequestedUtc,
             StartupTimeoutMs = signature.StartupTimeoutMs,
-            StartupGpuSignalMediaOpened = signature.StartupGpuSignalMediaOpened,
-            StartupGpuSignalFirstFrame = signature.StartupGpuSignalFirstFrame,
-            StartupGpuSignalPlaybackAdvancing = signature.StartupGpuSignalPlaybackAdvancing,
             StartupRequiredSignals = signature.StartupRequiredSignals,
             StartupReceivedSignals = signature.StartupReceivedSignals,
             StartupStrategy = signature.StartupStrategy,
@@ -101,9 +98,6 @@ internal sealed class PreviewRuntimeSnapshotSamplingController
             startupSession.AttemptId,
             startupSession.RequestedUtc,
             startupSession.VisualTimeoutMs,
-            startupSignalSnapshot.GpuSignalMediaOpened,
-            startupSignalSnapshot.GpuSignalFirstFrame,
-            startupSignalSnapshot.GpuSignalPlaybackAdvancing,
             startupSignalSnapshot.RequiredSignals,
             startupSignalSnapshot.ReceivedSignals,
             startupSignalSnapshot.Strategy,
@@ -145,9 +139,6 @@ internal readonly record struct PreviewRuntimeSnapshotSignature(
     string? StartupAttemptId,
     DateTimeOffset? StartupRequestedUtc,
     int StartupTimeoutMs,
-    bool StartupGpuSignalMediaOpened,
-    bool StartupGpuSignalFirstFrame,
-    bool StartupGpuSignalPlaybackAdvancing,
     PreviewStartupSignalFlags StartupRequiredSignals,
     PreviewStartupSignalFlags StartupReceivedSignals,
     PreviewStartupStrategy StartupStrategy,
@@ -176,9 +167,6 @@ internal sealed class PreviewRuntimeSnapshotInput
     public string? StartupAttemptId { get; init; }
     public DateTimeOffset? StartupRequestedUtc { get; init; }
     public int StartupTimeoutMs { get; init; }
-    public bool StartupGpuSignalMediaOpened { get; init; }
-    public bool StartupGpuSignalFirstFrame { get; init; }
-    public bool StartupGpuSignalPlaybackAdvancing { get; init; }
     public PreviewStartupSignalFlags StartupRequiredSignals { get; init; }
     public PreviewStartupSignalFlags StartupReceivedSignals { get; init; }
     public PreviewStartupStrategy StartupStrategy { get; init; }
@@ -227,9 +215,6 @@ internal static class PreviewRuntimeSnapshotMapper
             StartupAttemptId = input.StartupAttemptId,
             StartupElapsedMs = health.StartupElapsedMs,
             StartupTimeoutMs = input.StartupTimeoutMs,
-            StartupGpuSignalMediaOpened = input.StartupGpuSignalMediaOpened,
-            StartupGpuSignalFirstFrame = input.StartupGpuSignalFirstFrame,
-            StartupGpuSignalPlaybackAdvancing = input.StartupGpuSignalPlaybackAdvancing,
             StartupRequiredSignals = input.StartupRequiredSignals,
             StartupReceivedSignals = input.StartupReceivedSignals,
             StartupStrategy = input.StartupStrategy,

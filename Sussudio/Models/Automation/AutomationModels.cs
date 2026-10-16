@@ -822,9 +822,6 @@ public sealed class PreviewRuntimeSnapshot
     public string? StartupAttemptId { get; init; }
     public double? StartupElapsedMs { get; init; }
     public int StartupTimeoutMs { get; init; }
-    public bool StartupGpuSignalMediaOpened { get; init; }
-    public bool StartupGpuSignalFirstFrame { get; init; }
-    public bool StartupGpuSignalPlaybackAdvancing { get; init; }
     public PreviewStartupSignalFlags StartupRequiredSignals { get; init; }
     public PreviewStartupSignalFlags StartupReceivedSignals { get; init; }
     public PreviewStartupStrategy StartupStrategy { get; init; }

@@ -56,7 +56,6 @@ internal sealed class PreviewStartupSessionController
     private int _failureStopScheduled;
 
     private readonly PreviewStartupReadinessSignalController _readinessSignals = new();
-    private bool _expectGpuDualSignals;
     private long _positionEventCount;
     private readonly PreviewStartupSessionControllerContext _context;
 
@@ -428,19 +427,16 @@ internal sealed class PreviewStartupSessionController
 
     public void ResetSignalState()
     {
-        _expectGpuDualSignals = false;
         Interlocked.Exchange(ref _positionEventCount, 0);
         _readinessSignals.Reset();
     }
 
     public void ConfigureSignals(PreviewStartupStrategy strategy, PreviewStartupSignalFlags requiredSignals)
     {
-        _expectGpuDualSignals = false;
         Interlocked.Exchange(ref _positionEventCount, 0);
         var missingSignals = _readinessSignals.Configure(
             strategy,
             requiredSignals,
-            _expectGpuDualSignals,
             FirstVisualConfirmed);
         MissingSignals = missingSignals;
 
@@ -452,53 +448,6 @@ internal sealed class PreviewStartupSessionController
 
     public string BuildMissingSignals()
         => _readinessSignals.BuildMissingSignals(FirstVisualConfirmed);
-
-    public void MarkGpuStartupSignal(PreviewStartupSignalFlags signal, string signalName)
-    {
-        var result = _readinessSignals.MarkSignal(
-            signal,
-            IsSignalWindowActive(_context.IsPreviewing()),
-            FirstVisualConfirmed);
-        if (result.Status is PreviewStartupReadinessSignalStatus.IgnoredInactiveOrNotGpu or PreviewStartupReadinessSignalStatus.Duplicate)
-        {
-            return;
-        }
-
-        MissingSignals = result.MissingSignals;
-        _context.Log($"PREVIEW_START_SIGNAL signal={signalName} attempt={AttemptLabel}");
-        LogPlaybackSnapshot($"signal:{signalName}");
-        TryConfirmFirstVisualFromGpuSignals(result);
-    }
-
-    public void MarkGpuStartupSignalPlaybackAdvancing(TimeSpan position)
-    {
-        var result = _readinessSignals.TrackPlaybackPosition(
-            position,
-            IsSignalWindowActive(_context.IsPreviewing()),
-            FirstVisualConfirmed);
-        if (result.Status == PreviewStartupPlaybackPositionStatus.IgnoredInactiveOrNotGpu)
-        {
-            _context.Log(
-                $"PREVIEW_START_POSITION_IGNORED attempt={AttemptLabel} " +
-                $"reason=inactive-or-not-gpu positionMs={position.TotalMilliseconds:0.###}");
-            return;
-        }
-
-        if (result.Status == PreviewStartupPlaybackPositionStatus.BaselineCaptured)
-        {
-            _context.Log(
-                $"PREVIEW_START_POSITION_BASELINE attempt={AttemptLabel} " +
-                $"positionMs={result.Position.TotalMilliseconds:0.###} thresholdMs={result.Threshold.TotalMilliseconds:0.###}");
-            HandleGpuStartupSignalResult(result.SignalResult, "PlaybackAdvancing");
-            return;
-        }
-
-        _context.Log(
-            $"PREVIEW_START_POSITION_CHECK attempt={AttemptLabel} " +
-            $"positionMs={result.Position.TotalMilliseconds:0.###} deltaMs={result.Delta.TotalMilliseconds:0.###} " +
-            $"thresholdMs={result.Threshold.TotalMilliseconds:0.###}");
-        HandleGpuStartupSignalResult(result.SignalResult, "PlaybackAdvancing");
-    }
 
     public void LogPlaybackSnapshot(string reason)
     {
@@ -520,40 +469,6 @@ internal sealed class PreviewStartupSessionController
             $"received={PreviewStartupSignalFormatter.FormatSignalList(SignalSnapshot.ReceivedSignals)} " +
             $"missing={BuildMissingSignals()}");
     }
-
-    private void HandleGpuStartupSignalResult(PreviewStartupReadinessSignalResult? result, string signalName)
-    {
-        if (result == null || result.Status != PreviewStartupReadinessSignalStatus.Accepted)
-        {
-            return;
-        }
-
-        MissingSignals = result.MissingSignals;
-        _context.Log($"PREVIEW_START_SIGNAL signal={signalName} attempt={AttemptLabel}");
-        LogPlaybackSnapshot($"signal:{signalName}");
-        TryConfirmFirstVisualFromGpuSignals(result);
-    }
-
-    private void TryConfirmFirstVisualFromGpuSignals(PreviewStartupReadinessSignalResult result)
-    {
-        if (!_expectGpuDualSignals)
-        {
-            return;
-        }
-
-        if (!result.AllRequiredSignalsReceived)
-        {
-            var missing = result.Snapshot.RequiredSignals & ~result.Snapshot.ReceivedSignals;
-            _context.Log(
-                $"PREVIEW_START_WAITING attempt={AttemptLabel} " +
-                $"required={PreviewStartupSignalFormatter.FormatSignalList(result.Snapshot.RequiredSignals)} " +
-                $"received={PreviewStartupSignalFormatter.FormatSignalList(result.Snapshot.ReceivedSignals)} " +
-                $"missing={PreviewStartupSignalFormatter.FormatSignalList(missing)}");
-            return;
-        }
-
-        ConfirmFirstVisual($"GpuStartupSignals({PreviewStartupSignalFormatter.FormatSignalList(result.Snapshot.RequiredSignals)})");
-    }
 }
 
 internal sealed record PreviewStartupPlaybackSnapshotState(
@@ -563,23 +478,11 @@ internal sealed record PreviewStartupPlaybackSnapshotState(
 
 internal sealed class PreviewStartupReadinessSignalController
 {
-    public static readonly TimeSpan PlaybackAdvanceThreshold = TimeSpan.FromMilliseconds(33);
-
-    private bool _expectGpuDualSignals;
-    private bool _gpuSignalMediaOpened;
-    private bool _gpuSignalFirstFrame;
-    private bool _gpuSignalPlaybackAdvancing;
     private PreviewStartupSignalFlags _requiredSignals = PreviewStartupSignalFlags.None;
     private PreviewStartupSignalFlags _receivedSignals = PreviewStartupSignalFlags.None;
     private PreviewStartupStrategy _strategy = PreviewStartupStrategy.None;
-    private TimeSpan _lastPlaybackPosition = TimeSpan.Zero;
-    private bool _playbackPositionInitialized;
 
     public PreviewStartupReadinessSignalSnapshot Snapshot => new(
-        _expectGpuDualSignals,
-        _gpuSignalMediaOpened,
-        _gpuSignalFirstFrame,
-        _gpuSignalPlaybackAdvancing,
         _requiredSignals,
         _receivedSignals,
         _strategy);
@@ -587,11 +490,9 @@ internal sealed class PreviewStartupReadinessSignalController
     public string Configure(
         PreviewStartupStrategy strategy,
         PreviewStartupSignalFlags requiredSignals,
-        bool expectGpuDualSignals,
         bool firstVisualConfirmed)
     {
         Reset();
-        _expectGpuDualSignals = expectGpuDualSignals;
         _strategy = strategy;
         _requiredSignals = requiredSignals;
 
@@ -600,15 +501,9 @@ internal sealed class PreviewStartupReadinessSignalController
 
     public void Reset()
     {
-        _expectGpuDualSignals = false;
-        _gpuSignalMediaOpened = false;
-        _gpuSignalFirstFrame = false;
-        _gpuSignalPlaybackAdvancing = false;
         _requiredSignals = PreviewStartupSignalFlags.None;
         _receivedSignals = PreviewStartupSignalFlags.None;
         _strategy = PreviewStartupStrategy.None;
-        _lastPlaybackPosition = TimeSpan.Zero;
-        _playbackPositionInitialized = false;
     }
 
     public void MarkFirstVisualConfirmed()
@@ -621,108 +516,9 @@ internal sealed class PreviewStartupReadinessSignalController
             _requiredSignals,
             _receivedSignals,
             firstVisualConfirmed);
-
-    public PreviewStartupReadinessSignalResult MarkSignal(
-        PreviewStartupSignalFlags signal,
-        bool signalWindowActive,
-        bool firstVisualConfirmed)
-    {
-        if (!signalWindowActive || !_expectGpuDualSignals)
-        {
-            return CreateSignalResult(PreviewStartupReadinessSignalStatus.IgnoredInactiveOrNotGpu, firstVisualConfirmed);
-        }
-
-        if ((_receivedSignals & signal) != 0)
-        {
-            return CreateSignalResult(PreviewStartupReadinessSignalStatus.Duplicate, firstVisualConfirmed);
-        }
-
-        _receivedSignals |= signal;
-        if (signal == PreviewStartupSignalFlags.MediaOpened)
-        {
-            _gpuSignalMediaOpened = true;
-        }
-        else if (signal == PreviewStartupSignalFlags.FirstCaptureFrame)
-        {
-            _gpuSignalFirstFrame = true;
-        }
-        else if (signal == PreviewStartupSignalFlags.PlaybackAdvancing)
-        {
-            _gpuSignalPlaybackAdvancing = true;
-        }
-
-        return CreateSignalResult(PreviewStartupReadinessSignalStatus.Accepted, firstVisualConfirmed);
-    }
-
-    public PreviewStartupPlaybackPositionResult TrackPlaybackPosition(
-        TimeSpan position,
-        bool signalWindowActive,
-        bool firstVisualConfirmed)
-    {
-        if (!signalWindowActive || !_expectGpuDualSignals)
-        {
-            return new PreviewStartupPlaybackPositionResult(
-                PreviewStartupPlaybackPositionStatus.IgnoredInactiveOrNotGpu,
-                position,
-                TimeSpan.Zero,
-                PlaybackAdvanceThreshold,
-                null);
-        }
-
-        if (!_playbackPositionInitialized)
-        {
-            _playbackPositionInitialized = true;
-            _lastPlaybackPosition = position;
-            var acceptedSignal = position >= PlaybackAdvanceThreshold
-                ? MarkSignal(PreviewStartupSignalFlags.PlaybackAdvancing, signalWindowActive, firstVisualConfirmed)
-                : null;
-
-            return new PreviewStartupPlaybackPositionResult(
-                PreviewStartupPlaybackPositionStatus.BaselineCaptured,
-                position,
-                TimeSpan.Zero,
-                PlaybackAdvanceThreshold,
-                acceptedSignal);
-        }
-
-        var delta = position - _lastPlaybackPosition;
-        if (position > _lastPlaybackPosition)
-        {
-            _lastPlaybackPosition = position;
-        }
-
-        var signalResult = position >= PlaybackAdvanceThreshold || delta >= PlaybackAdvanceThreshold
-            ? MarkSignal(PreviewStartupSignalFlags.PlaybackAdvancing, signalWindowActive, firstVisualConfirmed)
-            : null;
-
-        return new PreviewStartupPlaybackPositionResult(
-            PreviewStartupPlaybackPositionStatus.Checked,
-            position,
-            delta,
-            PlaybackAdvanceThreshold,
-            signalResult);
-    }
-
-    private PreviewStartupReadinessSignalResult CreateSignalResult(
-        PreviewStartupReadinessSignalStatus status,
-        bool firstVisualConfirmed)
-    {
-        var snapshot = Snapshot;
-        var missingSignals = BuildMissingSignals(firstVisualConfirmed);
-        var requiredMissing = snapshot.RequiredSignals & ~snapshot.ReceivedSignals;
-        return new PreviewStartupReadinessSignalResult(
-            status,
-            snapshot,
-            missingSignals,
-            requiredMissing == PreviewStartupSignalFlags.None);
-    }
 }
 
 internal sealed record PreviewStartupReadinessSignalSnapshot(
-    bool ExpectGpuDualSignals,
-    bool GpuSignalMediaOpened,
-    bool GpuSignalFirstFrame,
-    bool GpuSignalPlaybackAdvancing,
     PreviewStartupSignalFlags RequiredSignals,
     PreviewStartupSignalFlags ReceivedSignals,
     PreviewStartupStrategy Strategy);
@@ -791,31 +587,4 @@ internal static class PreviewStartupSignalFormatter
 
         return labels.Count == 0 ? "None" : string.Join("+", labels);
     }
-}
-
-internal sealed record PreviewStartupReadinessSignalResult(
-    PreviewStartupReadinessSignalStatus Status,
-    PreviewStartupReadinessSignalSnapshot Snapshot,
-    string MissingSignals,
-    bool AllRequiredSignalsReceived);
-
-internal enum PreviewStartupReadinessSignalStatus
-{
-    IgnoredInactiveOrNotGpu,
-    Duplicate,
-    Accepted
-}
-
-internal sealed record PreviewStartupPlaybackPositionResult(
-    PreviewStartupPlaybackPositionStatus Status,
-    TimeSpan Position,
-    TimeSpan Delta,
-    TimeSpan Threshold,
-    PreviewStartupReadinessSignalResult? SignalResult);
-
-internal enum PreviewStartupPlaybackPositionStatus
-{
-    IgnoredInactiveOrNotGpu,
-    BaselineCaptured,
-    Checked
 }

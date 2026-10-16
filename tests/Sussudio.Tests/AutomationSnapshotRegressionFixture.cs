@@ -21,6 +21,10 @@ internal static class AutomationSnapshotRegressionFixture
             "RecordingCudaFramesDropped", "RecordingCudaFramesEnqueued", "RecordingCudaQueueCapacity",
             "RecordingCudaQueueDepth", "RecordingCudaQueueMaxDepth"
         },
+        ["Sussudio.Models.PreviewRuntimeSnapshot"] = new[]
+        {
+            "StartupGpuSignalFirstFrame", "StartupGpuSignalMediaOpened", "StartupGpuSignalPlaybackAdvancing"
+        },
     };
 
     internal static JsonElement BuildResult(Assembly assembly, bool populated, object? healthOverride = null)

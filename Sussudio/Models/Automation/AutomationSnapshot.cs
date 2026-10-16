@@ -464,9 +464,6 @@ public sealed class AutomationSnapshot
     public string? PreviewAttemptId { get; init; }
     public double? PreviewStartupElapsedMs { get; init; }
     public int PreviewStartupTimeoutMs { get; init; }
-    public bool PreviewGpuSignalMediaOpened { get; init; }
-    public bool PreviewGpuSignalFirstFrame { get; init; }
-    public bool PreviewGpuSignalPlaybackAdvancing { get; init; }
     public PreviewStartupSignalFlags PreviewStartupRequiredSignals { get; init; }
     public PreviewStartupSignalFlags PreviewStartupReceivedSignals { get; init; }
     public string PreviewStartupStrategy { get; init; } = "None";
