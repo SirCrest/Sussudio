@@ -86,6 +86,9 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private int _isDisposed;
     private int _disposeRequested;
     private int _cleanupRequired;
+    // What the pending cleanup must release; meaningful only while _cleanupRequired is set.
+    // Writes are serialized by _sessionTransitionLock.
+    private CaptureCleanupScope _retainedCleanupScope;
     // Fault injection for the late-cleanup live check: the first N pre-cleanup renderer handoffs fail before any
     // handler runs, as a renderer stop timeout does, and leave capture cleanup half done. 0 (default) is off.
     private readonly int _preCleanupFaultFailures = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_CAPTURE_FAULT_PRE_CLEANUP_FAILURES", 0, 0, 100);
@@ -272,11 +275,39 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             _flashbackExport.OutputPath);
     }
 
+    // A cleanup that failed part way (the renderer handoff timed out) keeps its owners and leaves
+    // _cleanupRequired set. Finishing it re-runs the same scope, so a failed preview teardown is
+    // finished as a teardown, never escalated into a full cleanup.
+    private enum CaptureCleanupScope
+    {
+        // DisposePreviewPipelineAsync: capture stays initialized and Flashback segments are retired.
+        PreviewPipeline,
+        // CleanupCoreAsync: capture is uninitialized and Flashback segments are purged.
+        FullCapture,
+    }
+
+    private void MarkCleanupRequired(CaptureCleanupScope scope)
+    {
+        // A full cleanup supersedes a pending pipeline teardown; a renderer handoff that fails
+        // inside a full cleanup must not narrow it back to a teardown.
+        if (Interlocked.Exchange(ref _cleanupRequired, 1) == 0 || scope == CaptureCleanupScope.FullCapture)
+        {
+            _retainedCleanupScope = scope;
+        }
+    }
+
+    private Task FinishRetainedCleanupAsync(CancellationToken cancellationToken)
+        => _retainedCleanupScope == CaptureCleanupScope.FullCapture
+            ? CleanupCoreAsync(cancellationToken)
+            : DisposePreviewPipelineAsync(cancellationToken, purgeFlashbackSegments: false);
+
+    // finishesRetainedCleanup is the widest pending cleanup this transition may finish before it
+    // runs. Null refuses any pending cleanup, so no transition runs over retained resources.
     private async Task RunTransitionAsync(
         CaptureSessionState transitionState,
         Func<CancellationToken, Task> action,
         CancellationToken cancellationToken = default,
-        bool cleanupRetainedResources = false)
+        CaptureCleanupScope? finishesRetainedCleanup = null)
     {
         ThrowIfDisposed();
         await _sessionTransitionLock.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -286,19 +317,19 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             cancellationToken.ThrowIfCancellationRequested();
             if (Volatile.Read(ref _cleanupRequired) != 0 && transitionState != CaptureSessionState.CleaningUp)
             {
-                if (!cleanupRetainedResources)
+                var scope = _retainedCleanupScope;
+                if (finishesRetainedCleanup is not { } widestScope || scope > widestScope)
                 {
                     throw new InvalidOperationException("Capture cleanup must complete before starting another session transition.");
                 }
 
-                // Finishing the half-done teardown is a full cleanup: it uninitializes capture
-                // instead of running the requested transition.
-                Logger.Log($"CAPTURE_RETAINED_CLEANUP_BEGIN requested={transitionState}");
+                // Finish the half-done cleanup as its owner would have, then run the requested
+                // transition under the same lock hold. If the finish fails, the transition never runs.
+                Logger.Log($"CAPTURE_RETAINED_CLEANUP_BEGIN requested={transitionState} scope={scope}");
                 EnterCleanupState();
-                await CleanupCoreAsync(cancellationToken).ConfigureAwait(false);
+                await FinishRetainedCleanupAsync(cancellationToken).ConfigureAwait(false);
                 ResolveSessionSteadyState();
-                Logger.Log($"CAPTURE_RETAINED_CLEANUP_COMPLETED requested={transitionState} initialized={_isInitialized}");
-                return;
+                Logger.Log($"CAPTURE_RETAINED_CLEANUP_COMPLETED requested={transitionState} scope={scope} initialized={_isInitialized}");
             }
 
             EnterTransitionState(transitionState);
@@ -389,7 +420,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             TryCorrectFrameRateFromTelemetry();
             _isInitialized = true;
             StatusChanged?.Invoke(this, StatusMessages.DeviceReady);
-        }, cancellationToken);
+        }, cancellationToken, finishesRetainedCleanup: CaptureCleanupScope.FullCapture);
 
     public CaptureService() : this(new ProcessSupervisor(), null)
     {
@@ -476,7 +507,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
 
     private async Task CleanupCoreAsync(CancellationToken transitionToken)
     {
-        Volatile.Write(ref _cleanupRequired, 1);
+        MarkCleanupRequired(CaptureCleanupScope.FullCapture);
         // Recording finalization can release capture too, so the renderer must
         // acknowledge its stop before any cleanup helper receives ownership.
         await StopPreviewRendererBeforeCaptureCleanupAsync(transitionToken).ConfigureAwait(false);
@@ -646,7 +677,9 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         }
         catch
         {
-            Volatile.Write(ref _cleanupRequired, 1);
+            // Outside a named cleanup (start rollback, idle release after recording) the
+            // handoff guards a preview pipeline release.
+            MarkCleanupRequired(CaptureCleanupScope.PreviewPipeline);
             throw;
         }
     }

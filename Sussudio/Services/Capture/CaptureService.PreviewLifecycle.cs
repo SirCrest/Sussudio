@@ -66,7 +66,7 @@ public partial class CaptureService
             _isVideoPreviewActive = true;
             StartTelemetryPoll();
             StatusChanged?.Invoke(this, StatusMessages.PreviewStarted);
-        }, cancellationToken);
+        }, cancellationToken, finishesRetainedCleanup: CaptureCleanupScope.PreviewPipeline);
 
     public Task StopVideoPreviewAsync(CancellationToken cancellationToken = default)
         => StopVideoPreviewCoreAsync(teardownPipeline: false, cancellationToken);
@@ -117,8 +117,12 @@ public partial class CaptureService
             }
             catch (Exception ex)
             {
+                // Preview is stopped even when the teardown fails part way: the renderer is
+                // detached, the view model commits stopped, and _cleanupRequired keeps the retained
+                // pipeline for the next transition to finish. Leaving preview active would let the
+                // published error mirror preview back on and attach a renderer cleanup refuses.
                 stopFailure = ex;
-                commitStoppedState = Volatile.Read(ref _cleanupRequired) == 0;
+                commitStoppedState = true;
                 throw;
             }
             finally
@@ -141,7 +145,7 @@ public partial class CaptureService
             }
 
             StatusChanged?.Invoke(this, StatusMessages.PreviewStopped);
-        }, cancellationToken, cleanupRetainedResources: true);
+        }, cancellationToken, finishesRetainedCleanup: CaptureCleanupScope.FullCapture);
 
     private async Task RecyclePreviewPipelineForStartAsync(
         CaptureSettings settings,
@@ -329,7 +333,7 @@ public partial class CaptureService
         CancellationToken transitionToken,
         bool purgeFlashbackSegments)
     {
-        Volatile.Write(ref _cleanupRequired, 1);
+        MarkCleanupRequired(CaptureCleanupScope.PreviewPipeline);
         await StopPreviewRendererBeforeCaptureCleanupAsync(transitionToken).ConfigureAwait(false);
         _recordingBackend.ClearPendingLibAvDrainIfCompletedSuccessfully();
 

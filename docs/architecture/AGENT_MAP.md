@@ -820,9 +820,16 @@ Important entry points:
   Cleanup awaits the renderer handoff before capture ownership is transferred or
   released. UI cancellation limits admission; admitted stop work remains awaited.
   Failed cleanup retains capture, renderer registrations, and coordination locks,
-  blocks new session/sink admission, and can be retried. Apart from explicit cleanup,
-  only a video-preview stop retries it, and that retry is the full cleanup, which
-  leaves capture uninitialized (`CAPTURE_RETAINED_CLEANUP_*`).
+  blocks new session/sink admission, and can be retried. It also records its scope:
+  a preview pipeline teardown or a full capture cleanup. A retry re-runs that scope,
+  so a finished teardown keeps capture initialized and retires Flashback segments
+  (kept on disk for bounded startup cleanup) exactly as a teardown stop does; only
+  a finished full cleanup uninitializes capture and purges them. Apart from explicit
+  cleanup, a video-preview stop or an initialize finishes either scope and a
+  video-preview start finishes a teardown, each then running its own transition
+  under the same lock hold; every other transition refuses (`CAPTURE_RETAINED_CLEANUP_*`).
+  A teardown stop that fails still commits preview stopped, so a published capture
+  error never mirrors preview back on over retained resources.
   `SUSSUDIO_CAPTURE_FAULT_PRE_CLEANUP_FAILURES` fails the first N renderer handoffs
   for the live check `scripts/performance/Test-CaptureLateCleanupRecovery.ps1`.
   Disposal callers share one owned task; a caller timeout does not retire its
@@ -2806,7 +2813,7 @@ Primary current owners:
   selected-device apply, and the reinitialize facade. Failed initialization repairs
   visible state and faults the caller so automation publishes command failure.
   A preview stop clears the initialized flag when capture is no longer initialized
-  afterwards (a stop that finished a half-done teardown ran the full capture cleanup);
+  afterwards (a stop that finished a half-done full capture cleanup);
   it never sets the flag from capture state.
   It also owns the preview lifecycle graph-port contract for preview
   state/events, capture/session operations, source telemetry refresh, UI

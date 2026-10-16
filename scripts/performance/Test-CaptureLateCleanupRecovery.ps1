@@ -1,32 +1,51 @@
 <#
 .SYNOPSIS
-Live check that preview start initializes capture after a half-done teardown is finished late.
+Live check that a start after a failed capture teardown finishes that teardown and starts preview.
 .DESCRIPTION
 Launches the built app on a private automation pipe with
-SUSSUDIO_CAPTURE_FAULT_PRE_CLEANUP_FAILURES=1, so the first capture teardown that
-reaches the renderer handoff fails, as a renderer stop timeout does. Capture keeps
-the half-done cleanup. Only a later preview stop finishes it, and that is the full
-capture cleanup, which uninitializes capture. The view model must then say
-initialized=False so the next start initializes instead of failing with
-"Capture not initialized".
+SUSSUDIO_CAPTURE_FAULT_PRE_CLEANUP_FAILURES=2, so the first two capture renderer handoffs
+fail, as a renderer stop timeout does. The first fails a teardown, which leaves the
+preview pipeline retained (capture keeps _cleanupRequired set). The second fails the
+first attempt to finish it. The third handoff passes.
 
-Steps, each judged from app log markers and `ssctl --json state`:
-  faulted-stop        `flashback off` (so a preview stop tears the pipeline down), then
-                      `preview stop`: the injected fault fails the stop, preview reports
-                      stopped, and capture stays initialized.
-  late-cleanup        `preview start` is refused ("Capture cleanup must complete"). The
-                      renderer attach that follows fails too, and its startup-failure stop
-                      finishes the cleanup (CAPTURE_RETAINED_CLEANUP_COMPLETED). Afterwards
-                      capture is Uninitialized and the view model must agree.
-  recovery-start      `preview start` initializes capture and reaches Rendering.
-  plain-cycle-flashback-off / plain-cycle-flashback-on
-                      ordinary stop + start cycles, before and after `flashback on`, that
-                      must render without clearing the flag or re-initializing.
-  close               window close exits the process.
+A retained teardown must be finished as a teardown: capture stays initialized and the
+Flashback session is retired (segments kept on disk with the retired-session marker,
+reclaimed later by bounded startup cleanup), never escalated into a full cleanup that
+uninitializes capture and purges the segments. A start or an initialize may finish it and
+then run in the same transition. Nothing may attach a renderer while it is retained.
 
--PreCleanupFailures 0 skips the fault and runs only the plain cycles (a control).
-Writes result.json and the app log under artifacts/capture-late-cleanup/. Refuses to
-start while any Sussudio instance runs: the app is single instance.
+Scenarios, each its own app launch, judged from app log markers, `ssctl --json state` and
+the Flashback session directory on disk:
+
+  StopThenStart (Flashback off, so a preview stop tears the pipeline down)
+    faulted-stop            `preview stop` fails on fault 1. Preview reports stopped, the
+                            view model stays initialized, capture is Faulted, and no
+                            preview session starts (the old spurious attach).
+    failed-recovery-start   `preview start` finishes the retained teardown first and hits
+                            fault 2. The start fails with that error, not "Capture cleanup
+                            must complete". No new capture is created or initialized, no
+                            preview session starts, no renderer attach fails, and no
+                            startup-failure stop runs.
+    recovery-start          `preview start` finishes the teardown (scope=PreviewPipeline,
+                            capture still initialized), starts a fresh pipeline without
+                            re-initializing capture, and renders.
+    plain-cycle-flashback-off / plain-cycle-flashback-on
+                            ordinary stop + start cycles, before and after `flashback on`.
+
+  ReinitThenStart (Flashback on, so DVR segments are live at the failure)
+    failed-reinit           `set fps <another rate>` reinitializes. Its teardown hits fault 1
+                            and its failure-cleanup stop hits fault 2 while finishing it.
+                            Preview stops, the view model is uninitialized, and the Flashback
+                            session directory still holds its segments with no retired marker.
+    recovery-start          `preview start` initializes; that transition finishes the
+                            teardown first. The Flashback session is retired (purge=False),
+                            its segment files are still on disk, and preview renders.
+
+  Control (no fault): the two plain cycles only.
+
+-Scenario All runs StopThenStart and ReinitThenStart. Writes result.json and one app log
+per launch under artifacts/capture-late-cleanup/. Refuses to start while any Sussudio
+instance runs: the app is single instance and owns the capture device.
 .EXAMPLE
 ./scripts/performance/Test-CaptureLateCleanupRecovery.ps1 -Label fix
 #>
@@ -35,8 +54,8 @@ param(
     [ValidatePattern('^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$')]
     [string] $Label = 'late-cleanup',
 
-    [ValidateSet(0, 1)]
-    [int] $PreCleanupFailures = 1,
+    [ValidateSet('All', 'StopThenStart', 'ReinitThenStart', 'Control')]
+    [string] $Scenario = 'All',
 
     [ValidateRange(5, 120)]
     [int] $StepTimeoutSeconds = 30,
@@ -74,10 +93,17 @@ if ($running.Count -gt 0) {
     throw "Sussudio is already running (PID $($running.Id -join ', ')); it owns the capture device. Close it first."
 }
 
+$scenarioNames = $(if ($Scenario -eq 'All') { @('StopThenStart', 'ReinitThenStart') } else { @($Scenario) })
 $pipeName = "SussudioAutomation.late-cleanup-$PID"
+# The app rotates its prior log at startup, so each launch starts a fresh file.
 $logPath = Join-Path $repoRoot 'temp/logs/Sussudio_Debug.log'
 $faultVariable = 'SUSSUDIO_CAPTURE_FAULT_PRE_CLEANUP_FAILURES'
-$markerPattern = 'CAPTURE_FAULT_PRE_CLEANUP_FAILED|CAPTURE_RETAINED_CLEANUP_|PREVIEW_STOP_CAPTURE_UNINITIALIZED|CAPTURE_INIT|PREVIEW_START requested|PREVIEW_START_FAILURE_STOP|PREVIEW_RENDERER_ATTACH_FAILED|PREVIEW_D3D11_FIRST_FRAME|PREVIEW_START_TIMEOUT|CAP-COORD|Capture not initialized|Capture cleanup must complete'
+# Fault 1 fails the teardown, fault 2 fails the first finish of it, the third handoff passes.
+$faultFailures = 2
+$retiredMarkerName = '.flashback-retired-session'
+$markerPattern = 'CAPTURE_FAULT_PRE_CLEANUP_FAILED|CAPTURE_RETAINED_CLEANUP_|PREVIEW_STOP_CAPTURE_UNINITIALIZED|CAPTURE_INIT|PREVIEW_START requested|PREVIEW_START phase=create_uvc|PREVIEW_SESSION_STARTED|PREVIEW_START_FAILURE_STOP|PREVIEW_RENDERER_ATTACH_FAILED|PREVIEW_D3D11_FIRST_FRAME|PREVIEW_START_TIMEOUT|REINIT_FAILED_CLEANUP|FLASHBACK_BUFFER_INIT|FLASHBACK_BUFFER_CLEANUP_RETIRE|FLASHBACK_BUFFER_DISPOSE|FLASHBACK_PREVIEW_DISPOSE_OK|FLASHBACK_CACHE_BUDGET_CLEANUP|FLASHBACK_STALE_SESSION_CLEANUP|CAP-COORD|Capture not initialized|Capture cleanup must complete'
+# A preview session that starts or a renderer that attaches while cleanup is retained.
+$spuriousAttachPattern = 'PREVIEW_SESSION_STARTED|PREVIEW_RENDERER_ATTACH_FAILED|PREVIEW_START_FAILURE_STOP'
 
 function Invoke-Ssctl {
     param([string[]] $Arguments, [int] $TimeoutMs = 10000)
@@ -117,6 +143,11 @@ function Test-LogMarker {
     return @($Window | Where-Object { $_ -match $Pattern }).Count -gt 0
 }
 
+function Select-Markers {
+    param([string[]] $Window)
+    return @($Window | Where-Object { $_ -match $markerPattern })
+}
+
 # Polls the log after $StartLine until $Pattern appears or the step deadline passes.
 function Wait-LogMarker {
     param([int] $StartLine, [string] $Pattern, [int] $TimeoutSeconds = $StepTimeoutSeconds)
@@ -149,6 +180,12 @@ function Wait-StartupOutcome {
     return $snapshot
 }
 
+# A failed step leaves no state to poll for; give queued capture errors time to land on the UI.
+function Get-SettledSnapshot {
+    Start-Sleep -Milliseconds 1500
+    return Get-Snapshot
+}
+
 # The view model's initialized flag next to capture's own session state.
 function Get-InitState {
     param($Snapshot)
@@ -158,7 +195,65 @@ function Get-InitState {
         captureSessionState = [string]$Snapshot.SessionState
         isPreviewing = [bool]$Snapshot.IsPreviewing
         previewStartupState = $Snapshot.PreviewStartupState
+        selectedFrameRate = $Snapshot.SelectedFrameRate
     }
+}
+
+# The session directory of the newest Flashback buffer the log has initialized.
+function Get-FlashbackSessionDirectory {
+    $match = @(Read-LogLines | Where-Object { $_ -match "FLASHBACK_BUFFER_INIT .*session_dir='([^']+)'" } | Select-Object -Last 1)
+    if ($match.Count -eq 0) { return $null }
+    if ($match[0] -match "session_dir='([^']+)'") { return $Matches[1] }
+    return $null
+}
+
+# What is on disk for one Flashback session: segment files and the lifetime markers.
+function Get-SegmentEvidence {
+    param([string] $SessionDirectory)
+    $exists = ![string]::IsNullOrWhiteSpace($SessionDirectory) -and (Test-Path -LiteralPath $SessionDirectory -PathType Container)
+    [ordered]@{
+        sessionDirectory = $SessionDirectory
+        exists = $exists
+        segmentFiles = $(if ($exists) { @(Get-ChildItem -LiteralPath $SessionDirectory -Filter 'fb_*' -File).Count } else { 0 })
+        retiredMarker = $exists -and (Test-Path -LiteralPath (Join-Path $SessionDirectory $retiredMarkerName))
+        capturedUtc = [DateTime]::UtcNow.ToString('o')
+    }
+}
+
+function Wait-SegmentFiles {
+    param([string] $SessionDirectory, [int] $Minimum)
+    $deadline = [DateTime]::UtcNow.AddSeconds($StepTimeoutSeconds)
+    do {
+        $evidence = Get-SegmentEvidence -SessionDirectory $SessionDirectory
+        if ($evidence.segmentFiles -ge $Minimum) { return $evidence }
+        Start-Sleep -Milliseconds 500
+    } while ([DateTime]::UtcNow -lt $deadline)
+    return $evidence
+}
+
+# An enabled frame rate other than the selected one, for a reinit that keeps the resolution.
+function Select-OtherFrameRate {
+    param([double] $Current)
+    $options = Invoke-Ssctl -Arguments @('--json', 'options') -TimeoutMs 5000
+    if ($options.ExitCode -ne 0) { return $null }
+    $data = Get-JsonProperty ($options.Output | ConvertFrom-Json) 'Data'
+    foreach ($rate in @(Get-JsonProperty $data 'FrameRates' @())) {
+        $friendly = [double](Get-JsonProperty $rate 'FriendlyValue' 0)
+        if ((Get-JsonProperty $rate 'IsEnabled' $true) -and !(Get-JsonProperty $rate 'IsSelected' $false) -and
+            [double](Get-JsonProperty $rate 'Value' 0) -gt 0 -and [Math]::Abs($friendly - $Current) -ge 1) {
+            return $friendly
+        }
+    }
+    return $null
+}
+
+# Strict mode throws on a missing property; serializers may omit defaults.
+function Get-JsonProperty {
+    param($Object, [string] $Name, $Default = $null)
+    if ($null -eq $Object) { return $Default }
+    $property = $Object.PSObject.Properties[$Name]
+    if ($null -eq $property) { return $Default }
+    return $property.Value
 }
 
 # Starts preview and requires Rendering with frames presented after a dwell.
@@ -185,10 +280,11 @@ function Invoke-RenderingStart {
         dwellSeconds = $DwellSeconds
         captureInitialized = Test-LogMarker -Window $window -Pattern 'CAPTURE_INIT_READY'
         flagClearedByStop = Test-LogMarker -Window $window -Pattern 'PREVIEW_STOP_CAPTURE_UNINITIALIZED'
+        attachFailed = Test-LogMarker -Window $window -Pattern 'PREVIEW_RENDERER_ATTACH_FAILED|PREVIEW_START_FAILURE_STOP'
         stateAfter = Get-InitState $after
         passed = $start.ExitCode -eq 0 -and $null -ne $outcome -and $outcome.PreviewStartupState -eq 'Rendering' -and
             $firstFrame -and $null -ne $renderedDuringDwell -and $renderedDuringDwell -gt 30
-        markers = @($window | Where-Object { $_ -match $markerPattern })
+        markers = Select-Markers $window
     }
 }
 
@@ -202,171 +298,296 @@ function Invoke-PlainCycle {
     $step.stopExitCode = $stop.ExitCode
     $step.stateAfterStop = Get-InitState $stopped
     $step.passed = $step.passed -and $stop.ExitCode -eq 0 -and $null -ne $stopped -and !$stopped.IsPreviewing -and
-        !$step.captureInitialized -and !$step.flagClearedByStop
+        !$step.captureInitialized -and !$step.flagClearedByStop -and !$step.attachFailed
     $steps.Add([pscustomobject]$step)
     Write-Host "${Name}: state=$($step.startupState) rendered=$($step.renderedDuringDwell) reinit=$($step.captureInitialized) passed=$($step.passed)"
 }
 
-New-Item -ItemType Directory -Force -Path $OutputDirectory | Out-Null
-$appliedEnvironment = @{ SUSSUDIO_AUTOMATION_PIPE = $pipeName }
-if ($PreCleanupFailures -gt 0) {
-    $appliedEnvironment[$faultVariable] = [string]$PreCleanupFailures
-}
-$savedEnvironment = @{}
-foreach ($key in @($appliedEnvironment.Keys) + $faultVariable) {
-    if ($savedEnvironment.ContainsKey($key)) { continue }
-    $savedEnvironment[$key] = [Environment]::GetEnvironmentVariable($key, 'Process')
-    $value = $null
-    if ($appliedEnvironment.ContainsKey($key)) { $value = $appliedEnvironment[$key] }
-    [Environment]::SetEnvironmentVariable($key, $value, 'Process')
+function Invoke-FlashbackToggle {
+    param([ValidateSet('on', 'off')] [string] $State)
+    $toggle = Invoke-Ssctl -Arguments @('flashback', $State) -TimeoutMs 30000
+    if ($toggle.ExitCode -ne 0) { throw "flashback $State failed: $($toggle.Output)" }
 }
 
-$steps = New-Object System.Collections.Generic.List[object]
-$app = $null
-$launch = $null
-$close = $null
-try {
-    $app = Start-Process -FilePath $AppPath -WorkingDirectory (Split-Path -Parent $AppPath) -PassThru
-}
-finally {
-    foreach ($key in $savedEnvironment.Keys) {
-        [Environment]::SetEnvironmentVariable($key, $savedEnvironment[$key], 'Process')
+function Start-App {
+    param([int] $FaultFailures)
+    $applied = @{ SUSSUDIO_AUTOMATION_PIPE = $pipeName }
+    if ($FaultFailures -gt 0) { $applied[$faultVariable] = [string]$FaultFailures }
+    $saved = @{}
+    foreach ($key in @($applied.Keys) + $faultVariable) {
+        if ($saved.ContainsKey($key)) { continue }
+        $saved[$key] = [Environment]::GetEnvironmentVariable($key, 'Process')
+        $value = $null
+        if ($applied.ContainsKey($key)) { $value = $applied[$key] }
+        [Environment]::SetEnvironmentVariable($key, $value, 'Process')
     }
-}
+    try {
+        $script:app = Start-Process -FilePath $AppPath -WorkingDirectory (Split-Path -Parent $AppPath) -PassThru
+    }
+    finally {
+        foreach ($key in $saved.Keys) {
+            [Environment]::SetEnvironmentVariable($key, $saved[$key], 'Process')
+        }
+    }
 
-try {
     $deadline = [DateTime]::UtcNow.AddSeconds(90)
     do {
         Start-Sleep -Milliseconds 500
         $probe = Invoke-Ssctl -Arguments @('state') -TimeoutMs 2000
         $ready = $probe.ExitCode -eq 0
-    } while (!$ready -and !$app.HasExited -and [DateTime]::UtcNow -lt $deadline)
+    } while (!$ready -and !$script:app.HasExited -and [DateTime]::UtcNow -lt $deadline)
     # A stale ssctl is refused with a manifest mismatch; the last reply says so.
     if (!$ready) { throw "The app did not answer on its automation pipe within 90 s. Last ssctl reply (exit $($probe.ExitCode)): $($probe.Output)" }
 
     $launchOutcome = Wait-StartupOutcome
     $launch = [ordered]@{
+        environment = $applied
         startupState = $(if ($null -ne $launchOutcome) { $launchOutcome.PreviewStartupState } else { $null })
         firstFrameLogged = Wait-LogMarker -StartLine 0 -Pattern 'PREVIEW_D3D11_FIRST_FRAME'
         faultFiredBeforeSteps = Test-LogMarker -Window (Read-LogLines) -Pattern 'CAPTURE_FAULT_PRE_CLEANUP_FAILED'
         state = Get-InitState $launchOutcome
     }
     Write-Host "launch: state=$($launch.startupState) firstFrame=$($launch.firstFrameLogged)"
+    $script:launch = $launch
     if ($launch.startupState -ne 'Rendering') { throw "Launch preview did not reach Rendering ($($launch.startupState))." }
-    if ($launch.faultFiredBeforeSteps) { throw 'The injected fault fired during launch, before the faulted stop.' }
+    if ($launch.faultFiredBeforeSteps) { throw 'The injected fault fired during launch, before the first step.' }
     Start-Sleep -Seconds 2
-
-    $flashbackOff = Invoke-Ssctl -Arguments @('flashback', 'off') -TimeoutMs 30000
-    if ($flashbackOff.ExitCode -ne 0) { throw "flashback off failed: $($flashbackOff.Output)" }
-
-    if ($PreCleanupFailures -gt 0) {
-        # faulted-stop: the stop tears the pipeline down, and the fault fails its renderer handoff.
-        $startLine = @(Read-LogLines).Count
-        $stop = Invoke-Ssctl -Arguments @('preview', 'stop') -TimeoutMs 30000
-        $faultFired = Wait-LogMarker -StartLine $startLine -Pattern 'CAPTURE_FAULT_PRE_CLEANUP_FAILED'
-        $stopped = Wait-PreviewStopped
-        $window = Get-LogWindow -StartLine $startLine
-        $state = Get-InitState $stopped
-        $step = [ordered]@{
-            name = 'faulted-stop'
-            stopExitCode = $stop.ExitCode
-            stopOutput = $stop.Output
-            faultFired = $faultFired
-            stopFailed = Test-LogMarker -Window $window -Pattern 'CAP-COORD-FAIL\] StopVideoPreview'
-            stateAfter = $state
-            markers = @($window | Where-Object { $_ -match $markerPattern })
-        }
-        $step.passed = $stop.ExitCode -ne 0 -and $faultFired -and $step.stopFailed -and $null -ne $state -and
-            !$state.isPreviewing -and $state.viewModelInitialized -and $state.captureSessionState -ne 'Uninitialized'
-        $steps.Add([pscustomobject]$step)
-        Write-Host "faulted-stop: fault=$faultFired stopFailed=$($step.stopFailed) passed=$($step.passed)"
-
-        # late-cleanup: the refused start's failure stop finishes the full cleanup; the flag must follow.
-        $startLine = @(Read-LogLines).Count
-        $start = Invoke-Ssctl -Arguments @('preview', 'start') -TimeoutMs 30000
-        $cleanupCompleted = Wait-LogMarker -StartLine $startLine -Pattern 'CAPTURE_RETAINED_CLEANUP_COMPLETED'
-        $failureStopCompleted = Wait-LogMarker -StartLine $startLine -Pattern 'PREVIEW_START_FAILURE_STOP completed'
-        $settled = Wait-PreviewStopped
-        Start-Sleep -Milliseconds 500
-        $settled = Get-Snapshot
-        $window = Get-LogWindow -StartLine $startLine
-        $state = Get-InitState $settled
-        $step = [ordered]@{
-            name = 'late-cleanup'
-            startExitCode = $start.ExitCode
-            startOutput = $start.Output
-            startRefusedForCleanup = $start.Output -match 'Capture cleanup must complete'
-            retainedCleanupCompleted = $cleanupCompleted
-            failureStopCompleted = $failureStopCompleted
-            flagClearedByStop = Test-LogMarker -Window $window -Pattern 'PREVIEW_STOP_CAPTURE_UNINITIALIZED'
-            stateAfter = $state
-            markers = @($window | Where-Object { $_ -match $markerPattern })
-        }
-        $step.passed = $start.ExitCode -ne 0 -and $step.startRefusedForCleanup -and $cleanupCompleted -and
-            $failureStopCompleted -and $null -ne $state -and !$state.isPreviewing -and
-            $state.captureSessionState -eq 'Uninitialized' -and !$state.viewModelInitialized -and $step.flagClearedByStop
-        $steps.Add([pscustomobject]$step)
-        Write-Host "late-cleanup: cleanup=$cleanupCompleted capture=$($state.captureSessionState) vmInitialized=$($state.viewModelInitialized) passed=$($step.passed)"
-
-        # recovery-start: the next start must initialize capture and render.
-        $startLine = @(Read-LogLines).Count
-        $recovery = Invoke-RenderingStart -Name 'recovery-start' -StartLine $startLine
-        $recovery.passed = $recovery.passed -and $recovery.captureInitialized
-        $steps.Add([pscustomobject]$recovery)
-        Write-Host "recovery-start: state=$($recovery.startupState) init=$($recovery.captureInitialized) rendered=$($recovery.renderedDuringDwell) passed=$($recovery.passed)"
-    }
-
-    Invoke-PlainCycle -Name 'plain-cycle-flashback-off'
-    $flashbackOn = Invoke-Ssctl -Arguments @('flashback', 'on') -TimeoutMs 30000
-    if ($flashbackOn.ExitCode -ne 0) { throw "flashback on failed: $($flashbackOn.Output)" }
-    Start-Sleep -Seconds 2
-    Invoke-PlainCycle -Name 'plain-cycle-flashback-on'
 }
-finally {
-    if ($null -ne $app -and !$app.HasExited) {
+
+function Stop-App {
+    param([string] $LogName)
+    $close = $null
+    if ($null -ne $script:app -and !$script:app.HasExited) {
         $closeLine = @(Read-LogLines).Count
         $closeExit = (Invoke-Ssctl -Arguments @('window', 'close')).ExitCode
-        $exited = $app.WaitForExit(30000)
-        if (!$exited) { Stop-Process -Id $app.Id -Force }
-        $window = Get-LogWindow -StartLine $closeLine
+        $exited = $script:app.WaitForExit(30000)
+        if (!$exited) { Stop-Process -Id $script:app.Id -Force }
         $close = [ordered]@{
             windowCloseExitCode = $closeExit
             exitedWithin30s = $exited
-            markers = @($window | Where-Object { $_ -match $markerPattern })
+            markers = Select-Markers (Get-LogWindow -StartLine $closeLine)
         }
         Write-Host "close: exited=$exited"
     }
     if (Test-Path -LiteralPath $logPath) {
-        Copy-Item -LiteralPath $logPath -Destination (Join-Path $OutputDirectory 'Sussudio_Debug.log')
+        Copy-Item -LiteralPath $logPath -Destination (Join-Path $OutputDirectory $LogName)
+    }
+    return $close
+}
+
+function Invoke-StopThenStart {
+    Invoke-FlashbackToggle -State off
+
+    # faulted-stop: the stop tears the pipeline down, and fault 1 fails its renderer handoff.
+    $startLine = @(Read-LogLines).Count
+    $stop = Invoke-Ssctl -Arguments @('preview', 'stop') -TimeoutMs 30000
+    $faultFired = Wait-LogMarker -StartLine $startLine -Pattern 'CAPTURE_FAULT_PRE_CLEANUP_FAILED count=1 '
+    $stopped = Wait-PreviewStopped
+    $settled = Get-SettledSnapshot
+    $window = Get-LogWindow -StartLine $startLine
+    $state = Get-InitState $settled
+    $step = [ordered]@{
+        name = 'faulted-stop'
+        stopExitCode = $stop.ExitCode
+        stopOutput = $stop.Output
+        faultFired = $faultFired
+        stopFailed = Test-LogMarker -Window $window -Pattern 'CAP-COORD-FAIL\] StopVideoPreview'
+        spuriousAttach = Test-LogMarker -Window $window -Pattern $spuriousAttachPattern
+        stateAfter = $state
+        markers = Select-Markers $window
+    }
+    $step.passed = $stop.ExitCode -ne 0 -and $faultFired -and $step.stopFailed -and !$step.spuriousAttach -and
+        $null -ne $stopped -and $null -ne $state -and !$state.isPreviewing -and $state.viewModelInitialized -and
+        $state.captureSessionState -eq 'Faulted'
+    $steps.Add([pscustomobject]$step)
+    Write-Host "faulted-stop: fault=$faultFired stopFailed=$($step.stopFailed) spuriousAttach=$($step.spuriousAttach) passed=$($step.passed)"
+
+    # failed-recovery-start: the start finishes the retained teardown first, and fault 2 fails that.
+    $startLine = @(Read-LogLines).Count
+    $start = Invoke-Ssctl -Arguments @('preview', 'start') -TimeoutMs 30000
+    $faultFired = Wait-LogMarker -StartLine $startLine -Pattern 'CAPTURE_FAULT_PRE_CLEANUP_FAILED count=2 '
+    $settled = Get-SettledSnapshot
+    $window = Get-LogWindow -StartLine $startLine
+    $state = Get-InitState $settled
+    $step = [ordered]@{
+        name = 'failed-recovery-start'
+        startExitCode = $start.ExitCode
+        startOutput = $start.Output
+        faultFired = $faultFired
+        failedWithFinishError = $start.Output -match 'Injected fault'
+        refusedForCleanup = $start.Output -match 'Capture cleanup must complete'
+        finishBegan = Test-LogMarker -Window $window -Pattern 'CAPTURE_RETAINED_CLEANUP_BEGIN requested=Previewing scope=PreviewPipeline'
+        finishCompleted = Test-LogMarker -Window $window -Pattern 'CAPTURE_RETAINED_CLEANUP_COMPLETED'
+        newCaptureCreated = Test-LogMarker -Window $window -Pattern 'PREVIEW_START phase=create_uvc'
+        captureInitialized = Test-LogMarker -Window $window -Pattern '\] CAPTURE_INIT( |_READY)'
+        spuriousAttach = Test-LogMarker -Window $window -Pattern $spuriousAttachPattern
+        stateAfter = $state
+        markers = Select-Markers $window
+    }
+    $step.passed = $start.ExitCode -ne 0 -and $faultFired -and $step.failedWithFinishError -and !$step.refusedForCleanup -and
+        $step.finishBegan -and !$step.finishCompleted -and !$step.newCaptureCreated -and !$step.captureInitialized -and
+        !$step.spuriousAttach -and $null -ne $state -and !$state.isPreviewing -and $state.viewModelInitialized
+    $steps.Add([pscustomobject]$step)
+    Write-Host "failed-recovery-start: fault=$faultFired finishBegan=$($step.finishBegan) completed=$($step.finishCompleted) spuriousAttach=$($step.spuriousAttach) passed=$($step.passed)"
+
+    # recovery-start: the third handoff passes; the teardown finishes and a fresh pipeline renders
+    # on the capture session that is still initialized.
+    $startLine = @(Read-LogLines).Count
+    $recovery = Invoke-RenderingStart -Name 'recovery-start' -StartLine $startLine
+    $window = Get-LogWindow -StartLine $startLine
+    $recovery.finishCompleted = Test-LogMarker -Window $window -Pattern 'CAPTURE_RETAINED_CLEANUP_COMPLETED requested=Previewing scope=PreviewPipeline initialized=True'
+    $recovery.passed = $recovery.passed -and $recovery.finishCompleted -and !$recovery.captureInitialized -and
+        !$recovery.flagClearedByStop -and !$recovery.attachFailed
+    $steps.Add([pscustomobject]$recovery)
+    Write-Host "recovery-start: state=$($recovery.startupState) finished=$($recovery.finishCompleted) reinit=$($recovery.captureInitialized) rendered=$($recovery.renderedDuringDwell) passed=$($recovery.passed)"
+
+    Invoke-PlainCycle -Name 'plain-cycle-flashback-off'
+    Invoke-FlashbackToggle -State on
+    Start-Sleep -Seconds 2
+    Invoke-PlainCycle -Name 'plain-cycle-flashback-on'
+}
+
+function Invoke-ReinitThenStart {
+    Invoke-FlashbackToggle -State on
+    if (Test-LogMarker -Window (Read-LogLines) -Pattern 'CAPTURE_FAULT_PRE_CLEANUP_FAILED') {
+        throw 'The injected fault fired while enabling Flashback, before the reinit.'
     }
 
+    $sessionDirectory = Get-FlashbackSessionDirectory
+    if ($null -eq $sessionDirectory) { throw 'No Flashback buffer was initialized; the reinit scenario needs live segments.' }
+    $segmentsBefore = Wait-SegmentFiles -SessionDirectory $sessionDirectory -Minimum 2
+    $initial = Get-Snapshot
+    $initialFrameRate = [double]$initial.SelectedFrameRate
+    $otherFrameRate = Select-OtherFrameRate -Current $initialFrameRate
+    if ($null -eq $otherFrameRate) { throw "No other enabled frame rate to reinitialize to (selected $initialFrameRate)." }
+
+    # failed-reinit: the reinit teardown hits fault 1 and its failure-cleanup stop hits fault 2.
+    $startLine = @(Read-LogLines).Count
+    $set = Invoke-Ssctl -Arguments @('set', 'fps', ([string]$otherFrameRate)) -TimeoutMs 60000
+    $cleanupFaulted = Wait-LogMarker -StartLine $startLine -Pattern 'REINIT_FAILED_CLEANUP_FAULT'
+    $settled = Get-SettledSnapshot
+    $window = Get-LogWindow -StartLine $startLine
+    $state = Get-InitState $settled
+    $segmentsAtFailure = Get-SegmentEvidence -SessionDirectory $sessionDirectory
+    $step = [ordered]@{
+        name = 'failed-reinit'
+        requestedFrameRate = $otherFrameRate
+        initialFrameRate = $initialFrameRate
+        setExitCode = $set.ExitCode
+        setOutput = $set.Output
+        teardownFaulted = Test-LogMarker -Window $window -Pattern 'CAPTURE_FAULT_PRE_CLEANUP_FAILED count=1 '
+        finishFaulted = Test-LogMarker -Window $window -Pattern 'CAPTURE_FAULT_PRE_CLEANUP_FAILED count=2 '
+        reinitCleanupFaulted = $cleanupFaulted
+        finishBegan = Test-LogMarker -Window $window -Pattern 'CAPTURE_RETAINED_CLEANUP_BEGIN requested=Ready scope=PreviewPipeline'
+        finishCompleted = Test-LogMarker -Window $window -Pattern 'CAPTURE_RETAINED_CLEANUP_COMPLETED'
+        flashbackDisposed = Test-LogMarker -Window $window -Pattern 'FLASHBACK_PREVIEW_DISPOSE_OK'
+        spuriousAttach = Test-LogMarker -Window $window -Pattern $spuriousAttachPattern
+        segmentsBefore = $segmentsBefore
+        segmentsAtFailure = $segmentsAtFailure
+        stateAfter = $state
+        markers = Select-Markers $window
+    }
+    $step.passed = $set.ExitCode -ne 0 -and $step.teardownFaulted -and $step.finishFaulted -and $cleanupFaulted -and
+        $step.finishBegan -and !$step.finishCompleted -and !$step.flashbackDisposed -and !$step.spuriousAttach -and
+        $segmentsBefore.segmentFiles -ge 1 -and $segmentsAtFailure.exists -and !$segmentsAtFailure.retiredMarker -and
+        $segmentsAtFailure.segmentFiles -ge $segmentsBefore.segmentFiles -and
+        $null -ne $state -and !$state.isPreviewing -and !$state.viewModelInitialized
+    $steps.Add([pscustomobject]$step)
+    Write-Host "failed-reinit: faults=$($step.teardownFaulted)/$($step.finishFaulted) segments=$($segmentsBefore.segmentFiles)->$($segmentsAtFailure.segmentFiles) vmInitialized=$($state.viewModelInitialized) passed=$($step.passed)"
+
+    # recovery-start: the third handoff passes. The transition that finds the teardown retained
+    # finishes it as a teardown, retiring the Flashback session, then preview renders.
+    $startLine = @(Read-LogLines).Count
+    $recovery = Invoke-RenderingStart -Name 'recovery-start' -StartLine $startLine
+    $window = Get-LogWindow -StartLine $startLine
+    $finishLine = @($window | Where-Object { $_ -match 'CAPTURE_RETAINED_CLEANUP_COMPLETED .*scope=PreviewPipeline initialized=True' } | Select-Object -First 1)
+    $recovery.finishCompleted = $finishLine.Count -gt 0
+    $recovery.finishedBy = $(if ($finishLine.Count -gt 0 -and $finishLine[0] -match 'requested=(\w+)') { $Matches[1] } else { $null })
+    $recovery.segmentsRetired = Test-LogMarker -Window $window -Pattern 'FLASHBACK_PREVIEW_DISPOSE_OK purge=False'
+    $recovery.segmentsPurged = Test-LogMarker -Window $window -Pattern 'FLASHBACK_PREVIEW_DISPOSE_OK purge=True|FLASHBACK_BUFFER_DISPOSE_PURGE'
+    $recovery.segmentsAfter = Get-SegmentEvidence -SessionDirectory $sessionDirectory
+    $recovery.passed = $recovery.passed -and $recovery.finishCompleted -and $recovery.segmentsRetired -and
+        !$recovery.segmentsPurged -and !$recovery.attachFailed -and $recovery.segmentsAfter.exists -and
+        $recovery.segmentsAfter.retiredMarker -and $recovery.segmentsAfter.segmentFiles -ge $segmentsAtFailure.segmentFiles
+    $after = Get-Snapshot
+    $recovery.selectedFrameRateRestored = $null -ne $after -and [Math]::Abs([double]$after.SelectedFrameRate - $initialFrameRate) -lt 0.01
+    $steps.Add([pscustomobject]$recovery)
+    Write-Host "recovery-start: state=$($recovery.startupState) finishedBy=$($recovery.finishedBy) retired=$($recovery.segmentsRetired) segments=$($recovery.segmentsAfter.segmentFiles) marker=$($recovery.segmentsAfter.retiredMarker) passed=$($recovery.passed)"
+}
+
+function Invoke-Control {
+    Invoke-FlashbackToggle -State off
+    Invoke-PlainCycle -Name 'plain-cycle-flashback-off'
+    Invoke-FlashbackToggle -State on
+    Start-Sleep -Seconds 2
+    Invoke-PlainCycle -Name 'plain-cycle-flashback-on'
+}
+
+$expectedStepCounts = @{ StopThenStart = 5; ReinitThenStart = 2; Control = 2 }
+New-Item -ItemType Directory -Force -Path $OutputDirectory | Out-Null
+$scenarioResults = New-Object System.Collections.Generic.List[object]
+try {
+    foreach ($name in $scenarioNames) {
+        $steps = New-Object System.Collections.Generic.List[object]
+        $script:app = $null
+        $script:launch = $null
+        $close = $null
+        $failure = $null
+        Write-Host "== $name =="
+        try {
+            Start-App -FaultFailures $(if ($name -eq 'Control') { 0 } else { $faultFailures })
+            switch ($name) {
+                'StopThenStart' { Invoke-StopThenStart }
+                'ReinitThenStart' { Invoke-ReinitThenStart }
+                'Control' { Invoke-Control }
+            }
+        }
+        catch {
+            $failure = $_.Exception.Message
+            Write-Host "${name} aborted: $failure"
+        }
+        finally {
+            $close = Stop-App -LogName "$name.Sussudio_Debug.log"
+        }
+
+        $closePassed = $null -ne $close -and $close.exitedWithin30s
+        $scenarioResults.Add([pscustomobject][ordered]@{
+            name = $name
+            passed = $null -eq $failure -and $steps.Count -eq $expectedStepCounts[$name] -and
+                @($steps | Where-Object { !$_.passed }).Count -eq 0 -and $closePassed
+            failure = $failure
+            stepsPassed = @($steps | Where-Object { $_.passed }).Count
+            stepsRun = $steps.Count
+            stepsExpected = $expectedStepCounts[$name]
+            log = "$name.Sussudio_Debug.log"
+            launch = $script:launch
+            steps = $steps
+            close = $close
+        })
+    }
+}
+finally {
     $ErrorActionPreference = 'Continue'
     $commit = (& git -C $repoRoot rev-parse HEAD 2>$null | Out-String).Trim()
     $dirty = @(& git -C $repoRoot status --porcelain --untracked-files=no 2>$null).Count -gt 0
-    $expectedSteps = $(if ($PreCleanupFailures -gt 0) { 5 } else { 2 })
-    $closePassed = $null -ne $close -and $close.exitedWithin30s
-    $allPassed = $steps.Count -eq $expectedSteps -and @($steps | Where-Object { !$_.passed }).Count -eq 0 -and $closePassed
+    $allPassed = $scenarioResults.Count -eq $scenarioNames.Count -and @($scenarioResults | Where-Object { !$_.passed }).Count -eq 0
     $report = [pscustomobject]@{
-        schema = 'sussudio.capture-late-cleanup-recovery/v1'
+        schema = 'sussudio.capture-late-cleanup-recovery/v2'
         label = $Label
+        scenario = $Scenario
         generatedUtc = [DateTime]::UtcNow.ToString('o')
         commit = $commit
         trackedChangesPresent = $dirty
         appPath = $AppPath
         appDllSha256 = (Get-FileHash (Join-Path (Split-Path -Parent $AppPath) 'Sussudio.dll')).Hash
-        environment = $appliedEnvironment
+        faultFailures = $faultFailures
         passed = $allPassed
-        stepsPassed = @($steps | Where-Object { $_.passed }).Count
-        stepsRun = $steps.Count
-        stepsExpected = $expectedSteps
-        launch = $launch
-        steps = $steps
-        close = $close
-        doesNotProve = 'The teardown failure is an injected exception at the capture pre-cleanup renderer handoff, not a real renderer stop timeout. Only the preview-stop path that finishes a retained cleanup is exercised; recording, reinit, and fatal capture cleanup are not. Judged from log markers and state counters only; not colour, HDR, audio, or recording.'
+        scenarios = $scenarioResults
+        doesNotProve = 'The teardown failures are injected exceptions at the capture pre-cleanup renderer handoff, not real renderer stop timeouts. Exercised: a preview-stop teardown and a reinit teardown, each finished late by a start or an initialize. Not exercised: a retained full capture cleanup (fatal capture error), recording, the start-rollback and post-recording idle-release handoffs, and cancellation of a finish. Judged from log markers, state counters and the Flashback session directory on disk; not colour, HDR, audio, or recording.'
     }
     $resultPath = Join-Path $OutputDirectory 'result.json'
-    $report | ConvertTo-Json -Depth 6 | Out-File -LiteralPath $resultPath -Encoding utf8
-    Write-Host "result: $resultPath passed=$allPassed ($(@($steps | Where-Object { $_.passed }).Count)/$expectedSteps steps)"
+    $report | ConvertTo-Json -Depth 8 | Out-File -LiteralPath $resultPath -Encoding utf8
+    Write-Host "result: $resultPath passed=$allPassed"
 }
 
 if (!$allPassed) { exit 1 }

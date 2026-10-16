@@ -826,10 +826,12 @@ internal sealed class MainViewModelPreviewLifecycleController
         }
     }
 
-    // A stop that finds an earlier teardown half done finishes the full capture cleanup, which
-    // uninitializes the capture service. That stop succeeds, or is cancelled, without a capture
-    // error, so nothing else tells this view model. Only ever clear the flag: false while capture
-    // is still initialized is a deliberate re-init request (device apply, reinit) and must stand.
+    // A stop that finds an earlier full capture cleanup half done (a fatal capture error whose
+    // cleanup failed) finishes it, which uninitializes the capture service; a half-done preview
+    // teardown is finished as a teardown and keeps it initialized. That stop succeeds, or is
+    // cancelled, without a capture error, so nothing else tells this view model. Only ever clear
+    // the flag: false while capture is still initialized is a deliberate re-init request (device
+    // apply, reinit) and must stand.
     private void ClearInitializedIfCaptureCleanedUp()
     {
         if (_context.IsInitialized() && !_context.IsCaptureInitialized())
