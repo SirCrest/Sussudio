@@ -45,6 +45,10 @@ namespace Sussudio.Tests;
 // 22. Events the recorder counted but never stored (`abandoned`: a writer lapped by the ring or by a newer trace): the
 //     frames they belonged to may be missing stages, so the count is reported with a warning, like a wrap. A dump
 //     from an app that predates the field, or one that abandoned nothing, has no such warning.
+// 23. Nested objects inside args can contain lookalike keys: only direct args members may affect an event.
+// 24. Consecutive events may omit id/reason/text: state from one event must not leak into the next.
+// 25. Stream reads may return fewer bytes than requested and tokens may cross buffer boundaries: neither may
+//     truncate or duplicate events.
 public sealed class FrameTraceAnalyzerTests
 {
     private const long Frequency = 10_000_000;
@@ -704,6 +708,62 @@ public sealed class FrameTraceAnalyzerTests
         Assert.Equal(20, analysis.Frames.Total);
         Assert.Equal(1, analysis.Frames.WithDrop);
         Assert.Equal("qpc-id", analysis.Trace.ArrivalSource);
+    }
+
+    [Fact]
+    public void NestedArgsLookalikesDoNotSupplyFrameIdOrDropReason()
+    {
+        var trace = Steady(10);
+        var id = Ticks(500);
+        trace.Raw("{\"name\":\"preview.present\",\"ph\":\"X\",\"ts\":500000,\"dur\":10,\"args\":{\"nested\":{\"id\":"
+            + id.ToString(CultureInfo.InvariantCulture) + ",\"reason\":\"nested\"}}}");
+
+        var analysis = FrameTraceAnalyzer.AnalyzeJson(trace.Build());
+
+        Assert.Equal(10, analysis.Frames.Total);
+        Assert.DoesNotContain(analysis.SlowestFrames, frame => frame.Id == id);
+        Assert.Contains(analysis.AmbientEvents, item => item.Name == "preview.present");
+        Assert.Empty(analysis.Drops);
+    }
+
+    [Fact]
+    public void EventStateDoesNotCarryIdReasonOrTextIntoFollowingEvents()
+    {
+        var trace = Steady(10);
+        var id = Ticks(500);
+        trace.Instant("preview.drop", 501, id, extraArgs: ReasonArg("first reason"));
+        trace.Instant("preview.drop", 502, null);
+        trace.Marker(503, "first text");
+        trace.Raw("{\"name\":\"marker\",\"ph\":\"i\",\"ts\":504000,\"args\":{}}");
+
+        var capture = FrameTraceReader.Read(new MemoryStream(Encoding.UTF8.GetBytes(trace.Build())));
+
+        Assert.Equal(2, capture.Drops["preview.drop"]);
+        Assert.Equal(1, capture.DropReasons["preview.drop"]["first reason"]);
+        Assert.Equal(1, capture.Frames[id].Drops);
+        var markers = capture.AmbientEvents.Where(item => item.Name == "marker").ToArray();
+        Assert.Equal(2, markers.Length);
+        Assert.Equal("first text", markers[0].Text);
+        Assert.Null(markers[1].Text);
+    }
+
+    [Fact]
+    public void ReaderHandlesShortReadsAndTokensCrossingItsInitialBufferBoundary()
+    {
+        var trace = Steady(10);
+        trace.Marker(150, new string('b', 70_000));
+        using var stream = new ShortReadStream(Encoding.UTF8.GetBytes(trace.Build()), maxRead: 7);
+
+        var capture = FrameTraceReader.Read(stream);
+
+        Assert.Equal(10, capture.Frames.Count);
+        Assert.Equal(71, capture.ParsedEvents);
+        Assert.Single(capture.AmbientEvents, item => item.Name == "marker");
+    }
+
+    private sealed class ShortReadStream(byte[] data, int maxRead) : MemoryStream(data, writable: false)
+    {
+        public override int Read(byte[] buffer, int offset, int count) => base.Read(buffer, offset, Math.Min(count, maxRead));
     }
 
     [Fact]

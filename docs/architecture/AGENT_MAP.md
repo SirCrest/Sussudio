@@ -607,13 +607,20 @@ recording and audio sites call into it, never the other way round.
   `tools/send-automation-command.ps1` resolve commands by catalog name and need
   no per-command code.
 - Tool-side analysis is in `tools/Common/Performance/`, compiled into ssctl,
-  McpServer and the test project: `FrameTraceAnalyzer` (with its reader,
-  builder and formatter; a slow frame's pre-arrival and after-present stages are listed apart
-  and never dominant) reads a trace dump offline, and `PerfExperimentRunner`
-  (spec, session, statistics, result) runs a knob A/B experiment through the
+  McpServer and the test project: `FrameTraceAnalyzer` reads a trace dump offline.
+  `FrameTraceReader` owns the pooled streaming buffer, root/schema routing,
+  metadata and format errors; `FrameTraceEventParser` owns one reusable event's
+  field state and instant/span routing. `FrameTraceCapture` owns the shared
+  accumulators and retention limits consumed by the reader and analysis builder.
+  The builder and formatter keep a slow frame's pre-arrival and after-present
+  stages separate and never dominant. `PerfExperimentRunner`
+  (spec, preflight, session, statistics, result) runs a knob A/B experiment through the
   existing automation commands under the experiment lease and restores the app;
+  `PerfExperimentPreflight` validates and normalizes against the live app without
+  mutation and supplies the successful immutable plan required to create a session.
   `PerfExperimentSession` owns the acquire, renewals, lease-id stamping and
-  release. Neither adds an app command: ssctl `perf trace analyze` and `perf experiment` are in
+  release, with lease-acquired baselines authoritative for restore.
+  Neither adds an app command: ssctl `perf trace analyze` and `perf experiment` are in
   `tools/ssctl/CommandHandlers.Perf.cs`, the MCP tools `analyze_frame_trace` and
   `run_perf_experiment` are in `tools/McpServer/Tools/PerfAnalysisTools.cs`, and
   the example spec is `scripts/performance/experiments/example-jitter-depth.json`.

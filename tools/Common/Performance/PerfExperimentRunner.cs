@@ -81,7 +81,7 @@ public static class PerfExperimentRunner
         var warnings = new List<string>();
         var runs = new List<PerfExperimentRun>();
         var samples = new List<PerfRunSamples>();
-        var session = new PerfExperimentSession(new PerfAppLink(send), spec, options);
+        var app = new PerfAppLink(send);
         var settings = new PerfExperimentSettings(
             spec.Name,
             spec.Description,
@@ -108,10 +108,10 @@ public static class PerfExperimentRunner
                 null);
 
         // Preflight only reads. Whatever happens here, nothing has been changed yet, so there is nothing to restore.
-        IReadOnlyList<string> preflightProblems;
+        PerfExperimentPreflight.Result preflight;
         try
         {
-            preflightProblems = await session.PreflightAsync(cancellationToken).ConfigureAwait(false);
+            preflight = await PerfExperimentPreflight.RunAsync(app, spec, cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -122,10 +122,12 @@ public static class PerfExperimentRunner
             return Finish(PerfExperimentStatus.Failed, $"Could not read the app before starting; nothing was changed: {ex.Message}", Array.Empty<string>());
         }
 
-        if (preflightProblems.Count > 0)
+        if (preflight.Plan is not { } plan)
         {
-            return Finish(PerfExperimentStatus.Rejected, null, preflightProblems);
+            return Finish(PerfExperimentStatus.Rejected, null, preflight.Problems);
         }
+
+        var session = new PerfExperimentSession(app, spec, options, plan);
 
         // The lease comes before the first change: a second experiment is turned away here with nothing changed.
         string? leaseProblem;
