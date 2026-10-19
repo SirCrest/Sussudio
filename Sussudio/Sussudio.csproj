@@ -16,7 +16,7 @@
     <Nullable>enable</Nullable>
     <SatelliteResourceLanguages>en-US</SatelliteResourceLanguages>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <LangVersion>preview</LangVersion>
+    <LangVersion>14.0</LangVersion>
   </PropertyGroup>
 
   <!--

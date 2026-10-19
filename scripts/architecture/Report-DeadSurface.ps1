@@ -36,10 +36,42 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+$Root = (Resolve-Path -LiteralPath $Root).Path
 
 $productionRoots = @("Sussudio", "Sussudio.Automation.Contracts", "tools")
-$excludePattern = '\\(obj|bin|artifacts|node_modules)\\|\.desloppify\\'
+$excludePattern = '\\(obj|bin|artifacts|node_modules)\\|\.desloppify\\|\\\.claude\\worktrees\\'
 $corpusExtensions = @('.cs', '.ps1', '.md', '.json', '.yml', '.yaml', '.xaml')
+
+function Get-FilteredFiles {
+    param(
+        [string]$StartPath,
+        [string[]]$Extensions
+    )
+
+    # Traverse explicitly so excluded directory trees are never enumerated.
+    # This matters for nested worktrees: filtering files after -Recurse has
+    # already visited them can consume substantial time and memory.
+    $pending = [System.Collections.Generic.Stack[string]]::new()
+    $pending.Push((Get-Item -LiteralPath $StartPath).FullName)
+    while ($pending.Count -gt 0) {
+        $directory = $pending.Pop()
+        $childDirectories = @(Get-ChildItem -LiteralPath $directory -Directory)
+        foreach ($child in $childDirectories) {
+            $relative = $child.FullName.Substring($Root.Length).TrimStart('\\')
+            if ($relative -match '(?i)(?:^|\\)(?:obj|bin|artifacts|node_modules|\.desloppify)(?:\\|$)' -or
+                $relative -match '(?i)(?:^|\\)\.claude\\worktrees(?:\\|$)') {
+                continue
+            }
+            $pending.Push($child.FullName)
+        }
+
+        foreach ($file in (Get-ChildItem -LiteralPath $directory -File)) {
+            if ($Extensions -contains $file.Extension -and $file.FullName -notmatch $excludePattern) {
+                $file
+            }
+        }
+    }
+}
 
 function Get-ProductionFiles {
     param([string]$RepoRoot)
@@ -47,8 +79,7 @@ function Get-ProductionFiles {
     foreach ($name in $productionRoots) {
         $path = Join-Path $RepoRoot $name
         if (-not (Test-Path -LiteralPath $path)) { continue }
-        $results += Get-ChildItem -LiteralPath $path -Recurse -Include *.cs -File |
-            Where-Object { $_.FullName -notmatch $excludePattern }
+        $results += Get-FilteredFiles -StartPath $path -Extensions @('.cs')
     }
     return $results
 }
@@ -89,15 +120,13 @@ $corpusFiles = @($production)
 foreach ($extra in @("tests", "scripts", ".github", "docs", ".claude")) {
     $path = Join-Path $Root $extra
     if (-not (Test-Path -LiteralPath $path)) { continue }
-    $corpusFiles += Get-ChildItem -LiteralPath $path -Recurse -File |
-        Where-Object { $corpusExtensions -contains $_.Extension -and $_.FullName -notmatch $excludePattern }
+    $corpusFiles += Get-FilteredFiles -StartPath $path -Extensions $corpusExtensions
 }
 # XAML lives inside the production roots, so pick those up too.
 foreach ($name in $productionRoots) {
     $path = Join-Path $Root $name
     if (-not (Test-Path -LiteralPath $path)) { continue }
-    $corpusFiles += Get-ChildItem -LiteralPath $path -Recurse -File -Include *.xaml |
-        Where-Object { $_.FullName -notmatch $excludePattern }
+    $corpusFiles += Get-FilteredFiles -StartPath $path -Extensions @('.xaml')
 }
 
 $builder = [System.Text.StringBuilder]::new()
