@@ -22,9 +22,6 @@ internal sealed record PerfRunOutcome(string Window, JsonElement? Report, double
 //  - Restore runs on a fresh token. A canceled run token would make every restore command throw before it was sent.
 internal sealed class PerfExperimentSession
 {
-    private const string LeaseCommand = "PerfExperimentLease";
-    private const int MaxHolderLength = 200;
-
     private const int MaxWindowNameLength = 64;
     private const string ApplyPreviewRestart = "preview-restart";
     private const string ApplyFlashbackRestart = "flashback-restart";
@@ -33,8 +30,8 @@ internal sealed class PerfExperimentSession
     private readonly PerfAppLink _app;
     private readonly PerfExperimentSpec _spec;
     private readonly PerfExperimentOptions _options;
-    private readonly Func<TimeSpan, CancellationToken, Task> _delay;
-    private readonly List<string> _touched;
+    private readonly PerfExperimentLeaseClient _lease;
+    private readonly IReadOnlyList<string> _touched;
     private readonly Dictionary<string, PerfExperimentPreflight.Baseline> _baselines;
     private readonly Dictionary<string, string> _applied = new(StringComparer.Ordinal);
     private readonly IReadOnlyList<IReadOnlyDictionary<string, string>> _variantKnobs;
@@ -45,32 +42,25 @@ internal sealed class PerfExperimentSession
     private bool _recordingStarted;
     private string? _openWindow;
 
-    // The lease id is this runner's capability: the app accepts changes to leased knobs only with it.
-    private readonly string _leaseId = Guid.NewGuid().ToString("N");
-    private readonly Stopwatch _sinceRenewClock = new();
-    private TimeSpan _sinceRenewWaited;
-    private bool _leaseHeld;
-    private string? _leaseLostReason;
-
     public PerfExperimentSession(PerfAppLink app, PerfExperimentSpec spec, PerfExperimentOptions options, PerfExperimentPreflight.Plan plan)
     {
         _app = app;
         _spec = spec;
         _options = options;
-        _delay = options.DelayAsync ?? ((delay, token) => Task.Delay(delay, token));
+        _lease = new PerfExperimentLeaseClient(
+            app,
+            spec.Name,
+            options.LeaseTimeToLive,
+            options.CleanupTimeout,
+            options.DelayAsync ?? ((delay, token) => Task.Delay(delay, token)));
         _variantKnobs = plan.VariantKnobs;
-        _touched = plan.Touched.ToList();
+        _touched = plan.Touched;
         _baselines = new Dictionary<string, PerfExperimentPreflight.Baseline>(plan.Baselines, StringComparer.Ordinal);
         _restartPreview = plan.RestartPreview;
         _restartFlashback = plan.RestartFlashback;
     }
 
     // ---- the experiment lease ------------------------------------------------------------------------------------
-
-    private int LeaseTtlSeconds => (int)Math.Ceiling(_options.LeaseTimeToLive.TotalSeconds);
-
-    // A quarter of the TTL leaves three missed renewals of slack before the app gives the knobs back.
-    private TimeSpan RenewInterval => TimeSpan.FromSeconds(Math.Max(1, LeaseTtlSeconds / 4.0));
 
     /// <summary>
     /// Takes the app's experiment lease on the knobs the preflight resolved. Returns the app's reason when another
@@ -79,25 +69,12 @@ internal sealed class PerfExperimentSession
     /// </summary>
     public async Task<string?> AcquireLeaseAsync(CancellationToken cancellationToken)
     {
-        var reply = await _app.CallAsync(
-            LeaseCommand,
-            new Dictionary<string, object?>
-            {
-                ["action"] = "acquire",
-                ["lease"] = _leaseId,
-                ["holder"] = BuildHolder(_spec.Name),
-                ["knobs"] = _touched.ToArray(),
-                ["ttlSeconds"] = LeaseTtlSeconds,
-            },
-            cancellationToken,
-            "PerfExperimentLease acquire").ConfigureAwait(false);
+        var reply = await _lease.AcquireAsync(_touched, cancellationToken).ConfigureAwait(false);
         if (!reply.Success)
         {
             return reply.Message;
         }
 
-        _leaseHeld = true;
-        MarkRenewed();
         if (reply.Data is { } data)
         {
             foreach (var knob in PerfJson.GetArray(data, "Baseline"))
@@ -123,91 +100,7 @@ internal sealed class PerfExperimentSession
     /// The acquire's reply never arrived, so the app may hold a lease under this runner's id with nothing to restore.
     /// Release it so it does not block the next experiment until it expires. Best effort; never throws.
     /// </summary>
-    public async Task ReleaseUnconfirmedLeaseAsync()
-    {
-        using var cleanup = new CancellationTokenSource(_options.CleanupTimeout);
-        try
-        {
-            await _app.CallAsync(
-                LeaseCommand,
-                new Dictionary<string, object?> { ["action"] = "release", ["lease"] = _leaseId },
-                cleanup.Token,
-                "PerfExperimentLease release").ConfigureAwait(false);
-        }
-        catch (Exception)
-        {
-            // Intentionally swallowed: the lease, if the app holds one, expires by itself and changed nothing.
-        }
-    }
-
-    private async Task RenewLeaseAsync(CancellationToken cancellationToken)
-    {
-        if (!_leaseHeld)
-        {
-            return;
-        }
-
-        var reply = await _app.CallAsync(
-            LeaseCommand,
-            new Dictionary<string, object?> { ["action"] = "renew", ["lease"] = _leaseId, ["ttlSeconds"] = LeaseTtlSeconds },
-            cancellationToken,
-            "PerfExperimentLease renew").ConfigureAwait(false);
-        if (!reply.Success)
-        {
-            _leaseHeld = false;
-            _leaseLostReason = reply.Message;
-            throw new PerfExperimentCommandException(
-                $"The experiment lost its tuning-knob lease: {reply.Message} The experiment stopped, and the run in progress is not used.");
-        }
-
-        MarkRenewed();
-    }
-
-    private Task RenewLeaseIfDueAsync(CancellationToken cancellationToken)
-        => _leaseHeld && (_sinceRenewWaited >= RenewInterval || _sinceRenewClock.Elapsed >= RenewInterval)
-            ? RenewLeaseAsync(cancellationToken)
-            : Task.CompletedTask;
-
-    private void MarkRenewed()
-    {
-        _sinceRenewWaited = TimeSpan.Zero;
-        _sinceRenewClock.Restart();
-    }
-
-    // Waits through the injected delay in steps no longer than the renew interval, renewing the lease between steps
-    // when it is due, so a long warmup or measure never outlives the lease. Virtual time in tests counts as waited.
-    private async Task WaitAsync(TimeSpan duration, CancellationToken cancellationToken)
-    {
-        var remaining = duration;
-        while (remaining > TimeSpan.Zero)
-        {
-            var step = _leaseHeld && remaining > RenewInterval ? RenewInterval : remaining;
-            await _delay(step, cancellationToken).ConfigureAwait(false);
-            remaining -= step;
-            _sinceRenewWaited += step;
-            if (remaining > TimeSpan.Zero)
-            {
-                await RenewLeaseIfDueAsync(cancellationToken).ConfigureAwait(false);
-            }
-        }
-    }
-
-    // Who runs the experiment, as other clients see it in the lease: the tool process and the experiment name.
-    internal static string BuildHolder(string experiment)
-    {
-        var text = new StringBuilder();
-        text.Append(Process.GetCurrentProcess().ProcessName)
-            .Append(" pid ")
-            .Append(Environment.ProcessId.ToString(CultureInfo.InvariantCulture))
-            .Append(": experiment '");
-        foreach (var ch in experiment)
-        {
-            text.Append(char.IsControl(ch) ? ' ' : ch);
-        }
-
-        text.Append('\'');
-        return text.Length <= MaxHolderLength ? text.ToString() : text.ToString(0, MaxHolderLength - 4) + "...'";
-    }
+    public Task ReleaseUnconfirmedLeaseAsync() => _lease.ReleaseUnconfirmedAsync();
 
     // ---- one run -----------------------------------------------------------------------------------------------
 
@@ -218,7 +111,7 @@ internal sealed class PerfExperimentSession
     public async Task<PerfRunOutcome> RunOnceAsync(int variantIndex, int repeat, int runNumber, CancellationToken cancellationToken)
     {
         var variant = _spec.Variants[variantIndex];
-        await RenewLeaseAsync(cancellationToken).ConfigureAwait(false);
+        await _lease.RenewAsync(cancellationToken).ConfigureAwait(false);
         await ApplyKnobsAsync(variantIndex, cancellationToken).ConfigureAwait(false);
         if (_restartPreview)
         {
@@ -238,17 +131,17 @@ internal sealed class PerfExperimentSession
         if (_spec.WarmupSeconds > 0)
         {
             await MarkAsync($"experiment variant {variant.Name} run {repeat} warmup", cancellationToken).ConfigureAwait(false);
-            await WaitAsync(TimeSpan.FromSeconds(_spec.WarmupSeconds), cancellationToken).ConfigureAwait(false);
+            await _lease.WaitAsync(TimeSpan.FromSeconds(_spec.WarmupSeconds), cancellationToken).ConfigureAwait(false);
         }
 
         var window = BuildWindowName(runNumber, _spec.Name, variant.Name, repeat);
         await BeginWindowAsync(window, cancellationToken).ConfigureAwait(false);
         await MarkAsync($"experiment variant {variant.Name} run {repeat} measure", cancellationToken).ConfigureAwait(false);
-        await WaitAsync(TimeSpan.FromSeconds(_spec.MeasureSeconds), cancellationToken).ConfigureAwait(false);
+        await _lease.WaitAsync(TimeSpan.FromSeconds(_spec.MeasureSeconds), cancellationToken).ConfigureAwait(false);
 
         // The window counts only if the lease held for all of it: a lease lost inside it means the app restored the
         // knobs, or another experiment changed them, while this window was measuring.
-        await RenewLeaseAsync(cancellationToken).ConfigureAwait(false);
+        await _lease.RenewAsync(cancellationToken).ConfigureAwait(false);
         var report = await EndWindowAsync(window, cancellationToken).ConfigureAwait(false);
 
         if (_spec.Recording)
@@ -301,7 +194,7 @@ internal sealed class PerfExperimentSession
 
                 var reply = await _app.RequireAsync(
                     "SetTuningKnob",
-                    new Dictionary<string, object?> { ["name"] = name, ["value"] = value, ["lease"] = _leaseId },
+                    new Dictionary<string, object?> { ["name"] = name, ["value"] = value, ["lease"] = _lease.Id },
                     cancellationToken,
                     $"SetTuningKnob {name}").ConfigureAwait(false);
                 NoteKnobChange(name, reply);
@@ -324,8 +217,8 @@ internal sealed class PerfExperimentSession
     {
         var baseline = _baselines[name];
         var payload = baseline.Mode == PerfExperimentPreflight.RestoreMode.Reset
-            ? new Dictionary<string, object?> { ["name"] = name, ["reset"] = true, ["lease"] = _leaseId }
-            : new Dictionary<string, object?> { ["name"] = name, ["value"] = baseline.Value, ["lease"] = _leaseId };
+            ? new Dictionary<string, object?> { ["name"] = name, ["reset"] = true, ["lease"] = _lease.Id }
+            : new Dictionary<string, object?> { ["name"] = name, ["value"] = baseline.Value, ["lease"] = _lease.Id };
         var reply = await _app.CallAsync(
             "SetTuningKnob",
             payload,
@@ -426,10 +319,9 @@ internal sealed class PerfExperimentSession
                     $"{failure} within {_options.ReadyTimeout.TotalSeconds.ToString("0.#", CultureInfo.InvariantCulture)} s.");
             }
 
-            await RenewLeaseIfDueAsync(cancellationToken).ConfigureAwait(false);
-            await _delay(interval, cancellationToken).ConfigureAwait(false);
+            await _lease.RenewIfDueAsync(cancellationToken).ConfigureAwait(false);
+            await _lease.DelayAsync(interval, cancellationToken).ConfigureAwait(false);
             waited += interval;
-            _sinceRenewWaited += interval;
         }
     }
 
@@ -540,11 +432,11 @@ internal sealed class PerfExperimentSession
             _openWindow = null;
         }).ConfigureAwait(false);
 
-        if (_leaseLostReason is not null)
+        if (_lease.LostReason is not null)
         {
             await Step(errors, "read who holds the lease now", async () =>
             {
-                var reply = await _app.RequireAsync(LeaseCommand, new Dictionary<string, object?> { ["action"] = "status" }, token, "PerfExperimentLease status").ConfigureAwait(false);
+                var reply = await _app.RequireAsync("PerfExperimentLease", new Dictionary<string, object?> { ["action"] = "status" }, token, "PerfExperimentLease status").ConfigureAwait(false);
                 if (reply.Data is { } data && PerfJson.TryGet(data, "Active", out var active) && active.ValueKind == JsonValueKind.Object)
                 {
                     takenBy = PerfJson.GetString(active, "Holder") ?? "another experiment";
@@ -555,7 +447,7 @@ internal sealed class PerfExperimentSession
         if (takenBy is not null)
         {
             errors.Add(
-                $"The knobs, preview and recording were left as they are: the lease was lost ({_leaseLostReason}) and {takenBy} "
+                $"The knobs, preview and recording were left as they are: the lease was lost ({_lease.LostReason}) and {takenBy} "
                 + "now holds it, so restoring them would disturb that experiment.");
             return new PerfExperimentRestore(false, actions, errors, mismatches);
         }
@@ -581,7 +473,7 @@ internal sealed class PerfExperimentSession
 
         // When the lease lapsed the app put the knobs back itself, without restarting anything, so the restore below
         // sees no change. A preview or Flashback that read an experiment value still runs with it and must restart.
-        if (_leaseLostReason is not null)
+        if (_lease.LostReason is not null)
         {
             foreach (var name in _applied.Keys)
             {
@@ -662,23 +554,17 @@ internal sealed class PerfExperimentSession
 
         await Step(errors, "release the experiment lease", async () =>
         {
-            if (!_leaseHeld)
+            if (!_lease.IsHeld)
             {
                 return;
             }
 
-            var reply = await _app.CallAsync(
-                LeaseCommand,
-                new Dictionary<string, object?> { ["action"] = "release", ["lease"] = _leaseId },
-                token,
-                "PerfExperimentLease release").ConfigureAwait(false);
+            var reply = await _lease.ReleaseAsync(token).ConfigureAwait(false);
             if (!reply.Success)
             {
-                errors.Add($"Could not release the experiment lease: {reply.Message} It ends by itself within {LeaseTtlSeconds} s.");
+                errors.Add($"Could not release the experiment lease: {reply.Message} It ends by itself within {_lease.TtlSeconds} s.");
                 return;
             }
-
-            _leaseHeld = false;
         }).ConfigureAwait(false);
 
         return new PerfExperimentRestore(errors.Count == 0 && mismatches.Count == 0, actions, errors, mismatches);

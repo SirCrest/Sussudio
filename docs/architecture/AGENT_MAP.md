@@ -618,8 +618,10 @@ recording and audio sites call into it, never the other way round.
   existing automation commands under the experiment lease and restores the app;
   `PerfExperimentPreflight` validates and normalizes against the live app without
   mutation and supplies the successful immutable plan required to create a session.
-  `PerfExperimentSession` owns the acquire, renewals, lease-id stamping and
-  release, with lease-acquired baselines authoritative for restore.
+  `PerfExperimentLeaseClient` owns the lease capability, acquisition/release,
+  renewal clock and virtual wait accounting. `PerfExperimentSession` owns
+  per-run mutations and defensive restore ordering, with lease-acquired
+  baselines authoritative for restore and a foreign lease protected from mutation.
   Neither adds an app command: ssctl `perf trace analyze` and `perf experiment` are in
   `tools/ssctl/CommandHandlers.Perf.cs`, the MCP tools `analyze_frame_trace` and
   `run_perf_experiment` are in `tools/McpServer/Tools/PerfAnalysisTools.cs`, and
