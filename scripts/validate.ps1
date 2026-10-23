@@ -116,9 +116,6 @@ function Invoke-Step {
     $stdoutPath = Join-Path $script:logDirectory "$Name.out.log"
     $stderrPath = Join-Path $script:logDirectory "$Name.err.log"
     $exe = (Get-Command $Command[0] -ErrorAction Stop).Source
-    $arguments = @($Command | Select-Object -Skip 1 | ForEach-Object {
-        if ($_ -match '\s') { '"{0}"' -f $_ } else { $_ }
-    })
     $started = [System.Diagnostics.Stopwatch]::StartNew()
     $exit = 1
 
@@ -132,8 +129,14 @@ function Invoke-Step {
         #                  leaves a persistent Roslyn compiler server behind, so
         #                  it never returns; without -Wait, ExitCode comes back
         #                  null.
-        $quoted = @($arguments | ForEach-Object {
-            if ($_ -match '[\s"]') { '"' + ($_ -replace '"', '\"') + '"' } else { $_ }
+        # Windows argument parsing treats backslashes literally except before a
+        # quote, so a run of them before an escaped quote or the closing quote
+        # is doubled.
+        $quoted = @($Command | Select-Object -Skip 1 | ForEach-Object {
+            if ($_ -match '[\s"]') {
+                '"' + ($_ -replace '(\\*)"', '$1$1\"' -replace '(\\+)$', '$1$1') + '"'
+            }
+            else { $_ }
         })
         $commandLine = '"{0}" {1} 1> "{2}" 2> "{3}"' -f $exe, ($quoted -join ' '), $stdoutPath, $stderrPath
         & cmd.exe /c $commandLine
