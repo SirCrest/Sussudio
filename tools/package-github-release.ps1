@@ -1,7 +1,7 @@
 <# Builds, validates, signs, and packages the supported Sussudio portable prerelease ZIP.
 
 The script deliberately has no unsigned or stale-publish mode. A package is produced only
-from a clean commit with an exact SemVer prerelease tag after the canonical reliability gate
+from a clean commit with an exact SemVer prerelease tag (any 0.y.z, or x.y.z-suffix) after the canonical reliability gate
 passes for that same commit.
 #>
 param(

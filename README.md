@@ -79,7 +79,7 @@ timestamped through Azure Artifact Signing; bundled third-party FFmpeg DLLs are
 verified against the tracked hash manifest and retain their own identity.
 
 Official archives are built only from a clean commit with an exact
-`v<SemVer-prerelease>` tag, and each ZIP has a published SHA-256 checksum. See
+`v<SemVer-prerelease>` tag (any `0.y.z` before 1.0), and each ZIP has a published SHA-256 checksum. See
 [`docs/release-process.md`](docs/release-process.md) for the operator workflow.
 
 MSIX distribution and the Stream Deck plugin remain future roadmap work; they

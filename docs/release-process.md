@@ -8,7 +8,9 @@ paths.
 ## Release contract
 
 An official archive must come from a clean commit tagged exactly
-`v<SemVer-prerelease>`, for example `v0.2.0-beta.1`. The package script runs the
+`v<SemVer-prerelease>`. Before 1.0, a bare `0.y.z` version such as `v0.4.0`
+counts as a prerelease, as SemVer defines it; from 1.0 on, the version needs a
+prerelease suffix such as `v1.0.0-beta.1`. The package script runs the
 canonical reliability gate before it publishes, stages, or signs anything, and
 rechecks the commit immediately before signing. The gate:
 
@@ -81,7 +83,7 @@ dotnet restore Sussudio.slnx -p:Platform=x64
 
 ```powershell
 tools\package-github-release.ps1 `
-  -Version 0.2.0-beta.1 `
+  -Version 0.4.0 `
   -SignToolPath 'C:\Program Files (x86)\Windows Kits\10\bin\VERSION\x64\signtool.exe' `
   -AzureCodeSigningDlibPath 'C:\artifact-signing\bin\x64\Azure.CodeSigning.Dlib.dll' `
   -ArtifactSigningMetadataPath 'C:\release-secrets\sussudio-signing.json'
