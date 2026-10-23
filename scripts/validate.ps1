@@ -72,6 +72,32 @@ $notCovered = @(
 
 $script:logDirectory = Join-Path $Root "artifacts\validation-logs"
 
+# The only constructor for a step result. The result projection reads every
+# field from every step, and under strict mode a missing one throws before
+# validation.json is written.
+function New-StepResult {
+    param(
+        [string]$Name,
+        [string]$Kind,
+        [string[]]$Command,
+        [int]$ExitCode,
+        [int]$DurationMs,
+        [bool]$LockDetected,
+        [string]$Output
+    )
+
+    [pscustomobject]@{
+        name = $Name
+        kind = $Kind
+        command = ($Command -join " ")
+        exitCode = $ExitCode
+        durationMs = $DurationMs
+        succeeded = ($ExitCode -eq 0)
+        lockDetected = $LockDetected
+        output = $Output
+    }
+}
+
 function Invoke-Step {
     param(
         [string]$Name,
@@ -90,9 +116,6 @@ function Invoke-Step {
     $stdoutPath = Join-Path $script:logDirectory "$Name.out.log"
     $stderrPath = Join-Path $script:logDirectory "$Name.err.log"
     $exe = (Get-Command $Command[0] -ErrorAction Stop).Source
-    $arguments = @($Command | Select-Object -Skip 1 | ForEach-Object {
-        if ($_ -match '\s') { '"{0}"' -f $_ } else { $_ }
-    })
     $started = [System.Diagnostics.Stopwatch]::StartNew()
     $exit = 1
 
@@ -106,8 +129,14 @@ function Invoke-Step {
         #                  leaves a persistent Roslyn compiler server behind, so
         #                  it never returns; without -Wait, ExitCode comes back
         #                  null.
-        $quoted = @($arguments | ForEach-Object {
-            if ($_ -match '[\s"]') { '"' + ($_ -replace '"', '\"') + '"' } else { $_ }
+        # Windows argument parsing treats backslashes literally except before a
+        # quote, so a run of them before an escaped quote or the closing quote
+        # is doubled.
+        $quoted = @($Command | Select-Object -Skip 1 | ForEach-Object {
+            if ($_ -match '[\s"]') {
+                '"' + ($_ -replace '(\\*)"', '$1$1\"' -replace '(\\+)$', '$1$1') + '"'
+            }
+            else { $_ }
         })
         $commandLine = '"{0}" {1} 1> "{2}" 2> "{3}"' -f $exe, ($quoted -join ' '), $stdoutPath, $stderrPath
         & cmd.exe /c $commandLine
@@ -131,16 +160,8 @@ function Invoke-Step {
     $lockDetected = $text -match 'MSB3027|MSB3021|MSB3026' -or
         $text -match 'because it is being used by another process'
 
-    [pscustomobject]@{
-        name = $Name
-        kind = $Kind
-        command = ($Command -join " ")
-        exitCode = $exit
-        durationMs = [int]$started.ElapsedMilliseconds
-        succeeded = ($exit -eq 0)
-        lockDetected = $lockDetected
-        output = $text.Trim()
-    }
+    New-StepResult -Name $Name -Kind $Kind -Command $Command -ExitCode $exit `
+        -DurationMs ([int]$started.ElapsedMilliseconds) -LockDetected $lockDetected -Output ($text.Trim())
 }
 
 # Stops processes known to lock this repository's build outputs and returns a
@@ -239,23 +260,13 @@ if (-not $SkipBuild) {
 $steps += Invoke-Step -Name "tests" -Kind "tests" -Command @(
     "dotnet", "test", $testProject, "-p:Platform=$Platform", "-c", $Configuration, "--no-restore", "-v", "minimal")
 
+$smokeCommand = @("dotnet", "exec", $harnessDll, $appDll)
 if (Test-Path -LiteralPath $harnessDll) {
-    $steps += Invoke-Step -Name "assembly-load-smoke" -Kind "smoke" -Command @(
-        "dotnet", "exec", $harnessDll, $appDll)
+    $steps += Invoke-Step -Name "assembly-load-smoke" -Kind "smoke" -Command $smokeCommand
 }
 else {
-    $steps += [pscustomobject]@{
-        name = "assembly-load-smoke"
-        kind = "smoke"
-        command = "dotnet exec $harnessDll $appDll"
-        exitCode = 1
-        durationMs = 0
-        succeeded = $false
-        # Same shape as Invoke-Step: the result projection below reads lockDetected
-        # from every step, and under strict mode a missing property throws.
-        lockDetected = $false
-        output = "Harness assembly not built: $harnessDll"
-    }
+    $steps += New-StepResult -Name "assembly-load-smoke" -Kind "smoke" -Command $smokeCommand `
+        -ExitCode 1 -DurationMs 0 -LockDetected $false -Output "Harness assembly not built: $harnessDll"
 }
 
 $steps += Invoke-Step -Name "whitespace" -Kind "diff" -Command @(
