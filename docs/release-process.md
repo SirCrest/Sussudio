@@ -34,41 +34,17 @@ Install or provide all of the following on the release machine:
 
 - a current Azure CLI, authenticated with `az login`;
 - an identity with the **Artifact Signing Certificate Profile Signer** role for
-  an active, identity-validated certificate profile;
-- x64 Windows SDK SignTool;
-- the x64 `Azure.CodeSigning.Dlib.dll` from Microsoft's Artifact Signing
-  client, with its sibling dependencies kept beside it; and
-- an Artifact Signing metadata JSON file stored outside this repository.
+  an active, identity-validated certificate profile; and
+- the .NET `sign` tool: `dotnet tool install -g --prerelease sign`.
 
-The metadata file must name `Endpoint`, `CodeSigningAccountName`, and
-`CertificateProfileName`. The release path deliberately uses the current Azure
-CLI principal, so `ExcludeCredentials` must exclude the other supported
-credential providers without excluding `AzureCliCredential`. A minimal policy
-shape is:
-
-```json
-{
-  "Endpoint": "https://REGION.codesigning.azure.net",
-  "CodeSigningAccountName": "ACCOUNT",
-  "CertificateProfileName": "PROFILE",
-  "ExcludeCredentials": [
-    "EnvironmentCredential",
-    "ManagedIdentityCredential",
-    "WorkloadIdentityCredential",
-    "SharedTokenCacheCredential",
-    "VisualStudioCredential",
-    "VisualStudioCodeCredential",
-    "AzurePowerShellCredential",
-    "AzureDeveloperCliCredential",
-    "InteractiveBrowserCredential"
-  ]
-}
-```
-
-Do not put credentials in this file. Do not copy it into the repository,
-publish directories, staging directory, ZIP, logs, or release notes. The Dlib
-uses the authenticated Azure identity; the first signing request remains the
-authoritative RBAC/profile check.
+The script defaults to the `crest-signing` account and its `SimpleStats-Cert`
+profile in West US 2 (`-SigningEndpoint`, `-SigningAccount`,
+`-SigningCertificateProfile`). The profile name is only a label: the
+certificate subject is the publisher identity, which the script checks against
+`-ExpectedSigner`. Signing pins `--azure-credential-type azure-cli`, so the
+`az login` identity is always the signing principal; the first signing request
+remains the authoritative RBAC/profile check. No credentials or signing
+configuration files live in this repository.
 
 ## Build a prerelease
 
@@ -82,19 +58,14 @@ dotnet restore Sussudio.slnx -p:Platform=x64
 ```
 
 ```powershell
-tools\package-github-release.ps1 `
-  -Version 0.4.0 `
-  -SignToolPath 'C:\Program Files (x86)\Windows Kits\10\bin\VERSION\x64\signtool.exe' `
-  -AzureCodeSigningDlibPath 'C:\artifact-signing\bin\x64\Azure.CodeSigning.Dlib.dll' `
-  -ArtifactSigningMetadataPath 'C:\release-secrets\sussudio-signing.json'
+tools\package-github-release.ps1 -Version 0.4.0
 ```
 
-The script signs only an explicit first-party allowlist. It uses SHA-256 file
-digests and the Microsoft RFC 3161 timestamp service, then runs SignTool
-verification with timestamp warnings enabled for every first-party binary.
-Third-party FFmpeg DLLs are never signed with the Sussudio publisher identity.
-Microsoft documents this local Dlib/SignTool workflow and its required
-timestamping in [Set up signing integrations](https://learn.microsoft.com/en-us/azure/artifact-signing/how-to-signing-integrations).
+The script signs only an explicit first-party allowlist with SHA-256 file
+digests and the Microsoft RFC 3161 timestamp service. It then requires every
+first-party binary to have a `Valid` Authenticode status, the expected signer
+subject and a timestamp. Third-party FFmpeg DLLs are never signed with the
+Sussudio publisher identity.
 
 ## FFmpeg identity
 
