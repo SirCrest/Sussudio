@@ -108,22 +108,6 @@ function Assert-CleanTaggedPrerelease {
     return $headCommit
 }
 
-function Test-FullPathWithinRoot {
-    param(
-        [Parameter(Mandatory = $true)][string]$Candidate,
-        [Parameter(Mandatory = $true)][string]$Root
-    )
-
-    $candidatePath = [IO.Path]::GetFullPath($Candidate).TrimEnd('\', '/')
-    $rootPath = [IO.Path]::GetFullPath($Root).TrimEnd('\', '/')
-    if ([string]::Equals($candidatePath, $rootPath, [StringComparison]::OrdinalIgnoreCase)) {
-        return $true
-    }
-
-    $rootPrefix = $rootPath + [IO.Path]::DirectorySeparatorChar
-    return $candidatePath.StartsWith($rootPrefix, [StringComparison]::OrdinalIgnoreCase)
-}
-
 function Get-ValidatedFfmpegManifest {
     param([Parameter(Mandatory = $true)][string]$ManifestPath)
 
@@ -228,67 +212,30 @@ function Assert-FfmpegRuntimeMatchesManifest {
 function Resolve-ArtifactSigningPrerequisites {
     param(
         [Parameter(Mandatory = $true)][string]$RepoRoot,
-        [Parameter(Mandatory = $true)][string]$SignToolPath,
-        [Parameter(Mandatory = $true)][string]$AzureCodeSigningDlibPath,
-        [Parameter(Mandatory = $true)][string]$ArtifactSigningMetadataPath,
+        [Parameter(Mandatory = $true)][string]$Endpoint,
+        [Parameter(Mandatory = $true)][string]$Account,
+        [Parameter(Mandatory = $true)][string]$CertificateProfile,
+        [Parameter(Mandatory = $true)][string]$ExpectedSigner,
+        [string]$SignToolCommand = 'sign',
         [string]$AzureCliPath = 'az'
     )
 
-    $resolvedSignTool = [IO.Path]::GetFullPath($SignToolPath)
-    if (-not (Test-Path -LiteralPath $resolvedSignTool -PathType Leaf)) {
-        throw "SignTool was not found at '$resolvedSignTool'. Install the Windows SDK signing tools and pass -SignToolPath explicitly."
-    }
-
-    $resolvedDlib = [IO.Path]::GetFullPath($AzureCodeSigningDlibPath)
-    if (-not (Test-Path -LiteralPath $resolvedDlib -PathType Leaf)) {
-        throw "Azure Artifact Signing Dlib was not found at '$resolvedDlib'. Install the Microsoft signing client and pass -AzureCodeSigningDlibPath explicitly."
-    }
-    if (-not [string]::Equals([IO.Path]::GetFileName($resolvedDlib), 'Azure.CodeSigning.Dlib.dll', [StringComparison]::OrdinalIgnoreCase)) {
-        throw "Azure signing library must be Azure.CodeSigning.Dlib.dll; received '$resolvedDlib'."
-    }
-
-    $resolvedMetadata = [IO.Path]::GetFullPath($ArtifactSigningMetadataPath)
-    if (-not (Test-Path -LiteralPath $resolvedMetadata -PathType Leaf)) {
-        throw "Azure Artifact Signing metadata was not found at '$resolvedMetadata'. Create it outside the repository and pass -ArtifactSigningMetadataPath."
-    }
-    if (Test-FullPathWithinRoot -Candidate $resolvedMetadata -Root $RepoRoot) {
-        throw 'Azure Artifact Signing metadata must remain outside the repository so it cannot be committed or packaged.'
-    }
-    try {
-        $signingMetadata = Get-Content -LiteralPath $resolvedMetadata -Raw | ConvertFrom-Json
-    }
-    catch {
-        throw "Azure Artifact Signing metadata is invalid JSON: $($_.Exception.Message)"
-    }
-
-    foreach ($requiredProperty in @('Endpoint', 'CodeSigningAccountName', 'CertificateProfileName')) {
-        $property = $signingMetadata.PSObject.Properties[$requiredProperty]
-        if ($null -eq $property -or [string]::IsNullOrWhiteSpace([string]$property.Value)) {
-            throw "Azure Artifact Signing metadata property '$requiredProperty' is required."
+    foreach ($required in @(
+            @{ Name = 'Endpoint'; Value = $Endpoint },
+            @{ Name = 'Account'; Value = $Account },
+            @{ Name = 'CertificateProfile'; Value = $CertificateProfile },
+            @{ Name = 'ExpectedSigner'; Value = $ExpectedSigner })) {
+        if ([string]::IsNullOrWhiteSpace($required.Value)) {
+            throw "Artifact Signing setting '$($required.Name)' is required."
         }
     }
 
-    $excludedCredentialsProperty = $signingMetadata.PSObject.Properties['ExcludeCredentials']
-    $excludedCredentials = if ($null -eq $excludedCredentialsProperty) { @() } else { @($excludedCredentialsProperty.Value) }
-    $requiredCredentialExclusions = @(
-        'EnvironmentCredential',
-        'ManagedIdentityCredential',
-        'WorkloadIdentityCredential',
-        'SharedTokenCacheCredential',
-        'VisualStudioCredential',
-        'VisualStudioCodeCredential',
-        'AzurePowerShellCredential',
-        'AzureDeveloperCliCredential',
-        'InteractiveBrowserCredential'
-    )
-    foreach ($credential in $requiredCredentialExclusions) {
-        if ($credential -notin $excludedCredentials) {
-            throw "Artifact Signing metadata must exclude '$credential' so the authenticated Azure CLI identity is the signing principal."
-        }
+    $signCommand = Get-Command $SignToolCommand -ErrorAction SilentlyContinue
+    if ($null -eq $signCommand) {
+        throw "The '$SignToolCommand' tool was not found. Install it with 'dotnet tool install -g --prerelease sign' and retry."
     }
-    if ('AzureCliCredential' -in $excludedCredentials) {
-        throw "Artifact Signing metadata must not exclude AzureCliCredential."
-    }
+    $resolvedSignTool = $signCommand.Source
+    $null = Invoke-ReleaseNativeCommand -FilePath $resolvedSignTool -Arguments @('--version') -Description 'sign tool version check' -WorkingDirectory $RepoRoot
 
     $azureCommand = Get-Command $AzureCliPath -ErrorAction SilentlyContinue
     if ($null -eq $azureCommand) {
@@ -300,9 +247,11 @@ function Resolve-ArtifactSigningPrerequisites {
 
     return [pscustomobject]@{
         SignToolPath = $resolvedSignTool
-        DlibPath = $resolvedDlib
-        MetadataPath = $resolvedMetadata
         AzureCliPath = $resolvedAzureCli
+        Endpoint = $Endpoint
+        Account = $Account
+        CertificateProfile = $CertificateProfile
+        ExpectedSigner = $ExpectedSigner
     }
 }
 
@@ -332,17 +281,20 @@ function Invoke-ArtifactSigning {
             throw "First-party file selected for signing is missing: $file"
         }
 
+        # The Azure CLI credential is pinned so the authenticated 'az login' identity is the
+        # signing principal, never an environment or cached credential picked up by default.
         $null = Invoke-ReleaseNativeCommand `
             -FilePath $Prerequisites.SignToolPath `
             -Arguments @(
-                'sign',
-                '/v',
-                '/debug',
-                '/fd', 'SHA256',
-                '/tr', $TimestampUrl,
-                '/td', 'SHA256',
-                '/dlib', $Prerequisites.DlibPath,
-                '/dmdf', $Prerequisites.MetadataPath,
+                'code', 'artifact-signing',
+                '--verbosity', 'warning',
+                '--azure-credential-type', 'azure-cli',
+                '--file-digest', 'sha256',
+                '--timestamp-url', $TimestampUrl,
+                '--timestamp-digest', 'sha256',
+                '--artifact-signing-endpoint', $Prerequisites.Endpoint,
+                '--artifact-signing-account', $Prerequisites.Account,
+                '--artifact-signing-certificate-profile', $Prerequisites.CertificateProfile,
                 $file
             ) `
             -Description "Azure Artifact Signing for '$file'"
@@ -356,10 +308,18 @@ function Assert-AuthenticodeSignatures {
     )
 
     foreach ($file in $Files) {
-        $null = Invoke-ReleaseNativeCommand `
-            -FilePath $Prerequisites.SignToolPath `
-            -Arguments @('verify', '/pa', '/all', '/v', '/debug', '/tw', $file) `
-            -Description "Authenticode verification for '$file'"
+        $signature = Get-AuthenticodeSignature -LiteralPath $file
+        if ($signature.Status -ne [System.Management.Automation.SignatureStatus]::Valid) {
+            throw "Authenticode signature for '$file' is $($signature.Status): $($signature.StatusMessage)"
+        }
+        $signer = if ($null -eq $signature.SignerCertificate) { '' } else { $signature.SignerCertificate.Subject }
+        if (-not [string]::Equals($signer, $Prerequisites.ExpectedSigner, [StringComparison]::Ordinal)) {
+            throw "Authenticode signer for '$file' is '$signer'; expected '$($Prerequisites.ExpectedSigner)'."
+        }
+        if ($null -eq $signature.TimeStamperCertificate) {
+            throw "Authenticode signature for '$file' has no timestamp, so it would stop validating when the short-lived certificate expires."
+        }
+        Write-Host "Verified signature: $file"
     }
 }
 

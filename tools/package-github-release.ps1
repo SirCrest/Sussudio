@@ -7,12 +7,10 @@ passes for that same commit.
 param(
     [Parameter(Mandatory = $true)]
     [string]$Version,
-    [Parameter(Mandatory = $true)]
-    [string]$SignToolPath,
-    [Parameter(Mandatory = $true)]
-    [string]$AzureCodeSigningDlibPath,
-    [Parameter(Mandatory = $true)]
-    [string]$ArtifactSigningMetadataPath,
+    [string]$SigningEndpoint = 'https://wus2.codesigning.azure.net/',
+    [string]$SigningAccount = 'crest-signing',
+    [string]$SigningCertificateProfile = 'SimpleStats-Cert',
+    [string]$ExpectedSigner = 'CN=Brett Sanders, O=Brett Sanders, L=Issaquah, S=Washington, C=US',
     [string]$AzureCliPath = 'az'
 )
 
@@ -66,9 +64,10 @@ function Invoke-RobocopyMirror {
 $sourceCommit = Assert-CleanTaggedPrerelease -RepoRoot $repoRoot -Version $Version
 $signingPrerequisites = Resolve-ArtifactSigningPrerequisites `
     -RepoRoot $repoRoot `
-    -SignToolPath $SignToolPath `
-    -AzureCodeSigningDlibPath $AzureCodeSigningDlibPath `
-    -ArtifactSigningMetadataPath $ArtifactSigningMetadataPath `
+    -Endpoint $SigningEndpoint `
+    -Account $SigningAccount `
+    -CertificateProfile $SigningCertificateProfile `
+    -ExpectedSigner $ExpectedSigner `
     -AzureCliPath $AzureCliPath
 $ffmpegManifest = Get-ValidatedFfmpegManifest -ManifestPath $ffmpegManifestPath
 Assert-FfmpegRuntimeMatchesManifest -RuntimeDirectory $sourceFfmpegDirectory -Manifest $ffmpegManifest
