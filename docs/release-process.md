@@ -82,7 +82,8 @@ the manifest merely to make an unexpected local binary pass.
 ## Publish on GitHub
 
 Upload the generated ZIP and `.sha256.txt` file from `artifacts/releases/`.
-Use the generated `.github-release.md` body and enable GitHub's **Set as a
-pre-release** option. The ZIP checksum protects the final signed archive; the
+Use the generated `.github-release.md` body and publish it as the **latest
+release**, not a GitHub pre-release, so it shows first and `/releases/latest`
+points to it. The version number already marks maturity. The ZIP checksum protects the final signed archive; the
 Authenticode signatures independently bind first-party binaries to the
 publisher identity.
