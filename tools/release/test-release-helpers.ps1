@@ -46,6 +46,8 @@ Assert-True (Test-SemVerPrerelease -Version '0.4.0') 'A 0.y.z initial-developmen
 Assert-True (Test-SemVerPrerelease -Version '0.4.0-beta.1') 'A 0.y.z version with a prerelease suffix was rejected.'
 Assert-True (-not (Test-SemVerPrerelease -Version '00.4.0')) 'A leading-zero major version must fail.'
 Assert-True (-not (Test-SemVerPrerelease -Version '0.4')) 'A two-part version must fail.'
+Assert-True (-not (Test-SemVerPrerelease -Version "0.4.0`n")) 'A trailing newline must fail.'
+Assert-True (-not (Test-SemVerPrerelease -Version "1.2.3-beta.1`n")) 'A trailing newline after a prerelease suffix must fail.'
 Assert-True (-not (Test-SemVerPrerelease -Version '1.2.3-beta.01')) 'Numeric prerelease identifiers with leading zero must fail.'
 Assert-True (-not (Test-SemVerPrerelease -Version '..\escape-beta.1')) 'Path-like version must fail.'
 
