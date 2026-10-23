@@ -8,6 +8,7 @@ using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Automation.Provider;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Media;
+using Sussudio.Models;
 using Sussudio.Services.Automation;
 
 namespace Sussudio.Controllers;

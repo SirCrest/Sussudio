@@ -26,6 +26,8 @@
     <ProjectReference Include="..\..\Sussudio.Automation.Contracts\Sussudio.Automation.Contracts.csproj" />
     <!-- Execute the complete managed controller logic with test-only UI boundaries. -->
     <Compile Include="..\..\Sussudio\Controllers\Dispatch\UiDispatchControllers.cs" Link="Production\UiDispatchControllers.cs" />
+    <!-- Native screenshot faults and handle lifetimes can be exercised without WinUI. -->
+    <Compile Include="..\..\Sussudio\Controllers\Screenshot\WindowScreenshotNativeCapture.cs" Link="Production\WindowScreenshotNativeCapture.cs" />
     <!-- Dependency-free production policies executed directly by their unit tests. -->
     <Compile Include="..\..\Sussudio\Models\StatusMessages.cs" Link="Production\StatusMessages.cs" />
     <Compile Include="..\..\Sussudio\Services\Preview\PreviewOutputSizePolicy.cs" Link="Production\PreviewOutputSizePolicy.cs" />
@@ -75,7 +77,8 @@
     <Compile Include="..\..\Sussudio\Services\Performance\AudioMonitorTap.cs" Link="Production\AudioMonitorTap.cs" />
     <Compile Include="..\..\Sussudio\Services\Performance\AudioWavWriter.cs" Link="Production\AudioWavWriter.cs" />
     <Compile Include="..\..\Sussudio\Services\Performance\AudioOutputProbeModels.cs" Link="Production\AudioOutputProbeModels.cs" />
-    <Compile Include="..\..\Sussudio\Services\Automation\UiAutomationModels.cs" Link="Production\UiAutomationModels.cs" />
+    <Compile Include="..\..\Sussudio\Models\Automation\UiAutomationModels.cs" Link="Production\UiAutomationModels.cs" />
+    <Compile Include="..\..\Sussudio\Services\Automation\UiTreeLimits.cs" Link="Production\UiTreeLimits.cs" />
     <Compile Include="..\..\Sussudio\Services\Automation\UiTargetResolver.cs" Link="Production\UiTargetResolver.cs" />
     <Compile Include="..\..\Sussudio\Services\Automation\UiActionPlanner.cs" Link="Production\UiActionPlanner.cs" />
     <Compile Include="..\..\Sussudio\Services\Automation\UiInvokeSequence.cs" Link="Production\UiInvokeSequence.cs" />

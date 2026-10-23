@@ -1,6 +1,6 @@
 # Sussudio Agent Map
 
-Last reviewed: 2026-09-23.
+Last reviewed: 2026-10-18.
 
 This file maps the current repo shape to named owners, entry points, invariants,
 and fast checks. It is intentionally mechanical so future agents can find the
@@ -81,9 +81,11 @@ tests that pin which file owns a symbol; see AGENTS.md § Testing Policy.
 | MJPEG preview pacing | `Sussudio/Services/Capture/MjpegPreviewJitterBuffer.cs` | Paced frame emission anchored to capture cadence, optional display-clock alignment, adaptive depth, and lease ownership. |
 | MJPEG decode pipeline | `Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.cs`, `Sussudio/Services/Capture/Mjpeg/FrameFingerprintCadenceTracker.cs` | Bounded compressed input, CPU decode workers, output ordering, and source-packet cadence metrics. |
 | GPU telemetry | `Sussudio/Services/Gpu/NvmlMonitor.cs`, `NvmlDemandSensor.cs` | Optional NVML sampling and graceful unavailable telemetry; polling follows the stats dock and the telemetry sensor demand. |
+| Capture-shared D3D device | `Sussudio/Services/Gpu/SharedD3DDeviceManager.cs` | Capture-owned D3D device/context and Media Foundation manager lifetime, reset, and COM reference handoff. `ILiveVideoSource` in `Services/Contracts/ServiceContracts.cs` exposes the live-source handoff used by preview and Flashback. |
 | FFmpeg D3D11 ownership | `Sussudio/Services/Gpu/FfmpegD3D11Ownership.cs` | Atomic device/context reference transfer to FFmpeg with rollback before publication. |
 | Automation diagnostics | `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`, `AutomationDiagnosticsHub.Evaluation.cs`, `AutomationDiagnosticsHub.FlashbackEvaluation.cs`, `AutomationDiagnosticsHub.Snapshots.cs`, `AutomationDiagnosticsHub.SnapshotProjection.cs`, `HubProcessCounters.cs` | Snapshot assembly and health evaluation. See [automation](#automation) for collector/assembly boundaries. |
 | Automation snapshot models | `Sussudio/Models/Automation/AutomationSnapshot.cs`, `AutomationModels.cs` | Flattened evidence snapshots and command/runtime DTOs; preserve wire shape. |
+| UI automation models | `Sussudio/Models/Automation/UiAutomationModels.cs` | Plain tree/invoke DTOs and wire status vocabulary shared by window contracts and automation consumers. Traversal caps and invoke-settle timing remain service policy in `Services/Automation/UiTreeLimits.cs`. |
 | Capture models | `Sussudio/Models/Capture/CaptureModels.cs` | Capture configuration, input media formats, health, cadence, and runtime DTOs. `MediaFormat` owns input frame-rate and pixel-format behavior beside `CaptureDevice`. |
 | Recording models | `Sussudio/Models/Recording/RecordingModels.cs` | Encoder capabilities, recording statistics, and integrity DTOs. `RecordingIntegrityStatus` and `RecordingIntegrityAudioStatus` define the typed integrity vocabulary; only the `AutomationSnapshot` projection turns these values into wire text. `EncoderSupport` owns recording-format-to-NVENC codec-name mapping. |
 | Flashback models | `Sussudio/Models/Flashback/FlashbackModels.cs` | Buffer options, session context, playback state, export progress/segments/requests, and force-rotation results. These types retain the `Sussudio.Models` namespace. |
@@ -160,8 +162,7 @@ Preview renderer notes:
   texture reuse/teardown, HDR fallback logging, native-call guard consumption,
   shader-resource binding, draw calls, and shader-mode present messages there.
 - `Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs` owns D3D
-  device/swap-chain/video-processor fields, shared source-reader D3D manager
-  lifecycle plus the `ILiveVideoSource` handoff contract, `InitializeD3D` orchestration,
+  device/swap-chain/video-processor fields and `InitializeD3D` orchestration,
   shared-vs-owned device setup, shared-device COM reference handoff/reinit
   retirement/reset scheduling, the removed-shared-device fallback to an owned device,
   device-lost classification (every removed-state DXGI HRESULT; failed `Present`,
@@ -696,7 +697,9 @@ Fingers:
   visibility) and `UiInvokeSequence` (the order of one invoke: perform, settle,
   read back; the request's cancellation stops the action only before the UI
   thread starts it, and the result reports an action that ran).
-  `UiAutomationModels.cs` owns the wire DTOs and status constants.
+  `Sussudio/Models/Automation/UiAutomationModels.cs` owns the wire DTOs and status
+  constants; `Services/Automation/UiTreeLimits.cs` owns traversal limits and
+  invoke-settle timing.
 - `Sussudio/Services/Automation/AutomationCommandDispatcher.UiAutomation.cs` owns
   the command 66 and 67 handlers and the status to error-code mapping
   (`invalid-request` for what rewording fixes, `command-failed` for live UI state).
@@ -1455,14 +1458,18 @@ Primary current owners:
   `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs`.
 - `Sussudio/Controllers/Screenshot/ScreenshotControllers.cs` owns automation
   whole-window screenshot dispatch plus preview-frame screenshot button workflow:
-  UI-thread enqueue/cancellation, failure wrapping, native PrintWindow capture,
-  GDI/DIB lifetime, output directory creation, screenshot result shaping, pure
+  UI-thread enqueue/cancellation, failure wrapping, output directory creation, screenshot result shaping, pure
   PNG/BMP byte-stream encoding helpers, pure preview-frame screenshot output-directory fallback,
   file naming, status/log text policy, preview-frame capture, logging side
   effects, and button enable/disable state. Keep whole-window screenshot
   automation on `MainWindow.xaml.cs` with the rest of the
   `IAutomationWindowControl` adapter; `MainWindow.xaml.cs` is the
   XAML-facing adapter for preview-frame screenshots.
+  `Sussudio/Controllers/Screenshot/WindowScreenshotNativeCapture.cs` owns
+  PrintWindow capture, validated GDI handle acquisition, selection restoration,
+  complete DIB readback, and native resource cleanup. It returns complete BGRA
+  pixels before the controller creates an output file; its native API boundary
+  supports fault injection without loading WinUI.
 - `Sussudio/Controllers/Window/WindowControllers.cs` owns window geometry
   automation plus the recordings-folder command and shell automation host
   lifecycle: UI-thread dispatch, AppWindow and DisplayArea access, maximized
@@ -1509,18 +1516,18 @@ Primary current owners:
   sampling, startup missing-signal refresh from the single startup session owner,
   sampled-input assembly, read-only
   preview runtime snapshot construction orchestration, and the UI-thread
-  sampled preview snapshot input contract shared by the snapshot controller and
-  D3D projection builder; final preview runtime snapshot DTO flattening from
-  sampled input and D3D projection; direct surface/startup/GPU playback mapping;
+  sampled preview signature shared by the snapshot controller and renderer
+  sampling; final preview runtime snapshot DTO flattening from that signature
+  and captured renderer metric groups; direct surface/startup/GPU playback mapping;
   the health input factory; preview startup elapsed timing; and
   blank/stall suspicion policy.
   `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotControllers.cs`
-  owns the renderer projection data contract, independent frame-counter and
-  renderer-state policies, renderer metric sampling order, and direct projection
-  of sampled renderer metric groups.
+  owns the captured renderer metric bundle, independent frame-counter and
+  renderer-state policies, and renderer metric sampling order.
   Display cadence, render CPU timing, pipeline latency, frame ownership, DXGI
-  frame statistics, and frame-latency wait defaults stay in private Apply
-  methods; each renderer metric group is sampled once.
+  frame statistics, and frame-latency wait defaults are applied once in the final
+  mapper; each renderer metric group is sampled once under its existing lock,
+  without implying an atomic snapshot across groups.
   Window close routing/finalization ownership is detailed in the window close
   section below:
   `Sussudio/Controllers/Window/WindowControllers.cs`,
@@ -1733,8 +1740,8 @@ Primary current owners:
   MainWindow preview runtime xUnit wrappers and backing `Program` methods for
   preview resize telemetry, preview renderer startup-plan fallback policy,
   preview surface/shadow, renderer host lifecycle, D3D startup/reinit, stats
-  adapter, preview runtime snapshot mapping, D3D projection ownership
-  assertions, preview runtime snapshot controller Build integration, D3D policy
+  adapter, preview runtime snapshot mapping, captured D3D metric groups,
+  preview runtime snapshot controller Build integration, D3D policy
   null-renderer defaults, health policy/input factory, and
   final snapshot surface/startup/GPU playback field-preservation regression checks.
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs` owns
@@ -1754,15 +1761,17 @@ Primary current owners:
   info/status-strip presentation, agent-facing automation ID inventory,
   full-screen/window automation, UI dispatching, preview-transition, preview startup overlay,
   and preview fade-in controllers, plus window-title formatting,
-  recording-button chrome, responsive shell layout adapter/controller ownership,
-  responsive breakpoint/placement and snap-region rectangle policy checks,
+  recording-button chrome, responsive breakpoint/placement and snap-region rectangle policy checks,
   output path display/action ownership, output picker and output drive
   free-space presentation bridge checks, preview screenshot workflow/text-policy,
-  whole-window screenshot ownership checks, stats snapshot builder/provider
+  whole-window PNG/BMP header checks, stats snapshot builder/provider
   contract checks, recording-state presentation, and
   recording-state presentation policy assertions, plus recording action,
   preview audio fade, preview button presentation, audio control presentation,
   and microphone control ownership assertions.
+- `tests/Sussudio.Tests/WindowScreenshotNativeCaptureTests.cs` injects native
+  acquisition, selection, PrintWindow, and readback failures and verifies that
+  no incomplete buffer is returned and acquired handles are released in order.
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`
   owns MainWindow capture-controller ownership assertions: capture selection
   binding XAML-adapter, controller shell, `PropertyChanged` routing, collection

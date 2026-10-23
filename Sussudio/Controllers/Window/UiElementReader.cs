@@ -9,6 +9,7 @@ using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Automation.Provider;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
+using Sussudio.Models;
 using Sussudio.Services.Automation;
 using Windows.Foundation;
 using Windows.System;

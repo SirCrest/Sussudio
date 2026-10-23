@@ -444,8 +444,8 @@ public sealed class PresentationPreviewMainWindowInitialContractsTests
     }
 
     [Fact]
-    public Task WindowScreenshotImageEncodingLivesInFocusedHelper()
-        => global::Program.WindowScreenshotImageEncoding_LivesInFocusedHelper();
+    public Task WindowScreenshotImageEncodingPreservesPngAndBmpHeaders()
+        => global::Program.WindowScreenshotImageEncoding_PreservesPngAndBmpHeaders();
 }
 
 [Collection(RecoveryEnvironmentCollection.Name)]
@@ -2152,6 +2152,38 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static void SetPreviewSnapshotInputValue(object input, string propertyName, object? value)
+    {
+        var inputType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotInput");
+        if (inputType.IsInstanceOfType(input) && inputType.GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic) == null)
+        {
+            var signatureProperty = inputType.GetProperty("Signature")
+                                   ?? throw new InvalidOperationException("PreviewRuntimeSnapshotInput.Signature not found.");
+            var signatureType = signatureProperty.PropertyType;
+            var signature = signatureProperty.GetValue(input)!;
+            var constructor = signatureType.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+                .Single(candidate => candidate.GetParameters().Length == 22);
+            var parameters = constructor.GetParameters();
+            var arguments = parameters.Select(parameter =>
+            {
+                var property = signatureType.GetProperty(parameter.Name!, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase)
+                               ?? throw new InvalidOperationException($"Signature property '{parameter.Name}' not found.");
+                return property.GetValue(signature);
+            }).ToArray();
+            var index = Array.FindIndex(parameters, parameter => string.Equals(parameter.Name, propertyName, StringComparison.OrdinalIgnoreCase));
+            if (index < 0)
+            {
+                throw new InvalidOperationException($"Signature field '{propertyName}' not found.");
+            }
+
+            arguments[index] = value;
+            signatureProperty.SetValue(input, constructor.Invoke(arguments));
+            return;
+        }
+
+        SetPropertyOrBackingField(input, propertyName, value);
+    }
+
     internal static Task PreviewRuntimeSnapshotEpoch_DoesNotAdvanceForUnchangedSignatures()
     {
         var contextType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotSamplingControllerContext");
@@ -2218,11 +2250,11 @@ static partial class Program
 
         var attachedInput = Activator.CreateInstance(inputType)
                             ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotInput.");
-        SetPropertyOrBackingField(attachedInput, "D3DRenderer", null);
-        SetPropertyOrBackingField(attachedInput, "PreviewSourceAttached", true);
-        SetPropertyOrBackingField(attachedInput, "FramesArrived", 31L);
-        SetPropertyOrBackingField(attachedInput, "FramesDisplayed", 17L);
-        SetPropertyOrBackingField(attachedInput, "FramesDropped", 4L);
+        SetPreviewSnapshotInputValue(attachedInput, "D3DRenderer", null);
+        SetPreviewSnapshotInputValue(attachedInput, "PreviewSourceAttached", true);
+        SetPreviewSnapshotInputValue(attachedInput, "FramesArrived", 31L);
+        SetPreviewSnapshotInputValue(attachedInput, "FramesDisplayed", 17L);
+        SetPreviewSnapshotInputValue(attachedInput, "FramesDropped", 4L);
 
         var attachedCounters = evaluate.Invoke(null, new[] { attachedInput })
                                ?? throw new InvalidOperationException("PreviewRuntimeD3DFrameCounterPolicy returned null.");
@@ -2237,8 +2269,8 @@ static partial class Program
 
         var detachedInput = Activator.CreateInstance(inputType)
                             ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotInput.");
-        SetPropertyOrBackingField(detachedInput, "D3DRenderer", null);
-        SetPropertyOrBackingField(detachedInput, "PreviewSourceAttached", false);
+        SetPreviewSnapshotInputValue(detachedInput, "D3DRenderer", null);
+        SetPreviewSnapshotInputValue(detachedInput, "PreviewSourceAttached", false);
 
         var detachedCounters = evaluate.Invoke(null, new[] { detachedInput })
                                ?? throw new InvalidOperationException("PreviewRuntimeD3DFrameCounterPolicy returned null.");
@@ -2250,22 +2282,22 @@ static partial class Program
     internal static Task PreviewRuntimeD3DProjectionBuilder_AppliesPolicyGroups()
     {
         var inputType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotInput");
-        var projectionType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DProjection");
-        var build = projectionType.GetMethod("Build", BindingFlags.Public | BindingFlags.Static)
-                    ?? throw new InvalidOperationException("PreviewRuntimeD3DProjection.Build not found.");
+        var controllerType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotController");
+        var build = controllerType.GetMethod("Build", BindingFlags.Public | BindingFlags.Static)
+                    ?? throw new InvalidOperationException("PreviewRuntimeSnapshotController.Build not found.");
 
         var input = Activator.CreateInstance(inputType)
                     ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotInput.");
-        SetPropertyOrBackingField(input, "D3DRenderer", null);
-        SetPropertyOrBackingField(input, "PreviewSourceAttached", true);
-        SetPropertyOrBackingField(input, "IsPreviewing", true);
-        SetPropertyOrBackingField(input, "FramesArrived", 31L);
-        SetPropertyOrBackingField(input, "FramesDisplayed", 17L);
-        SetPropertyOrBackingField(input, "FramesDropped", 4L);
-        SetPropertyOrBackingField(input, "PreviewMinPresentationIntervalMs", 8.33d);
+        SetPreviewSnapshotInputValue(input, "D3DRenderer", null);
+        SetPreviewSnapshotInputValue(input, "PreviewSourceAttached", true);
+        SetPreviewSnapshotInputValue(input, "IsPreviewing", true);
+        SetPreviewSnapshotInputValue(input, "FramesArrived", 31L);
+        SetPreviewSnapshotInputValue(input, "FramesDisplayed", 17L);
+        SetPreviewSnapshotInputValue(input, "FramesDropped", 4L);
+        SetPreviewSnapshotInputValue(input, "PreviewMinPresentationIntervalMs", 8.33d);
 
         var projection = build.Invoke(null, new[] { input })
-                         ?? throw new InvalidOperationException("PreviewRuntimeD3DProjection.Build returned null.");
+                         ?? throw new InvalidOperationException("PreviewRuntimeSnapshotController.Build returned null.");
         AssertEqual(false, GetBoolProperty(projection, "GpuActive"), "builder applies frame-counter GPU state");
         AssertEqual(true, GetBoolProperty(projection, "RendererAttached"), "builder applies CPU fallback attachment");
         AssertEqual(31L, GetLongProperty(projection, "FramesArrived"), "builder applies frame-counter arrived value");
@@ -2284,7 +2316,7 @@ static partial class Program
     {
         var metrics = CreatePreviewRendererMetric("DxgiFrameStatisticsMetrics",
             11L, 12L, 13L, "DXGI_ERROR_FRAME_STATISTICS_DISJOINT", 14L, 15L, 16L, 17L, 18L, 19L, 20L, 21L, 22L);
-        AssertPreviewMetricSnapshots("ApplyFrameStatistics", metrics,
+        AssertPreviewMetricSnapshots("FrameStatistics", metrics,
             ("D3DFrameStatsSampleCount", 0L, 11L),
             ("D3DFrameStatsSuccessCount", 0L, 12L),
             ("D3DFrameStatsFailureCount", 0L, 13L),
@@ -2299,7 +2331,7 @@ static partial class Program
             ("D3DFrameStatsMissedRefreshCount", 0L, 21L),
             ("D3DFrameStatsCadenceMissedRefreshCount", 0L, 22L));
 
-        AssertPreviewMetricSnapshots("ApplyFrameStatistics", CreatePreviewRendererMetric("DxgiFrameStatisticsMetrics"),
+        AssertPreviewMetricSnapshots("FrameStatistics", CreatePreviewRendererMetric("DxgiFrameStatisticsMetrics"),
             ("D3DFrameStatsPresentCount", -1L, 0L),
             ("D3DFrameStatsPresentRefreshCount", -1L, 0L),
             ("D3DFrameStatsSyncRefreshCount", -1L, 0L),
@@ -2312,7 +2344,7 @@ static partial class Program
         var timing = CreatePreviewRendererMetric("CpuStageTimingMetrics", 66, 6.7d, 6.8d, 6.9d, 7d);
         var metrics = CreatePreviewRendererMetric("FrameLatencyWaitMetrics",
             true, false, 61L, 62L, 63L, 64L, 0xFFFFFFF0u, 6.5d, timing);
-        AssertPreviewMetricSnapshots("ApplyFrameLatencyWait", metrics,
+        AssertPreviewMetricSnapshots("FrameLatencyWait", metrics,
             ("D3DFrameLatencyWaitEnabled", false, true),
             ("D3DFrameLatencyWaitHandleActive", false, false),
             ("D3DFrameLatencyWaitCallCount", 0L, 61L),
@@ -2329,7 +2361,7 @@ static partial class Program
 
         var activeHandleMetrics = CreatePreviewRendererMetric("FrameLatencyWaitMetrics",
             false, true, 0L, 0L, 0L, 0L, 0u, 0d, timing);
-        AssertPreviewMetricSnapshots("ApplyFrameLatencyWait", activeHandleMetrics,
+        AssertPreviewMetricSnapshots("FrameLatencyWait", activeHandleMetrics,
             ("D3DFrameLatencyWaitEnabled", false, false),
             ("D3DFrameLatencyWaitHandleActive", false, true));
         return Task.CompletedTask;
@@ -2341,7 +2373,7 @@ static partial class Program
             1001L, 1002L, 1003L, 1004L, 1005L,
             2001L, 2002L, 2003L, 2004L, 2005L, 2.6d, 2.7d,
             3001L, 3002L, 3003L, 3004L, 3005L, "replaced by newer frame");
-        AssertPreviewMetricSnapshots("ApplyFrameOwnership", metrics,
+        AssertPreviewMetricSnapshots("FrameOwnership", metrics,
             ("D3DLastSubmittedPreviewPresentId", 0L, 1001L),
             ("D3DLastSubmittedSourceSequenceNumber", -1L, 1002L),
             ("D3DLastSubmittedSourcePtsTicks", 0L, 1003L),
@@ -2361,7 +2393,7 @@ static partial class Program
             ("D3DLastDroppedUtcUnixMs", 0L, 3005L),
             ("D3DLastDropReason", string.Empty, "replaced by newer frame"));
 
-        AssertPreviewMetricSnapshots("ApplyFrameOwnership", CreatePreviewRendererMetric("FrameOwnershipMetrics"),
+        AssertPreviewMetricSnapshots("FrameOwnership", CreatePreviewRendererMetric("FrameOwnershipMetrics"),
             ("D3DLastSubmittedSourceSequenceNumber", -1L, 0L),
             ("D3DLastRenderedSourceSequenceNumber", -1L, 0L),
             ("D3DLastDroppedSourceSequenceNumber", -1L, 0L),
@@ -2408,7 +2440,7 @@ static partial class Program
         var intervals = new[] { 8.1d, 8.2d };
         var metrics = CreatePreviewRendererMetric("PresentCadenceMetrics",
             19, 118.5d, 8.33d, 8.44d, 8.55d, 8.66d, 8.77d, 110.1d, 111.2d, 159.3d, intervals, 0.45d, 7L, 6.7d);
-        AssertPreviewMetricSnapshots("ApplyDisplayCadence", metrics,
+        AssertPreviewMetricSnapshots("DisplayCadence", metrics,
             ("DisplayCadenceSampleCount", 0, 19),
             ("DisplayCadenceObservedFps", 0d, 118.5d),
             ("DisplayCadenceExpectedIntervalMs", 0d, 8.33d),
@@ -2424,7 +2456,7 @@ static partial class Program
             ("DisplayCadenceSlowFrameCount", 0L, 7L),
             ("DisplayCadenceSlowFramePercent", 0d, 6.7d));
 
-        AssertPreviewMetricSnapshots("ApplyDisplayCadence", CreatePreviewRendererMetric("PresentCadenceMetrics"),
+        AssertPreviewMetricSnapshots("DisplayCadence", CreatePreviewRendererMetric("PresentCadenceMetrics"),
             ("DisplayCadenceRecentIntervalsMs", Array.Empty<double>(), Array.Empty<double>()));
         return Task.CompletedTask;
     }
@@ -2436,7 +2468,7 @@ static partial class Program
         var presentCall = CreatePreviewRendererMetric("CpuStageTimingMetrics", 33, 3.1d, 3.2d, 3.3d, 3.4d);
         var totalFrame = CreatePreviewRendererMetric("CpuStageTimingMetrics", 44, 4.1d, 4.2d, 4.3d, 4.4d);
         var metrics = CreatePreviewRendererMetric("RenderCpuTimingMetrics", inputUpload, renderSubmit, presentCall, totalFrame);
-        AssertPreviewMetricSnapshots("ApplyRenderCpuTiming", metrics,
+        AssertPreviewMetricSnapshots("RenderCpuTiming", metrics,
             ("D3DCpuTimingSampleCount", 0, 44),
             ("D3DInputUploadCpuAvgMs", 0d, 1.1d),
             ("D3DInputUploadCpuP95Ms", 0d, 1.2d),
@@ -2460,7 +2492,7 @@ static partial class Program
     internal static Task PreviewRuntimeSnapshotProjection_PreservesPipelineLatencyMetrics()
     {
         var metrics = CreatePreviewRendererMetric("PipelineLatencyMetrics", 51, 5.1d, 5.2d, 5.3d, 5.4d);
-        AssertPreviewMetricSnapshots("ApplyPipelineLatency", metrics,
+        AssertPreviewMetricSnapshots("PipelineLatency", metrics,
             ("D3DPipelineLatencySampleCount", 0, 51),
             ("D3DPipelineLatencyAvgMs", 0d, 5.1d),
             ("D3DPipelineLatencyP95Ms", 0d, 5.2d),
@@ -2474,13 +2506,60 @@ static partial class Program
         => Activator.CreateInstance(RequireType($"Sussudio.Services.Preview.D3D11PreviewRenderer+{typeName}"), arguments)
            ?? throw new InvalidOperationException($"Failed to create renderer metric {typeName}.");
 
+    private static object CreatePreviewD3DProjection(
+        IReadOnlyDictionary<string, object?>? counterValues = null,
+        IReadOnlyDictionary<string, object?>? rendererStateValues = null,
+        string? metricGroup = null,
+        object? metrics = null)
+    {
+        static object CreateRecord(Type type, IReadOnlyDictionary<string, object?>? values)
+        {
+            var constructor = type.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+                .Single(candidate => candidate.GetParameters().Length > 0);
+            var arguments = constructor.GetParameters().Select(parameter =>
+            {
+                var valuePair = values?.FirstOrDefault(pair => string.Equals(pair.Key, parameter.Name, StringComparison.OrdinalIgnoreCase));
+                if (valuePair.HasValue && valuePair.Value.Key != null)
+                {
+                    return valuePair.Value.Value;
+                }
+
+                return parameter.ParameterType.IsValueType ? Activator.CreateInstance(parameter.ParameterType) : null;
+            }).ToArray();
+            return constructor.Invoke(arguments);
+        }
+
+        var projectionType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DProjection");
+        var projectionConstructor = projectionType.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+            .Single(candidate => candidate.GetParameters().Length == 8);
+        var arguments = new object?[8];
+        foreach (var parameter in projectionConstructor.GetParameters())
+        {
+            var index = Array.IndexOf(projectionConstructor.GetParameters(), parameter);
+            if (string.Equals(parameter.Name, "FrameCounters", StringComparison.OrdinalIgnoreCase))
+            {
+                arguments[index] = CreateRecord(RequireType("Sussudio.Controllers.PreviewRuntimeD3DFrameCounters"), counterValues);
+            }
+            else if (string.Equals(parameter.Name, "RendererState", StringComparison.OrdinalIgnoreCase))
+            {
+                arguments[index] = CreateRecord(RequireType("Sussudio.Controllers.PreviewRuntimeD3DRendererState"), rendererStateValues);
+            }
+            else if (string.Equals(parameter.Name, metricGroup, StringComparison.OrdinalIgnoreCase))
+            {
+                arguments[index] = metrics;
+            }
+        }
+
+        return projectionConstructor.Invoke(arguments);
+    }
+
     private static void AssertPreviewMetricSnapshots(
-        string applyMethod,
+        string metricGroup,
         object metrics,
         params (string Field, object Absent, object Present)[] expectedFields)
     {
         var absentSnapshot = BuildPreviewMetricSnapshot();
-        var presentSnapshot = BuildPreviewMetricSnapshot(applyMethod, metrics);
+        var presentSnapshot = BuildPreviewMetricSnapshot(metricGroup, metrics);
         foreach (var expected in expectedFields)
         {
             // Object equality for arrays also verifies that projection preserves the sampled array reference.
@@ -2489,24 +2568,23 @@ static partial class Program
         }
     }
 
-    private static object BuildPreviewMetricSnapshot(string? applyMethod = null, object? metrics = null)
+    private static object BuildPreviewMetricSnapshot(string? metricGroup = null, object? metrics = null)
     {
         var inputType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotInput");
         var input = Activator.CreateInstance(inputType)
                     ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotInput.");
-        SetPropertyOrBackingField(input, "PreviewMinPresentationIntervalMs", 8.33d);
-
-        if (applyMethod == null)
+        if (metricGroup == null)
         {
             var controller = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotController");
             return controller.GetMethod("Build", BindingFlags.Public | BindingFlags.Static)!.Invoke(null, new[] { input })
                    ?? throw new InvalidOperationException("PreviewRuntimeSnapshotController.Build returned null.");
         }
 
-        var projectionType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DProjection");
-        var projection = projectionType.GetMethod("Build", BindingFlags.Public | BindingFlags.Static)!.Invoke(null, new[] { input })
-                         ?? throw new InvalidOperationException("PreviewRuntimeD3DProjection.Build returned null.");
-        InvokeNonPublicInstanceMethod(projection, applyMethod, new[] { metrics });
+        var projection = CreatePreviewD3DProjection(
+            new Dictionary<string, object?> { ["RendererAttached"] = false, ["GpuActive"] = false },
+            null,
+            metricGroup,
+            metrics);
         var health = Activator.CreateInstance(RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotHealth"), new object?[] { null, false, false })
                      ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotHealth.");
         var mapper = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotMapper");
@@ -2582,7 +2660,6 @@ static partial class Program
     internal static Task PreviewRuntimeSnapshotHealthInputFactory_ProjectsControllerInputs()
     {
         var inputType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotInput");
-        var projectionType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DProjection");
         var factoryType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotHealthInputFactory");
         var build = factoryType.GetMethod("Build", BindingFlags.Public | BindingFlags.Static)
                     ?? throw new InvalidOperationException("PreviewRuntimeSnapshotHealthInputFactory.Build not found.");
@@ -2590,24 +2667,25 @@ static partial class Program
 
         var input = Activator.CreateInstance(inputType)
                     ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotInput.");
-        SetPropertyOrBackingField(input, "IsPreviewing", true);
-        SetPropertyOrBackingField(input, "IsStartupWaitingForFirstVisual", true);
-        SetPropertyOrBackingField(input, "StartupRequestedUtc", now.AddMilliseconds(-2500));
-        SetPropertyOrBackingField(input, "StartupTimeoutMs", 1200);
-        SetPropertyOrBackingField(input, "LastPresentedTick", 42L);
+        SetPreviewSnapshotInputValue(input, "IsPreviewing", true);
+        SetPreviewSnapshotInputValue(input, "IsStartupWaitingForFirstVisual", true);
+        SetPreviewSnapshotInputValue(input, "StartupRequestedUtc", now.AddMilliseconds(-2500));
+        SetPreviewSnapshotInputValue(input, "StartupTimeoutMs", 1200);
+        SetPreviewSnapshotInputValue(input, "LastPresentedTick", 42L);
 
-        var projection = Activator.CreateInstance(projectionType)
-                         ?? throw new InvalidOperationException("Failed to create PreviewRuntimeD3DProjection.");
-        SetPropertyOrBackingField(projection, "RendererAttached", true);
-        SetPropertyOrBackingField(projection, "GpuActive", false);
-        SetPropertyOrBackingField(projection, "FramesArrived", 55L);
-        SetPropertyOrBackingField(projection, "FramesDisplayed", 6L);
+        var projection = CreatePreviewD3DProjection(new Dictionary<string, object?>
+        {
+            ["RendererAttached"] = true,
+            ["GpuActive"] = false,
+            ["FramesArrived"] = 55L,
+            ["FramesDisplayed"] = 6L
+        });
 
         var healthInput = build.Invoke(null, new object[] { input, projection, 999L, now })
                           ?? throw new InvalidOperationException("PreviewRuntimeSnapshotHealthInputFactory returned null.");
         AssertEqual(true, GetBoolProperty(healthInput, "IsPreviewing"), "health input previewing");
         AssertEqual(true, GetBoolProperty(healthInput, "IsStartupWaitingForFirstVisual"), "health input waiting for first visual");
-        AssertEqual(GetPropertyValue(input, "StartupRequestedUtc"), GetPropertyValue(healthInput, "StartupRequestedUtc"), "health input startup request time");
+        AssertEqual(GetPropertyValue(GetPropertyValue(input, "Signature")!, "StartupRequestedUtc"), GetPropertyValue(healthInput, "StartupRequestedUtc"), "health input startup request time");
         AssertEqual(1200, GetIntProperty(healthInput, "StartupTimeoutMs"), "health input startup timeout");
         AssertEqual(true, GetBoolProperty(healthInput, "RendererAttached"), "health input renderer attached");
         AssertEqual(false, GetBoolProperty(healthInput, "GpuActive"), "health input GPU active");
@@ -2623,7 +2701,6 @@ static partial class Program
     internal static Task PreviewRuntimeSnapshotMapper_PreservesVisibilityAndHealthFields()
     {
         var inputType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotInput");
-        var projectionType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DProjection");
         var healthType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotHealth");
         var mapperType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotMapper");
         var build = mapperType.GetMethod("Build", BindingFlags.Public | BindingFlags.Static)
@@ -2634,23 +2711,24 @@ static partial class Program
         {
             var input = Activator.CreateInstance(inputType)
                         ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotInput.");
-            SetPropertyOrBackingField(input, "PreviewRuntimeEpoch", 73L);
-            SetPropertyOrBackingField(input, "IsPreviewing", active);
-            SetPropertyOrBackingField(input, "PlaceholderVisible", !active);
-            SetPropertyOrBackingField(input, "GpuElementVisible", active);
-            SetPropertyOrBackingField(input, "CpuElementVisible", !active);
+            SetPreviewSnapshotInputValue(input, "PreviewRuntimeEpoch", 73L);
+            SetPreviewSnapshotInputValue(input, "IsPreviewing", active);
+            SetPreviewSnapshotInputValue(input, "PlaceholderVisible", !active);
+            SetPreviewSnapshotInputValue(input, "GpuElementVisible", active);
+            SetPreviewSnapshotInputValue(input, "CpuElementVisible", !active);
             // The final counters must come from the resolved projection, not the sampled CPU input.
-            SetPropertyOrBackingField(input, "FramesArrived", 901L);
-            SetPropertyOrBackingField(input, "FramesDisplayed", 807L);
-            SetPropertyOrBackingField(input, "FramesDropped", 94L);
+            SetPreviewSnapshotInputValue(input, "FramesArrived", 901L);
+            SetPreviewSnapshotInputValue(input, "FramesDisplayed", 807L);
+            SetPreviewSnapshotInputValue(input, "FramesDropped", 94L);
 
-            var d3dProjection = Activator.CreateInstance(projectionType)
-                                ?? throw new InvalidOperationException("Failed to create PreviewRuntimeD3DProjection.");
-            SetPropertyOrBackingField(d3dProjection, "GpuActive", !active);
-            SetPropertyOrBackingField(d3dProjection, "RendererAttached", active);
-            SetPropertyOrBackingField(d3dProjection, "FramesArrived", 101L);
-            SetPropertyOrBackingField(d3dProjection, "FramesDisplayed", 99L);
-            SetPropertyOrBackingField(d3dProjection, "FramesDropped", 2L);
+            var d3dProjection = CreatePreviewD3DProjection(new Dictionary<string, object?>
+            {
+                ["GpuActive"] = !active,
+                ["RendererAttached"] = active,
+                ["FramesArrived"] = 101L,
+                ["FramesDisplayed"] = 99L,
+                ["FramesDropped"] = 2L
+            });
 
             var health = Activator.CreateInstance(healthType, new object?[] { null, active, !active })
                          ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotHealth.");
@@ -2678,7 +2756,6 @@ static partial class Program
     internal static Task PreviewRuntimeSnapshotMapper_PreservesSampledStartupFields()
     {
         var inputType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotInput");
-        var projectionType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DProjection");
         var healthType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotHealth");
         var mapperType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotMapper");
         var build = mapperType.GetMethod("Build", BindingFlags.Public | BindingFlags.Static)
@@ -2701,19 +2778,18 @@ static partial class Program
 
             var input = Activator.CreateInstance(inputType)
                         ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotInput.");
-            SetPropertyOrBackingField(input, "StartupState", state);
-            SetPropertyOrBackingField(input, "StartupAttemptId", attemptId);
-            SetPropertyOrBackingField(input, "StartupTimeoutMs", timeoutMs);
-            SetPropertyOrBackingField(input, "StartupRequiredSignals", requiredSignals);
-            SetPropertyOrBackingField(input, "StartupReceivedSignals", receivedSignals);
-            SetPropertyOrBackingField(input, "StartupStrategy", startupStrategy);
-            SetPropertyOrBackingField(input, "StartupMissingSignals", missingSignals);
-            SetPropertyOrBackingField(input, "StartupRecoveryAttemptCount", recoveryCount);
-            SetPropertyOrBackingField(input, "StartupLastFailureReason", failureReason);
-            SetPropertyOrBackingField(input, "FirstVisualConfirmed", !hasAttempt);
+            SetPreviewSnapshotInputValue(input, "StartupState", state);
+            SetPreviewSnapshotInputValue(input, "StartupAttemptId", attemptId);
+            SetPreviewSnapshotInputValue(input, "StartupTimeoutMs", timeoutMs);
+            SetPreviewSnapshotInputValue(input, "StartupRequiredSignals", requiredSignals);
+            SetPreviewSnapshotInputValue(input, "StartupReceivedSignals", receivedSignals);
+            SetPreviewSnapshotInputValue(input, "StartupStrategy", startupStrategy);
+            SetPreviewSnapshotInputValue(input, "StartupMissingSignals", missingSignals);
+            SetPreviewSnapshotInputValue(input, "StartupRecoveryAttemptCount", recoveryCount);
+            SetPreviewSnapshotInputValue(input, "StartupLastFailureReason", failureReason);
+            SetPreviewSnapshotInputValue(input, "FirstVisualConfirmed", !hasAttempt);
 
-            var d3dProjection = Activator.CreateInstance(projectionType)
-                                ?? throw new InvalidOperationException("Failed to create PreviewRuntimeD3DProjection.");
+            var d3dProjection = CreatePreviewD3DProjection();
             var health = Activator.CreateInstance(healthType, new object?[] { elapsedMs, true, false })
                          ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotHealth.");
             var snapshot = build.Invoke(null, new object?[] { input, d3dProjection, health, DateTimeOffset.UnixEpoch })
@@ -2738,7 +2814,6 @@ static partial class Program
     internal static Task PreviewRuntimeSnapshotMapper_PreservesGpuPlaybackFields()
     {
         var inputType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotInput");
-        var projectionType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DProjection");
         var healthType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotHealth");
         var mapperType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotMapper");
         var build = mapperType.GetMethod("Build", BindingFlags.Public | BindingFlags.Static)
@@ -2753,11 +2828,13 @@ static partial class Program
             var input = Activator.CreateInstance(inputType)
                         ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotInput.");
 
-            var d3dProjection = Activator.CreateInstance(projectionType)
-                                ?? throw new InvalidOperationException("Failed to create PreviewRuntimeD3DProjection.");
-            SetPropertyOrBackingField(d3dProjection, "GpuPlaybackState", sample.State);
-            SetPropertyOrBackingField(d3dProjection, "GpuNaturalVideoWidth", sample.Width);
-            SetPropertyOrBackingField(d3dProjection, "GpuNaturalVideoHeight", sample.Height);
+            var d3dProjection = CreatePreviewD3DProjection(
+                rendererStateValues: new Dictionary<string, object?>
+                {
+                    ["GpuPlaybackState"] = sample.State,
+                    ["NaturalVideoWidth"] = sample.Width,
+                    ["NaturalVideoHeight"] = sample.Height
+                });
 
             var health = Activator.CreateInstance(healthType, new object?[] { null, false, false })
                          ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotHealth.");
@@ -2784,30 +2861,30 @@ static partial class Program
 
         var input = Activator.CreateInstance(inputType)
                     ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotInput.");
-        SetPropertyOrBackingField(input, "D3DRenderer", null);
-        SetPropertyOrBackingField(input, "IsPreviewing", true);
-        SetPropertyOrBackingField(input, "PreviewSourceAttached", true);
-        SetPropertyOrBackingField(input, "GpuElementVisible", false);
-        SetPropertyOrBackingField(input, "CpuElementVisible", true);
-        SetPropertyOrBackingField(input, "PlaceholderVisible", false);
-        SetPropertyOrBackingField(input, "FramesArrived", 31L);
-        SetPropertyOrBackingField(input, "FramesDisplayed", 0L);
-        SetPropertyOrBackingField(input, "FramesDropped", 2L);
-        SetPropertyOrBackingField(input, "LastPresentedTick", Environment.TickCount64 - 4000);
-        SetPropertyOrBackingField(input, "PreviewMinPresentationIntervalMs", 8.33d);
+        SetPreviewSnapshotInputValue(input, "D3DRenderer", null);
+        SetPreviewSnapshotInputValue(input, "IsPreviewing", true);
+        SetPreviewSnapshotInputValue(input, "PreviewSourceAttached", true);
+        SetPreviewSnapshotInputValue(input, "GpuElementVisible", false);
+        SetPreviewSnapshotInputValue(input, "CpuElementVisible", true);
+        SetPreviewSnapshotInputValue(input, "PlaceholderVisible", false);
+        SetPreviewSnapshotInputValue(input, "FramesArrived", 31L);
+        SetPreviewSnapshotInputValue(input, "FramesDisplayed", 0L);
+        SetPreviewSnapshotInputValue(input, "FramesDropped", 2L);
+        SetPreviewSnapshotInputValue(input, "LastPresentedTick", Environment.TickCount64 - 4000);
+        SetPreviewSnapshotInputValue(input, "PreviewMinPresentationIntervalMs", 8.33d);
         var startupState = ParseEnum("Sussudio.Models.PreviewStartupState", "WaitingForFirstVisual");
-        SetPropertyOrBackingField(input, "StartupState", startupState);
-        SetPropertyOrBackingField(input, "IsStartupWaitingForFirstVisual", true);
-        SetPropertyOrBackingField(input, "StartupAttemptId", "attempt-1");
-        SetPropertyOrBackingField(input, "StartupRequestedUtc", DateTimeOffset.UtcNow.AddMilliseconds(-2000));
-        SetPropertyOrBackingField(input, "StartupTimeoutMs", 1000);
-        SetPropertyOrBackingField(input, "StartupRequiredSignals", requiredSignals);
-        SetPropertyOrBackingField(input, "StartupReceivedSignals", receivedSignals);
-        SetPropertyOrBackingField(input, "StartupStrategy", startupStrategy);
-        SetPropertyOrBackingField(input, "StartupMissingSignals", "FirstVisual");
-        SetPropertyOrBackingField(input, "StartupRecoveryAttemptCount", 3);
-        SetPropertyOrBackingField(input, "StartupLastFailureReason", "timeout");
-        SetPropertyOrBackingField(input, "FirstVisualConfirmed", false);
+        SetPreviewSnapshotInputValue(input, "StartupState", startupState);
+        SetPreviewSnapshotInputValue(input, "IsStartupWaitingForFirstVisual", true);
+        SetPreviewSnapshotInputValue(input, "StartupAttemptId", "attempt-1");
+        SetPreviewSnapshotInputValue(input, "StartupRequestedUtc", DateTimeOffset.UtcNow.AddMilliseconds(-2000));
+        SetPreviewSnapshotInputValue(input, "StartupTimeoutMs", 1000);
+        SetPreviewSnapshotInputValue(input, "StartupRequiredSignals", requiredSignals);
+        SetPreviewSnapshotInputValue(input, "StartupReceivedSignals", receivedSignals);
+        SetPreviewSnapshotInputValue(input, "StartupStrategy", startupStrategy);
+        SetPreviewSnapshotInputValue(input, "StartupMissingSignals", "FirstVisual");
+        SetPreviewSnapshotInputValue(input, "StartupRecoveryAttemptCount", 3);
+        SetPreviewSnapshotInputValue(input, "StartupLastFailureReason", "timeout");
+        SetPreviewSnapshotInputValue(input, "FirstVisualConfirmed", false);
 
         var snapshot = build.Invoke(null, new[] { input })
                        ?? throw new InvalidOperationException("PreviewRuntimeSnapshotController.Build returned null.");

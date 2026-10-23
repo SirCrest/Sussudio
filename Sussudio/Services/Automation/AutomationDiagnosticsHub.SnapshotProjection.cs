@@ -34,9 +34,6 @@ public sealed partial class AutomationDiagnosticsHub
         var negotiatedCaptureFormat = BuildCaptureFormatNegotiatedProjection(captureRuntime);
         var sourceSignal = BuildSourceSignalProjection(viewModelSnapshot, captureRuntime);
         var sourceTelemetry = BuildSourceTelemetryProjection(viewModelSnapshot, captureRuntime);
-        var previewFrame = BuildPreviewRuntimeFrameProjection(previewRuntime);
-        var previewStartup = BuildPreviewRuntimeStartupProjection(previewRuntime);
-        var recordingBackend = BuildRecordingBackendProjection(captureRuntime);
         var mjpegTiming = BuildMjpegTimingProjection(health);
         var hdrPipeline = BuildHdrPipelineProjection(viewModelSnapshot, captureRuntime, hdrTruthVerdict);
 
@@ -232,9 +229,9 @@ public sealed partial class AutomationDiagnosticsHub
             EncoderVideoFramesEncoded = health.VideoFramesConverted,
             EncoderLastEnqueueAgeMs = health.LastVideoEnqueueAgeMs,
             EncoderLastWriteAgeMs = health.LastVideoWriteAgeMs,
-            RecordingBackend = recordingBackend.Backend,
-            AudioPathMode = recordingBackend.AudioPathMode,
-            MuxResult = recordingBackend.MuxResult,
+            RecordingBackend = captureRuntime.RecordingBackend,
+            AudioPathMode = captureRuntime.AudioPathMode,
+            MuxResult = "NotAttempted",
             RecordingIntegrityStatus = captureRuntime.RecordingIntegrityStatus.ToString(),
             RecordingIntegrityComplete = captureRuntime.RecordingIntegrityComplete,
             RecordingIntegrityBackend = captureRuntime.RecordingIntegrityBackend,
@@ -314,9 +311,9 @@ public sealed partial class AutomationDiagnosticsHub
             EncoderTenBitPipelineConfirmed = captureRuntime.EncoderTenBitPipelineConfirmed,
             MfReadwriteDisableConverters = captureRuntime.MfReadwriteDisableConverters,
             NegotiatedMediaSubtypeToken = negotiatedCaptureFormat.MediaSubtypeToken,
-            PreviewFramesArrived = previewFrame.FramesArrived,
-            PreviewFramesDisplayed = previewFrame.FramesDisplayed,
-            PreviewFramesDropped = previewFrame.FramesDropped,
+            PreviewFramesArrived = previewRuntime.FramesArrived,
+            PreviewFramesDisplayed = previewRuntime.FramesDisplayed,
+            PreviewFramesDropped = previewRuntime.FramesDropped,
             PreviewCadenceSampleCount = previewRuntime.DisplayCadenceSampleCount,
             PreviewCadenceObservedFps = previewRuntime.DisplayCadenceObservedFps,
             PreviewCadenceExpectedIntervalMs = previewRuntime.DisplayCadenceExpectedIntervalMs,
@@ -336,20 +333,20 @@ public sealed partial class AutomationDiagnosticsHub
             PreviewGpuElementVisible = previewRuntime.GpuElementVisible,
             PreviewCpuElementVisible = previewRuntime.CpuElementVisible,
             PreviewRendererAttached = previewRuntime.RendererAttached,
-            PreviewStartupState = previewStartup.State?.ToString(),
-            PreviewAttemptId = previewStartup.AttemptId,
-            PreviewStartupElapsedMs = previewStartup.ElapsedMs,
-            PreviewStartupTimeoutMs = previewStartup.TimeoutMs,
-            PreviewStartupRequiredSignals = previewStartup.RequiredSignals,
-            PreviewStartupReceivedSignals = previewStartup.ReceivedSignals,
-            PreviewStartupStrategy = previewStartup.Strategy,
-            PreviewStartupMissingSignals = previewStartup.MissingSignals,
-            PreviewRecoveryAttemptCount = previewStartup.RecoveryAttemptCount,
-            PreviewLastFailureReason = previewStartup.LastFailureReason,
-            PreviewFirstVisualConfirmed = previewStartup.FirstVisualConfirmed,
-            PreviewBlankSuspected = previewStartup.BlankSuspected,
-            PreviewStalled = previewStartup.Stalled,
-            PreviewRendererMode = previewStartup.RendererMode,
+            PreviewStartupState = previewRuntime.StartupState?.ToString(),
+            PreviewAttemptId = previewRuntime.StartupAttemptId,
+            PreviewStartupElapsedMs = previewRuntime.StartupElapsedMs,
+            PreviewStartupTimeoutMs = previewRuntime.StartupTimeoutMs,
+            PreviewStartupRequiredSignals = previewRuntime.StartupRequiredSignals,
+            PreviewStartupReceivedSignals = previewRuntime.StartupReceivedSignals,
+            PreviewStartupStrategy = previewRuntime.StartupStrategy.ToString(),
+            PreviewStartupMissingSignals = previewRuntime.StartupMissingSignals,
+            PreviewRecoveryAttemptCount = previewRuntime.StartupRecoveryAttemptCount,
+            PreviewLastFailureReason = previewRuntime.StartupLastFailureReason,
+            PreviewFirstVisualConfirmed = previewRuntime.FirstVisualConfirmed,
+            PreviewBlankSuspected = previewRuntime.BlankSuspected,
+            PreviewStalled = previewRuntime.StallSuspected,
+            PreviewRendererMode = previewRuntime.RendererMode,
             PreviewD3DPresentSyncInterval = previewRuntime.D3DPresentSyncInterval,
             PreviewD3DMaxFrameLatency = previewRuntime.D3DMaxFrameLatency,
             PreviewD3DSwapChainBufferCount = previewRuntime.D3DSwapChainBufferCount,
@@ -524,7 +521,7 @@ public sealed partial class AutomationDiagnosticsHub
             AudioChunksDropped = audioDrops.ChunksDropped,
             AudioQueueDropsRealtime = audioDrops.QueueDropsRealtime,
             AudioQueueDropsFileWriter = audioDrops.QueueDropsFileWriter,
-            EstimatedPipelineLatencyMs = previewFrame.EstimatedPipelineLatencyMs,
+            EstimatedPipelineLatencyMs = (long)previewRuntime.EstimatedPipelineLatencyMs,
             ExpectedCaptureFrameRate = health.ExpectedFrameRate,
             CaptureCadenceSampleCount = health.CaptureCadenceSampleCount,
             CaptureCadenceObservedFps = health.CaptureCadenceObservedFps,
@@ -1435,21 +1432,6 @@ public sealed partial class AutomationDiagnosticsHub
         public MjpegDecoderAutomationSnapshot[] PerDecoder { get; init; }
     }
 
-    private static RecordingBackendProjection BuildRecordingBackendProjection(CaptureRuntimeSnapshot captureRuntime)
-        => new()
-        {
-            Backend = captureRuntime.RecordingBackend,
-            AudioPathMode = captureRuntime.AudioPathMode,
-            MuxResult = "NotAttempted"
-        };
-
-    private readonly record struct RecordingBackendProjection
-    {
-        public string Backend { get; init; }
-        public string AudioPathMode { get; init; }
-        public string MuxResult { get; init; }
-    }
-
     private static AudioDropsProjection BuildAudioDropsProjection(CaptureHealthSnapshot health)
         => new()
         {
@@ -1469,58 +1451,4 @@ public sealed partial class AutomationDiagnosticsHub
         public long QueueDropsFileWriter { get; init; }
     }
 
-    private static PreviewRuntimeFrameProjection BuildPreviewRuntimeFrameProjection(PreviewRuntimeSnapshot previewRuntime)
-        => new()
-        {
-            FramesArrived = previewRuntime.FramesArrived,
-            FramesDisplayed = previewRuntime.FramesDisplayed,
-            FramesDropped = previewRuntime.FramesDropped,
-            EstimatedPipelineLatencyMs = (long)previewRuntime.EstimatedPipelineLatencyMs
-        };
-
-    private readonly record struct PreviewRuntimeFrameProjection
-    {
-        public long FramesArrived { get; init; }
-        public long FramesDisplayed { get; init; }
-        public long FramesDropped { get; init; }
-        public long EstimatedPipelineLatencyMs { get; init; }
-    }
-
-    private static PreviewRuntimeStartupProjection BuildPreviewRuntimeStartupProjection(
-        PreviewRuntimeSnapshot previewRuntime)
-        => new()
-        {
-            State = previewRuntime.StartupState,
-            AttemptId = previewRuntime.StartupAttemptId,
-            ElapsedMs = previewRuntime.StartupElapsedMs,
-            TimeoutMs = previewRuntime.StartupTimeoutMs,
-            RequiredSignals = previewRuntime.StartupRequiredSignals,
-            ReceivedSignals = previewRuntime.StartupReceivedSignals,
-            Strategy = previewRuntime.StartupStrategy.ToString(),
-            MissingSignals = previewRuntime.StartupMissingSignals,
-            RecoveryAttemptCount = previewRuntime.StartupRecoveryAttemptCount,
-            LastFailureReason = previewRuntime.StartupLastFailureReason,
-            FirstVisualConfirmed = previewRuntime.FirstVisualConfirmed,
-            BlankSuspected = previewRuntime.BlankSuspected,
-            Stalled = previewRuntime.StallSuspected,
-            RendererMode = previewRuntime.RendererMode
-        };
-
-    private readonly record struct PreviewRuntimeStartupProjection
-    {
-        public PreviewStartupState? State { get; init; }
-        public string? AttemptId { get; init; }
-        public double? ElapsedMs { get; init; }
-        public int TimeoutMs { get; init; }
-        public PreviewStartupSignalFlags RequiredSignals { get; init; }
-        public PreviewStartupSignalFlags ReceivedSignals { get; init; }
-        public string Strategy { get; init; }
-        public string? MissingSignals { get; init; }
-        public int RecoveryAttemptCount { get; init; }
-        public string? LastFailureReason { get; init; }
-        public bool FirstVisualConfirmed { get; init; }
-        public bool BlankSuspected { get; init; }
-        public bool Stalled { get; init; }
-        public string RendererMode { get; init; }
-    }
 }

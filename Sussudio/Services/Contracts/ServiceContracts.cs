@@ -8,10 +8,17 @@ using System.Threading;
 using System.Threading.Tasks;
 using FFmpeg.AutoGen;
 using Sussudio.Models;
-using Sussudio.Services.Automation;
+using Sussudio.Services.Gpu;
 
 namespace Sussudio.Services.Contracts
 {
+    internal interface ILiveVideoSource
+    {
+        void SuppressPreviewSubmission();
+        void ResumePreviewSubmission();
+        SharedD3DDeviceManager? D3DManager { get; }
+    }
+
     public sealed class AutomationStateConflictException : InvalidOperationException
     {
         public AutomationStateConflictException(string message)

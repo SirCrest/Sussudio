@@ -2,6 +2,7 @@ using System;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Sussudio.Models;
 using Sussudio.Services.Automation;
 using Sussudio.Services.Performance;
 using Xunit;
@@ -51,6 +52,105 @@ public sealed class SenseFormatterContractsTests
 
     private static object Failure(string message, string errorCode, object? data)
         => new { Success = false, Message = message, ErrorCode = errorCode, Data = data };
+
+    [Fact]
+    public void UiAutomationDtos_PreserveWireNamesStatusesAndNestedValues()
+    {
+        var tree = new UiTreeResult(
+            UiTreeStatus.Ok,
+            "Tree of 'Root': 2 nodes.",
+            Root: "Root",
+            MaxDepth: 7,
+            InteractiveOnly: true,
+            VisitedElements: 4,
+            EmittedNodes: 2,
+            MaxNodes: UiTreeLimits.MaxNodes,
+            Truncated: false,
+            TruncationReason: null,
+            OpenPopups: 0,
+            WindowWidth: 800,
+            WindowHeight: 600,
+            Roots: new[]
+            {
+                Node("Grid", "Grid", name: "Root", children: new[]
+                {
+                    Node("Grid/Button[0]", "Button", automationId: "Record.Toggle", bounds: new UiBounds(1, 2, 30, 40)),
+                }),
+            });
+        var invoke = new UiInvokeResult(
+            UiActionStatus.Invoked,
+            "Invoked 'Record'.",
+            "Record",
+            MatchedBy: "x:Name",
+            Action: "invoke",
+            Via: "peer:Invoke",
+            Overridden: null,
+            Element: tree.Roots[0].Children![0],
+            Candidates: null,
+            CandidateTotal: null);
+
+        using var treeJson = JsonDocument.Parse(JsonSerializer.Serialize(tree, PipeOptions));
+        using var invokeJson = JsonDocument.Parse(JsonSerializer.Serialize(invoke, PipeOptions));
+        var treeRoot = treeJson.RootElement;
+        var child = treeRoot.GetProperty("Roots")[0].GetProperty("Children")[0];
+
+        Assert.Equal("ok", treeRoot.GetProperty("Status").GetString());
+        Assert.Equal("Root", treeRoot.GetProperty("Root").GetString());
+        Assert.Equal("Record.Toggle", child.GetProperty("AutomationId").GetString());
+        Assert.Equal("invoke", invokeJson.RootElement.GetProperty("Action").GetString());
+        Assert.Equal("invoked", invokeJson.RootElement.GetProperty("Status").GetString());
+        Assert.Equal(1, child.GetProperty("Bounds").GetProperty("X").GetDouble());
+        Assert.False(treeRoot.TryGetProperty("TruncationReason", out _));
+    }
+
+    [Fact]
+    public void UiAutomationDtos_OmitNullOptionalFieldsAndKeepRequiredWireFields()
+    {
+        var tree = new UiTreeResult(
+            UiTreeStatus.RootNotFound,
+            "No element matches root 'Missing'.",
+            Root: null,
+            MaxDepth: 10,
+            InteractiveOnly: false,
+            VisitedElements: 0,
+            EmittedNodes: 0,
+            MaxNodes: UiTreeLimits.MaxNodes,
+            Truncated: false,
+            TruncationReason: null,
+            OpenPopups: 0,
+            WindowWidth: 800,
+            WindowHeight: 600,
+            Roots: new[] { Node("Grid", "Grid") });
+        var invoke = new UiInvokeResult(
+            UiActionStatus.NotFound,
+            "No element matches target 'Missing'.",
+            "Missing",
+            MatchedBy: null,
+            Action: null,
+            Via: null,
+            Overridden: null,
+            Element: null,
+            Candidates: null,
+            CandidateTotal: null);
+
+        using var treeJson = JsonDocument.Parse(JsonSerializer.Serialize(tree, PipeOptions));
+        using var invokeJson = JsonDocument.Parse(JsonSerializer.Serialize(invoke, PipeOptions));
+        var treeRoot = treeJson.RootElement;
+        var node = treeRoot.GetProperty("Roots")[0];
+        var invokeRoot = invokeJson.RootElement;
+
+        Assert.Equal("root-not-found", treeRoot.GetProperty("Status").GetString());
+        Assert.Equal("Grid", node.GetProperty("Type").GetString());
+        Assert.False(treeRoot.TryGetProperty("Root", out _));
+        Assert.False(treeRoot.TryGetProperty("TruncationReason", out _));
+        Assert.False(node.TryGetProperty("Name", out _));
+        Assert.False(node.TryGetProperty("Children", out _));
+        Assert.Equal("not-found", invokeRoot.GetProperty("Status").GetString());
+        Assert.Equal("Missing", invokeRoot.GetProperty("Target").GetString());
+        Assert.False(invokeRoot.TryGetProperty("Element", out _));
+        Assert.False(invokeRoot.TryGetProperty("Candidates", out _));
+        Assert.False(invokeRoot.TryGetProperty("Action", out _));
+    }
 
     private static UiNode Node(
         string path,

@@ -356,7 +356,7 @@ public sealed class CaptureCleanupBarrierTests
 
         public CaptureFixture()
         {
-            _manager = RuntimeHelpers.GetUninitializedObject(AppType("Sussudio.Services.Preview.SharedD3DDeviceManager"));
+            _manager = RuntimeHelpers.GetUninitializedObject(AppType("Sussudio.Services.Gpu.SharedD3DDeviceManager"));
             SetField(_manager, "_sync", new object());
             SetField(Capture, "_d3dManager", _manager);
             _pipeline = GetField<object>(Service, "_videoPipeline");

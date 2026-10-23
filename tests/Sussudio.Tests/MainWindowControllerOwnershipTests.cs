@@ -93,67 +93,6 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-internal static Task ResponsiveShellLayout_LivesInController()
-    {
-        var mainWindowText = ReadMainWindowCompositionSource();
-        var xamlText = ReadRepoFile("Sussudio/MainWindow.xaml").Replace("\r\n", "\n");
-        var bindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var adapterText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Shell/ShellChromeController.cs").Replace("\r\n", "\n");
-        var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
-        var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md").Replace("\r\n", "\n");
-
-        AssertContains(adapterText, "private ControlBarLabelVisibilityController _controlBarLabelVisibilityController = null!;");
-        AssertContains(adapterText, "private ResponsiveShellLayoutController _responsiveShellLayoutController = null!;");
-        AssertContains(adapterText, "private void InitializeResponsiveShellLayoutController()");
-        AssertContains(adapterText, "var controlBarLabels = new UIElement[]");
-        AssertContains(adapterText, "CaptureSettingsGrid = CaptureSettingsGrid,");
-        AssertContains(adapterText, "FlashbackToggleLabel,");
-        AssertContains(adapterText, "_controlBarLabelVisibilityController = new ControlBarLabelVisibilityController(new ControlBarLabelVisibilityControllerContext");
-        AssertContains(adapterText, "ControlBarBorder = ControlBarBorder,");
-        AssertContains(adapterText, "ControlBarLabels = controlBarLabels,");
-        AssertContains(adapterText, "private void SetupResponsiveShellLayoutBindings()");
-        AssertContains(adapterText, "_controlBarLabelVisibilityController.Attach();");
-        AssertContains(adapterText, "_responsiveShellLayoutController.Attach();");
-        AssertContains(adapterText, "private void SetupResponsiveShellLayoutBindings()\n    {\n        _controlBarLabelVisibilityController.Attach();\n        _responsiveShellLayoutController.Attach();\n    }");
-        AssertContains(xamlText, "x:Name=\"FlashbackToggleLabel\"");
-        AssertContains(mainWindowText, "InitializeResponsiveShellLayoutController();");
-        AssertContains(bindingsText, "SetupResponsiveShellLayoutBindings();");
-        AssertContains(controllerText, "internal sealed class ResponsiveShellLayoutController");
-        AssertContains(controllerText, "internal sealed class ControlBarLabelVisibilityController");
-        AssertContains(controllerText, "public required UIElement[] ControlBarLabels { get; init; }");
-        AssertContains(controllerText, "internal static class ResponsiveShellLayoutPolicy");
-        AssertContains(controllerText, "public const double ControlBarLabelThreshold = 900.0;");
-        AssertContains(controllerText, "public const double CaptureSettingsNarrowWidth = 700.0;");
-        AssertContains(controllerText, "internal readonly record struct ResponsiveCaptureSettingsPlacement");
-        AssertContains(controllerText, "private bool _toggleLabelsVisible;");
-        AssertContains(controllerText, "private bool _captureSettingsNarrow;");
-        AssertContains(controllerText, "public void Attach()");
-        AssertContains(controllerText, "_context.ControlBarBorder.SizeChanged += (_, e) => ApplyControlBarWidth(e.NewSize.Width);");
-        AssertContains(controllerText, "ResponsiveShellLayoutPolicy.ShouldShowControlBarLabels(controlBarWidth);");
-        AssertContains(controllerText, "foreach (var label in _context.ControlBarLabels)");
-        AssertContains(controllerText, "label.Visibility = visibility;");
-        AssertContains(controllerText, "ResponsiveShellLayoutPolicy.GetCaptureSettingsLayoutKind(width);");
-        AssertContains(controllerText, "private void ApplyCaptureSettingsLayout(ResponsiveCaptureSettingsPlacement placement)");
-        AssertContains(controllerText, "private static void ApplyGridSlot(FrameworkElement element, ResponsiveGridSlot slot)");
-        AssertContains(agentMapText, "complete control-bar label set");
-        AssertContains(cleanupPlanText, "complete control-bar label set");
-        AssertDoesNotContain(mainWindowText, "private bool _toggleLabelsVisible;");
-        AssertDoesNotContain(mainWindowText, "private bool _captureSettingsNarrow;");
-        AssertDoesNotContain(mainWindowText, "private const double ControlBarLabelThreshold = 900.0;");
-        AssertDoesNotContain(controllerText, "private const double ControlBarLabelThreshold = 900.0;");
-        AssertDoesNotContain(controllerText, "private const double CaptureSettingsNarrowWidth = 700.0;");
-        AssertDoesNotContain(controllerText, "_context.HdrToggleLabel.Visibility = visibility;");
-        AssertDoesNotContain(controllerText, "_context.FrameTimeOverlayToggleLabel.Visibility = visibility;");
-        AssertDoesNotContain(adapterText, "FlashbackToggleLabel = FlashbackToggleLabel,");
-        AssertDoesNotContain(controllerText, "private void ApplyNarrowCaptureSettingsLayout()");
-        AssertDoesNotContain(controllerText, "private void ApplyWideCaptureSettingsLayout()");
-        AssertDoesNotContain(bindingsText, "private void UpdateToggleLabelVisibility(");
-        AssertDoesNotContain(bindingsText, "private void CaptureSettingsGrid_SizeChanged(");
-
-        return Task.CompletedTask;
-    }
-
     internal static Task ResponsiveShellLayoutPolicy_PreservesBreakpointsAndPlacements()
     {
         var policyType = RequireType("Sussudio.Controllers.ResponsiveShellLayoutPolicy");
@@ -331,22 +270,8 @@ internal static Task ResponsiveShellLayout_LivesInController()
     }
 
 
-    internal static Task WindowScreenshotImageEncoding_LivesInFocusedHelper()
+    internal static Task WindowScreenshotImageEncoding_PreservesPngAndBmpHeaders()
     {
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Screenshot/ScreenshotControllers.cs")
-            .Replace("\r\n", "\n");
-        var encoderText = controllerText;
-
-        AssertContains(controllerText, "private static void SaveHBitmapAsImage(");
-        AssertContains(controllerText, "new FileStream(outputPath, FileMode.CreateNew");
-        AssertContains(controllerText, "WindowScreenshotImageEncoder.WriteToStream(");
-        AssertContains(controllerText, "internal static void WritePngToStream");
-        AssertContains(controllerText, "internal static void WriteBmpToStream");
-        AssertContains(encoderText, "internal static class WindowScreenshotImageEncoder");
-        AssertContains(encoderText, "internal static void WritePngToStream");
-        AssertContains(encoderText, "internal static void WriteBmpToStream");
-        AssertContains(encoderText, "internal static uint[] InitCrc32Table()");
-
         var encoderType = RequireType("Sussudio.Controllers.WindowScreenshotImageEncoder");
         var writePng = encoderType.GetMethod("WritePngToStream", BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("WindowScreenshotImageEncoder.WritePngToStream missing.");

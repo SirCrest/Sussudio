@@ -1,4 +1,5 @@
 using System;
+using Sussudio.Models;
 using Sussudio.Services.Automation;
 using Xunit;
 
