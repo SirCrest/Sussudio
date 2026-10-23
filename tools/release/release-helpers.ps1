@@ -29,8 +29,14 @@ function Invoke-ReleaseNativeCommand {
 function Test-SemVerPrerelease {
     param([Parameter(Mandatory = $true)][string]$Version)
 
-    if ($Version -notmatch '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)$') {
+    if ($Version -notmatch '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?\z') {
         return $false
+    }
+
+    # SemVer treats every 0.y.z version as initial development, so a bare 0.y.z is
+    # already a prerelease. From 1.0.0 on, a prerelease needs an explicit suffix.
+    if (-not $Matches.ContainsKey(4)) {
+        return $Matches[1] -eq '0'
     }
 
     foreach ($identifier in $Matches[4].Split('.')) {
@@ -66,7 +72,7 @@ function Assert-CleanTaggedPrerelease {
     )
 
     if (-not (Test-SemVerPrerelease -Version $Version)) {
-        throw "Version '$Version' is not a SemVer prerelease such as 1.0.0-beta.1."
+        throw "Version '$Version' is not a prerelease: use a 0.y.z version such as 0.4.0, or a SemVer prerelease such as 1.0.0-beta.1."
     }
 
     $resolvedRepoRoot = [IO.Path]::GetFullPath($RepoRoot).TrimEnd('\', '/')
