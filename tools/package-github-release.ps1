@@ -203,7 +203,7 @@ Source commit: $sourceCommit
 Source tree clean: Yes
 Configuration: Release
 Runtime: win-x64
-GitHub release classification: Prerelease
+GitHub release classification: Latest release
 FFmpeg build: $($ffmpegManifest.buildVersion)
 FFmpeg identity manifest: app\ffmpeg\manifest.json
 First-party signing: Azure Artifact Signing, SHA-256, Microsoft timestamp
@@ -272,10 +272,10 @@ $zipHash = Get-FileHash -LiteralPath $zipPath -Algorithm SHA256
 "$($zipHash.Hash)  $releaseName.zip" | Set-Content -LiteralPath $checksumPath -Encoding ASCII
 
 @"
-## Sussudio $Version (prerelease)
+## Sussudio $Version
 
-Portable Windows x64 prerelease package. In GitHub, publish this with **Set as a
-pre-release** enabled; it is not a stable release.
+Portable Windows x64 package. Publish it on GitHub as the **latest release**, not
+as a pre-release; the version number already says how mature it is.
 
 ### Download
 
