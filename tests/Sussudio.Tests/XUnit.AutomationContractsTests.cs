@@ -134,6 +134,10 @@ public sealed class AutomationAppSurfaceContractsTests
     [Fact]
     public Task AutomationPipeServerKeepsDiagnosticsAvailableBesideBusyClients()
         => global::Program.NamedPipeAutomationServer_KeepsDiagnosticsAvailableBesideBusyClients();
+
+    [Fact]
+    public Task AutomationPipeClientRetriesNotReadyFromRealServer()
+        => global::Program.NamedPipeAutomationServer_ClientRetriesNotReadyResponse();
 }
 
 public sealed class AutomationCatalogContractsTests
@@ -2478,6 +2482,59 @@ static partial class Program
         {
             foreach (var client in busyClients) client.Dispose();
         }
+    }
+
+    // The shared pipe client retries "not_ready" while devices initialize. Its fixtures are
+    // hand-written JSON, so this drives the real server serializer into the real client.
+    internal static async Task NamedPipeAutomationServer_ClientRetriesNotReadyResponse()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        var responseType = RequireType("Sussudio.Models.AutomationCommandResponse");
+        var statusType = RequireType("Sussudio.Models.AutomationResponseStatus");
+        var fromResult = typeof(Task).GetMethod(nameof(Task.FromResult))!.MakeGenericMethod(responseType);
+        var dispatchCount = 0;
+        var dispatcher = CreateConfiguredProxy(RequireType("Sussudio.Services.Contracts.IAutomationCommandDispatcher"),
+            (method, _) =>
+            {
+                Assert.Equal("ExecuteAsync", method!.Name);
+                var response = Activator.CreateInstance(responseType)!;
+                if (Interlocked.Increment(ref dispatchCount) == 1)
+                {
+                    SetPropertyBackingField(response, "Success", false);
+                    SetPropertyBackingField(response, "Status", Enum.Parse(statusType, "NotReady"));
+                    SetPropertyBackingField(response, "ErrorCode", "not-ready");
+                    SetPropertyBackingField(response, "RetryAfterMs", 100);
+                }
+                else
+                {
+                    SetPropertyBackingField(response, "Success", true);
+                }
+
+                return fromResult.Invoke(null, new[] { response });
+            });
+
+        var pipeName = $"unit-pipe-not-ready-{Guid.NewGuid():N}";
+        using var server = CreateNamedPipeAutomationServer(pipeName, false, new byte[] { 1 },
+            _ => CreateTestPipeServerStream(pipeName), () => CreateTestPipeServerStream(pipeName), dispatcher);
+        Assert.True(StartNamedPipeAutomationServer(server));
+
+        var send = typeof(AutomationPipeProtocol).Assembly
+            .GetType("Sussudio.Tools.AutomationPipeClient", throwOnError: true)!
+            .GetMethods(BindingFlags.Static | BindingFlags.NonPublic)
+            .Single(candidate =>
+                candidate.Name == "SendCommandWithResultAsync" &&
+                candidate.GetParameters()[1].ParameterType == typeof(string));
+        var sendTask = (Task<AutomationPipeCommandResult>)send.Invoke(null, new object?[]
+        {
+            pipeName, "GetSnapshot", null, 5000, 5000, null, false, CancellationToken.None
+        })!;
+        var result = await sendTask.WaitAsync(TimeSpan.FromSeconds(10));
+
+        Assert.Equal(2, Volatile.Read(ref dispatchCount));
+        Assert.True(result.Success);
+        using var json = JsonDocument.Parse(result.ResponseJson);
+        Assert.Equal("ok", json.RootElement.GetProperty("Status").GetString());
+        Assert.Equal("completed", json.RootElement.GetProperty("CommandLifecycle").GetString());
     }
 
     internal static async Task NamedPipeAutomationServer_RequestLimit_HandlesCrLfBoundary()
