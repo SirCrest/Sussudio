@@ -96,7 +96,31 @@ internal sealed class FullScreenController
     {
         if (_isTransitioning || _isFullScreen) return;
         _isTransitioning = true;
+        var chromeMovedToOverlay = false;
+        try
+        {
+            await EnterCoreAsync(() => chromeMovedToOverlay = true).ConfigureAwait(true);
+        }
+        catch
+        {
+            // Once the chrome is in the overlay only ExitAsync moves it back, so a failed
+            // enter settles as full screen and Esc/F11 can still undo it.
+            if (chromeMovedToOverlay)
+            {
+                CompleteEnter();
+            }
+            else
+            {
+                RestoreWindowedChromeMaterials();
+                _isTransitioning = false;
+            }
 
+            throw;
+        }
+    }
+
+    private async Task EnterCoreAsync(Action markChromeMovedToOverlay)
+    {
         var appWindow = _context.GetAppWindow();
         _preFullScreenPosition = appWindow.Position;
         _preFullScreenBounds = new Windows.Graphics.RectInt32(
@@ -115,6 +139,7 @@ internal sealed class FullScreenController
         PrepareChromeForOverlay();
         ApplyFullScreenChromeMaterials();
 
+        markChromeMovedToOverlay();
         _context.RootGrid.Children.Remove(_context.FlashbackTimelinePanel);
         _context.FullScreenControlsOverlay.Children.Insert(0, _context.FlashbackTimelinePanel);
 
@@ -167,18 +192,11 @@ internal sealed class FullScreenController
             await AnimateFullScreenRectAsync(
                 prePosition, preW, preH,
                 postPosition, postW, postH,
-                () =>
-                {
-                    _isFullScreen = true;
-                    _isTransitioning = false;
-                    UpdateButtonState();
-                }).ConfigureAwait(true);
+                CompleteEnter).ConfigureAwait(true);
         }
         else
         {
-            _isFullScreen = true;
-            _isTransitioning = false;
-            UpdateButtonState();
+            CompleteEnter();
         }
     }
 
@@ -186,7 +204,29 @@ internal sealed class FullScreenController
     {
         if (_isTransitioning || !_isFullScreen) return;
         _isTransitioning = true;
+        var chromeMovedToWindow = false;
+        try
+        {
+            await ExitCoreAsync(() => chromeMovedToWindow = true).ConfigureAwait(true);
+        }
+        catch
+        {
+            // Mirror of EnterAsync: once the chrome starts moving back, settle as windowed.
+            if (chromeMovedToWindow)
+            {
+                CompleteExit();
+            }
+            else
+            {
+                _isTransitioning = false;
+            }
 
+            throw;
+        }
+    }
+
+    private async Task ExitCoreAsync(Action markChromeMovedToWindow)
+    {
         StopAutoHideTimer();
         var overlayVisual = ElementCompositionPreview.GetElementVisual(_context.FullScreenControlsOverlay);
         overlayVisual.StopAnimation("Translation");
@@ -196,6 +236,7 @@ internal sealed class FullScreenController
 
         var timelineVisibleAtExit = ShouldShowFlashbackTimeline();
         PrepareChromeForOverlay();
+        markChromeMovedToWindow();
         _context.FullScreenControlsOverlay.Children.Remove(_context.FlashbackTimelinePanel);
         _context.FlashbackTimelinePanel.Visibility = Visibility.Collapsed;
         _context.RootGrid.Children.Add(_context.FlashbackTimelinePanel);
@@ -397,6 +438,13 @@ internal sealed class FullScreenController
         };
 
         return completion.Task;
+    }
+
+    private void CompleteEnter()
+    {
+        _isFullScreen = true;
+        _isTransitioning = false;
+        UpdateButtonState();
     }
 
     private void CompleteExit()
