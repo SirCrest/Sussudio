@@ -285,14 +285,18 @@ public partial class CaptureService
         libAvSink.FrameEncoded += (s, count) => FrameCaptured?.Invoke(this, unchecked((ulong)Math.Max(0L, count)));
         rollback.RecordingSink = libAvSink;
 
-        var outputFolder = await OpenRecordingOutputFolderAsync(settings).ConfigureAwait(false);
-
+        // The folder lookup and the device telemetry read touch different resources, so overlap them. Start the
+        // folder lookup first: the telemetry read can hold this thread through a synchronous XU transfer. A folder
+        // failure still wins over a concurrent cancellation, because WhenAll reports a fault before a cancel.
+        var outputFolderTask = OpenRecordingOutputFolderAsync(settings);
+        var telemetryRefreshTask = RefreshSourceTelemetryAsync(transitionToken);
+        await Task.WhenAll(outputFolderTask, telemetryRefreshTask).ConfigureAwait(false);
+        var outputFolder = await outputFolderTask.ConfigureAwait(false);
         transitionToken.ThrowIfCancellationRequested();
 
         var effectiveWidth = _actualWidth ?? settings.Width;
         var effectiveHeight = _actualHeight ?? settings.Height;
         var effectiveFrameRate = _actualFrameRate ?? settings.FrameRate;
-        await RefreshSourceTelemetryAsync(transitionToken).ConfigureAwait(false);
         var hdrPipelineRequested = HdrOutputPolicy.IsEnabled(settings);
         if (hdrPipelineRequested && _latestSourceTelemetry.IsHdr == false)
         {
