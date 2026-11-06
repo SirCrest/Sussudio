@@ -92,14 +92,22 @@ internal sealed class FullScreenController
     public void Exit()
         => _ = RunTransitionAsync(ExitAsync, "exit");
 
-    public async Task EnterAsync()
+    public Task EnterAsync()
+        => RunSettledTransitionAsync(toFullScreen: true, EnterCoreAsync);
+
+    public Task ExitAsync()
+        => RunSettledTransitionAsync(toFullScreen: false, ExitCoreAsync);
+
+    private async Task RunSettledTransitionAsync(bool toFullScreen, Func<Task> transition)
     {
-        if (_isTransitioning || _isFullScreen) return;
+        if (_isTransitioning || _isFullScreen == toFullScreen) return;
         _isTransitioning = true;
         try
         {
-            await EnterCoreAsync().ConfigureAwait(true);
+            await transition().ConfigureAwait(true);
         }
+        // _isTransitioning is already false when the completion callback itself threw: the
+        // transition finished, so that error propagates without a second settle.
         catch when (_isTransitioning)
         {
             SettleWindowedAfterFailedTransition();
@@ -112,14 +120,10 @@ internal sealed class FullScreenController
         _preFullScreenSettingsVisible = _context.SettingsOverlayPanel.Visibility == Visibility.Visible;
         _preFullScreenStatsDockVisible = _context.StatsDockPanel.Visibility == Visibility.Visible;
         var appWindow = _context.GetAppWindow();
-        // A recovery that could not leave the FullScreen presenter keeps the last windowed bounds.
-        if (appWindow.Presenter.Kind != AppWindowPresenterKind.FullScreen)
-        {
-            _preFullScreenPosition = appWindow.Position;
-            _preFullScreenBounds = new Windows.Graphics.RectInt32(
-                appWindow.Position.X, appWindow.Position.Y,
-                appWindow.Size.Width, appWindow.Size.Height);
-        }
+        _preFullScreenPosition = appWindow.Position;
+        _preFullScreenBounds = new Windows.Graphics.RectInt32(
+            appWindow.Position.X, appWindow.Position.Y,
+            appWindow.Size.Width, appWindow.Size.Height);
 
         var transform = _context.PreviewBorder.TransformToVisual(_context.RootElement);
         var prePosition = transform.TransformPoint(new Windows.Foundation.Point(0, 0));
@@ -188,21 +192,6 @@ internal sealed class FullScreenController
         else
         {
             CompleteEnter();
-        }
-    }
-
-    public async Task ExitAsync()
-    {
-        if (_isTransitioning || !_isFullScreen) return;
-        _isTransitioning = true;
-        try
-        {
-            await ExitCoreAsync().ConfigureAwait(true);
-        }
-        catch when (_isTransitioning)
-        {
-            SettleWindowedAfterFailedTransition();
-            throw;
         }
     }
 
@@ -384,18 +373,31 @@ internal sealed class FullScreenController
         return completion.Task;
     }
 
-    // A failed toggle always lands windowed. Each step is idempotent and runs even when an
-    // earlier one throws, so an enter or exit that stopped partway still ends with the window,
-    // the chrome and the flags agreeing, and the next toggle starts clean.
+    // A failed toggle lands windowed. Each step is idempotent and runs even when an earlier
+    // one throws, so an enter or exit that stopped partway still ends with the window, the
+    // chrome and the flags agreeing, and the next toggle starts clean.
     private void SettleWindowedAfterFailedTransition()
     {
         StopAutoHideTimer();
         TrySettleStep(PrepareChromeForOverlay, "chrome-reset");
         TrySettleStep(MoveChromeToWindow, "chrome-move");
-        TrySettleStep(RestoreWindowPresenter, "presenter");
+        TrySettleStep(() =>
+        {
+            if (IsInFullScreenPresenter()) RestoreWindowPresenter();
+        }, "presenter");
         TrySettleStep(() => RestoreWindowedChrome(ShouldShowFlashbackTimeline()), "layout");
         TrySettleStep(CompleteExit, "complete");
+        // If Windows kept the FullScreen presenter, report full screen so Esc and F11 retry the exit.
+        TrySettleStep(() =>
+        {
+            if (!IsInFullScreenPresenter()) return;
+            _isFullScreen = true;
+            UpdateButtonState();
+        }, "presenter-check");
     }
+
+    private bool IsInFullScreenPresenter()
+        => _context.GetAppWindow().Presenter.Kind == AppWindowPresenterKind.FullScreen;
 
     private static void TrySettleStep(Action step, string name)
     {
