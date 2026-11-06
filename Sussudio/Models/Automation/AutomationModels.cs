@@ -118,7 +118,11 @@ public sealed class AutomationCommandResponse
     public bool Success { get; init; }
     public string CorrelationId { get; init; } = string.Empty;
     public DateTimeOffset TimestampUtc { get; init; } = DateTimeOffset.UtcNow;
+    // Property-level converters outrank the server's catch-all JsonStringEnumConverter, which
+    // would otherwise ship "NotReady" where clients retry on "not_ready".
+    [JsonConverter(typeof(SnakeCaseLowerStatusConverter))]
     public AutomationResponseStatus Status { get; init; } = AutomationResponseStatus.Ok;
+    [JsonConverter(typeof(SnakeCaseLowerLifecycleConverter))]
     public AutomationCommandLifecycle CommandLifecycle { get; init; } = AutomationCommandLifecycle.Completed;
     public int? RetryAfterMs { get; init; }
     public long? ElapsedMs { get; init; }

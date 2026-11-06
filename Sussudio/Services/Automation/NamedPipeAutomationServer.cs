@@ -71,10 +71,6 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
         {
             PropertyNameCaseInsensitive = true
         };
-        // Options converters outrank type-level [JsonConverter] attributes, so the wire enums'
-        // snake_case converters must precede the catch-all or "not_ready" ships as "NotReady".
-        _jsonOptions.Converters.Add(new SnakeCaseLowerStatusConverter());
-        _jsonOptions.Converters.Add(new SnakeCaseLowerLifecycleConverter());
         _jsonOptions.Converters.Add(new JsonStringEnumConverter());
         _requestTimeoutMs = EnvironmentHelpers.GetIntFromEnv(
             "SUSSUDIO_AUTOMATION_REQUEST_TIMEOUT_MS",
