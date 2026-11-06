@@ -169,9 +169,8 @@ public sealed partial class AutomationDiagnosticsHub
 
         var collectionEpoch = Interlocked.Increment(ref _snapshotCollectionEpoch);
         var collectionStartedUtc = DateTimeOffset.UtcNow;
-        // The view-model and preview fragments each wait on a UI-thread work item and read nothing the other
-        // writes, so queue both before collecting the capture fragments; the tick then pays one UI round trip
-        // instead of two. The capture fragments are synchronous reads and complete while those items are queued.
+        // The view-model and preview fragments each wait on an independent UI-thread work item; queue both first so
+        // the tick pays one UI round trip instead of two.
         var viewModelFragmentTask = CaptureSnapshotFragmentAsync(
             collectionEpoch,
             token => _snapshotQueryPort.GetViewModelRuntimeSnapshotAsync(token),
