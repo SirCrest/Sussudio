@@ -378,7 +378,6 @@ internal sealed class FullScreenController
     // chrome and the flags agreeing, and the next toggle starts clean.
     private void SettleWindowedAfterFailedTransition()
     {
-        StopAutoHideTimer();
         TrySettleStep(PrepareChromeForOverlay, "chrome-reset");
         TrySettleStep(MoveChromeToWindow, "chrome-move");
         TrySettleStep(() =>
