@@ -172,8 +172,7 @@ public sealed partial class AutomationDiagnosticsHub
         // The view-model and preview fragments each wait on an independent UI-thread work item. Queue both first, then
         // read the capture fragments (synchronous) while the UI thread runs them, so the tick pays one UI round trip
         // with the capture reads overlapped instead of two in series. The capture state is therefore sampled just
-        // before, not after, the view-model state; the mixed-epoch checks still flag a pair that disagrees. The UI
-        // fragments are awaited in the old order, so a view-model cancel or enqueue failure still surfaces first.
+        // before, not after, the view-model state; the mixed-epoch checks still flag a pair that disagrees.
         var viewModelFragmentTask = CaptureSnapshotFragmentAsync(
             collectionEpoch,
             token => _snapshotQueryPort.GetViewModelRuntimeSnapshotAsync(token),
@@ -191,26 +190,49 @@ public sealed partial class AutomationDiagnosticsHub
             _previewSnapshotProvider,
             snapshot => snapshot.PreviewRuntimeEpoch,
             cancellationToken);
-        var captureRuntimeFragment = await CaptureSnapshotFragmentAsync(
-            collectionEpoch,
-            token => _snapshotQueryPort.GetCaptureSnapshotProducerEpochAsync(token),
-            token => _snapshotQueryPort.GetCaptureRuntimeSnapshotAsync(token),
-            snapshot => snapshot.CaptureSessionEpoch,
-            cancellationToken).ConfigureAwait(false);
-        var healthFragment = await CaptureSnapshotFragmentAsync(
-            collectionEpoch,
-            token => _snapshotQueryPort.GetCaptureSnapshotProducerEpochAsync(token),
-            token => _snapshotQueryPort.GetCaptureHealthSnapshotAsync(token),
-            snapshot => snapshot.CaptureSessionEpoch,
-            cancellationToken).ConfigureAwait(false);
-        var recordingStatsFragment = await CaptureSnapshotFragmentAsync(
-            collectionEpoch,
-            token => _snapshotQueryPort.GetCaptureSnapshotProducerEpochAsync(token),
-            token => _snapshotQueryPort.GetRecordingStatsSnapshotAsync(token),
-            snapshot => snapshot.CaptureSessionEpoch,
-            cancellationToken).ConfigureAwait(false);
-        var viewModelFragment = await viewModelFragmentTask.ConfigureAwait(false);
-        var previewRuntimeFragment = await previewRuntimeFragmentTask.ConfigureAwait(false);
+        SnapshotFragment<CaptureRuntimeSnapshot> captureRuntimeFragment;
+        SnapshotFragment<CaptureHealthSnapshot> healthFragment;
+        SnapshotFragment<RecordingStats> recordingStatsFragment;
+        SnapshotFragment<ViewModelRuntimeSnapshot> viewModelFragment;
+        SnapshotFragment<PreviewRuntimeSnapshot> previewRuntimeFragment;
+        try
+        {
+            captureRuntimeFragment = await CaptureSnapshotFragmentAsync(
+                collectionEpoch,
+                token => _snapshotQueryPort.GetCaptureSnapshotProducerEpochAsync(token),
+                token => _snapshotQueryPort.GetCaptureRuntimeSnapshotAsync(token),
+                snapshot => snapshot.CaptureSessionEpoch,
+                cancellationToken).ConfigureAwait(false);
+            healthFragment = await CaptureSnapshotFragmentAsync(
+                collectionEpoch,
+                token => _snapshotQueryPort.GetCaptureSnapshotProducerEpochAsync(token),
+                token => _snapshotQueryPort.GetCaptureHealthSnapshotAsync(token),
+                snapshot => snapshot.CaptureSessionEpoch,
+                cancellationToken).ConfigureAwait(false);
+            recordingStatsFragment = await CaptureSnapshotFragmentAsync(
+                collectionEpoch,
+                token => _snapshotQueryPort.GetCaptureSnapshotProducerEpochAsync(token),
+                token => _snapshotQueryPort.GetRecordingStatsSnapshotAsync(token),
+                snapshot => snapshot.CaptureSessionEpoch,
+                cancellationToken).ConfigureAwait(false);
+            viewModelFragment = await viewModelFragmentTask.ConfigureAwait(false);
+            previewRuntimeFragment = await previewRuntimeFragmentTask.ConfigureAwait(false);
+        }
+        catch
+        {
+            // Settle both queued UI fragments before rethrowing, so neither outlives the refresh gate or faults unobserved.
+            try
+            {
+                await Task.WhenAll(viewModelFragmentTask, previewRuntimeFragmentTask).ConfigureAwait(false);
+            }
+            catch
+            {
+                // Already failing; the original exception is the one reported.
+            }
+
+            throw;
+        }
+
         var viewModelSnapshot = viewModelFragment.Value;
         var captureRuntime = captureRuntimeFragment.Value;
         var health = healthFragment.Value;
