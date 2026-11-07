@@ -106,8 +106,8 @@ internal sealed class FullScreenController
         {
             await transition().ConfigureAwait(true);
         }
-        // _isTransitioning is already false when the completion callback itself threw: the
-        // transition finished, so that error propagates without a second settle.
+        // _isTransitioning is already false when the completion callback itself threw (the
+        // transition finished) or when an enter failed before changing anything; neither settles.
         catch when (_isTransitioning)
         {
             SettleWindowedAfterFailedTransition();
@@ -117,20 +117,32 @@ internal sealed class FullScreenController
 
     private async Task EnterCoreAsync()
     {
-        _preFullScreenSettingsVisible = _context.SettingsOverlayPanel.Visibility == Visibility.Visible;
-        _preFullScreenStatsDockVisible = _context.StatsDockPanel.Visibility == Visibility.Visible;
-        var appWindow = _context.GetAppWindow();
-        _preFullScreenPosition = appWindow.Position;
-        _preFullScreenBounds = new Windows.Graphics.RectInt32(
-            appWindow.Position.X, appWindow.Position.Y,
-            appWindow.Size.Width, appWindow.Size.Height);
+        AppWindow appWindow;
+        Windows.Foundation.Point prePosition;
+        double preW, preH;
+        try
+        {
+            _preFullScreenSettingsVisible = _context.SettingsOverlayPanel.Visibility == Visibility.Visible;
+            _preFullScreenStatsDockVisible = _context.StatsDockPanel.Visibility == Visibility.Visible;
+            appWindow = _context.GetAppWindow();
+            _preFullScreenPosition = appWindow.Position;
+            _preFullScreenBounds = new Windows.Graphics.RectInt32(
+                appWindow.Position.X, appWindow.Position.Y,
+                appWindow.Size.Width, appWindow.Size.Height);
 
-        var transform = _context.PreviewBorder.TransformToVisual(_context.RootElement);
-        var prePosition = transform.TransformPoint(new Windows.Foundation.Point(0, 0));
-        var preW = _context.PreviewBorder.ActualWidth;
-        var preH = _context.PreviewBorder.ActualHeight;
+            var transform = _context.PreviewBorder.TransformToVisual(_context.RootElement);
+            prePosition = transform.TransformPoint(new Windows.Foundation.Point(0, 0));
+            preW = _context.PreviewBorder.ActualWidth;
+            preH = _context.PreviewBorder.ActualHeight;
 
-        _context.EndFlashbackScrubForFullScreen();
+            _context.EndFlashbackScrubForFullScreen();
+        }
+        catch
+        {
+            // Nothing on screen has changed yet, so skip the windowed settle and its shadow fade.
+            _isTransitioning = false;
+            throw;
+        }
 
         PrepareChromeForOverlay();
         ApplyFullScreenChromeMaterials();
