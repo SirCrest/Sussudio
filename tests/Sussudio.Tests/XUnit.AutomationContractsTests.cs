@@ -1744,7 +1744,7 @@ static partial class Program
         }
     }
 
-    private static object CreateNoHardwareAutomationCommandDispatcher(bool deviceScanFoundNoDevices = false)
+    private static object CreateNoHardwareAutomationCommandDispatcher(bool deviceScanPending = true)
     {
         var viewModelType = RequireType("Sussudio.Services.Automation.IAutomationViewModel");
         var diagnosticsType = RequireType("Sussudio.Services.Contracts.IAutomationDiagnosticsHub");
@@ -1758,9 +1758,9 @@ static partial class Program
                 return false;
             }
 
-            if (method?.Name == "get_LastDeviceScanFoundNoDevices")
+            if (method?.Name == "get_IsDeviceScanPending")
             {
-                return deviceScanFoundNoDevices;
+                return deviceScanPending;
             }
 
             if (method?.Name == "get_Devices")
@@ -2522,22 +2522,7 @@ static partial class Program
                 return fromResult.Invoke(null, new[] { response });
             });
 
-        var pipeName = $"unit-pipe-not-ready-{Guid.NewGuid():N}";
-        using var server = CreateNamedPipeAutomationServer(pipeName, false, new byte[] { 1 },
-            _ => CreateTestPipeServerStream(pipeName), () => CreateTestPipeServerStream(pipeName), dispatcher);
-        Assert.True(StartNamedPipeAutomationServer(server));
-
-        var send = typeof(AutomationPipeProtocol).Assembly
-            .GetType("Sussudio.Tools.AutomationPipeClient", throwOnError: true)!
-            .GetMethods(BindingFlags.Static | BindingFlags.NonPublic)
-            .Single(candidate =>
-                candidate.Name == "SendCommandWithResultAsync" &&
-                candidate.GetParameters()[1].ParameterType == typeof(string));
-        var sendTask = (Task<AutomationPipeCommandResult>)send.Invoke(null, new object?[]
-        {
-            pipeName, "GetSnapshot", null, 5000, 5000, null, false, CancellationToken.None
-        })!;
-        var result = await sendTask.WaitAsync(TimeSpan.FromSeconds(10));
+        var result = await SendThroughRealPipeAsync(dispatcher, "GetSnapshot", TimeSpan.FromSeconds(10));
 
         Assert.Equal(2, Volatile.Read(ref dispatchCount));
         Assert.True(result.Success);
@@ -2546,8 +2531,8 @@ static partial class Program
         Assert.Equal("completed", json.RootElement.GetProperty("CommandLifecycle").GetString());
     }
 
-    // A machine with no capture device: retrying "not_ready" cannot help once a scan has
-    // committed an empty list, so a device command must fail on the first reply.
+    // A machine with no capture device: retrying "not_ready" cannot help once no device scan
+    // is running, so a device command must fail on the first reply.
     internal static async Task NamedPipeAutomationServer_ClientFailsAtOnceWhenDeviceScanFoundNothing()
     {
         if (!OperatingSystem.IsWindows()) return;
@@ -2555,9 +2540,25 @@ static partial class Program
             .Where(entry => (bool)GetMetadataProperty(entry, "RequiresReadyDevices")!)
             .Select(entry => (string)GetMetadataProperty(entry, "Name")!)
             .First();
-        var dispatcher = CreateNoHardwareAutomationCommandDispatcher(deviceScanFoundNoDevices: true);
+        var dispatcher = CreateNoHardwareAutomationCommandDispatcher(deviceScanPending: false);
 
-        var pipeName = $"unit-pipe-no-devices-{Guid.NewGuid():N}";
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var result = await SendThroughRealPipeAsync(dispatcher, readyGatedCommand, TimeSpan.FromSeconds(30));
+        stopwatch.Stop();
+
+        Assert.False(result.Success);
+        Assert.Equal("error", result.Status);
+        Assert.True(stopwatch.ElapsedMilliseconds < 3000,
+            $"{readyGatedCommand} took {stopwatch.ElapsedMilliseconds} ms; the client retried a permanent failure.");
+        using var json = JsonDocument.Parse(result.ResponseJson);
+        Assert.Equal("invalid-state", json.RootElement.GetProperty("ErrorCode").GetString());
+    }
+
+    // Serves the dispatcher on a real pipe and sends one command through the shared client.
+    private static async Task<AutomationPipeCommandResult> SendThroughRealPipeAsync(
+        object dispatcher, string command, TimeSpan timeout)
+    {
+        var pipeName = $"unit-pipe-client-{Guid.NewGuid():N}";
         using var server = CreateNamedPipeAutomationServer(pipeName, false, new byte[] { 1 },
             _ => CreateTestPipeServerStream(pipeName), () => CreateTestPipeServerStream(pipeName), dispatcher);
         Assert.True(StartNamedPipeAutomationServer(server));
@@ -2568,20 +2569,11 @@ static partial class Program
             .Single(candidate =>
                 candidate.Name == "SendCommandWithResultAsync" &&
                 candidate.GetParameters()[1].ParameterType == typeof(string));
-        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         var sendTask = (Task<AutomationPipeCommandResult>)send.Invoke(null, new object?[]
         {
-            pipeName, readyGatedCommand, null, 5000, 5000, null, false, CancellationToken.None
+            pipeName, command, null, 5000, 5000, null, false, CancellationToken.None
         })!;
-        var result = await sendTask.WaitAsync(TimeSpan.FromSeconds(30));
-        stopwatch.Stop();
-
-        Assert.False(result.Success);
-        Assert.Equal("error", result.Status);
-        Assert.True(stopwatch.ElapsedMilliseconds < 3000,
-            $"{readyGatedCommand} took {stopwatch.ElapsedMilliseconds} ms; the client retried a permanent failure.");
-        using var json = JsonDocument.Parse(result.ResponseJson);
-        Assert.Equal("invalid-state", json.RootElement.GetProperty("ErrorCode").GetString());
+        return await sendTask.WaitAsync(timeout);
     }
 
     internal static async Task NamedPipeAutomationServer_RequestLimit_HandlesCrLfBoundary()

@@ -706,6 +706,32 @@ public sealed class DeviceDiscoveryTests
         Assert.Contains("No compatible video capture devices found", fixture.Status);
     }
 
+    [Fact]
+    public async Task DeviceScanStaysPendingUntilTheNewestScanFinishes()
+    {
+        var fixture = new RefreshFixture();
+        fixture.Discover = () => Task.FromResult(CreateDiscovery());
+        await fixture.RefreshAsync();
+        Assert.False(fixture.DeviceScanPending);
+
+        // A rescan after an empty scan is pending again, so automation keeps answering not_ready.
+        var olderCompletion = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+        fixture.Discover = () => olderCompletion.Task;
+        var olderRefresh = fixture.RefreshAsync();
+        Assert.True(fixture.DeviceScanPending);
+
+        var newerCompletion = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+        fixture.Discover = () => newerCompletion.Task;
+        var newerRefresh = fixture.RefreshAsync();
+        olderCompletion.SetResult(CreateDiscovery());
+        await olderRefresh;
+        Assert.True(fixture.DeviceScanPending);
+
+        newerCompletion.SetResult(CreateDiscovery(error: "newer scan failed"));
+        await newerRefresh;
+        Assert.False(fixture.DeviceScanPending);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -960,6 +986,7 @@ public sealed class DeviceDiscoveryTests
             SetDelegate(context, "GetSelectedDevice", _ => SelectedDevice);
             SetDelegate(context, "GetPendingSavedDeviceId", _ => PendingSavedDeviceId);
             SetDelegate(context, "SetPendingSavedDeviceId", args => { PendingSavedDeviceId = (string?)args[0]; return null; });
+            SetDelegate(context, "SetDeviceScanPending", args => { DeviceScanPending = (bool)args[0]!; return null; });
 
             _controller = Activator.CreateInstance(
                 RequireType("Sussudio.Controllers.MainViewModelDeviceRefreshController"),
@@ -983,6 +1010,7 @@ public sealed class DeviceDiscoveryTests
         public int AudioReplacements { get; private set; }
         public int ProbeStarts { get; private set; }
         public int PreviewStarts { get; private set; }
+        public bool DeviceScanPending { get; private set; } = true;
 
         public Task RefreshAsync(CancellationToken cancellationToken = default, bool throwOnScanFailure = false)
             => (Task)_controller.GetType().GetMethod("RefreshDevicesAsync")!.Invoke(
