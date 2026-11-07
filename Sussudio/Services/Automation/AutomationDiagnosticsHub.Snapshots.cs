@@ -169,10 +169,11 @@ public sealed partial class AutomationDiagnosticsHub
 
         var collectionEpoch = Interlocked.Increment(ref _snapshotCollectionEpoch);
         var collectionStartedUtc = DateTimeOffset.UtcNow;
-        // The view-model and preview fragments each wait on an independent UI-thread work item; queue both before
-        // awaiting either so the tick pays one UI round trip instead of two. They are still awaited in the old order,
-        // so a view-model cancel or enqueue failure surfaces first, as before, and the capture fragments are still
-        // read after both, so capture state stays at least as new as the view-model state it is compared against.
+        // The view-model and preview fragments each wait on an independent UI-thread work item. Queue both first, then
+        // read the capture fragments (synchronous) while the UI thread runs them, so the tick pays one UI round trip
+        // with the capture reads overlapped instead of two in series. The capture state is therefore sampled just
+        // before, not after, the view-model state; the mixed-epoch checks still flag a pair that disagrees. The UI
+        // fragments are awaited in the old order, so a view-model cancel or enqueue failure still surfaces first.
         var viewModelFragmentTask = CaptureSnapshotFragmentAsync(
             collectionEpoch,
             token => _snapshotQueryPort.GetViewModelRuntimeSnapshotAsync(token),
@@ -190,8 +191,6 @@ public sealed partial class AutomationDiagnosticsHub
             _previewSnapshotProvider,
             snapshot => snapshot.PreviewRuntimeEpoch,
             cancellationToken);
-        var viewModelFragment = await viewModelFragmentTask.ConfigureAwait(false);
-        var previewRuntimeFragment = await previewRuntimeFragmentTask.ConfigureAwait(false);
         var captureRuntimeFragment = await CaptureSnapshotFragmentAsync(
             collectionEpoch,
             token => _snapshotQueryPort.GetCaptureSnapshotProducerEpochAsync(token),
@@ -210,6 +209,8 @@ public sealed partial class AutomationDiagnosticsHub
             token => _snapshotQueryPort.GetRecordingStatsSnapshotAsync(token),
             snapshot => snapshot.CaptureSessionEpoch,
             cancellationToken).ConfigureAwait(false);
+        var viewModelFragment = await viewModelFragmentTask.ConfigureAwait(false);
+        var previewRuntimeFragment = await previewRuntimeFragmentTask.ConfigureAwait(false);
         var viewModelSnapshot = viewModelFragment.Value;
         var captureRuntime = captureRuntimeFragment.Value;
         var health = healthFragment.Value;
