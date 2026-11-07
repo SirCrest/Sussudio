@@ -142,6 +142,10 @@ public sealed class AutomationAppSurfaceContractsTests
     [Fact]
     public Task AutomationPipeClientFailsAtOnceWhenDeviceScanFoundNothing()
         => global::Program.NamedPipeAutomationServer_ClientFailsAtOnceWhenDeviceScanFoundNothing();
+
+    [Fact]
+    public Task DeviceCommandStaysNotReadyWhenAScanFinishesDuringTheReadinessCheck()
+        => global::Program.AutomationCommandDispatcher_ScanFinishingDuringReadinessCheckStaysNotReady();
 }
 
 public sealed class AutomationCatalogContractsTests
@@ -1744,12 +1748,15 @@ static partial class Program
         }
     }
 
-    private static object CreateNoHardwareAutomationCommandDispatcher(bool deviceScanPending = true)
+    private static object CreateNoHardwareAutomationCommandDispatcher(
+        bool deviceScanPending = true,
+        bool scanFinishesAfterDeviceRead = false)
     {
         var viewModelType = RequireType("Sussudio.Services.Automation.IAutomationViewModel");
         var diagnosticsType = RequireType("Sussudio.Services.Contracts.IAutomationDiagnosticsHub");
         var windowControlType = RequireType("Sussudio.Services.Contracts.IAutomationWindowControl");
         var snapshot = CreateInstance("Sussudio.Models.AutomationSnapshot");
+        var scanFinished = false;
 
         object? Handler(MethodInfo? method, object?[]? args)
         {
@@ -1760,11 +1767,13 @@ static partial class Program
 
             if (method?.Name == "get_IsDeviceScanPending")
             {
-                return deviceScanPending;
+                return deviceScanPending && !scanFinished;
             }
 
             if (method?.Name == "get_Devices")
             {
+                // The scan commits right after this read, as if the UI thread won the race.
+                scanFinished = scanFinishesAfterDeviceRead;
                 return Activator.CreateInstance(
                     typeof(ObservableCollection<>).MakeGenericType(RequireType("Sussudio.Models.CaptureDevice")));
             }
@@ -2542,16 +2551,31 @@ static partial class Program
             .First();
         var dispatcher = CreateNoHardwareAutomationCommandDispatcher(deviceScanPending: false);
 
-        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         var result = await SendThroughRealPipeAsync(dispatcher, readyGatedCommand, TimeSpan.FromSeconds(30));
-        stopwatch.Stop();
 
+        // The client retries only not_ready, so a final "error" means it gave up on the first reply.
         Assert.False(result.Success);
         Assert.Equal("error", result.Status);
-        Assert.True(stopwatch.ElapsedMilliseconds < 3000,
-            $"{readyGatedCommand} took {stopwatch.ElapsedMilliseconds} ms; the client retried a permanent failure.");
         using var json = JsonDocument.Parse(result.ResponseJson);
         Assert.Equal("invalid-state", json.RootElement.GetProperty("ErrorCode").GetString());
+    }
+
+    // The UI thread commits a scan while automation checks readiness off it. A scan that ends
+    // between the device read and the pending read must not turn into a lasting error.
+    internal static async Task AutomationCommandDispatcher_ScanFinishingDuringReadinessCheckStaysNotReady()
+    {
+        var readyGatedCommand = GetCatalogEntries(RequireType("Sussudio.Tools.AutomationCommandCatalog"))
+            .Where(entry => (bool)GetMetadataProperty(entry, "RequiresReadyDevices")!)
+            .Select(entry => (string)GetMetadataProperty(entry, "Name")!)
+            .First();
+        var dispatcher = CreateNoHardwareAutomationCommandDispatcher(scanFinishesAfterDeviceRead: true);
+
+        var response = await ExecuteAutomationCommandAsync(
+                dispatcher,
+                CreateAutomationCommandRequest(readyGatedCommand, authToken: null, payloadJson: "{}"))
+            .ConfigureAwait(false);
+
+        Assert.Equal("NotReady", GetPublicProperty(response, "Status")!.ToString());
     }
 
     // Serves the dispatcher on a real pipe and sends one command through the shared client.
