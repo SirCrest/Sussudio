@@ -605,6 +605,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private bool _isAutoFrameRateSelected = true;
     private readonly CaptureModeSelectionState _captureModeSelection = new();
     private long _deviceScanGeneration;
+    // Written on the UI thread when a scan commits; read by automation off the UI thread.
+    private volatile bool _lastDeviceScanFoundNoDevices;
 
     // Flag to prevent reinitialization during initial device setup.
     private bool _isChangingDevice;
@@ -1942,6 +1944,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     [ObservableProperty]
     public partial double SelectedFrameRate { get; set; } = 60;
 
+    public bool LastDeviceScanFoundNoDevices => _lastDeviceScanFoundNoDevices;
+
     public bool IsAutoFrameRateSelected
     {
         get => _isAutoFrameRateSelected;
@@ -2546,7 +2550,11 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                     EnumerateCaptureDeviceDiscoveryAsync = () =>
                         viewModel._deviceService.EnumerateCaptureDeviceDiscoveryAsync(waitForFormatProbes: false),
                     ApplyStartupAudioDeviceScan = viewModel.ApplyStartupAudioDeviceScan,
-                    ReplaceDevices = devices => ReplaceCollection(viewModel.Devices, devices),
+                    ReplaceDevices = devices =>
+                    {
+                        ReplaceCollection(viewModel.Devices, devices);
+                        viewModel._lastDeviceScanFoundNoDevices = devices.Count == 0;
+                    },
                     GetDevices = () => viewModel.Devices,
                     BeginBackgroundFormatProbe = (device, scanGeneration) =>
                         viewModel._deviceService.BeginBackgroundFormatProbe(device, scanGeneration),

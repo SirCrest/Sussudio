@@ -18,6 +18,8 @@ public interface IAutomationReadinessPort
 {
     bool IsInitialized { get; }
     ObservableCollection<CaptureDevice> Devices { get; }
+    // True once a committed device scan found no capture devices, so retrying cannot help.
+    bool LastDeviceScanFoundNoDevices { get; }
 }
 
 /// <summary>

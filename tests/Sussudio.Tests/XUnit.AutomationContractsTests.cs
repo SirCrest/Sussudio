@@ -138,6 +138,10 @@ public sealed class AutomationAppSurfaceContractsTests
     [Fact]
     public Task AutomationPipeClientRetriesNotReadyFromRealServer()
         => global::Program.NamedPipeAutomationServer_ClientRetriesNotReadyResponse();
+
+    [Fact]
+    public Task AutomationPipeClientFailsAtOnceWhenDeviceScanFoundNothing()
+        => global::Program.NamedPipeAutomationServer_ClientFailsAtOnceWhenDeviceScanFoundNothing();
 }
 
 public sealed class AutomationCatalogContractsTests
@@ -1740,7 +1744,7 @@ static partial class Program
         }
     }
 
-    private static object CreateNoHardwareAutomationCommandDispatcher()
+    private static object CreateNoHardwareAutomationCommandDispatcher(bool deviceScanFoundNoDevices = false)
     {
         var viewModelType = RequireType("Sussudio.Services.Automation.IAutomationViewModel");
         var diagnosticsType = RequireType("Sussudio.Services.Contracts.IAutomationDiagnosticsHub");
@@ -1752,6 +1756,11 @@ static partial class Program
             if (method?.Name == "get_IsInitialized")
             {
                 return false;
+            }
+
+            if (method?.Name == "get_LastDeviceScanFoundNoDevices")
+            {
+                return deviceScanFoundNoDevices;
             }
 
             if (method?.Name == "get_Devices")
@@ -2535,6 +2544,44 @@ static partial class Program
         using var json = JsonDocument.Parse(result.ResponseJson);
         Assert.Equal("ok", json.RootElement.GetProperty("Status").GetString());
         Assert.Equal("completed", json.RootElement.GetProperty("CommandLifecycle").GetString());
+    }
+
+    // A machine with no capture device: retrying "not_ready" cannot help once a scan has
+    // committed an empty list, so a device command must fail on the first reply.
+    internal static async Task NamedPipeAutomationServer_ClientFailsAtOnceWhenDeviceScanFoundNothing()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        var readyGatedCommand = GetCatalogEntries(RequireType("Sussudio.Tools.AutomationCommandCatalog"))
+            .Where(entry => (bool)GetMetadataProperty(entry, "RequiresReadyDevices")!)
+            .Select(entry => (string)GetMetadataProperty(entry, "Name")!)
+            .First();
+        var dispatcher = CreateNoHardwareAutomationCommandDispatcher(deviceScanFoundNoDevices: true);
+
+        var pipeName = $"unit-pipe-no-devices-{Guid.NewGuid():N}";
+        using var server = CreateNamedPipeAutomationServer(pipeName, false, new byte[] { 1 },
+            _ => CreateTestPipeServerStream(pipeName), () => CreateTestPipeServerStream(pipeName), dispatcher);
+        Assert.True(StartNamedPipeAutomationServer(server));
+
+        var send = typeof(AutomationPipeProtocol).Assembly
+            .GetType("Sussudio.Tools.AutomationPipeClient", throwOnError: true)!
+            .GetMethods(BindingFlags.Static | BindingFlags.NonPublic)
+            .Single(candidate =>
+                candidate.Name == "SendCommandWithResultAsync" &&
+                candidate.GetParameters()[1].ParameterType == typeof(string));
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var sendTask = (Task<AutomationPipeCommandResult>)send.Invoke(null, new object?[]
+        {
+            pipeName, readyGatedCommand, null, 5000, 5000, null, false, CancellationToken.None
+        })!;
+        var result = await sendTask.WaitAsync(TimeSpan.FromSeconds(30));
+        stopwatch.Stop();
+
+        Assert.False(result.Success);
+        Assert.Equal("error", result.Status);
+        Assert.True(stopwatch.ElapsedMilliseconds < 3000,
+            $"{readyGatedCommand} took {stopwatch.ElapsedMilliseconds} ms; the client retried a permanent failure.");
+        using var json = JsonDocument.Parse(result.ResponseJson);
+        Assert.Equal("invalid-state", json.RootElement.GetProperty("ErrorCode").GetString());
     }
 
     internal static async Task NamedPipeAutomationServer_RequestLimit_HandlesCrLfBoundary()

@@ -365,6 +365,17 @@ public sealed partial class AutomationCommandDispatcher : IAutomationCommandDisp
 
         if (RequiresReadyDevices(request.Command) && !IsAutomationReady())
         {
+            // Clients retry not_ready for about 15 s; a scan that found nothing will not change.
+            if (_readinessPort.LastDeviceScanFoundNoDevices)
+            {
+                return CreateResponse(
+                    correlationId,
+                    "No capture devices found.",
+                    errorCode: AutomationErrorCodes.InvalidState,
+                    success: false,
+                    status: AutomationResponseStatus.Error);
+            }
+
             return CreateResponse(
                 correlationId,
                 "Automation is still initializing devices; retry shortly.",
