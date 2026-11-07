@@ -337,6 +337,7 @@ internal sealed class MainViewModelDeviceRefreshControllerContext
     public required Func<CaptureDevice?> GetSelectedDevice { get; init; }
     public required Func<string?> GetPendingSavedDeviceId { get; init; }
     public required Action<string?> SetPendingSavedDeviceId { get; init; }
+    public required Action<bool> SetDeviceScanPending { get; init; }
 }
 
 /// <summary>
@@ -362,6 +363,7 @@ internal sealed class MainViewModelDeviceRefreshController
     {
         cancellationToken.ThrowIfCancellationRequested();
         var requestGeneration = Interlocked.Increment(ref _refreshRequestGeneration);
+        _context.SetDeviceScanPending(true);
         _context.SetStatusText(StatusMessages.ScanningForDevices);
 
         try
@@ -444,6 +446,14 @@ internal sealed class MainViewModelDeviceRefreshController
             if (throwOnScanFailure)
             {
                 throw;
+            }
+        }
+        finally
+        {
+            // A superseded scan leaves the newer one pending.
+            if (requestGeneration == Volatile.Read(ref _refreshRequestGeneration))
+            {
+                _context.SetDeviceScanPending(false);
             }
         }
     }

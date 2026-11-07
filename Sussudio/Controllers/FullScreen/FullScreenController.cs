@@ -92,25 +92,57 @@ internal sealed class FullScreenController
     public void Exit()
         => _ = RunTransitionAsync(ExitAsync, "exit");
 
-    public async Task EnterAsync()
+    public Task EnterAsync()
+        => RunSettledTransitionAsync(toFullScreen: true, EnterCoreAsync);
+
+    public Task ExitAsync()
+        => RunSettledTransitionAsync(toFullScreen: false, ExitCoreAsync);
+
+    private async Task RunSettledTransitionAsync(bool toFullScreen, Func<Task> transition)
     {
-        if (_isTransitioning || _isFullScreen) return;
+        if (_isTransitioning || _isFullScreen == toFullScreen) return;
         _isTransitioning = true;
+        try
+        {
+            await transition().ConfigureAwait(true);
+        }
+        // _isTransitioning is already false when the completion callback itself threw (the
+        // transition finished) or when an enter failed before changing anything; neither settles.
+        catch when (_isTransitioning)
+        {
+            SettleWindowedAfterFailedTransition();
+            throw;
+        }
+    }
 
-        var appWindow = _context.GetAppWindow();
-        _preFullScreenPosition = appWindow.Position;
-        _preFullScreenBounds = new Windows.Graphics.RectInt32(
-            appWindow.Position.X, appWindow.Position.Y,
-            appWindow.Size.Width, appWindow.Size.Height);
-        _preFullScreenSettingsVisible = _context.SettingsOverlayPanel.Visibility == Visibility.Visible;
-        _preFullScreenStatsDockVisible = _context.StatsDockPanel.Visibility == Visibility.Visible;
+    private async Task EnterCoreAsync()
+    {
+        AppWindow appWindow;
+        Windows.Foundation.Point prePosition;
+        double preW, preH;
+        try
+        {
+            _preFullScreenSettingsVisible = _context.SettingsOverlayPanel.Visibility == Visibility.Visible;
+            _preFullScreenStatsDockVisible = _context.StatsDockPanel.Visibility == Visibility.Visible;
+            appWindow = _context.GetAppWindow();
+            _preFullScreenPosition = appWindow.Position;
+            _preFullScreenBounds = new Windows.Graphics.RectInt32(
+                appWindow.Position.X, appWindow.Position.Y,
+                appWindow.Size.Width, appWindow.Size.Height);
 
-        var transform = _context.PreviewBorder.TransformToVisual(_context.RootElement);
-        var prePosition = transform.TransformPoint(new Windows.Foundation.Point(0, 0));
-        var preW = _context.PreviewBorder.ActualWidth;
-        var preH = _context.PreviewBorder.ActualHeight;
+            var transform = _context.PreviewBorder.TransformToVisual(_context.RootElement);
+            prePosition = transform.TransformPoint(new Windows.Foundation.Point(0, 0));
+            preW = _context.PreviewBorder.ActualWidth;
+            preH = _context.PreviewBorder.ActualHeight;
 
-        _context.EndFlashbackScrubForFullScreen();
+            _context.EndFlashbackScrubForFullScreen();
+        }
+        catch
+        {
+            // Nothing on screen has changed yet, so skip the windowed settle and its shadow fade.
+            _isTransitioning = false;
+            throw;
+        }
 
         PrepareChromeForOverlay();
         ApplyFullScreenChromeMaterials();
@@ -167,26 +199,16 @@ internal sealed class FullScreenController
             await AnimateFullScreenRectAsync(
                 prePosition, preW, preH,
                 postPosition, postW, postH,
-                () =>
-                {
-                    _isFullScreen = true;
-                    _isTransitioning = false;
-                    UpdateButtonState();
-                }).ConfigureAwait(true);
+                CompleteEnter).ConfigureAwait(true);
         }
         else
         {
-            _isFullScreen = true;
-            _isTransitioning = false;
-            UpdateButtonState();
+            CompleteEnter();
         }
     }
 
-    public async Task ExitAsync()
+    private async Task ExitCoreAsync()
     {
-        if (_isTransitioning || !_isFullScreen) return;
-        _isTransitioning = true;
-
         StopAutoHideTimer();
         var overlayVisual = ElementCompositionPreview.GetElementVisual(_context.FullScreenControlsOverlay);
         overlayVisual.StopAnimation("Translation");
@@ -196,51 +218,15 @@ internal sealed class FullScreenController
 
         var timelineVisibleAtExit = ShouldShowFlashbackTimeline();
         PrepareChromeForOverlay();
-        _context.FullScreenControlsOverlay.Children.Remove(_context.FlashbackTimelinePanel);
-        _context.FlashbackTimelinePanel.Visibility = Visibility.Collapsed;
-        _context.RootGrid.Children.Add(_context.FlashbackTimelinePanel);
-
-        _context.FullScreenControlsOverlay.Children.Remove(_context.ControlBarBorder);
-        _context.ControlBarBorder.Visibility = Visibility.Collapsed;
-        _context.FullScreenControlsOverlay.Visibility = Visibility.Collapsed;
-        _controlsVisible = false;
-
-        _context.RootGrid.Children.Add(_context.ControlBarShadowHost);
-        _context.RootGrid.Children.Add(_context.ControlBarBorder);
+        MoveChromeToWindow();
 
         var transform = _context.PreviewBorder.TransformToVisual(_context.RootElement);
         var prePosition = transform.TransformPoint(new Windows.Foundation.Point(0, 0));
         var preW = _context.PreviewBorder.ActualWidth;
         var preH = _context.PreviewBorder.ActualHeight;
 
-        var appWindow = _context.GetAppWindow();
-        appWindow.SetPresenter(AppWindowPresenterKind.Overlapped);
-        appWindow.Move(_preFullScreenPosition);
-        appWindow.Resize(new Windows.Graphics.SizeInt32(_preFullScreenBounds.Width, _preFullScreenBounds.Height));
-
-        _context.PreviewBorder.Margin = new Thickness(12, 6, 12, 6);
-        _context.PreviewShadowHost.Margin = new Thickness(16);
-        _context.PreviewShadowHost.CornerRadius = new CornerRadius(4);
-
-        _context.ControlBarBorder.Visibility = Visibility.Visible;
-        _context.ControlBarShadowHost.Visibility = Visibility.Visible;
-        RestoreWindowedChromeMaterials();
-        if (_preFullScreenSettingsVisible)
-        {
-            _context.SettingsOverlayPanel.Visibility = Visibility.Visible;
-        }
-
-        if (_preFullScreenStatsDockVisible)
-        {
-            _context.ShowStatsDockPanel();
-        }
-
-        if (timelineVisibleAtExit)
-        {
-            _context.FlashbackTimelinePanel.Visibility = Visibility.Visible;
-        }
-
-        _context.RootGrid.Background = null;
+        RestoreWindowPresenter();
+        RestoreWindowedChrome(timelineVisibleAtExit);
 
         await WaitForSizeChangedAsync(_context.PreviewContentGrid, 200).ConfigureAwait(true);
 
@@ -397,6 +383,109 @@ internal sealed class FullScreenController
         };
 
         return completion.Task;
+    }
+
+    // A failed toggle lands windowed. Each step is idempotent and runs even when an earlier
+    // one throws, so an enter or exit that stopped partway still ends with the window, the
+    // chrome and the flags agreeing, and the next toggle starts clean.
+    private void SettleWindowedAfterFailedTransition()
+    {
+        TrySettleStep(PrepareChromeForOverlay, "chrome-reset");
+        TrySettleStep(MoveChromeToWindow, "chrome-move");
+        TrySettleStep(() =>
+        {
+            if (IsInFullScreenPresenter()) RestoreWindowPresenter();
+        }, "presenter");
+        TrySettleStep(() => RestoreWindowedChrome(ShouldShowFlashbackTimeline()), "layout");
+        TrySettleStep(CompleteExit, "complete");
+        // If Windows kept the FullScreen presenter, report full screen so Esc and F11 retry the exit.
+        TrySettleStep(() =>
+        {
+            if (!IsInFullScreenPresenter()) return;
+            _isFullScreen = true;
+            UpdateButtonState();
+        }, "presenter-check");
+    }
+
+    private bool IsInFullScreenPresenter()
+        => _context.GetAppWindow().Presenter.Kind == AppWindowPresenterKind.FullScreen;
+
+    private static void TrySettleStep(Action step, string name)
+    {
+        try
+        {
+            step();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FULLSCREEN_SETTLE_FAIL step={name} type={ex.GetType().Name} msg={ex.Message}");
+        }
+    }
+
+    // Idempotent: recovery runs it after an enter or exit that moved only some of the chrome.
+    private void MoveChromeToWindow()
+    {
+        _context.FullScreenControlsOverlay.Children.Remove(_context.FlashbackTimelinePanel);
+        _context.FlashbackTimelinePanel.Visibility = Visibility.Collapsed;
+        AddToRootGridOnce(_context.FlashbackTimelinePanel);
+
+        _context.FullScreenControlsOverlay.Children.Remove(_context.ControlBarBorder);
+        _context.ControlBarBorder.Visibility = Visibility.Collapsed;
+        _context.FullScreenControlsOverlay.Visibility = Visibility.Collapsed;
+        _controlsVisible = false;
+
+        AddToRootGridOnce(_context.ControlBarShadowHost);
+        AddToRootGridOnce(_context.ControlBarBorder);
+    }
+
+    private void AddToRootGridOnce(UIElement element)
+    {
+        if (!_context.RootGrid.Children.Contains(element))
+        {
+            _context.RootGrid.Children.Add(element);
+        }
+    }
+
+    private void RestoreWindowPresenter()
+    {
+        var appWindow = _context.GetAppWindow();
+        appWindow.SetPresenter(AppWindowPresenterKind.Overlapped);
+        appWindow.Move(_preFullScreenPosition);
+        appWindow.Resize(new Windows.Graphics.SizeInt32(_preFullScreenBounds.Width, _preFullScreenBounds.Height));
+    }
+
+    private void RestoreWindowedChrome(bool showTimeline)
+    {
+        _context.PreviewBorder.Margin = new Thickness(12, 6, 12, 6);
+        _context.PreviewShadowHost.Margin = new Thickness(16);
+        _context.PreviewShadowHost.CornerRadius = new CornerRadius(4);
+
+        _context.ControlBarBorder.Visibility = Visibility.Visible;
+        _context.ControlBarShadowHost.Visibility = Visibility.Visible;
+        RestoreWindowedChromeMaterials();
+        if (_preFullScreenSettingsVisible)
+        {
+            _context.SettingsOverlayPanel.Visibility = Visibility.Visible;
+        }
+
+        if (_preFullScreenStatsDockVisible)
+        {
+            _context.ShowStatsDockPanel();
+        }
+
+        if (showTimeline)
+        {
+            _context.FlashbackTimelinePanel.Visibility = Visibility.Visible;
+        }
+
+        _context.RootGrid.Background = null;
+    }
+
+    private void CompleteEnter()
+    {
+        _isFullScreen = true;
+        _isTransitioning = false;
+        UpdateButtonState();
     }
 
     private void CompleteExit()

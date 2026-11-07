@@ -605,6 +605,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private bool _isAutoFrameRateSelected = true;
     private readonly CaptureModeSelectionState _captureModeSelection = new();
     private long _deviceScanGeneration;
+    // Written on the UI thread by the device refresh; read by automation off the UI thread.
+    private volatile bool _isDeviceScanPending = true;
 
     // Flag to prevent reinitialization during initial device setup.
     private bool _isChangingDevice;
@@ -1942,6 +1944,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     [ObservableProperty]
     public partial double SelectedFrameRate { get; set; } = 60;
 
+    public bool IsDeviceScanPending => _isDeviceScanPending;
+
     public bool IsAutoFrameRateSelected
     {
         get => _isAutoFrameRateSelected;
@@ -2555,6 +2559,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                     GetSelectedDevice = () => viewModel.SelectedDevice,
                     GetPendingSavedDeviceId = () => viewModel._pendingSavedDeviceId,
                     SetPendingSavedDeviceId = value => viewModel._pendingSavedDeviceId = value,
+                    SetDeviceScanPending = pending => viewModel._isDeviceScanPending = pending,
                 },
                 previewLifecycleController);
         }
