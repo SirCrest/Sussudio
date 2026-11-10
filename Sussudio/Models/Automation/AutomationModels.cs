@@ -5,11 +5,9 @@ using System.Text.Json.Serialization;
 
 namespace Sussudio.Models;
 
-// Wire-format response status. The converter uses SnakeCaseLower so the
-// on-the-wire spelling stays "ok"/"error"/"not_ready" — every consumer
-// (ssctl, MCP tools, test fixtures) reads the JSON via JsonElement walking,
-// so wire stability is the contract that matters.
-[JsonConverter(typeof(SnakeCaseLowerStatusConverter))]
+// Wire-format response status, spelled "ok"/"error"/"not_ready" by the converter on
+// AutomationCommandResponse.Status. Every consumer (ssctl, MCP tools, test fixtures)
+// reads the JSON via JsonElement walking, so wire stability is the contract that matters.
 public enum AutomationResponseStatus
 {
     Ok,
@@ -17,10 +15,8 @@ public enum AutomationResponseStatus
     NotReady,
 }
 
-// Wire-format command lifecycle. SnakeCaseLower preserves "completed",
-// "failed", "acknowledged" exactly — the values happen to also be
-// snake_case-stable.
-[JsonConverter(typeof(SnakeCaseLowerLifecycleConverter))]
+// Wire-format command lifecycle, spelled "completed"/"failed"/"acknowledged" by the
+// converter on AutomationCommandResponse.CommandLifecycle.
 public enum AutomationCommandLifecycle
 {
     Completed,
@@ -118,7 +114,11 @@ public sealed class AutomationCommandResponse
     public bool Success { get; init; }
     public string CorrelationId { get; init; } = string.Empty;
     public DateTimeOffset TimestampUtc { get; init; } = DateTimeOffset.UtcNow;
+    // Property-level converters outrank the server's catch-all JsonStringEnumConverter, which
+    // would otherwise ship "NotReady" where clients retry on "not_ready".
+    [JsonConverter(typeof(SnakeCaseLowerStatusConverter))]
     public AutomationResponseStatus Status { get; init; } = AutomationResponseStatus.Ok;
+    [JsonConverter(typeof(SnakeCaseLowerLifecycleConverter))]
     public AutomationCommandLifecycle CommandLifecycle { get; init; } = AutomationCommandLifecycle.Completed;
     public int? RetryAfterMs { get; init; }
     public long? ElapsedMs { get; init; }

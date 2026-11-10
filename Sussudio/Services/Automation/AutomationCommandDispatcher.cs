@@ -363,8 +363,24 @@ public sealed partial class AutomationCommandDispatcher : IAutomationCommandDisp
                 includeSnapshot: false);
         }
 
-        if (RequiresReadyDevices(request.Command) && !IsAutomationReady())
+        // Pending is read on both sides of the device list: a scan that starts (clearing the list)
+        // or commits devices in between then answers not_ready, which the client retries, rather
+        // than a lasting error.
+        if (RequiresReadyDevices(request.Command) &&
+            _readinessPort.IsDeviceScanPending is var deviceScanPending &&
+            !IsAutomationReady())
         {
+            // Clients retry not_ready for about 15 s; once no scan is running, retrying cannot help.
+            if (!deviceScanPending && !_readinessPort.IsDeviceScanPending)
+            {
+                return CreateResponse(
+                    correlationId,
+                    "No capture device is available and no device scan is running.",
+                    errorCode: AutomationErrorCodes.InvalidState,
+                    success: false,
+                    status: AutomationResponseStatus.Error);
+            }
+
             return CreateResponse(
                 correlationId,
                 "Automation is still initializing devices; retry shortly.",

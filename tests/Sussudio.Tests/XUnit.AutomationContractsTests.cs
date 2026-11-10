@@ -134,6 +134,22 @@ public sealed class AutomationAppSurfaceContractsTests
     [Fact]
     public Task AutomationPipeServerKeepsDiagnosticsAvailableBesideBusyClients()
         => global::Program.NamedPipeAutomationServer_KeepsDiagnosticsAvailableBesideBusyClients();
+
+    [Fact]
+    public Task AutomationPipeClientRetriesNotReadyFromRealServer()
+        => global::Program.NamedPipeAutomationServer_ClientRetriesNotReadyResponse();
+
+    [Fact]
+    public Task AutomationPipeClientFailsAtOnceWhenDeviceScanFoundNothing()
+        => global::Program.NamedPipeAutomationServer_ClientFailsAtOnceWhenDeviceScanFoundNothing();
+
+    [Theory]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public Task DeviceCommandStaysNotReadyWhenAScanStartsOrFinishesDuringTheReadinessCheck(
+        bool pendingBeforeDeviceRead, bool pendingAfterDeviceRead)
+        => global::Program.AutomationCommandDispatcher_ScanChangingDuringReadinessCheckStaysNotReady(
+            pendingBeforeDeviceRead, pendingAfterDeviceRead);
 }
 
 public sealed class AutomationCatalogContractsTests
@@ -1736,12 +1752,15 @@ static partial class Program
         }
     }
 
-    private static object CreateNoHardwareAutomationCommandDispatcher()
+    private static object CreateNoHardwareAutomationCommandDispatcher(
+        bool deviceScanPending = true,
+        bool? pendingAfterDeviceRead = null)
     {
         var viewModelType = RequireType("Sussudio.Services.Automation.IAutomationViewModel");
         var diagnosticsType = RequireType("Sussudio.Services.Contracts.IAutomationDiagnosticsHub");
         var windowControlType = RequireType("Sussudio.Services.Contracts.IAutomationWindowControl");
         var snapshot = CreateInstance("Sussudio.Models.AutomationSnapshot");
+        var pending = deviceScanPending;
 
         object? Handler(MethodInfo? method, object?[]? args)
         {
@@ -1750,8 +1769,15 @@ static partial class Program
                 return false;
             }
 
+            if (method?.Name == "get_IsDeviceScanPending")
+            {
+                return pending;
+            }
+
             if (method?.Name == "get_Devices")
             {
+                // A scan starts or commits right after this read, as if the UI thread won the race.
+                pending = pendingAfterDeviceRead ?? pending;
                 return Activator.CreateInstance(
                     typeof(ObservableCollection<>).MakeGenericType(RequireType("Sussudio.Models.CaptureDevice")));
             }
@@ -2478,6 +2504,106 @@ static partial class Program
         {
             foreach (var client in busyClients) client.Dispose();
         }
+    }
+
+    // The shared pipe client retries "not_ready" while devices initialize. Its fixtures are
+    // hand-written JSON, so this drives the real server serializer into the real client.
+    internal static async Task NamedPipeAutomationServer_ClientRetriesNotReadyResponse()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        var responseType = RequireType("Sussudio.Models.AutomationCommandResponse");
+        var statusType = RequireType("Sussudio.Models.AutomationResponseStatus");
+        var fromResult = typeof(Task).GetMethod(nameof(Task.FromResult))!.MakeGenericMethod(responseType);
+        var dispatchCount = 0;
+        var dispatcher = CreateConfiguredProxy(RequireType("Sussudio.Services.Contracts.IAutomationCommandDispatcher"),
+            (method, _) =>
+            {
+                Assert.Equal("ExecuteAsync", method!.Name);
+                var response = Activator.CreateInstance(responseType)!;
+                if (Interlocked.Increment(ref dispatchCount) == 1)
+                {
+                    SetPropertyBackingField(response, "Success", false);
+                    SetPropertyBackingField(response, "Status", Enum.Parse(statusType, "NotReady"));
+                    SetPropertyBackingField(response, "ErrorCode", "not-ready");
+                    SetPropertyBackingField(response, "RetryAfterMs", 100);
+                }
+                else
+                {
+                    SetPropertyBackingField(response, "Success", true);
+                }
+
+                return fromResult.Invoke(null, new[] { response });
+            });
+
+        var result = await SendThroughRealPipeAsync(dispatcher, "GetSnapshot", TimeSpan.FromSeconds(10));
+
+        Assert.Equal(2, Volatile.Read(ref dispatchCount));
+        Assert.True(result.Success);
+        using var json = JsonDocument.Parse(result.ResponseJson);
+        Assert.Equal("ok", json.RootElement.GetProperty("Status").GetString());
+        Assert.Equal("completed", json.RootElement.GetProperty("CommandLifecycle").GetString());
+    }
+
+    // A machine with no capture device: retrying "not_ready" cannot help once no device scan
+    // is running, so a device command must fail on the first reply.
+    internal static async Task NamedPipeAutomationServer_ClientFailsAtOnceWhenDeviceScanFoundNothing()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        var readyGatedCommand = GetCatalogEntries(RequireType("Sussudio.Tools.AutomationCommandCatalog"))
+            .Where(entry => (bool)GetMetadataProperty(entry, "RequiresReadyDevices")!)
+            .Select(entry => (string)GetMetadataProperty(entry, "Name")!)
+            .First();
+        var dispatcher = CreateNoHardwareAutomationCommandDispatcher(deviceScanPending: false);
+
+        var result = await SendThroughRealPipeAsync(dispatcher, readyGatedCommand, TimeSpan.FromSeconds(30));
+
+        // The client retries only not_ready, so a final "error" means it gave up on the first reply.
+        Assert.False(result.Success);
+        Assert.Equal("error", result.Status);
+        using var json = JsonDocument.Parse(result.ResponseJson);
+        Assert.Equal("invalid-state", json.RootElement.GetProperty("ErrorCode").GetString());
+    }
+
+    // The UI thread runs a scan while automation checks readiness off it. A scan that starts
+    // (and clears the device list) or ends during the check must not turn into a lasting error.
+    internal static async Task AutomationCommandDispatcher_ScanChangingDuringReadinessCheckStaysNotReady(
+        bool pendingBeforeDeviceRead, bool pendingAfterDeviceRead)
+    {
+        var readyGatedCommand = GetCatalogEntries(RequireType("Sussudio.Tools.AutomationCommandCatalog"))
+            .Where(entry => (bool)GetMetadataProperty(entry, "RequiresReadyDevices")!)
+            .Select(entry => (string)GetMetadataProperty(entry, "Name")!)
+            .First();
+        var dispatcher = CreateNoHardwareAutomationCommandDispatcher(
+            pendingBeforeDeviceRead, pendingAfterDeviceRead);
+
+        var response = await ExecuteAutomationCommandAsync(
+                dispatcher,
+                CreateAutomationCommandRequest(readyGatedCommand, authToken: null, payloadJson: "{}"))
+            .ConfigureAwait(false);
+
+        Assert.Equal("NotReady", GetPublicProperty(response, "Status")!.ToString());
+    }
+
+    // Serves the dispatcher on a real pipe and sends one command through the shared client.
+    private static async Task<AutomationPipeCommandResult> SendThroughRealPipeAsync(
+        object dispatcher, string command, TimeSpan timeout)
+    {
+        var pipeName = $"unit-pipe-client-{Guid.NewGuid():N}";
+        using var server = CreateNamedPipeAutomationServer(pipeName, false, new byte[] { 1 },
+            _ => CreateTestPipeServerStream(pipeName), () => CreateTestPipeServerStream(pipeName), dispatcher);
+        Assert.True(StartNamedPipeAutomationServer(server));
+
+        var send = typeof(AutomationPipeProtocol).Assembly
+            .GetType("Sussudio.Tools.AutomationPipeClient", throwOnError: true)!
+            .GetMethods(BindingFlags.Static | BindingFlags.NonPublic)
+            .Single(candidate =>
+                candidate.Name == "SendCommandWithResultAsync" &&
+                candidate.GetParameters()[1].ParameterType == typeof(string));
+        var sendTask = (Task<AutomationPipeCommandResult>)send.Invoke(null, new object?[]
+        {
+            pipeName, command, null, 5000, 5000, null, false, CancellationToken.None
+        })!;
+        return await sendTask.WaitAsync(timeout);
     }
 
     internal static async Task NamedPipeAutomationServer_RequestLimit_HandlesCrLfBoundary()

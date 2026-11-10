@@ -18,6 +18,8 @@ public interface IAutomationReadinessPort
 {
     bool IsInitialized { get; }
     ObservableCollection<CaptureDevice> Devices { get; }
+    // True until a device scan has finished, and again while a rescan runs.
+    bool IsDeviceScanPending { get; }
 }
 
 /// <summary>
